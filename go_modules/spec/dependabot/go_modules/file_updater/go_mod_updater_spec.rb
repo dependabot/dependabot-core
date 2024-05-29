@@ -71,6 +71,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it "updated the dependency" do
         is_expected.to include(%(rsc.io/quote v1.5.2\n))
       end
+
       it "retained the previous change" do
         is_expected.to include(%(rsc.io/qr v0.1.1\n))
       end
@@ -234,8 +235,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          let(:project_name) { "go_sum" }
           subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+          let(:project_name) { "go_sum" }
 
           it "adds new entries to the go.sum" do
             is_expected
@@ -404,7 +406,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
                                                                                                     exit_status])
       end
 
-      it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
+      it {
+        expect do
+          updated_go_mod_content
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/)
+      }
     end
 
     context "for an explicit indirect dependency" do
@@ -805,8 +811,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#updated_go_sum_content" do
-    let(:project_name) { "go_sum" }
     subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+    let(:project_name) { "go_sum" }
 
     context "for a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
@@ -827,6 +834,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       context "if no files have changed" do
         let(:go_sum_content) { fixture("projects", project_name, "go.sum") }
+
         it { is_expected.to eq(go_sum_content) }
       end
 
@@ -849,6 +857,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         context "but tidying is disabled" do
           let(:tidy) { false }
+
           it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
           it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
         end

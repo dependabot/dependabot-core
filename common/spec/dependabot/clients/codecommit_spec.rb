@@ -28,6 +28,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
   end
+
   before do
     allow_any_instance_of(
       Dependabot::Clients::CodeCommit
@@ -35,7 +36,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   end
 
   describe "#fetch_commit" do
-    subject { client.fetch_commit(nil, branch) }
+    subject(:fetch_commit) { client.fetch_commit(nil, branch) }
 
     context "when a response is returned" do
       before do
@@ -50,12 +51,13 @@ RSpec.describe Dependabot::Clients::CodeCommit do
           )
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { fetch_commit }.to_not raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
 
       context "without credentials" do
         let(:credentials) { [] }
+
         before { ENV["AWS_REGION"] = "us-east-1" }
 
         it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
@@ -71,7 +73,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(
+        expect { fetch_commit }.to raise_error(
           Aws::CodeCommit::Errors::BranchDoesNotExistException
         )
       end

@@ -91,6 +91,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to eq manifest(dependency_files)
@@ -109,6 +110,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock, and updates the content-hash" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to eq manifest(dependency_files)
@@ -140,6 +142,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to include "collection: ^1.15.0"
@@ -188,6 +191,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         )
       ]
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to include "protobuf: ^2.0.0"

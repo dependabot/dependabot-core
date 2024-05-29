@@ -7,6 +7,7 @@ require "dependabot/update_checkers/base"
 RSpec.shared_examples "an update checker" do
   describe "the class" do
     subject { described_class }
+
     let(:base_class) { Dependabot::UpdateCheckers::Base }
 
     def recent_ancestors

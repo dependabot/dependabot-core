@@ -6,6 +6,7 @@ require "dependabot/maven/utils/auth_headers_finder"
 
 RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
   subject(:finder) { described_class.new(credentials) }
+
   let(:credentials) do
     [
       {
@@ -37,6 +38,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
 
   describe "#auth_headers" do
     subject(:found_auth_headers) { finder.auth_headers(maven_repo_url) }
+
     let(:maven_repo_url) do
       "https://custom.repo.org/maven2"
     end

@@ -102,12 +102,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
       context "handles dependencies with classifiers" do
         let(:dependencies) { [dependency, mockk_dependency] }
+
         its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
         let(:dependency_groups) { [] }
+
         its(:content) { is_expected.to include("<version> 4.6.1 </version>") }
       end
 
@@ -176,6 +178,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) do
           is_expected.to include("<version>1.6.0.RELEASE</version>")
         end
+
         its(:content) { is_expected.to include("<version>0.7.9</version>") }
       end
 
@@ -640,6 +643,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
     end
 
     context "the updated extensions.xml file" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "extensions.xml" }
+      end
+
       let(:dependency_files) { [pom, extensions] }
       let(:extensions) do
         Dependabot::DependencyFile.new(
@@ -669,14 +676,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "extensions.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>0.4.7</version>") }
     end
 
     context "when updating an annotationProcessorPaths dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -706,14 +713,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>2.18.0</version>") }
     end
 
     context "when updating a plugin artifactItem dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -741,10 +748,6 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           }],
           package_manager: "maven"
         )
-      end
-
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
       end
 
       its(:content) { is_expected.to include("<version>0.9.5</version>") }

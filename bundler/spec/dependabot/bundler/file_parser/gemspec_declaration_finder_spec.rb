@@ -31,26 +31,31 @@ RSpec.describe Dependabot::Bundler::FileParser::GemspecDeclarationFinder do
 
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }
+
       it { is_expected.to eq(false) }
     end
 
     context "when the file does include the dependency as `add_dependency`" do
       let(:dependency_name) { "excon" }
+
       it { is_expected.to eq(true) }
     end
 
     context "when the file does include the dependency as `add_runtime_dependency`" do
       let(:dependency_name) { "bundler" }
+
       it { is_expected.to eq(true) }
     end
 
     context "when the file does include the dependency as `add_development_dependency`" do
       let(:dependency_name) { "webmock" }
+
       it { is_expected.to eq(true) }
     end
 
     context "when the file loads the dependency dynamically" do
       let(:dependency_name) { "rake" }
+
       it { is_expected.to eq(false) }
     end
   end

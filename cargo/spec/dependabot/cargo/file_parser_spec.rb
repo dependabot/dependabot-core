@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "which is part of a workspace but not the root" do
+      context "when the project is part of a workspace but not the root" do
         let(:manifest_fixture_name) { "workspace_child" }
 
         it "raises a helpful error" do
@@ -264,9 +264,10 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
 
         context "with an override (specified as a patch)" do
+          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
           let(:manifest_fixture_name) { "workspace_root_with_patch" }
           let(:lockfile_fixture_name) { "workspace_with_patch" }
-          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
           it "excludes the patched dependency" do
             expect(top_level_dependencies.map(&:name)).to eq(["regex"])
@@ -361,6 +362,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
           context "when using an old format lockfile" do
             let(:lockfile_fixture_name) { "virtual_workspace_old_format" }
+
             its(:length) { is_expected.to eq(2) }
           end
         end
@@ -521,7 +523,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that is unparseable" do
+      context "when the input is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -532,7 +534,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that have value overwrite issues" do
+      context "when there are value overwrite issues" do
         let(:manifest_fixture_name) { "unparseable_value_overwrite" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -553,6 +555,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
       describe "top level dependencies" do
         subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
@@ -829,16 +832,18 @@ RSpec.describe Dependabot::Cargo::FileParser do
       context "with resolver version 2" do
         let(:manifest_fixture_name) { "resolver2" }
         let(:lockfile_fixture_name) { "no_dependencies" }
+
         it { is_expected.to eq([]) }
       end
 
       context "with no dependencies" do
         let(:manifest_fixture_name) { "no_dependencies" }
         let(:lockfile_fixture_name) { "no_dependencies" }
+
         it { is_expected.to eq([]) }
       end
 
-      context "that is unparseable" do
+      context "when the input is unparseable" do
         let(:lockfile_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do

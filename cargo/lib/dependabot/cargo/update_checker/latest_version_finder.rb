@@ -97,52 +97,79 @@ module Dependabot
           crates_listing
             .fetch("versions", [])
             .reject { |v| v["yanked"] }
-            .map { |v| version_class.new(v.fetch("num")) }
+            # Handle both default and sparse registry responses.
+            # Default registry uses "num" for version number.
+            # Sparse registry uses "vers" for version number.
+            .map do |v|
+              version_number = v["num"] || v["vers"]
+              version_class.new(version_number)
+            end
         end
 
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          info = dependency.requirements.filter_map { |r| r[:source] }.first
-          index = (info && info[:index]) || CRATES_IO_API
+          info = fetch_dependency_info
+          index = fetch_index(info)
 
-          # Default request headers
-          hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
-
-          if index != CRATES_IO_API
-            # Add authentication headers if credentials are present for this registry
-            registry_creds = credentials.find do |cred|
-              cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
-            end
-
-            unless registry_creds.nil?
-              # If there is a credential, but no actual token at this point, it means that dependabot-cli
-              # stripped the token from our credentials. In this case, the dependabot proxy will reintroduce
-              # the correct token, so we just use 'placeholder_token' as the token value.
-              token = registry_creds["token"] || "placeholder_token"
-
-              hdrs["Authorization"] = token
-            end
-          end
+          hdrs = default_headers
+          hdrs.merge!(auth_headers(info)) if index != CRATES_IO_API
 
           url = metadata_fetch_url(dependency, index)
 
           # B4PR
           puts "Calling #{url} to fetch metadata for #{dependency.name} from #{index}"
 
-          response = Excon.get(
-            url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: hdrs)
-          )
+          response = fetch_response(url, hdrs)
+          return {} if response.status == 404
 
-          @crates_listing = JSON.parse(response.body)
+          @crates_listing = parse_response(response, index)
 
           # B4PR
           puts "Fetched metadata for #{dependency.name} from #{index} successfully"
           puts response.body
 
           @crates_listing
+        end
+
+        def fetch_dependency_info
+          dependency.requirements.filter_map { |r| r[:source] }.first
+        end
+
+        def fetch_index(info)
+          (info && info[:index]) || CRATES_IO_API
+        end
+
+        def default_headers
+          { "User-Agent" => "Dependabot (dependabot.com)" }
+        end
+
+        def auth_headers(info)
+          registry_creds = credentials.find do |cred|
+            cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
+          end
+
+          return {} if registry_creds.nil?
+
+          token = registry_creds["token"] || "placeholder_token"
+          { "Authorization" => token }
+        end
+
+        def fetch_response(url, headers)
+          Excon.get(
+            url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults(headers: headers)
+          )
+        end
+
+        def parse_response(response, index)
+          if index.start_with?("sparse+")
+            parsed_response = response.body.lines.map { |line| JSON.parse(line) }
+            { "versions" => parsed_response }
+          else
+            JSON.parse(response.body)
+          end
         end
 
         def metadata_fetch_url(dependency, index)

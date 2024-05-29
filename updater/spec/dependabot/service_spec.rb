@@ -12,6 +12,8 @@ require "dependabot/pull_request_creator"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
+  subject(:service) { described_class.new(client: mock_client) }
+
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
@@ -25,8 +27,6 @@ RSpec.describe Dependabot::Service do
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
   end
-
-  subject(:service) { described_class.new(client: mock_client) }
 
   shared_context :a_pr_was_created do
     let(:source) do

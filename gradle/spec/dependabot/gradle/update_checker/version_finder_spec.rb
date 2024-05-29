@@ -60,14 +60,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
   end
 
   describe "#latest_version_details" do
-    subject { finder.latest_version_details }
+    subject(:latest_version_details) { finder.latest_version_details }
+
     its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
 
     context "when the user wants a pre-release" do
       let(:dependency_version) { "23.0-rc1-android" }
+
       its([:version]) do
         is_expected.to eq(version_class.new("23.7-rc1-android"))
       end
@@ -78,10 +81,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         fixture("maven_central_metadata", "with_date_releases.xml")
       end
       let(:dependency_version) { "3.1" }
+
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
       context "and that's what we're using" do
         let(:dependency_version) { "20030418" }
+
         its([:version]) { is_expected.to eq(version_class.new("20040616")) }
       end
     end
@@ -96,10 +101,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
       end
       let(:dependency_version) { "1.4.11-java7" }
+
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
 
       context "and the type is native-mt" do
         let(:dependency_version) { "1.4.11-native-mt" }
+
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.12-native-mt"))
         end
@@ -118,13 +125,15 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
       end
       let(:dependency_version) { "1.4.11.1" }
+
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
     end
 
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_details }.to_not raise_error
       end
     end
 
@@ -133,8 +142,9 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
@@ -149,12 +159,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -162,32 +174,37 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     context "when the user has asked to ignore a major version" do
       let(:ignored_versions) { ["[23.0,24)"] }
       let(:dependency_version) { "17.0" }
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
     context "when the user has asked to ignore several major versions" do
       let(:ignored_versions) { ["[23.0,24),[22.0,23)"] }
       let(:dependency_version) { "17.0" }
+
       its([:version]) { is_expected.to eq(version_class.new("21.0")) }
     end
 
     context "when a version range is specified using Ruby syntax" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
     context "when the user has asked to ignore all versions" do
       let(:ignored_versions) { [">= 0"] }
       let(:dependency_version) { "17.0" }
+
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version_details).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -197,14 +214,16 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
+
       its([:version]) { is_expected.to eq(version_class.new("23.0")) }
     end
 
@@ -241,6 +260,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("27.1.1")) }
+
       its([:source_url]) do
         is_expected.to eq("https://maven.google.com")
       end
@@ -270,6 +290,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
@@ -304,6 +325,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
         end
@@ -323,6 +345,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -335,7 +358,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }
+            expect { latest_version_details }
               .to raise_error(error_class) do |error|
               expect(error.source).to eq("https://private.registry.org/repo")
             end
@@ -406,6 +429,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
@@ -438,6 +462,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         "https://repo.maven.apache.org/maven2/org/springframework/boot" \
           "/org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
+
       before do
         stub_request(:get, repo_maven_metadata_url)
           .to_return(status: 404)
@@ -464,6 +489,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("2.1.4.RELEASE"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -487,6 +513,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("2.1.4.RELEASE"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -499,6 +526,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
             "url" => "https://private.registry.org/repo/"
           }]
         end
+
         before do
           stub_request(:get, maven_metadata_url)
             .to_return(status: 404)
@@ -508,7 +536,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }
+          expect { latest_version_details }
             .to raise_error(error_class) do |error|
             expect(error.source).to eq("https://private.registry.org/repo")
           end
@@ -532,6 +560,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
     end
 
     its([:version]) { is_expected.to eq(version_class.new("20.0")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
@@ -539,12 +568,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
+
     its(:count) { is_expected.to eq(70) }
 
     describe "the first version" do
       subject { versions.first }
 
       its([:version]) { is_expected.to eq(version_class.new("r03")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -554,6 +585,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       subject { versions.last }
 
       its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -595,6 +627,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.2.RELEASE"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
@@ -606,6 +639,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("2.1.4.RELEASE"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
@@ -648,6 +682,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("0.0.1-test-1"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
@@ -659,6 +694,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.30-M1"))
         end
+
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
@@ -708,6 +744,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         its([:version]) do
           is_expected.to eq(version_class.new("28.0.0-alpha1"))
         end
+
         its([:source_url]) { is_expected.to eq("https://maven.google.com") }
       end
 
@@ -754,6 +791,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           its([:version]) do
             is_expected.to eq(version_class.new("23.7-rc1-jre"))
           end
+
           its([:source_url]) do
             is_expected.to eq("https://jcenter.bintray.com")
           end

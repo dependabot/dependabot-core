@@ -7,6 +7,10 @@ require "dependabot/elm/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Elm::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -29,9 +33,7 @@ RSpec.describe Dependabot::Elm::MetadataFinder do
       package_manager: "elm"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
+
   let(:credentials) do
     [{
       "type" => "git_source",
