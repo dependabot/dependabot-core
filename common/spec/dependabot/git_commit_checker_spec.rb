@@ -142,12 +142,12 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#branch_or_ref_in_release?" do
-    subject { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
+    subject(:branch_or_ref_in_release?) { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 
     context "with a non-git dependency" do
       let(:source) { nil }
 
-      specify { expect { subject }.to raise_error(/Not a git dependency!/) }
+      specify { expect { branch_or_ref_in_release? }.to raise_error(/Not a git dependency!/) }
     end
 
     context "with a git dependency" do
@@ -363,7 +363,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#pinned?" do
-    subject { checker.pinned? }
+    subject(:pinned) { checker.pinned? }
 
     let(:source) do
       {
