@@ -330,7 +330,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          context "when the package name is renamed" do
+          context "when the package is renamed" do
             let(:project_name) { "renamed_package" }
             let(:dependency_name) { "github.com/googleapis/gnostic" }
             # OpenAPIV2 has been renamed to openapiv2 in this version
