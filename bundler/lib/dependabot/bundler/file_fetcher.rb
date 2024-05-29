@@ -45,6 +45,7 @@ module Dependabot
         fetched_files += child_gemfiles
         fetched_files += gemspecs
         fetched_files << ruby_version_file if ruby_version_file
+        fetched_files << tool_versions_file if tool_versions_file
         fetched_files += path_gemspecs
         fetched_files += require_relative_files(fetched_files)
 
@@ -100,9 +101,13 @@ module Dependabot
       def ruby_version_file
         return unless gemfile
 
-        @ruby_version_file ||=
-          fetch_file_if_present(".ruby-version")
-          &.tap { |f| f.support_file = true }
+        @ruby_version_file ||= fetch_support_file(".ruby-version")
+      end
+
+      def tool_versions_file
+        return unless gemfile
+
+        @tool_versions_file ||= fetch_support_file(".tool-versions")
       end
 
       def path_gemspecs

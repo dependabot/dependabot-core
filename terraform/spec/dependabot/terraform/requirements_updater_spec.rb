@@ -44,37 +44,37 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("0.3.7") }
 
-      context "and no requirement was previously specified" do
+      context "when no requirement was previously specified" do
         let(:requirement) { nil }
 
         it { is_expected.to eq(requirements.first) }
       end
 
-      context "and an exact requirement was previously specified" do
+      context "when an exact requirement was previously specified" do
         let(:requirement) { "0.3.1" }
 
         its([:requirement]) { is_expected.to eq("0.3.7") }
 
-        context "and a pre-release version" do
+        context "when a pre-release version" do
           let(:latest_version) { version_class.new("0.3.7-pre") }
 
           its([:requirement]) { is_expected.to eq("0.3.7-pre") }
         end
       end
 
-      context "and a ~> requirement was previously specified" do
-        context "that is satisfied" do
+      context "when a ~> requirement was previously specified" do
+        context "when satisfied" do
           let(:requirement) { "~> 0.3.1" }
 
           it { is_expected.to eq(requirements.first) }
         end
 
-        context "that is not satisfied" do
+        context "when not satisfied" do
           let(:requirement) { "~> 0.2.1" }
 
           its([:requirement]) { is_expected.to eq("~> 0.3.7") }
 
-          context "specifying two digits" do
+          context "when specifying two digits" do
             let(:requirement) { "~> 0.2" }
             let(:latest_version) { "1.1.0" }
 
@@ -83,15 +83,15 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         end
       end
 
-      context "and a =>,< requirement was previously specified" do
-        context "that is satisfied" do
+      context "when a =>,< requirement was previously specified" do
+        context "when satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.4.0" }
           let(:latest_version) { "0.3.7" }
 
           its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
         end
 
-        context "that is not satisfied" do
+        context "when not satisfied" do
           let(:requirement) { ">= 0.2.1, < 0.3.0" }
           let(:latest_version) { "0.3.7" }
 
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       end
     end
 
-    context "for a git requirement" do
+    context "when dealing with a git requirement" do
       let(:latest_version) { "0.4.1" }
       let(:tag_for_latest_version) { "tags/0.4.1" }
       let(:requirements) do

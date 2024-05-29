@@ -168,13 +168,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
-      context "that needs to be sanitized" do
+      context "when dependency needs to be sanitized" do
         let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
 
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
 
-      context "that imports a setup.cfg" do
+      context "when dependency imports a setup.cfg" do
         let(:dependency_files) { [pipfile, lockfile, setupfile, setup_cfg] }
         let(:setupfile_fixture_name) { "with_pbr.py" }
         let(:setup_cfg) do
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
 
-      context "that comes from a Poetry file and includes || logic" do
+      context "when version comes from a Poetry file and includes || logic" do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:dependency_files) { [pipfile, pyproject] }
         let(:pyproject) do
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         it { is_expected.to eq(Gem::Version.new("2.18.4")) }
       end
 
-      context "that is invalid" do
+      context "when version is invalid" do
         let(:pipfile_fixture_name) { "required_python_invalid" }
 
         it "raises a helpful error" do
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "that is set to a python version no longer supported by Dependabot" do
+      context "when version is set to a python version no longer supported by Dependabot" do
         let(:pipfile_fixture_name) { "required_python_unsupported" }
 
         it "raises a helpful error" do
@@ -232,7 +232,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "that is implicit, and happens on another dependency" do
+      context "when implicit and occurring on another dependency" do
         let(:pipfile_fixture_name) { "required_python_implicit" }
         let(:lockfile_fixture_name) { "required_python_implicit.lock" }
         let(:dependency_name) { "pytest" }
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "for a resolution that has caused trouble in the past" do
+      context "when dealing with a resolution that has caused trouble in the past" do
         let(:dependency_files) { [pipfile] }
         let(:pipfile_fixture_name) { "problematic_resolution" }
         let(:dependency_name) { "twilio" }
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     end
 
     context "with a git source" do
-      context "for another dependency, that can't be reached" do
+      context "when dealing with a dependency reference, that can't be reached" do
         let(:pipfile_fixture_name) { "git_source_unreachable" }
         let(:lockfile_fixture_name) { "git_source_unreachable.lock" }
 
@@ -295,7 +295,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         end
       end
 
-      context "for another dependency, that has a bad ref" do
+      context "when dealing with a dependency has a bad ref" do
         let(:pipfile_fixture_name) { "git_source_bad_ref" }
         let(:lockfile_fixture_name) { "git_source_bad_ref.lock" }
 
@@ -459,7 +459,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
 
     let(:version) { Gem::Version.new("2.18.4") }
 
-    context "that is resolvable" do
+    context "when version is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
 
       it { is_expected.to eq(true) }
@@ -474,7 +474,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
-    context "that is not resolvable" do
+    context "when version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
 
       it { is_expected.to eq(false) }
@@ -487,7 +487,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         it { is_expected.to eq(false) }
       end
 
-      context "because the original manifest isn't resolvable" do
+      context "when the original manifest isn't resolvable" do
         let(:pipfile_fixture_name) { "conflict_at_current" }
         let(:lockfile_fixture_name) { "conflict_at_current.lock" }
         let(:version) { Gem::Version.new("99.18.4") }

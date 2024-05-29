@@ -55,7 +55,6 @@ RSpec/ContextWording:
     - 'composer/**/*'
     - 'devcontainers/**/*'
     - 'docker/**/*'
-    - 'elm/**/*'
     - 'github_actions/**/*'
     - 'go_modules/**/*'
     - 'gradle/**/*'
@@ -63,11 +62,6 @@ RSpec/ContextWording:
     - 'maven/**/*'
     - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
-    - 'pub/**/*'
-    - 'python/**/*'
-    - 'sorbet/**/*'
-    - 'terraform/**/*'
-    - 'updater/**/*'
 
 # Offense count: 31
 # This cop supports unsafe autocorrection (--autocorrect-all).
