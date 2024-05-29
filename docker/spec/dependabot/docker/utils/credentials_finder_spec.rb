@@ -9,6 +9,7 @@ require "base64"
 
 RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "docker_registry",
@@ -20,10 +21,12 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
   describe "#credentials_for_registry" do
     subject(:found_credentials) { finder.credentials_for_registry(registry) }
+
     let(:registry) { "my.registry.com" }
 
     context "with no matching credentials" do
       let(:registry) { "my.registry.com" }
+
       it { is_expected.to be_nil }
     end
 

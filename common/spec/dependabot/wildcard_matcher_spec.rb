@@ -13,26 +13,31 @@ RSpec.describe WildcardMatcher do
 
       context "with a matching string" do
         let(:candidate_string) { wildcard_string }
+
         it { is_expected.to eq(true) }
 
         context "with different capitalisation" do
           let(:candidate_string) { "Bus" }
+
           it { is_expected.to eq(true) }
         end
       end
 
       context "with a superstring" do
         let(:candidate_string) { wildcard_string + "iness" }
+
         it { is_expected.to eq(false) }
       end
 
       context "with a substring" do
         let(:candidate_string) { "bu" }
+
         it { is_expected.to eq(false) }
       end
 
       context "with a string that ends in the same way" do
         let(:candidate_string) { "blunderbus" }
+
         it { is_expected.to eq(false) }
       end
 
@@ -41,11 +46,13 @@ RSpec.describe WildcardMatcher do
 
         context "with a matching string" do
           let(:candidate_string) { wildcard_string }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a superstring" do
           let(:candidate_string) { wildcard_string + "iness" }
+
           it { is_expected.to eq(false) }
         end
       end
@@ -57,26 +64,31 @@ RSpec.describe WildcardMatcher do
 
         context "with a matching string" do
           let(:candidate_string) { wildcard_string }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a matching string (except the wildcard" do
           let(:candidate_string) { "bus" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a string that ends in the same way" do
           let(:candidate_string) { "blunderbus" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a superstring" do
           let(:candidate_string) { wildcard_string + "iness" }
+
           it { is_expected.to eq(false) }
         end
 
         context "with a substring" do
           let(:candidate_string) { "bu" }
+
           it { is_expected.to eq(false) }
         end
       end
@@ -86,26 +98,31 @@ RSpec.describe WildcardMatcher do
 
         context "with a matching string" do
           let(:candidate_string) { wildcard_string }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a matching string (except the wildcard" do
           let(:candidate_string) { "bus" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a string that ends in the same way" do
           let(:candidate_string) { "blunderbus" }
+
           it { is_expected.to eq(false) }
         end
 
         context "with a superstring" do
           let(:candidate_string) { wildcard_string + "iness" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a substring" do
           let(:candidate_string) { "bu" }
+
           it { is_expected.to eq(false) }
         end
       end
@@ -115,31 +132,37 @@ RSpec.describe WildcardMatcher do
 
         context "with a matching string" do
           let(:candidate_string) { wildcard_string }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a matching string (except the wildcard" do
           let(:candidate_string) { "bus" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a string that ends in the same way" do
           let(:candidate_string) { "blunderbus" }
+
           it { is_expected.to eq(false) }
         end
 
         context "with a superstring" do
           let(:candidate_string) { wildcard_string + "y" }
+
           it { is_expected.to eq(false) }
         end
 
         context "with a substring" do
           let(:candidate_string) { "bu" }
+
           it { is_expected.to eq(false) }
         end
 
         context "with a string that starts and ends in the right way" do
           let(:candidate_string) { "business" }
+
           it { is_expected.to eq(true) }
         end
       end
@@ -149,11 +172,13 @@ RSpec.describe WildcardMatcher do
 
         context "with a matching string" do
           let(:candidate_string) { wildcard_string }
+
           it { is_expected.to eq(true) }
         end
 
         context "with any string" do
           let(:candidate_string) { "bus" }
+
           it { is_expected.to eq(true) }
         end
       end
@@ -163,11 +188,13 @@ RSpec.describe WildcardMatcher do
 
         context "with a string that fits" do
           let(:candidate_string) { "business" }
+
           it { is_expected.to eq(true) }
         end
 
         context "with a string that doesn't" do
           let(:candidate_string) { "buspass" }
+
           it { is_expected.to eq(false) }
         end
       end

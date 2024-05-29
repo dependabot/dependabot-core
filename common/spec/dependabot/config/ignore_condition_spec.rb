@@ -14,6 +14,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
   describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
@@ -269,6 +270,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
@@ -276,6 +278,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_minor_versions" do
           let(:update_types) { ["version-update:semver-minor"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
@@ -283,6 +286,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
@@ -312,16 +316,19 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
+
           it { is_expected.to eq([]) }
         end
 
         context "with ignore_minor_versions" do
           let(:update_types) { ["version-update:semver-minor"] }
+
           it { is_expected.to eq([]) }
         end
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
+
           it { is_expected.to eq([]) }
         end
       end

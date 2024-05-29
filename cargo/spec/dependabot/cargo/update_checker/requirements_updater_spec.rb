@@ -39,6 +39,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
     context "when there is no latest version" do
       let(:target_version) { nil }
+
       its([:requirement]) { is_expected.to eq(req_string) }
     end
 
@@ -69,11 +70,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           ref: nil
         }
       end
+
       it { is_expected.to eq(cargo_req) }
 
       context "when asked to update the source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+
         before { cargo_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
+
         its([:source]) { is_expected.to eq(updated_source) }
       end
     end
@@ -84,52 +88,62 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
       context "when there is a latest version" do
         context "when a full version was previously specified" do
           let(:req_string) { "1.2.3" }
+
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
 
         context "when an equality requirement was previously specified" do
           let(:req_string) { "=1.2.3" }
+
           its([:requirement]) { is_expected.to eq("=1.5.0") }
         end
 
         context "when a partial version was previously specified" do
           let(:req_string) { "0.1" }
+
           its([:requirement]) { is_expected.to eq("1.5") }
         end
 
         context "when only the major part was previously specified" do
           let(:req_string) { "1" }
           let(:target_version) { "4.5.0" }
+
           its([:requirement]) { is_expected.to eq("4") }
         end
 
         context "when the new version has fewer digits than the old one" do
           let(:req_string) { "1.1.0.1" }
+
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
 
         context "when the new version has significantly fewer digits than the old one" do
           let(:req_string) { "1.1.0.1" }
           let(:target_version) { "4" }
+
           its([:requirement]) { is_expected.to eq("4") }
         end
 
         context "when a caret was previously specified" do
           let(:req_string) { "^1.2.3" }
+
           its([:requirement]) { is_expected.to eq("^1.5.0") }
         end
 
         context "when a pre-release was previously specified" do
           let(:req_string) { "^1.2.3-rc1" }
+
           its([:requirement]) { is_expected.to eq("^1.5.0") }
 
           context "when needing an update" do
             let(:req_string) { "1.2.3-rc1" }
+
             its([:requirement]) { is_expected.to eq("1.5.0") }
 
             context "when transitioning to a new pre-release version" do
               let(:req_string) { "1.2.3-beta" }
               let(:target_version) { "1.2.3-beta.2" }
+
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
             end
           end
@@ -137,41 +151,69 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "with just *" do
           let(:req_string) { "*" }
+
           its([:requirement]) { is_expected.to eq("*") }
         end
 
         context "with a < condition" do
           let(:req_string) { "< 1.2.0" }
+
           its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
         context "with a < condition" do
           let(:req_string) { "> 99.2.0" }
+
           its([:requirement]) { is_expected.to eq(:unfixable) }
         end
 
         context "when there were multiple range specifications" do
-          let(:req_string) { "> 1.0.0, < 1.2.0" }
-          its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
+          context "with `less than`" do
+            let(:req_string) { "> 1.0.0, < 1.2.0" }
 
-          context "when already valid" do
-            let(:req_string) { "> 1.0.0, < 1.7.0" }
-            its([:requirement]) { is_expected.to eq(req_string) }
+            its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
+
+            context "when already valid" do
+              let(:req_string) { "> 1.0.0, < 1.7.0" }
+
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when including a pre-release" do
+              let(:req_string) { ">=1.2.0, <1.4.0-dev" }
+
+              its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+            end
           end
 
-          context "when including a pre-release" do
-            let(:req_string) { ">=1.2.0, <1.4.0-dev" }
-            its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+          context "with `less than equal`" do
+            let(:req_string) { "> 1.0.0, <= 1.2.0" }
+
+            its([:requirement]) { is_expected.to eq("> 1.0.0, <= 1.5.0") }
+
+            context "when already valid" do
+              let(:req_string) { "> 1.0.0, <= 1.7.0" }
+
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when including a pre-release" do
+              let(:req_string) { ">=1.2.0, <=1.4.0-dev" }
+
+              its([:requirement]) { is_expected.to eq(">=1.2.0, <=1.5.0") }
+            end
           end
         end
 
         context "when an *.* was previously specified" do
           let(:req_string) { "^0.*.*" }
+
           its([:requirement]) { is_expected.to eq("^1.*.*") }
         end
 
         context "when an *.* was previously specified with four places" do
           let(:req_string) { "^0.*.*.rc1" }
+
           its([:requirement]) { is_expected.to eq("^1.*.*") }
         end
 
@@ -218,6 +260,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
         context "when the target version has a build annotation" do
           let(:req_string) { "1.2.3" }
           let(:target_version) { "1.5.0+build.1" }
+
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
       end
@@ -228,58 +271,69 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
       context "when there is no latest version" do
         let(:target_version) { nil }
+
         its([:requirement]) { is_expected.to eq(req_string) }
       end
 
       context "when there is a latest version" do
         context "when a full version was previously specified" do
           let(:req_string) { "1.2.3" }
+
           its([:requirement]) { is_expected.to eq(req_string) }
         end
 
         context "when an equality requirement was previously specified" do
           let(:req_string) { "=1.2.3" }
+
           its([:requirement]) { is_expected.to eq("=1.5.0") }
         end
 
         context "when a partial version was previously specified" do
           let(:req_string) { "0.1" }
+
           its([:requirement]) { is_expected.to eq("1.5") }
         end
 
         context "when only the major part was previously specified" do
           let(:req_string) { "1" }
           let(:target_version) { "4.5.0" }
+
           its([:requirement]) { is_expected.to eq("4") }
         end
 
         context "when the new version has fewer digits than the old one" do
           let(:req_string) { "0.1.0.1" }
+
           its([:requirement]) { is_expected.to eq("1.5.0") }
         end
 
         context "when the new version has significantly fewer digits than the old one" do
           let(:req_string) { "1.1.0.1" }
           let(:target_version) { "4" }
+
           its([:requirement]) { is_expected.to eq("4") }
         end
 
         context "when a caret was previously specified" do
           let(:req_string) { "^1.2.3" }
+
           its([:requirement]) { is_expected.to eq(req_string) }
         end
 
         context "when a pre-release was previously specified" do
           let(:req_string) { "^1.2.3-rc1" }
+
           its([:requirement]) { is_expected.to eq(req_string) }
 
           context "when needing an update" do
             let(:req_string) { "0.2.3-rc1" }
+
             its([:requirement]) { is_expected.to eq("1.5.0") }
 
             context "when transitioning to a new pre-release version" do
               let(:req_string) { "0.2.3-beta" }
               let(:target_version) { "1.2.3-beta.2" }
+
               its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
             end
           end
@@ -287,41 +341,49 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
         context "with just *" do
           let(:req_string) { "*" }
+
           its([:requirement]) { is_expected.to eq("*") }
         end
 
         context "with a < condition" do
           let(:req_string) { "< 1.2.0" }
+
           its([:requirement]) { is_expected.to eq("< 1.6.0") }
         end
 
         context "with a < condition" do
           let(:req_string) { "> 99.2.0" }
+
           its([:requirement]) { is_expected.to eq(:unfixable) }
         end
 
         context "when there are multiple range specifications" do
           let(:req_string) { "> 1.0.0, < 1.2.0" }
+
           its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
 
           context "when already valid" do
             let(:req_string) { "> 1.0.0, < 1.7.0" }
+
             its([:requirement]) { is_expected.to eq(req_string) }
           end
 
           context "when including a pre-release" do
             let(:req_string) { ">=1.2.0, <1.4.0-dev" }
+
             its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
           end
         end
 
         context "when an *.* was previously specified" do
           let(:req_string) { "^0.*.*" }
+
           its([:requirement]) { is_expected.to eq("^1.*.*") }
         end
 
         context "when an *.* was previously specified with four places" do
           let(:req_string) { "^0.*.*.rc1" }
+
           its([:requirement]) { is_expected.to eq("^1.*.*") }
         end
 

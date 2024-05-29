@@ -86,7 +86,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfDisk)
           end
         end
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfMemory)
           end
         end
@@ -117,6 +117,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
+
       # Should have the version in the lock file
       context "that contains dependencies with empty version" do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
@@ -223,12 +224,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contains dependencies with an empty/no version" do
         let(:dependency_files) { project_dependency_files("npm6/empty_version") }
+
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
       context "that contains an invalid version requirement string" do
         let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
+
         subject { dependencies.find { |d| d.name == "etag" } }
 
         it { is_expected.to eq(nil) }
@@ -254,6 +257,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contain bundled dependencies" do
         let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
+
         subject { dependencies.find { |d| d.name == "tar" } }
 
         its(:subdependency_metadata) do
@@ -271,7 +275,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm8/nested_node_modules_lockfile_v3") }
 
         it "does not incorrectly parse dependencies with node_modules/ in their name" do
-          bad_names = subject.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
+          bad_names = dependencies.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
 
           expect(bad_names).to be_empty
         end
@@ -299,6 +303,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
       context "that contains an empty version string" do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_empty_version") }
+
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
@@ -324,6 +329,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         manifest_name: manifest_name
       )
     end
+
     let(:dependency_name) { "etag" }
     let(:requirement) { nil }
     let(:manifest_name) { "package.json" }

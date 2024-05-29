@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       config_files: [config_file].compact
     )
   end
+
   let(:config_file) { nil }
   let(:credentials) do
     [{
@@ -195,6 +196,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
 
       context "that does not return PackageBaseAddress" do
         let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
+
         before do
           stub_request(:get, custom_repo_url)
             .to_return(
@@ -222,6 +224,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
 
       context "that has URLs that need to be escaped" do
         let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
+
         before do
           stub_request(:get, "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json")
             .to_return(
@@ -430,6 +433,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
+
         it "when the default api key of default registry is provided with clear" do
           expect(dependency_urls).to match_array(
             [{

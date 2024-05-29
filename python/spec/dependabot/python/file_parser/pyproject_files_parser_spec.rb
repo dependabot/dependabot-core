@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     subject(:dependencies) { parser.dependency_set.dependencies }
 
-    context "incorrectly defined" do
+    context "when defined incorrectly" do
       let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
 
       it "raises a DependencyFileNotParseable error" do
@@ -85,6 +85,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a path requirement" do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes path dependency" do
@@ -98,6 +99,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a git requirement" do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes git dependency" do
@@ -111,6 +113,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       context "with a url requirement" do
         let(:pyproject_fixture_name) { "url_dependency.toml" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes url dependency" do
@@ -169,6 +172,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       context "with a path dependency" do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
         let(:poetry_lock_fixture_name) { "dir_dependency.lock" }
+
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes the path dependency" do
@@ -215,7 +219,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           )
         end
 
-        context "that has a name that needs normalising" do
+        context "when having a name that needs normalising" do
           subject(:dependency) { dependencies.find { |f| f.name == "pillow" } }
 
           it "has the right details" do
@@ -248,6 +252,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     context "with group dependencies" do
       let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
+
       subject(:dependency_names) { dependencies.map(&:name) }
 
       it "includes dev-dependencies and group.dev.dependencies" do
@@ -262,6 +267,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     context "with package specify source" do
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
+
       subject(:dependency) { dependencies.find { |f| f.name == "black" } }
 
       it "specifies a package source" do
@@ -330,7 +336,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       its(:length) { is_expected.to eq(0) }
 
-      context "and a leftover poetry.lock" do
+      context "when a leftover poetry.lock is present" do
         let(:poetry_lock) do
           Dependabot::DependencyFile.new(
             name: "poetry.lock",

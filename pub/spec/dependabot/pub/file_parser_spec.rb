@@ -27,13 +27,14 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a pinned dependency" do
       let(:files) { project_dependency_files("pinned_version") }
-      specify { expect(subject.length).to eq(1) }
-      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+      specify { expect(dependencies.length).to eq(1) }
+      specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
 
       it "has the right details for the dependency" do
-        expect(subject[0].name).to eq("retry")
-        expect(subject[0].version).to eq("2.0.0")
-        expect(subject[0].requirements).to eq([{
+        expect(dependencies[0].name).to eq("retry")
+        expect(dependencies[0].version).to eq("2.0.0")
+        expect(dependencies[0].requirements).to eq([{
           requirement: "2.0.0",
           groups: ["direct"],
           file: "pubspec.yaml",
@@ -44,11 +45,12 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with several dependencies" do
       let(:files) { project_dependency_files("constraints") }
-      specify { expect(subject.length).to eq(49) }
-      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+      specify { expect(dependencies.length).to eq(49) }
+      specify { expect(dependencies).to all(be_a(Dependabot::Dependency)) }
 
       it "has the right details for the retry (direct) dependency" do
-        dep = subject.find { |d| d.name == "retry" }
+        dep = dependencies.find { |d| d.name == "retry" }
         expect(dep.version).to eq("2.0.0")
         expect(dep.requirements).to eq([{
           requirement: "^2.0.0",
@@ -59,7 +61,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       end
 
       it "has the right details for the test (dev) dependency" do
-        dep = subject.find { |d| d.name == "test" }
+        dep = dependencies.find { |d| d.name == "test" }
         expect(dep.version).to eq("1.17.12")
         expect(dep.requirements).to eq([{
           requirement: ">=1.17.10 <=1.17.12",
@@ -70,7 +72,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       end
 
       it "has the right details for the test_core (transitive) dependency" do
-        dep = subject.find { |d| d.name == "test_core" }
+        dep = dependencies.find { |d| d.name == "test_core" }
         expect(dep.version).to eq("0.4.2")
         expect(dep.requirements).to eq([])
       end
@@ -78,8 +80,9 @@ RSpec.describe Dependabot::Pub::FileParser do
 
     context "with a broken pubspec.yaml" do
       let(:files) { project_dependency_files("broken_pubspec") }
+
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependabotError) do |error|
+        expect { dependencies }.to raise_error(Dependabot::DependabotError) do |error|
           expect(error.message).to start_with("dependency_services failed: " \
                                               "Error on line 3, column 1 of pubspec.yaml: Unexpected end of file.")
         end

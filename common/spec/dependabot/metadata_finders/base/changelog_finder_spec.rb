@@ -17,6 +17,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       dependency: dependency
     )
   end
+
   let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
@@ -48,6 +49,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   let(:dummy_commits_finder) do
     instance_double(Dependabot::MetadataFinders::Base::CommitsFinder)
   end
+
   before do
     allow(Dependabot::MetadataFinders::Base::CommitsFinder)
       .to receive(:new).and_return(dummy_commits_finder)
@@ -119,7 +121,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
   end
 
   describe "#changelog_url" do
-    subject { finder.changelog_url }
+    subject(:changelog_url) { finder.changelog_url }
 
     context "with a github repo" do
       let(:github_url) do
@@ -138,13 +140,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                      body: changelog_body,
                      headers: { "Content-Type" => "application/json" })
       end
+
       let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       context "with a changelog" do
         let(:github_response) { fixture("github", "business_files.json") }
 
         it "gets the right URL" do
-          expect(subject)
+          expect(changelog_url)
             .to eq(
               "https://github.com/gocardless/business/blob/master/CHANGELOG.md"
             )
@@ -178,7 +181,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "gets the right URL" do
-            expect(subject)
+            expect(changelog_url)
               .to eq(
                 "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
               )
@@ -190,7 +193,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
 
             it "gets the right URL" do
-              expect(subject)
+              expect(changelog_url)
                 .to eq(
                   "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
                 )
@@ -211,7 +214,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
 
             it "returns nil for the changelog url" do
-              expect(subject).to eq(nil)
+              expect(changelog_url).to eq(nil)
             end
           end
         end
@@ -246,7 +249,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "gets the right URL" do
-            expect(subject)
+            expect(changelog_url)
               .to eq(
                 "https://github.com/gocardless/business/blob/v1.4.0/" \
                 "CHANGELOG.md"
@@ -264,6 +267,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
         let(:dependency_name) { "scrapy" }
         let(:github_response) { fixture("github", "scrapy_files.json") }
+
         before do
           stub_request(:get, github_url + "docs")
             .to_return(status: github_status,
@@ -292,7 +296,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "gets the right URL" do
-            expect(subject).to eq(
+            expect(changelog_url).to eq(
               "https://github.com/scrapy/scrapy/blob/master/docs/news.rst"
             )
           end
@@ -309,7 +313,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             end
 
             it "gets the right URL" do
-              expect(subject).to eq(
+              expect(changelog_url).to eq(
                 "https://github.com/scrapy/scrapy/blob/master/docs/news.rst"
               )
             end
@@ -330,6 +334,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         let(:changelog_body_without_version) do
           fixture("github", "changelog_contents_japanese.json")
         end
+
         before do
           stub_request(:get, github_url + "packages/stryker")
             .to_return(status: github_status,
@@ -346,7 +351,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         it "gets the right URL" do
-          expect(subject)
+          expect(changelog_url)
             .to eq("https://github.com/gocardless/business/blob/master/module" \
                    "/CHANGELOG.md")
         end
@@ -374,7 +379,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
 
           it "gets the right URL" do
-            expect(subject)
+            expect(changelog_url)
               .to eq("https://github.com/gocardless/business/blob/master" \
                      "/CHANGELOG.md")
           end
@@ -427,10 +432,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                          body: changelog_body,
                          headers: { "Content-Type" => "application/json" })
           end
+
           let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
           it "gets the right URL" do
-            expect(subject)
+            expect(changelog_url)
               .to eq("https://github.com/gocardless/business/blob/master/" \
                      "CHANGELOG.md")
           end
@@ -486,7 +492,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:package_manager) { "composer" }
 
           it "finds the changelog as normal" do
-            expect(subject)
+            expect(changelog_url)
               .to eq("https://github.com/gocardless/business/blob/master/" \
                      "CHANGELOG.md")
           end
@@ -497,7 +503,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:old_ref) { "v1.0.0" }
 
           it "finds the changelog as normal" do
-            expect(subject)
+            expect(changelog_url)
               .to eq("https://github.com/gocardless/business/blob/master/" \
                      "CHANGELOG.md")
           end
@@ -549,6 +555,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       context "that can't be found exists" do
         let(:gitlab_status) { 404 }
         let(:gitlab_response) { fixture("gitlab", "not_found.json") }
+
         it { is_expected.to be_nil }
       end
     end
@@ -632,11 +639,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "that can't be found exists" do
         let(:azure_status) { 404 }
+
         it { is_expected.to be_nil }
       end
 
       context "that is private" do
         let(:azure_status) { 403 }
+
         it { is_expected.to be_nil }
       end
     end
@@ -709,17 +718,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
       context "that can't be found exists" do
         let(:bitbucket_status) { 404 }
+
         it { is_expected.to be_nil }
       end
 
       context "that is private" do
         let(:bitbucket_status) { 403 }
+
         it { is_expected.to be_nil }
       end
     end
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
 
       context "for a docker dependency" do
@@ -747,6 +759,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#changelog_text" do
     subject(:changelog_text) { finder.changelog_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "1.0.0" }
 
@@ -819,6 +832,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         context "that is an image" do
           let(:changelog_body) { fixture("github", "contents_image.json") }
+
           it { is_expected.to be_nil }
         end
 
@@ -1058,12 +1072,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end
 
   describe "#upgrade_guide_url" do
-    subject { finder.upgrade_guide_url }
+    subject(:upgrade_guide_url) { finder.upgrade_guide_url }
 
     context "with a github repo" do
       let(:github_url) do
@@ -1096,7 +1111,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { "0.9.0" }
 
           it "gets the right URL" do
-            expect(subject)
+            expect(upgrade_guide_url)
               .to eq(
                 "https://github.com/gocardless/business/blob/master/UPGRADE.md"
               )
@@ -1122,6 +1137,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
   describe "#upgrade_guide_text" do
     subject(:upgrade_guide_text) { finder.upgrade_guide_text }
+
     let(:dependency_version) { "1.4.0" }
     let(:dependency_previous_version) { "0.9.0" }
 

@@ -20,6 +20,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
   end
   let(:repo_contents_path) { Dir.mktmpdir }
   after { FileUtils.rm_rf(repo_contents_path) }
+
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: github_credentials,
                         repo_contents_path: repo_contents_path)

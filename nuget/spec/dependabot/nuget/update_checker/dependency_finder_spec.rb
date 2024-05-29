@@ -11,10 +11,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      ignored_versions: [],
       credentials: credentials,
       repo_contents_path: "test/repo"
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -57,6 +59,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     let(:nuget_config_body) { fixture("configs", "example.com_nuget.config") }
     let(:nuget_config) { Dependabot::DependencyFile.new(name: "NuGet.Config", content: nuget_config_body) }
     let(:dependency_files) { [csproj, nuget_config] }
+
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
     def create_nupkg(nuspec_name, nuspec_fixture_path)
