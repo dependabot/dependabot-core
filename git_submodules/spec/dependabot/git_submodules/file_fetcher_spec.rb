@@ -52,7 +52,7 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
           )
       end
 
-      context "when dealing with fetchable path" do
+      context "when dealing with a fetchable path" do
         before do
           stub_request(:get, url + "about/documents?ref=sha")
             .with(headers: { "Authorization" => "token token" })
