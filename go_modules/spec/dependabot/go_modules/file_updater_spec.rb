@@ -128,7 +128,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "when pre 1.21 go.mod using a 1.21 dependency" do
+    context "when go.mod specifies a pre-1.21 version but uses a 1.21 dependency" do
       let(:project_name) { "toolchain" }
       let(:files) { [go_mod] }
 
