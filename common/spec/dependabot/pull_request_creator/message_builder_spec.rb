@@ -167,8 +167,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
-    context "for an application" do
-      context "that doesn't use a commit convention" do
+    context "when dealing with an application" do
+      context "when not using a commit convention" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
             .to_return(
@@ -1030,7 +1030,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
     end
 
-    context "for an application" do
+    context "when dealing with an application" do
       it "has the right text" do
         expect(pr_message)
           .to eq(
