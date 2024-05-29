@@ -15,6 +15,7 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
   end
 
   subject(:result) { user_nuget_config_contents_during_and_after_action }
+
   let(:default_nuget_config_contents) do
     File.read(Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path)
   end

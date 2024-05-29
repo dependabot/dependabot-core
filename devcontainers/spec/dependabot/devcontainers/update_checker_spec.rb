@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version.to_s }
+    subject(:latest_version) { checker.latest_version.to_s }
 
     let(:name) { "ghcr.io/codspace/versioning/foo" }
     let(:current_version) { "1.1.0" }
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end

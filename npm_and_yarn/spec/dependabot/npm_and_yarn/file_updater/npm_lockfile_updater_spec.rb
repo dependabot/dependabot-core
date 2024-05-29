@@ -607,7 +607,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   end
 
   context "when updating a git source dependency that is not pinned to a hash" do
-    subject { JSON.parse(updated_npm_lock_content) }
+    subject(:parsed_lock_file) { JSON.parse(updated_npm_lock_content) }
 
     let(:files) { project_dependency_files("npm6/ghpr_no_hash_pinning") }
     let(:dependency_name) { "npm6-dependency" }
@@ -641,9 +641,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     it "pins the version to a hash and ensures that the `from` field matches the original constraint" do
-      expect(subject["dependencies"]["npm6-dependency"]["version"])
+      expect(parsed_lock_file["dependencies"]["npm6-dependency"]["version"])
         .to match(%r{github:dependabot-fixtures/npm6-dependency#[0-9a-z]{40}})
-      expect(subject["dependencies"]["npm6-dependency"]["from"]).to eq("github:dependabot-fixtures/npm6-dependency")
+      expect(parsed_lock_file["dependencies"]["npm6-dependency"]["from"])
+        .to eq("github:dependabot-fixtures/npm6-dependency")
     end
   end
 end

@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:group) { nil }
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     context "with a yarn-berry project that sets an ENV variable in .yarnrc.yml" do
       let(:project_name) { "yarn_berry/env_variable" }
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error due to invalid .yarnrc.yml file" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
@@ -253,6 +253,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_apollo_registry_response) do
           fixture("npm_responses", "react-apollo.json")
         end
+
         before do
           stub_request(:get, react_apollo_registry_listing_url)
             .to_return(status: 200, body: react_apollo_registry_response)
@@ -290,6 +291,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_burger_menu_registry_response) do
           fixture("npm_responses", "react-burger-menu.json")
         end
+
         before do
           stub_request(:get, react_burger_menu_registry_listing_url)
             .to_return(status: 200, body: react_burger_menu_registry_response)
@@ -476,6 +478,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           let(:react_apollo_registry_response) do
             fixture("npm_responses", "react-apollo.json")
           end
+
           before do
             stub_request(:get, react_apollo_registry_listing_url)
               .to_return(status: 200, body: react_apollo_registry_response)
@@ -513,6 +516,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           let(:react_burger_menu_registry_response) do
             fixture("npm_responses", "react-burger-menu.json")
           end
+
           before do
             stub_request(:get, react_burger_menu_registry_listing_url)
               .to_return(status: 200, body: react_burger_menu_registry_response)
@@ -610,11 +614,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         context "with other parts of the monorepo present" do
           let(:project_name) { "npm6/monorepo_dep_multiple_no_lockfile" }
+
           it { is_expected.to be_nil }
         end
 
         context "without other parts of the monorepo" do
           let(:project_name) { "npm6/monorepo_dep_single_no_lockfile" }
+
           it { is_expected.to eq(latest_allowable_version) }
         end
       end
@@ -688,6 +694,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         context "to an acceptable version" do
           let(:latest_allowable_version) { Gem::Version.new("15.6.2") }
+
           it { is_expected.to eq(Gem::Version.new("15.6.2")) }
         end
 
@@ -917,6 +924,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           let(:react_burger_menu_registry_response) do
             fixture("npm_responses", "react-burger-menu.json")
           end
+
           before do
             stub_request(:get, react_burger_menu_registry_listing_url)
               .to_return(status: 200, body: react_burger_menu_registry_response)
@@ -1057,6 +1065,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_apollo_registry_response) do
           fixture("npm_responses", "react-apollo.json")
         end
+
         before do
           stub_request(:get, react_apollo_registry_listing_url)
             .to_return(status: 200, body: react_apollo_registry_response)
@@ -1094,6 +1103,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_burger_menu_registry_response) do
           fixture("npm_responses", "react-burger-menu.json")
         end
+
         before do
           stub_request(:get, react_burger_menu_registry_listing_url)
             .to_return(status: 200, body: react_burger_menu_registry_response)
@@ -1199,6 +1209,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:vue_registry_response) do
         fixture("npm_responses", "vue.json")
       end
+
       before do
         stub_request(:get, vue_template_compiler_registry_listing_url)
           .to_return(status: 200, body: vue_template_compiler_registry_response)
@@ -1214,6 +1225,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       context "with other parts of the monorepo present" do
         let(:manifest_fixture_name) { "monorepo_dep_multiple.json" }
+
         it { is_expected.to eq(true) }
       end
     end
@@ -1260,6 +1272,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_modal_registry_response) do
           fixture("npm_responses", "react-modal.json")
         end
+
         before do
           stub_request(:get, react_modal_registry_listing_url)
             .to_return(status: 200, body: react_modal_registry_response)
@@ -1321,6 +1334,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:vue_registry_response) do
         fixture("npm_responses", "vue.json")
       end
+
       before do
         stub_request(:get, vue_template_compiler_registry_listing_url)
           .to_return(status: 200, body: vue_template_compiler_registry_response)
@@ -1381,6 +1395,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:react_modal_registry_response) do
           fixture("npm_responses", "react-modal.json")
         end
+
         before do
           stub_request(:get, react_modal_registry_listing_url)
             .to_return(status: 200, body: react_modal_registry_response)
@@ -1446,6 +1461,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:vue_registry_response) do
         fixture("npm_responses", "vue.json")
       end
+
       before do
         stub_request(:get, vue_template_compiler_registry_listing_url)
           .to_return(status: 200, body: vue_template_compiler_registry_response)
@@ -1801,6 +1817,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       let(:response) do
         fixture("npm_responses", "chalk.json")
       end
+
       before do
         stub_request(:get, listing_url)
           .to_return(status: 200, body: response)
@@ -1813,6 +1830,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
     describe "#latest_resolvable_previous_version" do
       let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
+
       subject do
         resolver.latest_resolvable_previous_version(latest_allowable_version)
       end
@@ -1839,6 +1857,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "chalk.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -1871,6 +1890,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "react.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -1908,6 +1928,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "react.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -1942,6 +1963,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "etag.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -1974,6 +1996,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "etag_deprecated.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -2006,6 +2029,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "react.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -2038,6 +2062,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         let(:response) do
           fixture("npm_responses", "chalk.json")
         end
+
         before do
           stub_request(:get, listing_url)
             .to_return(status: 200, body: response)
@@ -2069,6 +2094,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             }]
           )
         end
+
         it { is_expected.to eq("0.2.0") }
       end
 
@@ -2087,6 +2113,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
             }]
           )
         end
+
         it { is_expected.to eq("9ec4acec6abd23f9b23e33b1171e50d41953f00d") }
       end
     end

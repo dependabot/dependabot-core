@@ -93,6 +93,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("") }
@@ -130,6 +131,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
             "#{CGI.escape(source.repo)}/repository"
         end
         let(:commits_response) { fixture("gitlab", "commits.json") }
+
         before do
           stub_request(:get, watched_repo_url + "/commits")
             .to_return(
@@ -154,6 +156,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         let(:commits_response) do
           fixture("azure", "commits_no_author_email.json")
         end
+
         before do
           stub_request(:get, watched_repo_url + "/commits")
             .to_return(
@@ -168,6 +171,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
+
         it { is_expected.to eq("[Security] ") }
       end
     end
@@ -197,11 +201,13 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
+
         it { is_expected.to eq("chore(deps): [security] ") }
       end
 
       context "with a dev dependency" do
         let(:dependencies) { [development_dependency] }
+
         it { is_expected.to eq("chore(deps-dev): ") }
       end
     end
@@ -218,6 +224,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
+
         it { is_expected.to eq("Upgrade: [Security] ") }
       end
     end
@@ -234,6 +241,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
+
         it { is_expected.to eq("⬆️🔒 ") }
       end
     end
@@ -247,6 +255,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
       let(:commit_message_options) do
         {
@@ -263,30 +272,36 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
 
       context "with a security vulnerability fixed" do
         let(:security_fix) { true }
+
         it { is_expected.to eq("custom: [security] ") }
 
         context "with a capitalised prefix" do
           let(:prefix) { "Custom" }
+
           it { is_expected.to eq("Custom: [Security] ") }
         end
       end
 
       context "when asked to include the scope" do
         let(:include_scope) { true }
+
         it { is_expected.to eq("custom(deps): ") }
       end
 
       context "when asked not to include the scope" do
         let(:include_scope) { false }
+
         it { is_expected.to eq("custom: ") }
       end
 
       context "with a development prefix" do
         let(:development_prefix) { "chore" }
+
         it { is_expected.to eq("custom: ") }
 
         context "for a development dependency" do
           let(:dependencies) { [development_dependency] }
+
           it { is_expected.to eq("chore: ") }
         end
       end

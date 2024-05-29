@@ -8,6 +8,7 @@ require "dependabot/file_parsers/base"
 RSpec.shared_examples "a dependency file parser" do
   describe "the class" do
     subject { described_class }
+
     let(:base_class) { Dependabot::FileParsers::Base }
 
     its(:superclass) { is_expected.to be <= base_class }

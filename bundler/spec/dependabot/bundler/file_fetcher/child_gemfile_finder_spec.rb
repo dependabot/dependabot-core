@@ -16,11 +16,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher::ChildGemfileFinder do
 
     context "when the file does not include any child Gemfiles" do
       let(:gemfile) { bundler_project_dependency_file("gemfile", filename: "Gemfile") }
+
       it { is_expected.to eq([]) }
     end
 
     context "when the file does include a child Gemfile" do
       let(:gemfile) { bundler_project_dependency_file("eval_gemfile_gemfile", filename: "Gemfile") }
+
       it { is_expected.to eq(["backend/Gemfile"]) }
 
       context "when path must be eval-ed" do

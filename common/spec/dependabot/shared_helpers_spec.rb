@@ -23,6 +23,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:output_dir) { -> { Dir.pwd } }
+
     it "runs inside the temporary directory created" do
       expect(in_a_temporary_directory).to match(%r{#{tmp}\/dependabot_+.})
     end
@@ -271,6 +272,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "when the subprocess exits with out of disk error" do
       let(:command) { File.join(spec_root, "helpers/test/error_bash disk") }
+
       it "raises a HelperSubprocessFailed out of disk error" do
         expect { run_shell_command }
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
@@ -280,6 +282,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
       context "when the subprocess exits with out of memory error" do
         let(:command) { File.join(spec_root, "helpers/test/error_bash memory") }
+
         it "raises a HelperSubprocessFailed out of memory error" do
           expect { run_shell_command }
             .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
@@ -350,7 +353,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "includes the defaults" do
-      expect(subject).to eq(
+      expect(excon_defaults).to eq(
         instrumentor: Dependabot::SimpleInstrumentor,
         connect_timeout: 5,
         write_timeout: 5,
@@ -417,6 +420,7 @@ RSpec.describe Dependabot::SharedHelpers do
       before do
         Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo")
       end
+
       after do
         Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo")
       end
@@ -434,6 +438,7 @@ RSpec.describe Dependabot::SharedHelpers do
         before do
           Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo2")
         end
+
         after do
           Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo2")
         end

@@ -48,6 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::SoloStrategy do
 
   describe "#new_branch_name" do
     subject(:new_branch_name) { namer.new_branch_name }
+
     it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
 
     context "with directory" do
@@ -423,6 +424,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::SoloStrategy do
 
       context "that has a trailing dot" do
         let(:requirement_string) { "^7." }
+
         it { is_expected.to eq("dependabot/dummy/business-tw-7") }
       end
     end

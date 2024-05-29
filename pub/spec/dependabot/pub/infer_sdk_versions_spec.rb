@@ -35,6 +35,7 @@ RSpec.describe "Helpers" do
 
   describe "Will resolve to latest beta if needed" do
     let(:project) { "requires_latest_beta" }
+
     it "Finds a matching beta" do
       expect(inferred_result["flutter"]).to eq "3.1.0"
       expect(inferred_result["channel"]).to eq "beta"
@@ -43,6 +44,7 @@ RSpec.describe "Helpers" do
 
   describe "pinned on a beta-release" do
     let(:project) { "requires_old_beta" }
+
     it "Finds a matching beta" do
       expect(inferred_result["flutter"]).to eq "2.13.0-0.4.pre"
       expect(inferred_result["channel"]).to eq "beta"
@@ -51,6 +53,7 @@ RSpec.describe "Helpers" do
 
   describe "Uses newest stable if allowed" do
     let(:project) { "allows_latest_stable" }
+
     it "Finds a matching beta" do
       expect(inferred_result["flutter"]).to eq "3.0.1"
       expect(inferred_result["channel"]).to eq "stable"
@@ -59,6 +62,7 @@ RSpec.describe "Helpers" do
 
   describe "The dart constraint is taken into account" do
     let(:project) { "requires_dart_2_15" }
+
     it "Finds a matching beta" do
       expect(inferred_result["dart"]).to eq "2.15.1"
       expect(inferred_result["channel"]).to eq "stable"

@@ -16,6 +16,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       credentials: credentials
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -44,7 +45,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   end
 
   describe "#releases_url" do
-    subject { finder.releases_url }
+    subject(:releases_url) { finder.releases_url }
 
     context "with a github repo" do
       let(:github_url) do
@@ -62,7 +63,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       end
 
       it "gets the right URL" do
-        expect(subject).to eq("https://github.com/gocardless/business/releases")
+        expect(releases_url).to eq("https://github.com/gocardless/business/releases")
       end
     end
 
@@ -87,12 +88,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       end
 
       it "gets the right URL" do
-        expect(subject).to eq("https://gitlab.com/org/business/tags")
+        expect(releases_url).to eq("https://gitlab.com/org/business/tags")
       end
     end
 
     context "without a source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
 
@@ -103,7 +105,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       end
 
       it "gets the right URL" do
-        expect(subject)
+        expect(releases_url)
           .to eq("https://dev.azure.com/saigkill/_git/hoe-manns/tags")
       end
     end
@@ -121,7 +123,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
   end
 
   describe "#releases_text" do
-    subject { finder.releases_text }
+    subject(:releases_text) { finder.releases_text }
 
     context "with a github repo" do
       let(:github_url) do
@@ -148,7 +150,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             let(:dependency_previous_version) { "1.7.0" }
 
             it "gets the right text" do
-              expect(subject)
+              expect(releases_text)
                 .to eq(
                   "## v1.8.0\n" \
                   "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -195,7 +197,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
 
               it "gets the right text" do
-                expect(subject)
+                expect(releases_text)
                   .to eq(
                     "## v1.8.0\n" \
                     "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -210,7 +212,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
 
               it "still gets the right text" do
-                expect(subject)
+                expect(releases_text)
                   .to eq(
                     "## business-1.8.0\n" \
                     "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -239,7 +241,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
 
               it "falls back to the tag name" do
-                expect(subject)
+                expect(releases_text)
                   .to eq(
                     "## v1.8.0\n" \
                     "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -264,7 +266,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               let(:dependency_previous_version) { "6.4.0" }
 
               it "falls back to the tag name" do
-                expect(subject)
+                expect(releases_text)
                   .to eq(
                     "## JasperReports 6.5.1\n" \
                     "Body for 6.5.1\n" \
@@ -286,7 +288,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             let(:dependency_previous_version) { "1.6.0" }
 
             it "gets the right text" do
-              expect(subject)
+              expect(releases_text)
                 .to eq(
                   "## v1.8.0\n" \
                   "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -305,6 +307,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
             context "but all versions are blank or nil" do
               let(:dependency_version) { "1.7.0" }
+
               it { is_expected.to be_nil }
             end
 
@@ -313,7 +316,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               let(:dependency_previous_version) { "1.5.0" }
 
               it "gets the right text" do
-                expect(subject)
+                expect(releases_text)
                   .to eq(
                     "## v1.7.0\n" \
                     "No release notes provided.\n" \
@@ -338,7 +341,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             let(:dependency_previous_version) { "1.5.1" }
 
             it "uses the version number to filter the releases" do
-              expect(subject)
+              expect(releases_text)
                 .to eq(
                   "## v1.8.0\n" \
                   "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -432,6 +435,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
         context "when the release is not present" do
           let(:dependency_version) { "1.9.0" }
           let(:dependency_previous_version) { "1.8.0" }
+
           it { is_expected.to be_nil }
 
           context "and there is a blank named release that needs excluding" do
@@ -440,6 +444,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
             let(:dependency_version) { "3.5.3" }
             let(:dependency_previous_version) { "3.5.2" }
+
             it { is_expected.to be_nil }
           end
 
@@ -451,7 +456,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             end
 
             it "figures out not to use the 'Fix #123' names" do
-              expect(subject).to be_nil
+              expect(releases_text).to be_nil
             end
           end
         end
@@ -462,8 +467,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:github_response) do
             fixture("github", "business_releases_bad_name.json")
           end
+
           it "gets the right text" do
-            expect(subject)
+            expect(releases_text)
               .to eq(
                 "## v1.7.0\n" \
                 "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -477,8 +483,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           let(:dependency_version) { "2.4.0" }
           let(:dependency_previous_version) { "2.3.2" }
           let(:github_response) { fixture("github", "releases_monorepo.json") }
+
           it "gets the right text" do
-            expect(subject)
+            expect(releases_text)
               .to eq(
                 "## Flurl.Http 2.4.0\n" \
                 "- Improved `ConnectionLeaseTimeout` implementation (#330)"
@@ -498,6 +505,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
           context "when authentication fails" do
             before { stub_request(:get, github_url).to_return(status: 404) }
+
             it { is_expected.to be_nil }
           end
 
@@ -517,7 +525,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             let(:dependency_previous_version) { "1.7.0" }
 
             it "gets the right text" do
-              expect(subject)
+              expect(releases_text)
                 .to eq(
                   "## v1.8.0\n" \
                   "- Add 2018-2027 TARGET holiday defintions\n" \
@@ -560,7 +568,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       let(:dependency_previous_version) { "1.3.0" }
 
       it "gets the right text" do
-        expect(subject)
+        expect(releases_text)
           .to eq(
             "## v1.4.0\n" \
             "Some release notes"
@@ -579,6 +587,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end

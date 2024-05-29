@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
       end
 
-      context "because an existing requirement is no good" do
+      context "when an existing requirement is not sufficient" do
         let(:dependency_version) { "0.1.38" }
         let(:requirements) do
           [{ file: "Cargo.toml", requirement: "0.3.20", groups: [], source: nil }]
@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include("unexpected end of input while parsing major version")
           end
         end
