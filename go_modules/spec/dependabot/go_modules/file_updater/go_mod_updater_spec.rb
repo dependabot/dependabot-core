@@ -943,7 +943,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#handle_subprocess_error" do
-    context "when dealing with a error caused by running out of disk space" do
+    context "when dealing with an error caused by running out of disk space" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }
       let(:dependency_previous_version) { "v1.4.0" }
