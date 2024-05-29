@@ -177,6 +177,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               headers: json_header
             )
         end
+
         let(:commits_response) { fixture("github", "commits.json") }
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
@@ -338,6 +339,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) { [dependency, dependency2] }
+
           it { is_expected.to eq("Bump business") }
         end
 
@@ -829,6 +831,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
+
           it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
       end
@@ -954,6 +957,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
+
       let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }
@@ -3450,6 +3454,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
+
         it "uses gitmoji" do
           is_expected.to start_with(":arrow_up::lock: Bump ")
         end
@@ -3472,12 +3477,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     it "returns a Message" do
       expect(message).to be_a(Dependabot::PullRequestCreator::Message)
     end
+
     its(:pr_name) { is_expected.to eq(pr_name) }
     its(:pr_message) { is_expected.to eq(pr_message) }
     its(:commit_message) { is_expected.to eq(commit_message) }
   end
 
   subject(:message_builder) { builder }
+
   describe "#truncate_pr_message" do
     context "when pr_message_max_length is not provided" do
       let(:message) { "This is a normal length PR description and it should not be truncated." }

@@ -146,6 +146,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
+
       specify { expect { subject }.to raise_error(/Not a git dependency!/) }
     end
 
@@ -1079,6 +1080,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         context "when there are multiple ignore conditions" do
           let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
+
           its([:tag]) { is_expected.to eq("v1.13.0") }
         end
 
