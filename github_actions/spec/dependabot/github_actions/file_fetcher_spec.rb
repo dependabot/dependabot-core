@@ -81,7 +81,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
-    context "when an explicit directory given" do
+    context "when an explicit directory is given" do
       let(:directory) { "/.github/workflows" }
 
       it "fetches the workflow files relatively to the directory" do
