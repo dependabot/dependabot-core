@@ -157,11 +157,6 @@ module Dependabot
       rescue Octokit::Conflict => e
         raise unless e.message.include?("Repository is empty")
       end
-      
-      /# Returns the path to the shallow-cloned repo
-      sig { overridable.returns(String) }
-      def shallow_clone_repo_contents
-      end/
 
       # Returns the path to the cloned repo
       sig { overridable.returns(String) }
@@ -446,10 +441,7 @@ module Dependabot
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
 
-      sig {
-        params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
-        .returns(T::Array[OpenStruct]) }
-      
+      sig { params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean).returns(T::Array[OpenStruct]) }
       def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true)
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
@@ -480,10 +472,7 @@ module Dependabot
         retry
       end
 
-      sig {
-        params(provider: String, repo: String, path: String, commit: String)
-          .returns(T::Array[OpenStruct]) }
-
+      sig { params(provider: String, repo: String, path: String, commit: String).returns(T::Array[OpenStruct]) }
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
         case provider
         when "github"
@@ -835,10 +824,10 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              if isLfsEnabled(path.to_s) 
-                SharedHelpers.run_shell_command("git lfs install") 
+              if isLfsEnabled(path.to_s)
+                SharedHelpers.run_shell_command("git lfs install")
                 SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
-              else 
+              else
                 SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
               end
               reset_options = StringIO.new
@@ -869,11 +858,11 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        lfsEnabled = isLfsEnabled(path) if lfsEnabled.nil?
-        SharedHelpers.run_shell_command("git-lfs-checkout") if lfsEnabled
-        commandString = getCommandString(path,lfsEnabled)
-                                                                                                               #  eep commandString
-        SharedHelpers.run_shell_command(commandString).split("\n").filter_map do |line|
+        lfs_enabled = isLfsEnabled(path) if lfs_enabled.nil?
+        SharedHelpers.run_shell_command("git-lfs-checkout") if lfs_enabled
+        command_string = getCommandString(path,lfs_enabled)
+        #  eep command_string
+        SharedHelpers.run_shell_command(command_string).split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
@@ -881,7 +870,7 @@ module Dependabot
           next path if type == DependencyFile::Mode::SUBMODULE
         end
       rescue SharedHelpers::HelperSubprocessFailed => spf
-        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfsEnabled
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfs_enabled
         Dependabot.logger.error(spf.message)
         raise 
       end
@@ -889,18 +878,18 @@ module Dependabot
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
       def isLfsEnabled(path)
         filepath = File.join(path,".gitattributes")
-        lfsEnabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
+        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
       rescue 
         # this should not be needed, but I don't trust 'should'
-        lfsEnabled = T.let(false, T::Boolean)
+        lfs_enabled = T.let(false, T::Boolean)
       end
 
-      sig { params(path: String, lfsEnabled: T.nilable(T::Boolean)).returns(String) }
-      def getCommandString(path,lfsEnabled)
-        return "git -C #{path} ls-files --stage" unless lfsEnabled
+      sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }
+      def getCommandString(path,lfs_enabled)
+        return "git -C #{path} ls-files --stage" unless lfs_enabled
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
-        commandString = "cd #{path};git-lfs ls-files --stage"
-        return commandString
+        command_string = "cd #{path};git-lfs ls-files --stage"
+        return command_string
       end
 
     end 
