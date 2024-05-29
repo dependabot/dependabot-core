@@ -174,7 +174,7 @@ module Dependabot
       sig { params(path: String).returns(T::Boolean) }
       def isLfsEnabled(path)
         filepath = File.join(path,".gitattributes")
-        lfsEnabled = FIle.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"") if lfsEnabled.nil?
+        lfsEnabled = File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include? "#{filepath}"
       rescue 
         # this should not be needed, but I don't trust 'should'
         lfsEnabled = false

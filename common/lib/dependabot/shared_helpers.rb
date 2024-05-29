@@ -392,11 +392,12 @@ module Dependabot
     sig { params(path: String).returns(T::Boolean) }
     def self.isLfsEnabled(path)
       filepath = File.join(path,".gitattributes")
-      lfsEnabled = FIle.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+      lfsEnabled = File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include? "#{filepath}"
     rescue 
       # this should not be needed, but I don't trust 'should'
       lfsEnabled = false
     end
+
 
     sig { returns(T::Array[String]) }
     def self.find_safe_directories

@@ -835,7 +835,7 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              if isLfsEnabled(path) do
+              if isLfsEnabled(path.to_s) do
                   SharedHelpers.run_shell_command("git lfs install") 
                   SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
                 end
@@ -874,7 +874,7 @@ module Dependabot
         SharedHelpers.run_shell_command("git-lfs-checkout") if lfsEnabled
         commandString = getCommandString(path,lfsEnabled)
                                                                                                                #  eep commandString
-        SharedHelpers.run_shell_command(commandString)&.split("\n").filter_map do |line|
+        SharedHelpers.run_shell_command(commandString).split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
@@ -890,7 +890,7 @@ module Dependabot
       sig { params(path: String).returns(T::Boolean) }
       def isLfsEnabled(path)
         filepath = File.join(path,".gitattributes")
-        lfsEnabled = FIle.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+        lfsEnabled = File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include? "#{filepath}"
       rescue 
         # this should not be needed, but I don't trust 'should'
         lfsEnabled = false
