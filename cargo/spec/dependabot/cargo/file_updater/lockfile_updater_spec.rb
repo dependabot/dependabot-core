@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include("unexpected end of input while parsing major version")
           end
         end

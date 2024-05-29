@@ -7,6 +7,10 @@ require "dependabot/gradle/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Gradle::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -22,9 +26,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       package_manager: "maven"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -42,6 +44,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:maven_url) do
       "https://repo.maven.apache.org/maven2/com/google/guava/" \
         "guava/23.3-jre/guava-23.3-jre.pom"
@@ -155,6 +158,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
         context "that doesn't match the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
+
           before do
             stub_request(:get, parent_url)
               .to_return(
@@ -175,11 +179,13 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
           context "and doesn't have a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_js_npm.json" }
+
             it { is_expected.to be_nil }
           end
 
           context "and does have a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_java.json" }
+
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
@@ -195,6 +201,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
+
             let(:repo_contents_fixture_nm) { "not_found.json" }
 
             it { is_expected.to be_nil }
@@ -218,6 +225,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
     context "when the github link includes a property" do
       let(:maven_response) { fixture("poms", "property_url_pom.xml") }
+
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
 
       context "that is nested" do
@@ -280,6 +288,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
               }
             ]
           end
+
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url)
@@ -308,6 +317,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         stub_request(:get, maven_url)
           .to_return(status: 200, body: maven_response)
       end
+
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
       context "with credentials" do
@@ -352,6 +362,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
               }
             ]
           end
+
           before do
             stub_request(:get, maven_url).to_return(status: 404)
             stub_request(:get, maven_url)

@@ -126,6 +126,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
 
       context "without a target version" do
         let(:target_version_details) { nil }
+
         it { is_expected.to eq(false) }
       end
 
@@ -164,6 +165,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
 
       context "without a target version" do
         let(:target_version_details) { nil }
+
         it { is_expected.to eq(false) }
       end
 

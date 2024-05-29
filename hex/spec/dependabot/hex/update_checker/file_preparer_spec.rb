@@ -220,6 +220,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
 
     describe "the updated mix.lock" do
       subject { prepared_dependency_files.find { |f| f.name == "mix.lock" } }
+
       it { is_expected.to eq(lockfile) }
     end
   end

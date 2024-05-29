@@ -39,6 +39,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           "replaces-base" => true
         })]
       end
+
       it "returns that URL instead" do
         expect(finder.central_repo_url).to eq("https://example.com")
       end
@@ -47,10 +48,12 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
   describe "#repository_urls" do
     subject(:repository_urls) { finder.repository_urls(pom: pom) }
+
     let(:pom) { base_pom }
 
     context "when there are no parents, and no repository declarations" do
       let(:base_pom_fixture_name) { "basic_pom.xml" }
+
       it { is_expected.to eq(["https://repo.maven.apache.org/maven2"]) }
     end
 

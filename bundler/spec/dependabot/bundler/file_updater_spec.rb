@@ -81,6 +81,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:previous_requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -204,6 +205,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -235,6 +237,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
         its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
       end
@@ -365,9 +368,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         context "when dealing with a gems.rb setup" do
-          let(:project_name) { "gems_rb" }
-
           subject(:file) { updated_files.find { |f| f.name == "gems.locked" } }
+
+          let(:project_name) { "gems_rb" }
 
           let(:requirements) do
             [{
@@ -518,6 +521,24 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
       context "when given a Gemfile that loads a .ruby-version file" do
         let(:project_name) { "ruby_version_file" }
+        let(:updater) do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: [dependency],
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com"
+            }]
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+      end
+
+      context "when the Gemfile loads a .tool-versions file" do
+        let(:project_name) { "tool_versions_file" }
         let(:updater) do
           described_class.new(
             dependency_files: dependency_files,
@@ -878,6 +899,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 }
               }]
             end
+
             its(:content) do
               is_expected.to include "dependabot-test-ruby-package (~> 1.0.1)!"
             end

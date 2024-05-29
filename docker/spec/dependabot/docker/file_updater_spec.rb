@@ -593,6 +593,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated Dockerfile" do
         subject { updated_files.find { |f| f.name == "Dockerfile" } }
+
         its(:content) { is_expected.to include "FROM ubuntu@sha256:3ea1ca1aa" }
       end
 
@@ -1020,6 +1021,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         its(:content) { is_expected.to include "kind: Pod" }
 
         context "when the podfile has a tag as well as a digest" do
+          subject(:updated_podfile) do
+            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
+          end
+
           let(:podfile) do
             Dependabot::DependencyFile.new(
               content: podfile_body,
@@ -1056,10 +1061,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               }],
               package_manager: "docker"
             )
-          end
-
-          subject(:updated_podfile) do
-            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
           end
 
           its(:content) do
@@ -1189,6 +1190,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated podfile" do
         subject { updated_files.find { |f| f.name == "digest.yaml" } }
+
         its(:content) { is_expected.to include "image: ubuntu@sha256:3ea1ca1aa" }
       end
 
@@ -1242,6 +1244,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
   end
+
   let(:helm_updater) do
     described_class.new(
       dependency_files: helm_files,

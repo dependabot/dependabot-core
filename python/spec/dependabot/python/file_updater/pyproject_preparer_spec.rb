@@ -104,6 +104,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
     context "with no dependencies to except" do
       let(:dependencies) { [] }
+
       it { is_expected.to include("geopy = \"1.14.0\"\n") }
       it { is_expected.to include("hypothesis = \"3.57.0\"\n") }
       it { is_expected.to include("python = \"^3.6 || ^3.7\"\n") }

@@ -127,9 +127,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "that contains a version requirement string" do
+          subject { dependencies.find { |d| d.name == "etag" } }
+
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
-          subject { dependencies.find { |d| d.name == "etag" } }
           it { is_expected.to eq(nil) }
         end
 
@@ -585,6 +586,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   headers: git_header
                 )
             end
+
             let(:git_pack_fixture_name) { "is-number" }
 
             its(:length) { is_expected.to eq(1) }
@@ -614,6 +616,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               context "when a tag can't be found" do
                 let(:git_pack_fixture_name) { "manifesto" }
+
                 its(:version) do
                   is_expected.to eq("63d5b26c793194bf7f341a7203e0e5568c753539")
                 end
@@ -729,6 +732,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "with a git dependency" do
             let(:project_name) { "npm6/git_dependency" }
+
             its(:length) { is_expected.to eq(4) }
 
             describe "the git dependency" do
@@ -766,6 +770,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "that does flat resolution" do
             let(:project_name) { "npm6/flat_resolution" }
+
             its(:length) { is_expected.to eq(0) }
           end
         end
@@ -1288,6 +1293,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
         context "with workspaces" do
           let(:files) { project_dependency_files("yarn/workspaces") }
+
           its(:length) { is_expected.to eq(3) }
 
           describe "the etag dependency" do
@@ -1346,6 +1352,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
         context "with lerna.json" do
           let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
+
           its(:length) { is_expected.to eq(5) }
 
           it "parses the lerna dependency" do
@@ -1414,6 +1421,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       context "with workspaces" do
         let(:files) { project_dependency_files("yarn_berry/workspaces") }
+
         its(:length) { is_expected.to eq(3) }
 
         describe "the etag dependency" do
@@ -1494,12 +1502,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     end
 
     context "with duplicate dependencies" do
-      subject { parser.parse }
+      subject(:parsed_file) { parser.parse }
+
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
-        expect(subject.count).to eql(1)
-        expect(subject[0].requirements).to match_array([
+        expect(parsed_file.count).to eql(1)
+        expect(parsed_file[0].requirements).to match_array([
           {
             requirement: "^10.5.12",
             file: "package.json",
@@ -1517,12 +1526,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     end
 
     context "with multiple versions of a dependency" do
-      subject { parser.parse }
+      subject(:parsed_file) { parser.parse }
+
       let(:files) { project_dependency_files("npm8/transitive_dependency_multiple_versions") }
 
       it "stores all versions of the dependency in its metadata" do
         name = "kind-of"
-        dependency = subject.find { |dep| dep.name == name }
+        dependency = parsed_file.find { |dep| dep.name == name }
 
         expect(dependency.metadata[:all_versions]).to eq([
           Dependabot::Dependency.new(

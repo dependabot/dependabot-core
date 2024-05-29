@@ -41,6 +41,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       Dependabot::Clients::CodeCommit
     ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
+
   let(:repo_contents_path) { nil }
 
   let(:child_class) do
@@ -299,6 +300,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
@@ -307,6 +309,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -316,7 +319,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("octokit") }
@@ -347,7 +350,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "is stripped" do
-            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+            expect(files_find.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
           end
         end
 
@@ -694,6 +697,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           "https://api.github.com/repos/#{repo}/git/blobs/" \
             "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
+
         before do
           stub_request(:get, url + "requirements.txt?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -726,6 +730,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         context "with a directory specified" do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+
           before do
             stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -762,7 +767,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("octokit") }
@@ -791,7 +796,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "is stripped" do
-            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+            expect(files_find.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
           end
         end
       end
@@ -1211,7 +1216,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("required_rubygems_version") }
@@ -1235,11 +1240,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "app/" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
 
@@ -1256,11 +1261,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "/app" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
 
@@ -1277,11 +1282,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "a/pp" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.to_not raise_error
           end
         end
       end
@@ -1361,6 +1366,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
+
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#files" do
@@ -1371,7 +1377,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
       after { FileUtils.rm_rf(repo_path) }
+
       let(:fill_repo) { nil }
+
       before do
         Dir.chdir(repo_path) do
           `git init --initial-branch main .`
@@ -1444,14 +1452,14 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises RepoNotFound" do
-          expect { subject }
+          expect { files }
             .to raise_error(Dependabot::RepoNotFound)
         end
       end
 
       context "file not found" do
         it "raises DependencyFileNotFound" do
-          expect { subject }
+          expect { files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
             expect(error.file_path).to eq("/requirements.txt")
           end
@@ -1499,7 +1507,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "file not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }
+            expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
@@ -1532,7 +1540,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "file not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }
+            expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
@@ -1592,7 +1600,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a not found error" do
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
         end
       end
 
@@ -1602,7 +1610,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a not found error" do
-          expect { subject }.to raise_error(Dependabot::BranchNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::BranchNotFound)
         end
       end
 
@@ -1631,7 +1639,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               )
             )
 
-          expect { subject }.to raise_error(Dependabot::OutOfDisk)
+          expect { clone_repo_contents }.to raise_error(Dependabot::OutOfDisk)
         end
       end
 
@@ -1660,7 +1668,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               proc { "" }
             )
 
-          expect { subject }.to_not raise_error
+          expect { clone_repo_contents }.to_not raise_error
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).thrice
           expect(file_fetcher_instance).to have_received(:sleep).once
         end
@@ -1677,7 +1685,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               retryable_error
             )
 
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).exactly(6).times
           expect(file_fetcher_instance).to have_received(:sleep).exactly(5).times
         end
@@ -1692,7 +1700,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               )
             )
 
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
           expect(file_fetcher_instance).to_not have_received(:sleep)
         end

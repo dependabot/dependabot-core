@@ -224,8 +224,8 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
 
         it "updates both sources" do
-          expect(subject.content).to include "actions/checkout@v2.2.0\n"
-          expect(subject.content).not_to include "actions/checkout@master\n"
+          expect(updated_workflow_file.content).to include "actions/checkout@v2.2.0\n"
+          expect(updated_workflow_file.content).not_to include "actions/checkout@master\n"
         end
       end
 
@@ -289,10 +289,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
 
         it "updates both sources" do
-          expect(subject.content).to include "actions/cache@v2 # comment"
-          expect(subject.content).to match(%r{actions\/cache@v2$})
-          expect(subject.content).not_to include "actions/cache@v1.1.2\n"
-          expect(subject.content).not_to include "actions/cache@v2.1.2\n"
+          expect(updated_workflow_file.content).to include "actions/cache@v2 # comment"
+          expect(updated_workflow_file.content).to match(%r{actions\/cache@v2$})
+          expect(updated_workflow_file.content).not_to include "actions/cache@v1.1.2\n"
+          expect(updated_workflow_file.content).not_to include "actions/cache@v2.1.2\n"
         end
       end
 
@@ -373,41 +373,44 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         it "updates SHA version" do
           old_sha = dependency.previous_requirements.first.dig(:source, :ref)
-          expect(subject.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(:source, :ref)}"
-          expect(subject.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
+          expect(updated_workflow_file.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(
+            :source, :ref
+          )}"
+          expect(updated_workflow_file.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
         end
 
         it "updates version comment" do
           new_sha = dependency.requirements.first.dig(:source, :ref)
-          expect(subject.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
+          expect(updated_workflow_file.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
 
-          expect(subject.content).to include "# v#{dependency.version}"
-          expect(subject.content).to include "# #{dependency.version}"
-          expect(subject.content).to include "# @v#{dependency.version}"
-          expect(subject.content).to include "# pin @v#{dependency.version}"
-          expect(subject.content).to include "# tag=v#{dependency.version}"
+          expect(updated_workflow_file.content).to include "# v#{dependency.version}"
+          expect(updated_workflow_file.content).to include "# #{dependency.version}"
+          expect(updated_workflow_file.content).to include "# @v#{dependency.version}"
+          expect(updated_workflow_file.content).to include "# pin @v#{dependency.version}"
+          expect(updated_workflow_file.content).to include "# tag=v#{dependency.version}"
         end
 
         context "when previous version is older than comment" do
           let(:previous_version) { "2.0.0" }
 
           it "updates version comment" do
-            expect(subject.content).to include "# v#{dependency.version}"
-            expect(subject.content).to include "# #{dependency.version}"
-            expect(subject.content).to include "# @v#{dependency.version}"
-            expect(subject.content).to include "# pin @v#{dependency.version}"
-            expect(subject.content).to include "# tag=v#{dependency.version}"
+            expect(updated_workflow_file.content).to include "# v#{dependency.version}"
+            expect(updated_workflow_file.content).to include "# #{dependency.version}"
+            expect(updated_workflow_file.content).to include "# @v#{dependency.version}"
+            expect(updated_workflow_file.content).to include "# pin @v#{dependency.version}"
+            expect(updated_workflow_file.content).to include "# tag=v#{dependency.version}"
           end
         end
+
         it "doesn't update version comments when @ref is not a SHA" do
           old_version = dependency.previous_requirements[1].dig(:source, :ref)
-          expect(subject.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
+          expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
         end
 
         it "doesn't update version comments in the middle of sentences" do
           # rubocop:disable Layout/LineLength
-          expect(subject.content).to include "Versions older than v#{dependency.previous_version} have a security vulnerability"
-          expect(subject.content).not_to include "Versions older than v#{dependency.version} have a security vulnerability"
+          expect(updated_workflow_file.content).to include "Versions older than v#{dependency.previous_version} have a security vulnerability"
+          expect(updated_workflow_file.content).not_to include "Versions older than v#{dependency.version} have a security vulnerability"
           # rubocop:enable Layout/LineLength
         end
 
@@ -418,7 +421,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
           it "updates SHA version but not the comment" do
             new_sha = dependency.requirements.first.dig(:source, :ref)
-            expect(subject.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
+            expect(updated_workflow_file.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
           end
         end
       end

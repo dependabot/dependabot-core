@@ -66,6 +66,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
     let(:updated_package_json) do
       updated_files.find { |f| f.name == "package.json" }
     end
@@ -92,10 +93,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "without a lockfile" do
       let(:files) { project_dependency_files("npm6/simple_manifest") }
+
       its(:length) { is_expected.to eq(1) }
 
       context "when nothing has changed" do
         let(:requirements) { previous_requirements }
+
         specify { expect { updated_files }.to raise_error(/No files/) }
       end
     end
@@ -626,6 +629,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               headers: git_header
             )
         end
+
         let(:git_pack_fixture_name) { "is-number" }
 
         it "updates the package.json and the lockfiles" do
@@ -2467,6 +2471,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 headers: git_header
               )
           end
+
           let(:git_pack_fixture_name) { "is-number" }
 
           it "updates the package.json and the lockfiles" do

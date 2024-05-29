@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       .with(headers: { "Authorization" => "Bearer #{access_token}" })
       .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
+
   let(:access_token) { "access_token" }
   let(:credentials) do
     [Dependabot::Credential.new({
@@ -31,7 +32,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
   end
 
   describe "#default_reviewers" do
-    subject do
+    subject(:default_reviewers) do
       client.default_reviewers(repo)
     end
 
@@ -44,7 +45,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_no_data.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { default_reviewers }.to_not raise_error }
 
       it { is_expected.to eq([]) }
     end
@@ -56,7 +57,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { default_reviewers }.to_not raise_error }
 
       it { is_expected.to eq([{ uuid: "{00000000-0000-0000-0000-000000000001}" }]) }
     end
@@ -74,7 +75,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { default_reviewers }.to_not raise_error }
 
       it {
         is_expected.to eq(
@@ -88,7 +89,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
   end
 
   describe "#create_pull_request" do
-    subject do
+    subject(:create_pull_request) do
       client.create_pull_request(repo, "pr_name", "source_branch", "target_branch", "pr_description", nil)
     end
 
@@ -114,21 +115,22 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { create_pull_request }.to_not raise_error }
     end
   end
 
   describe "#remove_current_user_from_default_reviewer" do
-    subject do
+    subject(:current_user) do
       client.current_user
     end
-    specify { expect { subject }.to_not raise_error }
+
+    specify { expect { current_user }.to_not raise_error }
 
     it { is_expected.to eq("{11111111-6349-0000-aea6-111111111111}") }
   end
 
   describe "#pull_requests" do
-    subject do
+    subject(:pull_requests) do
       client.pull_requests(repo, "source_branch", "target_branch")
     end
 
@@ -142,7 +144,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_requests }.to_not raise_error }
 
       it { is_expected.to eq([]) }
     end
@@ -154,7 +156,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_requests }.to_not raise_error }
 
       it {
         is_expected.to eq([
@@ -182,6 +184,10 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     end
 
     context "only open pull requests with matching source and target branch" do
+      subject(:pull_requests) do
+        client.pull_requests(repo, "source_branch", "target_branch", %w(OPEN))
+      end
+
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
@@ -190,11 +196,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
-      subject do
-        client.pull_requests(repo, "source_branch", "target_branch", %w(OPEN))
-      end
-
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_requests }.to_not raise_error }
 
       it {
         is_expected.to eq([
@@ -222,6 +224,10 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     end
 
     context "open pull requests where matching target branch" do
+      subject(:pull_requests) do
+        client.pull_requests(repo, nil, "target_branch", %w(OPEN))
+      end
+
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
@@ -230,11 +236,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
-      subject do
-        client.pull_requests(repo, nil, "target_branch", %w(OPEN))
-      end
-
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_requests }.to_not raise_error }
 
       it {
         is_expected.to eq([
@@ -269,6 +271,10 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     let(:default_comment_url) { api_base_url + repo + "/pullrequests/15/comments" }
 
     context "with provided comment" do
+      subject(:decline_pull_request) do
+        client.decline_pull_request(repo, 15, "Superseded by newer version")
+      end
+
       before do
         stub_request(:post, default_decline_url)
           .with(
@@ -290,14 +296,14 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      subject do
-        client.decline_pull_request(repo, 15, "Superseded by newer version")
-      end
-
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { decline_pull_request }.to_not raise_error }
     end
 
     context "without provided comment" do
+      subject(:decline_pull_request) do
+        client.decline_pull_request(repo, 15)
+      end
+
       before do
         stub_request(:post, default_decline_url)
           .with(
@@ -319,11 +325,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      subject do
-        client.decline_pull_request(repo, 15)
-      end
-
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { decline_pull_request }.to_not raise_error }
     end
   end
 end

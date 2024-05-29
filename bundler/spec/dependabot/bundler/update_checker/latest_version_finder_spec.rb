@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   let(:rubygems_url) { "https://rubygems.org/api/v1/" }
 
   describe "#latest_version_details" do
-    subject { finder.latest_version_details }
+    subject(:latest_version_details) { finder.latest_version_details }
 
     context "with a rubygems source" do
       before do
@@ -90,6 +90,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       context "when the gem is Bundler" do
         let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
         let(:dependency_name) { "bundler" }
+
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
           stub_request(:get, rubygems_url + "versions/bundler.json")
@@ -100,25 +101,29 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         context "when wrapped in a source block" do
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified_in_source_bundler_specified") }
+
           its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
         end
       end
 
       context "when raise_on_ignored is set and later versions are allowed" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
 
       context "when the user is on the latest version" do
         let(:current_version) { "1.5.0" }
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
+
           it "doesn't raise an error" do
-            expect { subject }.to_not raise_error
+            expect { latest_version_details }.to_not raise_error
           end
         end
       end
@@ -128,8 +133,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
+
           it "doesn't raise an error" do
-            expect { subject }.to_not raise_error
+            expect { latest_version_details }.to_not raise_error
           end
         end
       end
@@ -139,8 +145,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
+
           it "doesn't raise an error" do
-            expect { subject }.to_not raise_error
+            expect { latest_version_details }.to_not raise_error
           end
         end
       end
@@ -152,14 +159,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
+
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
       end
 
@@ -167,13 +176,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { [">= 0"] }
 
         it "returns nil" do
-          expect(subject).to be_nil
+          expect(latest_version_details).to be_nil
         end
 
         context "when raise_on_ignored is set" do
           let(:raise_on_ignored) { true }
+
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
@@ -187,16 +197,24 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           stub_request(:get, rubygems_url + "versions/business.json")
             .to_return(status: 200, body: rubygems_response)
         end
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
       end
 
       context "with a Ruby version specified" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby") }
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
       context "when given a Gemfile that loads a .ruby-version file" do
         let(:dependency_files) { bundler_project_dependency_files("ruby_version_file") }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+      end
+
+      context "when the Gemfile loads a .tool-versions file" do
+        let(:dependency_files) { bundler_project_dependency_files("tool_versions_file") }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
@@ -220,6 +238,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
           context "when there is no default source" do
             let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_default_source_no_lockfile") }
+
             its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
           end
         end
@@ -281,6 +300,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
+
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
 
@@ -538,7 +558,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { finder.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
     let(:current_version) { "1.1.0" }
     let(:security_advisories) do

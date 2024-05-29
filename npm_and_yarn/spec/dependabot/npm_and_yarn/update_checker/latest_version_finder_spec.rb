@@ -59,7 +59,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:dependency_version) { "1.0.0" }
 
   describe "#latest_version_from_registry" do
-    subject { version_finder.latest_version_from_registry }
+    subject(:latest_version_from_registry) { version_finder.latest_version_from_registry }
+
     it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
     it "only hits the registry once" do
@@ -69,19 +70,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_from_registry }.to_not raise_error
       end
     end
 
     context "when the user is on the latest version" do
       let(:dependency_version) { "1.7.0" }
+
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_from_registry }.to_not raise_error
         end
       end
     end
@@ -89,12 +93,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.0.0"] }
       let(:target_version) { "1.0.0" }
+
       it { is_expected.to eq(Gem::Version.new("1.0.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_from_registry }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -102,6 +108,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.7.0.a, < 1.8"] }
       let(:target_version) { "1.6.0" }
+
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
@@ -110,8 +117,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_from_registry }.to_not raise_error
         end
       end
     end
@@ -121,8 +129,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_from_registry }.to_not raise_error
         end
       end
     end
@@ -142,6 +151,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         )
       end
       let(:target_version) { "1.5.1" }
+
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
@@ -249,6 +259,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
           context "specified with a dash" do
             let(:requirement) { "^2.0.0-pre" }
+
             it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
           end
         end
@@ -359,6 +370,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             "token" => "secret:token"
           })]
         end
+
         before do
           body = fixture("npm_responses", "prerelease.json")
           stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep")
@@ -765,6 +777,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           stub_request(:get, "https://www.npmjs.com/package/@dependabot/blep")
             .to_return(status: 200, body: login_form)
         end
+
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "@dependabot/blep",
@@ -858,7 +871,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
 
       it "picks the latest dist-tags version" do
-        expect(subject).to eq(Gem::Version.new("1.7.0"))
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
       end
     end
   end
@@ -911,6 +924,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when constrained" do
       let(:req_string) { "<= 1.5.0" }
       let(:target_version) { "1.5.0" }
+
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
       context "by multiple requirements" do
@@ -927,6 +941,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             source: nil
           }]
         end
+
         it { is_expected.to eq(Gem::Version.new("1.5.0")) }
       end
     end
@@ -941,7 +956,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { version_finder.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { version_finder.lowest_security_fix_version }
+
     let(:target_version) { "1.2.1" }
 
     let(:dependency_version) { "1.1.0" }
@@ -983,6 +999,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         )
       end
       let(:target_version) { "1.5.1" }
+
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
     end
 
@@ -995,7 +1012,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises exception" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -1010,7 +1027,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises exception" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
