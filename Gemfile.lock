@@ -238,15 +238,15 @@ GEM
     parser (3.3.1.0)
       ast (~> 2.4.1)
       racc
-    prism (0.24.0)
+    prism (0.29.0)
     psych (5.1.2)
       stringio
     public_suffix (5.0.4)
     racc (1.7.3)
     rainbow (3.1.1)
     rake (13.1.0)
-    rbi (0.1.10)
-      prism (>= 0.18.0, < 0.25)
+    rbi (0.1.13)
+      prism (>= 0.18.0, < 1.0.0)
       sorbet-runtime (>= 0.5.9204)
     rdoc (6.6.3.1)
       psych (>= 4.0.0)
