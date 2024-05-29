@@ -832,7 +832,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
 
-      context "when if no files have changed" do
+      context "when no files have changed" do
         let(:go_sum_content) { fixture("projects", project_name, "go.sum") }
 
         it { is_expected.to eq(go_sum_content) }
