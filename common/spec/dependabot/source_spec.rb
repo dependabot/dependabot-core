@@ -342,8 +342,9 @@ RSpec.describe Dependabot::Source do
   end
 
   describe "#url_with_directory" do
-    let(:source) { described_class.new(**attrs) }
     subject { source.url_with_directory }
+
+    let(:source) { described_class.new(**attrs) }
 
     let(:attrs) do
       {

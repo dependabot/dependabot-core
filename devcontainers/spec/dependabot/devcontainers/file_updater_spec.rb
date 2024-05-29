@@ -9,8 +9,6 @@ require "dependabot/devcontainers/requirement"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Devcontainers::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -19,6 +17,8 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
       repo_contents_path: repo_contents_path
     )
   end
+
+  it_behaves_like "a dependency file updater"
 
   let(:repo_contents_path) { build_tmp_repo(project_name) }
 

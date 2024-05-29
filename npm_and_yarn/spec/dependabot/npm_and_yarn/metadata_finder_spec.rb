@@ -9,6 +9,10 @@ require "dependabot/npm_and_yarn/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -20,9 +24,6 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       ],
       package_manager: "npm_and_yarn"
     )
-  end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
   end
 
   let(:credentials) do

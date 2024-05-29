@@ -1021,6 +1021,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         its(:content) { is_expected.to include "kind: Pod" }
 
         context "when the podfile has a tag as well as a digest" do
+          subject(:updated_podfile) do
+            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
+          end
+
           let(:podfile) do
             Dependabot::DependencyFile.new(
               content: podfile_body,
@@ -1057,10 +1061,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               }],
               package_manager: "docker"
             )
-          end
-
-          subject(:updated_podfile) do
-            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
           end
 
           its(:content) do
