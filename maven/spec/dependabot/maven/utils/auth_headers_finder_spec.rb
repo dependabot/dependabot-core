@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
       end
 
-      context "when it is not a gitlab maven repo" do
+      context "when repo is not a gitlab maven repo" do
         let(:credentials) do
           [
             {

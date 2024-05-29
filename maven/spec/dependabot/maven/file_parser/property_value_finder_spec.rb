@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
         its([:value]) { is_expected.to eq("2.2.1") }
 
-        context "when that is (case2)" do
+        context "when property name is (case2)" do
           let(:property_name) { "jta-api-1.2-version" }
 
           its([:value]) { is_expected.to eq("1.2.1") }
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("2.7") }
 
-      context "when that can't be found" do
+      context "when source can't be found" do
         before do
           stub_request(:get, struts_apps_maven_url)
             .to_return(status: 404, body: "")
@@ -163,19 +163,19 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         it { is_expected.to be_nil }
       end
 
-      context "when that specifies a version range (so can't be fetched)" do
+      context "when the pom specifies a version range (so can't be fetched)" do
         let(:base_pom_fixture_name) { "remote_parent_pom_with_range.xml" }
 
         it { is_expected.to be_nil }
       end
 
-      context "when that uses properties so can't be fetched" do
+      context "when the pom uses properties so can't be fetched" do
         let(:base_pom_fixture_name) { "remote_parent_pom_with_props.xml" }
 
         it { is_expected.to be_nil }
       end
 
-      context "when that is a custom repo" do
+      context "when a custom repo is used" do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
         let(:scala_plugins_maven_url) do

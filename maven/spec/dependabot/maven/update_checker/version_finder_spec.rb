@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "when that is a gitlab maven repository" do
+      context "when gitlab maven repository is used" do
         let(:credentials) do
           [
             Dependabot::Credential.new({

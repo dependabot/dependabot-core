@@ -133,19 +133,19 @@ RSpec.describe Dependabot::Maven::Version do
     subject { version.send(:<=>, other_version) }
 
     context "when comparing to a Gem::Version" do
-      context "when that is lower" do
+      context "when lower" do
         let(:other_version) { Gem::Version.new("0.9.0") }
 
         it { is_expected.to eq(1) }
       end
 
-      context "when that is equal" do
+      context "when equal" do
         let(:other_version) { Gem::Version.new("1.0.0") }
 
         it { is_expected.to eq(0) }
       end
 
-      context "when that is greater" do
+      context "when greater" do
         let(:other_version) { Gem::Version.new("1.1.0") }
 
         it { is_expected.to eq(-1) }
@@ -153,13 +153,13 @@ RSpec.describe Dependabot::Maven::Version do
     end
 
     context "when comparing to a Maven::Version" do
-      context "when that is lower" do
+      context "when lower" do
         let(:other_version) { described_class.new("0.9.0") }
 
         it { is_expected.to eq(1) }
       end
 
-      context "when that is equal" do
+      context "when equal" do
         let(:other_version) { described_class.new("1.0.0") }
 
         it { is_expected.to eq(0) }
@@ -178,25 +178,25 @@ RSpec.describe Dependabot::Maven::Version do
         end
       end
 
-      context "when that is greater" do
+      context "when greater" do
         let(:other_version) { described_class.new("1.1.0") }
 
         it { is_expected.to eq(-1) }
       end
 
-      context "when that is a post-release" do
+      context "when the version is a post-release" do
         let(:other_version) { described_class.new("1.0.0u1") }
 
         it { is_expected.to eq(-1) }
       end
 
-      context "when that is a pre-release" do
+      context "when the version is a pre-release" do
         let(:other_version) { described_class.new("1.0.0a1") }
 
         it { is_expected.to eq(1) }
       end
 
-      context "when that is non-numeric" do
+      context "when the version is non-numeric" do
         let(:version) { described_class.new("Finchley") }
         let(:other_version) { described_class.new("Edgware") }
 
@@ -204,21 +204,21 @@ RSpec.describe Dependabot::Maven::Version do
       end
 
       describe "with a + separated alphanumeric build identifier" do
-        context "when that is equal" do
+        context "when equal" do
           let(:version_string) { "9.0.0+100" }
           let(:other_version) { described_class.new("9.0.0+100") }
 
           it { is_expected.to eq(0) }
         end
 
-        context "when that is greater" do
+        context "when greater" do
           let(:version_string) { "9.0.0+102" }
           let(:other_version) { described_class.new("9.0.0+101") }
 
           it { is_expected.to eq(1) }
         end
 
-        context "when that is less than" do
+        context "when less than" do
           let(:version_string) { "9.0.0+100" }
           let(:other_version) { described_class.new("9.0.0+101") }
 

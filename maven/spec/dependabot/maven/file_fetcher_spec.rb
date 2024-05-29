@@ -182,7 +182,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         )
     end
 
-    context "when that uses submodules" do
+    context "when repo uses submodules" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })

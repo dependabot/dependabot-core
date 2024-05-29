@@ -54,19 +54,19 @@ RSpec.describe Dependabot::Maven::Requirement do
 
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
 
-      context "when that needs a > operator" do
+      context "when needing a > operator" do
         let(:requirement_string) { "(1.0.0,)" }
 
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
       end
 
-      context "when that needs a > and a < operator" do
+      context "when needing a > and a < operator" do
         let(:requirement_string) { "(1.0.0, 2.0.0)" }
 
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
       end
 
-      context "when that needs a >= and a <= operator" do
+      context "when needing a >= and a <= operator" do
         let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
 
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
@@ -84,13 +84,13 @@ RSpec.describe Dependabot::Maven::Requirement do
 
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
 
-      context "when that specifies a minimum" do
+      context "when specifying a minimum" do
         let(:requirement_string) { "1.5+" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5").to_s) }
       end
 
-      context "when that is just a +" do
+      context "when the requirement version is +" do
         let(:requirement_string) { "+" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new(">= 0").to_s) }

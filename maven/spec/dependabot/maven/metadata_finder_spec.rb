@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           expect(WebMock).to have_requested(:get, maven_url).once
         end
 
-        context "when that doesn't match the name of the artifact" do
+        context "when not matching the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
 
           before do
@@ -126,13 +126,13 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
               )
           end
 
-          context "when that doesn't have a subdirectory with its name" do
+          context "when not having a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_js_npm.json" }
 
             it { is_expected.to be_nil }
           end
 
-          context "when that does have a subdirectory with its name" do
+          context "when having a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
 
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
 
-      context "when that is nested" do
+      context "when the property is nested" do
         let(:maven_response) do
           fixture("poms", "nested_property_url_pom.xml")
         end
@@ -338,7 +338,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
 
-        context "when that include a username and password" do
+        context "when including a username and password" do
           let(:credentials) do
             [
               {
@@ -412,7 +412,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
 
-        context "when that include a username and password" do
+        context "when including a username and password" do
           let(:credentials) do
             [
               {

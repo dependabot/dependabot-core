@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             )
         end
 
-        context "when that is required for all dependencies" do
+        context "when the property is required for all dependencies" do
           let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
           it "raises a helpful error" do
@@ -495,7 +495,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
 
-      context "when that inherits from a parent POM downloaded for support" do
+      context "when inheriting from a parent POM downloaded for support" do
         let(:files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do

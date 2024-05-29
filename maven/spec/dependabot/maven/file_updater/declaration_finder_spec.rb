@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           .to eq("org.apache.httpcomponents")
       end
 
-      context "when that doesn't match this dependency's groups" do
+      context "when not matching this dependency's groups" do
         let(:groups) { [] }
 
         it { is_expected.to be_empty }
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
             expect(declaration_nodes.first.at_css("type")).to be_nil
           end
 
-          context "when that is looking for the bespoke type" do
+          context "when looking for the bespoke type" do
             let(:dependency_metadata) { { packaging_type: "test-jar" } }
 
             it "finds the declaration" do
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           .to eq("${project.groupId}")
       end
 
-      context "when that is missing for an unrelated dependency" do
+      context "when missing for an unrelated dependency" do
         let(:dependency_files) { [pom] }
         let(:pom) do
           Dependabot::DependencyFile.new(

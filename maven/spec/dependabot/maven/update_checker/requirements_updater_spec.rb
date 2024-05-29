@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("23.6-jre") }
         its([:source]) { is_expected.to eq(type: "maven_repo", url: "new_url") }
 
-        context "when that include multiple dashes" do
+        context "when including multiple dashes" do
           let(:pom_req_string) { "v2-rev398-1.24.1" }
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
