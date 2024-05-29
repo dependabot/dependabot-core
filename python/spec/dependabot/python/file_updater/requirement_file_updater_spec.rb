@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           )
         end
 
-        context "using a sha512 algorithm" do
+        context "when using a sha512 algorithm" do
           let(:requirements_fixture_name) { "hashes_512.txt" }
 
           its(:content) do
@@ -309,7 +309,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
             )
           end
 
-          context "moving to multiple hashes" do
+          context "when moving to multiple hashes" do
             let(:requirements_fixture_name) { "hashes_single_to_multiple.txt" }
             let(:dependency) do
               Dependabot::Dependency.new(
