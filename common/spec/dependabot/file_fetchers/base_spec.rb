@@ -304,7 +304,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
-    #start of lfs testing
+
     context "with a GitHub source" do
       its(:length) { is_expected.to eq(1) }
 
