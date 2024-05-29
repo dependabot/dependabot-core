@@ -341,6 +341,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:dockerfile_fixture_name) { "digest_and_tag" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -350,8 +352,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
@@ -837,6 +837,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -846,8 +848,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"

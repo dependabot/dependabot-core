@@ -198,11 +198,6 @@ RSpec/IteratedExpectation:
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
 
-# Offense count: 126
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/LeadingSubject:
-  Enabled: false
-
 # Offense count: 675
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/LetBeforeExamples:

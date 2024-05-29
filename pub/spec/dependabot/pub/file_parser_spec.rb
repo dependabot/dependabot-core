@@ -9,14 +9,14 @@ require "dependabot/pub/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Pub::FileParser do
-  it_behaves_like "a dependency file parser"
-
   subject(:parser) do
     described_class.new(
       dependency_files: files,
       source: source
     )
   end
+
+  it_behaves_like "a dependency file parser"
 
   let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory) }

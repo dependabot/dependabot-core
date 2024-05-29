@@ -184,16 +184,16 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     end
 
     context "only open pull requests with matching source and target branch" do
+      subject(:pull_requests) do
+        client.pull_requests(repo, "source_branch", "target_branch", %w(OPEN))
+      end
+
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
         stub_request(:get, pull_requests_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
-      end
-
-      subject(:pull_requests) do
-        client.pull_requests(repo, "source_branch", "target_branch", %w(OPEN))
       end
 
       specify { expect { pull_requests }.to_not raise_error }
@@ -224,16 +224,16 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     end
 
     context "open pull requests where matching target branch" do
+      subject(:pull_requests) do
+        client.pull_requests(repo, nil, "target_branch", %w(OPEN))
+      end
+
       let(:pull_requests_url) { api_base_url + repo + "/pullrequests?status=OPEN" }
 
       before do
         stub_request(:get, pull_requests_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
-      end
-
-      subject(:pull_requests) do
-        client.pull_requests(repo, nil, "target_branch", %w(OPEN))
       end
 
       specify { expect { pull_requests }.to_not raise_error }
@@ -271,6 +271,10 @@ RSpec.describe Dependabot::Clients::Bitbucket do
     let(:default_comment_url) { api_base_url + repo + "/pullrequests/15/comments" }
 
     context "with provided comment" do
+      subject(:decline_pull_request) do
+        client.decline_pull_request(repo, 15, "Superseded by newer version")
+      end
+
       before do
         stub_request(:post, default_decline_url)
           .with(
@@ -292,14 +296,14 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      subject(:decline_pull_request) do
-        client.decline_pull_request(repo, 15, "Superseded by newer version")
-      end
-
       specify { expect { decline_pull_request }.to_not raise_error }
     end
 
     context "without provided comment" do
+      subject(:decline_pull_request) do
+        client.decline_pull_request(repo, 15)
+      end
+
       before do
         stub_request(:post, default_decline_url)
           .with(
@@ -319,10 +323,6 @@ RSpec.describe Dependabot::Clients::Bitbucket do
             }
           )
           .to_return(status: 201)
-      end
-
-      subject(:decline_pull_request) do
-        client.decline_pull_request(repo, 15)
       end
 
       specify { expect { decline_pull_request }.to_not raise_error }
