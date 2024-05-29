@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         })
       end
 
-      context "that doesn't include a :" do
+      context "when not including a :" do
         let(:token) { "token" }
 
         it "builds the URL correctly" do
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
             .to eq("https://token@pypi.weasyldev.com/weasyl/source/+simple")
         end
 
-        context "that is already base64 encoded" do
+        context "when already base64 encoded" do
           let(:token) { "bXk6cGFzcw==" }
 
           it "builds the URL correctly" do
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         end
       end
 
-      context "that includes a :" do
+      context "when including a :" do
         let(:token) { "token:pass" }
 
         it "builds the URL correctly" do
@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         end
       end
 
-      context "that includes an @" do
+      context "when including an @" do
         let(:token) { "token:pass@23" }
 
         it "builds the URL correctly" do
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         end
       end
 
-      context "that includes an #" do
+      context "when including an #" do
         let(:token) { "token:pass#23" }
 
         it "builds the URL correctly" do
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         end
       end
 
-      context "that has multiple colons" do
+      context "when there are multiple colons" do
         let(:token) { "token:pass:23" }
 
         it "builds the URL correctly" do
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
         end
       end
 
-      context "that includes an @ and is base64 encoded" do
+      context "when including an @ and is base64 encoded" do
         let(:token) { "dG9rZW46cGFzc0AyMw==" }
 
         it "builds the URL correctly" do

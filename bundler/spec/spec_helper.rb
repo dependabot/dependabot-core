@@ -27,6 +27,9 @@ end
 
 def bundler_project_dependency_files(project, directory: "/")
   project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project), directory: directory)
+    .each do |dep|
+      dep.support_file = dep.name.end_with?(".ruby-version", ".tool-versions")
+    end
 end
 
 def bundler_project_dependency_file(project, filename:)

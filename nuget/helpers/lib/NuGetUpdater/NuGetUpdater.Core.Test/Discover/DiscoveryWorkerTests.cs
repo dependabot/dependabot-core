@@ -58,16 +58,15 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     [Fact]
     public async Task TestPackageConfig()
     {
-        var projectPath = "src/project.csproj";
         await TestDiscoveryAsync(
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
             ],
-            workspacePath: "",
+            workspacePath: "src",
             files: new[]
             {
-                (projectPath, """
+                ("src/project.csproj", """
                     <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
                       <PropertyGroup>
@@ -93,11 +92,11 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "",
+                FilePath = "src",
                 Projects = [
                     new()
                     {
-                        FilePath = projectPath,
+                        FilePath = "project.csproj",
                         TargetFrameworks = ["net45"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2,
@@ -106,7 +105,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
                         Properties = [
-                            new("TargetFrameworkVersion", "v4.5", projectPath),
+                            new("TargetFrameworkVersion", "v4.5", "src/project.csproj"),
                         ]
                     }
                 ]
@@ -117,16 +116,15 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     [Fact]
     public async Task TestProps()
     {
-        var projectPath = "src/project.csproj";
         await TestDiscoveryAsync(
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
             ],
-            workspacePath: "",
+            workspacePath: "src",
             files: new[]
             {
-                (projectPath, """
+                ("src/project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>net8.0</TargetFramework>
@@ -137,6 +135,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       </ItemGroup>
                     </Project>
                     """),
+                ("Directory.Build.props", "<Project />"),
                 ("Directory.Packages.props", """
                     <Project>
                       <PropertyGroup>
@@ -152,11 +151,12 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "",
+                FilePath = "src",
+                ExpectedProjectCount = 2,
                 Projects = [
                     new()
                     {
-                        FilePath = projectPath,
+                        FilePath = "project.csproj",
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         ExpectedDependencyCount = 2,
@@ -167,13 +167,13 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
                             new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
-                            new("TargetFramework", "net8.0", projectPath),
+                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ]
                     }
                 ],
                 DirectoryPackagesProps = new()
                 {
-                    FilePath = "Directory.Packages.props",
+                    FilePath = "../Directory.Packages.props",
                     Dependencies = [
                         new("Some.Package", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
                     ],
@@ -205,6 +205,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       </ItemGroup>
                     </Project>
                     """),
+                ("Directory.Build.props", "<Project />"),
                 ("Directory.Packages.props", """
                     <Project>
                       <PropertyGroup>
@@ -276,6 +277,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 FilePath = "",
+                ExpectedProjectCount = 2,
                 Projects = [
                     new()
                     {
