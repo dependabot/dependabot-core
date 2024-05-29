@@ -348,7 +348,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
     subject(:latest_version) { checker.latest_version }
 
     let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
