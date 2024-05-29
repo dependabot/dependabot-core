@@ -93,7 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "when it has a blank file: in the package-lock" do
+  context "when repo has a blank file: in the package-lock" do
     before do
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
@@ -582,7 +582,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "when it is specified as a link" do
+    context "when specified as a link" do
       before do
         stub_request(:get, File.join(url, "package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -801,7 +801,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "when it only appears in the lockfile" do
+      context "when only appears in the lockfile" do
         before do
           stub_request(:get, url + "?ref=sha")
             .with(headers: { "Authorization" => "token token" })

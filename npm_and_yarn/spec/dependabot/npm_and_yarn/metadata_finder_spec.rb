@@ -222,7 +222,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           .to have_requested(:get, "https://registry.npmjs.org/@etag%2Fetag")
       end
 
-      context "when it is private" do
+      context "when registry is private" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag")
             .to_return(status: 404, body: '{"error":"Not found"}')
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
 
-      context "when it is hosted on gemfury" do
+      context "when dependency is hosted on gemfury" do
         before do
           body = fixture("gemfury_responses", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag")

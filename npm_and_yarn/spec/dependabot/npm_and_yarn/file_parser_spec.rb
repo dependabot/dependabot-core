@@ -134,7 +134,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it { is_expected.to eq(nil) }
         end
 
-        context "when it has URL versions (i.e., is from a bad version of npm)" do
+        context "when containing URL versions (i.e., is from a bad version of npm)" do
           let(:files) { project_dependency_files("npm6/url_versions") }
 
           its(:length) { is_expected.to eq(1) }
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "when it specifies a semver requirement" do
+          context "when specifying a semver requirement" do
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
 
             before do
@@ -638,7 +638,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "when it doesn't specify a reference" do
+          context "when not specifying a reference" do
             let(:files) { project_dependency_files("npm6/github_dependency_no_ref") }
 
             its(:length) { is_expected.to eq(1) }
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "when it is specified with its shortname" do
+          context "when specifying with its shortname" do
             let(:files) { project_dependency_files("npm6/github_shortname") }
 
             its(:length) { is_expected.to eq(1) }

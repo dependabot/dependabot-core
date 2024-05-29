@@ -399,7 +399,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         it { is_expected.to eq(latest_allowable_version) }
 
-        context "when it is a git dependency" do
+        context "when requirement is a git dependency" do
           let(:manifest_fixture_name) { "git_dependency.json" }
           let(:npm_lock_fixture_name) { "git_dependency.json" }
           let(:latest_allowable_version) do
@@ -644,7 +644,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         it { is_expected.to eq(latest_allowable_version) }
 
-        context "when it is a git dependency" do
+        context "when requirement is a git dependency" do
           let(:project_name) { "npm6/git_dependency_no_lockfile" }
           let(:latest_allowable_version) do
             "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
@@ -698,7 +698,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           it { is_expected.to eq(Gem::Version.new("15.6.2")) }
         end
 
-        context "when it is a git dependency" do
+        context "when requirement is a git dependency" do
           let(:project_name) { "npm6/peer_dependency_git_no_lockfile" }
           let(:latest_allowable_version) do
             "1af607cc24ee57b338c18e1a67eae445da86b316"
@@ -854,7 +854,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         it { is_expected.to eq(latest_allowable_version) }
 
-        context "when it is a git dependency" do
+        context "when requirement is a git dependency" do
           let(:project_name) { "yarn/git_dependency" }
           let(:latest_allowable_version) do
             "0c6b15a88bc10cd47f67a09506399dfc9ddc075d"

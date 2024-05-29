@@ -247,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
       it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }
 
-      context "when it is separated by &&" do
+      context "when requirement string is separated by &&" do
         let(:requirement_string) { ">=1.0.0 && <=1.5.0" }
 
         it { is_expected.to eq([Gem::Requirement.new(">= 1.0.0", "<= 1.5.0")]) }

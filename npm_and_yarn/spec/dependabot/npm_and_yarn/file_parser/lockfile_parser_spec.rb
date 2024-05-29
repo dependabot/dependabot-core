@@ -237,7 +237,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it { is_expected.to eq(nil) }
       end
 
-      context "when it has URL versions (i.e., is from a bad version of npm)" do
+      context "when there are URL versions (i.e., is from a bad version of npm)" do
         let(:dependency_files) { project_dependency_files("npm6/url_versions") }
 
         # All but 1 dependency in the lockfile has a URL version
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           )
         end
 
-        context "when it should be used for this manifest" do
+        context "when lockfile should be used for this manifest" do
           let(:manifest_name) { "nested/package.json" }
 
           it "finds the correct dependency" do
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "when dealing with an npm8 workspace project with a direct dependency" do
-      context "when it is installed in the workspace's node_modules" do
+      context "when the dependency is installed in the workspace's node_modules" do
         let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package") }
         let(:dependency_name) { "yargs" }
         let(:manifest_name) { "packages/build/package.json" }
@@ -538,7 +538,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "when dealing with an npm8 workspace project with a direct dependency" do
-      context "when it is installed in the top-level node_modules" do
+      context "when the dependency installed in the top-level node_modules" do
         let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level") }
         let(:dependency_name) { "uuid" }
         let(:manifest_name) { "api/package.json" }
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
     context "when npm8 with a v3 lockfile-version" do
       context "when dealing with workspace project with a direct dependency" do
-        context "when it is installed in the workspace's node_modules" do
+        context "when the dependency is installed in the workspace's node_modules" do
           let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_lockfile_v3") }
           let(:dependency_name) { "yargs" }
           let(:manifest_name) { "packages/build/package.json" }
@@ -587,7 +587,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when dealing with workspace project with a direct dependency" do
-        context "when it is installed in the top-level node_modules" do
+        context "when the dependency is installed in the top-level node_modules" do
           let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level_lockfile_v3") }
           let(:dependency_name) { "uuid" }
           let(:manifest_name) { "api/package.json" }

@@ -299,7 +299,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     end
 
     context "with a space in registry url" do
-      context "when it is in .npmrc file" do
+      context "when dependency is in .npmrc file" do
         let(:npmrc_file) do
           project_dependency_files(project_name).find { |f| f.name == ".npmrc" }
         end
@@ -315,7 +315,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
         it { is_expected.to eq("npm.fury.io/dependabot%20with%20space") }
       end
 
-      context "when it is in .yarnrc file" do
+      context "when dependency is in .yarnrc file" do
         let(:yarnrc_file) do
           project_dependency_files(project_name).find { |f| f.name == ".yarnrc" }
         end

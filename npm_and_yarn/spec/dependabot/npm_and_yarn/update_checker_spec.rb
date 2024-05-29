@@ -463,7 +463,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             .to eq("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
-        context "when it doesn't exist" do
+        context "when ref doesn't exist" do
           let(:ref) { "nonexistent" }
           let(:req) { nil }
 

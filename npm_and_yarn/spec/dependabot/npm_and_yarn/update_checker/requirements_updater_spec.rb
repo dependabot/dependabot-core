@@ -175,7 +175,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq("v1.5.0") }
 
-          context "when it is capitalised (and therefore invalid)" do
+          context "when requirement is capitalised (and therefore invalid)" do
             let(:package_json_req_string) { "V1.2.3" }
 
             its([:requirement]) { is_expected.to eq("V1.2.3") }
@@ -264,7 +264,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
 
-          context "when it is already valid" do
+          context "when requirement is already valid" do
             let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
 
             its([:requirement]) { is_expected.to eq(package_json_req_string) }
@@ -366,7 +366,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq("v1.5.0") }
 
-          context "when it is capitalised (and therefore invalid)" do
+          context "when requirement is capitalised (and therefore invalid)" do
             let(:package_json_req_string) { "V1.2.3" }
 
             its([:requirement]) { is_expected.to eq("V1.2.3") }
@@ -587,7 +587,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
 
-          context "when it is already valid" do
+          context "when requirement is already valid" do
             let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
 
             its([:requirement]) { is_expected.to eq(package_json_req_string) }

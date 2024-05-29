@@ -79,7 +79,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
         end
       end
 
-      context "when it can't be parsed" do
+      context "when dependency file can't be parsed" do
         let(:project_name) { "yarn/unparseable" }
 
         it "raises DependencyFileNotParseable" do

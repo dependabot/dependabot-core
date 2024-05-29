@@ -238,7 +238,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "0.0.6" }
         let(:previous_version) { "0.0.5" }
 
-        context "when it is missing from npm" do
+        context "when missing from npm" do
           let(:files) { project_dependency_files("npm6_and_yarn/diverged_sub_dependency_missing_npm") }
 
           it "only updates the yarn lockfile (which includes the sub-dep)" do
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
 
-        context "when it is missing from yarn" do
+        context "when missing from yarn" do
           let(:files) { project_dependency_files("npm6_and_yarn/diverged_sub_dependency_missing_yarn") }
 
           it "only updates the npm lockfile (which includes the sub-dep)" do
