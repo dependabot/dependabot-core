@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to eq(false) }
 
-      context "for a security update" do
+      context "when dealing with a security update" do
         let(:security_updates_only) { true }
 
         it { is_expected.to eq(true) }
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to eq(false) }
 
-      context "that is insecure" do
+      context "when insecure" do
         let(:security_advisories) do
           [
             {
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to eq(false) }
 
-      context "for a security fix" do
+      context "when dealing with a security fix" do
         let(:security_advisories) do
           [
             {
@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Job do
         it { is_expected.to eq(true) }
       end
 
-      context "for a security fix that doesn't apply" do
+      context "when dealing with a security fix that doesn't apply" do
         let(:security_advisories) do
           [
             {
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::Job do
         it { is_expected.to eq(false) }
       end
 
-      context "for a security fix that doesn't apply to some versions" do
+      context "when dealing with a security fix that doesn't apply to some versions" do
         let(:security_advisories) do
           [
             {
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "and a dependency whitelist that includes the dependency" do
+    context "when a dependency whitelist that includes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "business" }] }
 
       it { is_expected.to eq(true) }
@@ -311,12 +311,12 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "and a dependency whitelist that excludes the dependency" do
+    context "when dependency whitelist that excludes the dependency" do
       let(:allowed_updates) { [{ "dependency-name" => "rails" }] }
 
       it { is_expected.to eq(false) }
 
-      context "that would match if we were sloppy about substrings" do
+      context "when matching with potential sloppiness about substrings" do
         let(:allowed_updates) { [{ "dependency-name" => "bus" }] }
 
         it { is_expected.to eq(false) }
@@ -338,7 +338,7 @@ RSpec.describe Dependabot::Job do
 
         it { is_expected.to eq(false) }
 
-        context "for a security fix" do
+        context "when dealing with a security fix" do
           let(:security_advisories) do
             [
               {

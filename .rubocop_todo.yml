@@ -63,10 +63,6 @@ RSpec/ContextWording:
     - 'maven/**/*'
     - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
-    - 'python/**/*'
-    - 'sorbet/**/*'
-    - 'terraform/**/*'
-    - 'updater/**/*'
 
 # Offense count: 31
 # This cop supports unsafe autocorrection (--autocorrect-all).

@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
 
       it { is_expected.to eq(["3.6.2"]) }
 
-      context "that has a version unknown to pyenv" do
+      context "when having a version unknown to pyenv" do
         let(:python_version_body) { "personal-3.6.2\n" }
 
         it { is_expected.to eq([]) }
@@ -77,19 +77,19 @@ RSpec.describe Dependabot::Python::FileParser::PythonRequirementParser do
       end
       let(:setup_py_body) { fixture("setup_files", fixture_name) }
 
-      context "that includes a python_requires line" do
+      context "when including a python_requires line" do
         let(:fixture_name) { "impossible_imports.py" }
 
         it { is_expected.to eq([">=3.7"]) }
       end
 
-      context "that doesn't include a python_requires line" do
+      context "when not including a python_requires line" do
         let(:fixture_name) { "setup.py" }
 
         it { is_expected.to eq([]) }
       end
 
-      context "that has a requirement we can't parse" do
+      context "when having a requirement that can't be parsed" do
         let(:fixture_name) { "unparseable_python_requires.py" }
 
         it { is_expected.to eq([]) }
