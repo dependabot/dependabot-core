@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "deprecated terraform provider syntax" do
+    context "when dealing with a deprecated terraform provider syntax" do
       let(:files) { project_dependency_files("deprecated_provider") }
 
       it "raises a helpful error message" do
@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "hcl2 files" do
+    context "when dealing with hcl2 files" do
       let(:files) { project_dependency_files("hcl2") }
 
       it "has the right source for the dependency" do
@@ -798,7 +798,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "terraform.lock.hcl files" do
+    context "when dealing with terraform.lock.hcl files" do
       let(:files) { project_dependency_files("terraform_lock_only") }
 
       it "does not attempt to parse the lockfile" do
