@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Workspace::Git do
   end
 
   describe "#change" do
-    context "on success" do
+    context "when the #change is successful" do
       it "captures the change" do
         workspace.change("timecop") do
           `echo 'gem "timecop", "~> 0.9.6", group: :test' >> Gemfile`
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Workspace::Git do
       end
     end
 
-    context "on error" do
+    context "when an error occurs" do
       it "captures the failed change attempt" do
         expect do
           workspace.change("timecop") do
