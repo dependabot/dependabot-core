@@ -872,18 +872,18 @@ module Dependabot
       rescue SharedHelpers::HelperSubprocessFailed => e
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfs_enabled
         Dependabot.logger.error(e.message)
-        raise e.exception("Message: #{error.message}")
+        raise e.exception("Message: #{e.message}")
       end
 
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
       def is_lfs_enabled(path)
         filepath = File.join(path, ".gitattributes")
-        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath)
-          && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
+        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
       rescue Exception => e
         # this should not be needed, but I don't trust 'should'
         lfs_enabled = T.let(false, T::Boolean)
-        raise e
+        raise e.exception("Message: #{e.message}")
       end
 
       sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }

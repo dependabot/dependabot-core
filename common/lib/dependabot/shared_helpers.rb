@@ -374,7 +374,7 @@ module Dependabot
 
     sig { params(path: String).void }
     def self.reset_git_repo(path)
-      if is_lfs_enabled(path) 
+      if lfs_enabled?(path) 
         Dir.chdir(path) do
           begin
             run_shell_command("git-lfs-reset HEAD --hard")
@@ -392,14 +392,15 @@ module Dependabot
     end
 
     sig { params(path: String).returns(T.nilable(T::Boolean)) }
-    def self.is_lfs_enabled(path)
-      filepath = File.join(path,".gitattributes")
-      lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
-    rescue 
+    def self.lfs_enabled?(path)
+      filepath = File.join(path, ".gitattributes")
+      lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+        SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
+    rescue Exception => e
       # this should not be needed, but I don't trust 'should'
       lfs_enabled = T.let(false, T::Boolean)
+      raise e.exception("Message: #{e.message}")
     end
-
 
     sig { returns(T::Array[String]) }
     def self.find_safe_directories
