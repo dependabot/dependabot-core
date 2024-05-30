@@ -481,7 +481,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("octokit") }
         end
 
-        context "when file is in a submodule (shallow)" do
+        context "when the file is in a submodule (shallow)" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -545,7 +545,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "when file is in a submodule (deep)" do
+        context "when the file is in a submodule (deep)" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -619,7 +619,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "when file is in a symlinked directory" do
+        context "when the file is in a symlinked directory" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -972,7 +972,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("required_rubygems_version") }
         end
 
-        context "when file can't be found" do
+        context "when the file can't be found" do
           before do
             stub_request(:get, repo_contents_url)
               .to_return(status: 200,
@@ -1147,7 +1147,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("required_rubygems_version") }
         end
 
-        context "when file can't be found" do
+        context "when the file can't be found" do
           before do
             stub_request(:get, repo_contents_url)
               .to_return(status: 200,
@@ -1457,7 +1457,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
-      context "when file is not found" do
+      context "when the file is not found" do
         it "raises DependencyFileNotFound" do
           expect { files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
@@ -1466,7 +1466,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
-      context "when symlink enabled" do
+      context "when the directory is symlinked" do
         let(:fill_repo) do
           Dir.mkdir("symlinked")
           file_path = File.join("symlinked", "requirements.txt")
@@ -1505,7 +1505,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "when file is not found" do
+        context "when the file is not found" do
           it "raises DependencyFileNotFound" do
             expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
@@ -1538,7 +1538,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       context "with a directory specified" do
         let(:directory) { "/nested" }
 
-        context "when file is not found" do
+        context "when the file is not found" do
           it "raises DependencyFileNotFound" do
             expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|

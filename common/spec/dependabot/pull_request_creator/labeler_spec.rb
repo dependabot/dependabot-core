@@ -165,7 +165,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
-        context "when considering a label that should be ignored" do
+        context "when considering the label that should be ignored" do
           let(:labels_fixture_name) { "labels_with_custom_ignored.json" }
 
           before do
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
-        context "when not exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it "does not create any labels" do
@@ -443,7 +443,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             .to_not have_requested(:post, "#{repo_api_url}/labels")
         end
 
-        context "when not exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it "does not create any labels" do
@@ -558,7 +558,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["wontfix"]) }
 
-        context "when not exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it { is_expected.to eq([]) }
@@ -764,7 +764,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["critical"]) }
 
-        context "when dealing with labels that don't exist" do
+        context "when dealing with the labels that don't exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it { is_expected.to eq(["non-existent"]) }

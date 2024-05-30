@@ -328,7 +328,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             it { is_expected.to be_falsey }
           end
 
-          context "when able to with a full unlock" do
+          context "when the requirements can be updated with a full unlock" do
             before do
               allow(updater_instance)
                 .to receive(:latest_version_resolvable_with_full_unlock?)

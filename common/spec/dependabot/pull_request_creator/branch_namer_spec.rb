@@ -63,7 +63,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/directory/business-1.5.0") }
 
-      context "when it starts with a dot" do
+      context "when the directory name starts with a dot" do
         let(:directory) { ".directory" }
 
         it "sanitizes the dot" do

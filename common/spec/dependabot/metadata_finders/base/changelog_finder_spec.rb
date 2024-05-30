@@ -234,7 +234,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it { is_expected.to be_nil }
 
-        context "when the tag has changlog" do
+        context "when the tag has changelog" do
           before do
             stub_request(:get, github_url + "?ref=v1.4.0")
               .to_return(status: github_status,
@@ -443,7 +443,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
       end
 
-      describe "for a git dependency with multiple sources", :vcr do
+      context "when dealing with a git dependency with multiple sources", :vcr do
         include_context "with multiple git sources"
 
         before do
@@ -876,7 +876,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           end
         end
 
-        describe "for a git dependency with multiple sources", :vcr do
+        context "when dealing with a git dependency with multiple sources", :vcr do
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do

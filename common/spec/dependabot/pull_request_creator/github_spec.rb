@@ -515,7 +515,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
         end
 
-        context "when it isn't initially returned (a race)" do
+        context "when the PR isn't initially returned (a race)" do
           before do
             url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                   "&state=all"
@@ -543,7 +543,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           end
         end
 
-        context "when it is merged" do
+        context "when the PR is merged" do
           before do
             url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                   "&state=all"
@@ -792,7 +792,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           )
       end
 
-      context "when it doesn't exist" do
+      context "when the PR doesn't exist" do
         before do
           stub_request(:post, "#{repo_api_url}/pulls")
             .to_return(status: 422,
@@ -888,7 +888,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           .with(body: '["wontfix"]')
       end
 
-      context "when it doesn't exist" do
+      context "when the label doesn't exist" do
         let(:custom_labels) { ["non-existent"] }
 
         # Alternatively we could create the label (current choice isn't fixed)
@@ -939,7 +939,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           ).with(body: { reviewers: ["greysteil"], team_reviewers: [] }.to_json)
       end
 
-      context "when it can't be added" do
+      context "when the reviewer can't be added" do
         before do
           stub_request(:post, "#{repo_api_url}/pulls/1347/requested_reviewers")
             .to_return(status: 422,
@@ -1029,7 +1029,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           ).with(body: { milestone: 5 }.to_json)
       end
 
-      context "when it can't be specified for some reason" do
+      context "when the milestone can't be specified for some reason" do
         before do
           stub_request(:patch, "#{repo_api_url}/issues/1347")
             .to_return(status: 422,
