@@ -1050,6 +1050,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
           context "when raise_on_ignored is enabled" do
             let(:raise_on_ignored) { true }
+
             it "doesn't raise an error" do
               expect { local_tag_for_latest_version }.to_not raise_error
             end
