@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
 
-      context "when the minimum version of which is invalid" do
+      context "when the minimum version is invalid" do
         let(:dependency_version) { "4.2.0" }
         let(:string_req) { "4.2.0" }
 

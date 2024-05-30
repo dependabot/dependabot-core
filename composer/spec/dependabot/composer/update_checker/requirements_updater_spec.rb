@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
 
           its([:requirement]) { is_expected.to eq(composer_json_req_string) }
 
-          context "when it specifies a numeric version" do
+          context "when the alias is numeric" do
             let(:composer_json_req_string) { "1.2.0 as 1.0.0" }
 
             its([:requirement]) { is_expected.to eq("1.5.0 as 1.0.0") }

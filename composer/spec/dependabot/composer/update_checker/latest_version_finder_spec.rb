@@ -356,7 +356,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
               .with(basic_auth: %w(user pass))
           end
 
-          context "when it can't be parsed" do
+          context "when the auth.json file can't be parsed" do
             let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do

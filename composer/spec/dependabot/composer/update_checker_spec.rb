@@ -104,11 +104,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .to_return(status: 404)
       end
 
-      context "when that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         it { is_expected.to eq(Gem::Version.new("3.2.0")) }
       end
 
-      context "when that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
         let(:dependency_version) { "1.0.1" }
         let(:requirements) do
@@ -300,11 +300,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .to_return(status: 404)
       end
 
-      context "when that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         it { is_expected.to be >= Gem::Version.new("1.22.0") }
       end
 
-      context "when that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
         let(:dependency_version) { "1.0.1" }
         let(:requirements) do

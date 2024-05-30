@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     it { is_expected.to include "\"prefer-stable\":false" }
 
     context "when an old version of PHP is specified" do
-      context "when as a platform requirement" do
+      context "when the version is specified as a platform requirement" do
         let(:project_name) { "old_php_platform" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     context "when an environment variable is required (composer v1)" do
       let(:project_name) { "v1/env_variable" }
 
-      context "when it hasn't been provided" do
+      context "when the variable hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
           expect { updated_lockfile_content }.to raise_error do |error|
             expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
@@ -281,7 +281,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "when it has been provided" do
+      context "when the variable has been provided" do
         let(:updater) do
           described_class.new(
             dependency_files: files,
@@ -311,7 +311,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     context "when an environment variable is required (composer v2)" do
       let(:project_name) { "env_variable" }
 
-      context "when it hasn't been provided" do
+      context "when the variable hasn't been provided" do
         it "does not attempt to download and has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"5.9.2\"")
         end
@@ -408,7 +408,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           .to include("22bde7b048a33c702d9737fc1446234fff9b1363")
       end
 
-      context "when limited by a library's PHP version" do
+      context "when the sub dependency is limited by a library's PHP version" do
         let(:project_name) { "php_specified_in_library" }
 
         let(:dependency) do

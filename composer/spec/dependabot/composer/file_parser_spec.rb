@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Composer::FileParser do
           )
         end
 
-        context "when specified as an alias" do
+        context "when the requirement specified as an alias" do
           let(:project_name) { "git_source_alias" }
 
           its(:requirements) do
