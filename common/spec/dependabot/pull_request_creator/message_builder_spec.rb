@@ -8,6 +8,8 @@ require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/message_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
+  subject(:message_builder) { builder }
+
   let(:builder) do
     described_class.new(
       source: source,
@@ -3482,8 +3484,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     its(:pr_message) { is_expected.to eq(pr_message) }
     its(:commit_message) { is_expected.to eq(commit_message) }
   end
-
-  subject(:message_builder) { builder }
 
   describe "#truncate_pr_message" do
     context "when pr_message_max_length is not provided" do

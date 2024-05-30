@@ -38,9 +38,9 @@ RSpec.describe Dependabot::Nuget::FileParser do
   end
 
   describe "parse" do
-    let(:dependencies) { parser.parse }
-
     subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+    let(:dependencies) { parser.parse }
 
     context "with a single project file" do
       before do

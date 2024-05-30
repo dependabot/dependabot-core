@@ -8,9 +8,9 @@ require "spec_helper"
 require "dependabot/workspace/git"
 
 RSpec.describe Dependabot::Workspace::Git do
-  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
-
   subject(:workspace) { described_class.new(repo_contents_path) }
+
+  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
 
   around do |example|
     Dir.chdir(repo_contents_path) { example.run }

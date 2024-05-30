@@ -6,6 +6,16 @@ require "dependabot/pull_request_creator/message_builder/metadata_presenter"
 
 namespace = Dependabot::PullRequestCreator::MessageBuilder
 RSpec.describe namespace::MetadataPresenter do
+  subject(:presenter) do
+    described_class.new(
+      dependency: dependency,
+      source: source,
+      metadata_finder: metadata_finder,
+      vulnerabilities_fixed: vulnerabilities_fixed,
+      github_redirection_service: github_redirection_service
+    )
+  end
+
   let(:source) do
     Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
   end
@@ -40,16 +50,6 @@ RSpec.describe namespace::MetadataPresenter do
   let(:vulnerabilities_fixed) { [] }
 
   let(:github_redirection_service) { "redirect.github.com" }
-
-  subject(:presenter) do
-    described_class.new(
-      dependency: dependency,
-      source: source,
-      metadata_finder: metadata_finder,
-      vulnerabilities_fixed: vulnerabilities_fixed,
-      github_redirection_service: github_redirection_service
-    )
-  end
 
   describe "#to_s" do
     context "with a changelog that requires truncation" do

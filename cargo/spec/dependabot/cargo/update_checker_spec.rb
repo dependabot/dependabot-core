@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
       expect(Dependabot::Cargo::UpdateChecker::VersionResolver)
@@ -242,7 +242,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end
 

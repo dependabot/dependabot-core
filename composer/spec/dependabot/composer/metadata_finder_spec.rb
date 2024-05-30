@@ -8,6 +8,10 @@ require "dependabot/composer/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Composer::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -20,9 +24,6 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
   end
   let(:requirements) do
     [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
-  end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
   end
 
   let(:credentials) do

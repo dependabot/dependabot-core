@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     before do
       allow(checker).to receive(:latest_resolvable_version)
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
@@ -351,7 +351,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         # This needs to changes to the Elixir helper
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
@@ -372,7 +372,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         # passes as long as we're intelligently timing out.
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
 
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
@@ -453,7 +453,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it "raises a helpful error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
 
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("dependabot")
             end
