@@ -1,9 +1,10 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/version"
 require "dependabot/utils"
 require "dependabot/docker/tag"
+require "sorbet-runtime"
 
 module Dependabot
   module Docker
@@ -13,10 +14,12 @@ module Dependabot
     # for a description of Java versions.
     #
     class Version < Dependabot::Version
+      extend T::Sig
       # The regex has limits for the 0,255 and 1,255 repetitions to avoid infinite limits which makes codeql angry.
       # A docker image cannot be longer than 255 characters anyways.
       DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]{0,255})[_\-v]?(?<version>.{1,255})$/
 
+      sig { params(version: String).void }
       def initialize(version)
         parsed_version = version.match(DOCKER_VERSION_REGEX)
         release_part, update_part = parsed_version[:version].split("_", 2)
@@ -31,6 +34,7 @@ module Dependabot
         super(@release_part)
       end
 
+      sig { params(version: String).returns(T::Boolean) }
       def self.correct?(version)
         return true if version.is_a?(Gem::Version)
 
