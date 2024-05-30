@@ -824,7 +824,7 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              if is_lfs_enabled(path.to_s)
+              if lfs_enabled?(path.to_s)
                 SharedHelpers.run_shell_command("git lfs install")
                 SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
               else
@@ -858,7 +858,7 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        lfs_enabled = is_lfs_enabled(path) if lfs_enabled.nil?
+        lfs_enabled = lfs_enabled?(path) if lfs_enabled.nil?
         SharedHelpers.run_shell_command("git-lfs-checkout") if lfs_enabled
         command_string = get_command_string(path, lfs_enabled)
         #  eep command_string
@@ -876,14 +876,15 @@ module Dependabot
       end
 
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
-      def is_lfs_enabled(path)
+      def lfs_enabled?(path)
         filepath = File.join(path, ".gitattributes")
-        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
-          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
-      rescue Exception => e
+        return T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+                                          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+                                            .include?("filter=lfs")
+      rescue StandardError => e
+        Dependabot.logger.warn("An error has occurred: #{e.message}")
         # this should not be needed, but I don't trust 'should'
-        lfs_enabled = T.let(false, T::Boolean)
-        raise e.exception("Message: #{e.message}")
+        return T.let(false, T::Boolean)
       end
 
       sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }

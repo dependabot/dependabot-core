@@ -173,12 +173,13 @@ module Dependabot
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
       def lfs_enabled?(path)
         filepath = File.join(path, ".gitattributes")
-        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
-          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
-      rescue Exception => e
+        return T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+                                          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+                                            .include?("filter=lfs")
+      rescue StandardError => e
+        Dependabot.logger.warn("An error has occurred: #{e.message}")
         # this should not be needed, but I don't trust 'should'
-        lfs_enabled = T.let(false, T::Boolean)
-        raise e.exception("Message: #{e.message}")
+        return T.let(false, T::Boolean)
       end
     end
   end
