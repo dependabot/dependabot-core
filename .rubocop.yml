@@ -19,6 +19,8 @@ AllCops:
   NewCops: enable
   TargetRubyVersion: 3.1
   SuggestExtensions: false
+ExpectActual:
+  Enabled: true
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
 Gemspec/DevelopmentDependencies:
