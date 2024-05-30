@@ -439,8 +439,9 @@ module Dependabot
           pull_request.number,
           assignees
         )
-      rescue Octokit::NotFound
-        # This can happen if a passed assignee login is now an org account
+      rescue Octokit::UnprocessableEntity, Octokit::NotFound
+        # Octokit::UnprocessableEntity - This can happen if an invalid assignee was passed
+        # Octokit::NotFound            - This can happen if a passed assignee login is now an org account
         nil
       end
 

@@ -512,7 +512,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         it "raises a helpful error" do
           expect { creator.create }
             .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists, /1347/)
-          expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/pulls")
+          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
         end
 
         context "when the PR isn't initially returned (a race)" do
@@ -586,7 +586,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               expect { creator.create }
                 .to raise_error(Dependabot::PullRequestCreator::BaseCommitNotUpToDate)
               expect(WebMock)
-                .to_not have_requested(:post, "#{repo_api_url}/pulls")
+                .not_to have_requested(:post, "#{repo_api_url}/pulls")
             end
 
             context "when the commit we're branching off of is up-to-date" do
@@ -858,7 +858,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock)
-          .to_not have_requested(:post, "#{repo_api_url}/labels")
+          .not_to have_requested(:post, "#{repo_api_url}/labels")
       end
 
       it "labels the PR correctly" do
@@ -877,7 +877,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         creator.create
 
         expect(WebMock)
-          .to_not have_requested(:post, "#{repo_api_url}/labels")
+          .not_to have_requested(:post, "#{repo_api_url}/labels")
       end
 
       it "labels the PR correctly" do
@@ -896,14 +896,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           creator.create
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/labels")
         end
 
         it "does not label the PR" do
           creator.create
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/issues/1347/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/issues/1347/labels")
         end
       end
 
@@ -1006,6 +1006,23 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           expect(WebMock)
             .to have_requested(:post, "#{repo_api_url}/issues/1347/assignees")
             .with(body: { assignees: ["greysteil"] }.to_json)
+        end
+      end
+
+      context "when GitHub returns a 422 Validation Failed" do
+        let(:assignees) { %w(greysteil nishnha) }
+
+        before do
+          stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
+            .to_return(status: 422)
+        end
+
+        it "quietly ignores the 422" do
+          expect { creator.create }.not_to raise_error
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/issues/1347/assignees")
+            .with(body: { assignees: %w(greysteil nishnha) }.to_json)
         end
       end
     end
