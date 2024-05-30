@@ -37,7 +37,7 @@ module Dependabot
         super(@release_part)
       end
 
-      sig { override.params(version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean) }
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         return true if version.is_a?(Gem::Version)
 
