@@ -19,7 +19,7 @@ module Dependabot
       # A docker image cannot be longer than 255 characters anyways.
       DOCKER_VERSION_REGEX = /^(?<prefix>[a-z._\-]{0,255})[_\-v]?(?<version>.{1,255})$/
 
-      sig { override.params(version: T.nilable(T.any(String, Integer, Gem::Version))).void }
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
         parsed_version = version.to_s.match(DOCKER_VERSION_REGEX)
         release_part, update_part = T.must(T.must(parsed_version)[:version]).split("_", 2)
