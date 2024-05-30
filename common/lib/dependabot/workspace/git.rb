@@ -13,7 +13,7 @@ module Dependabot
 
       USER = "dependabot[bot]"
       EMAIL = T.let("#{USER}@users.noreply.github.com".freeze, String)
-      lfsEnabled = nil
+      lfs_enabled = nil
 
       sig { returns(String) }
       attr_reader :initial_head_sha
@@ -23,7 +23,7 @@ module Dependabot
         super(path)
         @initial_head_sha = T.let(head_sha, String)
         configure_git
-        run_shell_command("git lfs install") if isLfsEnabled(path.to_s)
+        run_shell_command("git lfs install") if is_lfs_enabled(path.to_s)
       end
 
       sig { returns(T::Boolean) }
@@ -172,12 +172,12 @@ module Dependabot
       end
 
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
-      def isLfsEnabled(path)
+      def is_lfs_enabled(path)
         filepath = File.join(path,".gitattributes")
-        lfsEnabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
+        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
       rescue 
         # this should not be needed, but I don't trust 'should'
-        lfsEnabled = T.let(false, T::Boolean)
+        lfs_enabled = T.let(false, T::Boolean)
       end
 
     end

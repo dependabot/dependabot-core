@@ -824,7 +824,7 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              if isLfsEnabled(path.to_s)
+              if is_lfs_enabled(path.to_s)
                 SharedHelpers.run_shell_command("git lfs install")
                 SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
               else
@@ -858,9 +858,9 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        lfs_enabled = isLfsEnabled(path) if lfs_enabled.nil?
+        lfs_enabled = is_lfs_enabled(path) if lfs_enabled.nil?
         SharedHelpers.run_shell_command("git-lfs-checkout") if lfs_enabled
-        command_string = getCommandString(path,lfs_enabled)
+        command_string = get_command_string(path, lfs_enabled)
         #  eep command_string
         SharedHelpers.run_shell_command(command_string).split("\n").filter_map do |line|
           info = line.split
@@ -869,30 +869,31 @@ module Dependabot
           path = T.must(info.last)
           next path if type == DependencyFile::Mode::SUBMODULE
         end
-      rescue SharedHelpers::HelperSubprocessFailed => spf
+      rescue SharedHelpers::HelperSubprocessFailed => e
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfs_enabled
-        Dependabot.logger.error(spf.message)
-        raise 
+        Dependabot.logger.error(e.message)
+        raise e.exception("Message: #{error.message}")
       end
-      
+
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
-      def isLfsEnabled(path)
-        filepath = File.join(path,".gitattributes")
-        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
-      rescue 
+      def is_lfs_enabled(path)
+        filepath = File.join(path, ".gitattributes")
+        lfs_enabled = T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath)
+          && SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"").include?("filter=lfs")
+      rescue Exception => e
         # this should not be needed, but I don't trust 'should'
         lfs_enabled = T.let(false, T::Boolean)
+        raise e
       end
 
       sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }
-      def getCommandString(path,lfs_enabled)
+      def get_command_string(path, lfs_enabled)
         return "git -C #{path} ls-files --stage" unless lfs_enabled
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
         command_string = "cd #{path};git-lfs ls-files --stage"
         return command_string
       end
-
-    end 
-  end 
-end 
+    end
+  end
+end
 # rubocop:enable Metrics/ClassLength
