@@ -878,21 +878,21 @@ module Dependabot
       sig { params(path: String).returns(T.nilable(T::Boolean)) }
       def lfs_enabled?(path)
         filepath = File.join(path, ".gitattributes")
-        return T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+        T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
                                           SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
-                                            .include?("filter=lfs")
+                                                       .include?("filter=lfs")
       rescue StandardError => e
         Dependabot.logger.warn("An error has occurred: #{e.message}")
         # this should not be needed, but I don't trust 'should'
-        return T.let(false, T::Boolean)
+        T.let(false, T::Boolean)
       end
 
       sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }
       def get_command_string(path, lfs_enabled)
         return "git -C #{path} ls-files --stage" unless lfs_enabled
+
         Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
-        command_string = "cd #{path};git-lfs ls-files --stage"
-        return command_string
+        return "cd #{path};git-lfs ls-files --stage"
       end
     end
   end
