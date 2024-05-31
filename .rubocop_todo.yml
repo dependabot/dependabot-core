@@ -51,7 +51,6 @@ RSpec/BeforeAfterAll:
 # Prefixes: when, with, without
 RSpec/ContextWording:
   Exclude:
-    - 'go_modules/**/*'
     - 'gradle/**/*'
     - 'hex/**/*'
     - 'npm_and_yarn/**/*'
