@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Docker::Requirement do
       context "when using the current version" do
         let(:version) { Dependabot::Docker::Version.new("20.9.0-alpine3.18") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

@@ -408,7 +408,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
 
@@ -474,7 +474,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
   end
@@ -595,7 +595,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -605,7 +605,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
         let(:dependency_version) { "$(NukeVersion)" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         let(:dependency_requirements) { [] }
         let(:dependency_version) { "2.0.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
   end
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
           end
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "where not all dependencies can update to the latest version" do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(false)
           end
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "whose property couldn't be found" do
         let(:dependency_requirements) do
@@ -382,7 +382,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
         let(:dependency_version) { "$(NukeVersion)" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

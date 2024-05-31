@@ -421,7 +421,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       it "includes the path dependency's sub-dependency" do
         sub_dep = dependencies.find { |dep| dep.name == "i18n" }
         expect(sub_dep.requirements).to eq([])
-        expect(sub_dep.top_level?).to eq(false)
+        expect(sub_dep.top_level?).to be(false)
       end
 
       context "when that comes from a .specification file" do

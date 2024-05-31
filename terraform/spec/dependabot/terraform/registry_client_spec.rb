@@ -183,7 +183,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
 
     source = client.source(dependency: provider_dependency)
-    expect(source).to eq(nil)
+    expect(source).to be_nil
   end
 
   it "fetches the source for a provider from a custom registry", :vcr do
