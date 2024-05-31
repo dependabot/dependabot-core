@@ -465,7 +465,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           [Dependabot::Credential.new({
             "type" => "hex_organization",
             "organization" => "dependabot",
-            "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+            "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
           }), Dependabot::Credential.new({
             "type" => "hex_repository",
             "repo" => "dependabot",
