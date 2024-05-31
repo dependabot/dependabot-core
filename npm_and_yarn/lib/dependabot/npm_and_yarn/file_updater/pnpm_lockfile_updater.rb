@@ -66,8 +66,8 @@ module Dependabot
           end.join(" ")
 
           Helpers.run_pnpm_command(
-            "install #{dependency_updates} --lockfile-only",
-            fingerprint: "install <dependency_updates> --lockfile-only"
+            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
+            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
           )
         end
 
