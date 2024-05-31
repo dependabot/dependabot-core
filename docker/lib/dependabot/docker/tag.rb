@@ -128,7 +128,7 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        T.must(version).gsub(/kb/i, "").gsub(/-[a-z]+/, "").downcase
+        version&.gsub(/kb/i, "").gsub(/-[a-z]+/, "").downcase
       end
 
       sig { returns(Integer) }
