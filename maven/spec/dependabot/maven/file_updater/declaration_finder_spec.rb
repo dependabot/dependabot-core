@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           .to eq("org.apache.httpcomponents")
       end
 
-      context "that doesn't match this dependency's groups" do
+      context "when not matching this dependency's groups" do
         let(:groups) { [] }
 
         it { is_expected.to be_empty }
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         expect(declaration_node.at_css("groupId").content).to eq("org.jacoco")
       end
 
-      context "missing a groupId" do
+      context "when dealing with missing a groupId" do
         let(:pom_fixture_name) { "plugin_dependencies_missing_group_id.xml" }
         let(:dependency_name) do
           "org.apache.maven.plugins:spring-boot-maven-plugin"
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           .to eq("org.apache.maven.plugins")
       end
 
-      context "where the versions are identical" do
+      context "when the versions are identical" do
         let(:pom_fixture_name) { "repeated_pom_identical.xml" }
 
         it "finds the declaration" do
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
             .to eq("org.apache.maven.plugins")
         end
 
-        context "but differ by distribution type" do
+        context "with that differs by distribution type" do
           let(:pom_fixture_name) { "repeated_pom_multiple_types.xml" }
 
           it "finds the declaration" do
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
             expect(declaration_nodes.first.at_css("type")).to be_nil
           end
 
-          context "looking for the bespoke type" do
+          context "when looking for the bespoke type" do
             let(:dependency_metadata) { { packaging_type: "test-jar" } }
 
             it "finds the declaration" do
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           .to eq("${project.groupId}")
       end
 
-      context "that is missing for an unrelated dependency" do
+      context "when missing for an unrelated dependency" do
         let(:dependency_files) { [pom] }
         let(:pom) do
           Dependabot::DependencyFile.new(

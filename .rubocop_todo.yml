@@ -53,7 +53,6 @@ RSpec/ContextWording:
   Exclude:
     - 'gradle/**/*'
     - 'hex/**/*'
-    - 'maven/**/*'
     - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
 
