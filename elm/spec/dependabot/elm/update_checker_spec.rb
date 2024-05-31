@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           .to_return(status: 200, body: elm_package_response)
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it "is true" do
         pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
-        is_expected.to eq(true)
+        is_expected.to be(true)
       end
     end
 
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           .to_return(status: 200, body: elm_package_response)
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
