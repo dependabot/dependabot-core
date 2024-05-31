@@ -100,7 +100,7 @@ module Dependabot
 
       sig { returns T.nilable(String) }
       def version
-        T.must(name.match(NAME_WITH_VERSION)).named_captures.fetch("version")
+        name.match(NAME_WITH_VERSION)&.named_captures.fetch("version")
       end
 
       sig { returns(Symbol) }
