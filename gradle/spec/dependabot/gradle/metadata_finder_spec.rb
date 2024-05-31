@@ -11,8 +11,20 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:dependency_groups) { [] }
+  let(:dependency_source) do
+    { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
+  end
+  let(:dependency_version) { "23.3-jre" }
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,20 +39,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
-  let(:dependency_source) do
-    { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
-  end
-  let(:dependency_groups) { [] }
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

@@ -11,20 +11,34 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:registry_base) { "https://registry.npmjs.org" }
-  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
-  let(:registry_response) do
-    fixture("npm_responses", "#{escaped_dependency_name}.json")
+  let(:dependency_version) { "1.0.0" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: [
+        { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
+      ],
+      package_manager: "npm_and_yarn"
+    )
   end
-  before do
-    stub_request(:get, registry_listing_url)
-      .to_return(status: 200, body: registry_response)
-    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
-      .to_return(status: 200)
+  let(:target_version) { "1.7.0" }
+  let(:unscoped_dependency_name) { dependency_name.split("/").last }
+  let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
+  let(:dependency_name) { "etag" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
   end
-
+  let(:options) { {} }
+  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -36,36 +50,20 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       options: options
     )
   end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-  let(:options) { {} }
-
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+  let(:registry_response) do
+    fixture("npm_responses", "#{escaped_dependency_name}.json")
   end
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
+  let(:registry_base) { "https://registry.npmjs.org" }
 
-  let(:dependency_name) { "etag" }
-  let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
-  let(:unscoped_dependency_name) { dependency_name.split("/").last }
-  let(:target_version) { "1.7.0" }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: [
-        { file: "package.json", requirement: "^1.0.0", groups: [], source: nil }
-      ],
-      package_manager: "npm_and_yarn"
-    )
+  it_behaves_like "an update checker"
+
+  before do
+    stub_request(:get, registry_listing_url)
+      .to_return(status: 200, body: registry_response)
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
+      .to_return(status: 200)
   end
-  let(:dependency_version) { "1.0.0" }
 
   describe "#vulnerable?" do
     context "when the dependency has multiple versions" do

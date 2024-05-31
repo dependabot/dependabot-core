@@ -9,24 +9,8 @@ require "dependabot/go_modules/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  after do
-    # Reset to the default go toolchain after each test
-    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
-  end
-
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
-  let(:files) { [go_mod] }
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(
-      name: "go.mod",
-      content: go_mod_content,
-      directory: directory
-    )
-  end
-  let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
-  let(:go_mod_fixture_name) { "go.mod" }
+  let(:directory) { "/" }
+  let(:repo_contents_path) { nil }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -34,8 +18,24 @@ RSpec.describe Dependabot::GoModules::FileParser do
       directory: directory
     )
   end
-  let(:repo_contents_path) { nil }
-  let(:directory) { "/" }
+  let(:go_mod_fixture_name) { "go.mod" }
+  let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
+  let(:go_mod) do
+    Dependabot::DependencyFile.new(
+      name: "go.mod",
+      content: go_mod_content,
+      directory: directory
+    )
+  end
+  let(:files) { [go_mod] }
+  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+
+  it_behaves_like "a dependency file parser"
+
+  after do
+    # Reset to the default go toolchain after each test
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+  end
 
   it "requires a go.mod to be present" do
     expect do

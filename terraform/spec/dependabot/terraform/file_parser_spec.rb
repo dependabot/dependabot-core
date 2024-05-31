@@ -16,10 +16,18 @@ RSpec.describe Dependabot::Terraform::FileParser do
     )
   end
 
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
+  let(:files) { project_dependency_files("registry") }
+  let(:file_parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source
+    )
+  end
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
+  let(:files) { [] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "#parse" do
     subject(:dependencies) { parser.parse }
@@ -931,16 +939,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
   end
-
-  let(:file_parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source
-    )
-  end
-
-  let(:files) { project_dependency_files("registry") }
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
   describe "#source_type" do
     subject(:source_type) { file_parser.send(:source_type, source_string) }

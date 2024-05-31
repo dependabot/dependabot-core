@@ -10,31 +10,6 @@ require "dependabot/github_actions/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GithubActions::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-  let(:files) { [workflow_file] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:workflow_file) do
-    Dependabot::DependencyFile.new(
-      content: workflow_file_body,
-      name: ".github/workflows/workflow.yml"
-    )
-  end
-  let(:workflow_file_body) { fixture("workflow_files", "workflow.yml") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "actions/setup-node",
@@ -67,6 +42,31 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       package_manager: "github_actions"
     )
   end
+  let(:workflow_file_body) { fixture("workflow_files", "workflow.yml") }
+  let(:workflow_file) do
+    Dependabot::DependencyFile.new(
+      content: workflow_file_body,
+      name: ".github/workflows/workflow.yml"
+    )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:files) { [workflow_file] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
