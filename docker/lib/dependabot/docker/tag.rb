@@ -8,8 +8,6 @@ module Dependabot
   module Docker
     class Tag
       extend T::Sig
-      extend T::Helpers
-
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[0-9]+)*(?:_[0-9]+|\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
@@ -39,7 +37,7 @@ module Dependabot
         name.match?(FileParser::DIGEST)
       end
 
-      sig { returns(T::Boolean) }
+      sig { returns(T.nilable(T::Boolean)) }
       def looks_like_prerelease?
         numeric_version&.match?(/[a-zA-Z]/)
       end
@@ -77,30 +75,30 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Boolean) }
+      sig { returns(T.nilable(T::Boolean)) }
       def canonical?
         return false unless numeric_version
         return true if name == numeric_version
 
         # .NET tags are suffixed with -sdk
-        return true if numberic_version && name == numeric_version + "-sdk"
+        return true if numeric_version && name == numeric_version.to_s + "-sdk"
 
-        numeric_version && name == "jdk-" + numeric_version
+        numeric_version && name == "jdk-" + T.must(numeric_version)
       end
 
       sig { returns T.nilable(String) }
       def prefix
-        name.match(NAME_WITH_VERSION)&.named_captures.fetch("prefix")
+        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("prefix")
       end
 
       sig { returns T.nilable(String) }
       def suffix
-        name.match(NAME_WITH_VERSION)&.named_captures.fetch("suffix")
+        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("suffix")
       end
 
       sig { returns T.nilable(String) }
       def version
-        name.match(NAME_WITH_VERSION)&.named_captures.fetch("version")
+        name.match(NAME_WITH_VERSION)&.named_captures&.fetch("version")
       end
 
       sig { returns(Symbol) }
@@ -128,7 +126,7 @@ module Dependabot
       def numeric_version
         return unless comparable?
 
-        version&.gsub(/kb/i, "").gsub(/-[a-z]+/, "").downcase
+        version&.gsub(/kb/i, "")&.gsub(/-[a-z]+/, "")&.downcase
       end
 
       sig { returns(Integer) }
