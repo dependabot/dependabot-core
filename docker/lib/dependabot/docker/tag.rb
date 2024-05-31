@@ -85,7 +85,7 @@ module Dependabot
         # .NET tags are suffixed with -sdk
         return true if numberic_version && name == numeric_version + "-sdk"
 
-        name == "jdk-" + T.must(numeric_version)
+        numeric_version && name == "jdk-" + numeric_version
       end
 
       sig { returns T.nilable(String) }
