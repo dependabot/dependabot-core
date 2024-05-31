@@ -235,9 +235,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          let(:project_name) { "go_sum" }
-
           subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+          let(:project_name) { "go_sum" }
 
           it "adds new entries to the go.sum" do
             is_expected
@@ -811,9 +811,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#updated_go_sum_content" do
-    let(:project_name) { "go_sum" }
-
     subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+    let(:project_name) { "go_sum" }
 
     context "for a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }

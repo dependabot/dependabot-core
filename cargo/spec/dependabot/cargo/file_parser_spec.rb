@@ -264,10 +264,10 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
 
         context "with an override (specified as a patch)" do
+          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
           let(:manifest_fixture_name) { "workspace_root_with_patch" }
           let(:lockfile_fixture_name) { "workspace_with_patch" }
-
-          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
           it "excludes the patched dependency" do
             expect(top_level_dependencies.map(&:name)).to eq(["regex"])
