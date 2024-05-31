@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("2.7") }
 
-      context "when source can't be found" do
+      context "when the source can't be found" do
         before do
           stub_request(:get, struts_apps_maven_url)
             .to_return(status: 404, body: "")
