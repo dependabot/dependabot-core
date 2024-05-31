@@ -142,7 +142,7 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.base_commit_sha).to eql("mock-sha")
         expect(snapshot.dependency_files).to all(be_a(Dependabot::DependencyFile))
         expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
-        expect(snapshot.dependencies.count).to eql(2)
+        expect(snapshot.dependencies.count).to be(2)
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
         expect(snapshot.dependencies.map(&:name)).to eql(%w(dummy-pkg-a dummy-pkg-b))
       end
@@ -163,15 +163,15 @@ RSpec.describe Dependabot::DependencySnapshot do
       it "correctly instantiates any configured dependency groups" do
         snapshot = create_dependency_snapshot
 
-        expect(snapshot.groups.length).to eql(1)
+        expect(snapshot.groups.length).to be(1)
 
         group = snapshot.groups.last
 
         expect(group.name).to eql("group-a")
-        expect(group.dependencies.length).to eql(1)
+        expect(group.dependencies.length).to be(1)
         expect(group.dependencies.first.name).to eql("dummy-pkg-a")
 
-        expect(snapshot.ungrouped_dependencies.length).to eql(2)
+        expect(snapshot.ungrouped_dependencies.length).to be(2)
 
         snapshot.add_handled_dependencies(group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name)
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.base_commit_sha).to eql("mock-sha")
         expect(snapshot.dependency_files).to all(be_a(Dependabot::DependencyFile))
         expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
-        expect(snapshot.dependencies.count).to eql(2)
+        expect(snapshot.dependencies.count).to be(2)
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
         expect(snapshot.allowed_dependencies.map(&:name)).to eql(%w(dummy-pkg-a))
       end
