@@ -108,7 +108,7 @@ RSpec/FilePath:
 # Offense count: 56
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/HooksBeforeExamples:
-  Enabled: false
+  Enabled: true
 
 # Offense count: 213
 # This cop supports safe autocorrection (--autocorrect).

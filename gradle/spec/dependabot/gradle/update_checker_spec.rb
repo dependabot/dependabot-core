@@ -9,6 +9,11 @@ require "dependabot/gradle/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Gradle::UpdateChecker do
+  before do
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
+  end
+
   it_behaves_like "an update checker"
 
   let(:maven_central_metadata_url) do
@@ -18,11 +23,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   let(:version_class) { Dependabot::Gradle::Version }
   let(:maven_central_releases) do
     fixture("maven_central_metadata", "with_release.xml")
-  end
-
-  before do
-    stub_request(:get, maven_central_metadata_url)
-      .to_return(status: 200, body: maven_central_releases)
   end
 
   let(:checker) do

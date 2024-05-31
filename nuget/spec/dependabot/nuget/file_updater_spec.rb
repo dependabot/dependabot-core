@@ -16,6 +16,14 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     config.include(NuGetSearchStubs)
   end
 
+  before do
+    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
+                       "microsoft.extensions.dependencymodel/1.0.0/" \
+                       "microsoft.extensions.dependencymodel.nuspec")
+      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
+  end
+
   it_behaves_like "a dependency file updater"
 
   let(:file_updater_instance) do
@@ -64,14 +72,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
-
-  before do
-    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
-                       "microsoft.extensions.dependencymodel/1.0.0/" \
-                       "microsoft.extensions.dependencymodel.nuspec")
-      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
-  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }

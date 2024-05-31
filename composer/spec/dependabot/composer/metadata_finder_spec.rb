@@ -12,6 +12,17 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+  before do
+    packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
+    stub_request(:get, packagist_url).to_return(status: 200, body: packagist_response)
+
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -39,17 +50,6 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
-  end
-
-  before do
-    packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
-    stub_request(:get, packagist_url).to_return(status: 200, body: packagist_response)
-
-    stub_request(:get, "https://example.com/status").to_return(
-      status: 200,
-      body: "Not GHES",
-      headers: {}
-    )
   end
 
   describe "#source_url" do

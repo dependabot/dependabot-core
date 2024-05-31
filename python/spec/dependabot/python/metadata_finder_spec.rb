@@ -12,6 +12,16 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+    stub_request(:get, "https://initd.org/status").to_return(status: 404)
+    stub_request(:get, "https://pypi.org/status").to_return(status: 404)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -38,16 +48,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
   end
   let(:dependency_name) { "luigi" }
   let(:version) { "1.0" }
-
-  before do
-    stub_request(:get, "https://example.com/status").to_return(
-      status: 200,
-      body: "Not GHES",
-      headers: {}
-    )
-    stub_request(:get, "https://initd.org/status").to_return(status: 404)
-    stub_request(:get, "https://pypi.org/status").to_return(status: 404)
-  end
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

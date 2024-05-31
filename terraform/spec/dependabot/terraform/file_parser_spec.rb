@@ -315,6 +315,14 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "when dealing with hcl2 files" do
       let(:files) { project_dependency_files("hcl2") }
 
+      before do
+        stub_request(:get, "https://unknown-git-repo-example.com/status").to_return(
+          status: 200,
+          body: "Not GHES",
+          headers: {}
+        )
+      end
+
       it "has the right source for the dependency" do
         expect(dependencies[0].requirements).to eq([{
           requirement: nil,
@@ -448,14 +456,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
             }
           }])
         end
-      end
-
-      before do
-        stub_request(:get, "https://unknown-git-repo-example.com/status").to_return(
-          status: 200,
-          body: "Not GHES",
-          headers: {}
-        )
       end
 
       context "with relative path" do

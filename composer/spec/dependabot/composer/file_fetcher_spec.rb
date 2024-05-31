@@ -6,29 +6,6 @@ require "dependabot/composer/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Composer::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:directory) { "/" }
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -53,6 +30,29 @@ RSpec.describe Dependabot::Composer::FileFetcher do
         body: fixture("github", "composer_lock_content.json"),
         headers: { "content-type" => "application/json" }
       )
+  end
+
+  it_behaves_like "a dependency file fetcher"
+
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:directory) { "/" }
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
 
   it "fetches the composer.json and composer.lock" do

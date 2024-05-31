@@ -9,6 +9,13 @@ require "dependabot/maven/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Maven::UpdateChecker do
+  before do
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
+    stub_request(:head, maven_central_version_files_url)
+      .to_return(status: 200)
+  end
+
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -65,13 +72,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/" \
       "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
-  end
-
-  before do
-    stub_request(:get, maven_central_metadata_url)
-      .to_return(status: 200, body: maven_central_releases)
-    stub_request(:head, maven_central_version_files_url)
-      .to_return(status: 200)
   end
 
   let(:pom) do

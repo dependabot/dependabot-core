@@ -6,6 +6,26 @@ require "dependabot/bundler/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Bundler::FileFetcher do
+  before do
+    stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "ruby_version_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+
+    stub_request(:get, File.join(url, ".tool-versions?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "tool_versions_content.json"),
+        headers: { "content-type" => "application/json" }
+      )
+  end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -28,26 +48,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
       "username" => "x-access-token",
       "password" => "token"
     }]
-  end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
-  before do
-    stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 200,
-        body: fixture("github", "ruby_version_content.json"),
-        headers: { "content-type" => "application/json" }
-      )
-
-    stub_request(:get, File.join(url, ".tool-versions?ref=sha"))
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 200,
-        body: fixture("github", "tool_versions_content.json"),
-        headers: { "content-type" => "application/json" }
-      )
   end
 
   context "with a directory" do

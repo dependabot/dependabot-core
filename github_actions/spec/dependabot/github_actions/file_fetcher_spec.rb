@@ -6,6 +6,8 @@ require "dependabot/github_actions/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GithubActions::FileFetcher do
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -29,8 +31,6 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       "password" => "token"
     }]
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with workflow files" do
     before do

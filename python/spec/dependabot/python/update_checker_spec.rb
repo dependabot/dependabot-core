@@ -10,11 +10,11 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Python::UpdateChecker do
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+
+  it_behaves_like "an update checker"
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }

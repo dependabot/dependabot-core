@@ -6,6 +6,10 @@ require "dependabot/pub/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Pub::FileFetcher do
+  after do
+    FileUtils.rm_rf(repo_contents_path)
+  end
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -23,10 +27,6 @@ RSpec.describe Dependabot::Pub::FileFetcher do
   let(:project_name) { "pinned_version" }
   let(:directory) { "/" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  after do
-    FileUtils.rm_rf(repo_contents_path)
-  end
 
   context "with pubspec.yaml and pubspec.lock" do
     it "fetches the  files" do

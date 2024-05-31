@@ -10,6 +10,15 @@ require "dependabot/config/update_config"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Docker::UpdateChecker do
+  before do
+    auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+    stub_request(:get, auth_url)
+      .and_return(status: 200, body: { token: "token" }.to_json)
+
+    stub_request(:get, repo_url + "tags/list")
+      .and_return(status: 200, body: registry_tags)
+  end
+
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -51,15 +60,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
   let(:registry_tags) { fixture("docker", "registry_tags", tags_fixture_name) }
   let(:tags_fixture_name) { "ubuntu_no_latest.json" }
-
-  before do
-    auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-    stub_request(:get, auth_url)
-      .and_return(status: 200, body: { token: "token" }.to_json)
-
-    stub_request(:get, repo_url + "tags/list")
-      .and_return(status: 200, body: registry_tags)
-  end
 
   def stub_tag_with_no_digest(tag)
     stub_request(:head, repo_url + "manifests/#{tag}")

@@ -6,6 +6,16 @@ require "dependabot/maven/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Maven::FileFetcher do
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+  end
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -68,16 +78,6 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
       it { is_expected.to be(false) }
     end
-  end
-
-  before do
-    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
-    stub_request(:get, File.join(url, ".mvn?ref=sha"))
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 404
-      )
   end
 
   context "with a basic pom" do

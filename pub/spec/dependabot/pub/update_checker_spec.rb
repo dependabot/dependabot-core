@@ -12,20 +12,11 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Pub::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  before(:all) do
-    # Because we do the networking in dependency_services we have to run an
-    # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
-    Thread.new do
-      @server.start
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
     end
-  end
-
-  after(:all) do
-    @server.shutdown
   end
 
   before do
@@ -40,12 +31,21 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  after do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
+  after(:all) do
+    @server.shutdown
+  end
+
+  before(:all) do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    dev_null = WEBrick::Log.new("/dev/null", 7)
+    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
+    Thread.new do
+      @server.start
     end
   end
+
+  it_behaves_like "an update checker"
 
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
   let(:sample) { "simple" }

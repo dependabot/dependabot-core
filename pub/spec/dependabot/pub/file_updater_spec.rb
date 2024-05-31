@@ -10,20 +10,11 @@ require "webrick"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Pub::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  before(:all) do
-    # Because we do the networking in dependency_services we have to run an
-    # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
-    Thread.new do
-      @server.start
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
     end
-  end
-
-  after(:all) do
-    @server.shutdown
   end
 
   before do
@@ -35,12 +26,21 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     end
   end
 
-  after do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
+  after(:all) do
+    @server.shutdown
+  end
+
+  before(:all) do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    dev_null = WEBrick::Log.new("/dev/null", 7)
+    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
+    Thread.new do
+      @server.start
     end
   end
+
+  it_behaves_like "a dependency file updater"
 
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
   let(:sample) { "simple" }

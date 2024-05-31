@@ -9,6 +9,18 @@ require "json"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Nuget::FileFetcher do
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".config?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+  end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -31,18 +43,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       "username" => "x-access-token",
       "password" => "token"
     }]
-  end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
-  before do
-    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-
-    stub_request(:get, File.join(url, ".config?ref=sha"))
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 404
-      )
   end
 
   context "with a .csproj" do

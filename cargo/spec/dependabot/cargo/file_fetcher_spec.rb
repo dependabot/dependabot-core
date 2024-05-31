@@ -6,32 +6,6 @@ require "dependabot/cargo/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Cargo::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-
-  let(:json_header) { { "content-type" => "application/json" } }
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
   before do
     stub_request(:get, url + "Cargo.toml?ref=sha")
       .with(headers: { "Authorization" => "token token" })
@@ -65,6 +39,32 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         headers: json_header
       )
   end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
+
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+
+  let(:json_header) { { "content-type" => "application/json" } }
 
   context "with a lockfile" do
     before do

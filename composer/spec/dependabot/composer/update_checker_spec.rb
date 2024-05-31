@@ -10,6 +10,11 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Composer::UpdateChecker do
+  before do
+    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
+    stub_request(:get, url).to_return(status: 200, body: packagist_response)
+  end
+
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -48,11 +53,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
-  end
-
-  before do
-    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
-    stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
 
   describe "#latest_version" do

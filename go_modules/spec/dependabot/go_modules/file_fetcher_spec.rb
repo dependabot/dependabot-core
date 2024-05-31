@@ -6,6 +6,12 @@ require "dependabot/go_modules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GoModules::FileFetcher do
+  after do
+    FileUtils.rm_rf(repo_contents_path)
+  end
+
+  after { FileUtils.rm_rf(repo_contents_path) }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:repo) { "dependabot-fixtures/go-modules-lib" }
@@ -19,17 +25,12 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     )
   end
   let(:repo_contents_path) { Dir.mktmpdir }
-  after { FileUtils.rm_rf(repo_contents_path) }
 
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: github_credentials,
                         repo_contents_path: repo_contents_path)
   end
   let(:directory) { "/" }
-
-  after do
-    FileUtils.rm_rf(repo_contents_path)
-  end
 
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name))

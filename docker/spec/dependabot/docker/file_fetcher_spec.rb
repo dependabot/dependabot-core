@@ -6,6 +6,8 @@ require "dependabot/docker/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Docker::FileFetcher do
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -33,8 +35,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       "password" => "token"
     }]
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with no Dockerfile or Kubernetes YAML file" do
     before do

@@ -9,6 +9,10 @@ require "dependabot/npm_and_yarn/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
+  before do
+    FileUtils.mkdir_p(tmp_path)
+  end
+
   it_behaves_like "a dependency file updater"
 
   let(:updater) do
@@ -59,10 +63,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
-
-  before do
-    FileUtils.mkdir_p(tmp_path)
-  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

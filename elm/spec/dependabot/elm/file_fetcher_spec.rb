@@ -6,6 +6,25 @@ require "dependabot/elm/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Elm::FileFetcher do
+  before do
+    stub_request(:get, url + "?ref=sha")
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "contents_elm_with_elm_package.json"),
+        headers: json_header
+      )
+    stub_request(:get, url + "elm-package.json?ref=sha")
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 200,
+        body: fixture("github", "contents_elm_package.json"),
+        headers: json_header
+      )
+  end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
@@ -29,25 +48,6 @@ RSpec.describe Dependabot::Elm::FileFetcher do
   end
 
   let(:json_header) { { "content-type" => "application/json" } }
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
-  before do
-    stub_request(:get, url + "?ref=sha")
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 200,
-        body: fixture("github", "contents_elm_with_elm_package.json"),
-        headers: json_header
-      )
-    stub_request(:get, url + "elm-package.json?ref=sha")
-      .with(headers: { "Authorization" => "token token" })
-      .to_return(
-        status: 200,
-        body: fixture("github", "contents_elm_package.json"),
-        headers: json_header
-      )
-  end
 
   context "with an elm.json" do
     before do

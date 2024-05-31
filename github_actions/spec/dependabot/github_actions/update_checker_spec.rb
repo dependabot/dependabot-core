@@ -8,6 +8,17 @@ require "dependabot/github_actions/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GithubActions::UpdateChecker do
+  before do
+    stub_request(:get, service_pack_url)
+      .to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", upload_pack_fixture),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
+
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -64,16 +75,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
-  end
-  before do
-    stub_request(:get, service_pack_url)
-      .to_return(
-        status: 200,
-        body: fixture("git", "upload_packs", upload_pack_fixture),
-        headers: {
-          "content-type" => "application/x-git-upload-pack-advertisement"
-        }
-      )
   end
 
   let(:upload_pack_fixture) { "setup-node" }

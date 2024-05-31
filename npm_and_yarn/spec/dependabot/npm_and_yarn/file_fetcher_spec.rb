@@ -6,30 +6,6 @@ require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-  let(:directory) { "/" }
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:json_header) { { "content-type" => "application/json" } }
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -57,6 +33,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         headers: json_header
       )
   end
+
+  it_behaves_like "a dependency file fetcher"
+
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:directory) { "/" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:json_header) { { "content-type" => "application/json" } }
 
   context "with .yarn data stored in git-lfs" do
     let(:source) do

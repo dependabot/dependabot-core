@@ -10,11 +10,11 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker do
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
+
+  it_behaves_like "an update checker"
 
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }

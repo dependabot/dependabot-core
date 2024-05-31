@@ -12,6 +12,15 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+  before do
+    # Not hosted on GitHub Enterprise Server
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -43,15 +52,6 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       "username" => "x-access-token",
       "password" => "token"
     }]
-  end
-
-  before do
-    # Not hosted on GitHub Enterprise Server
-    stub_request(:get, "https://example.com/status").to_return(
-      status: 200,
-      body: "Not GHES",
-      headers: {}
-    )
   end
 
   describe "#source_url" do

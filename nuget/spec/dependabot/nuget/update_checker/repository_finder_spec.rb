@@ -109,6 +109,11 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         ENV.delete("THIS_VARIABLE_DOES_NOT")
       end
 
+      after do
+        ENV.delete("THIS_VARIBLE_EXISTS")
+        ENV.delete("THIS_VARIABLE_DOES_NOT")
+      end
+
       it "contains the expected values and warns on unavailable" do
         repo = known_repositories[0]
         expect(repo[:url]).to eq("https://nuget.example.com/index.json")
@@ -118,11 +123,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
             The variable '%THIS_VARIABLE_DOES_NOT%' could not be expanded in NuGet.Config
           WARN
         )
-      end
-
-      after do
-        ENV.delete("THIS_VARIBLE_EXISTS")
-        ENV.delete("THIS_VARIABLE_DOES_NOT")
       end
     end
   end
