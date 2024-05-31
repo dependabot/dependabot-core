@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Hex::Requirement do
     subject { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
-      context "for the current version" do
+      context "when using the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
 
         it { is_expected.to eq(true) }
@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Hex::Requirement do
         end
       end
 
-      context "for an out-of-range version" do
+      context "when using an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
 
         it { is_expected.to eq(false) }
@@ -53,12 +53,12 @@ RSpec.describe Dependabot::Hex::Requirement do
     context "with a Hex::Version" do
       let(:version) { Dependabot::Hex::Version.new(version_string) }
 
-      context "for the current version" do
+      context "when using the current version" do
         let(:version_string) { "1.0.0" }
 
         it { is_expected.to eq(true) }
 
-        context "that includes a local version" do
+        context "when the specification includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
 
           it { is_expected.to eq(true) }
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Hex::Requirement do
 
           it { is_expected.to eq(false) }
 
-          context "that is satisfied by the version" do
+          context "when the specification is satisfied by the version" do
             let(:version_string) { "1.0.0+gc.2" }
 
             it { is_expected.to eq(true) }
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Hex::Requirement do
         end
       end
 
-      context "for an out-of-range version" do
+      context "when using an out-of-range version" do
         let(:version_string) { "0.9.0" }
 
         it { is_expected.to eq(false) }

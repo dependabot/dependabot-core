@@ -52,7 +52,6 @@ RSpec/BeforeAfterAll:
 RSpec/ContextWording:
   Exclude:
     - 'gradle/**/*'
-    - 'hex/**/*'
     - 'npm_and_yarn/**/*'
     - 'nuget/**/*'
 
