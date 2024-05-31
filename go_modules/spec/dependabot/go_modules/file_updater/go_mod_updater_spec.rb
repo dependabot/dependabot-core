@@ -815,7 +815,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
     let(:project_name) { "go_sum" }
 
-    context ""when dealing with a top level dependency"" do
+    context "when dealing with a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.4.0" }
       let(:dependency_previous_version) { "v1.4.0" }
