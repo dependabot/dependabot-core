@@ -168,20 +168,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
         end
 
         context "when there were multiple range specifications" do
-          let(:req_string) { "> 1.0.0, < 1.2.0" }
+          context "with `less than`" do
+            let(:req_string) { "> 1.0.0, < 1.2.0" }
 
-          its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
+            its([:requirement]) { is_expected.to eq("> 1.0.0, < 1.6.0") }
 
-          context "when already valid" do
-            let(:req_string) { "> 1.0.0, < 1.7.0" }
+            context "when already valid" do
+              let(:req_string) { "> 1.0.0, < 1.7.0" }
 
-            its([:requirement]) { is_expected.to eq(req_string) }
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when including a pre-release" do
+              let(:req_string) { ">=1.2.0, <1.4.0-dev" }
+
+              its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+            end
           end
 
-          context "when including a pre-release" do
-            let(:req_string) { ">=1.2.0, <1.4.0-dev" }
+          context "with `less than equal`" do
+            let(:req_string) { "> 1.0.0, <= 1.2.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
+            its([:requirement]) { is_expected.to eq("> 1.0.0, <= 1.5.0") }
+
+            context "when already valid" do
+              let(:req_string) { "> 1.0.0, <= 1.7.0" }
+
+              its([:requirement]) { is_expected.to eq(req_string) }
+            end
+
+            context "when including a pre-release" do
+              let(:req_string) { ">=1.2.0, <=1.4.0-dev" }
+
+              its([:requirement]) { is_expected.to eq(">=1.2.0, <=1.5.0") }
+            end
           end
         end
 

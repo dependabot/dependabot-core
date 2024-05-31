@@ -106,10 +106,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
 
     describe "#updated_requirements" do
-      subject { checker.updated_requirements }
+      subject(:updated_requirements) { checker.updated_requirements }
 
       it "does not update them" do
-        expect(subject.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
+        expect(updated_requirements.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
       end
     end
   end

@@ -7,11 +7,11 @@ require "spec_helper"
 require "dependabot/sentry/exception_sanitizer_processor"
 
 RSpec.describe ExceptionSanitizer do
+  subject { exception }
+
   let(:message) { "kaboom" }
   let(:exception) { instance_double(::Sentry::SingleExceptionInterface, value: message) }
   let(:event) { instance_double(::Sentry::ErrorEvent) }
-
-  subject { exception }
 
   before do
     allow(exception).to receive(:value=)

@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:group) { nil }
 
   describe "#latest_resolvable_version" do
-    subject { resolver.latest_resolvable_version }
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     context "with a yarn-berry project that sets an ENV variable in .yarnrc.yml" do
       let(:project_name) { "yarn_berry/env_variable" }
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       it "raises a Dependabot::MisconfiguredTooling error due to invalid .yarnrc.yml file" do
-        expect { subject }.to raise_error(Dependabot::MisconfiguredTooling)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
@@ -1791,10 +1791,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     describe "#dependency_updates_from_full_unlock resolves previous version" do
-      let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
       subject do
         resolver.dependency_updates_from_full_unlock.first[:previous_version]
       end
+
+      let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
 
       let(:latest_allowable_version) { Gem::Version.new("1.1.1") }
       let(:dependency) do
@@ -1829,11 +1830,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     describe "#latest_resolvable_previous_version" do
-      let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
-
       subject do
         resolver.latest_resolvable_previous_version(latest_allowable_version)
       end
+
+      let(:project_name) { "npm6/exact_version_requirements_no_lockfile" }
 
       describe "when version requirement is exact" do
         let(:latest_allowable_version) { Gem::Version.new("1.1.1") }

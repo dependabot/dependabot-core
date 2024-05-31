@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
 
-      context "the minimum version of which is invalid" do
+      context "when the minimum version is invalid" do
         let(:dependency_version) { "4.2.0" }
         let(:string_req) { "4.2.0" }
 
@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with an application using a ^ PHP constraint" do
-      context "the minimum version of which is invalid" do
+      context "when the minimum version is invalid" do
         let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
         let(:dependency_version) { "2.0.4" }
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    context "updating a subdependency that's not required anymore" do
+    context "when updating a subdependency that's not required anymore" do
       let(:project_name) { "subdependency_no_longer_required" }
       let(:requirements) { [] }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }

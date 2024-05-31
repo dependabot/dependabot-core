@@ -24,8 +24,6 @@ RSpec.describe Functions do
   end
 
   describe "#git_specs" do
-    let(:project_name) { "git_source" }
-
     subject(:git_specs) do
       in_tmp_folder do
         Functions.git_specs(
@@ -35,6 +33,8 @@ RSpec.describe Functions do
         )
       end
     end
+
+    let(:project_name) { "git_source" }
 
     def expect_specs(count)
       expect(git_specs.size).to eq(count)

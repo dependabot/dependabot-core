@@ -5,6 +5,8 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
+  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock) }
+
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -61,9 +63,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
-  before { FileUtils.mkdir_p(tmp_path)  }
-
-  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "errors" do
     context "with a dependency version that can't be found" do

@@ -42,7 +42,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
 
-    context "for a grouped update" do
+    context "when dealing with a grouped update" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }
       let(:dependency_previous_version) { "v1.4.0" }
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a top level dependency" do
+    context "when dealing with a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.4.0" }
       let(:dependency_previous_version) { "v1.4.0" }
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         it { is_expected.to eq(go_mod_content) }
       end
 
@@ -132,20 +132,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
 
-        context "for a go 1.11 go.mod" do
+        context "when dealing with a go 1.11 go.mod" do
           let(:project_name) { "go_1.11" }
 
           it { is_expected.to_not include("go 1.") }
           it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
         end
 
-        context "for a go 1.12 go.mod" do
+        context "when dealing with a go 1.12 go.mod" do
           let(:project_name) { "simple" }
 
           it { is_expected.to include("go 1.12") }
         end
 
-        context "for a go 1.13 go.mod" do
+        context "when dealing with a go 1.13 go.mod" do
           let(:project_name) { "go_1.13" }
 
           it { is_expected.to include("go 1.13") }
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           end
         end
 
-        context "for a go 1.17 go.mod" do
+        context "when dealing with a go 1.17 go.mod" do
           let(:project_name) { "go_1.17" }
 
           it { is_expected.to include("go 1.17") }
@@ -235,9 +235,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         context "with a go.sum" do
-          let(:project_name) { "go_sum" }
-
           subject(:updated_go_mod_content) { updater.updated_go_sum_content }
+
+          let(:project_name) { "go_sum" }
 
           it "adds new entries to the go.sum" do
             is_expected
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          context "renamed package name" do
+          context "when the package is renamed" do
             let(:project_name) { "renamed_package" }
             let(:dependency_name) { "github.com/googleapis/gnostic" }
             # OpenAPIV2 has been renamed to openapiv2 in this version
@@ -406,10 +406,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
                                                                                                     exit_status])
       end
 
-      it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
+      it {
+        expect do
+          updated_go_mod_content
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/)
+      }
     end
 
-    context "for an explicit indirect dependency" do
+    context "when dealing with an explicit indirect dependency" do
       let(:project_name) { "indirect" }
       let(:dependency_name) { "github.com/mattn/go-isatty" }
       let(:dependency_version) { "v0.0.4" }
@@ -417,7 +421,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       let(:requirements) { previous_requirements }
       let(:previous_requirements) { [] }
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         it { is_expected.to eq(go_mod_content) }
       end
 
@@ -431,7 +435,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for an implicit (vgo) indirect dependency" do
+    context "when dealing with an implicit (vgo) indirect dependency" do
       let(:dependency_name) { "rsc.io/sampler" }
       let(:dependency_version) { "v1.2.0" }
       let(:dependency_previous_version) { "v1.2.0" }
@@ -448,7 +452,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for an upgraded indirect dependency" do
+    context "when dealing with an upgraded indirect dependency" do
       let(:go_mod_fixture_name) { "upgraded_indirect_dependency.mod" }
       let(:dependency_name) { "github.com/gorilla/csrf" }
       let(:dependency_version) { "v1.7.0" }
@@ -473,7 +477,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a revision that does not exist" do
+    context "when dealing with a revision that does not exist" do
       # The go.mod file contains a reference to a revision of
       # google.golang.org/grpc that does not exist.
       let(:project_name) { "unknown_revision" }
@@ -502,7 +506,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a project that references a non-existing proxy" do
+    context "when dealing with a project that references a non-existing proxy" do
       let(:project_name) { "nonexisting_proxy" }
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }
@@ -587,7 +591,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a invalid pseudo version" do
+    context "when dealing with a invalid pseudo version" do
       let(:project_name) { "invalid_pseudo_version" }
       let(:dependency_name) do
         "rsc.io/quote"
@@ -619,7 +623,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for an unknown revision version" do
+    context "when dealing with an unknown revision version" do
       let(:project_name) { "unknown_revision_version" }
       let(:dependency_name) do
         "github.com/deislabs/oras"
@@ -807,11 +811,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#updated_go_sum_content" do
-    let(:project_name) { "go_sum" }
-
     subject(:updated_go_mod_content) { updater.updated_go_sum_content }
 
-    context "for a top level dependency" do
+    let(:project_name) { "go_sum" }
+
+    context "when dealing with a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.4.0" }
       let(:dependency_previous_version) { "v1.4.0" }
@@ -828,7 +832,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         let(:go_sum_content) { fixture("projects", project_name, "go.sum") }
 
         it { is_expected.to eq(go_sum_content) }
@@ -851,7 +855,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
         it { is_expected.not_to include(%(rsc.io/quote v1.4.0)) }
 
-        context "but tidying is disabled" do
+        context "when tidying is disabled" do
           let(:tidy) { false }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2)) }
@@ -860,7 +864,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "for a monorepo directory" do
+    context "when dealing with a monorepo directory" do
       let(:project_name) { "monorepo" }
       let(:directory) { "/cmd" }
 
@@ -887,7 +891,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
 
-    context "for a monorepo root" do
+    context "when dealing with a monorepo root" do
       let(:project_name) { "monorepo" }
 
       let(:dependency_name) { "rsc.io/qr" }
@@ -913,7 +917,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       it { is_expected.to include(%(rsc.io/quote v1.4.0)) }
     end
 
-    context "for an external path replacement" do
+    context "when dealing with an external path replacement" do
       let(:project_name) { "substituted" }
 
       let(:dependency_name) { "rsc.io/qr" }
@@ -939,7 +943,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#handle_subprocess_error" do
-    context "for a error caused by running out of disk space" do
+    context "when dealing with an error caused by running out of disk space" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.5.2" }
       let(:dependency_previous_version) { "v1.4.0" }
