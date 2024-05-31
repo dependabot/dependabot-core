@@ -84,12 +84,13 @@ module Dependabot
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
         dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
-      sig { params(parsed_from_line: T.untyped).returns(T.untyped) }
+
+      sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
       def version_from(parsed_from_line)
         parsed_from_line.fetch("tag") || parsed_from_line.fetch("digest")
       end
 
-      sig { params(parsed_from_line: T.untyped).returns(T::Hash[T.untyped, T.untyped]) }
+      sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T::Hash[String, T.nilable(String)]) }
       def source_from(parsed_from_line)
         source = {}
 
