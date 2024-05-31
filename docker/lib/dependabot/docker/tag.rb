@@ -106,9 +106,9 @@ module Dependabot
       sig { returns(Symbol) }
       def format
         return :sha_suffixed if name.match?(/(^|\-g?)[0-9a-f]{7,}$/)
-        return :year_month if T.must(version).match?(/^[12]\d{3}(?:[.\-]|$)/)
-        return :year_month_day if T.must(version).match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
-        return :build_num if T.must(version).match?(/^\d+$/)
+        return :year_month if version&.match?(/^[12]\d{3}(?:[.\-]|$)/)
+        return :year_month_day if version&.match?(/^[12](?:\d{5}|\d{7})(?:[.\-]|$)/)
+        return :build_num if version&.match?(/^\d+$/)
 
         # As an example, "21-ea-32", "22-ea-7", and "22-ea-jdk-nanoserver-1809"
         # are mapped to "<version>-ea-<build_num>", "<version>-ea-<build_num>",
