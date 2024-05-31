@@ -1012,17 +1012,34 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       context "when GitHub returns a 422 Validation Failed" do
         let(:assignees) { %w(greysteil nishnha) }
 
-        before do
-          stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
-            .to_return(status: 422)
+        context "with a known error message" do
+          before do
+            stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
+              .to_return(status: 422, body: "{\"Error summary:\":\"Could not add assignees: Something went wrong\"}")
+          end
+
+          it "quietly ignores the 422" do
+            expect { creator.create }.not_to raise_error
+
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/issues/1347/assignees")
+              .with(body: { assignees: %w(greysteil nishnha) }.to_json)
+          end
         end
 
-        it "quietly ignores the 422" do
-          expect { creator.create }.not_to raise_error
+        context "with an unknown error message" do
+          before do
+            stub_request(:post, "#{repo_api_url}/issues/1347/assignees")
+              .to_return(status: 422)
+          end
 
-          expect(WebMock)
-            .to have_requested(:post, "#{repo_api_url}/issues/1347/assignees")
-            .with(body: { assignees: %w(greysteil nishnha) }.to_json)
+          it "re-raises the error" do
+            expect { creator.create }.to raise_error(Dependabot::PullRequestCreator::AnnotationError)
+
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/issues/1347/assignees")
+              .with(body: { assignees: %w(greysteil nishnha) }.to_json)
+          end
         end
       end
     end
