@@ -93,7 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "when repo has a blank file: in the package-lock" do
+  context "when the repo has a blank file: in the package-lock" do
     before do
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
