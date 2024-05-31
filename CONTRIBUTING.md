@@ -17,7 +17,8 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 2. Get the [development environment running](README.md#getting-a-development-environment-running).
 3. Make your feature addition or bug fix.
 4. Add [tests for it](README.md#running-tests). This is important so we don't break it in a future version unintentionally.
-5. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
+5. Ensure your code is well-documented and easy to understand.
+6. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
 
 ## Project layout
 

@@ -120,9 +120,9 @@ module Dependabot
 
           has_glob = true
           dir = dir.delete_prefix("/")
-          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }
+          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
         end.flatten
-      end
+      end.uniq
 
       directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
