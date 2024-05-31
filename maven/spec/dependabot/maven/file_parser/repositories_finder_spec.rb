@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         end
       end
 
-      context "when dependency is in the parent POM" do
+      context "when the dependency is in the parent POM" do
         let(:dependency_files) { [base_pom, child_pom] }
         let(:child_pom) do
           Dependabot::DependencyFile.new(
