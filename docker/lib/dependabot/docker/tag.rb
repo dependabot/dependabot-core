@@ -95,7 +95,7 @@ module Dependabot
 
       sig { returns T.nilable(String) }
       def suffix
-        T.must(name.match(NAME_WITH_VERSION)).named_captures.fetch("suffix")
+        name.match(NAME_WITH_VERSION)&.named_captures.fetch("suffix")
       end
 
       sig { returns T.nilable(String) }
