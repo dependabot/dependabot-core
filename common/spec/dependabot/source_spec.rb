@@ -327,7 +327,7 @@ RSpec.describe Dependabot::Source do
       its(:organization) { is_expected.to eq("greysteil") }
       its(:project) { is_expected.to eq("dependabot-test") }
 
-      context "that specifies the project" do
+      context "when the url specifies the project" do
         let(:url) do
           "https://dev.azure.com/greysteil/dependabot-test/_git/test2"
         end
@@ -342,8 +342,9 @@ RSpec.describe Dependabot::Source do
   end
 
   describe "#url_with_directory" do
-    let(:source) { described_class.new(**attrs) }
     subject { source.url_with_directory }
+
+    let(:source) { described_class.new(**attrs) }
 
     let(:attrs) do
       {
@@ -380,19 +381,19 @@ RSpec.describe Dependabot::Source do
 
       it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
 
-      context "that is prefixed with ./" do
+      context "when the directory name prefixed with ./" do
         let(:directory) { "./lib/a" }
 
         it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
       end
 
-      context "that is prefixed with /" do
+      context "when the directory name prefixed with /" do
         let(:directory) { "/lib/a" }
 
         it { is_expected.to eq("https://github.com/my/repo/tree/HEAD/lib/a") }
       end
 
-      context "that is the root" do
+      context "when dealing with the root directory" do
         let(:directory) { "/" }
 
         it { is_expected.to eq("https://github.com/my/repo") }

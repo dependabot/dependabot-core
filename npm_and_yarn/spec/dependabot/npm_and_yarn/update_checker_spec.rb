@@ -348,9 +348,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-
     subject(:latest_version) { checker.latest_version }
+
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
     it "delegates to LatestVersionFinder" do
       expect(described_class::LatestVersionFinder).to receive(:new).with(
@@ -827,12 +827,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_resolvable_previous_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-    let(:updated_version) { Gem::Version.new("1.7.0") }
-
     subject(:latest_resolvable_previous_version) do
       checker.latest_resolvable_previous_version(updated_version)
     end
+
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:updated_version) { Gem::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
       dummy_version_resolver =

@@ -55,12 +55,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
   end
 
   context "api.nuget.org is not hit if it's not in the NuGet.Config" do
+    subject(:transitive_dependencies) { finder.transitive_dependencies }
+
     let(:dependency_version) { "42.42.42" }
     let(:nuget_config_body) { fixture("configs", "example.com_nuget.config") }
     let(:nuget_config) { Dependabot::DependencyFile.new(name: "NuGet.Config", content: nuget_config_body) }
     let(:dependency_files) { [csproj, nuget_config] }
-
-    subject(:transitive_dependencies) { finder.transitive_dependencies }
 
     def create_nupkg(nuspec_name, nuspec_fixture_path)
       content = Zip::OutputStream.write_buffer do |zio|

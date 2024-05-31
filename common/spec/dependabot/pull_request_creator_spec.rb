@@ -147,7 +147,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             creator.create
           end
 
-          context "one of which has a previous version, the other not" do
+          context "when one has a previous version, the other does not" do
             let(:dependencies) { [dependency, dependency_with_lock] }
             let(:dependency_with_lock) do
               Dependabot::Dependency.new(
@@ -374,10 +374,6 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a dependency group" do
-      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
-      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
-      let(:dummy_creator) { instance_double(described_class::Github) }
-
       subject(:creator_with_group) do
         described_class.new(
           source: source,
@@ -395,6 +391,10 @@ RSpec.describe Dependabot::PullRequestCreator do
           dependency_group: dependency_group
         )
       end
+
+      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
 
       it "delegates to PullRequestCreator::Github with correct params" do
         expect(described_class::Github)
