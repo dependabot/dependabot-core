@@ -173,9 +173,9 @@ RSpec.describe Dependabot::ApiClient do
             .with(headers: { "Authorization" => "token" })
             .with do |req|
               data = JSON.parse(req.body)["data"]
-              expect(data["dependencies"].first["removed"]).to eq(true)
-              expect(data["dependencies"].first.key?("version")).to eq(false)
-              expect(data["dependencies"].last.key?("removed")).to eq(false)
+              expect(data["dependencies"].first["removed"]).to be(true)
+              expect(data["dependencies"].first.key?("version")).to be(false)
+              expect(data["dependencies"].last.key?("removed")).to be(false)
               expect(data["dependencies"].last["version"]).to eq("1.8.0")
               true
             end)
