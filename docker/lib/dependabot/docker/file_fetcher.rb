@@ -56,30 +56,34 @@ module Dependabot
 
       sig { returns(T::Array[DependencyFile]) }
       def dockerfiles
-        @dockerfiles ||= T.let([], T.nilable(T::Array[T.untyped]))
-        @dockerfiles +=
-          repo_contents(raise_errors: false)
+        @dockerfiles ||= T.let(fetch_dockerfiles, T.nilable(T::Array[DependencyFile]))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_dockerfiles
+        repo_contents(raise_errors: false)
           .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
           .map { |f| fetch_file_from_host(f.name) }
       end
 
       sig { returns(T::Array[DependencyFile]) }
       def correctly_encoded_dockerfiles
-        dockerfiles.select { |f| T.must(f.content).valid_encoding? }
+        dockerfiles.select { |f| f.content&.valid_encoding? }
       end
 
       sig { returns(T::Array[DependencyFile]) }
       def incorrectly_encoded_dockerfiles
-        dockerfiles.reject { |f| T.must(f.content).valid_encoding? }
+        dockerfiles.reject { |f| f.content&.valid_encoding? }
       end
 
       sig { returns(T::Array[DependencyFile]) }
       def yamlfiles
-        @yamlfiles ||= T.let([], T.nilable(T::Array[T.untyped]))
-        @yamlfiles +=
+        @yamlfiles ||= T.let(
           repo_contents(raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
-          .map { |f| fetch_file_from_host(f.name) }
+                  .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+                  .map { |f| fetch_file_from_host(f.name) },
+          T.nilable(T::Array[DependencyFile])
+        )
       end
 
       sig { params(resource: T.untyped).returns(T.nilable(T::Boolean)) }
@@ -88,9 +92,9 @@ module Dependabot
         resource.is_a?(::Hash) && resource.key?("apiVersion") && resource.key?("kind")
       end
 
-      sig { returns(T::Array[DependencyFile]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
-        candidate_files = yamlfiles.select { |f| T.must(f.content).valid_encoding? }
+        candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
         candidate_files.select do |f|
           if f.type == "file" && Utils.likely_helm_chart?(f)
             true
@@ -105,7 +109,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[DependencyFile]) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def incorrectly_encoded_yamlfiles
         yamlfiles.reject { |f| T.must(f.content).valid_encoding? }
       end
