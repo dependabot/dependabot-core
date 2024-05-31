@@ -86,7 +86,7 @@ module Dependabot
         )
       end
 
-      sig { params(resource: T.untyped).returns(T.nilable(T::Boolean)) }
+      sig { params(resource: Object).returns(T.nilable(T::Boolean)) }
       def likely_kubernetes_resource?(resource)
         # Heuristic for being a Kubernetes resource. We could make this tighter but this probably works well.
         resource.is_a?(::Hash) && resource.key?("apiVersion") && resource.key?("kind")
