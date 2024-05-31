@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
         its([:value]) { is_expected.to eq("2.2.1") }
 
-        context "when property name is (case2)" do
+        context "when the property name is (case2)" do
           let(:property_name) { "jta-api-1.2-version" }
 
           its([:value]) { is_expected.to eq("1.2.1") }
