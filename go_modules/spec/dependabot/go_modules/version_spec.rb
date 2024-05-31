@@ -15,31 +15,31 @@ RSpec.describe Dependabot::GoModules::Version do
     context "with a string prefixed with a 'v'" do
       let(:version_string) { "v1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a string not prefixed with a 'v'" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an 'incompatible' suffix" do
       let(:version_string) { "v1.0.0+incompatible" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid string" do
       let(:version_string) { "va1.0.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with an empty string" do
       let(:version_string) { "" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -97,38 +97,38 @@ RSpec.describe Dependabot::GoModules::Version do
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an 'incompatible' suffix" do
       let(:version_string) { "1.0.0+incompatible" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a valid prerelease version" do
       let(:version_string) { "1.1.0-pre" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "prefixed with a 'v'" do
       context "with a greater version" do
         let(:version_string) { "v1.1.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "with an lesser version" do
         let(:version_string) { "v0.9.0" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

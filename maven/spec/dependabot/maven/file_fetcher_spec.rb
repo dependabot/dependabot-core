@@ -36,37 +36,37 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     context "with only a pom.xml" do
       let(:filenames) { %w(pom.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with pom.xml and any other valid .xml" do
       let(:filenames) { %w(pom.xml othermodule.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only an extensions.xml" do
       let(:filenames) { %w(extensions.xml) }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with an extensions.xml and a valid pom.xml file" do
       let(:filenames) { %w(extensions.xml pom.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a non .xml file" do
       let(:filenames) { %w(nonxml.txt) }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with no files passed" do
       let(:filenames) { %w() }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

@@ -345,7 +345,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
     context "when the version is resolvable" do
       let(:version) { Gem::Version.new("18.1.0") }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with a subdependency" do
         let(:dependency_name) { "pbr" }
@@ -353,14 +353,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_requirements) { [] }
         let(:version) { Gem::Version.new("5.1.3") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
     context "when the version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
 
       context "with a subdependency" do
         let(:manifest_fixture_name) { "requests.in" }
@@ -370,7 +370,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_requirements) { [] }
         let(:version) { Gem::Version.new("1.23") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "when the original manifest isn't resolvable" do

@@ -164,19 +164,19 @@ RSpec.describe Dependabot::Maven::Requirement do
       context "for the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "when the requirement includes a post-release" do
           let(:requirement_string) { ">=1.0.0u2" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
 
       context "for an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -188,25 +188,25 @@ RSpec.describe Dependabot::Maven::Requirement do
       context "for the current version" do
         let(:version_string) { "1.0.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "for a post-release version" do
           let(:version_string) { "1.0.0u2" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "for a pre-release string" do
           let(:requirement_string) { "1.0.0-alpha" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
 
       context "for an out-of-range version" do
         let(:version_string) { "0.9.0" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

@@ -131,7 +131,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
 
         context "that has URL versions (i.e., is from a bad version of npm)" do
