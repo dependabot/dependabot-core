@@ -111,7 +111,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def incorrectly_encoded_yamlfiles
-        yamlfiles.reject { |f| T.must(f.content).valid_encoding? }
+        yamlfiles.reject { |f| f.content&.valid_encoding? }
       end
     end
   end
