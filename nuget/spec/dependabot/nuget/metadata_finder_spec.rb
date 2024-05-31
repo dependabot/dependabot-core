@@ -11,8 +11,17 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:source) { nil }
+  let(:dependency_version) { "2.1.0" }
+  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,17 +36,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:dependency_version) { "2.1.0" }
-  let(:source) { nil }
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

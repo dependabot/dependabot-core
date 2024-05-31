@@ -8,22 +8,6 @@ require "dependabot/npm_and_yarn/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source,
-      credentials: credentials
-    )
-  end
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -32,6 +16,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       "password" => "token"
     })]
   end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

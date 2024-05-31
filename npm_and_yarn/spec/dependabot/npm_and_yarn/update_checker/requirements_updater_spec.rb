@@ -35,10 +35,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
 
-    specify { expect(updater.updated_requirements.count).to eq(1) }
-
-    let(:package_json_req_string) { "^1.0.0" }
     let(:latest_resolvable_version) { nil }
+    let(:package_json_req_string) { "^1.0.0" }
+
+    specify { expect(updater.updated_requirements.count).to eq(1) }
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }

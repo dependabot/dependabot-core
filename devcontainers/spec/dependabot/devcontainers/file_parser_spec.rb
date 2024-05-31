@@ -9,12 +9,11 @@ require "dependabot/devcontainers/requirement"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Devcontainers::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+  let(:dependencies) { parser.parse }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:files) do
+    project_dependency_files(project_name, directory: directory)
   end
-
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -22,14 +21,11 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       directory: directory
     )
   end
-
-  let(:files) do
-    project_dependency_files(project_name, directory: directory)
+  let(:parser) do
+    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-  let(:dependencies) { parser.parse }
+  it_behaves_like "a dependency file parser"
 
   shared_examples_for "parse" do
     it "parses dependencies fine" do

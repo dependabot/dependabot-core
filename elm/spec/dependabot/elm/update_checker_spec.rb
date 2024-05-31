@@ -8,8 +8,39 @@ require "dependabot/elm/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Elm::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:fixture_name) { "for_update_checking" }
+  let(:elm_package) do
+    Dependabot::DependencyFile.new(
+      content: fixture("elm_jsons", fixture_name),
+      name: "elm.json",
+      directory: directory
+    )
+  end
+  let(:string_req) { "1.0.0 <= v <= 2.2.0" }
+  let(:requirements) do
+    [{
+      file: "elm.json",
+      requirement: string_req,
+      groups: [],
+      source: nil
+    }]
+  end
+  let(:dependency_version) { "2.2.0" }
+  let(:dependency_name) { "realWorld/ElmPackage" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "elm"
+    )
+  end
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:credentials) { [] }
+  let(:directory) { "/" }
+  let(:github_token) { "token" }
+  let(:dependency_files) { [elm_package] }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -19,41 +50,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       raise_on_ignored: raise_on_ignored
     )
   end
-  let(:dependency_files) { [elm_package] }
-  let(:github_token) { "token" }
-  let(:directory) { "/" }
-  let(:credentials) { [] }
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "elm"
-    )
-  end
-  let(:dependency_name) { "realWorld/ElmPackage" }
-  let(:dependency_version) { "2.2.0" }
-  let(:requirements) do
-    [{
-      file: "elm.json",
-      requirement: string_req,
-      groups: [],
-      source: nil
-    }]
-  end
-  let(:string_req) { "1.0.0 <= v <= 2.2.0" }
-
-  let(:elm_package) do
-    Dependabot::DependencyFile.new(
-      content: fixture("elm_jsons", fixture_name),
-      name: "elm.json",
-      directory: directory
-    )
-  end
-  let(:fixture_name) { "for_update_checking" }
+  it_behaves_like "an update checker"
 
   describe "up_to_date?" do
     subject { checker.up_to_date? }

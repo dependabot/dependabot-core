@@ -9,8 +9,52 @@ require "dependabot/maven/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Maven::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
+  end
+  let(:maven_central_version_files_url) do
+    "https://repo.maven.apache.org/maven2/" \
+      "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+  end
+  let(:maven_central_releases) do
+    fixture("maven_central_metadata", "with_release.xml")
+  end
+  let(:version_class) { Dependabot::Maven::Version }
+  let(:maven_central_metadata_url) do
+    "https://repo.maven.apache.org/maven2/" \
+      "com/google/guava/guava/maven-metadata.xml"
+  end
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:dependency_files) { [pom] }
+  let(:dependency_version) { "23.3-jre" }
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:dependency_requirements) do
+    [{
+      file: "pom.xml",
+      requirement: "23.3-jre",
+      groups: [],
+      metadata: { packaging_type: "jar" },
+      source: nil
+    }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "maven"
+    )
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -21,51 +65,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     )
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "maven"
-    )
-  end
-  let(:dependency_requirements) do
-    [{
-      file: "pom.xml",
-      requirement: "23.3-jre",
-      groups: [],
-      metadata: { packaging_type: "jar" },
-      source: nil
-    }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
-
-  let(:dependency_files) { [pom] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
-  let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/maven-metadata.xml"
-  end
-  let(:version_class) { Dependabot::Maven::Version }
-  let(:maven_central_releases) do
-    fixture("maven_central_metadata", "with_release.xml")
-  end
-
-  let(:maven_central_version_files_url) do
-    "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
-  end
+  it_behaves_like "an update checker"
 
   before do
     stub_request(:get, maven_central_metadata_url)
@@ -73,11 +73,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     stub_request(:head, maven_central_version_files_url)
       .to_return(status: 200)
   end
-
-  let(:pom) do
-    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
 
   describe "#latest_version" do
     subject { checker.latest_version }

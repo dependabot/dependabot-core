@@ -9,23 +9,28 @@ require "dependabot/npm_and_yarn/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: dependencies,
-      credentials: credentials,
-      repo_contents_path: repo_contents_path
-    )
+  let(:repo_contents_path) { nil }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:source) { nil }
+  let(:previous_requirements) do
+    [{
+      file: "package.json",
+      requirement: "^0.0.1",
+      groups: ["dependencies"],
+      source: source
+    }]
   end
-  let(:dependencies) { [dependency] }
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com"
-    })]
+  let(:requirements) do
+    [{
+      file: "package.json",
+      requirement: "^0.0.2",
+      groups: ["dependencies"],
+      source: nil
+    }]
   end
+  let(:previous_version) { "0.0.1" }
+  let(:version) { "0.0.2" }
+  let(:dependency_name) { "fetch-factory" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -36,29 +41,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       package_manager: "npm_and_yarn"
     )
   end
-  let(:dependency_name) { "fetch-factory" }
-  let(:version) { "0.0.2" }
-  let(:previous_version) { "0.0.1" }
-  let(:requirements) do
-    [{
-      file: "package.json",
-      requirement: "^0.0.2",
-      groups: ["dependencies"],
-      source: nil
-    }]
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com"
+    })]
   end
-  let(:previous_requirements) do
-    [{
-      file: "package.json",
-      requirement: "^0.0.1",
-      groups: ["dependencies"],
-      source: source
-    }]
+  let(:dependencies) { [dependency] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: dependencies,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
-  let(:source) { nil }
 
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
-  let(:repo_contents_path) { nil }
+  it_behaves_like "a dependency file updater"
 
   before do
     FileUtils.mkdir_p(tmp_path)

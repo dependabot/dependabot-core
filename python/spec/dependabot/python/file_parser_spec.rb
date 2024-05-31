@@ -8,15 +8,16 @@ require "dependabot/python/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Python::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source,
-      reject_external_code: reject_external_code
+  let(:requirements_fixture_name) { "version_specified.txt" }
+  let(:requirements_body) { fixture("requirements", requirements_fixture_name) }
+  let(:requirements) do
+    Dependabot::DependencyFile.new(
+      name: "requirements.txt",
+      content: requirements_body
     )
   end
+  let(:files) { [requirements] }
+  let(:reject_external_code) { false }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -24,17 +25,15 @@ RSpec.describe Dependabot::Python::FileParser do
       directory: "/"
     )
   end
-  let(:reject_external_code) { false }
-
-  let(:files) { [requirements] }
-  let(:requirements) do
-    Dependabot::DependencyFile.new(
-      name: "requirements.txt",
-      content: requirements_body
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
     )
   end
-  let(:requirements_body) { fixture("requirements", requirements_fixture_name) }
-  let(:requirements_fixture_name) { "version_specified.txt" }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

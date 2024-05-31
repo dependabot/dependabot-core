@@ -10,8 +10,31 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Composer::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
+  end
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  let(:project_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:credentials) { github_credentials }
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.0.*", groups: [], source: nil }]
+  end
+  let(:dependency_version) { "1.0.1" }
+  let(:dependency_name) { "monolog/monolog" }
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "composer"
+    )
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -24,31 +47,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     )
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "composer"
-    )
-  end
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-  let(:dependency_name) { "monolog/monolog" }
-  let(:dependency_version) { "1.0.1" }
-  let(:requirements) do
-    [{ file: "composer.json", requirement: "1.0.*", groups: [], source: nil }]
-  end
-  let(:credentials) { github_credentials }
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "exact_version" }
-  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
-  let(:packagist_response) do
-    sanitized_name = dependency_name.downcase.gsub("/", "--")
-    fixture("packagist_responses", "#{sanitized_name}.json")
-  end
+  it_behaves_like "an update checker"
 
   before do
     url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"

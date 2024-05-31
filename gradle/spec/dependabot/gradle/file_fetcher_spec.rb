@@ -6,8 +6,20 @@ require "dependabot/gradle/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Gradle::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -15,9 +27,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       directory: directory
     )
   end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
+
+  it_behaves_like "a dependency file fetcher"
+
   def stub_content_request(path, fixture)
     stub_request(:get, File.join(url, path))
       .with(headers: { "Authorization" => "token token" })
@@ -26,17 +38,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         body: fixture("github", fixture),
         headers: { "content-type" => "application/json" }
       )
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
   end
 
   def stub_no_content_request(path)

@@ -8,30 +8,7 @@ require "dependabot/hex/version"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Hex::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [mixfile, lockfile] }
-  let(:mixfile) do
-    Dependabot::DependencyFile.new(
-      name: "mix.exs",
-      content: fixture("mixfiles", mixfile_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "mix.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:mixfile_fixture_name) { "minor_version" }
-  let(:lockfile_fixture_name) { "minor_version" }
-  let(:parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source,
-      reject_external_code: reject_external_code
-    )
-  end
+  let(:reject_external_code) { false }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -39,7 +16,30 @@ RSpec.describe Dependabot::Hex::FileParser do
       directory: "/"
     )
   end
-  let(:reject_external_code) { false }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
+  let(:lockfile_fixture_name) { "minor_version" }
+  let(:mixfile_fixture_name) { "minor_version" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:mixfile) do
+    Dependabot::DependencyFile.new(
+      name: "mix.exs",
+      content: fixture("mixfiles", mixfile_fixture_name)
+    )
+  end
+  let(:files) { [mixfile, lockfile] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
