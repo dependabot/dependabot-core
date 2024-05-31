@@ -41,7 +41,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def looks_like_prerelease?
-        T.must(numeric_version).match?(/[a-zA-Z]/)
+        numeric_version&.match?(/[a-zA-Z]/)
       end
 
       sig { params(other: Tag).returns(T::Boolean) }
