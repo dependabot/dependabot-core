@@ -13,7 +13,7 @@ module Dependabot
   module Docker
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
-      extend T::Helpers
+
       require "dependabot/file_parsers/base/dependency_set"
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
@@ -188,7 +188,7 @@ module Dependabot
         dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
-      sig { params(img_hash: T.untyped).returns(T::Array[T.untyped]) }
+      sig { params(img_hash: T::Hash[String, T.nilable(String)]).returns(T::Array[String]) }
       def parse_helm(img_hash)
         tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
         return [] unless tag_value
@@ -196,7 +196,7 @@ module Dependabot
         repo = img_hash.fetch("repository", nil)
         return [] unless repo
 
-        tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
+        tag_details = T.must(tag_value.to_s.match(TAG_WITH_DIGEST)).named_captures
         tag = tag_details["tag"]
         return [repo] unless tag
 
