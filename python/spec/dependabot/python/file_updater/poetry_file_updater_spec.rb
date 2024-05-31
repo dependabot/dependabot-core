@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
-      context "that's indented" do
+      context "when dealing with indented" do
         let(:pyproject_fixture_name) { "indented.toml" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
-      context "specifying table style dependencies" do
+      context "when specifying table style dependencies" do
         let(:pyproject_fixture_name) { "table.toml" }
         let(:dependency_name) { "isort" }
         let(:dependency) do
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
-      context "specifying table style dependencies with version as the last field" do
+      context "when specifying table style dependencies with version as the last field" do
         let(:pyproject_fixture_name) { "table_version_last.toml" }
         let(:dependency_name) { "isort" }
         let(:dependency) do
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         end
       end
 
-      context "specifying table style dependencies with version conflicting with other deps" do
+      context "when specifying table style dependencies with version conflicting with other deps" do
         let(:pyproject_fixture_name) { "table_version_conflicts.toml" }
         let(:dependency_name) { "isort" }
         let(:dependency) do
@@ -516,7 +516,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           )
         end
 
-        context "for the dependency in the main dependencies group" do
+        context "when dealing with the dependency in the main dependencies group" do
           let(:dependency_name) { "jsonschema" }
           let(:requirements) do
             [{
@@ -561,7 +561,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           end
         end
 
-        context "for the dependency in the dev dependencies group with multiple spaces" do
+        context "when dealing with the dependency in the dev dependencies group with multiple spaces" do
           let(:dependency_name) { "isort" }
           let(:requirements) do
             [{
@@ -606,7 +606,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           end
         end
 
-        context "for the dependency in the test dependencies group without spaces" do
+        context "when dealing with the dependency in the test dependencies group without spaces" do
           let(:dependency_name) { "pytest-mock" }
           let(:requirements) do
             [{
@@ -675,7 +675,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           )
         end
 
-        context "for the first dependency" do
+        context "when dealing with the first dependency" do
           let(:dependency_name) { "rq" }
 
           it "updates the pyproject.toml correctly" do
@@ -702,7 +702,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
           end
         end
 
-        context "for the second dependency" do
+        context "when dealing with the second dependency" do
           let(:dependency_name) { "dramatiq" }
 
           it "updates the pyproject.toml correctly" do

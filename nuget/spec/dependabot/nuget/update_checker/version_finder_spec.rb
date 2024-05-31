@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_details }.to_not raise_error
       end
     end
 
@@ -182,7 +182,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.to_not raise_error
         end
       end
     end
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     end
 
     context "when a version range is specified using Ruby syntax" do
-      let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
+      let(:ignored_versions) { [">= 2.a"] }
       let(:expected_version) { "1.1.2" }
 
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
@@ -246,14 +246,14 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:ignored_versions) { ["[0,)"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version_details).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -262,16 +262,23 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:ignored_versions) { ["> 0"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version_details).to be_nil
       end
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
+    end
+
+    context "when the user is ignoring all versions but a very specific one" do
+      let(:ignored_versions) { ["< 1.1.1, > 1.1.1"] }
+      let(:expected_version) { "1.1.1" }
+
+      its([:version]) { is_expected.to eq(expected_version_instance) }
     end
 
     context "with a custom repo in a nuget.config file" do
@@ -376,7 +383,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:expected_version) { "7.3.0" }
 
       it "returns the expected version" do
-        expect(subject[:version]).to eq(expected_version_instance)
+        expect(latest_version_details[:version]).to eq(expected_version_instance)
       end
     end
 
@@ -475,7 +482,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       it "returns the expected version" do
         skip "This test was commented out and does not work at the moment"
-        expect(subject[:version]).to eq(version_class.new("6.5.0"))
+        expect(latest_version_details[:version]).to eq(version_class.new("6.5.0"))
       end
     end
 
@@ -528,7 +535,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
 
       it "returns the expected version" do
-        expect(subject[:version]).to eq(version_class.new("3.14.0"))
+        expect(latest_version_details[:version]).to eq(version_class.new("3.14.0"))
       end
     end
 
@@ -657,7 +664,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
 
       it "returns the expected version honoring the package source mapping" do
-        expect(subject[:version]).to eq(version_class.new("1.1.0"))
+        expect(latest_version_details[:version]).to eq(version_class.new("1.1.0"))
       end
     end
   end
@@ -688,7 +695,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     its([:version]) { is_expected.to eq(version_class.new("2.0.0")) }
 
     context "when the user is ignoring the lowest version" do
-      let(:ignored_versions) { [">= 2.a, <= 2.0.0"] }
+      let(:ignored_versions) { ["<= 2.0.0"] }
       let(:expected_version) { "2.0.3" }
 
       its([:version]) { is_expected.to eq(version_class.new("2.0.3")) }

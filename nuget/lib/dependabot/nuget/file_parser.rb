@@ -16,20 +16,19 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
+      require_relative "cache_manager"
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        workspace_path = project_files.first&.directory
-        return [] unless workspace_path
         return [] unless repo_contents_path
 
-        # `workspace_path` is the only unique value here so we use it as the cache key
         cache = T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
-        key = workspace_path
+        # key the cache on the dependency files, excluding the content
+        key = dependency_files.map { |d| d.to_h.except("content") }.to_s
         cache[key] ||= begin
           # run discovery for the repo
           NativeHelpers.run_nuget_discover_tool(repo_root: T.must(repo_contents_path),
-                                                workspace_path: workspace_path,
+                                                workspace_path: source&.directory || "/",
                                                 output_path: DiscoveryJsonReader.discovery_file_path,
                                                 credentials: credentials)
           discovered_dependencies.dependencies

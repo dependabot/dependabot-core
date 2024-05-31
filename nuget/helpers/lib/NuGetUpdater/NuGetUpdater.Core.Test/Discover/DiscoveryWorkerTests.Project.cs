@@ -91,6 +91,7 @@ public partial class DiscoveryWorkerTests
                           </ItemGroup>
                         </Project>
                         """),
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -108,6 +109,7 @@ public partial class DiscoveryWorkerTests
                 expectedResult: new()
                 {
                     FilePath = "",
+                    ExpectedProjectCount = 2,
                     Projects = [
                         new()
                         {
@@ -453,6 +455,136 @@ public partial class DiscoveryWorkerTests
                             ReferencedProjectPaths = [],
                         }
                     ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DiscoverReportsPackagesThroughProjectReferenceElements()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "test",
+                files:
+                [
+                    ("test/unit-tests.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <ProjectReference Include="..\src\helpers.csproj" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("src/helpers.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.B" Version="4.5.6" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "test",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "unit-tests.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", @"test/unit-tests.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [
+                                "../src/helpers.csproj"
+                            ],
+                        },
+                        new()
+                        {
+                            FilePath = "../src/helpers.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", @"src/helpers.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
+        public async Task DiscoverReportsPackagesThroughSolutionFilesNotInTheSameDirectoryTreeAsTheProjects()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "solutions",
+                files:
+                [
+                    ("solutions/sln.sln", """
+                        Microsoft Visual Studio Solution File, Format Version 12.00
+                        # Visual Studio Version 17
+                        VisualStudioVersion = 17.5.33516.290
+                        MinimumVisualStudioVersion = 10.0.40219.1
+                        Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "library", "..\projects\library.csproj", "{DA55A30A-048A-4D8A-A3EC-4F2CF4B294B8}"
+                        EndProject
+                        Global
+                        	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        		Debug|Any CPU = Debug|Any CPU
+                        		Release|Any CPU = Release|Any CPU
+                        	EndGlobalSection
+                        	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        		{DA55A30A-048A-4D8A-A3EC-4F2CF4B294B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        		{DA55A30A-048A-4D8A-A3EC-4F2CF4B294B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        		{DA55A30A-048A-4D8A-A3EC-4F2CF4B294B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        		{DA55A30A-048A-4D8A-A3EC-4F2CF4B294B8}.Release|Any CPU.Build.0 = Release|Any CPU
+                        	EndGlobalSection
+                        EndGlobal
+                        """),
+                    ("projects/library.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    FilePath = "solutions",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "../projects/library.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", @"projects/library.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
                 }
             );
         }

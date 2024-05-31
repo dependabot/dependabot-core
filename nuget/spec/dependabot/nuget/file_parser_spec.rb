@@ -28,18 +28,19 @@ RSpec.describe Dependabot::Nuget::FileParser do
                         source: source,
                         repo_contents_path: repo_contents_path)
   end
+  let(:directory) { "/" }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
       repo: "gocardless/bump",
-      directory: "/"
+      directory: directory
     )
   end
 
   describe "parse" do
-    let(:dependencies) { parser.parse }
-
     subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+    let(:dependencies) { parser.parse }
 
     context "with a single project file" do
       before do
@@ -216,6 +217,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       context "that is nested" do
+        let(:directory) { "/dir" }
         let(:packages_config) do
           Dependabot::DependencyFile.new(
             name: "dir/packages.config",
@@ -243,7 +245,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.0",
-                file: "dir/packages.config",
+                file: "packages.config",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -262,7 +264,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.1",
-                file: "dir/packages.config",
+                file: "packages.config",
                 groups: ["devDependencies"],
                 source: nil
               }]

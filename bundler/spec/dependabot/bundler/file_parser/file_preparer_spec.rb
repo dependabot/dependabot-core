@@ -56,6 +56,16 @@ RSpec.describe Dependabot::Bundler::FileParser::FilePreparer do
       its(:content) { is_expected.to eq("2.2.0\n") }
     end
 
+    describe "the updated tool versions file" do
+      subject do
+        prepared_dependency_files.find { |f| f.name == ".tool-versions" }
+      end
+
+      let(:dependency_files) { bundler_project_dependency_files("tool_versions_file") }
+
+      its(:content) { is_expected.to eq("ruby 2.2.0\n") }
+    end
+
     describe "the updated .specification file" do
       subject do
         prepared_dependency_files.find { |f| f.name == "plugins/example/.specification" }

@@ -185,7 +185,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#can_update?" do
-    subject { checker.can_update?(requirements_to_unlock: :own) }
+    subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
 
     context "given an outdated dependency" do
       it { is_expected.to be_truthy }
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(subject).to eq(false)
+          expect(can_update).to eq(false)
         end
 
         it "allows full unlocking" do
@@ -311,7 +311,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(subject).to eq(false)
+          expect(can_update).to eq(false)
         end
 
         it "allows full unlocking" do
@@ -348,9 +348,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    subject(:latest_version) { checker.latest_version }
 
-    subject { checker.latest_version }
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
     it "delegates to LatestVersionFinder" do
       expect(described_class::LatestVersionFinder).to receive(:new).with(
@@ -398,7 +398,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .and_return(status: 200, body: JSON.pretty_generate({}))
       end
 
-      specify { expect { subject }.not_to raise_error }
+      specify { expect { latest_version }.not_to raise_error }
     end
 
     context "with a git dependency" do
@@ -827,12 +827,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_resolvable_previous_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-    let(:updated_version) { Gem::Version.new("1.7.0") }
-
     subject(:latest_resolvable_previous_version) do
       checker.latest_resolvable_previous_version(updated_version)
     end
+
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:updated_version) { Gem::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
       dummy_version_resolver =

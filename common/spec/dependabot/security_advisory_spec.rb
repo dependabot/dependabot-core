@@ -154,13 +154,13 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
     it { is_expected.to eq(true) }
 
-    context "for a different package manager" do
+    context "when dealing with a different package manager" do
       let(:package_manager) { "npm_and_yarn" }
 
       it { is_expected.to eq(false) }
     end
 
-    context "for a different dependency" do
+    context "when dealing with a different dependency" do
       let(:dependency_name) { "gemcutter" }
 
       it { is_expected.to eq(false) }
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
       it { is_expected.to eq(false) }
     end
 
-    context "updating to a version that isn't fixed" do
+    context "when updating to a version that isn't fixed" do
       let(:dependency_version) { "1.10.1" }
 
       it { is_expected.to eq(false) }
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
       it { is_expected.to eq(true) }
 
-      context "that don't match the old version" do
+      context "when not matching the old version" do
         let(:vulnerable_versions) { ["~> 0.8.0"] }
 
         it { is_expected.to eq(false) }
@@ -250,19 +250,19 @@ RSpec.describe Dependabot::SecurityAdvisory do
 
       it { is_expected.to eq(true) }
 
-      context "and some other versions are patched" do
+      context "when some other versions are patched" do
         let(:safe_versions) { [">= 0.7.2"] }
 
         it { is_expected.to eq(true) }
       end
 
-      context "but this version is patched" do
+      context "when this version is patched" do
         let(:safe_versions) { [">= 0.7.1"] }
 
         it { is_expected.to eq(false) }
       end
 
-      context "that don't match this version" do
+      context "when not matching this version" do
         let(:vulnerable_versions) { ["~> 0.8.0"] }
 
         it { is_expected.to eq(false) }

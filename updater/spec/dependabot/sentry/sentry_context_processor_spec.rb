@@ -8,12 +8,12 @@ require "dependabot/errors"
 require "dependabot/sentry/sentry_context_processor"
 
 RSpec.describe SentryContext do
+  subject { event }
+
   let(:sentry_context) { { foo: "bar" } }
   let(:exception) { double(::Dependabot::DependabotError, sentry_context: sentry_context) }
   let(:hint) { { exception: exception } }
   let(:event) { instance_double(::Sentry::ErrorEvent) }
-
-  subject { event }
 
   before do
     allow(event).to receive(:send)
