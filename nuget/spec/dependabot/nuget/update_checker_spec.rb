@@ -318,10 +318,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       end
 
       context "the security vulnerability excludes all compatible packages" do
+        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
+
         let(:target_version) { "1.1.1" }
         let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
-
-        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
 
         before do
           # only vulnerable versions are returned
@@ -442,7 +442,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
             expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
 
-            subject
+            updated_dependencies
           end
         end
       end

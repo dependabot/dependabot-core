@@ -42,6 +42,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
     end
 
     context "with a git dependency" do
+      subject { updater.updated_requirements }
+
       let(:latest_resolvable_version) do
         "aa218f56b14c9653891f9e74264a383fa43fefbd"
       end
@@ -67,8 +69,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
           ref: nil
         }
       end
-
-      subject { updater.updated_requirements }
 
       it { is_expected.to eq([mixfile_req, git_req]) }
 
