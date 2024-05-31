@@ -32,21 +32,21 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
 
-      context "and the property is an attribute on the project" do
+      context "when the property is an attribute on the project" do
         let(:base_pom_fixture_name) { "project_version_pom.xml" }
         let(:property_name) { "project.version" }
 
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
 
-      context "and the property name starts with 'project' but not an attribute of the project" do
+      context "when the property name starts with 'project' but not an attribute of the project" do
         let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
         let(:property_name) { "project.dependency.spring-boot.version" }
 
         its([:value]) { is_expected.to eq("2.2.1.RELEASE") }
       end
 
-      context "and the property is within a profile" do
+      context "when the property is within a profile" do
         let(:base_pom_fixture_name) { "profile_property_pom.xml" }
 
         its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
@@ -58,14 +58,14 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         specify { expect { property_details }.to_not raise_error }
       end
 
-      context "and in case of duplicate tags then read the latest" do
+      context "when there are duplicate tags then read the latest" do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "jmh.version" }
 
         its([:value]) { is_expected.to eq("1.2.7") }
       end
 
-      context "and the latest tag is pointing to self then raise the error" do
+      context "when the latest tag is pointing to self then raise the error" do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "dozer.version" }
 
@@ -76,14 +76,14 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         end
       end
 
-      context "and the latest tag is pointing to another tag, then get the value of that tag" do
+      context "when the latest tag is pointing to another tag, then get the value of that tag" do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "orika.version" }
 
         its([:value]) { is_expected.to eq("1.2.7") }
       end
 
-      context "and malformed expression should be treated as regular value." do
+      context "when a malformed expression should be treated as regular value." do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "lombok.version" }
 
@@ -112,12 +112,12 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("2.5.6") }
 
-      context "and the property name needs careful manipulation" do
+      context "when the property name needs careful manipulation" do
         let(:property_name) { "spring.version.2.2" }
 
         its([:value]) { is_expected.to eq("2.2.1") }
 
-        context "(case2)" do
+        context "when the property name is (case2)" do
           let(:property_name) { "jta-api-1.2-version" }
 
           its([:value]) { is_expected.to eq("1.2.1") }
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       its([:value]) { is_expected.to eq("2.7") }
 
-      context "that can't be found" do
+      context "when the source can't be found" do
         before do
           stub_request(:get, struts_apps_maven_url)
             .to_return(status: 404, body: "")
@@ -163,19 +163,19 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         it { is_expected.to be_nil }
       end
 
-      context "that specifies a version range (so can't be fetched)" do
+      context "when the pom specifies a version range (so can't be fetched)" do
         let(:base_pom_fixture_name) { "remote_parent_pom_with_range.xml" }
 
         it { is_expected.to be_nil }
       end
 
-      context "that uses properties so can't be fetched" do
+      context "when the pom uses properties so can't be fetched" do
         let(:base_pom_fixture_name) { "remote_parent_pom_with_props.xml" }
 
         it { is_expected.to be_nil }
       end
 
-      context "that is a custom repo" do
+      context "when a custom repo is used" do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
         let(:scala_plugins_maven_url) do
