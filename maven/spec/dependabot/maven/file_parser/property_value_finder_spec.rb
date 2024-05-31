@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("1.2.7") }
       end
 
-      context "when malformed expression should be treated as regular value." do
+      context "when a malformed expression should be treated as regular value." do
         let(:base_pom_fixture_name) { "property_pom_duplicate_tags.xml" }
         let(:property_name) { "lombok.version" }
 
