@@ -210,7 +210,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which uses git:: with a tag)" do
         expect(dependencies[5].name).to eq("origin_label::github::cloudposse/terraform-null-label::tags/0.3.7")
         expect(dependencies[5].version).to eq("0.3.7")
-        expect(dependencies[5].requirements).to match_array([{
+        expect(dependencies[5].requirements).to contain_exactly({
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which uses github.com with a tag)" do
         expect(dependencies[4].name).to eq("logs::github::cloudposse/terraform-log-storage::tags/0.2.2")
         expect(dependencies[4].version).to eq("0.2.2")
-        expect(dependencies[4].requirements).to match_array([{
+        expect(dependencies[4].requirements).to contain_exactly({
           requirement: nil,
           groups: [],
           file: "main.tf",

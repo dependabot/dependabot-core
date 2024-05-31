@@ -159,6 +159,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
 
   describe "#shrinkwraps" do
     subject(:test_subject) { builder.shrinkwraps }
+
     let(:project_name) { "npm6/shrinkwrap" }
 
     it { is_expected.to contain_exactly(project_dependency_file("npm-shrinkwrap.json")) }

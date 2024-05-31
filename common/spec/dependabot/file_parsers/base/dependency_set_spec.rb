@@ -136,9 +136,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           expect(set_of_dependencies.dependencies.count).to eq(1)
           expect(set_of_dependencies.dependencies.first.requirements)
             .to contain_exactly(
-                { requirement: "1", file: "a", groups: nil, source: nil },
-                { requirement: "1", file: "b", groups: nil, source: nil }
-              )
+              { requirement: "1", file: "a", groups: nil, source: nil },
+              { requirement: "1", file: "b", groups: nil, source: nil }
+            )
         end
       end
 

@@ -1496,20 +1496,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       it "includes both registries" do
         expect(parsed_file.count).to eql(1)
-        expect(parsed_file[0].requirements).to match_array([
-          {
-            requirement: "^10.5.12",
-            file: "package.json",
-            groups: ["dependencies"],
-            source: { type: "registry", url: "https://registry.yarnpkg.com" }
-          },
-          {
-            requirement: "10.5.12",
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: { type: "registry", url: "https://registry.yarnpkg.com" }
-          }
-        ])
+        expect(parsed_file[0].requirements).to contain_exactly({
+          requirement: "^10.5.12",
+          file: "package.json",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.yarnpkg.com" }
+        }, {
+          requirement: "10.5.12",
+          file: "package.json",
+          groups: ["devDependencies"],
+          source: { type: "registry", url: "https://registry.yarnpkg.com" }
+        })
       end
     end
 
