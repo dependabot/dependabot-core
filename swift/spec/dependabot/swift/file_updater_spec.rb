@@ -8,8 +8,6 @@ require "dependabot/swift/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Swift::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -18,6 +16,8 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       repo_contents_path: repo_contents_path
     )
   end
+
+  it_behaves_like "a dependency file updater"
 
   let(:project_name) { "Example" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Swift::FileUpdater do
   end
 
   describe "#updated_dependency_files" do
-    subject { updater.updated_dependency_files }
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
 
     let(:dependencies) do
       [
@@ -74,13 +74,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
 
     it "updates the version in manifest and lockfile" do
-      manifest = subject.find { |file| file.name == "Package.swift" }
+      manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
       expect(manifest.content).to include(
         "url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\""
       )
 
-      lockfile = subject.find { |file| file.name == "Package.resolved" }
+      lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
       expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
         {
@@ -139,13 +139,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       end
 
       it "properly updates to target version in manifest and lockfile" do
-        manifest = subject.find { |file| file.name == "Package.swift" }
+        manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
         expect(manifest.content).to include(
           "url: \"https://github.com/apple/swift-docc-plugin\",\n      from: \"1.1.0\""
         )
 
-        lockfile = subject.find { |file| file.name == "Package.resolved" }
+        lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
         expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
           {

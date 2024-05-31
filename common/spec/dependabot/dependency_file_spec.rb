@@ -24,13 +24,13 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "that starts and ends with a slash" do
+      context "when starting and ending with a slash" do
         let(:directory) { "/path/to/files/" }
 
         it { is_expected.to eq("/path/to/files/Gemfile") }
       end
 
-      context "that doesn't start or end with a slash" do
+      context "when not starting or ending with a slash" do
         let(:directory) { "path/to/files" }
 
         it { is_expected.to eq("/path/to/files/Gemfile") }
@@ -63,13 +63,13 @@ RSpec.describe Dependabot::DependencyFile do
         described_class.new(name: "Gemfile", content: "a", directory: directory)
       end
 
-      context "that starts and ends with a slash" do
+      context "when starting and ending with a slash" do
         let(:directory) { "/path/to/files" }
 
         it { is_expected.to eq("/path/to/files") }
       end
 
-      context "that doesn't start or end with a slash" do
+      context "when not starting or ending with a slash" do
         let(:directory) { "path/to/files" }
 
         it { is_expected.to eq("/path/to/files") }
@@ -78,11 +78,11 @@ RSpec.describe Dependabot::DependencyFile do
   end
 
   describe "#to_h" do
-    subject { file.to_h }
+    subject(:file_hash) { file.to_h }
 
     context "with a non-symlink" do
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
 
       it "returns the correct array" do
-        expect(subject).to eq(
+        expect(file_hash).to eq(
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::DependencyFile do
   end
 
   describe "#decoded_content" do
-    context "for base64 encoded content" do
+    context "when dealing with a base64 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",
@@ -335,7 +335,7 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
 
-    context "for utf-8 encoded content" do
+    context "when dealing with a utf-8 encoded content" do
       let(:file) do
         described_class.new(
           name: "example.gem",

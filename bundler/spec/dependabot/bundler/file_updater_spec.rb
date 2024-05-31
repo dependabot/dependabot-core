@@ -368,9 +368,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
 
         context "when dealing with a gems.rb setup" do
-          let(:project_name) { "gems_rb" }
-
           subject(:file) { updated_files.find { |f| f.name == "gems.locked" } }
+
+          let(:project_name) { "gems_rb" }
 
           let(:requirements) do
             [{

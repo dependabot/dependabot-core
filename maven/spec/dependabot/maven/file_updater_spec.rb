@@ -643,6 +643,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
     end
 
     context "when there is a updated extensions.xml file" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "extensions.xml" }
+      end
+
       let(:dependency_files) { [pom, extensions] }
       let(:extensions) do
         Dependabot::DependencyFile.new(
@@ -672,14 +676,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "extensions.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>0.4.7</version>") }
     end
 
     context "when updating an annotationProcessorPaths dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -709,14 +713,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>2.18.0</version>") }
     end
 
     context "when updating a plugin artifactItem dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -744,10 +748,6 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           }],
           package_manager: "maven"
         )
-      end
-
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
       end
 
       its(:content) { is_expected.to include("<version>0.9.5</version>") }

@@ -599,7 +599,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+    subject(:latest_version_resolvable_with_full_unlock) { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
@@ -676,13 +676,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to eq(true)
       end
     end
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    subject { checker.send(:updated_dependencies_after_full_unlock) }
+    subject(:checker_updated_dependencies_after_full_unlock) { checker.send(:updated_dependencies_after_full_unlock) }
 
     context "with a property pom" do
       let(:dependency_name) { "org.springframework:spring-beans" }
@@ -746,7 +746,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(
+        expect(checker_updated_dependencies_after_full_unlock).to eq(
           [
             Dependabot::Dependency.new(
               name: "org.springframework:spring-beans",

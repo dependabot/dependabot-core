@@ -51,12 +51,6 @@ RSpec/BeforeAfterAll:
 # Prefixes: when, with, without
 RSpec/ContextWording:
   Exclude:
-    - 'common/**/*'
-    - 'composer/**/*'
-    - 'devcontainers/**/*'
-    - 'docker/**/*'
-    - 'git_submodules/**/*'
-    - 'github_actions/**/*'
     - 'go_modules/**/*'
     - 'gradle/**/*'
     - 'hex/**/*'
@@ -198,11 +192,6 @@ RSpec/IteratedExpectation:
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
 
-# Offense count: 126
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/LeadingSubject:
-  Enabled: false
-
 # Offense count: 675
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/LetBeforeExamples:
@@ -249,12 +238,6 @@ RSpec/MultipleExpectations:
 # Configuration parameters: AllowSubject.
 RSpec/MultipleMemoizedHelpers:
   Max: 30
-
-# Offense count: 500
-# Configuration parameters: EnforcedStyle, IgnoreSharedExamples.
-# SupportedStyles: always, named_only
-RSpec/NamedSubject:
-  Enabled: false
 
 # Offense count: 3871
 # Configuration parameters: AllowedGroups.

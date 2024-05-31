@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
   let(:dependency_version) { "0.1.38" }
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
 
     before do
       stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -153,7 +153,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -179,14 +179,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
   end
 
   describe "#lowest_security_fix_version" do
-    subject { finder.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
     before do
       stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
@@ -216,14 +216,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
       let(:ignored_versions) { [">= 0"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(lowest_security_fix_version).to be_nil
       end
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
     end
 
     describe "#latest_version" do
-      subject { finder.latest_version }
+      subject(:latest_version) { finder.latest_version }
 
       before do
         stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
@@ -368,14 +368,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
     end
 
     describe "#lowest_security_fix_version" do
-      subject { finder.lowest_security_fix_version }
+      subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
       before do
         stub_request(:get, sparse_registry_url).to_return(status: 200, body: sparse_registry_response)
@@ -405,14 +405,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { [">= 0"] }
 
         it "returns nil" do
-          expect(subject).to be_nil
+          expect(lowest_security_fix_version).to be_nil
         end
 
         context "with raise_on_ignored" do
           let(:raise_on_ignored) { true }
 
           it "raises an error" do
-            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            expect { lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
       end
