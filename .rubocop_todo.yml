@@ -398,6 +398,12 @@ RSpec/VerifiedDoubles:
     - 'updater/spec/dependabot/sentry/sentry_context_processor_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
 
+# Offense count: 17
+# This cop supports safe autocorrection (--autocorrect).
+RSpec/ExpectActual:
+  Exclude:
+    - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
+
 # Offense count: 2
 RSpec/VoidExpect:
   Exclude:
