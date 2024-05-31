@@ -674,6 +674,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -739,6 +740,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1036,6 +1038,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1103,6 +1106,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1170,6 +1174,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1233,6 +1238,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1290,6 +1296,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1473,6 +1480,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1556,6 +1564,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1641,6 +1650,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1900,6 +1910,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -2174,6 +2185,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -2246,6 +2258,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -2481,6 +2494,7 @@ public partial class UpdateWorkerTests
                     """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>

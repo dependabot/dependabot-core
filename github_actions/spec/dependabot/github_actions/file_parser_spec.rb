@@ -260,7 +260,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         mock_service_pack_request("docker/login-action")
       end
 
-      context "the first dependency" do
+      context "when dealing with the first dependency" do
         subject(:dependency) { dependencies.first }
 
         it "has the right details" do

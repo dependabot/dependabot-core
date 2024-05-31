@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         )
       end
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         let(:requirements) { previous_requirements }
 
         it "raises a helpful error" do
