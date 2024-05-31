@@ -20,9 +20,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   end
 
   describe "parse poetry files" do
-    let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
-
     subject(:dependencies) { parser.dependency_set.dependencies }
+
+    let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
     context "when defined incorrectly" do
       let(:pyproject_fixture_name) { "incorrect_poetry_setup.toml" }
@@ -84,9 +84,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       context "with a path requirement" do
-        let(:pyproject_fixture_name) { "dir_dependency.toml" }
-
         subject(:dependency_names) { dependencies.map(&:name) }
+
+        let(:pyproject_fixture_name) { "dir_dependency.toml" }
 
         it "excludes path dependency" do
           expect(dependency_names).to_not include("toml")
@@ -98,9 +98,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       context "with a git requirement" do
-        let(:pyproject_fixture_name) { "git_dependency.toml" }
-
         subject(:dependency_names) { dependencies.map(&:name) }
+
+        let(:pyproject_fixture_name) { "git_dependency.toml" }
 
         it "excludes git dependency" do
           expect(dependency_names).to_not include("toml")
@@ -112,9 +112,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       context "with a url requirement" do
-        let(:pyproject_fixture_name) { "url_dependency.toml" }
-
         subject(:dependency_names) { dependencies.map(&:name) }
+
+        let(:pyproject_fixture_name) { "url_dependency.toml" }
 
         it "excludes url dependency" do
           expect(dependency_names).to_not include("toml")
@@ -170,10 +170,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
 
       context "with a path dependency" do
+        subject(:dependency_names) { dependencies.map(&:name) }
+
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
         let(:poetry_lock_fixture_name) { "dir_dependency.lock" }
-
-        subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes the path dependency" do
           expect(dependency_names).to_not include("toml")
@@ -251,9 +251,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
 
     context "with group dependencies" do
-      let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
-
       subject(:dependency_names) { dependencies.map(&:name) }
+
+      let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
 
       it "includes dev-dependencies and group.dev.dependencies" do
         expect(dependency_names).to include("black")
@@ -266,9 +266,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
 
     context "with package specify source" do
-      let(:pyproject_fixture_name) { "package_specify_source.toml" }
-
       subject(:dependency) { dependencies.find { |f| f.name == "black" } }
+
+      let(:pyproject_fixture_name) { "package_specify_source.toml" }
 
       it "specifies a package source" do
         expect(dependency.requirements[0][:source]).to eq("custom")
@@ -277,9 +277,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   end
 
   describe "parse standard python files" do
-    let(:pyproject_fixture_name) { "standard_python.toml" }
-
     subject(:dependencies) { parser.dependency_set.dependencies }
+
+    let(:pyproject_fixture_name) { "standard_python.toml" }
 
     its(:length) { is_expected.to eq(1) }
 
@@ -303,22 +303,24 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
 
     context "without dependencies" do
-      let(:pyproject_fixture_name) { "no_dependencies.toml" }
-
       subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "no_dependencies.toml" }
 
       its(:length) { is_expected.to eq(0) }
     end
 
     context "with dependencies with empty requirements" do
-      let(:pyproject_fixture_name) { "no_requirements.toml" }
-
       subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "no_requirements.toml" }
 
       its(:length) { is_expected.to eq(0) }
     end
 
     context "with a PDM project" do
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
       let(:pyproject_fixture_name) { "pdm_example.toml" }
       let(:pdm_lock) do
         Dependabot::DependencyFile.new(
@@ -331,8 +333,6 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
       let(:poetry_lock_fixture_name) { "pdm_example.lock" }
       let(:files) { [pyproject, pdm_lock] }
-
-      subject(:dependencies) { parser.dependency_set.dependencies }
 
       its(:length) { is_expected.to eq(0) }
 
@@ -355,9 +355,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
 
     context "with optional dependencies" do
-      let(:pyproject_fixture_name) { "optional_dependencies.toml" }
-
       subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "optional_dependencies.toml" }
 
       # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
       # is ignored because it has markers
@@ -365,9 +365,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
     end
 
     context "with optional dependencies only" do
-      let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
-
       subject(:dependencies) { parser.dependency_set.dependencies }
+
+      let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
 
       its(:length) { is_expected.to be > 0 }
     end

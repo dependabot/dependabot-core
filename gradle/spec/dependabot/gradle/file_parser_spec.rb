@@ -438,6 +438,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
     end
 
     describe "settings script" do
+      subject(:dependencies) { parser.parse }
+
       let(:files) { [buildfile, settings_file] }
       let(:settings_file) do
         Dependabot::DependencyFile.new(
@@ -446,8 +448,6 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
       let(:settings_file_fixture_name) { "buildscript_dependencies_settings.gradle" }
-
-      subject(:dependencies) { parser.parse }
 
       its(:length) { is_expected.to eq(20) }
     end
@@ -802,6 +802,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
 
       describe "kotlin settings script" do
+        subject(:dependencies) { parser.parse }
+
         let(:files) { [buildfile, settings_file] }
         let(:settings_file) do
           Dependabot::DependencyFile.new(
@@ -810,8 +812,6 @@ RSpec.describe Dependabot::Gradle::FileParser do
           )
         end
         let(:settings_file_fixture_name) { "buildscript_dependencies_settings.gradle.kts" }
-
-        subject(:dependencies) { parser.parse }
 
         its(:length) { is_expected.to eq(20) }
       end

@@ -294,13 +294,13 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     describe "a dependency replaced by a local override" do
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "rsc.io/qr" }
+      end
+
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
         go_mod.sub("=> github.com/rsc/qr v0.2.0", "=> ./foo/bar/baz")
-      end
-
-      subject(:dependency) do
-        dependencies.find { |d| d.name == "rsc.io/qr" }
       end
 
       it "is skipped as unsupported" do
@@ -309,12 +309,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     describe "without any dependencies" do
-      let(:go_mod_content) do
-        fixture("projects", "no_dependencies", "go.mod")
-      end
-
       subject(:dependencies) do
         parser.parse
+      end
+
+      let(:go_mod_content) do
+        fixture("projects", "no_dependencies", "go.mod")
       end
 
       its(:length) { is_expected.to eq(0) }

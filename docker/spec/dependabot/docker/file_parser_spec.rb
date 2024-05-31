@@ -225,7 +225,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "that doesn't match any tags" do
+      context "when the digest doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "that matches a tag" do
+      context "when the digest matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -341,6 +341,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:dockerfile_fixture_name) { "digest_and_tag" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -350,8 +352,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
@@ -424,7 +424,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are identical" do
+      context "when the lines are identical" do
         let(:dockerfile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "that doesn't match any tags" do
+      context "when the digest doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
@@ -800,7 +800,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "that matches a tag" do
+      context "when the digest matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -837,6 +837,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -846,8 +848,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
@@ -920,7 +920,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are identical" do
+      context "when the lines are identical" do
         let(:podfile_fixture_name) { "multiple_identical.yaml" }
 
         its(:length) { is_expected.to eq(1) }

@@ -6,6 +6,8 @@ require "dependabot/credential"
 require "dependabot/npm_and_yarn/file_updater/npm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
+  subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
+
   let(:updater) do
     described_class.new(
       lockfile: package_lock,
@@ -59,8 +61,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { FileUtils.mkdir_p(tmp_path) }
-
-  subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
 
   describe "npm 6 specific" do
     # NOTE: This is no longer failing in npm 8
