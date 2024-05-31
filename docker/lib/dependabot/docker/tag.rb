@@ -117,7 +117,7 @@ module Dependabot
         # That means only "22-ea-7" will be considered as a viable update
         # candidate for "21-ea-32", since it's the only one that respects that
         # format.
-        if T.must(version).match?(WORDS_WITH_BUILD)
+        if version&.match?(WORDS_WITH_BUILD)
           return :"<version>#{T.must(version).match(WORDS_WITH_BUILD).to_s.gsub(/-[0-9]+/, '-<build_num>')}"
         end
 
