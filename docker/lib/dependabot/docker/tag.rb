@@ -90,7 +90,7 @@ module Dependabot
 
       sig { returns T.nilable(String) }
       def prefix
-        T.must(name.match(NAME_WITH_VERSION)).named_captures.fetch("prefix")
+        name.match(NAME_WITH_VERSION)&.named_captures.fetch("prefix")
       end
 
       sig { returns T.nilable(String) }
