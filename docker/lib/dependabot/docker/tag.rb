@@ -83,7 +83,7 @@ module Dependabot
         return true if name == numeric_version
 
         # .NET tags are suffixed with -sdk
-        return true if name == T.must(numeric_version) + "-sdk"
+        return true if numberic_version && name == numeric_version + "-sdk"
 
         name == "jdk-" + T.must(numeric_version)
       end
