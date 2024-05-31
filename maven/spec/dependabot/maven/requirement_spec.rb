@@ -54,19 +54,19 @@ RSpec.describe Dependabot::Maven::Requirement do
 
       it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0")) }
 
-      context "which needs a > operator" do
+      context "when needing a > operator" do
         let(:requirement_string) { "(1.0.0,)" }
 
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0")) }
       end
 
-      context "which needs a > and a < operator" do
+      context "when needing a > and a < operator" do
         let(:requirement_string) { "(1.0.0, 2.0.0)" }
 
         it { is_expected.to eq(Gem::Requirement.new("> 1.0.0", "< 2.0.0")) }
       end
 
-      context "which needs a >= and a <= operator" do
+      context "when needing a >= and a <= operator" do
         let(:requirement_string) { "[ 1.0.0,2.0.0 ]" }
 
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "<= 2.0.0")) }
@@ -84,13 +84,13 @@ RSpec.describe Dependabot::Maven::Requirement do
 
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
 
-      context "that specifies a minimum" do
+      context "when specifying a minimum" do
         let(:requirement_string) { "1.5+" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5").to_s) }
       end
 
-      context "that is just a +" do
+      context "when the requirement version is +" do
         let(:requirement_string) { "+" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new(">= 0").to_s) }
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Maven::Requirement do
     subject { requirement.satisfied_by?(version) }
 
     context "with a Gem::Version" do
-      context "for the current version" do
+      context "when dealing with the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
 
         it { is_expected.to be(true) }
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::Maven::Requirement do
         end
       end
 
-      context "for an out-of-range version" do
+      context "when dealing with an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
 
         it { is_expected.to be(false) }
@@ -185,25 +185,25 @@ RSpec.describe Dependabot::Maven::Requirement do
         Dependabot::Maven::Version.new(version_string)
       end
 
-      context "for the current version" do
+      context "when dealing with the current version" do
         let(:version_string) { "1.0.0" }
 
         it { is_expected.to be(true) }
 
-        context "for a post-release version" do
+        context "when dealing with a post-release version" do
           let(:version_string) { "1.0.0u2" }
 
           it { is_expected.to be(true) }
         end
 
-        context "for a pre-release string" do
+        context "when dealing with a pre-release string" do
           let(:requirement_string) { "1.0.0-alpha" }
 
           it { is_expected.to be(false) }
         end
       end
 
-      context "for an out-of-range version" do
+      context "when dealing with an out-of-range version" do
         let(:version_string) { "0.9.0" }
 
         it { is_expected.to be(false) }

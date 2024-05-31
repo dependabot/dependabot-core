@@ -64,7 +64,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    context "updates indirect dependencies" do
+    context "when updating indirect dependencies" do
       let(:requirements) { [] }
 
       it "updates to the newer version" do
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    context "updates indirect dependencies" do
+    context "when updating indirect dependencies" do
       let(:requirements) { [] }
 
       it "updates to the least new supported version" do

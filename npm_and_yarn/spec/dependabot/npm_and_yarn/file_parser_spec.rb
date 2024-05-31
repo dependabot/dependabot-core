@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
-        expect(parsed_file.count).to eql(1)
+        expect(parsed_file.count).to be(1)
         expect(parsed_file[0].requirements).to match_array([
           {
             requirement: "^10.5.12",
