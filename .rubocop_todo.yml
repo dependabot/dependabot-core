@@ -51,10 +51,6 @@ RSpec/BeforeAfterAll:
 # Prefixes: when, with, without
 RSpec/ContextWording:
   Exclude:
-    - 'common/**/*'
-    - 'composer/**/*'
-    - 'devcontainers/**/*'
-    - 'docker/**/*'
     - 'github_actions/**/*'
     - 'go_modules/**/*'
     - 'gradle/**/*'
