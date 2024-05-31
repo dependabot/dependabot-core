@@ -200,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      context "when path is unfetchable" do
+      context "when the path is unfetchable" do
         before do
           stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
