@@ -599,6 +599,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
     before do
       # Allow network. We use it to install flutter.
       WebMock.allow_net_connect!
@@ -610,8 +612,6 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         headers: {}
       )
     end
-
-    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     let(:dependency_name) { "retry" }
     let(:dependency_version) { "2.0.0" }

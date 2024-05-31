@@ -119,12 +119,12 @@ RSpec.describe Dependabot::Dependency do
     let(:groups) { [] }
     let(:package_manager) { "dummy" }
 
-    context "for a requirement that isn't top-level" do
+    context "when dealing with a requirement that isn't top-level" do
       let(:dependency_args) do
         { name: "dep", requirements: [], package_manager: package_manager }
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with subdependency metadata" do
         let(:dependency_args) do
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Dependency do
           }
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Dependency do
         }
       end
 
-      it { is_expected.to eq(nil) }
+      it { is_expected.to be_nil }
     end
   end
 

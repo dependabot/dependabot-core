@@ -120,7 +120,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "returns true" do
-          expect(checker.vulnerable?).to eq(true)
+          expect(checker.vulnerable?).to be(true)
         end
       end
 
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "returns false" do
-          expect(checker.vulnerable?).to eq(false)
+          expect(checker.vulnerable?).to be(false)
         end
       end
     end
@@ -278,11 +278,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(can_update).to eq(false)
+          expect(can_update).to be(false)
         end
 
         it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
         end
       end
 
@@ -311,11 +311,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "can't update without unlocking" do
-          expect(can_update).to eq(false)
+          expect(can_update).to be(false)
         end
 
         it "allows full unlocking" do
-          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+          expect(checker.can_update?(requirements_to_unlock: :all)).to be(true)
         end
       end
     end
@@ -348,9 +348,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-
     subject(:latest_version) { checker.latest_version }
+
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
     it "delegates to LatestVersionFinder" do
       expect(described_class::LatestVersionFinder).to receive(:new).with(
@@ -827,12 +827,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#latest_resolvable_previous_version" do
-    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-    let(:updated_version) { Gem::Version.new("1.7.0") }
-
     subject(:latest_resolvable_previous_version) do
       checker.latest_resolvable_previous_version(updated_version)
     end
+
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:updated_version) { Gem::Version.new("1.7.0") }
 
     it "delegates to VersionResolver" do
       dummy_version_resolver =
@@ -1215,12 +1215,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

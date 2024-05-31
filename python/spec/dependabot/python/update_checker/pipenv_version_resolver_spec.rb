@@ -460,7 +460,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     context "when version is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with a subdependency" do
         let(:dependency_name) { "py" }
@@ -468,21 +468,21 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:dependency_requirements) { [] }
         let(:version) { Gem::Version.new("1.7.0") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
     context "when version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
 
       context "with a subdependency" do
         let(:dependency_name) { "py" }
         let(:dependency_version) { "1.5.3" }
         let(:dependency_requirements) { [] }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "when the original manifest isn't resolvable" do

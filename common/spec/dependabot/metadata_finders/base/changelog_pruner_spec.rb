@@ -103,19 +103,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     subject(:includes_new_version) { pruner.includes_new_version? }
 
     context "when the new version is included" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when the new version is not included" do
       let(:dependency_version) { "5.0.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the dependency has multiple git sources" do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
@@ -123,19 +123,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     subject(:includes_previous_version) { pruner.includes_previous_version? }
 
     context "when the previous version is included" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when the previous version is not included" do
       let(:dependency_previous_version) { "5.0.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the dependency has multiple git sources" do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
     it { is_expected.to eq(expected_pruned_changelog) }
 
-    context "that has non-standard characters" do
+    context "when dealing with non-standard characters" do
       let(:changelog_body) do
         fixture("github", "changelog_contents_japanese.json")
       end
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
     end
 
-    context "where the old version is a substring of the new one" do
+    context "when the old version is a substring of the new one" do
       let(:changelog_text) { fixture("changelogs", "rails52.md") }
       let(:dependency_version) { "5.2.1.1" }
       let(:dependency_previous_version) { "5.2.1" }
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       end
     end
 
-    context "that is in reverse order" do
+    context "when in reverse order" do
       let(:changelog_body) do
         fixture("github", "changelog_contents_reversed.json")
       end
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
         expect(pruned_text).to end_with("- Add 2015 holiday definitions")
       end
 
-      context "and the previous version is the latest in the changelog" do
+      context "when the previous version is the latest in the changelog" do
         let(:dependency_previous_version) { "1.11.1" }
 
         it { is_expected.to be_nil }

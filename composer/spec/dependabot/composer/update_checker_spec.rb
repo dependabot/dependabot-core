@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         expect(latest_version).to eq(Gem::Version.new("1.17.0"))
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -104,11 +104,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .to_return(status: 404)
       end
 
-      context "that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         it { is_expected.to eq(Gem::Version.new("3.2.0")) }
       end
 
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
         let(:dependency_version) { "1.0.1" }
         let(:requirements) do
@@ -247,12 +247,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it { is_expected.to be >= Gem::Version.new("5.2.45") }
 
-        context "as a platform requirement" do
+        context "when as a platform requirement" do
           let(:project_name) { "old_php_platform" }
 
           it { is_expected.to eq(Gem::Version.new("5.4.36")) }
 
-          context "and an extension is specified that we don't have" do
+          context "when an extension is specified that we don't have" do
             let(:project_name) { "missing_extension" }
 
             it "pretends the missing extension is there" do
@@ -261,7 +261,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             end
           end
 
-          context "but the platform requirement only specifies an extension" do
+          context "when the platform requirement only specifies an extension" do
             let(:project_name) { "bad_php" }
 
             it { is_expected.to eq(Gem::Version.new("5.4.36")) }
@@ -300,11 +300,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .to_return(status: 404)
       end
 
-      context "that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         it { is_expected.to be >= Gem::Version.new("1.22.0") }
       end
 
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "path_dep/path_dep" }
         let(:dependency_version) { "1.0.1" }
         let(:requirements) do
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
       end
 
-      context "where the blocking dependency is a git dependency" do
+      context "when the blocking dependency is a git dependency" do
         let(:project_name) { "git_source_conflict_at_latest" }
 
         it "is the highest resolvable version" do
@@ -515,7 +515,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      context "and there is no lockfile" do
+      context "when there is no lockfile" do
         let(:project_name) { "version_conflict_without_lockfile" }
 
         it "raises a resolvability error" do
@@ -553,12 +553,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         ).at_least(:once)
       end
 
-      context "and there is no lockfile" do
+      context "when there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
         it { is_expected.to be_nil }
 
-        context "and the conflict comes from a loose PHP version" do
+        context "when the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
           it { is_expected.to be_nil }
@@ -912,12 +912,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

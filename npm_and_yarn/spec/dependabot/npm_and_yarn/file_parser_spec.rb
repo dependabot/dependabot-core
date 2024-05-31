@@ -127,11 +127,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "that contains a version requirement string" do
-          let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
-
           subject { dependencies.find { |d| d.name == "etag" } }
 
-          it { is_expected.to eq(nil) }
+          let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
+
+          it { is_expected.to be_nil }
         end
 
         context "that has URL versions (i.e., is from a bad version of npm)" do
@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
-        expect(parsed_file.count).to eql(1)
+        expect(parsed_file.count).to be(1)
         expect(parsed_file[0].requirements).to match_array([
           {
             requirement: "^10.5.12",

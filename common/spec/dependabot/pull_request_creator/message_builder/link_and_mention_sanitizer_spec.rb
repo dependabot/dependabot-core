@@ -26,7 +26,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
                  "<code>@\u200Bgreysteil</code></a>!</p>\n")
       end
 
-      context "that includes a dash" do
+      context "when the text includes a dash" do
         let(:text) { "Great work @greysteil-work!" }
 
         it "sanitizes the text" do
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that is in brackets" do
+      context "when the text is in brackets" do
         let(:text) { "The team (by @greysteil) etc." }
 
         it "sanitizes the text" do
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that is in square brackets" do
+      context "when th text is in square brackets" do
         let(:text) { "[@hmarr]" }
 
         it "sanitizes the text" do
@@ -69,13 +69,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that appears in single tick code quotes" do
+      context "when the text is in single tick code quotes" do
         let(:text) { "Great work `@greysteil`!" }
 
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
       end
 
-      context "that appears in double tick code quotes" do
+      context "when the text is in double tick code quotes" do
         let(:text) { "Great work ``@greysteil``!" }
 
         it { is_expected.to eq("<p>Great work <code>@greysteil</code>!</p>\n") }
@@ -91,14 +91,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that appears in codeblock quotes" do
+      context "when the text is in code block quotes" do
         let(:text) { "``` @model ||= 123```" }
 
         it do
           is_expected.to eq("<p><code> @model ||= 123</code></p>\n")
         end
 
-        context "that use `~`" do
+        context "when the text contains `~`" do
           let(:text) { "~~~\n @model ||= 123\n~~~" }
 
           it do
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
             )
           end
 
-          context "and a real mention after" do
+          context "when the text includes real mention after" do
             let(:text) do
               "Take a look at this code: ```` @not-a-mention " \
                 "```@not-a-mention``` ```` This is a @mention!"
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "team mentions" do
+      context "when the text includes team mentions" do
         let(:text) { "Thanks @dependabot/reviewers" }
 
         it "sanitizes the team mention" do
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "multiple team mentions" do
+      context "when the text includes multiple team mentions" do
         let(:text) { "Thanks @dependabot/reviewers @dependabot/developers" }
 
         it "sanitizes the team mentions" do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "team mention and non-mention line" do
+      context "when the text includes team mention and non-mention line" do
         let(:text) { "Thanks @dependabot/reviewers\n\nAnd more regular text" }
 
         it "sanitizes the team mention" do
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
           .to eq("Great work [`@\u200Bgreysteil`](https://github.com/greysteil)\\!\n")
       end
 
-      context "that includes a dash" do
+      context "when the text includes a dash" do
         let(:text) { "Great work @greysteil-work!" }
 
         it "sanitizes the text" do
@@ -400,7 +400,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         end
       end
 
-      context "that is in brackets" do
+      context "when the text is in brackets" do
         let(:text) { "The team (by @greysteil) etc." }
 
         it "sanitizes the text" do

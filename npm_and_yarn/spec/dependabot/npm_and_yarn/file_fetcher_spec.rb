@@ -578,7 +578,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
@@ -606,7 +606,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
@@ -795,7 +795,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
           expect(path_file.content)
             .to eq('{"name":"etag","version":"0.0.1"}')
         end
@@ -832,7 +832,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
         end
       end
     end
@@ -868,7 +868,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("mocks/sprintf-js/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "mocks/sprintf-js/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "mocks/sprintf-js/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
           expect(path_file.content)
             .to eq('{"name":"sprintf-js","version":"0.0.0"}')
         end

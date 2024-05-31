@@ -17,13 +17,13 @@ RSpec.describe Dependabot::Maven do
       { name: name, requirements: [], package_manager: "maven" }
     end
 
-    context "normal dependency" do
+    context "when dealing with a normal dependency" do
       let(:name) { "group.com:dep:mule-plugin" }
 
       it { is_expected.to eq("group.com:dep:mule-plugin") }
     end
 
-    context "dependency with classifier" do
+    context "when the dependency has classifier" do
       let(:name) { "group.com:dep:mule-plugin" }
 
       it { is_expected.to eq("group.com:dep:mule-plugin") }
