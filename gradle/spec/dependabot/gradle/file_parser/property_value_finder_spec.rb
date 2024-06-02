@@ -401,6 +401,7 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
         end
 
         let(:property_name) { "collectionsVersion" }
+
         its([:value]) { is_expected.to eq("4.4") }
         its([:file]) { is_expected.to eq("gradle/dependencies.gradle.kts") }
       end
