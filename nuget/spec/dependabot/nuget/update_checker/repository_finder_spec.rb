@@ -253,7 +253,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "when a request getting a 404 response" do
+      context "when a request returns a 404 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 
         # TODO: Might want to raise here instead?
