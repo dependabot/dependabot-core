@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "when it fails to get the index" do
+      context "when the source url fails to get the index.json" do
         before do
           # registry is in a bad state
           stub_request(:get, nuget_url).to_return(status: 500)
