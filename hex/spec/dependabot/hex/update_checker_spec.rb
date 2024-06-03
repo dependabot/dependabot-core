@@ -9,10 +9,6 @@ require "dependabot/errors"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Hex::UpdateChecker do
-  before do
-    stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
-  end
-
   it_behaves_like "an update checker"
 
   let(:checker) do
@@ -65,6 +61,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
   let(:hex_url) { "https://hex.pm/api/packages/#{dependency_name}" }
   let(:hex_response) do
     fixture("registry_api", "#{dependency_name}_response.json")
+  end
+
+  before do
+    stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
   end
 
   describe "#latest_version" do
@@ -402,9 +402,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        it "Skipping the failing test", skip: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          is_expected.to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
       end
 
       context "with bad credentials" do
@@ -438,8 +436,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        it "Skipping the failing test", skip: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          is_expected.to eq(Dependabot::Hex::Version.new("1.1.0"))
+        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
         end
       end
 
@@ -478,8 +476,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        it "Skipping the failing test", skip: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          is_expected.to eq(Dependabot::Hex::Version.new("1.1.0"))
+        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
+          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
         end
       end
     end
