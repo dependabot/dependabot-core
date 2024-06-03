@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
           .to match_array(%w(../ganttproject ../biz.ganttproject.core))
       end
 
-      context "when the subprojects declared across multiple lines" do
+      context "when the subprojects are declared across multiple lines" do
         let(:fixture_name) { "multiline_settings.gradle" }
 
         it "includes the additional declarations" do
