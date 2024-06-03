@@ -402,10 +402,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-#        describe "Skipping with good credentials",
-#                 pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
-#        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
       end
 
       context "with bad credentials" do
@@ -439,10 +436,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-#        describe "Skipping with correct public key fingerprint verification",
-#                 pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
-#        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+
       end
 
       context "with incorrect public key fingerprint verification" do
@@ -480,10 +475,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-#        describe "Skipping with dependencies on both a private organization and private repo",
-#                 pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
-#        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
       end
     end
 
