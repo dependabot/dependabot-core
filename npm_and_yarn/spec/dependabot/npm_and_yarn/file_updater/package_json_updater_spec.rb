@@ -98,7 +98,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         is_expected.to eq(fixture("projects", "npm8", "minor_version_specified", "package.json"))
       end
 
-      context "except for the source" do
+      context "when not changed for the source" do
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "fetch-factory",
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
-    context "updating multiple dependencies" do
+    context "when updating multiple dependencies" do
       let(:project_name) { "npm8/simple" }
       let(:dependencies) do
         [
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
 
       its(:content) { is_expected.to include("jonschlinkert/is-number#4.0.0") }
 
-      context "that specifies a semver requirement" do
+      context "when it specifies a semver requirement" do
         let(:project_name) { "npm8/github_dependency_semver" }
         let(:dependency) do
           Dependabot::Dependency.new(

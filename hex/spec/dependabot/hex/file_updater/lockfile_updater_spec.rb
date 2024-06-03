@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         )
       end
 
-      context "targeting 1.3.2" do
+      context "when the target version is 1.3.2" do
         let(:target_version) { "1.3.2" }
 
         it "updates the dependency version in the lockfile" do
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "targeting 1.3.6" do
+      context "when the target version is 1.3.6" do
         let(:target_version) { "1.3.6" }
 
         it "updates the dependency version in the lockfile" do
