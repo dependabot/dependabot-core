@@ -477,8 +477,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
           it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
         end
-
-
       end
     end
 
