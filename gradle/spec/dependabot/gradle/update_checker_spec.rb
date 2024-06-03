@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "when that's what we're using" do
         let(:dependency_version) { "20030418" }
 
         it { is_expected.to eq(version_class.new("20040616")) }
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to eq(version_class.new("23.0")) }
@@ -219,7 +219,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to be_nil }
@@ -410,7 +410,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
 
@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
   end
@@ -597,7 +597,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -607,7 +607,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

@@ -14,61 +14,61 @@ RSpec.describe Dependabot::Python::FileFetcher do
     context "with only a requirements.in" do
       let(:filenames) { %w(requirements.in) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a requirements.txt" do
       let(:filenames) { %w(requirements.txt) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a setup.py" do
       let(:filenames) { %w(setup.py) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a setup.cfg" do
       let(:filenames) { %w(setup.cfg) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a requirements folder" do
       let(:filenames) { %w(requirements) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a requirements-dev" do
       let(:filenames) { %w(requirements-dev.txt) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a Pipfile and Pipfile.lock" do
       let(:filenames) { %w(Pipfile Pipfile.lock) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only a Pipfile" do
       let(:filenames) { %w(Pipfile) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a pyproject.toml" do
       let(:filenames) { %w(pyproject.toml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with no requirements" do
       let(:filenames) { %w(requirements-dev.md) }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

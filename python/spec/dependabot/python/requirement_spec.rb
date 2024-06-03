@@ -255,19 +255,19 @@ RSpec.describe Dependabot::Python::Requirement do
       context "when dealing with the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "when the requirement includes a local version" do
           let(:requirement_string) { ">=1.0.0+gc.1" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
 
       context "when dealing with an out-of-range version" do
         let(:version) { Gem::Version.new("0.9.0") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -277,23 +277,23 @@ RSpec.describe Dependabot::Python::Requirement do
       context "when dealing with the current version" do
         let(:version_string) { "1.0.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
 
         context "when including a local version" do
           let(:version_string) { "1.0.0+gc.1" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "when the requirement includes a local version" do
           let(:requirement_string) { ">=1.0.0+gc.1" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
 
           context "when satisfied by the version" do
             let(:version_string) { "1.0.0+gc.2" }
 
-            it { is_expected.to eq(true) }
+            it { is_expected.to be(true) }
           end
         end
       end
@@ -301,7 +301,7 @@ RSpec.describe Dependabot::Python::Requirement do
       context "when dealing with an out-of-range version" do
         let(:version_string) { "0.9.0" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "with a wildcard" do
@@ -310,18 +310,18 @@ RSpec.describe Dependabot::Python::Requirement do
         context "when a pre-release" do
           let(:version_string) { "1.8-dev" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "when a full-release" do
           let(:version_string) { "1.8.1" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
 
           context "when out of range" do
             let(:version_string) { "1.9.1" }
 
-            it { is_expected.to eq(false) }
+            it { is_expected.to be(false) }
           end
         end
       end
