@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
           its([:requirement]) { is_expected.to eq("23.6+") }
         end
 
-        context "when it is just a plus" do
+        context "when the requirement is just a plus" do
           let(:pom_req_string) { "+" }
 
           its([:requirement]) { is_expected.to eq("+") }
