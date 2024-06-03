@@ -48,7 +48,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
-      context "when it needs an auth sanitizing" do
+      context "when it needs auth sanitizing" do
         let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth") }
 
         it "removes the env variable use" do
