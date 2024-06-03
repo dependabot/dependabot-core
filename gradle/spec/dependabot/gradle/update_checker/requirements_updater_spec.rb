@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         end
       end
 
-      context "when there were multiple requirements" do
+      context "when there are multiple requirements" do
         let(:requirements) { [pom_req, other_pom_req] }
 
         let(:other_pom_req) do
