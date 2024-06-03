@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         end
       end
 
-      context "when the requirement includes capitals" do
+      context "when the requirement includes uppercase letters" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
