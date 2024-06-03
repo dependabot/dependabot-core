@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         it { is_expected.to eq([]) }
       end
 
-      context "when a request getting a 403 response" do
+      context "when a request returns a 403 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 403) }
 
         it "raises a useful error" do
