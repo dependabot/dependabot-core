@@ -392,20 +392,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
 
-      # context "with good credentials" do
-      #   let(:credentials) do
-      #     [Dependabot::Credential.new({
-      #       "type" => "hex_repository",
-      #       "repo" => "dependabot",
-      #       "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-      #       "url" => "https://dependabot-private.fly.dev"
-      #      })]
-      #    end
+      context "with good credentials" do
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://dependabot-private.fly.dev"
+          })]
+        end
 
-      # describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-      # it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) } # skipped test
-      # end
-      # end
+        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
+          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        end
+      end
 
       context "with bad credentials" do
         let(:credentials) do
@@ -427,21 +427,21 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-      # context "with correct public key fingerprint verification" do
-      #   let(:credentials) do
-      #     [Dependabot::Credential.new({
-      #       "type" => "hex_repository",
-      #       "repo" => "dependabot",
-      #       "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-      #       "url" => "https://dependabot-private.fly.dev",
-      #       "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
-      #     })]
-      #   end
+      context "with correct public key fingerprint verification" do
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://dependabot-private.fly.dev",
+            "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
+          })]
+        end
 
-      # describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-      # it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) } #skipped test
-      # end
-      # end
+        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
+          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        end
+      end
 
       context "with incorrect public key fingerprint verification" do
         let(:credentials) do
@@ -464,24 +464,24 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
       end
 
-      # context "with dependencies on both a private organization and private repo" do
-      #   let(:credentials) do
-      #     [Dependabot::Credential.new({
-      #       "type" => "hex_organization",
-      #       "organization" => "dependabot",
-      #       "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
-      #     }), Dependabot::Credential.new({
-      #       "type" => "hex_repository",
-      #       "repo" => "dependabot",
-      #       "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-      #       "url" => "https://dependabot-private.fly.dev"
-      #     })]
-      #   end
+      context "with dependencies on both a private organization and private repo" do
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "hex_organization",
+            "organization" => "dependabot",
+            "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
+          }), Dependabot::Credential.new({
+            "type" => "hex_repository",
+            "repo" => "dependabot",
+            "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+            "url" => "https://dependabot-private.fly.dev"
+          })]
+        end
 
-      # describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-      # it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) } # skipped test
-      # end
-      #      end
+        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
+          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        end
+      end
     end
 
     context "with a dependency with a git source" do
