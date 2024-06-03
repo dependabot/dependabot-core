@@ -519,7 +519,7 @@ RSpec.describe Dependabot::Job do
       attrs = attributes
       attrs[:reject_external_code] = true
       job = described_class.new(attrs)
-      expect(job.reject_external_code?).to eq(true)
+      expect(job.reject_external_code?).to be(true)
     end
   end
 end

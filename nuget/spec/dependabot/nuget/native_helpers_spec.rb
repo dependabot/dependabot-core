@@ -10,10 +10,10 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
 
   describe "nuget updater command path" do
     subject(:command) do
-      (command,) = Dependabot::Nuget::NativeHelpers.get_nuget_updater_tool_command(repo_root: repo_root,
-                                                                                   proj_path: proj_path,
-                                                                                   dependency: dependency,
-                                                                                   is_transitive: is_transitive)
+      (command,) = described_class.get_nuget_updater_tool_command(repo_root: repo_root,
+                                                                  proj_path: proj_path,
+                                                                  dependency: dependency,
+                                                                  is_transitive: is_transitive)
       command = command.gsub(/^.*NuGetUpdater.Cli/, "/path/to/NuGetUpdater.Cli") # normalize path for unit test
       command
     end
@@ -31,15 +31,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       )
     end
     let(:is_transitive) { false }
-
-    subject(:command) do
-      (command,) = described_class.get_nuget_updater_tool_command(repo_root: repo_root,
-                                                                  proj_path: proj_path,
-                                                                  dependency: dependency,
-                                                                  is_transitive: is_transitive)
-      command = command.gsub(/^.*NuGetUpdater.Cli/, "/path/to/NuGetUpdater.Cli") # normalize path for unit test
-      command
-    end
 
     it "returns a properly formatted command with spaces on the path" do
       expect(command).to eq("/path/to/NuGetUpdater.Cli update --repo-root /path/to/repo " \
