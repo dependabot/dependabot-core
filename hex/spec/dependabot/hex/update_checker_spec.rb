@@ -402,9 +402,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0"))  }
-        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
       end
 
       context "with bad credentials" do
@@ -438,9 +436,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
-        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+
       end
 
       context "with incorrect public key fingerprint verification" do
@@ -478,9 +475,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        describe "Skipping the failing test", pending: "https://github.com/dependabot/dependabot-core/issues/9884" do
-          it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
-        end
+        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
       end
     end
 
