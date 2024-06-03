@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         end
       end
 
-      context "when another (granchild) file is imported" do
+      context "when another (grandchild) file is imported" do
         before do
           stub_request(:get, File.join(url, "commonprops.props?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
