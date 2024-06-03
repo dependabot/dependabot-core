@@ -54,6 +54,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -88,6 +89,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the last dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -125,6 +127,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     describe "with multiple sources" do
       subject(:dependency) { dependencies.first }
+
       let(:workflow_file_fixture_name) { "multiple_sources.yml" }
 
       let(:expected_requirements) do
@@ -152,6 +155,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     describe "with multiple sources pinned to different refs, and newest ref parsed first" do
       subject(:dependency) { dependencies.first }
+
       let(:workflow_file_fixture_name) { "newest_ref_parsed_first.yml" }
 
       let(:expected_requirements) do
@@ -190,6 +194,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     describe "with reusable workflow" do
       subject(:dependency) { dependencies.first }
+
       let(:workflow_file_fixture_name) { "workflow_reusable.yml" }
 
       let(:expected_requirements) do
@@ -255,7 +260,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         mock_service_pack_request("docker/login-action")
       end
 
-      context "the first dependency" do
+      context "when dealing with the first dependency" do
         subject(:dependency) { dependencies.first }
 
         it "has the right details" do
@@ -269,6 +274,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     describe "with empty" do
       subject(:dependency) { dependencies.first }
+
       let(:workflow_file_fixture_name) { "empty.yml" }
 
       it "has no dependencies" do
@@ -297,6 +303,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     context "with a Docker url reference" do
       subject(:dependency) { dependencies.first }
+
       let(:workflow_file_fixture_name) { "docker_reference.yml" }
 
       it "ignores the Docker url reference" do
@@ -312,6 +319,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -359,6 +367,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         "https://github.com/swatinem/rust-cache.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -380,6 +389,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -413,6 +423,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         "https://github.com/actions/checkout.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -428,6 +439,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -467,6 +479,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           api_endpoint: "https://ghes.other.com/api/v3"
         )
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -482,6 +495,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -522,6 +536,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,

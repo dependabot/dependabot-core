@@ -274,10 +274,12 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected.to include "FROM python:3.10.6@sha256:8d1f943ceaaf3b3ce05df5c0926e7958836b048b" \
                                  "700176bf9c56d8f37ac13fca AS base\n"
         end
+
         its(:content) do
           is_expected.to include "FROM python:3.10.6-slim@sha256:c8ef926b002a8371fff6b4f40142dcc6d6f" \
                                  "7e217f7afce2c2d1ed2e6c28e2b7c AS production\n"
         end
+
         its(:content) { is_expected.to include "ENV PIP_NO_CACHE_DIR=off \\\n" }
       end
     end
@@ -357,6 +359,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected
             .to include("FROM registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
+
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
     end
@@ -395,6 +398,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected
             .to include("FROM docker.io/myreg/ubuntu:17.10\n")
         end
+
         its(:content) { is_expected.to include "RUN apt-get update" }
       end
     end
@@ -524,6 +528,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include("FROM registry-host.io:5000/" \
                                    "myreg/ubuntu@sha256:3ea1ca1aa")
           end
+
           its(:content) { is_expected.to include "RUN apt-get update" }
         end
       end
@@ -588,6 +593,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated Dockerfile" do
         subject { updated_files.find { |f| f.name == "Dockerfile" } }
+
         its(:content) { is_expected.to include "FROM ubuntu@sha256:3ea1ca1aa" }
       end
 
@@ -675,6 +681,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected.to include "FROM --platform=$BUILDPLATFORM " \
                                  "node:10.9-alpine AS"
         end
+
         its(:content) { is_expected.to include "FROM node:10.9-alpine\n" }
         its(:content) { is_expected.to include "RUN apk add" }
       end
@@ -912,6 +919,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected
             .to include("    image: registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
+
         its(:content) { is_expected.to include "kind: Pod" }
       end
     end
@@ -962,6 +970,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           is_expected
             .to include("    image: docker.io/myreg/ubuntu:17.10\n")
         end
+
         its(:content) { is_expected.to include "kind: Pod" }
       end
     end
@@ -1012,6 +1021,10 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         its(:content) { is_expected.to include "kind: Pod" }
 
         context "when the podfile has a tag as well as a digest" do
+          subject(:updated_podfile) do
+            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
+          end
+
           let(:podfile) do
             Dependabot::DependencyFile.new(
               content: podfile_body,
@@ -1048,10 +1061,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               }],
               package_manager: "docker"
             )
-          end
-
-          subject(:updated_podfile) do
-            updated_files.find { |f| f.name == "digest_and_tag.yaml" }
           end
 
           its(:content) do
@@ -1110,6 +1119,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include("image: registry-host.io:5000/" \
                                    "myreg/ubuntu@sha256:3ea1ca1aa")
           end
+
           its(:content) { is_expected.to include "kind: Pod" }
         end
       end
@@ -1180,6 +1190,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
 
       describe "the updated podfile" do
         subject { updated_files.find { |f| f.name == "digest.yaml" } }
+
         its(:content) { is_expected.to include "image: ubuntu@sha256:3ea1ca1aa" }
       end
 
@@ -1233,6 +1244,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
   end
+
   let(:helm_updater) do
     described_class.new(
       dependency_files: helm_files,

@@ -9,6 +9,7 @@ require "base64"
 
 RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "docker_registry",
@@ -20,10 +21,12 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
 
   describe "#credentials_for_registry" do
     subject(:found_credentials) { finder.credentials_for_registry(registry) }
+
     let(:registry) { "my.registry.com" }
 
     context "with no matching credentials" do
       let(:registry) { "my.registry.com" }
+
       it { is_expected.to be_nil }
     end
 
@@ -65,7 +68,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and a valid AWS response (via proxying)" do
+        context "when there is a valid AWS response (via proxying)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -93,7 +96,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and an invalid secret key as the password" do
+        context "when using an invalid secret key as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -112,7 +115,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and an invalid secret key as the password (another type)" do
+        context "when an invalid secret key is used as the password (another type)" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -135,7 +138,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
         end
 
-        context "and a valid secret key as the password" do
+        context "when a valid secret key is used as the password" do
           before do
             stub_request(:post, "https://api.ecr.eu-west-2.amazonaws.com/")
               .and_return(
@@ -155,7 +158,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         end
       end
 
-      context "using the default credentials provider" do
+      context "when using the default credentials provider" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "docker_registry",
@@ -163,7 +166,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           })]
         end
 
-        context "and a valid AWS response" do
+        context "when there is a valid AWS response" do
           let(:ecr_stub) { Aws::ECR::Client.new(stub_responses: true) }
 
           before do

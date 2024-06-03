@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     context "with multiple file sources" do
       let(:requirements) do
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       end
 
       it "ignores the dependencies with file sources" do
-        expect(subject).to be_nil
+        expect(latest_version).to be_nil
       end
     end
 
@@ -123,6 +123,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 0.3.8, < 0.4.0"] }
+
         it { is_expected.to eq(Gem::Version.new("0.3.7")) }
       end
     end
@@ -175,10 +176,11 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
+
         it { is_expected.to be_falsey }
       end
     end
@@ -199,15 +201,17 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           .and_return(Gem::Version.new("0.3.8"))
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when the requirement is already up-to-date" do
         let(:requirement) { "~> 0.3.1" }
+
         it { is_expected.to be_falsey }
       end
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
+
         it { is_expected.to be_falsey }
       end
     end
@@ -263,11 +267,13 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "without a reference" do
         let(:ref) { nil }
+
         it { is_expected.to eq(requirements) }
       end
 
       context "with a git SHA as the latest version" do
         let(:ref) { "master" }
+
         it { is_expected.to eq(requirements) }
       end
     end
@@ -305,6 +311,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "when the requirement is already up-to-date" do
         let(:requirement) { "~> 0.3.1" }
+
         it { is_expected.to eq(requirements) }
       end
     end
@@ -340,7 +347,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with a source that came from an http proxy" do
       let(:source) do
@@ -353,7 +360,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

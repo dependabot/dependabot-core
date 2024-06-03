@@ -7,6 +7,10 @@ require "dependabot/nuget/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Nuget::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -22,9 +26,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
       package_manager: "nuget"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -39,6 +41,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:nuget_url) do
       "https://api.nuget.org/v3-flatcontainer/" \
         "microsoft.extensions.dependencymodel/2.1.0/" \
@@ -109,7 +112,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           }
         end
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
       context "with details in the credentials (but no token)" do

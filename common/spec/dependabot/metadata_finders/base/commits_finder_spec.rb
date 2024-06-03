@@ -15,6 +15,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       source: source
     )
   end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -52,6 +53,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         }
       )
   end
+
   let(:service_pack_url) do
     "https://github.com/gocardless/business.git/info/refs" \
       "?service=git-upload-pack"
@@ -105,7 +107,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           .to eq("https://github.com/gocardless/business/commits/v1.4.0")
       end
 
-      context "and a directory" do
+      context "when there is a directory" do
         before { source.directory = "my/directory" }
 
         it "doesn't include the directory (since it is unreliable)" do
@@ -113,7 +115,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             .to eq("https://github.com/gocardless/business/commits/v1.4.0")
         end
 
-        context "for a package manager with reliable source directories" do
+        context "when dealing with a package manager with reliable source directories" do
           before do
             allow(builder)
               .to receive(:reliable_source_directory?)
@@ -164,7 +166,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                           "commits/business-1.4")
       end
 
-      context "for a monorepo" do
+      context "when dealing with a monorepo" do
         let(:dependency_name) { "@pollyjs/ember" }
         let(:dependency_version) { "0.2.0" }
         let(:dependency_previous_version) { "0.0.1" }
@@ -175,6 +177,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             directory: "packages/ember"
           )
         end
+
         before do
           allow(builder)
             .to receive(:fetch_dependency_tags)
@@ -261,6 +264,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "with a github repo that has a DMCA takedown notice" do
       let(:url) { "https://github.com/gocardless/business.git" }
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -491,7 +495,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "for the previous requirement only" do
+      context "when dealing with the previous requirement only" do
         let(:dependency_requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
@@ -551,7 +555,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               .to eq("https://github.com/gocardless/business/commits/v1.4.0")
           end
 
-          context "but with a previously specified reference" do
+          context "when there is a previously specified reference" do
             let(:dependency_previous_requirements) do
               [{
                 file: "Gemfile",
@@ -618,7 +622,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "no tags" do
+      context "when there are no tags" do
         let(:dependency_previous_version) { "0.3.0" }
         let(:dependency_version) { "0.5.0" }
 
@@ -682,7 +686,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "no tags" do
+      context "when there are no tags" do
         let(:dependency_previous_version) { "0.3.0" }
         let(:dependency_version) { "0.5.0" }
 
@@ -691,7 +695,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "no previous version" do
+      context "when there is no previous version" do
         let(:dependency_previous_version) { nil }
         let(:dependency_version) { "0.5.0" }
 
@@ -792,7 +796,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "no tags" do
+      context "when there are no tags" do
         let(:dependency_previous_version) { "0.3.0" }
         let(:dependency_version) { "0.5.0" }
 
@@ -801,7 +805,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
-      context "no previous version" do
+      context "when there is no previous version" do
         let(:dependency_previous_version) { nil }
         let(:dependency_version) { "0.5.0" }
 
@@ -813,6 +817,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to be_nil }
     end
   end
@@ -896,7 +901,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
         end
 
-        context "that 404s" do
+        context "when receiving a 404 response" do
           before do
             response = {
               message: "No common ancestor between v4.7.0 and 5.0.8."
@@ -916,7 +921,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           it { is_expected.to eq([]) }
         end
 
-        context "for a monorepo" do
+        context "when dealing with a monorepo" do
           let(:dependency_name) { "@pollyjs/ember" }
           let(:dependency_version) { "0.2.0" }
           let(:dependency_previous_version) { "0.1.0" }
@@ -927,6 +932,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               directory: "packages/@pollyjs/ember"
             )
           end
+
           before do
             allow(builder)
               .to receive(:fetch_dependency_tags)
@@ -1150,7 +1156,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             )
           end
 
-          context "that 404s" do
+          context "when receiving a 404 response" do
             before do
               response = { message: "404 Project Not Found" }.to_json
               stub_request(:get, azure_compare_url)
@@ -1183,6 +1189,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             repo: "org/#{dependency_name}"
           )
         end
+
         before do
           stub_request(:get, gitlab_compare_url)
             .to_return(status: 200,
@@ -1243,7 +1250,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             "7638417db6d59f3c431d3e1f261cc637155684cd"
           end
 
-          context "that 404s" do
+          context "when receiving a 404 response" do
             before do
               response = { message: "404 Project Not Found" }.to_json
               gitlab_compare_url =
@@ -1278,6 +1285,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
     context "without a recognised source" do
       let(:source) { nil }
+
       it { is_expected.to eq([]) }
     end
   end

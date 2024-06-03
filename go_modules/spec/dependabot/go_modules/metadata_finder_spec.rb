@@ -7,6 +7,10 @@ require "dependabot/go_modules/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::GoModules::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -25,9 +29,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
       source: source
     }]
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -47,8 +49,9 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/satori/go.uuid") }
 
-      context "for a golang.org project" do
+      context "when dealing with a golang.org project" do
         let(:dependency_name) { "golang.org/x/text" }
+
         it { is_expected.to eq("https://github.com/golang/text") }
       end
     end

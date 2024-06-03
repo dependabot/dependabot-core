@@ -43,6 +43,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
 
     context "when there is no latest version" do
       let(:latest_version) { nil }
+
       it { is_expected.to eq(csproj_req) }
     end
 
@@ -51,16 +52,19 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
 
       context "and no requirement was previously specified" do
         let(:csproj_req_string) { nil }
+
         it { is_expected.to eq(csproj_req) }
       end
 
       context "and a soft requirement was previously specified" do
         let(:csproj_req_string) { "23.3-jre" }
+
         its([:requirement]) { is_expected.to eq("23.6-jre") }
       end
 
       context "and a hard requirement was previously specified" do
         let(:csproj_req_string) { "[23.3-jre]" }
+
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
@@ -69,6 +73,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
           version_class.new("3.0.0-beta4.20210.2+38fe3493")
         end
         let(:csproj_req_string) { "3.0.0-beta4.20207.4+07df2f07" }
+
         its([:requirement]) do
           is_expected.to eq("3.0.0-beta4.20210.2")
         end
@@ -76,20 +81,24 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
 
       context "and a wildcard requirement was previously specified" do
         let(:csproj_req_string) { "22.*" }
+
         its([:requirement]) { is_expected.to eq("23.*") }
 
         context "for pre-release versions" do
           let(:csproj_req_string) { "22.3-*" }
+
           its([:requirement]) { is_expected.to eq("23.6-*") }
         end
 
         context "that doesn't need updating" do
           let(:csproj_req_string) { "23.*" }
+
           it { is_expected.to eq(csproj_req) }
         end
 
         context "that is just a wildcard" do
           let(:csproj_req_string) { "*" }
+
           it { is_expected.to eq(csproj_req) }
         end
       end

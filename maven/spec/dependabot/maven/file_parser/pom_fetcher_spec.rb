@@ -11,6 +11,7 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
 
   describe "#fetch_remote_parent_pom" do
     subject(:fetch_remote_parent_pom) { fetcher.fetch_remote_parent_pom(group_id, artifact_id, version, urls_to_try) }
+
     let(:group_id) { "org.springframework.boot" }
     let(:artifact_id) { "spring-boot-starter-parent" }
     let(:version) { "1.5.9.RELEASE" }
@@ -57,7 +58,7 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
         expect(fetch_remote_parent_pom.content).to include("snapshot")
       end
 
-      context "but the response is malformed" do
+      context "when the response is malformed" do
         before do
           stub_request(:get, "https://repo.maven.apache.org/maven2/" \
                              "org/springframework/boot/" \

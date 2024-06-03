@@ -542,12 +542,12 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
             """);
 
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
-        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
 
         return tempProjectPath;
     }

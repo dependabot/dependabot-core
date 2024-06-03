@@ -349,7 +349,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
           .to eq([OpenStruct.new(name: "updated files")])
       end
 
-      context "and a requirements.txt that specifies a subdependency" do
+      context "when a requirements.txt that specifies a subdependency" do
         let(:dependency_files) { [manifest_file, generated_file, requirements] }
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }

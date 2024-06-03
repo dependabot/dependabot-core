@@ -15,6 +15,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   before do
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
+
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
   let(:crates_fixture_name) { "#{dependency_name}.json" }
@@ -80,16 +81,19 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when given an up-to-date dependency" do
       let(:dependency_version) { "0.1.40" }
+
       it { is_expected.to be_falsey }
     end
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(Gem::Version.new("0.1.40")) }
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
@@ -217,7 +221,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
       expect(Dependabot::Cargo::UpdateChecker::VersionResolver)
@@ -229,14 +233,16 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.40, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
 
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
       let(:raise_on_ignored) { true }
+
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end
 
@@ -340,12 +346,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           )
         ]
       end
+
       it { is_expected.to eq(Gem::Version.new("0.1.39")) }
     end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.send(:latest_resolvable_version_with_no_unlock) }
+
     let(:dependency_name) { "regex" }
     let(:dependency_version) { "0.1.41" }
     let(:requirements) do
@@ -361,6 +369,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 0.1.60, < 2.0"] }
+
       it { is_expected.to eq(Gem::Version.new("0.1.59")) }
     end
 
@@ -385,6 +394,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           ref: nil
         }
       end
+
       before do
         git_url = "https://github.com/BurntSushi/utf8-ranges.git"
         git_header = {
@@ -492,12 +502,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

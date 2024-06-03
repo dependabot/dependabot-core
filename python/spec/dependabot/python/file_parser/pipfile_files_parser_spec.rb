@@ -29,10 +29,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       subject(:dependencies) do
         parser.dependency_set.dependencies.select(&:top_level?)
       end
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -53,6 +55,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       subject(:dependencies) do
         parser.dependency_set.dependencies.reject(&:top_level?)
       end
+
       its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
@@ -62,6 +65,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:name) { is_expected.to eq("certifi") }
         its(:version) { is_expected.to eq("2017.11.5") }
         its(:requirements) { is_expected.to eq([]) }
+
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: true }])
         end
@@ -76,10 +80,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
 
       describe "a development and production dependency" do
+        subject { dependencies.find { |d| d.name == "py" } }
+
         let(:pipfile_fixture_name) { "prod_and_dev" }
         let(:lockfile_fixture_name) { "prod_and_dev.lock" }
-
-        subject { dependencies.find { |d| d.name == "py" } }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ production: true }, { production: false }])
@@ -102,6 +106,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the last dependency" do
           subject { dependencies.last }
+
           let(:expected_requirements) do
             [{
               requirement: "==3.4.0",
@@ -120,10 +125,11 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       context "without a source" do
         let(:pipfile_fixture_name) { "no_source" }
+
         its(:length) { is_expected.to eq(11) }
       end
 
-      context "using arbitrary equality" do
+      context "when using arbitrary equality" do
         let(:pipfile_fixture_name) { "arbitrary_equality" }
         let(:lockfile_fixture_name) { "arbitrary_equality.lock" }
 
@@ -134,6 +140,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
           describe "the last dependency" do
             subject { dependencies.last }
+
             let(:expected_requirements) do
               [{
                 requirement: "===3.4.0",
@@ -167,6 +174,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the last dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -199,6 +207,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -229,6 +238,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -259,6 +269,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "==2.18.0",
@@ -308,6 +319,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       describe "the dependency" do
         subject { dependencies.find { |d| d.name == "pytest" } }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -334,6 +346,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       describe "the (non-git) dependency" do
         subject { dependencies.find { |d| d.name == "requests" } }
+
         let(:expected_requirements) do
           [{
             requirement: "*",
@@ -363,10 +376,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         subject(:dependencies) do
           parser.dependency_set.dependencies.select(&:top_level?)
         end
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -393,10 +408,12 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         subject(:dependencies) do
           parser.dependency_set.dependencies.select(&:top_level?)
         end
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
           subject { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: "*",
@@ -413,11 +430,13 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
           context "with exact versions specified in the Pipfile" do
             let(:pipfile_fixture_name) { "exact_version" }
+
             its(:version) { is_expected.to eq("2.18.0") }
           end
 
           context "with wildcard versions specified in the Pipfile" do
             let(:pipfile_fixture_name) { "wildcard" }
+
             its(:version) { is_expected.to be_nil }
           end
         end
@@ -425,13 +444,13 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
     end
 
     context "with an empty requirement string" do
+      subject { dependencies.find { |d| d.name == "tensorflow-gpu" } }
+
       let(:pipfile_fixture_name) { "empty_requirement" }
       let(:files) { [pipfile] }
       let(:dependencies) do
         parser.dependency_set.dependencies.select(&:top_level?)
       end
-
-      subject { dependencies.find { |d| d.name == "tensorflow-gpu" } }
 
       let(:expected_requirements) do
         [{

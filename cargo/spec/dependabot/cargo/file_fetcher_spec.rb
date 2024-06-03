@@ -29,7 +29,9 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
   end
 
   let(:json_header) { { "content-type" => "application/json" } }
+
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   before do
     stub_request(:get, url + "Cargo.toml?ref=sha")
       .with(headers: { "Authorization" => "token token" })
@@ -246,6 +248,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 200, body: parent_fixture, headers: json_header)
     end
+
     let(:parent_fixture) do
       fixture("github", "contents_cargo_manifest_path_deps.json")
     end
@@ -256,6 +259,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 200, body: path_dep_fixture, headers: json_header)
       end
+
       let(:path_dep_fixture) do
         fixture("github", "contents_cargo_manifest.json")
       end
@@ -264,7 +268,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         expect(file_fetcher_instance.files.last.support_file?)
-          .to eq(true)
+          .to be(true)
       end
 
       context "with a trailing slash in the path" do
@@ -360,6 +364,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
         end
+
         before do
           stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                              "contents/my_dir?ref=sha")
@@ -474,6 +479,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 200, body: parent_fixture, headers: json_header)
     end
+
     let(:parent_fixture) do
       fixture("github", "contents_cargo_manifest_workspace_root.json")
     end
@@ -484,6 +490,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 200, body: child_fixture, headers: json_header)
       end
+
       let(:child_fixture) do
         fixture("github", "contents_cargo_manifest_workspace_child.json")
       end
@@ -497,6 +504,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         let(:parent_fixture) do
           fixture("github", "contents_cargo_manifest_workspace_implicit.json")
         end
+
         before do
           stub_request(:get, url + "src/s3/Cargo.toml?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -626,6 +634,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
             "contents_cargo_manifest_workspace_root_partial_glob.json"
           )
         end
+
         before do
           stub_request(:get, url + "packages?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -672,6 +681,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 200, body: member_fixture, headers: json_header)
     end
+
     let(:parent_fixture) do
       fixture("github", "contents_cargo_manifest_workspace_excluded_dependencies_root.json")
     end

@@ -75,6 +75,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           "'0.6.0-SNAPSHOT', changing: true"
         )
       end
+
       its(:content) { is_expected.to include "version: '4.2.0'" }
 
       context "with kotlin" do
@@ -85,6 +86,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             'implementation(group = "co.aikar", name = "acf-paper", version = "0.6.0-SNAPSHOT", changing: true)'
           )
         end
+
         its(:content) { is_expected.to include 'version = "4.2.0"' }
       end
 
@@ -286,6 +288,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
+
             its(:content) { is_expected.to include "version: '4.2.0'" }
           end
 
@@ -300,6 +303,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
+
             its(:content) { is_expected.to include "version: '4.2.0'" }
           end
         end
@@ -445,7 +449,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
             .to include("ext.kotlin_version = '23.6-jre'")
         end
 
-        context "that is inherited from the parent buildfile" do
+        context "when the build file is inherited from the parent build file" do
           let(:buildfile_fixture_name) { "shortform_build.gradle" }
           let(:subproject_fixture_name) { "inherited_property.gradle" }
 
@@ -571,6 +575,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
 
       context "with a version catalog" do
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+
         let(:buildfile) do
           Dependabot::DependencyFile.new(
             name: "gradle/libs.versions.toml",
@@ -600,16 +608,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
 
-        subject(:updated_buildfile) do
-          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
-        end
         its(:content) do
           is_expected.to include(
             'kotlinter = { id = "org.jmailen.kotlinter", version = "3.12.0" }'
           )
         end
       end
+
       context "with a version catalog with ref" do
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+
         let(:buildfile) do
           Dependabot::DependencyFile.new(
             name: "gradle/libs.versions.toml",
@@ -639,9 +649,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
 
-        subject(:updated_buildfile) do
-          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
-        end
         its(:content) do
           is_expected.to include(
             'ktlint = "11.0.0"'
@@ -650,6 +657,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
       end
 
       context "with a version catalog with ref and non-ref mixed" do
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+
         let(:buildfile) do
           Dependabot::DependencyFile.new(
             name: "gradle/libs.versions.toml",
@@ -691,9 +702,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
 
-        subject(:updated_buildfile) do
-          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
-        end
         its(:content) do
           is_expected.to include(
             'ktlint = "11.0.0"'

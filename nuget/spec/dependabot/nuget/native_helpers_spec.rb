@@ -9,6 +9,15 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
   let(:dependabot_home) { ENV.fetch("DEPENDABOT_HOME", nil) || Dir.home }
 
   describe "nuget updater command path" do
+    subject(:command) do
+      (command,) = Dependabot::Nuget::NativeHelpers.get_nuget_updater_tool_command(repo_root: repo_root,
+                                                                                   proj_path: proj_path,
+                                                                                   dependency: dependency,
+                                                                                   is_transitive: is_transitive)
+      command = command.gsub(/^.*NuGetUpdater.Cli/, "/path/to/NuGetUpdater.Cli") # normalize path for unit test
+      command
+    end
+
     let(:repo_root) { "/path/to/repo" }
     let(:proj_path) { "/path/to/repo/src/some project/some_project.csproj" }
     let(:dependency) do
@@ -57,6 +66,10 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
   end
 
   describe "#native_csharp_tests" do
+    subject(:dotnet_test) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
+
     let(:command) do
       [
         "dotnet",
@@ -65,10 +78,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "Release",
         project_path
       ].join(" ")
-    end
-
-    subject(:dotnet_test) do
-      Dependabot::SharedHelpers.run_shell_command(command)
     end
 
     context "`dotnet test NuGetUpdater.Core.Test` output" do
@@ -95,6 +104,10 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
   end
 
   describe "#native_csharp_format" do
+    subject(:dotnet_test) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
+
     let(:command) do
       [
         "dotnet",
@@ -106,10 +119,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "-v",
         "diag"
       ].join(" ")
-    end
-
-    subject(:dotnet_test) do
-      Dependabot::SharedHelpers.run_shell_command(command)
     end
 
     context "`dotnet format NuGetUpdater` output" do

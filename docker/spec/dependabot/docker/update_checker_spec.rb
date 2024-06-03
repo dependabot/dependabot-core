@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   describe "#up_to_date?" do
     subject { checker.up_to_date? }
 
-    context "given an out of date digest and an up to date tag" do
+    context "when the digest is out of date and the tag is up to date" do
       let(:version) { "17.10" }
       let(:source) { { digest: "old_digest", tag: "17.10" } }
 
@@ -87,26 +87,30 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
-    context "given an outdated dependency" do
+    context "when the dependency is outdated" do
       let(:version) { "17.04" }
+
       it { is_expected.to be_truthy }
     end
 
-    context "given an up-to-date dependency" do
+    context "when the dependency is up-to-date" do
       let(:version) { "17.10" }
+
       it { is_expected.to be_falsey }
     end
 
-    context "given a purely numeric version" do
+    context "when the version is numeric" do
       let(:version) { "1234567890" }
+
       it { is_expected.to be_truthy }
     end
 
-    context "given a non-numeric version" do
+    context "when the version is non-numeric" do
       let(:version) { "artful" }
+
       it { is_expected.to be_falsey }
 
-      context "and a digest" do
+      context "when the digest is present" do
         let(:source) { { digest: "old_digest" } }
         let(:headers_response) do
           fixture("docker", "registry_manifest_headers", "generic.json")
@@ -117,11 +121,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             .and_return(status: 200, headers: JSON.parse(headers_response))
         end
 
-        context "that is out-of-date" do
+        context "when the digest is out-of-date" do
           let(:source) { { digest: "old_digest" } }
+
           it { is_expected.to be_truthy }
 
-          context "but the response doesn't include a new digest" do
+          context "when the response doesn't include a new digest" do
             let(:headers_response) do
               fixture(
                 "docker",
@@ -134,7 +139,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           end
         end
 
-        context "that is up-to-date" do
+        context "when the digest is up-to-date" do
           let(:source) do
             {
               digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
@@ -147,7 +152,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "given a digest only" do
+    context "when only the digest is present" do
       let(:tags_fixture_name) { "ubuntu.json" }
 
       let(:version) { digest }
@@ -162,13 +167,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           .and_return(status: 200, headers: JSON.parse(headers_response))
       end
 
-      context "that is out-to-date" do
+      context "when the digest is out-to-date" do
         let(:digest) { "c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
 
         it { is_expected.to be_truthy }
       end
 
-      context "that is up-to-date" do
+      context "when the digest is up-to-date" do
         let(:latest_digest) { "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
         let(:digest) { latest_digest }
 
@@ -244,16 +249,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     it { is_expected.to eq("17.10") }
 
     context "when the dependency has a non-numeric version" do
       let(:version) { "artful" }
+
       it { is_expected.to eq("artful") }
 
-      context "that starts with a number" do
+      context "when the version starts with a number" do
         let(:version) { "309403913c7f0848e6616446edec909b55d53571" }
+
         it { is_expected.to eq("309403913c7f0848e6616446edec909b55d53571") }
       end
     end
@@ -262,6 +269,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:dependency_name) { "ruby" }
       let(:version) { "2.4.0-slim" }
       let(:tags_fixture_name) { "ruby_25.json" }
+
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
         stub_request(:get, tags_url)
@@ -271,33 +279,38 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("2.5.0-slim") }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
     context "when already on the latest version" do
       let(:version) { "17.10" }
+
       it { is_expected.to eq("17.10") }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
 
     context "when all later versions are being ignored" do
       let(:ignored_versions) { [">= 17.10"] }
+
       it { is_expected.to eq("17.04") }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -306,7 +319,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:ignored_versions) { [">= 17.10"] }
       let(:source) { { digest: "old_digest", tag: "17.04" } }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         before do
@@ -317,24 +330,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
 
     context "when ignoring multiple versions" do
       let(:ignored_versions) { [">= 17.10, < 17.2"] }
+
       it { is_expected.to eq("17.10") }
     end
 
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
+
       it { is_expected.to eq("17.04") }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -359,13 +375,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             .and_return(status: 200, headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2")))
         end
 
-        context "and we're using a version with no KB" do
+        context "when using a version with no KB" do
           let(:version) { "1803" }
+
           it { is_expected.to eq("1903-KB4505057") }
         end
 
-        context "and we're using a version with KB" do
+        context "when using a version with KB" do
           let(:version) { "1803-KB4487017" }
+
           it { is_expected.to eq("1903-KB4505057") }
         end
       end
@@ -411,12 +429,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     context "when the dependency's version has a prefix" do
       let(:version) { "artful-20170826" }
+
       it { is_expected.to eq("artful-20170916") }
     end
 
     context "when the dependency's version starts with a 'v'" do
       let(:version) { "v1.5.0" }
       let(:tags_fixture_name) { "kube_state_metrics.json" }
+
       it { is_expected.to eq("v1.6.0") }
     end
 
@@ -434,8 +454,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("7.2-0.3") }
 
-      context "for an older version of the prefix" do
+      context "when using an older version of the prefix" do
         let(:version) { "7.1-0.1" }
+
         it { is_expected.to eq("7.2-0.3") }
       end
     end
@@ -443,6 +464,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the dependency version is generated with git describe --tags --long" do
       let(:tags_fixture_name) { "git_describe.json" }
       let(:version) { "v3.9.0-177-ged5bcde" }
+
       it { is_expected.to eq("v3.10.0-169-gfe040d3") }
     end
 
@@ -455,7 +477,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
 
-      context "every time" do
+      context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
             .to_raise(RestClient::Exceptions::OpenTimeout)
@@ -466,7 +488,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             .to raise_error(RestClient::Exceptions::OpenTimeout)
         end
 
-        context "for a private registry" do
+        context "when using a private registry" do
           let(:dependency_name) { "ubuntu" }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -496,6 +518,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:dependency_name) { "ruby" }
       let(:version) { "2.4.0-slim" }
       let(:tags_fixture_name) { "ruby.json" }
+
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
         stub_request(:get, tags_url)
@@ -515,6 +538,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -558,6 +582,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -595,6 +620,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -620,6 +646,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -645,6 +672,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -669,6 +697,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -731,6 +760,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -766,6 +796,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -790,6 +821,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -812,24 +844,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      context "followed by numbers" do
+      context "when the underscore followed by numbers" do
         let(:version) { "17.0.1_12-jre-alpine" }
+
         it { is_expected.to eq("17.0.2_8-jre-alpine") }
       end
 
-      context "followed by numbers and with less components than other version but higher underscore part" do
-        before do
-          stub_request(:head, repo_url + "manifests/#{latest_version}")
-            .and_return(
-              status: 200,
-              body: "",
-              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
-            )
-        end
+      context "when the underscore followed by numbers" do
+        context "with less components than other version but higher underscore part" do
+          before do
+            stub_request(:head, repo_url + "manifests/#{latest_version}")
+              .and_return(
+                status: 200,
+                body: "",
+                headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+              )
+          end
 
-        let(:latest_version) { "11.0.16.1_1-jdk" }
-        let(:version) { "11.0.16_8-jdk" }
-        it { is_expected.to eq(latest_version) }
+          let(:latest_version) { "11.0.16.1_1-jdk" }
+          let(:version) { "11.0.16_8-jdk" }
+
+          it { is_expected.to eq(latest_version) }
+        end
       end
     end
 
@@ -857,7 +893,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "2.1.3" }
 
       it "ignores the sha-like part" do
-        expect(subject).to eq("2.10.0")
+        expect(latest_version).to eq("2.10.0")
       end
     end
 
@@ -865,6 +901,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:dependency_name) { "moj/ruby" }
       let(:version) { "2.4.0" }
       let(:tags_fixture_name) { "ruby.json" }
+
       before do
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
         stub_request(:get, tags_url)
@@ -873,7 +910,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("2.4.2") }
 
-      context "and dockerhub 401s" do
+      context "when dockerhub returns a 401 status" do
         before do
           tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
           stub_request(:get, tags_url)
@@ -902,6 +939,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url)
@@ -912,8 +950,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("3.6") }
 
-      context "and the current version is a pre-release" do
+      context "when the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
+
         it { is_expected.to eq("3.7.0a2") }
       end
     end
@@ -989,7 +1028,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("2.1-sdk") }
 
-      context "and a suffix" do
+      context "when a suffix is present" do
         let(:version) { "2.0-runtime" }
 
         before do
@@ -1006,6 +1045,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:end_pagination_headers) do
           fixture("docker", "registry_pagination_headers", "no_next_link.json")
         end
+
         before do
           stub_request(:get, repo_url + "tags/list")
             .and_return(
@@ -1044,7 +1084,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("2.1-sdk") }
 
-        context "every time" do
+        context "when it occurs every time" do
           before do
             stub_request(:head, repo_url + "manifests/latest")
               .to_return(status: 404)
@@ -1059,6 +1099,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:dependency_name) { "python" }
       let(:version) { "3.6.2-alpine3.6" }
       let(:tags_fixture_name) { "python.json" }
+
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url)
@@ -1128,7 +1169,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("17.10") }
 
-        context "that don't have a username or password" do
+        context "when there is no username or password" do
           let(:credentials) do
             [Dependabot::Credential.new({
               "type" => "git_source",
@@ -1284,6 +1325,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     before { allow(checker).to receive(:latest_version).and_return("delegate") }
+
     it { is_expected.to eq("delegate") }
   end
 
