@@ -35,8 +35,6 @@ RSpec/BeforeAfterAll:
 # Prefixes: when, with, without
 RSpec/ContextWording:
   Exclude:
-    - 'gradle/**/*'
-    - 'hex/**/*'
     - 'nuget/**/*'
 
 # Offense count: 31
