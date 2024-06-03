@@ -39,7 +39,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           .to eq(fixture("projects", "generic", "npmrc_auth_token", ".npmrc"))
       end
 
-      context "when it needs an authToken sanitizing" do
+      context "when it needs to sanitize the authToken" do
         let(:dependency_files) { project_dependency_files("generic/npmrc_env_auth_token") }
 
         it "removes the env variable use" do
