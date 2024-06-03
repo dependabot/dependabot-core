@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Service do
         .to eql([["dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )", :created]])
     end
 
-    context "when the change is missing a previous version" do
+    context "when the change is missing a previous version and there's no change in requirements" do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -249,39 +249,15 @@ RSpec.describe Dependabot::Service do
               { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
             ],
             previous_requirements: [
-              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
-            ]
-          )
-        ]
-      end
-
-      it "raises a MissingPreviousVersion error" do
-        expect { service.create_pull_request(dependency_change, base_sha) }
-          .to raise_error(Dependabot::Service::MissingPreviousVersion)
-      end
-    end
-
-    context "when the change is missing a requirements change" do
-      let(:dependencies) do
-        [
-          Dependabot::Dependency.new(
-            name: "dependabot-fortran",
-            package_manager: "bundler",
-            version: "1.8.0",
-            previous_version: "1.7.0",
-            requirements: [
-              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
-            ],
-            previous_requirements: [
               { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
             ]
           )
         ]
       end
 
-      it "raises a MissingRequirementsChange error" do
+      it "raises an InvalidUpdatedDependencies error" do
         expect { service.create_pull_request(dependency_change, base_sha) }
-          .to raise_error(Dependabot::Service::MissingRequirementsChange)
+          .to raise_error(Dependabot::Service::InvalidUpdatedDependencies)
       end
     end
   end

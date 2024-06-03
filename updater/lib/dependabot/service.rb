@@ -21,21 +21,18 @@ module Dependabot
     extend T::Sig
     extend Forwardable
 
-    class MissingPreviousVersion < DependabotError
+    class InvalidUpdatedDependencies < DependabotError
       extend T::Sig
 
-      sig { params(deps: T::Array[String]).void }
-      def initialize(deps)
-        super("Previous version was not provided for the following dependencies: #{deps.join(', ')}")
-      end
-    end
+      sig { params(deps_no_previous_version: T::Array[String], deps_no_change: T::Array[String]).void }
+      def initialize(deps_no_previous_version:, deps_no_change:)
+        msg = ""
+        if deps_no_previous_version.any?
+          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
+        end
+        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
 
-    class MissingRequirementsChange < DependabotError
-      extend T::Sig
-
-      sig { params(deps: T::Array[String]).void }
-      def initialize(deps)
-        super("Requirements was not changed for the following dependencies: #{deps.join(', ')}")
+        super(msg)
       end
     end
 
@@ -68,12 +65,7 @@ module Dependabot
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
       if Experiments.enabled?("dependency_change_validation")
-        updated_deps = dependency_change.updated_dependencies
-        deps_missing_previous = updated_deps.reject(&:previous_version)
-        raise MissingPreviousVersion, deps_missing_previous.map(&:name) unless deps_missing_previous.empty?
-
-        deps_missing_change = updated_deps.reject { |dep| requirements_changed?(dep) }
-        raise MissingRequirementsChange, deps_missing_change.map(&:name) unless deps_missing_change.empty?
+        check_dependencies_have_previous_version(dependency_change.updated_dependencies)
       end
 
       if Experiments.enabled?("threaded_metadata")
@@ -255,6 +247,19 @@ module Dependabot
     def truncate(string, max: 120)
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
+    end
+
+    sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
+    def check_dependencies_have_previous_version(updated_dependencies)
+      return if updated_dependencies.all? { |d| requirements_changed?(d) }
+      return if updated_dependencies.all?(&:previous_version)
+
+      deps_no_previous_version = updated_dependencies.reject(&:previous_version)
+      deps_no_change = updated_dependencies.reject { |d| requirements_changed?(d) }
+      raise InvalidUpdatedDependencies.new(
+        deps_no_previous_version: deps_no_previous_version.map(&:name),
+        deps_no_change: deps_no_change.map(&:name)
+      )
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
