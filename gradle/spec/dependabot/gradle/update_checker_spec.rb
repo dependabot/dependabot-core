@@ -343,7 +343,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+    subject(:latest_version_resolvable_with_full_unlock) { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
@@ -410,7 +410,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
 
@@ -476,13 +476,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    subject { checker.send(:updated_dependencies_after_full_unlock) }
+    subject(:checker_send) { checker.send(:updated_dependencies_after_full_unlock) }
 
     context "with a property buildfile" do
       let(:dependency_name) { "org.jetbrains.kotlin:kotlin-gradle-plugin" }
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(
+        expect(checker_send).to eq(
           [
             Dependabot::Dependency.new(
               name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
@@ -597,7 +597,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -607,7 +607,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

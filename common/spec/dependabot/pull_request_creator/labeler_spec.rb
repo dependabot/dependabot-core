@@ -132,7 +132,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             .to_not have_requested(:post, "#{repo_api_url}/labels")
         end
 
-        context "that is only present after paginating" do
+        context "when dealing with the label that is only present after paginating" do
           let(:repo_labels_url) { "#{repo_api_url}/labels?per_page=100" }
           let(:links_header) do
             {
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
-        context "that should be ignored" do
+        context "when considering the label that should be ignored" do
           let(:labels_fixture_name) { "labels_with_custom_ignored.json" }
 
           before do
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
-        context "that doesn't exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it "does not create any labels" do
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
-      context "for an update that fixes a security vulnerability" do
+      context "when applying an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
 
         context "when the 'security' label doesn't yet exist" do
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
-      context "for an update that fixes a security vulnerability" do
+      context "when applying an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
 
         context "when the 'security' label doesn't yet exist" do
@@ -443,7 +443,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             .to_not have_requested(:post, "#{repo_api_url}/labels")
         end
 
-        context "that doesn't exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it "does not create any labels" do
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
-      context "for an update that fixes a security vulnerability" do
+      context "when applying an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
 
         context "when the 'security' label doesn't yet exist" do
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["dependencies"]) }
 
-        context "for a security fix" do
+        context "when dealing with a security fix" do
           let(:includes_security_fixes) { true }
           let(:labels_fixture_name) { "labels_with_security.json" }
 
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["dependencies"]) }
 
-        context "and label_language is true" do
+        context "when label_language is true" do
           let(:label_language) { true }
 
           it { is_expected.to match_array(%w(dependencies ruby)) }
@@ -558,7 +558,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["wontfix"]) }
 
-        context "that don't exist" do
+        context "when the label is not exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it { is_expected.to eq([]) }
@@ -571,39 +571,39 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
-      context "for an automerge candidate" do
+      context "when dealing with an automerge candidate" do
         let(:automerge_candidate) { true }
 
         it { is_expected.to_not include("automerge") }
 
-        context "for a repo that has an automerge label" do
+        context "when dealing with a repo that has an automerge label" do
           let(:labels_fixture_name) { "labels_with_automerge_tag.json" }
 
           it { is_expected.to include("automerge") }
         end
       end
 
-      context "for a non-automerge candidate" do
+      context "when dealing with a non-automerge candidate" do
         let(:automerge_candidate) { false }
 
-        context "for a repo that has an automerge label" do
+        context "when dealing with a repo that has an automerge label" do
           let(:labels_fixture_name) { "labels_with_automerge_tag.json" }
 
           it { is_expected.to_not include("automerge") }
         end
       end
 
-      context "for a repo without patch, minor and major labels" do
+      context "when dealing with a repo without patch, minor and major labels" do
         it { is_expected.to_not include("patch") }
       end
 
-      context "for a repo that has patch, minor and major labels" do
+      context "when dealing with a repo that has patch, minor and major labels" do
         let(:labels_fixture_name) { "labels_with_semver_tags.json" }
 
         context "with a version and a previous version" do
           let(:previous_version) { "1.4.0" }
 
-          context "for a patch release" do
+          context "when dealing with a patch release" do
             let(:version) { "1.4.1" }
 
             it { is_expected.to include("patch") }
@@ -615,7 +615,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
-          context "for a patch release with build identifier" do
+          context "when dealing with a patch release with build identifier" do
             let(:version) { "1.4.1+10" }
 
             it { is_expected.to include("patch") }
@@ -627,7 +627,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
-          context "for a patch release when both have build identifiers" do
+          context "when dealing with a patch release and both have build identifiers" do
             let(:previous_version) { "1.4.0+10" }
             let(:version) { "1.4.1+9" }
 
@@ -640,51 +640,51 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
-          context "for a minor release" do
+          context "when dealing with a minor release" do
             let(:version) { "1.5.1" }
 
             it { is_expected.to include("minor") }
           end
 
-          context "for a minor release with build identifier" do
+          context "when dealing with a minor release with build identifier" do
             let(:version) { "1.5.1+1" }
 
             it { is_expected.to include("minor") }
           end
 
-          context "for a minor release when both have build identifiers" do
+          context "when dealing with a minor release when both have build identifiers" do
             let(:previous_version) { "1.4.0+10" }
             let(:version) { "1.5.1+1" }
 
             it { is_expected.to include("minor") }
           end
 
-          context "for a major release" do
+          context "when dealing with a major release" do
             let(:version) { "2.5.1" }
 
             it { is_expected.to include("major") }
           end
 
-          context "for a major release with build identifier" do
+          context "when dealing with a major release with build identifier" do
             let(:version) { "2.5.1+100" }
 
             it { is_expected.to include("major") }
           end
 
-          context "for a major release when both have build identifiers" do
+          context "when dealing with a major release and both have build identifiers" do
             let(:previous_version) { "1.4.0+10" }
             let(:version) { "2.5.1+100" }
 
             it { is_expected.to include("major") }
           end
 
-          context "for a non-semver release" do
+          context "when dealing with a non-semver release" do
             let(:version) { "random" }
 
             it { is_expected.to eq(["dependencies"]) }
           end
 
-          context "for a git dependency" do
+          context "when dealing with a git dependency" do
             let(:version) { "6cf3d8c20aa5171b4f9f98ab8f4b6ced5ace912f" }
             let(:previous_version) do
               "9cd93a80d534ff616458af949b0d67aa10812d1a"
@@ -727,7 +727,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
-      context "for an update that fixes a security vulnerability" do
+      context "when applying an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
 
         context "when a default and custom dependencies label exists" do
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       context "when a 'dependencies' label exists" do
         it { is_expected.to eq(["dependencies"]) }
 
-        context "for a security fix" do
+        context "when applying a security fix" do
           let(:includes_security_fixes) { true }
 
           it { is_expected.to eq(%w(dependencies security)) }
@@ -764,7 +764,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["critical"]) }
 
-        context "that don't exist" do
+        context "when dealing with the labels that don't exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it { is_expected.to eq(["non-existent"]) }
@@ -803,7 +803,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["dependencies"]) }
 
-        context "for a security fix" do
+        context "when dealing with a security fix" do
           let(:includes_security_fixes) { true }
 
           before do
@@ -858,7 +858,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it { is_expected.to eq(["critical"]) }
 
-        context "that don't exist" do
+        context "when dealing with labels that don't exist" do
           let(:custom_labels) { ["non-existent"] }
 
           it { is_expected.to eq([]) }
@@ -952,7 +952,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
         end
 
-        context "for a security fix" do
+        context "when dealing with a security fix" do
           let(:includes_security_fixes) { true }
 
           before do

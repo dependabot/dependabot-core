@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           .to_return(status: 200, body: elm_package_response)
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it "is true" do
         pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
-        is_expected.to eq(true)
+        is_expected.to be(true)
       end
     end
 
@@ -127,12 +127,12 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           .to_return(status: 200, body: elm_package_response)
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version }
+    subject(:latest_version) { checker.latest_version }
 
     let(:elm_package_url) do
       "https://package.elm-lang.org/packages/realWorld/ElmPackage/releases.json"
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.to_not raise_error
       end
     end
 
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -207,14 +207,14 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:ignored_versions) { [">= 0"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version).to be_nil
       end
 
       context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.to_not raise_error
         end
       end
     end

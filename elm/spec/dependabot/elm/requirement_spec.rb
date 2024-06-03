@@ -11,13 +11,13 @@ RSpec.describe Dependabot::Elm::Requirement do
   let(:requirement_string) { "1.0.0 <= v < 2.0.0" }
 
   describe ".new" do
-    subject { described_class.new(requirement_string) }
+    subject(:requirement_string_class) { described_class.new(requirement_string) }
 
     context "with nil" do
       let(:requirement_string) { nil }
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Gem::Requirement::BadRequirementError)
+        expect { requirement_string_class }.to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
 
@@ -61,13 +61,13 @@ RSpec.describe Dependabot::Elm::Requirement do
       context "when dealing with the current version" do
         let(:version) { Gem::Version.new("1.0.0") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when dealing with an out-of-range version" do
         let(:version) { Gem::Version.new("2.0.1") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -77,13 +77,13 @@ RSpec.describe Dependabot::Elm::Requirement do
       context "when dealing with the current version" do
         let(:version_string) { "1.0.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when dealing with an out-of-range version" do
         let(:version_string) { "2.0.1" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

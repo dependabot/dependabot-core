@@ -502,7 +502,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
   end
 
   describe "#dependency_url" do
-    subject { finder.dependency_url }
+    subject(:finder_dependency_url) { finder.dependency_url }
 
     it { is_expected.to eq("https://registry.npmjs.org/etag") }
 
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       end
 
       it "allows multiple sources" do
-        expect { subject }.not_to raise_error
+        expect { finder_dependency_url }.not_to raise_error
       end
     end
 
@@ -558,7 +558,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       end
 
       it "returns the private registry url" do
-        expect(subject).to eql("https://registry.example.org/example")
+        expect(finder_dependency_url).to eql("https://registry.example.org/example")
       end
     end
   end

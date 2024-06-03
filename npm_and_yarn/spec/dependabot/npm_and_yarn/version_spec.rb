@@ -15,25 +15,25 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
     context "with a string prefixed with a 'v'" do
       let(:version_string) { "v1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a string not prefixed with a 'v'" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with build metadata" do
       let(:version_string) { "1.0.0+some-metadata" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid string" do
       let(:version_string) { "va1.0.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -186,91 +186,91 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
       let(:version_string) { "1.2.3.pre1" }
       let(:other_version_string) { version_string }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing same version with different prerelease" do
       let(:version_string) { "1.2.3.pre1" }
       let(:other_version_string) { "1.2.3.pre2" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with later patch" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.2.4" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with earlier patch" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.2.2" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with zero patch" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.2.0" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with omitted patch" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.2" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with earlier minor" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.1" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing version with later minor" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "1.3" }
 
-      it { is_expected.to eq false }
+      it { is_expected.to be false }
     end
 
     context "when comparing version with earlier major" do
       let(:version_string) { "2.3.4" }
       let(:other_version_string) { "1.2.3" }
 
-      it { is_expected.to eq false }
+      it { is_expected.to be false }
     end
 
     context "when comparing version with later major" do
       let(:version_string) { "1.2.3" }
       let(:other_version_string) { "2.3.4" }
 
-      it { is_expected.to eq false }
+      it { is_expected.to be false }
     end
 
     context "when comparing same versions with zero major" do
       let(:version_string) { "0.2.1" }
       let(:other_version_string) { "0.2.1" }
 
-      it { is_expected.to eq true }
+      it { is_expected.to be true }
     end
 
     context "when comparing earlier version with zero major" do
       let(:version_string) { "0.2.1" }
       let(:other_version_string) { "0.2.0" }
 
-      it { is_expected.to eq false }
+      it { is_expected.to be false }
     end
 
     context "when comparing later version with zero major" do
       let(:version_string) { "0.2.1" }
       let(:other_version_string) { "0.2.2" }
 
-      it { is_expected.to eq false }
+      it { is_expected.to be false }
     end
   end
 
@@ -282,32 +282,32 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
     context "with a greater version" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an lesser version" do
       let(:version_string) { "0.9.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a valid prerelease version" do
       let(:version_string) { "1.1.0-pre" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when prefixed with a 'v'" do
       context "with a greater version" do
         let(:version_string) { "v1.1.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "with an lesser version" do
         let(:version_string) { "v0.9.0" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -315,7 +315,7 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
       let(:requirement) { Gem::Requirement.new("1.0.0") }
       let(:version_string) { "1.0.0+build-metadata" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 end

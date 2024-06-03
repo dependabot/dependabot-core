@@ -60,9 +60,7 @@ RSpec.describe namespace::PoetryVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject do
-      resolver.latest_resolvable_version(requirement: updated_requirement)
-    end
+    subject(:latest_resolvable_version) { resolver.latest_resolvable_version(requirement: updated_requirement) }
 
     let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
 
@@ -174,7 +172,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:lockfile_fixture_name) { "python_2.lock" }
 
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::ToolVersionNotSupported)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 
@@ -222,7 +220,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:pyproject_fixture_name) { "git_dependency_bad_ref.toml" }
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
                 expect(err.dependency).to eq("toml")
               end
@@ -233,7 +231,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:pyproject_fixture_name) { "git_dependency_unreachable.toml" }
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
                 expect(error.dependency_urls)
                   .to eq(["https://github.com/greysteil/unreachable.git"])
@@ -284,7 +282,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:pyproject_fixture_name) { "solver_problem.toml" }
 
       it "raises a helpful error" do
-        expect { subject }
+        expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message)
               .to include("depends on black (^18), version solving failed")
@@ -299,7 +297,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:dependency_files) { [pyproject, lockfile] }
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
                   .to include("Package croniter (0.3.26) not found")
@@ -311,7 +309,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           let(:dependency_files) { [pyproject] }
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
                   .to include("depends on croniter (0.3.26) which doesn't match any versions")
@@ -323,14 +321,14 @@ RSpec.describe namespace::PoetryVersionResolver do
   end
 
   describe "#resolvable?" do
-    subject { resolver.resolvable?(version: version) }
+    subject(:resolvable) { resolver.resolvable?(version: version) }
 
     let(:version) { Gem::Version.new("2.18.4") }
 
     context "when version is resolvable" do
       let(:version) { Gem::Version.new("2.18.4") }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with a subdependency" do
         let(:dependency_name) { "idna" }
@@ -340,14 +338,14 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
         let(:version) { Gem::Version.new("2.6") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
     context "when version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
 
       context "with a subdependency" do
         let(:dependency_name) { "idna" }
@@ -357,7 +355,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:lockfile_fixture_name) { "latest_subdep_blocked.lock" }
         let(:version) { Gem::Version.new("2.7") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "when the original manifest isn't resolvable" do
@@ -365,7 +363,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         let(:pyproject_fixture_name) { "solver_problem.toml" }
 
         it "raises a helpful error" do
-          expect { subject }
+          expect { resolvable }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message)
                 .to include("depends on black (^18), version solving failed")

@@ -86,7 +86,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfDisk)
           end
         end
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
 
           it "raises a helpful error" do
-            expect { subject }
+            expect { dependencies }
               .to raise_error(Dependabot::OutOfMemory)
           end
         end
@@ -230,11 +230,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when there is an invalid version requirement string" do
-        let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
-
         subject { dependencies.find { |d| d.name == "etag" } }
 
-        it { is_expected.to eq(nil) }
+        let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
+
+        it { is_expected.to be_nil }
       end
 
       context "when there are URL versions (i.e., is from a bad version of npm)" do
@@ -256,9 +256,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when there is a bundled dependencies" do
-        let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
-
         subject { dependencies.find { |d| d.name == "tar" } }
+
+        let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
 
         its(:subdependency_metadata) do
           is_expected.to eq([{ npm_bundled: true }])
@@ -275,7 +275,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         let(:dependency_files) { project_dependency_files("npm8/nested_node_modules_lockfile_v3") }
 
         it "does not incorrectly parse dependencies with node_modules/ in their name" do
-          bad_names = subject.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
+          bad_names = dependencies.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
 
           expect(bad_names).to be_empty
         end
@@ -361,7 +361,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^3.3.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 
@@ -415,7 +415,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^6.26.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 

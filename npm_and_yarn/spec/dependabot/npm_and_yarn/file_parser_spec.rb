@@ -127,11 +127,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "when containing a version requirement string" do
-          let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
-
           subject { dependencies.find { |d| d.name == "etag" } }
 
-          it { is_expected.to eq(nil) }
+          let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
+
+          it { is_expected.to be_nil }
         end
 
         context "when containing URL versions (i.e., is from a bad version of npm)" do
@@ -1502,13 +1502,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     end
 
     context "with duplicate dependencies" do
-      subject { parser.parse }
+      subject(:parsed_file) { parser.parse }
 
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
-        expect(subject.count).to eql(1)
-        expect(subject[0].requirements).to match_array([
+        expect(parsed_file.count).to be(1)
+        expect(parsed_file[0].requirements).to match_array([
           {
             requirement: "^10.5.12",
             file: "package.json",
@@ -1526,13 +1526,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     end
 
     context "with multiple versions of a dependency" do
-      subject { parser.parse }
+      subject(:parsed_file) { parser.parse }
 
       let(:files) { project_dependency_files("npm8/transitive_dependency_multiple_versions") }
 
       it "stores all versions of the dependency in its metadata" do
         name = "kind-of"
-        dependency = subject.find { |dep| dep.name == name }
+        dependency = parsed_file.find { |dep| dep.name == name }
 
         expect(dependency.metadata[:all_versions]).to eq([
           Dependabot::Dependency.new(

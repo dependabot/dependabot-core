@@ -6,6 +6,10 @@ require "dependabot/github_actions/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::GithubActions::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -30,9 +34,6 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       branch: nil
     }
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
 
   let(:credentials) do
     [{
@@ -46,7 +47,7 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
-    context "for a git source" do
+    context "when dealing with a git source" do
       let(:dependency_source) do
         {
           type: "git",
@@ -59,7 +60,7 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       it { is_expected.to eq("https://github.com/actions/checkout") }
     end
 
-    context "for a subdependency" do
+    context "when dealing with a subdependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,

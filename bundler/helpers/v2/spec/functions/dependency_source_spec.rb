@@ -180,7 +180,7 @@ RSpec.describe Functions::DependencySource do
       end
 
       it "returns all versions from the private source" do
-        expect(private_registry_versions.length).to eql(70)
+        expect(private_registry_versions.length).to be(70)
         expect(private_registry_versions.min).to eql(Gem::Version.new("1.0.0"))
         expect(private_registry_versions.max).to eql(Gem::Version.new("3.5.2"))
       end

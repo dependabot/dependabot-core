@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
 
     source = client.source(dependency: provider_dependency)
-    expect(source).to eq(nil)
+    expect(source).to be_nil
   end
 
   it "fetches the source for a provider from a custom registry", :vcr do
@@ -218,9 +218,9 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   context "with a custom hostname" do
-    let(:hostname) { "registry.example.org" }
-
     subject(:client) { described_class.new(hostname: hostname) }
+
+    let(:hostname) { "registry.example.org" }
 
     it "raises helpful error when request is not authenticated", :vcr do
       stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 401)

@@ -7,6 +7,10 @@ require "dependabot/terraform/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Terraform::MetadataFinder do
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
+
   it_behaves_like "a dependency metadata finder"
 
   let(:dependency) do
@@ -38,9 +42,6 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       }],
       package_manager: "terraform"
     )
-  end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
   end
 
   let(:credentials) do

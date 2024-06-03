@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     it "delegates to VersionResolver" do
       expect(Dependabot::Cargo::UpdateChecker::VersionResolver)
@@ -242,7 +242,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        expect { latest_resolvable_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end
 
@@ -502,12 +502,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end
