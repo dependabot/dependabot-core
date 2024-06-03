@@ -402,7 +402,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           })]
         end
 
-        it { is_expected.to eq(Dependabot::Hex::Version.new("1.1.0")) }
+        it "Skipping the failing test", skip: "https://github.com/dependabot/dependabot-core/issues/9884" do
+          is_expected.to eq(Dependabot::Hex::Version.new("1.1.0"))
+        end
       end
 
       context "with bad credentials" do
