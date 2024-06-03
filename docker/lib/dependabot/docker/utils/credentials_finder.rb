@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "aws-sdk-ecr"
@@ -16,6 +16,7 @@ module Dependabot
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
         DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
 
+        sig { params(credentials: T::Array[Dependabot::Credential]).void }
         def initialize(credentials)
           @credentials = credentials
         end
@@ -32,14 +33,13 @@ module Dependabot
           build_aws_credentials(registry_details)
         end
 
+        sig { returns(String) }
         def base_registry
-          @base_registry ||= credentials.find do |cred|
-            cred["type"] == "docker_registry" && cred.replaces_base?
-          end
-          @base_registry ||= { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
-          @base_registry["registry"]
+          @base_registry ||= T.let(nil, T.nilable(Dependabot::Credential))
+          @base_registry&.fetch("registry") || DEFAULT_DOCKER_HUB_REGISTRY
         end
 
+        sig { params(registry: String).returns(T::Boolean) }
         def using_dockerhub?(registry)
           registry == DEFAULT_DOCKER_HUB_REGISTRY
         end
@@ -76,7 +76,7 @@ module Dependabot
 
           # Otherwise, we need to use the provided Access Key ID and secret to
           # generate a temporary username and password
-          @authorization_tokens ||= {}
+          @authorization_tokens ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
           @authorization_tokens[registry_hostname] ||=
             ecr_client.get_authorization_token.authorization_data.first.authorization_token
           username, password =
