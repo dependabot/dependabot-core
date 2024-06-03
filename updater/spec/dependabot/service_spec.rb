@@ -10,6 +10,7 @@ require "dependabot/dependency_snapshot"
 require "dependabot/errors"
 require "dependabot/pull_request_creator"
 require "dependabot/service"
+require "dependabot/experiments"
 
 RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
@@ -94,8 +95,6 @@ RSpec.describe Dependabot::Service do
             commit_message: "Commit message"
           )
         )
-
-      service.create_pull_request(dependency_change, base_sha)
     end
   end
 
@@ -221,14 +220,69 @@ RSpec.describe Dependabot::Service do
   describe "#create_pull_request" do
     include_context :a_pr_was_created
 
+    before do
+      Dependabot::Experiments.register("dependency_change_validation", true)
+    end
+
     it "delegates to @client" do
+      service.create_pull_request(dependency_change, base_sha)
+
       expect(mock_client)
         .to have_received(:create_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
+      service.create_pull_request(dependency_change, base_sha)
+
       expect(service.pull_requests)
         .to eql([["dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )", :created]])
+    end
+
+    context "when the change is missing a previous version" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dependabot-fortran",
+            package_manager: "bundler",
+            version: "1.8.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "raises a MissingPreviousVersion error" do
+        expect { service.create_pull_request(dependency_change, base_sha) }
+          .to raise_error(Dependabot::Service::MissingPreviousVersion)
+      end
+    end
+
+    context "when the change is missing a requirements change" do
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dependabot-fortran",
+            package_manager: "bundler",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+            ]
+          )
+        ]
+      end
+
+      it "raises a MissingRequirementsChange error" do
+        expect { service.create_pull_request(dependency_change, base_sha) }
+          .to raise_error(Dependabot::Service::MissingRequirementsChange)
+      end
     end
   end
 
@@ -488,6 +542,8 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_created
 
       it "includes the summary of the created PR" do
+        service.create_pull_request(dependency_change, base_sha)
+
         expect(service.summary)
           .to include("created",
                       "dependabot-fortran ( from 1.7.0 to 1.8.0 ), dependabot-pascal ( from 2.7.0 to 2.8.0 )")
@@ -562,6 +618,10 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_closed
       include_context :an_error_was_reported
       include_context :a_dependency_error_was_reported
+
+      before do
+        service.create_pull_request(dependency_change, base_sha)
+      end
 
       it "includes the summary of the created PR" do
         expect(service.summary)

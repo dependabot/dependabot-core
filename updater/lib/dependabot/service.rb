@@ -8,6 +8,7 @@ require "terminal-table"
 require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
+require "dependabot/experiments"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -19,6 +20,24 @@ module Dependabot
   class Service
     extend T::Sig
     extend Forwardable
+
+    class MissingPreviousVersion < DependabotError
+      extend T::Sig
+
+      sig { params(deps: T::Array[String]).void }
+      def initialize(deps)
+        super("Previous version was not provided for the following dependencies: #{deps.join(', ')}")
+      end
+    end
+
+    class MissingRequirementsChange < DependabotError
+      extend T::Sig
+
+      sig { params(deps: T::Array[String]).void }
+      def initialize(deps)
+        super("Requirements was not changed for the following dependencies: #{deps.join(', ')}")
+      end
+    end
 
     sig { returns(T::Array[T.untyped]) }
     attr_reader :pull_requests
@@ -48,6 +67,15 @@ module Dependabot
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
+      if Experiments.enabled?("dependency_change_validation")
+        updated_deps = dependency_change.updated_dependencies
+        deps_missing_previous = updated_deps.reject(&:previous_version)
+        raise MissingPreviousVersion, deps_missing_previous.map(&:name) unless deps_missing_previous.empty?
+
+        deps_missing_change = updated_deps.reject { |dep| requirements_changed?(dep) }
+        raise MissingRequirementsChange, deps_missing_change.map(&:name) unless deps_missing_change.empty?
+      end
+
       if Experiments.enabled?("threaded_metadata")
         @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }
       else
@@ -227,6 +255,11 @@ module Dependabot
     def truncate(string, max: 120)
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def requirements_changed?(dependency)
+      (dependency.requirements - T.must(dependency.previous_requirements)).any?
     end
   end
 end
