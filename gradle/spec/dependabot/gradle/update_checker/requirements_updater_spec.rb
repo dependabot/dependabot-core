@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("23.6-jre") }
         its([:source]) { is_expected.to eq(type: "maven_repo", url: "new_url") }
 
-        context "when it includes multiple dashes" do
+        context "when the requirement includes multiple dashes" do
           let(:pom_req_string) { "v2-rev398-1.24.1" }
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         end
       end
 
-      context "when the version included capitals" do
+      context "when the requirement includes capitals" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
         its([:requirement]) { is_expected.to eq("23.6-jre") }
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
 
         its([:requirement]) { is_expected.to eq("23.+") }
 
-        context "when omitting the dot before the plus" do
+        context "when the requirement omits the dot before the plus" do
           let(:pom_req_string) { "22.1+" }
 
           its([:requirement]) { is_expected.to eq("23.6+") }

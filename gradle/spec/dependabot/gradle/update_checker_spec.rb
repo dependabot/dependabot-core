@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "when that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to eq(version_class.new("23.0")) }
@@ -219,7 +219,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "when that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to be_nil }
