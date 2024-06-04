@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
     its(:length) { is_expected.to eq(34) }
   end
 
-  context "api.nuget.org is not hit if it's not in the NuGet.Config" do
+  context "when the api.nuget.org is not hit due to absence in the NuGet.Config" do
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
     let(:dependency_version) { "42.42.42" }

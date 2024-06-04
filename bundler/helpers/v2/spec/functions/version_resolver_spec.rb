@@ -36,6 +36,9 @@ RSpec.describe Functions::VersionResolver do
     stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.1.gemspec.rz")
       .to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.1.gemspec.rz"))
 
+    stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.5.gemspec.rz")
+      .to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.5.gemspec.rz"))
+
     stub_request(:get, %r{quick/Marshal.4.8/business-.*.gemspec.rz})
       .to_return(status: 200, body: fixture("rubygems_responses", "business-1.0.0.gemspec.rz"))
   end
@@ -102,12 +105,12 @@ RSpec.describe Functions::VersionResolver do
       its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
     end
 
-    context "with no update possible due to a version conflict" do
+    context "when there's a version conflict with a subdep also listed as a top level dependency" do
       let(:project_name) { "version_conflict_with_listed_subdep" }
       let(:dependency_name) { "rspec-mocks" }
       let(:requirement_string) { ">= 0" }
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
+      its([:version]) { is_expected.to be > Gem::Version.new("3.6.0") }
     end
   end
 end
