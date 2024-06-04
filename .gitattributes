@@ -1,3 +1,4 @@
 * text=auto eof=lf
 Dockerfile.development linguist-language=Dockerfile
 Dockerfile.updater-core linguist-language=Dockerfile
+bundler/spec/fixtures/rubygems_responses/*.rz binary linguist-generated
