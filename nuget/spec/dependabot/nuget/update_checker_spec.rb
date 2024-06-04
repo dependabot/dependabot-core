@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     subject(:up_to_date?) { checker.up_to_date? }
 
     context "with a property dependency" do
-      context "whose property couldn't be found" do
+      context "when a dependency's property couldn't be found" do
         let(:dependency_name) { "Nuke.Common" }
         let(:dependency_requirements) do
           [{
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       expect(checker.latest_version).to eq("1.2.3")
     end
 
-    context "the package could not be found on any source" do
+    context "when the package could not be found on any source" do
       before do
         stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
           .to_return(status: 404)
@@ -166,12 +166,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      context "that is used for multiple dependencies" do
+      context "when a property is used for multiple dependencies" do
         let(:csproj_body) do
           fixture("csproj", "property_version.csproj")
         end
 
-        context "where all dependencies can update to the latest version" do
+        context "when all dependencies can update to the latest version" do
           before do
             allow(checker).to receive(:all_property_based_dependencies).and_return(
               [
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           it { is_expected.to be(true) }
         end
 
-        context "where not all dependencies can update to the latest version" do
+        context "when all dependencies cannot update to the latest version" do
           before do
             allow(checker).to receive(:all_property_based_dependencies).and_return(
               [
@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         )
       end
 
-      context "the security vulnerability excludes all compatible packages" do
+      context "when the security vulnerability excludes all compatible packages" do
         subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
 
         let(:target_version) { "1.1.1" }
@@ -374,7 +374,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
       it { is_expected.to be(true) }
 
-      context "whose property couldn't be found" do
+      context "when a dependency's property couldn't be found" do
         let(:dependency_requirements) do
           [{
             requirement: "$(NukeVersion)",
@@ -409,12 +409,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      context "that is used for multiple dependencies" do
+      context "when a property is used for multiple dependencies" do
         let(:csproj_body) do
           fixture("csproj", "property_version.csproj")
         end
 
-        context "where all dependencies can update to the latest version" do
+        context "when all dependencies can update to the latest version" do
           before do
             allow(checker).to receive(:latest_version).and_return("0.9.0")
             allow(checker).to receive(:all_property_based_dependencies).and_return(
