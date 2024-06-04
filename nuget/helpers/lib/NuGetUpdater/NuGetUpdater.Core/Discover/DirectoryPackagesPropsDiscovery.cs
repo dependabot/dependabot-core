@@ -14,6 +14,9 @@ internal static class DirectoryPackagesPropsDiscovery
             logger.Log("  Central Package Management is not enabled.");
             return null;
         }
+        else {
+            logger.Log("  Central Package Management is enabled.");
+        }
 
         var projectFilePath = Path.GetFullPath(projectResult.FilePath, workspacePath);
         if (!MSBuildHelper.TryGetDirectoryPackagesPropsPath(repoRootPath, projectFilePath, out var directoryPackagesPropsPath))
