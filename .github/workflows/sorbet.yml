@@ -24,7 +24,7 @@ jobs:
 
       - run: bundle exec srb tc
 
-      - run: bundle exec spoom coverage
+      - run: bundle exec spoom srb coverage
 
       - run: |
           bundle exec spoom srb bump --from=false --to=true --dry
