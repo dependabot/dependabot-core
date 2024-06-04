@@ -10,14 +10,58 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Python::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  before do
-    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+  let(:dependency) { requirements_dependency }
+  let(:dependency_requirements) do
+    [{
+      file: "requirements.txt",
+      requirement: "==2.0.0",
+      groups: [],
+      source: nil
+    }]
   end
-
-  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
-  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
+  let(:dependency_version) { "2.0.0" }
+  let(:dependency_name) { "luigi" }
+  let(:requirements_dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "pip"
+    )
+  end
+  let(:requirements_fixture_name) { "version_specified.txt" }
+  let(:requirements_file) do
+    Dependabot::DependencyFile.new(
+      name: "requirements.txt",
+      content: fixture("requirements", requirements_fixture_name)
+    )
+  end
+  let(:pyproject) do
+    Dependabot::DependencyFile.new(
+      name: "pyproject.toml",
+      content: fixture("pyproject_files", pyproject_fixture_name)
+    )
+  end
+  let(:pipfile_fixture_name) { "exact_version" }
+  let(:pipfile) do
+    Dependabot::DependencyFile.new(
+      name: "Pipfile",
+      content: fixture("pipfile_files", pipfile_fixture_name)
+    )
+  end
+  let(:dependency_files) { [requirements_file] }
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -29,59 +73,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       requirements_update_strategy: requirements_update_strategy
     )
   end
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-  let(:dependency_files) { [requirements_file] }
-  let(:pipfile) do
-    Dependabot::DependencyFile.new(
-      name: "Pipfile",
-      content: fixture("pipfile_files", pipfile_fixture_name)
-    )
-  end
-  let(:pipfile_fixture_name) { "exact_version" }
-  let(:pyproject) do
-    Dependabot::DependencyFile.new(
-      name: "pyproject.toml",
-      content: fixture("pyproject_files", pyproject_fixture_name)
-    )
-  end
-  let(:requirements_file) do
-    Dependabot::DependencyFile.new(
-      name: "requirements.txt",
-      content: fixture("requirements", requirements_fixture_name)
-    )
-  end
-  let(:requirements_fixture_name) { "version_specified.txt" }
-  let(:requirements_dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "pip"
-    )
-  end
-  let(:dependency_name) { "luigi" }
-  let(:dependency_version) { "2.0.0" }
-  let(:dependency_requirements) do
-    [{
-      file: "requirements.txt",
-      requirement: "==2.0.0",
-      groups: [],
-      source: nil
-    }]
-  end
+  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
+  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
 
-  let(:dependency) { requirements_dependency }
+  it_behaves_like "an update checker"
+
+  before do
+    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+  end
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }

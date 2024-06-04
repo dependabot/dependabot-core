@@ -18,16 +18,14 @@ RSpec.describe Dependabot::Devcontainers::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:files) { project_dependency_files(project_name, directory: directory) }
-  let(:directory) { "/" }
-
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
+  let(:directory) { "/" }
+  let(:files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }

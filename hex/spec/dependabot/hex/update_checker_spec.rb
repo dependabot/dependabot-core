@@ -13,8 +13,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
   end
 
-  it_behaves_like "an update checker"
-
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -24,7 +22,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       raise_on_ignored: raise_on_ignored
     )
   end
-
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -43,29 +40,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       package_manager: "hex"
     )
   end
-
   let(:dependency_name) { "plug" }
   let(:version) { "1.3.0" }
   let(:dependency_requirements) do
     [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
   end
-
   let(:files) { [mixfile, lockfile] }
-
   let(:mixfile) do
     Dependabot::DependencyFile.new(content: mixfile_body, name: "mix.exs")
   end
   let(:lockfile) do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "mix.lock")
   end
-
   let(:mixfile_body) { fixture("mixfiles", "minor_version") }
   let(:lockfile_body) { fixture("lockfiles", "minor_version") }
-
   let(:hex_url) { "https://hex.pm/api/packages/#{dependency_name}" }
   let(:hex_response) do
     fixture("registry_api", "#{dependency_name}_response.json")
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }

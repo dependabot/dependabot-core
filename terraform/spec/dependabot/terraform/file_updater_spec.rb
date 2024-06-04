@@ -17,16 +17,15 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
-  let(:project_name) { "" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:files) { project_dependency_files(project_name) }
-  let(:dependencies) { [] }
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
+  let(:dependencies) { [] }
+  let(:files) { project_dependency_files(project_name) }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:project_name) { "" }
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }

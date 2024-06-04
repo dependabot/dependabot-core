@@ -9,57 +9,6 @@ require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GoModules::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials,
-      repo_contents_path: repo_contents_path
-    )
-  end
-
-  let(:files) { [go_mod, go_sum] }
-  let(:project_name) { "go_sum" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:credentials) { [] }
-
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-  end
-  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
-
-  let(:go_sum) do
-    Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
-  end
-  let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      previous_version: dependency_previous_version,
-      previous_requirements: previous_requirements,
-      package_manager: "go_modules"
-    )
-  end
-  let(:dependency_name) { "rsc.io/quote" }
-  let(:dependency_version) { "v1.5.2" }
-  let(:dependency_previous_version) { "v1.5.1" }
-  let(:requirements) do
-    [{
-      file: "go.mod",
-      requirement: dependency_version,
-      groups: [],
-      source: {
-        type: "default",
-        source: "rsc.io/quote"
-      }
-    }]
-  end
   let(:previous_requirements) do
     [{
       file: "go.mod",
@@ -71,6 +20,52 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       }
     }]
   end
+  let(:requirements) do
+    [{
+      file: "go.mod",
+      requirement: dependency_version,
+      groups: [],
+      source: {
+        type: "default",
+        source: "rsc.io/quote"
+      }
+    }]
+  end
+  let(:dependency_previous_version) { "v1.5.1" }
+  let(:dependency_version) { "v1.5.2" }
+  let(:dependency_name) { "rsc.io/quote" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      previous_version: dependency_previous_version,
+      previous_requirements: previous_requirements,
+      package_manager: "go_modules"
+    )
+  end
+  let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
+  let(:go_sum) do
+    Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
+  end
+  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+  let(:go_mod) do
+    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
+  end
+  let(:credentials) { [] }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:project_name) { "go_sum" }
+  let(:files) { [go_mod, go_sum] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

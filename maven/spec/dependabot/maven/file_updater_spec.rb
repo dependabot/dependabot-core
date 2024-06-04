@@ -8,47 +8,7 @@ require "dependabot/maven/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Maven::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
-    )
-  end
-  let(:dependency_files) { [pom] }
-  let(:dependencies) { [dependency] }
-  let(:pom) do
-    Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "org.apache.httpcomponents:httpclient",
-      version: "4.6.1",
-      requirements: [{
-        file: "pom.xml",
-        requirement: "4.6.1",
-        groups: dependency_groups,
-        source: nil,
-        metadata: { packaging_type: "jar" }
-      }],
-      previous_requirements: [{
-        file: "pom.xml",
-        requirement: "4.5.3",
-        groups: dependency_groups,
-        source: nil,
-        metadata: { packaging_type: "jar" }
-      }],
-      package_manager: "maven"
-    )
-  end
+  let(:dependency_groups) { ["test"] }
   let(:mockk_dependency) do
     Dependabot::Dependency.new(
       name: "io.mockk:mockk",
@@ -76,7 +36,47 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       package_manager: "maven"
     )
   end
-  let(:dependency_groups) { ["test"] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "org.apache.httpcomponents:httpclient",
+      version: "4.6.1",
+      requirements: [{
+        file: "pom.xml",
+        requirement: "4.6.1",
+        groups: dependency_groups,
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      previous_requirements: [{
+        file: "pom.xml",
+        requirement: "4.5.3",
+        groups: dependency_groups,
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      package_manager: "maven"
+    )
+  end
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
+  end
+  let(:dependencies) { [dependency] }
+  let(:dependency_files) { [pom] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: dependency_files,
+      dependencies: dependencies,
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

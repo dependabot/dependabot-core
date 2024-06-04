@@ -7,21 +7,8 @@ require "dependabot/git_submodules/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: [],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
-    )
-  end
-
+  let(:branch) { "master" }
+  let(:url) { "https://github.com/example/manifesto.git" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
@@ -35,9 +22,20 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker do
       package_manager: "submodules"
     )
   end
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    )
+  end
 
-  let(:url) { "https://github.com/example/manifesto.git" }
-  let(:branch) { "master" }
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
