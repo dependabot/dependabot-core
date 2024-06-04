@@ -31,7 +31,7 @@ jobs:
           bundle exec spoom srb bump --from=true --to=strict --dry
           bundle exec spoom srb bump --from=strict --to=strong --dry
 
-      - run: bundle exec spoom coverage timeline --save
+      - run: bundle exec spoom srb coverage snapshot --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
