@@ -13,6 +13,18 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
   end
 
+  it_behaves_like "an update checker"
+
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
+  end
+
   let(:hex_response) do
     fixture("registry_api", "#{dependency_name}_response.json")
   end
