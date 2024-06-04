@@ -7,7 +7,7 @@ require "dependabot/nuget/nuget_client"
 RSpec.describe Dependabot::Nuget::NugetClient do
   describe "#get_package_versions" do
     subject(:package_versions) do
-      Dependabot::Nuget::NugetClient.get_package_versions(dependency_name, repository_details)
+      described_class.get_package_versions(dependency_name, repository_details)
     end
 
     let(:dependency_name) { "Some.Dependency" }

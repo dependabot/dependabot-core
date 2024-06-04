@@ -405,7 +405,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:replaces_base) { false }
 
       before do
-        allow_any_instance_of(Dependabot::Python::FileUpdater).to receive(:check_required_files).and_return(true)
+        allow_any_instance_of(described_class).to receive(:check_required_files).and_return(true)
         allow(Dependabot::Python::AuthedUrlBuilder).to receive(:authed_url).and_return("authed_url")
       end
 

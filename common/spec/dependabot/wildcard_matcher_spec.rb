@@ -6,7 +6,7 @@ require "wildcard_matcher"
 
 RSpec.describe WildcardMatcher do
   describe ".match?" do
-    subject { WildcardMatcher.match?(wildcard_string, candidate_string) }
+    subject { described_class.match?(wildcard_string, candidate_string) }
 
     context "without a wildcard" do
       let(:wildcard_string) { "bus" }
