@@ -19,7 +19,7 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     subject(:in_a_temporary_directory) do
-      Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
+      described_class.in_a_temporary_directory { output_dir.call }
     end
 
     let(:output_dir) { -> { Dir.pwd } }
@@ -40,7 +40,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".in_a_temporary_repo_directory" do
     subject(:in_a_temporary_repo_directory) do
-      Dependabot::SharedHelpers
+      described_class
         .in_a_temporary_repo_directory(directory, repo_contents_path) do
           on_create.call
         end
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::SharedHelpers do
     subject(:run_subprocess) do
       bin_path = File.join(spec_root, "helpers/test/run.rb")
       command = "ruby #{bin_path}"
-      Dependabot::SharedHelpers.run_helper_subprocess(
+      described_class.run_helper_subprocess(
         command: command,
         function: function,
         args: args,
@@ -218,7 +218,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".run_shell_command" do
     subject(:run_shell_command) do
-      Dependabot::SharedHelpers.run_shell_command(command, env: env)
+      described_class.run_shell_command(command, env: env)
     end
 
     let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
@@ -241,7 +241,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
       context "when allowing unsafe shell command" do
         subject(:run_shell_command) do
-          Dependabot::SharedHelpers
+          described_class
             .run_shell_command(command, allow_unsafe_shell_command: true)
         end
 
@@ -295,7 +295,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".escape_command" do
     subject(:escape_command) do
-      Dependabot::SharedHelpers.escape_command(command)
+      described_class.escape_command(command)
     end
 
     let(:command) { "yes | foo=1 &  'na=1'  name  > file" }
@@ -392,7 +392,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     credentials_helper = <<~CONFIG.chomp
       [credential]
-      	helper = !#{Dependabot::SharedHelpers.credential_helper_path} --file #{Dir.pwd}/git.store
+      	helper = !#{described_class.credential_helper_path} --file #{Dir.pwd}/git.store
     CONFIG
 
     def alternatives(host)
