@@ -10,6 +10,7 @@ module Dependabot
   module Docker
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
       private
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
