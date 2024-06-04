@@ -10,8 +10,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     FileUtils.rm_rf(repo_contents_path)
   end
 
-  after { FileUtils.rm_rf(repo_contents_path) }
-
   it_behaves_like "a dependency file fetcher"
 
   let(:repo) { "dependabot-fixtures/go-modules-lib" }

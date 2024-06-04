@@ -19,8 +19,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       )
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
   it_behaves_like "a dependency file fetcher"
 
   let(:source) do
