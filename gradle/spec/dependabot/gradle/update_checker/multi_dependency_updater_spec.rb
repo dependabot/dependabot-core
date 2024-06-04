@@ -122,12 +122,12 @@ RSpec.describe namespace::MultiDependencyUpdater do
     subject { updater.update_possible? }
 
     context "with a property version" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "without a target version" do
         let(:target_version_details) { nil }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "when one dependency is missing the target version" do
@@ -140,7 +140,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
             )
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -161,12 +161,12 @@ RSpec.describe namespace::MultiDependencyUpdater do
       let(:dependency_name) { "com.google.protobuf:protoc" }
       let(:dependency_version) { "3.6.1" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "without a target version" do
         let(:target_version_details) { nil }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "when one dependency is missing the target version" do
@@ -179,7 +179,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
             )
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

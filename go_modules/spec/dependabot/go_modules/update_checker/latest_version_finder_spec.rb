@@ -146,7 +146,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version with pre-releases available" do
+    context "when dealing with a Git pseudo-version with pre-releases available" do
       let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
 
       it "returns the latest pre-release" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git psuedo-version with releases available" do
+    context "when dealing with a Git psuedo-version with releases available" do
       let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
       let(:dependency_name) { "golang.org/x/net" }
       let(:ignored_versions) { ["> 0.8.0"] }
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version that is later than all releases" do
+    context "when dealing with a Git pseudo-version that is later than all releases" do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
       it "doesn't downgrade the dependency" do

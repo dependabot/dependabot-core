@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Nuget::TfmFinder do
     Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
                                       source: source,
                                       repo_contents_path: repo_contents_path).parse
-    Dependabot::Nuget::TfmFinder.frameworks(dependency)
+    described_class.frameworks(dependency)
   end
 
   let(:project_name) { "tfm_finder" }

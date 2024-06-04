@@ -120,21 +120,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:length) { is_expected.to eq(2) }
         end
 
-        context "that contains an empty version string for a sub-dep" do
+        context "when containing an empty version string for a sub-dep" do
           let(:files) { project_dependency_files("npm6/empty_version") }
 
           its(:length) { is_expected.to eq(2) }
         end
 
-        context "that contains a version requirement string" do
+        context "when containing a version requirement string" do
           subject { dependencies.find { |d| d.name == "etag" } }
 
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
 
-        context "that has URL versions (i.e., is from a bad version of npm)" do
+        context "when containing URL versions (i.e., is from a bad version of npm)" do
           let(:files) { project_dependency_files("npm6/url_versions") }
 
           its(:length) { is_expected.to eq(1) }
@@ -406,7 +406,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 )
               end
 
-              context "excluding the auth token" do
+              context "when excluding the auth token" do
                 let(:credentials) do
                   [Dependabot::Credential.new({
                     "type" => "npm_registry",
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "that specifies a semver requirement" do
+          context "when specifying a semver requirement" do
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
 
             before do
@@ -638,7 +638,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "that doesn't specify a reference" do
+          context "when not specifying a reference" do
             let(:files) { project_dependency_files("npm6/github_dependency_no_ref") }
 
             its(:length) { is_expected.to eq(1) }
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "that is specified with its shortname" do
+          context "when specifying with its shortname" do
             let(:files) { project_dependency_files("npm6/github_shortname") }
 
             its(:length) { is_expected.to eq(1) }
@@ -768,7 +768,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
           end
 
-          context "that does flat resolution" do
+          context "when it does flat resolution" do
             let(:project_name) { "npm6/flat_resolution" }
 
             its(:length) { is_expected.to eq(0) }
@@ -802,7 +802,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
-        context "that has relative resolved paths" do
+        context "when it has relative resolved paths" do
           let(:files) { project_dependency_files("npm4/shrinkwrap_relative") }
 
           its(:length) { is_expected.to eq(2) }
@@ -953,7 +953,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
 
-        context "that specifies a semver requirement" do
+        context "when it specifies a semver requirement" do
           let(:files) { project_dependency_files("yarn/github_dependency_yarn_semver") }
 
           its(:length) { is_expected.to eq(1) }
@@ -1242,7 +1242,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
             end
 
-            context "specified with https and a colon (supported by npm)" do
+            context "when specified with https and a colon (supported by npm)" do
               let(:files) { project_dependency_files("npm6/git_dependency_with_auth") }
 
               describe "the git dependency" do
@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
 
       it "includes both registries" do
-        expect(parsed_file.count).to eql(1)
+        expect(parsed_file.count).to be(1)
         expect(parsed_file[0].requirements).to match_array([
           {
             requirement: "^10.5.12",

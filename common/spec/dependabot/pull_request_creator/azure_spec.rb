@@ -144,7 +144,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                  .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                 .to eq(true)
+                 .to be(true)
             end
           )
       end
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                 .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                .to eq(false)
+                .to be(false)
             end
           )
       end
@@ -192,7 +192,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           )
       end
 
-      context "but are an empty hash" do
+      context "when there is an empty hash" do
         let(:author_details) { {} }
 
         it "does not include the author details in the commit" do
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         )
       end
 
-      context "but a pull request to this branch doesn't" do
+      context "when a pull request to this branch doesn't exist" do
         before do
           stub_request(
             :get,
@@ -255,7 +255,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
       end
 
-      context "and a pull request to this branch already exists" do
+      context "when a pull request to this branch already exists" do
         before do
           stub_request(
             :get,

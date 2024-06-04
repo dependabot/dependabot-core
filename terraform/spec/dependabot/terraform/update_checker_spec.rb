@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           .and_return(Gem::Version.new("0.3.8"))
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when the requirement is already up-to-date" do
         let(:requirement) { "~> 0.3.1" }
@@ -347,7 +347,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with a source that came from an http proxy" do
       let(:source) do
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end
