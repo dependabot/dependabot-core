@@ -13,8 +13,15 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:dependency_name) { "etag" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -26,15 +33,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     )
   end
 
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:dependency_name) { "etag" }
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

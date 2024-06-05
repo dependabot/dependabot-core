@@ -11,8 +11,34 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
+  let(:current_version) { "1.4.0" }
+  let(:dependency_name) { "business" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: current_version,
+      requirements: requirements,
+      package_manager: "bundler"
+    )
+  end
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:directory) { "/" }
+  let(:github_token) { "token" }
+  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -23,37 +49,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       requirements_update_strategy: requirements_update_strategy
     )
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
 
-  let(:github_token) { "token" }
-  let(:directory) { "/" }
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: current_version,
-      requirements: requirements,
-      package_manager: "bundler"
-    )
-  end
-  let(:dependency_name) { "business" }
-  let(:current_version) { "1.4.0" }
-  let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
-  end
-
-  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }

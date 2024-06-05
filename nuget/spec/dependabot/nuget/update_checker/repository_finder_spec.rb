@@ -412,6 +412,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
             )
         end
 
+        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
+
         it "when the default api key of default registry is provided without clear" do
           expect(dependency_urls).to match_array(
             [{
@@ -431,8 +433,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
             }]
           )
         end
-
-        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
 
         it "when the default api key of default registry is provided with clear" do
           expect(dependency_urls).to match_array(

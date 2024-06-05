@@ -6,19 +6,6 @@ require "dependabot/git_submodules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GitSubmodules::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -27,6 +14,19 @@ RSpec.describe Dependabot::GitSubmodules::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with submodules" do
     before do

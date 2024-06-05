@@ -49,20 +49,6 @@ RSpec/ExampleWording:
     - 'updater/spec/dependabot/job_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
 
-# Offense count: 14
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ExcessiveDocstringSpacing:
-  Exclude:
-    - 'common/spec/dependabot/config/ignore_condition_spec.rb'
-    - 'common/spec/dependabot/file_parsers/base/dependency_set_spec.rb'
-    - 'common/spec/dependabot/shared_helpers_spec.rb'
-    - 'devcontainers/spec/dependabot/devcontainers/update_checker_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/update_checker_spec.rb'
-    - 'pub/spec/dependabot/pub/file_fetcher_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
-    - 'updater/spec/dependabot/updater_spec.rb'
-
 # Offense count: 17
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/ExpectActual:
@@ -144,11 +130,6 @@ RSpec/IteratedExpectation:
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
-
-# Offense count: 675
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/LetBeforeExamples:
-  Enabled: false
 
 # Offense count: 141
 # This cop supports safe autocorrection (--autocorrect).

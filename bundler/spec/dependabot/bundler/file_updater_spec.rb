@@ -13,8 +13,31 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 RSpec.describe Dependabot::Bundler::FileUpdater do
   include_context "when stubbing rubygems compact index"
 
-  it_behaves_like "a dependency file updater"
-
+  let(:repo_contents_path) { nil }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
+  end
+  let(:dependency_previous_version) { "1.4.0" }
+  let(:dependency_version) { "1.5.0" }
+  let(:dependency_name) { "business" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      previous_version: dependency_previous_version,
+      requirements: requirements,
+      previous_requirements: previous_requirements,
+      package_manager: "bundler"
+    )
+  end
+  let(:dependency_files) { bundler_project_dependency_files(project_name, directory: directory) }
+  let(:directory) { "/" }
+  let(:project_name) { "gemfile" }
+  let(:dependencies) { [dependency] }
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
@@ -26,31 +49,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       repo_contents_path: repo_contents_path
     )
   end
-  let(:dependencies) { [dependency] }
-  let(:project_name) { "gemfile" }
-  let(:directory) { "/" }
-  let(:dependency_files) { bundler_project_dependency_files(project_name, directory: directory) }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      previous_version: dependency_previous_version,
-      requirements: requirements,
-      previous_requirements: previous_requirements,
-      package_manager: "bundler"
-    )
-  end
-  let(:dependency_name) { "business" }
-  let(:dependency_version) { "1.5.0" }
-  let(:dependency_previous_version) { "1.4.0" }
-  let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
-  end
-  let(:previous_requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
-  end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
-  let(:repo_contents_path) { nil }
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 
