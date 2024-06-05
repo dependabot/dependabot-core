@@ -865,3 +865,4 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     end
   end
 end
+end
