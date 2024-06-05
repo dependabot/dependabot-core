@@ -17,6 +17,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
   let(:mixfile_body) { fixture("mixfiles", "minor_version") }
   let(:lockfile) do
     Dependabot::DependencyFile.new(content: lockfile_body, name: "mix.lock")
+  before do
+    stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
+  end
+
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
+  end
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
   end
   let(:mixfile) do
     Dependabot::DependencyFile.new(content: mixfile_body, name: "mix.exs")
@@ -44,6 +64,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       "username" => "x-access-token",
       "password" => "token"
     })]
+  let(:dependency_name) { "plug" }
+  let(:version) { "1.3.0" }
+  let(:dependency_requirements) do
+    [{ file: "mix.exs", requirement: "~> 1.3.0", groups: [], source: nil }]
+  end
+  let(:files) { [mixfile, lockfile] }
+  let(:mixfile) do
+    Dependabot::DependencyFile.new(content: mixfile_body, name: "mix.exs")
   end
   let(:checker) do
     described_class.new(
@@ -54,12 +82,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       raise_on_ignored: raise_on_ignored
     )
   end
+  let(:mixfile_body) { fixture("mixfiles", "minor_version") }
+  let(:lockfile_body) { fixture("lockfiles", "minor_version") }
+  let(:hex_url) { "https://hex.pm/api/packages/#{dependency_name}" }
+  let(:hex_response) do
+    fixture("registry_api", "#{dependency_name}_response.json")
+  end
 
   it_behaves_like "an update checker"
-
-  before do
-    stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
-  end
 
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
@@ -92,7 +122,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       it { is_expected.to eq(Gem::Version.new("1.8.0-rc.0")) }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
@@ -105,7 +135,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("1.7.1")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -117,7 +147,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     context "when the current version isn't known" do
       let(:current_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -129,7 +159,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     context "when the dependency is a git dependency" do
       let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -143,7 +173,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("1.3.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -163,7 +193,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("1.3.5")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -459,7 +489,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           [Dependabot::Credential.new({
             "type" => "hex_organization",
             "organization" => "dependabot",
-            "token" => "855f6cbeffc6e14c6a884f0111caff3e"
+            "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
           }), Dependabot::Credential.new({
             "type" => "hex_repository",
             "repo" => "dependabot",
@@ -476,7 +506,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "that is not the dependency we're checking" do
+      context "when it is not the dependency we're checking" do
         let(:dependency_name) { "plug" }
         let(:version) { "1.2.0" }
         let(:dependency_requirements) do
@@ -486,7 +516,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         it { is_expected.to be >= Gem::Version.new("1.4.3") }
       end
 
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_requirements) do
@@ -503,7 +533,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           }]
         end
 
-        context "and has a tag" do
+        context "when the dependency has a tag" do
           let(:ref) { "v1.2.0" }
 
           before do
@@ -520,7 +550,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               )
           end
 
-          context "that can update" do
+          context "when the dependency can be updated" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_tag_can_update")
             end
@@ -531,7 +561,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
           end
 
-          context "that can't update (because of resolvability)" do
+          context "when the dependency can't be updated (because of resolvability)" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source")
             end
@@ -543,10 +573,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           end
         end
 
-        context "and has no tag" do
+        context "when the dependency has no tag" do
           let(:ref) { nil }
 
-          context "and can update" do
+          context "when the dependency can be updated" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag")
             end
@@ -563,7 +593,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             end
           end
 
-          context "and is blocked from updating" do
+          context "when the dependency is blocked from updating" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag_blocked")
             end
@@ -682,7 +712,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
 
-      context "that is the dependency we're checking" do
+      context "when it is the dependency we're checking" do
         let(:dependency_name) { "phoenix" }
         let(:version) { "178ce1a2344515e9145599970313fcc190d4b881" }
         let(:dependency_requirements) do
@@ -699,13 +729,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           }]
         end
 
-        context "and has a tag" do
+        context "when the dependency has a tag" do
           let(:ref) { "v1.2.0" }
 
           it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
         end
 
-        context "and has no tag and can update" do
+        context "when the dependency has no tag and it can be updated" do
           let(:mixfile_body) do
             fixture("mixfiles", "git_source_no_tag")
           end
@@ -722,7 +752,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           end
         end
 
-        context "and is blocked from updating" do
+        context "when the dependency is blocked from updating" do
           let(:mixfile_body) do
             fixture("mixfiles", "git_source_no_tag_blocked")
           end
@@ -766,7 +796,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         )
     end
 
-    context "updating a git source" do
+    context "when updating a git source" do
       let(:mixfile_body) do
         fixture("mixfiles", "git_source_tag_can_update")
       end

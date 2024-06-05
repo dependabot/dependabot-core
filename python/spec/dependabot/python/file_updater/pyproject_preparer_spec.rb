@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
   describe "#add_auth_env_vars" do
     it "adds auth env vars when a token is present" do
-      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+      preparer = described_class.new(
         pyproject_content: fixture("pyproject_files", "private_source.toml"),
         lockfile: nil
       )
@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     end
 
     it "has no effect when a token is not present" do
-      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+      preparer = described_class.new(
         pyproject_content: fixture("pyproject_files", "private_source.toml"),
         lockfile: nil
       )
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     end
 
     it "doesn't break when there are no private sources" do
-      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+      preparer = described_class.new(
         pyproject_content: pyproject_content,
         lockfile: nil
       )
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     end
 
     it "doesn't break when there are private sources but no credentials" do
-      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+      preparer = described_class.new(
         pyproject_content: fixture("pyproject_files", "private_source.toml"),
         lockfile: nil
       )

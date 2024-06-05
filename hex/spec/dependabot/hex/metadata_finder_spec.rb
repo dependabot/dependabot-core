@@ -94,7 +94,7 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
       it { is_expected.to eq("https://github.com/phoenixframework/phoenix") }
     end
 
-    context "for a git source" do
+    context "when using a git source" do
       let(:hex_response) { nil }
       let(:dependency_source) do
         { type: "git", url: "https://github.com/my_fork/phoenix" }
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/my_fork/phoenix") }
 
-      context "that doesn't match a supported source" do
+      context "when it doesn't match a supported source" do
         let(:dependency_source) do
           { type: "git", url: "https://example.com/my_fork/phoenix" }
         end

@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
-    context "are expanded" do
+    context "when expanded" do
       before do
         allow(Dependabot.logger).to receive(:warn)
         ENV["FEED_URL"] = "https://nuget.example.com/index.json"
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         )
       end
 
-      context "that does not return PackageBaseAddress" do
+      context "when the PackageBaseAddress is not returned" do
         let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
 
         before do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has URLs that need to be escaped" do
+      context "when URLs need to be escaped" do
         let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
 
         before do
@@ -253,14 +253,14 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that 404s" do
+      context "when a request returns a 404 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 
         # TODO: Might want to raise here instead?
         it { is_expected.to eq([]) }
       end
 
-      context "that 403s" do
+      context "when a request returns a 403 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 403) }
 
         it "raises a useful error" do
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       #   )
       # end
 
-      context "include the default repository" do
+      context "when including the default repository" do
         let(:config_file_fixture_name) { "include_default_disable_ext_sources.config" }
 
         it "with disable external source" do
@@ -398,7 +398,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that overrides the default package sources" do
+      context "when the spec overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
 
         before do
@@ -509,6 +509,9 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
 
           it "only includes the enabled package sources" do
             expect(dependency_urls).to contain_exactly({
+        it "when the default api key of default registry is provided with clear" do
+          expect(dependency_urls).to match_array(
+            [{
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
               registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
                                 "microsoft.extensions.dependencymodel/index.json",
@@ -528,6 +531,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
 
         context "that has disabled default package sources" do
           let(:config_file_fixture_name) { "disabled_default_sources.config" }
+      context "when not including the default repository" do
+        let(:config_file_fixture_name) { "excludes_default.config" }
 
           it "only includes the enable package sources" do
             expect(dependency_urls).to contain_exactly({
@@ -544,12 +549,85 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
                           "&prerelease=true&semVerLevel=2.0.0",
               auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
               repository_type: "v3"
-            })
+<            })
+            }]
+          )
+        end
+
+        context "when spec clears default repo info" do
+          let(:config_file_fixture_name) { "clears_default.config" }
+
+          it "still excludes the default repository" do
+            expect(dependency_urls).to match_array(
+              [{
+                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel/index.json",
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "flatcontainer/microsoft.extensions." \
+                              "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "query?q=microsoft.extensions.dependencymodel" \
+                            "&prerelease=true&semVerLevel=2.0.0",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
+          end
+        end
+
+        context "when the spec has disabled package sources" do
+          let(:config_file_fixture_name) { "disabled_sources.config" }
+
+          it "when only including the enabled package sources" do
+            expect(dependency_urls).to match_array(
+              [{
+                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel/index.json",
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "flatcontainer/microsoft.extensions." \
+                              "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "query?q=microsoft.extensions.dependencymodel" \
+                            "&prerelease=true&semVerLevel=2.0.0",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
+          end
+        end
+
+        context "when the spec has disabled default package sources" do
+          let(:config_file_fixture_name) { "disabled_default_sources.config" }
+
+          it "only includes the enable package sources" do
+            expect(dependency_urls).to match_array(
+              [{
+                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                  "microsoft.extensions.dependencymodel/index.json",
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "flatcontainer/microsoft.extensions." \
+                              "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "query?q=microsoft.extensions.dependencymodel" \
+                            "&prerelease=true&semVerLevel=2.0.0",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
           end
         end
       end
 
-      context "that has a numeric key" do
+      context "when the spec has a numeric key" do
         let(:config_file_fixture_name) { "numeric_key.config" }
 
         before do
@@ -580,7 +658,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that only provides versioned `SearchQueryService`` entries" do
+      context "when only providing versioned `SearchQueryService`` entries" do
         let(:config_file_fixture_name) { "versioned_search.config" }
 
         before do
@@ -605,7 +683,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "includes repositories in the `trustedSigners` section" do
+      context "when including repositories in the `trustedSigners` section" do
         let(:config_file_fixture_name) { "with_trustedSigners.config" }
 
         before do
@@ -669,7 +747,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has a non-ascii key" do
+      context "when the repo URL has a non-ascii key" do
         let(:config_file_fixture_name) { "non_ascii_key.config" }
 
         before do
@@ -700,7 +778,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that uses the v2 API alongside the v3 API" do
+      context "when the repo URL uses the v2 API alongside the v3 API" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -755,7 +833,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has no base url in v2 API response" do
+      context "when the repo URL has no base url in v2 API response" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -848,7 +926,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "matching `packageSourceMapping` entries are honored" do
+      context "when matching `packageSourceMapping` entries are honored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>
@@ -895,7 +973,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "non-matching `packageSourceMapping` entries are ignored" do
+      context "when non-matching `packageSourceMapping` entries are ignored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>

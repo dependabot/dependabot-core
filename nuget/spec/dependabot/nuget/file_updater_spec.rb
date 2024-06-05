@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         )
       end
 
-      context "that has only deleted lines" do
+      context "when the file has only deleted lines" do
         before do
           allow(File).to receive(:read)
             .and_call_original
