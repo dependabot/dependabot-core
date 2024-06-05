@@ -30,36 +30,6 @@ RSpec/BeforeAfterAll:
     - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
     - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
-# Offense count: 2229
-# Configuration parameters: Prefixes, AllowedPatterns.
-# Prefixes: when, with, without
-RSpec/ContextWording:
-  Exclude:
-    - 'gradle/**/*'
-    - 'hex/**/*'
-    - 'npm_and_yarn/**/*'
-    - 'nuget/**/*'
-
-# Offense count: 31
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: SkipBlocks, EnforcedStyle, OnlyStaticConstants.
-# SupportedStyles: described_class, explicit
-RSpec/DescribedClass:
-  Exclude:
-    - 'bundler/helpers/v2/spec/functions_spec.rb'
-    - 'common/spec/dependabot/clients/codecommit_spec.rb'
-    - 'common/spec/dependabot/config/file_spec.rb'
-    - 'common/spec/dependabot/shared_helpers_spec.rb'
-    - 'common/spec/dependabot/wildcard_matcher_spec.rb'
-    - 'nuget/spec/dependabot/nuget/native_helpers_spec.rb'
-    - 'nuget/spec/dependabot/nuget/nuget_client_spec.rb'
-    - 'nuget/spec/dependabot/nuget/nuget_config_credential_helpers_spec.rb'
-    - 'nuget/spec/dependabot/nuget/update_checker/tfm_finder_spec.rb'
-    - 'python/spec/dependabot/python/file_updater/pyproject_preparer_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
-    - 'updater/spec/dependabot/api_client_spec.rb'
-    - 'updater/spec/dependabot/job_spec.rb'
-
 # Offense count: 1286
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
@@ -160,11 +130,6 @@ RSpec/IteratedExpectation:
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
-
-# Offense count: 675
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/LetBeforeExamples:
-  Enabled: false
 
 # Offense count: 141
 # This cop supports safe autocorrection (--autocorrect).

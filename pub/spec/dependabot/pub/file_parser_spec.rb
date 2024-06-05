@@ -16,11 +16,11 @@ RSpec.describe Dependabot::Pub::FileParser do
     )
   end
 
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [] }
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory) }
   let(:directory) { "/" }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: directory) }
+  let(:files) { [] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "#parse" do
     subject(:dependencies) { parser.parse }

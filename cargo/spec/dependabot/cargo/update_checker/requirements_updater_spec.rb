@@ -33,9 +33,9 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
 
-    specify { expect(updater.updated_requirements.count).to eq(1) }
-
     let(:req_string) { "^1.0.0" }
+
+    specify { expect(updater.updated_requirements.count).to eq(1) }
 
     context "when there is no latest version" do
       let(:target_version) { nil }

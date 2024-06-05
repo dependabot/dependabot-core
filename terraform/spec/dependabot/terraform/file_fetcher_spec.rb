@@ -6,8 +6,12 @@ require "dependabot/terraform/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Terraform::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:directory) { "/" }
+  let(:project_name) { "provider" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -16,13 +20,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     )
   end
 
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
-  end
-
-  let(:project_name) { "provider" }
-  let(:directory) { "/" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  it_behaves_like "a dependency file fetcher"
 
   after do
     FileUtils.rm_rf(repo_contents_path)

@@ -9,16 +9,33 @@ require "dependabot/docker/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Docker::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
+  let(:helm_dependency) do
+    Dependabot::Dependency.new(
+      name: "nginx",
+      version: "1.14.3",
+      previous_version: "1.14.2",
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "values.yaml",
+        source: { tag: "1.14.3" }
+      }],
+      previous_requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "values.yaml",
+        source: { tag: "1.14.2" }
+      }],
+      package_manager: "docker"
     )
   end
-  let(:files) { [dockerfile] }
+  let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
+  let(:helmfile) do
+    Dependabot::DependencyFile.new(
+      content: helmfile_body,
+      name: "values.yaml"
+    )
+  end
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -27,13 +44,57 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:dockerfile) do
-    Dependabot::DependencyFile.new(
-      content: dockerfile_body,
-      name: "Dockerfile"
+  let(:helm_files) { [helmfile] }
+  let(:helm_updater) do
+    described_class.new(
+      dependency_files: helm_files,
+      dependencies: [helm_dependency],
+      credentials: credentials
     )
   end
-  let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+  let(:yaml_dependency) do
+    Dependabot::Dependency.new(
+      name: "ubuntu",
+      version: "17.10",
+      previous_version: "17.04",
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "multiple.yaml",
+        source: { tag: "17.10" }
+      }],
+      previous_requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "multiple.yaml",
+        source: { tag: "17.04" }
+      }],
+      package_manager: "docker"
+    )
+  end
+  let(:podfile_body) { fixture("kubernetes", "yaml", "multiple.yaml") }
+  let(:podfile) do
+    Dependabot::DependencyFile.new(
+      content: podfile_body,
+      name: "multiple.yaml"
+    )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:yaml_files) { [podfile] }
+  let(:yaml_updater) do
+    described_class.new(
+      dependency_files: yaml_files,
+      dependencies: [yaml_dependency],
+      credentials: credentials
+    )
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "ubuntu",
@@ -54,6 +115,31 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       package_manager: "docker"
     )
   end
+  let(:dockerfile_body) { fixture("docker", "dockerfiles", "multiple") }
+  let(:dockerfile) do
+    Dependabot::DependencyFile.new(
+      content: dockerfile_body,
+      name: "Dockerfile"
+    )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:files) { [dockerfile] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -688,50 +774,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     end
   end
 
-  let(:yaml_updater) do
-    described_class.new(
-      dependency_files: yaml_files,
-      dependencies: [yaml_dependency],
-      credentials: credentials
-    )
-  end
-  let(:yaml_files) { [podfile] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:podfile) do
-    Dependabot::DependencyFile.new(
-      content: podfile_body,
-      name: "multiple.yaml"
-    )
-  end
-  let(:podfile_body) { fixture("kubernetes", "yaml", "multiple.yaml") }
-  let(:yaml_dependency) do
-    Dependabot::Dependency.new(
-      name: "ubuntu",
-      version: "17.10",
-      previous_version: "17.04",
-      requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "multiple.yaml",
-        source: { tag: "17.10" }
-      }],
-      previous_requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "multiple.yaml",
-        source: { tag: "17.04" }
-      }],
-      package_manager: "docker"
-    )
-  end
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { yaml_updater.updated_dependency_files }
 
@@ -1243,50 +1285,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         end
       end
     end
-  end
-
-  let(:helm_updater) do
-    described_class.new(
-      dependency_files: helm_files,
-      dependencies: [helm_dependency],
-      credentials: credentials
-    )
-  end
-  let(:helm_files) { [helmfile] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:helmfile) do
-    Dependabot::DependencyFile.new(
-      content: helmfile_body,
-      name: "values.yaml"
-    )
-  end
-  let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
-  let(:helm_dependency) do
-    Dependabot::Dependency.new(
-      name: "nginx",
-      version: "1.14.3",
-      previous_version: "1.14.2",
-      requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "values.yaml",
-        source: { tag: "1.14.3" }
-      }],
-      previous_requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "values.yaml",
-        source: { tag: "1.14.2" }
-      }],
-      package_manager: "docker"
-    )
   end
 
   describe "#updated_dependency_files" do

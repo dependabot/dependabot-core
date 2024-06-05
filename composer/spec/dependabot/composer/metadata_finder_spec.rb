@@ -12,20 +12,12 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: "1.0",
-      requirements: requirements,
-      package_manager: "composer"
-    )
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
   end
-  let(:requirements) do
-    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
-  end
-
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  let(:dependency_name) { "monolog/monolog" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -34,12 +26,19 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       "password" => "token"
     }]
   end
-  let(:dependency_name) { "monolog/monolog" }
-  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
-  let(:packagist_response) do
-    sanitized_name = dependency_name.downcase.gsub("/", "--")
-    fixture("packagist_responses", "#{sanitized_name}.json")
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
   end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: "1.0",
+      requirements: requirements,
+      package_manager: "composer"
+    )
+  end
+
+  it_behaves_like "a dependency metadata finder"
 
   before do
     packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
