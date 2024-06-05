@@ -73,7 +73,7 @@ module Dependabot
 
         updated_content = T.let(file.content, T.untyped)
 
-        old_sources.zip(new_sources).each do |old_source, new_source|
+        T.must(old_sources).zip(new_sources).each do |old_source, new_source|
           updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
         end
 
@@ -121,26 +121,20 @@ module Dependabot
         end
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
       def specified_with_tag?(source)
-        !!source[:tag]
+        source[:tag]
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
       def specified_with_digest?(source)
-        !!source[:digest]
+        source[:digest]
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
-      def new_tags(file)
-        requirements(file)
-          .map { |r| r.fetch(:source)[:tag] }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[String])) }
       def old_tags(file)
-        T.must(previous_requirements(file))
-         .map { |r| r.fetch(:source)[:tag] }
+        previous_requirements(file)
+          &.map { |r| r.fetch(:source)[:tag] }
       end
 
       sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
@@ -153,9 +147,9 @@ module Dependabot
         requirements(file).map { |r| r.fetch(:source) }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]])) }
       def previous_sources(file)
-        T.must(previous_requirements(file)).map { |r| r.fetch(:source) }
+        previous_requirements(file)&.map { |r| r.fetch(:source) }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
