@@ -132,6 +132,12 @@ module Dependabot
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[String])) }
+      def new_tags(file)
+        requirements(file)
+          .map { |r| r.fetch(:source)[:tag] }
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[String])) }
       def old_tags(file)
         previous_requirements(file)
           &.map { |r| r.fetch(:source)[:tag] }
