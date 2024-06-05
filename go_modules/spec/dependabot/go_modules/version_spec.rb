@@ -194,7 +194,7 @@ RSpec.describe Dependabot::GoModules::Version do
     end
 
     sorted_versions.each do |v|
-      it "should equal itself #{v}" do
+      it "equals itself #{v}" do
         expect(described_class.new(v)).to eq v
       end
     end
