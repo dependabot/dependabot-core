@@ -66,7 +66,6 @@ module Dependabot
     sig { returns(Dependabot::DependencyChange) }
     def run
       updated_files = generate_dependency_files
-      Dependabot.logger.error("Generated Dependency list" + updated_files.to_s)
       raise DependabotError, "FileUpdater failed" unless updated_files.any?
 
       # Remove any unchanged dependencies from the updated list
