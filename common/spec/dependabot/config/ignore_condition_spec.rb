@@ -337,7 +337,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:security_updates_only) { true }
         let(:update_types) { %w(version-update:semver-major version-update:semver-patch) }
 
-        it "allows all " do
+        it "allows all" do
           expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end
