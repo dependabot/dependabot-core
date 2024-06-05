@@ -36,10 +36,12 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def base_registry
-          @base_registry ||= T.let(nil, T.nilable(Dependabot::Credential))
-          @base_registry ||= credentials.find do |cred|
-            cred["type"] == "docker_registry" && cred.replaces_base?
-          end
+          @base_registry ||= T.let(
+            credentials.find do |cred|
+              cred["type"] == "docker_registry" && cred.replaces_base?
+            end,
+            T.nilable(Dependabot::Credential)
+          )
           @base_registry ||= Dependabot::Credential.new({ "registry" => DEFAULT_DOCKER_HUB_REGISTRY,
                                                           "credentials" => nil })
           @base_registry["registry"]
