@@ -89,7 +89,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("blocked_by_subdep") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.1.0")) }
+        it "only upgrades as far as the subdep allows", :bundler_v1_only do
+          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("1.1.0"))
+        end
+
+        it "is still able to upgrade to the latest version by upgrading the subdep as well", :bundler_v2_only do
+          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("2.0.0"))
+        end
       end
 
       context "when that only appears in the lockfile" do
@@ -235,13 +241,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with no update possible due to a version conflict" do
+      context "when upgrading needs to unlock subdeps" do
         let(:dependency_name) { "rspec-mocks" }
         let(:requirement_string) { ">= 0" }
 
         let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_listed_subdep") }
 
-        its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
+        it "does not allow the upgrade", :bundler_v1_only do
+          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("3.6.0"))
+        end
+
+        it "is still able to upgrade", :bundler_v2_only do
+          expect(latest_resolvable_version_details[:version]).to be > Gem::Version.new("3.6.0")
+        end
       end
 
       context "with a legacy Ruby which disallows the latest version" do

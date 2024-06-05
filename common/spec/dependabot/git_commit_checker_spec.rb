@@ -57,7 +57,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "with a non-git dependency" do
       let(:source) { nil }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a non-git dependency that has multiple sources" do
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         ]
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a git dependency" do
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when hosted on bitbucket" do
         let(:source) do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "with multiple sources" do
@@ -126,7 +126,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           end
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "with multiple source types" do
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             .to receive(:look_up_source).and_return(nil)
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
       context "with source code hosted on GitHub" do
@@ -191,7 +191,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "when there are no tags on GitHub" do
           let(:upload_pack_fixture) { "no_tags" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
 
         context "when GitHub returns a 404" do
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
           end
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
 
         context "with tags on GitHub" do
@@ -226,7 +226,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               fixture("github", "commit_compare_diverged.json")
             end
 
-            it { is_expected.to eq(false) }
+            it { is_expected.to be(false) }
           end
 
           context "when the specified reference is included in the release" do
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               fixture("github", "commit_compare_behind.json")
             end
 
-            it { is_expected.to eq(true) }
+            it { is_expected.to be(true) }
 
             context "when the fork is not on GitHub" do
               let(:source) do
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::GitCommitChecker do
                 }
               end
 
-              it { is_expected.to eq(true) }
+              it { is_expected.to be(true) }
             end
 
             context "when there is no github.com credential" do
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::GitCommitChecker do
                 }]
               end
 
-              it { is_expected.to eq(true) }
+              it { is_expected.to be(true) }
             end
           end
 
@@ -278,14 +278,14 @@ RSpec.describe Dependabot::GitCommitChecker do
               fixture("github", "commit_compare_behind.json")
             end
 
-            it { is_expected.to eq(true) }
+            it { is_expected.to be(true) }
 
             context "when a source has no branch specified" do
               let(:branch) { nil }
               let(:comparison_url) { "unused" }
               let(:comparison_response) { "unused" }
 
-              it { is_expected.to eq(false) }
+              it { is_expected.to be(false) }
             end
           end
         end
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               )
           end
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
 
         context "when bitbucket 404s" do
@@ -343,7 +343,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               )
           end
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
 
         context "when bitbucket 404s" do
@@ -356,7 +356,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               )
           end
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
       end
     end
@@ -384,28 +384,28 @@ RSpec.describe Dependabot::GitCommitChecker do
       let(:ref) { nil }
       let(:branch) { nil }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with no reference specified" do
       let(:ref) { nil }
       let(:branch) { "master" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a reference that matches the branch" do
       let(:ref) { "master" }
       let(:branch) { "master" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a reference that does not match the branch" do
       let(:ref) { "v1.0.0" }
       let(:branch) { "master" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with no branch specified" do
@@ -414,7 +414,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "when a reference matches the version" do
         let(:ref) { "df9f605" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when a reference that does not match the version" do
@@ -434,13 +434,13 @@ RSpec.describe Dependabot::GitCommitChecker do
         context "when a reference does not match any branch names" do
           let(:ref) { "my_ref" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "when a reference matches a branch names" do
           let(:ref) { "master" }
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
 
         context "with a bitbucket source" do
@@ -456,7 +456,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
           let(:ref) { "my_ref" }
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
         context "when the source is unreachable" do
@@ -767,7 +767,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a version pin" do
@@ -780,7 +780,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when including a hyphen" do
         let(:source) do
@@ -792,7 +792,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when the source reference is just v1" do
@@ -805,7 +805,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -819,7 +819,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with no ref" do
@@ -832,7 +832,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -849,7 +849,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a version pin" do
@@ -862,7 +862,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a git commit pin" do
@@ -890,7 +890,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       let(:upload_pack_fixture) { "monolog" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when the ref matches a tag" do
         let(:source) do
@@ -902,7 +902,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -916,7 +916,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -962,7 +962,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:upload_pack_fixture) { "no_tags" }
 
     context "with no tags on GitHub" do
-      it { is_expected.to eq(nil) }
+      it { is_expected.to be_nil }
     end
 
     context "when GitHub returns a 404" do
@@ -986,7 +986,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "when there are no version tags" do
         let(:upload_pack_fixture) { "no_versions" }
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
       context "with version tags" do
@@ -1506,7 +1506,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "when the results is 403" do
@@ -1522,7 +1522,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

@@ -9,17 +9,24 @@ require "dependabot/docker/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Docker::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [dockerfile] }
-  let(:dockerfile) do
-    Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+  let(:helm_parser) { described_class.new(dependency_files: helmfiles, source: source) }
+  let(:helmfile_fixture_name) { "values.yaml" }
+  let(:helmfile_body) do
+    fixture("helm", "yaml", helmfile_fixture_name)
   end
-  let(:dockerfile_body) do
-    fixture("docker", "dockerfiles", dockerfile_fixture_name)
+  let(:helmfile) do
+    Dependabot::DependencyFile.new(name: helmfile_fixture_name, content: helmfile_body)
   end
-  let(:dockerfile_fixture_name) { "tag" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:helmfiles) { [helmfile] }
+  let(:yaml_parser) { described_class.new(dependency_files: podfiles, source: source) }
+  let(:podfile_fixture_name) { "pod.yaml" }
+  let(:podfile_body) do
+    fixture("kubernetes", "yaml", podfile_fixture_name)
+  end
+  let(:podfile) do
+    Dependabot::DependencyFile.new(name: podfile_fixture_name, content: podfile_body)
+  end
+  let(:podfiles) { [podfile] }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -27,6 +34,17 @@ RSpec.describe Dependabot::Docker::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:dockerfile_fixture_name) { "tag" }
+  let(:dockerfile_body) do
+    fixture("docker", "dockerfiles", dockerfile_fixture_name)
+  end
+  let(:dockerfile) do
+    Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+  end
+  let(:files) { [dockerfile] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -668,16 +686,6 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
   end
 
-  let(:podfiles) { [podfile] }
-  let(:podfile) do
-    Dependabot::DependencyFile.new(name: podfile_fixture_name, content: podfile_body)
-  end
-  let(:podfile_body) do
-    fixture("kubernetes", "yaml", podfile_fixture_name)
-  end
-  let(:podfile_fixture_name) { "pod.yaml" }
-  let(:yaml_parser) { described_class.new(dependency_files: podfiles, source: source) }
-
   describe "YAML parse" do
     subject(:dependencies) { yaml_parser.parse }
 
@@ -1132,16 +1140,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
   end
-
-  let(:helmfiles) { [helmfile] }
-  let(:helmfile) do
-    Dependabot::DependencyFile.new(name: helmfile_fixture_name, content: helmfile_body)
-  end
-  let(:helmfile_body) do
-    fixture("helm", "yaml", helmfile_fixture_name)
-  end
-  let(:helmfile_fixture_name) { "values.yaml" }
-  let(:helm_parser) { described_class.new(dependency_files: helmfiles, source: source) }
 
   describe "YAML parse" do
     subject(:dependencies) { helm_parser.parse }

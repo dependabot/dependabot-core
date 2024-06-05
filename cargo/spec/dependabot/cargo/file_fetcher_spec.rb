@@ -6,19 +6,7 @@ require "dependabot/cargo/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Cargo::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -27,8 +15,19 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
-  let(:json_header) { { "content-type" => "application/json" } }
+  it_behaves_like "a dependency file fetcher"
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
@@ -268,7 +267,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
         expect(file_fetcher_instance.files.last.support_file?)
-          .to eq(true)
+          .to be(true)
       end
 
       context "with a trailing slash in the path" do

@@ -306,9 +306,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitHub source" do
-      its(:length) { is_expected.to eq(1) }
-
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
+      its(:length) { is_expected.to eq(1) }
 
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")

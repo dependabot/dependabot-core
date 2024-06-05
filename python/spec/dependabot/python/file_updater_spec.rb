@@ -9,23 +9,15 @@ require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Python::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: dependency_files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
   end
-  let(:dependency_files) { [requirements] }
-  let(:requirements) do
-    Dependabot::DependencyFile.new(
-      content: fixture("requirements", requirements_fixture_name),
-      name: "requirements.txt"
-    )
-  end
-  let(:requirements_fixture_name) { "version_specified.txt" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "psycopg2",
@@ -45,15 +37,23 @@ RSpec.describe Dependabot::Python::FileUpdater do
       package_manager: "pip"
     )
   end
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
+  let(:requirements_fixture_name) { "version_specified.txt" }
+  let(:requirements) do
+    Dependabot::DependencyFile.new(
+      content: fixture("requirements", requirements_fixture_name),
+      name: "requirements.txt"
+    )
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:dependency_files) { [requirements] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: dependency_files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 
@@ -405,7 +405,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:replaces_base) { false }
 
       before do
-        allow_any_instance_of(Dependabot::Python::FileUpdater).to receive(:check_required_files).and_return(true)
+        allow_any_instance_of(described_class).to receive(:check_required_files).and_return(true)
         allow(Dependabot::Python::AuthedUrlBuilder).to receive(:authed_url).and_return("authed_url")
       end
 

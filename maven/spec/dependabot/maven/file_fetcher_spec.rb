@@ -6,21 +6,6 @@ require "dependabot/maven/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Maven::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -29,6 +14,21 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+  it_behaves_like "a dependency file fetcher"
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
@@ -36,37 +36,37 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     context "with only a pom.xml" do
       let(:filenames) { %w(pom.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with pom.xml and any other valid .xml" do
       let(:filenames) { %w(pom.xml othermodule.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with only an extensions.xml" do
       let(:filenames) { %w(extensions.xml) }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with an extensions.xml and a valid pom.xml file" do
       let(:filenames) { %w(extensions.xml pom.xml) }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a non .xml file" do
       let(:filenames) { %w(nonxml.txt) }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with no files passed" do
       let(:filenames) { %w() }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 

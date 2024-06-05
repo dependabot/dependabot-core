@@ -13,9 +13,9 @@ RSpec.describe Dependabot::DependabotError do
   describe "#message" do
     subject { error.message }
 
-    it { is_expected.to eq("some error") }
-
     let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+
+    it { is_expected.to eq("some error") }
 
     context "with dependabot temp path" do
       let(:message) do
