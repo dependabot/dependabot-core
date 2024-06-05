@@ -34,7 +34,7 @@ module Dependabot
           updated_files << if file.name.match?(YAML_REGEXP)
                              updated_file(
                                file: file,
-                               content: updated_yaml_content(file)
+                               content: T.must(updated_yaml_content(file))
                              )
                            else
                              updated_file(
@@ -158,15 +158,15 @@ module Dependabot
         previous_requirements(file)&.map { |r| r.fetch(:source) }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_yaml_content(file)
         updated_content = file.content
-        updated_content = update_helm(file, T.must(updated_content)) if Utils.likely_helm_chart?(file)
-        updated_content = update_image(file, T.must(updated_content))
+        updated_content = update_helm(file, updated_content.to_s) if Utils.likely_helm_chart?(file)
+        updated_content = update_image(file, updated_content.to_s)
 
         raise "Expected content to change!" if updated_content == file.content
 
-        T.must(updated_content)
+        updated_content
       end
 
       sig { params(file: Dependabot::DependencyFile, content: String).returns(T.nilable(String)) }
