@@ -39,7 +39,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
+          return requirements if update_strategy.lockfile_only?
 
           requirements.map do |req|
             if req[:file].include?(".gemspec")
@@ -102,8 +102,7 @@ module Dependabot
         end
 
         def new_version_satisfies?(req)
-          original_req = Gem::Requirement.new(req[:requirement].split(","))
-          original_req.satisfied_by?(latest_resolvable_version)
+          Requirement.satisfied_by?(req, latest_resolvable_version)
         end
 
         def update_gemfile_range(requirements)
