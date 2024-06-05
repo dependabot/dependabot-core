@@ -150,6 +150,16 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def directory_build_files
         @directory_build_files ||= T.let(fetch_directory_build_files, T.nilable(T::Array[Dependabot::DependencyFile]))
+
+        prop_file_content = @directory_build_files[0].instance_variable_get(:@content).to_s
+
+        if prop_file_content.include? "<!--<ItemGroup"
+          prop_file_content = prop_file_content.sub! "<!--<ItemGroup", "<ItemGroup"
+          prop_file_content = prop_file_content.sub! "ItemGroup>-->", "ItemGroup>"
+          @directory_build_files[0].instance_variable_set(:@content, prop_file_content)
+        end
+
+        @directory_build_files
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
