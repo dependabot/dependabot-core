@@ -8,17 +8,6 @@ require "dependabot/gradle/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Gradle::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [buildfile] }
-  let(:buildfile) do
-    Dependabot::DependencyFile.new(
-      name: "build.gradle",
-      content: fixture("buildfiles", buildfile_fixture_name)
-    )
-  end
-  let(:buildfile_fixture_name) { "basic_build.gradle" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -26,6 +15,17 @@ RSpec.describe Dependabot::Gradle::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:buildfile_fixture_name) { "basic_build.gradle" }
+  let(:buildfile) do
+    Dependabot::DependencyFile.new(
+      name: "build.gradle",
+      content: fixture("buildfiles", buildfile_fixture_name)
+    )
+  end
+  let(:files) { [buildfile] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

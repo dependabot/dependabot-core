@@ -6,25 +6,6 @@ require "dependabot/docker/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Docker::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(
-      source: source,
-      credentials: credentials,
-      repo_contents_path: nil
-    )
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -33,6 +14,25 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: nil
+    )
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+  it_behaves_like "a dependency file fetcher"
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 

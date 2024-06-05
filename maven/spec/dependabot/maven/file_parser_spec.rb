@@ -8,14 +8,6 @@ require "dependabot/maven/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Maven::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [pom] }
-  let(:pom) do
-    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -23,6 +15,14 @@ RSpec.describe Dependabot::Maven::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
+  end
+  let(:files) { [pom] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

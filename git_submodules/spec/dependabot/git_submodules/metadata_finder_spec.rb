@@ -12,8 +12,15 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:url) { "https://github.com/example/manifesto.git" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
@@ -34,16 +41,8 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       package_manager: "submodules"
     )
   end
-  let(:url) { "https://github.com/example/manifesto.git" }
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  it_behaves_like "a dependency metadata finder"
 
   before do
     # Not hosted on GitHub Enterprise Server

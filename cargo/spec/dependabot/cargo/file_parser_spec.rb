@@ -8,9 +8,21 @@ require "dependabot/source"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Cargo::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "Cargo.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:manifest) do
+    Dependabot::DependencyFile.new(
+      name: "Cargo.toml",
+      content: fixture("manifests", manifest_fixture_name)
+    )
+  end
+  let(:files) { [manifest, lockfile] }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -18,22 +30,9 @@ RSpec.describe Dependabot::Cargo::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
 
-  let(:files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(
-      name: "Cargo.toml",
-      content: fixture("manifests", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "Cargo.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

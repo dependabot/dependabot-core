@@ -8,22 +8,34 @@ require "dependabot/github_actions/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GithubActions::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:checker) do
-    described_class.new(
+  let(:upload_pack_fixture) { "setup-node" }
+  let(:git_commit_checker) do
+    Dependabot::GitCommitChecker.new(
       dependency: dependency,
-      dependency_files: [],
       credentials: github_credentials,
-      security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
   end
-  let(:security_advisories) { [] }
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
+  let(:service_pack_url) do
+    "https://github.com/#{dependency_name}.git/info/refs" \
+      "?service=git-upload-pack"
+  end
+  let(:reference) { "master" }
+  let(:dependency_source) do
+    {
+      type: "git",
+      url: "https://github.com/#{dependency_name}",
+      ref: reference,
+      branch: nil
+    }
+  end
+  let(:dependency_version) do
+    return unless Dependabot::GithubActions::Version.correct?(reference)
 
+    Dependabot::GithubActions::Version.new(reference).to_s
+  end
+  let(:dependency_name) { "actions/setup-node" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -38,33 +50,22 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       package_manager: "github_actions"
     )
   end
-  let(:dependency_name) { "actions/setup-node" }
-  let(:dependency_version) do
-    return unless Dependabot::GithubActions::Version.correct?(reference)
-
-    Dependabot::GithubActions::Version.new(reference).to_s
-  end
-  let(:dependency_source) do
-    {
-      type: "git",
-      url: "https://github.com/#{dependency_name}",
-      ref: reference,
-      branch: nil
-    }
-  end
-  let(:reference) { "master" }
-  let(:service_pack_url) do
-    "https://github.com/#{dependency_name}.git/info/refs" \
-      "?service=git-upload-pack"
-  end
-  let(:git_commit_checker) do
-    Dependabot::GitCommitChecker.new(
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
+  let(:checker) do
+    described_class.new(
       dependency: dependency,
+      dependency_files: [],
       credentials: github_credentials,
+      security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
   end
+
+  it_behaves_like "an update checker"
+
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -75,8 +76,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }
       )
   end
-
-  let(:upload_pack_fixture) { "setup-node" }
 
   shared_context "with multiple git sources" do
     let(:upload_pack_fixture) { "checkout" }
