@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Swift::MetadataFinder do
         )
       end
 
-      it "works" do
+      it "returns the correct source URL" do
         expect(finder.source_url).to eq "https://github.com/reactivecocoa/reactiveswift"
       end
     end
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Swift::MetadataFinder do
         )
       end
 
-      it "works" do
+      it "returns the correct source URL" do
         expect(finder.source_url).to eq "https://github.com/reactivecocoa/reactiveswift"
       end
     end
