@@ -124,7 +124,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a file fetcher error (cloud) ", vcr: true do
+    context "when the fetcher raises a file fetcher error (cloud)", vcr: true do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a file fetcher error (ghes) ", vcr: true do
+    context "when the fetcher raises a file fetcher error (ghes)", vcr: true do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
