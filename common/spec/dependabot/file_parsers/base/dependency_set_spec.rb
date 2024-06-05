@@ -224,7 +224,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
     it { is_expected.to be_a(described_class) }
     its(:dependencies) { is_expected.to eq([dependency]) }
 
-    it "delegates to << " do
+    it "delegates to <<" do
       expect(dependency_set).to receive(:<<).with(dependency).and_call_original
       plus_dependencies
     end
