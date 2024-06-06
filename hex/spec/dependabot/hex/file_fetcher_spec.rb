@@ -248,7 +248,7 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to include("apps/bank/mix.exs")
         expect(file_fetcher_instance.files.map(&:name))
-          .to_not include("apps/bank_web/mix.exs")
+          .not_to include("apps/bank_web/mix.exs")
       end
     end
 

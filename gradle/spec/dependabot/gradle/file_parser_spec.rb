@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       it "excludes the dependency with the missing property" do
         expect(dependencies.map(&:name))
-          .to_not include("org.scala-lang:scala-library")
+          .not_to include("org.scala-lang:scala-library")
       end
     end
 
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
       it "excludes the dependency with the missing property" do
         expect(dependencies.map(&:name))
-          .to_not include("org.gradle:gradle-tooling-api")
+          .not_to include("org.gradle:gradle-tooling-api")
       end
     end
 

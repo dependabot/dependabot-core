@@ -3306,7 +3306,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       it "doesn't include a signoff line" do
-        expect(pr_message).to_not include("Signed-off-by")
+        expect(pr_message).not_to include("Signed-off-by")
       end
     end
 
@@ -3314,7 +3314,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:trailers) { { "Changelog" => "dependency" } }
 
       it "doesn't include git trailer" do
-        expect(pr_message).to_not include("Changelog: dependency")
+        expect(pr_message).not_to include("Changelog: dependency")
       end
     end
   end

@@ -62,14 +62,14 @@ RSpec.describe Dependabot::Elm::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(1) }
 
     describe "the elm.json file" do

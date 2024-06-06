@@ -187,7 +187,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
       it "captures the exception and does not records the update job unknown error api" do
         expect(service).to receive(:capture_exception)
-        expect(service).to_not receive(:record_update_job_unknown_error)
+        expect(service).not_to receive(:record_update_job_unknown_error)
 
         perform_job
         Dependabot::Experiments.reset!

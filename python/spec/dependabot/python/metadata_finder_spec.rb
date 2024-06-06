@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it "doesn't call pypi" do
         source_url
-        expect(WebMock).to_not have_requested(:get, pypi_url).once
+        expect(WebMock).not_to have_requested(:get, pypi_url).once
       end
     end
 
