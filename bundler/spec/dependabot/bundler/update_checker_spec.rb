@@ -11,8 +11,34 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
+  let(:current_version) { "1.4.0" }
+  let(:dependency_name) { "business" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: current_version,
+      requirements: requirements,
+      package_manager: "bundler"
+    )
+  end
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:directory) { "/" }
+  let(:github_token) { "token" }
+  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -23,37 +49,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       requirements_update_strategy: requirements_update_strategy
     )
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
 
-  let(:github_token) { "token" }
-  let(:directory) { "/" }
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: current_version,
-      requirements: requirements,
-      package_manager: "bundler"
-    )
-  end
-  let(:dependency_name) { "business" }
-  let(:current_version) { "1.4.0" }
-  let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
-  end
-
-  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -279,7 +276,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             it "respects the pin" do
               expect(checker.latest_version).to eq(current_version)
               expect(checker.can_update?(requirements_to_unlock: :own))
-                .to eq(false)
+                .to be(false)
             end
           end
 
@@ -858,7 +855,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               expect(checker.latest_resolvable_version)
                 .to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
               expect(checker.can_update?(requirements_to_unlock: :own))
-                .to eq(false)
+                .to be(false)
             end
           end
 
@@ -1810,12 +1807,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when the lockfile-only requirements update strategy is set" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -1825,7 +1822,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_name) { "i18n" }
       let(:current_version) { "0.7.0.beta1" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a Gemfile dependency that can be unlocked" do
@@ -1835,19 +1832,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
       let(:req) { "~> 1.4.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with multiple requirements" do
         let(:dependency_files) { bundler_project_dependency_files("version_between_bounds_gemfile") }
         let(:req) { "> 1.0.0, < 1.5.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when the lockfile-only requirements update strategy is set" do
         let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -1868,7 +1865,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a Gemfile with a function version" do
@@ -1877,7 +1874,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         [{ file: "Gemfile", requirement: "1.0.0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

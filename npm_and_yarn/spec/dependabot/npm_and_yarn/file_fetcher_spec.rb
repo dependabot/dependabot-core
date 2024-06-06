@@ -6,20 +6,7 @@ require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-  let(:directory) { "/" }
+  let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -28,7 +15,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       "password" => "token"
     })]
   end
-  let(:json_header) { { "content-type" => "application/json" } }
+  let(:directory) { "/" }
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+  it_behaves_like "a dependency file fetcher"
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "that has a blank file: in the package-lock" do
+  context "when the repo has a blank file: in the package-lock" do
     before do
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to include("package-lock.json")
     end
 
-    context "that specifies no package-lock" do
+    context "when specifying no package-lock" do
       before do
         stub_request(:get, File.join(url, ".npmrc?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      context "that has an unfetchable path" do
+      context "when the path is unfetchable" do
         before do
           stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to_return(status: 404)
     end
 
-    context "and older than 5.4 lockfile format" do
+    context "when using older than 5.4 lockfile format" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "and 5.4 as lockfile format" do
+    context "when using 5.4 as lockfile format" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -373,7 +373,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "and 6.0 as lockfile format" do
+    context "when using 6.0 as lockfile format" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -396,7 +396,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "using double quotes to surround lockfileVersion" do
+    context "when using double quotes to surround lockfileVersion" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -561,7 +561,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has a fetchable path" do
+    context "when path is fetchable" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -578,11 +578,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
-    context "that is specified as a link" do
+    context "when specified as a link" do
       before do
         stub_request(:get, File.join(url, "package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -606,7 +606,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("deps/etag/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "deps/etag/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
@@ -652,7 +652,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has an unfetchable tarball path dependency" do
+    context "when tarball path dependency is unfetchable" do
       before do
         stub_request(:get, File.join(url, "package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -724,7 +724,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has an unfetchable tar path dependency" do
+    context "when tar path dependency is unfetchable" do
       before do
         stub_request(:get, File.join(url, "package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -754,7 +754,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has an unfetchable path" do
+    context "when path is unfetchable" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -795,13 +795,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
           expect(path_file.content)
             .to eq('{"name":"etag","version":"0.0.1"}')
         end
       end
 
-      context "that only appears in the lockfile" do
+      context "when only appears in the lockfile" do
         before do
           stub_request(:get, url + "?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -832,7 +832,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("deps/etag/package.json")
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "deps/etag/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
         end
       end
     end
@@ -850,7 +850,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         )
     end
 
-    context "that has a fetchable path" do
+    context "when paths are fetchable" do
       before do
         file_url = File.join(url, "mocks/sprintf-js/package.json?ref=sha")
         stub_request(:get, file_url)
@@ -868,11 +868,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to include("mocks/sprintf-js/package.json")
         path_file = file_fetcher_instance.files
                                          .find { |f| f.name == "mocks/sprintf-js/package.json" }
-        expect(path_file.support_file?).to eq(true)
+        expect(path_file.support_file?).to be(true)
       end
     end
 
-    context "that has an unfetchable path" do
+    context "when paths are unfetchable" do
       before do
         file_url = File.join(url, "mocks/sprintf-js/package.json?ref=sha")
         stub_request(:get, file_url)
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
           path_file = file_fetcher_instance.files
                                            .find { |f| f.name == "mocks/sprintf-js/package.json" }
-          expect(path_file.support_file?).to eq(true)
+          expect(path_file.support_file?).to be(true)
           expect(path_file.content)
             .to eq('{"name":"sprintf-js","version":"0.0.0"}')
         end
@@ -950,7 +950,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         )
     end
 
-    context "that have fetchable paths" do
+    context "when paths are fetchable" do
       before do
         stub_request(:get, File.join(url, "packages?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -1043,7 +1043,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("packages/package2/package.json")
         end
 
-        context "and a deeply nested package" do
+        context "when dealing with a deeply nested package" do
           before do
             stub_request(
               :get,
@@ -1166,7 +1166,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "in a directory" do
+      context "when in a directory" do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
@@ -1202,7 +1202,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has an unfetchable path" do
+    context "when paths are unfetchable" do
       before do
         stub_request(:get, File.join(url, "packages?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -1289,7 +1289,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         )
     end
 
-    context "that have fetchable paths" do
+    context "when paths are fetchable" do
       before do
         stub_request(:get, File.join(url, "packages?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -1338,7 +1338,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(workspace_dep.type).to eq("file")
       end
 
-      context "specified using './packages/*'" do
+      context "when specified using './packages/*'" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1361,7 +1361,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "specified using 'packages/*/*'" do
+      context "when specified using 'packages/*/*'" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1566,19 +1566,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "specified using 'packages/**'" do
+      context "when specified using 'packages/**'" do
         let(:project) { "yarn/double_star_workspaces" }
 
         it_behaves_like "fetching all files recursively"
       end
 
-      context "specified using 'packages/**/*'" do
+      context "when specified using 'packages/**/*'" do
         let(:project) { "yarn/double_star_single_star_workspaces" }
 
         it_behaves_like "fetching all files recursively"
       end
 
-      context "specified using a hash" do
+      context "when specified using a hash" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1595,7 +1595,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("packages/package2/package.json")
         end
 
-        context "that excludes a workspace" do
+        context "when excluding a workspace" do
           before do
             stub_request(:get, File.join(url, "package.json?ref=sha"))
               .with(headers: { "Authorization" => "token token" })
@@ -1629,7 +1629,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           end
         end
 
-        context "that uses nohoist" do
+        context "when using nohoist" do
           before do
             stub_request(:get, File.join(url, "package.json?ref=sha"))
               .with(headers: { "Authorization" => "token token" })
@@ -1651,7 +1651,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "specified with a top-level wildcard" do
+      context "when specified with a top-level wildcard" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -1713,7 +1713,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "including an empty folder" do
+      context "when including an empty folder" do
         before do
           stub_request(
             :get,
@@ -1729,7 +1729,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "in a directory" do
+      context "when in a directory" do
         let(:url) do
           "https://api.github.com/repos/gocardless/bump/contents/etc"
         end
@@ -1763,7 +1763,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("packages/package2/package.json")
         end
 
-        context "and an npmrc file in the parent directory" do
+        context "when dealing with an npmrc file in the parent directory" do
           before do
             stub_request(
               :get,
@@ -1786,7 +1786,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "that has an unfetchable path" do
+    context "when there is an unfetchable path" do
       before do
         stub_request(:get, File.join(url, "packages?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -1828,7 +1828,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to_not include("other_package/package.json")
       end
 
-      context "because one of the repos isn't fetchable" do
+      context "when one of the repos isn't fetchable" do
         before do
           stub_request(:get, File.join(url, "packages?ref=sha"))
             .with(headers: { "Authorization" => "token token" })

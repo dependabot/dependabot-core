@@ -9,20 +9,6 @@ require "dependabot/dependency"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GithubActions::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [workflow_files] }
-  let(:workflow_files) do
-    Dependabot::DependencyFile.new(
-      name: ".github/workflows/workflow.yml",
-      content: workflow_file_body
-    )
-  end
-  let(:workflow_file_body) do
-    fixture("workflow_files", workflow_file_fixture_name)
-  end
-  let(:workflow_file_fixture_name) { "workflow.yml" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -30,6 +16,20 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:workflow_file_fixture_name) { "workflow.yml" }
+  let(:workflow_file_body) do
+    fixture("workflow_files", workflow_file_fixture_name)
+  end
+  let(:workflow_files) do
+    Dependabot::DependencyFile.new(
+      name: ".github/workflows/workflow.yml",
+      content: workflow_file_body
+    )
+  end
+  let(:files) { [workflow_files] }
+
+  it_behaves_like "a dependency file parser"
 
   def mock_service_pack_request(nwo)
     stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack")
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         mock_service_pack_request("docker/login-action")
       end
 
-      context "the first dependency" do
+      context "when dealing with the first dependency" do
         subject(:dependency) { dependencies.first }
 
         it "has the right details" do

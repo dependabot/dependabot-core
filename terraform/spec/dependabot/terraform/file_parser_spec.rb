@@ -18,11 +18,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
   it_behaves_like "a dependency file parser"
 
-  let(:files) { [] }
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
-
   describe "#parse" do
     subject(:dependencies) { parser.parse }
+
+    let(:files) { [] }
+    let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
     context "with an invalid registry source" do
       let(:files) { project_dependency_files("invalid_registry") }
@@ -914,7 +914,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with a private module proxy that can't be reached", vcr: true do
+    context "with a private module proxy that can't be reached", :vcr do
       before do
         artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
 
@@ -932,18 +932,13 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
   end
 
-  let(:file_parser) do
-    described_class.new(
-      dependency_files: files,
-      source: source
-    )
-  end
-
-  let(:files) { project_dependency_files("registry") }
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
-
   describe "#source_type" do
     subject(:source_type) { file_parser.send(:source_type, source_string) }
+
+    let(:file_parser) { described_class.new(dependency_files: files, source: source) }
+
+    let(:files) { project_dependency_files("registry") }
+    let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
     context "when the source type is known" do
       let(:source_string) { "github.com/org/repo" }

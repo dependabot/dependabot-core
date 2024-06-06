@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
 
-      context "and the type is native-mt" do
+      context "when the type is native-mt" do
         let(:dependency_version) { "1.4.11-native-mt" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "when that's what we're using" do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -242,7 +242,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when already on the latest version" do
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -275,7 +275,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "that is a gitlab maven repository" do
+      context "when gitlab maven repository is used" do
         let(:credentials) do
           [
             Dependabot::Credential.new({
@@ -406,7 +406,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
       end
 
-      context "but no auth details" do
+      context "when there is no auth details" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "maven_repository",
@@ -642,7 +642,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         expect(lowest_security_fix_version_details).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
@@ -654,7 +654,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
@@ -747,7 +747,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
       end
 
-      context "that augment the central repo" do
+      context "when augmenting the central repo" do
         before do
           body =
             fixture("maven_central_metadata", "with_date_releases.xml")

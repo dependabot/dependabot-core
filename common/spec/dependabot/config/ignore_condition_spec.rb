@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       versions.each do |v|
         version = Dependabot::Utils.version_class_for_package_manager(package_manager).new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
-        expect(ignored).to eq(false), "Expected #{v} to be allowed, but was ignored"
+        expect(ignored).to be(false), "Expected #{v} to be allowed, but was ignored"
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       versions.each do |v|
         version = Dependabot::Version.new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
-        expect(ignored).to eq(true), "Expected #{v} to be ignored, but was allowed"
+        expect(ignored).to be(true), "Expected #{v} to be ignored, but was allowed"
       end
     end
 
@@ -337,7 +337,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:security_updates_only) { true }
         let(:update_types) { %w(version-update:semver-major version-update:semver-patch) }
 
-        it "allows all " do
+        it "allows all" do
           expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end

@@ -11,15 +11,15 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: "2.1.0",
-      requirements: requirements,
-      package_manager: "go_modules"
-    )
+  let(:source) { nil }
+  let(:dependency_name) { "github.com/satori/go.uuid" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:requirements) do
     [{
@@ -29,17 +29,16 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
       source: source
     }]
   end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: "2.1.0",
+      requirements: requirements,
+      package_manager: "go_modules"
+    )
   end
-  let(:dependency_name) { "github.com/satori/go.uuid" }
-  let(:source) { nil }
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -49,7 +48,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/satori/go.uuid") }
 
-      context "for a golang.org project" do
+      context "when dealing with a golang.org project" do
         let(:dependency_name) { "golang.org/x/text" }
 
         it { is_expected.to eq("https://github.com/golang/text") }

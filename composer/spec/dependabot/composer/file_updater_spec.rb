@@ -8,20 +8,23 @@ require "dependabot/composer/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Composer::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{
+      file: "composer.json",
+      requirement: "1.0.1",
+      groups: [],
+      source: nil
+    }]
   end
-
-  let(:credentials) { github_credentials }
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "exact_version" }
-
+  let(:requirements) do
+    [{
+      file: "composer.json",
+      requirement: "1.22.1",
+      groups: [],
+      source: nil
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
@@ -32,23 +35,18 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       package_manager: "composer"
     )
   end
-  let(:requirements) do
-    [{
-      file: "composer.json",
-      requirement: "1.22.1",
-      groups: [],
-      source: nil
-    }]
+  let(:project_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:credentials) { github_credentials }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
   end
-  let(:previous_requirements) do
-    [{
-      file: "composer.json",
-      requirement: "1.0.1",
-      groups: [],
-      source: nil
-    }]
-  end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 

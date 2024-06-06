@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the file is just comments" do
@@ -40,26 +40,26 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
         Dependabot::DependencyFile.new(content: "#Lol this is just a comment", name: "Gemfile")
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "when the file does include the dependency" do
       let(:dependency_name) { "business" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when it's in a source block" do
         let(:gemfile) { bundler_project_dependency_file("sidekiq_pro", filename: "Gemfile") }
         let(:dependency_name) { "sidekiq-pro" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
       context "when it's in a group block" do
         let(:gemfile) { bundler_project_dependency_file("development_dependencies", filename: "Gemfile") }
         let(:dependency_name) { "business" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
   end

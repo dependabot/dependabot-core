@@ -9,22 +9,30 @@ require "dependabot/gradle/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Gradle::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/maven-metadata.xml"
+  let(:dependency_version) { "23.3-jre" }
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:dependency_requirements) do
+    [{ file: "build.gradle", requirement: "23.3-jre", groups: [], source: nil }]
   end
-  let(:version_class) { Dependabot::Gradle::Version }
-  let(:maven_central_releases) do
-    fixture("maven_central_metadata", "with_release.xml")
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "gradle"
+    )
   end
-
-  before do
-    stub_request(:get, maven_central_metadata_url)
-      .to_return(status: 200, body: maven_central_releases)
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:buildfile_fixture_name) { "basic_build.gradle" }
+  let(:buildfile) do
+    Dependabot::DependencyFile.new(
+      name: "build.gradle",
+      content: fixture("buildfiles", buildfile_fixture_name)
+    )
   end
-
+  let(:credentials) { [] }
+  let(:dependency_files) { [buildfile] }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -34,31 +42,21 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       security_advisories: security_advisories
     )
   end
-  let(:dependency_files) { [buildfile] }
-  let(:credentials) { [] }
-  let(:buildfile) do
-    Dependabot::DependencyFile.new(
-      name: "build.gradle",
-      content: fixture("buildfiles", buildfile_fixture_name)
-    )
+  let(:maven_central_releases) do
+    fixture("maven_central_metadata", "with_release.xml")
   end
-  let(:buildfile_fixture_name) { "basic_build.gradle" }
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
+  let(:version_class) { Dependabot::Gradle::Version }
+  let(:maven_central_metadata_url) do
+    "https://repo.maven.apache.org/maven2/" \
+      "com/google/guava/guava/maven-metadata.xml"
+  end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "gradle"
-    )
+  it_behaves_like "an update checker"
+
+  before do
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
   end
-  let(:dependency_requirements) do
-    [{ file: "build.gradle", requirement: "23.3-jre", groups: [], source: nil }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -87,7 +85,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "when that's what we're using" do
         let(:dependency_version) { "20030418" }
 
         it { is_expected.to eq(version_class.new("20040616")) }
@@ -120,7 +118,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to eq(version_class.new("23.0")) }
@@ -219,7 +217,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when the version affects multiple dependencies" do
         let(:buildfile_fixture_name) { "shortform_build.gradle" }
 
         it { is_expected.to be_nil }
@@ -410,7 +408,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
 
@@ -476,7 +474,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
             }
           )
           .and_call_original
-        expect(latest_version_resolvable_with_full_unlock).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
   end
@@ -597,7 +595,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 
@@ -607,7 +605,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE802" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

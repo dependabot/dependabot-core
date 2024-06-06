@@ -10,40 +10,21 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Cargo::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  before do
-    stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
+  let(:dependency_version) { "0.1.38" }
+  let(:dependency_name) { "time" }
+  let(:requirements) do
+    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
-
-  let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
-  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
-  let(:crates_fixture_name) { "#{dependency_name}.json" }
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "cargo"
     )
   end
-
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-  let(:security_advisories) { [] }
-  let(:requirements_update_strategy) { nil }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
   let(:dependency_files) do
     [
       Dependabot::DependencyFile.new(
@@ -56,21 +37,38 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       )
     ]
   end
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "cargo"
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
-  let(:requirements) do
-    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+  let(:crates_fixture_name) { "#{dependency_name}.json" }
+  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
+  let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
+
+  it_behaves_like "an update checker"
+
+  before do
+    stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
-  let(:dependency_name) { "time" }
-  let(:dependency_version) { "0.1.38" }
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -502,12 +500,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with the lockfile-only requirements update strategy set" do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

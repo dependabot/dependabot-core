@@ -290,6 +290,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           )
       end
 
+      let(:subprocess_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {},
+          error_class: error_class
+        )
+      end
+
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
 
       context "when specified as the default source" do
@@ -302,14 +310,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:ignored_versions) { [">= 1.9.0.a, < 2.0"] }
 
         its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
-      end
-
-      let(:subprocess_error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: error_message,
-          error_context: {},
-          error_class: error_class
-        )
       end
 
       context "when we don't have authentication details", :bundler_v1_only do

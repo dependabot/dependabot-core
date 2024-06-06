@@ -8,15 +8,8 @@ require "dependabot/bundler/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Bundler::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(
-      dependency_files: dependency_files,
-      source: source,
-      reject_external_code: reject_external_code
-    )
-  end
+  let(:reject_external_code) { false }
+  let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -24,8 +17,15 @@ RSpec.describe Dependabot::Bundler::FileParser do
       directory: "/"
     )
   end
-  let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
-  let(:reject_external_code) { false }
+  let(:parser) do
+    described_class.new(
+      dependency_files: dependency_files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -421,7 +421,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       it "includes the path dependency's sub-dependency" do
         sub_dep = dependencies.find { |dep| dep.name == "i18n" }
         expect(sub_dep.requirements).to eq([])
-        expect(sub_dep.top_level?).to eq(false)
+        expect(sub_dep.top_level?).to be(false)
       end
 
       context "when that comes from a .specification file" do

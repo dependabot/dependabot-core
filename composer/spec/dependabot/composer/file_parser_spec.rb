@@ -8,11 +8,6 @@ require "dependabot/composer/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Composer::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "minor_version" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -20,6 +15,11 @@ RSpec.describe Dependabot::Composer::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:project_name) { "minor_version" }
+  let(:files) { project_dependency_files(project_name) }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }

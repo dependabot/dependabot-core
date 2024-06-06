@@ -13,21 +13,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
   describe "#parse" do
     subject(:dependencies) { lockfile_parser.parse }
 
-    context "for yarn lockfiles" do
+    context "when dealing with yarn lockfiles" do
       let(:dependency_files) { project_dependency_files("yarn/only_dev_dependencies") }
 
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
 
-      context "that contains an empty version string" do
+      context "when there is an empty version string" do
         let(:dependency_files) { project_dependency_files("yarn/empty_version") }
 
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
-      context "that contains an aliased dependency" do
+      context "when there is an aliased dependency" do
         let(:dependency_files) { project_dependency_files("yarn/aliased_dependency") }
 
         it "excludes the dependency" do
@@ -37,7 +37,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain multiple dependencies" do
+      context "when there are multiple dependencies" do
         let(:dependency_files) { project_dependency_files("yarn/no_lockfile_change") }
 
         its(:length) { is_expected.to eq(393) }
@@ -49,7 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains dependencies with multiple requirements" do
+      context "when there are dependencies with multiple requirements" do
         let(:dependency_files) { project_dependency_files("yarn_berry/multiple_requirements") }
 
         its(:length) { is_expected.to eq(172) }
@@ -59,7 +59,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain bad lockfile" do
+      context "when there is a bad lockfile" do
         let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
@@ -70,10 +70,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain out of disk/memory error" do
+      context "when there is an out of disk/memory error" do
         let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
 
-        context "because it ran out of disk space" do
+        context "when ran out of disk space" do
           before do
             allow(Dependabot::SharedHelpers)
               .to receive(:run_helper_subprocess)
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
         end
 
-        context "because it ran out of memory" do
+        context "when ran out of memory" do
           before do
             allow(Dependabot::SharedHelpers)
               .to receive(:run_helper_subprocess)
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for pnpm lockfiles" do
+    context "when dealing with pnpm lockfiles" do
       let(:dependency_files) { project_dependency_files("pnpm/only_dev_dependencies") }
 
       it "parses the dependencies" do
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       # Should have the version in the lock file
-      context "that contains dependencies with empty version" do
+      context "when there are dependencies with empty version" do
         let(:dependency_files) { project_dependency_files("pnpm/empty_version") }
 
         it "generates updated lockfile which excludes empty version dependencies." do
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains an aliased dependency" do
+      context "when there is an aliased dependency" do
         let(:dependency_files) { project_dependency_files("pnpm/aliased_dependency") }
 
         it "excludes the dependency" do
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain multiple dependencies" do
+      context "when there are multiple dependencies" do
         let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
 
         its(:length) { is_expected.to eq(370) }
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "locked to versions with peer disambiguation suffix" do
+      context "when locked to versions with peer disambiguation suffix" do
         let(:dependency_files) { project_dependency_files("pnpm/peer_disambiguation") }
 
         its(:length) { is_expected.to eq(121) }
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain bad lockfile" do
+      context "when there is a bad lockfile" do
         let(:dependency_files) { project_dependency_files("pnpm/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "in v6.1 format" do
+      context "when dealing with v6.1 format" do
         let(:dependency_files) { project_dependency_files("pnpm/6_1_format") }
 
         it "parses dependencies properly" do
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "in v9.0 format" do
+      context "when dealing with v9.0 format" do
         let(:dependency_files) { project_dependency_files("pnpm/9_0_format") }
 
         it "parses dependencies properly" do
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for npm lockfiles" do
+    context "when dealing with npm lockfiles" do
       let(:dependency_files) { project_dependency_files("npm6/multiple_updates") }
 
       it "parses the dependencies" do
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain multiple dependencies" do
+      context "when there are multiple dependencies" do
         let(:dependency_files) { project_dependency_files("npm6/blank_requirement") }
 
         its(:length) { is_expected.to eq(23) }
@@ -222,29 +222,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains dependencies with an empty/no version" do
+      context "when there are dependencies with an empty/no version" do
         let(:dependency_files) { project_dependency_files("npm6/empty_version") }
 
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
-      context "that contains an invalid version requirement string" do
+      context "when there is an invalid version requirement string" do
         subject { dependencies.find { |d| d.name == "etag" } }
 
         let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
-      context "that has URL versions (i.e., is from a bad version of npm)" do
+      context "when there are URL versions (i.e., is from a bad version of npm)" do
         let(:dependency_files) { project_dependency_files("npm6/url_versions") }
 
         # All but 1 dependency in the lockfile has a URL version
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "that contain bad json" do
+      context "when there is a bad json" do
         let(:dependency_files) { project_dependency_files("npm6/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
@@ -255,7 +255,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contain bundled dependencies" do
+      context "when there is a bundled dependencies" do
         subject { dependencies.find { |d| d.name == "tar" } }
 
         let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
@@ -265,13 +265,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "in v3 format" do
+      context "when dealing with v3 format" do
         let(:dependency_files) { project_dependency_files("npm8/package-lock-v3") }
 
         its(:length) { is_expected.to eq(2) }
       end
 
-      context "in v3 format with nested node_modules dependencies" do
+      context "when dealing with v3 format and nested node_modules dependencies" do
         let(:dependency_files) { project_dependency_files("npm8/nested_node_modules_lockfile_v3") }
 
         it "does not incorrectly parse dependencies with node_modules/ in their name" do
@@ -282,14 +282,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for npm shrinkwraps" do
+    context "when dealing with npm shrinkwraps" do
       let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_only_dev_dependencies") }
 
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
 
-      context "that contain multiple dependencies" do
+      context "when there are multiple dependencies" do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_blank_requirement") }
 
         its(:length) { is_expected.to eq(23) }
@@ -301,14 +301,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         end
       end
 
-      context "that contains an empty version string" do
+      context "when there is an empty version string" do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_empty_version") }
 
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
-      context "that contain bad json" do
+      context "when there is a bad json" do
         let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_broken") }
 
         it "raises a DependencyFileNotParseable error" do
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     let(:requirement) { nil }
     let(:manifest_name) { "package.json" }
 
-    context "for yarn lockfiles" do
+    context "when dealing with yarn lockfiles" do
       let(:dependency_files) { project_dependency_files("yarn/only_dev_dependencies") }
 
       it "finds the dependency" do
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         )
       end
 
-      context "that contain duplicate dependencies" do
+      context "when containing duplicate dependencies" do
         let(:dependency_files) { project_dependency_files("yarn/no_lockfile_change") }
         let(:dependency_name) { "ansi-styles" }
         let(:requirement) { "^2.2.1" }
@@ -361,11 +361,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^3.3.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 
-      context "that have multiple requirements" do
+      context "when there are multiple requirements" do
         let(:dependency_files) { project_dependency_files("yarn_berry/multiple_requirements") }
         let(:dependency_name) { "postcss" }
         let(:requirement) { "^8.4.17" }
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for pnpm lockfiles" do
+    context "when dealing with pnpm lockfiles" do
       let(:dependency_files) { project_dependency_files("pnpm/only_dev_dependencies") }
 
       it "finds the dependency" do
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         )
       end
 
-      context "that contain duplicate dependencies" do
+      context "when containing duplicate dependencies" do
         let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
         let(:dependency_name) { "babel-register" }
         let(:requirement) { "^6.24.1" }
@@ -415,7 +415,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         context "when the requirement doesn't match" do
           let(:requirement) { "^6.26.0" }
 
-          it { is_expected.to eq(nil) }
+          it { is_expected.to be_nil }
         end
       end
 
@@ -469,7 +469,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for npm lockfiles" do
+    context "when dealing with npm lockfiles" do
       let(:dependency_files) { project_dependency_files("npm6/only_dev_dependencies") }
 
       it "finds the dependency" do
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           )
         end
 
-        context "that should be used for this manifest" do
+        context "when lockfile should be used for this manifest" do
           let(:manifest_name) { "nested/package.json" }
 
           it "finds the correct dependency" do
@@ -507,7 +507,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for npm shrinkwraps" do
+    context "when dealing with npm shrinkwraps" do
       let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_only_dev_dependencies") }
 
       it "finds the dependency" do
@@ -520,37 +520,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for an npm8 workspace project with a direct dependency that's installed in the workspace's node_modules" do
-      let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package") }
-      let(:dependency_name) { "yargs" }
-      let(:manifest_name) { "packages/build/package.json" }
+    context "when dealing with an npm8 workspace project with a direct dependency" do
+      context "when the dependency is installed in the workspace's node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package") }
+        let(:dependency_name) { "yargs" }
+        let(:manifest_name) { "packages/build/package.json" }
 
-      it "finds the correct dependency" do
-        expect(lockfile_details).to eq(
-          "version" => "16.2.0",
-          "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
-          "integrity" =>
-            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
-        )
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "16.2.0",
+            "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+            "integrity" =>
+              "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+          )
+        end
       end
     end
 
-    context "for an npm8 workspace project with a direct dependency that's installed in the top-level node_modules" do
-      let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level") }
-      let(:dependency_name) { "uuid" }
-      let(:manifest_name) { "api/package.json" }
+    context "when dealing with an npm8 workspace project with a direct dependency" do
+      context "when the dependency installed in the top-level node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level") }
+        let(:dependency_name) { "uuid" }
+        let(:manifest_name) { "api/package.json" }
 
-      it "finds the correct dependency" do
-        expect(lockfile_details).to eq(
-          "version" => "8.3.2",
-          "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
-          "integrity" =>
-            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
-        )
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "8.3.2",
+            "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+            "integrity" =>
+              "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+          )
+        end
       end
     end
 
-    context "for a non-workspace npm 8 lockfile" do
+    context "when dealing with a non-workspace npm 8 lockfile" do
       let(:dependency_files) { project_dependency_files("npm8/simple") }
       let(:dependency_name) { "fetch-factory" }
       let(:manifest_name) { "package.json" }
@@ -564,38 +568,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "npm8 with a v3 lockfile-version" do
-      context "workspace project with a direct dependency that's installed in the workspace's node_modules" do
-        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_lockfile_v3") }
-        let(:dependency_name) { "yargs" }
-        let(:manifest_name) { "packages/build/package.json" }
+    context "when npm8 with a v3 lockfile-version" do
+      context "when dealing with workspace project with a direct dependency" do
+        context "when the dependency is installed in the workspace's node_modules" do
+          let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_lockfile_v3") }
+          let(:dependency_name) { "yargs" }
+          let(:manifest_name) { "packages/build/package.json" }
 
-        it "finds the correct dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "16.2.0",
-            "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
-            "integrity" =>
-            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
-          )
+          it "finds the correct dependency" do
+            expect(lockfile_details).to eq(
+              "version" => "16.2.0",
+              "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+              "integrity" =>
+              "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+            )
+          end
         end
       end
 
-      context "workspace project with a direct dependency that's installed in the top-level node_modules" do
-        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level_lockfile_v3") }
-        let(:dependency_name) { "uuid" }
-        let(:manifest_name) { "api/package.json" }
+      context "when dealing with workspace project with a direct dependency" do
+        context "when the dependency is installed in the top-level node_modules" do
+          let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level_lockfile_v3") }
+          let(:dependency_name) { "uuid" }
+          let(:manifest_name) { "api/package.json" }
 
-        it "finds the correct dependency" do
-          expect(lockfile_details).to eq(
-            "version" => "8.3.2",
-            "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
-            "integrity" =>
-            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
-          )
+          it "finds the correct dependency" do
+            expect(lockfile_details).to eq(
+              "version" => "8.3.2",
+              "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+              "integrity" =>
+              "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+            )
+          end
         end
       end
 
-      context "for a non-workspace project" do
+      context "when dealing with a non-workspace project" do
         let(:dependency_files) { project_dependency_files("npm8/simple_lockfile_v3") }
         let(:dependency_name) { "fetch-factory" }
         let(:manifest_name) { "package.json" }

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -87,7 +87,7 @@ module Dependabot
         end
 
         source_url = github_urls.find do |url|
-          repo = Source.from_url(url).repo
+          repo = T.must(Source.from_url(url)).repo
           repo.downcase.end_with?(dependency.name)
         end
         return unless source_url
@@ -102,7 +102,7 @@ module Dependabot
         rubygems_marshalled_gemspec_response.gsub("\x06;", "\n")
                                             .scan(Dependabot::Source::SOURCE_REGEX) do
           github_urls << (Regexp.last_match.to_s +
-                         Regexp.last_match.post_match.split("\n").first)
+                         T.must(T.must(Regexp.last_match).post_match.split("\n").first))
         end
 
         github_urls.find do |url|
@@ -204,7 +204,7 @@ module Dependabot
           cred["type"] == "rubygems_server" && cred.replaces_base?
         end
         host = credential ? credential["host"] : "rubygems.org"
-        @base_url = "https://#{host}" + ("/" unless host.end_with?("/"))
+        @base_url = "https://#{host}#{host&.end_with?('/') ? '' : '/'}"
       end
 
       def registry_auth_headers

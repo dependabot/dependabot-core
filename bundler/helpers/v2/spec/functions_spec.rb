@@ -12,7 +12,7 @@ RSpec.describe Functions do
 
     it "returns the jfrog source" do
       in_tmp_folder do
-        jfrog_source = Functions.jfrog_source(
+        jfrog_source = described_class.jfrog_source(
           dir: tmp_path,
           gemfile_name: "Gemfile",
           credentials: {}
@@ -26,7 +26,7 @@ RSpec.describe Functions do
   describe "#git_specs" do
     subject(:git_specs) do
       in_tmp_folder do
-        Functions.git_specs(
+        described_class.git_specs(
           dir: tmp_path,
           gemfile_name: "Gemfile",
           credentials: {}

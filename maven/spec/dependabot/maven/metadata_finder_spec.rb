@@ -11,8 +11,19 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:dependency_source) do
+    { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
+  end
+  let(:dependency_version) { "23.3-jre" }
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,19 +38,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
-  let(:dependency_source) do
-    { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" }
-  end
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -90,7 +89,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           "parent/3.10.0/parent-3.10.0.pom"
       end
 
-      context "but there is in the parent" do
+      context "when there is in the parent" do
         before do
           stub_request(:get, parent_url)
             .to_return(
@@ -106,7 +105,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           expect(WebMock).to have_requested(:get, maven_url).once
         end
 
-        context "that doesn't match the name of the artifact" do
+        context "when not matching the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
 
           before do
@@ -127,19 +126,19 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
               )
           end
 
-          context "and doesn't have a subdirectory with its name" do
+          context "when not having a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_js_npm.json" }
 
             it { is_expected.to be_nil }
           end
 
-          context "and does have a subdirectory with its name" do
+          context "when having a subdirectory with its name" do
             let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
 
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
-          context "and the repo 404s" do
+          context "when the repo 404s" do
             before do
               allow_any_instance_of(Dependabot::FileFetchers::Base)
                 .to receive(:commit).and_call_original
@@ -157,7 +156,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
             it { is_expected.to be_nil }
           end
 
-          context "and the branch can't be found" do
+          context "when the branch can't be found" do
             before do
               allow_any_instance_of(Dependabot::FileFetchers::Base)
                 .to receive(:commit).and_call_original
@@ -197,7 +196,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
-          context "neither the branch nor default branch can be found" do
+          context "when neither the branch nor default branch can be found" do
             before do
               allow_any_instance_of(Dependabot::FileFetchers::Base)
                 .to receive(:commit).and_call_original
@@ -243,7 +242,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         end
       end
 
-      context "and there isn't in the parent, either" do
+      context "when there isn't in the parent, either" do
         before do
           stub_request(:get, parent_url).to_return(status: 404, body: "")
         end
@@ -256,7 +255,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         end
       end
 
-      context "and the parent details include a variable" do
+      context "when the parent details including a variable" do
         let(:maven_response) do
           fixture("poms", "okhttp-3.10.0-bad-variable.xml")
         end
@@ -283,7 +282,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/davidB/maven-scala-plugin") }
 
-      context "that is nested" do
+      context "when the property is nested" do
         let(:maven_response) do
           fixture("poms", "nested_property_url_pom.xml")
         end
@@ -339,7 +338,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
 
-        context "that include a username and password" do
+        context "when including a username and password" do
           let(:credentials) do
             [
               {
@@ -413,7 +412,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/mockito/mockito") }
 
-        context "that include a username and password" do
+        context "when including a username and password" do
           let(:credentials) do
             [
               {

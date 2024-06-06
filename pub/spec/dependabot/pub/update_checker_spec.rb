@@ -12,6 +12,63 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Pub::UpdateChecker do
+  let(:updated_dependencies) do
+    checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock).map(&:to_h)
+  end
+  let(:can_update) { checker.can_update?(requirements_to_unlock: requirements_to_unlock) }
+  let(:directory) { nil }
+  let(:project) { "can_update" }
+  let(:dependency_files) do
+    files = project_dependency_files(project)
+    files.each do |file|
+      # Simulate that the lockfile was from localhost:
+      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+      if defined?(git_dir)
+        file.content.gsub!("$GIT_DIR", git_dir)
+        file.content.gsub!("$REF", dependency_version)
+      end
+    end
+    files
+  end
+  let(:requirements) { [] }
+  let(:dependency_name) { "retry" }
+  let(:requirements_update_strategy) { nil } # nil means "auto".
+  let(:dependency_version) { "0.0.0" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      # This version is ignored by dependency_services, but will be seen by base
+      version: dependency_version,
+      requirements: requirements,
+      package_manager: "pub"
+    )
+  end
+  let(:security_advisories) { [] }
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: [{
+        "type" => "hosted",
+        "host" => "pub.dartlang.org",
+        "username" => "x-access-token",
+        "password" => "token"
+      }],
+      ignored_versions: ignored_versions,
+      options: {
+        pub_hosted_url: "http://localhost:#{@server[:Port]}",
+        flutter_releases_url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
+      },
+      raise_on_ignored: raise_on_ignored,
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
+    )
+  end
+  let(:sample) { "simple" }
+  let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
+
   it_behaves_like "an update checker"
 
   before(:all) do
@@ -45,69 +102,6 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       package = File.basename(f, ".json")
       @server.unmount "/api/packages/#{package}"
     end
-  end
-
-  let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
-  let(:sample) { "simple" }
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: [{
-        "type" => "hosted",
-        "host" => "pub.dartlang.org",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
-      ignored_versions: ignored_versions,
-      options: {
-        pub_hosted_url: "http://localhost:#{@server[:Port]}",
-        flutter_releases_url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
-      },
-      raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
-    )
-  end
-
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-  let(:security_advisories) { [] }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      # This version is ignored by dependency_services, but will be seen by base
-      version: dependency_version,
-      requirements: requirements,
-      package_manager: "pub"
-    )
-  end
-  let(:dependency_version) { "0.0.0" }
-
-  let(:requirements_update_strategy) { nil } # nil means "auto".
-  let(:dependency_name) { "retry" }
-  let(:requirements) { [] }
-
-  let(:dependency_files) do
-    files = project_dependency_files(project)
-    files.each do |file|
-      # Simulate that the lockfile was from localhost:
-      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
-      if defined?(git_dir)
-        file.content.gsub!("$GIT_DIR", git_dir)
-        file.content.gsub!("$REF", dependency_version)
-      end
-    end
-    files
-  end
-  let(:project) { "can_update" }
-  let(:directory) { nil }
-
-  let(:can_update) { checker.can_update?(requirements_to_unlock: requirements_to_unlock) }
-  let(:updated_dependencies) do
-    checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock).map(&:to_h)
   end
 
   context "when given an outdated dependency, not requiring unlock" do
@@ -591,7 +585,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     context "when the current version is not newest but also not vulnerable" do
       let(:dependency_version) { "3.0.0" } # 3.1.0 is latest
 
-      it "raises an error " do
+      it "raises an error" do
         expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("Dependency not vulnerable!")
         end

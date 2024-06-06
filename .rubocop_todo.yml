@@ -35,6 +35,7 @@ RSpec/BeforeAfterAll:
 RSpec/ExampleLength:
   Max: 98
 
+
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
 # Include: **/*_spec*rb*, **/spec/**/*

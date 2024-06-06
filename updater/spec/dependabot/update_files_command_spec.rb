@@ -127,7 +127,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
       it_behaves_like "a fast-failed job"
 
-      it "it captures the exception and records to a update job error api" do
+      it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         perform_job
       end
 
-      it "it captures the exception and records the a update job unknown error api" do
+      it "captures the exception and records the a update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_unknown_error).with(
           error_type: "update_files_error",
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
       it_behaves_like "a fast-failed job"
 
-      it "it captures the exception and records to a update job error api" do
+      it "captures the exception and records to a update job error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to receive(:record_update_job_error).with(
           error_type: "update_files_error",
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         perform_job
       end
 
-      it "it captures the exception and does not records the update job unknown error api" do
+      it "captures the exception and does not records the update job unknown error api" do
         expect(service).to receive(:capture_exception)
         expect(service).to_not receive(:record_update_job_unknown_error)
 

@@ -8,8 +8,22 @@ require "dependabot/devcontainers/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Devcontainers::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:dependency) { dependencies.find { |dep| dep.name == name } }
+  let(:file_parser) do
+    Dependabot::Devcontainers::FileParser.new(
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path,
+      source: nil
+    )
+  end
+  let(:dependencies) do
+    file_parser.parse
+  end
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
+  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -22,25 +36,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
     )
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
-  let(:security_advisories) { [] }
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
-
-  let(:dependencies) do
-    file_parser.parse
-  end
-
-  let(:file_parser) do
-    Dependabot::Devcontainers::FileParser.new(
-      dependency_files: dependency_files,
-      repo_contents_path: repo_contents_path,
-      source: nil
-    )
-  end
-
-  let(:dependency) { dependencies.find { |dep| dep.name == name } }
+  it_behaves_like "an update checker"
 
   shared_context "when the config is in root" do
     let(:project_name) { "config_in_root" }
@@ -59,7 +55,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         it { is_expected.to be_falsey }
       end
 
-      context "when the config is in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 
@@ -76,7 +72,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         it { is_expected.to be_truthy }
       end
 
-      context "when the config is in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 

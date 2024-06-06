@@ -8,40 +8,7 @@ require "dependabot/hex/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Hex::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:files) { [mixfile, lockfile] }
-  let(:mixfile) do
-    Dependabot::DependencyFile.new(
-      content: fixture("mixfiles", mixfile_fixture_name),
-      name: "mix.exs"
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "mix.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:mixfile_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
-
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
@@ -54,7 +21,38 @@ RSpec.describe Dependabot::Hex::FileUpdater do
       package_manager: "hex"
     )
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:lockfile_fixture_name) { "exact_version" }
+  let(:mixfile_fixture_name) { "exact_version" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:mixfile) do
+    Dependabot::DependencyFile.new(
+      content: fixture("mixfiles", mixfile_fixture_name),
+      name: "mix.exs"
+    )
+  end
+  let(:files) { [mixfile, lockfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 

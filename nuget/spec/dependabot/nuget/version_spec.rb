@@ -15,42 +15,42 @@ RSpec.describe Dependabot::Nuget::Version do
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
-      context "that includes build information" do
+      context "when including build information" do
         let(:version_string) { "1.0.0+abc.1" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
-      context "that includes pre-release details" do
+      context "when including pre-release details" do
         let(:version_string) { "1.0.0-beta+abc.1" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
     context "with nil" do
       let(:version_string) { nil }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a blank version" do
       let(:version_string) { "" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "bad" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
 
-      context "that includes build information" do
+      context "when including build information" do
         let(:version_string) { "1.0.0+abc 123" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end
@@ -111,11 +111,11 @@ RSpec.describe Dependabot::Nuget::Version do
     end
 
     sorted_versions.each do |v|
-      it "should equal itself #{v}" do
+      it "equals itself #{v}" do
         expect(described_class.new(v)).to eq v
       end
 
-      it "should ignore the build identifier #{v}+build" do
+      it "ignores the build identifier #{v}+build" do
         expect(described_class.new(v)).to eq described_class.new("#{v}+build")
       end
     end
@@ -133,19 +133,19 @@ RSpec.describe Dependabot::Nuget::Version do
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
 
     context "with a valid build information" do
       let(:version_string) { "1.1.0+gc.1" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
   end
 end

@@ -11,8 +11,17 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  it_behaves_like "a dependency metadata finder"
-
+  let(:source) { nil }
+  let(:dependency_version) { "2.1.0" }
+  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -27,17 +36,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:dependency_version) { "2.1.0" }
-  let(:source) { nil }
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -89,7 +88,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         expect(WebMock).to have_requested(:get, nuget_url).once
       end
 
-      context "that has a source_url only" do
+      context "when nuget repo has a source_url only" do
         let(:source) do
           {
             type: "nuget_repo",
@@ -102,7 +101,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq("https://github.com/my/repo") }
       end
 
-      context "that has neither a source_url nor a nuspec_url" do
+      context "when the nuget repo has neither a source_url nor a nuspec_url" do
         let(:source) do
           {
             type: "nuget_repo",
@@ -112,7 +111,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           }
         end
 
-        it { is_expected.to eq(nil) }
+        it { is_expected.to be_nil }
       end
 
       context "with details in the credentials (but no token)" do
@@ -132,7 +131,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq("https://github.com/dotnet/core-setup") }
       end
 
-      context "that requires authentication" do
+      context "when the registry requires authentication" do
         before do
           stub_request(:get, nuget_url).to_return(status: 404)
           stub_request(:get, nuget_url)
@@ -161,7 +160,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         end
       end
 
-      context "that doesn't support .nuspec routes" do
+      context "when the registry doesn't support .nuspec routes" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -177,7 +176,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to eq "https://github.com/dotnet/core-setup" }
       end
 
-      context "the index returns XML" do
+      context "when the index returns XML" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -191,7 +190,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "the search results do not contain a projectUrl" do
+      context "when the search results do not contain a projectUrl" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)
@@ -207,7 +206,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "and it fails to get the index" do
+      context "when the source url fails to get the index.json" do
         before do
           # registry is in a bad state
           stub_request(:get, nuget_url).to_return(status: 500)
@@ -219,7 +218,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "and it fails to get the search results" do
+      context "when it fails to get the search results" do
         before do
           # registry doesn't support .nuspec route, so returns 404
           stub_request(:get, nuget_url).to_return(status: 404)

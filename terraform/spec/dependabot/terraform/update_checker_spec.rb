@@ -8,40 +8,6 @@ require "dependabot/terraform/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Terraform::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: [],
-      credentials: credentials,
-      ignored_versions: ignored_versions
-    )
-  end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: version,
-      requirements: requirements,
-      package_manager: "terraform"
-    )
-  end
-  let(:dependency_name) { "origin_label" }
-  let(:version) { "0.3.7" }
-  let(:requirements) do
-    [{ requirement: requirement, groups: [], file: "main.tf", source: source }]
-  end
-  let(:requirement) { nil }
   let(:source) do
     {
       type: "git",
@@ -50,6 +16,39 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       ref: "tags/0.3.7"
     }
   end
+  let(:requirement) { nil }
+  let(:requirements) do
+    [{ requirement: requirement, groups: [], file: "main.tf", source: source }]
+  end
+  let(:version) { "0.3.7" }
+  let(:dependency_name) { "origin_label" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: version,
+      requirements: requirements,
+      package_manager: "terraform"
+    )
+  end
+  let(:ignored_versions) { [] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: credentials,
+      ignored_versions: ignored_versions
+    )
+  end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
@@ -176,7 +175,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           )
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when no requirements can be unlocked" do
         subject { checker.can_update?(requirements_to_unlock: :none) }
@@ -201,7 +200,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           .and_return(Gem::Version.new("0.3.8"))
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "when the requirement is already up-to-date" do
         let(:requirement) { "~> 0.3.1" }
@@ -347,7 +346,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   describe "#requirements_unlocked_or_can_be?" do
     subject { checker.requirements_unlocked_or_can_be? }
 
-    it { is_expected.to eq(true) }
+    it { is_expected.to be(true) }
 
     context "with a source that came from an http proxy" do
       let(:source) do
@@ -360,7 +359,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         }
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

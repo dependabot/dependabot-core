@@ -10,31 +10,6 @@ require "dependabot/github_actions/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GithubActions::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-  let(:files) { [workflow_file] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:workflow_file) do
-    Dependabot::DependencyFile.new(
-      content: workflow_file_body,
-      name: ".github/workflows/workflow.yml"
-    )
-  end
-  let(:workflow_file_body) { fixture("workflow_files", "workflow.yml") }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "actions/setup-node",
@@ -67,6 +42,31 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       package_manager: "github_actions"
     )
   end
+  let(:workflow_file_body) { fixture("workflow_files", "workflow.yml") }
+  let(:workflow_file) do
+    Dependabot::DependencyFile.new(
+      content: workflow_file_body,
+      name: ".github/workflows/workflow.yml"
+    )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:files) { [workflow_file] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -296,6 +296,50 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with actions name having same ending" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "same_name_ending.yml")
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/cache",
+            version: nil,
+            package_manager: "github_actions",
+            previous_version: nil,
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v1" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v1",
+                branch: nil
+              }
+            }],
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              metadata: { declaration_string: "actions/cache@v4" },
+              source: {
+                type: "git",
+                url: "https://github.com/actions/cache",
+                ref: "v4",
+                branch: nil
+              }
+            }]
+          )
+        end
+
+        it "updates only actions/cache" do
+          expect(updated_workflow_file.content).to include "actions/cache@v4"
+          expect(updated_workflow_file.content).to include "julia-actions/cache@v1"
+          expect(updated_workflow_file.content).not_to include "julia-actions/cache@v4\n"
+        end
+      end
+
       context "with pinned SHA hash and version in comment" do
         let(:service_pack_url) do
           "https://github.com/actions/checkout.git/info/refs" \
@@ -414,7 +458,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           # rubocop:enable Layout/LineLength
         end
 
-        context "but the previous SHA is not tagged" do
+        context "when the previous SHA is not tagged" do
           before do
             dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
           end
