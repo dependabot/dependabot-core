@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
-          its(:content) { is_expected.not_to include "<version>2.10.4</versio" }
+          its(:content) { is_expected.not_to include "<version>2.10.4</version>" }
         end
 
         context "when both versions are hard-coded, and are identical" do
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
-          its(:content) { is_expected.not_to include "<version>2.10.4</versio" }
+          its(:content) { is_expected.not_to include "<version>2.10.4</version>" }
 
           context "when they have different scopes" do
             let(:pom_body) { fixture("poms", "repeated_dev_and_prod.xml") }
