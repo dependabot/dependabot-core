@@ -64,9 +64,7 @@ module Dependabot
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
-      if Experiments.enabled?("dependency_change_validation")
-        check_dependencies_have_previous_version(dependency_change.updated_dependencies)
-      end
+      dependency_change.check_dependencies_have_previous_version if Experiments.enabled?("dependency_change_validation")
 
       if Experiments.enabled?("threaded_metadata")
         @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }
@@ -247,24 +245,6 @@ module Dependabot
     def truncate(string, max: 120)
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
-    end
-
-    sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
-    def check_dependencies_have_previous_version(updated_dependencies)
-      return if updated_dependencies.all? { |d| requirements_changed?(d) }
-      return if updated_dependencies.all?(&:previous_version)
-
-      deps_no_previous_version = updated_dependencies.reject(&:previous_version)
-      deps_no_change = updated_dependencies.reject { |d| requirements_changed?(d) }
-      raise InvalidUpdatedDependencies.new(
-        deps_no_previous_version: deps_no_previous_version.map(&:name),
-        deps_no_change: deps_no_change.map(&:name)
-      )
-    end
-
-    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-    def requirements_changed?(dependency)
-      (dependency.requirements - T.must(dependency.previous_requirements)).any?
     end
   end
 end

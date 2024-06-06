@@ -108,6 +108,17 @@ module Dependabot
             raise "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
           end
 
+          # The PR will be rejected if this happens, so we avoid tainting the whole group by skipping.
+          deps_no_previous_version = updated_deps.reject(&:previous_version)
+          deps_no_change = updated_deps.reject(&:requirements_changed?)
+          if deps_no_previous_version.any? && deps_no_change.any?
+            msg = "Skipping #{dependency.name} because"
+            msg += " some dependencies bumped have no previous version" if deps_no_previous_version.any?
+            msg += " and" if deps_no_previous_version.any? && deps_no_change.any?
+            msg += " some dependencies bumped have no change in requirements" if deps_no_change.any?
+            return Dependabot.logger.info(msg)
+          end
+
           if (existing_pr = existing_pull_request(updated_deps))
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)

@@ -16,6 +16,21 @@ module Dependabot
   class DependencyChange
     extend T::Sig
 
+    class InvalidUpdatedDependencies < DependabotError
+      extend T::Sig
+
+      sig { params(deps_no_previous_version: T::Array[String], deps_no_change: T::Array[String]).void }
+      def initialize(deps_no_previous_version:, deps_no_change:)
+        msg = ""
+        if deps_no_previous_version.any?
+          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
+        end
+        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
+
+        super(msg)
+      end
+    end
+
     sig { returns(Dependabot::Job) }
     attr_reader :job
 
@@ -120,6 +135,27 @@ module Dependabot
       end
       updated_dependencies.compact!
       updated_dependency_files.compact!
+    end
+
+    sig { returns(T::Boolean) }
+    def previous_version?
+      return true if updated_dependencies.all?(&:requirements_changed?)
+      return true if updated_dependencies.all?(&:previous_version)
+
+      false
+    end
+
+    sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
+    def check_dependencies_have_previous_version
+      return if updated_dependencies.all?(&:requirements_changed?)
+      return if updated_dependencies.all?(&:previous_version)
+
+      deps_no_previous_version = updated_dependencies.reject(&:previous_version)
+      deps_no_change = updated_dependencies.reject(&:requirements_changed?)
+      raise InvalidUpdatedDependencies.new(
+        deps_no_previous_version: deps_no_previous_version.map(&:name),
+        deps_no_change: deps_no_change.map(&:name)
+      )
     end
 
     sig { returns(T::Boolean) }
