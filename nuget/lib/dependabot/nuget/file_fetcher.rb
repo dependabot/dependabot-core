@@ -55,17 +55,17 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = []
-        fetched_files += project_files
-        fetched_files += directory_build_files
-        fetched_files += imported_property_files
-
-        fetched_files += packages_config_files
-        fetched_files += nuget_config_files
-        fetched_files += packages_lock_files
-        fetched_files << global_json if global_json
-        fetched_files << dotnet_tools_json if dotnet_tools_json
-        fetched_files << packages_props if packages_props
+        fetched_files = [
+          *project_files,
+          *directory_build_files,
+          *imported_property_files,
+          *packages_config_files,
+          *nuget_config_files,
+          *packages_lock_files,
+          global_json,
+          dotnet_tools_json,
+          packages_props
+        ].compact
 
         # dedup files based on their absolute path
         fetched_files = fetched_files.uniq do |fetched_file|
