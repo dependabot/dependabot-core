@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
             source: nil
           }]
         )
-        expect(dependency.production?).to be_truthy
+        expect(dependency).to be_production
       end
     end
 

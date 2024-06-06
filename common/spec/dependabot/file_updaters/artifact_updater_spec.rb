@@ -58,7 +58,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
         f.name == "vendor/cache/business-1.5.0.gem"
       end
 
-      expect(file.binary?).to be_truthy
+      expect(file).to be_binary
     end
 
     it "marks created files as such" do
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
       end
 
       expect(file.deleted).to be_falsey
-      expect(file.deleted?).to be_falsey
+      expect(file).not_to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
     end
 
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
       end
 
       expect(file.deleted).to be_falsey
-      expect(file.deleted?).to be_falsey
+      expect(file).not_to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
     end
 
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
       end
 
       expect(file.deleted).to be_truthy
-      expect(file.deleted?).to be_truthy
+      expect(file).to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
     end
 
@@ -132,7 +132,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
           f.name == "vendor/cache/iso8859.txt"
         end
 
-        expect(file.binary?).to be_truthy
+        expect(file).to be_binary
       end
 
       it "does not mark all files as binary" do
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
           f.name == "vendor/cache/utf8.txt"
         end
 
-        expect(file.binary?).to be_falsy
+        expect(file).not_to be_binary
       end
     end
 
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
 
         file = updated_files.find { |f| f.name == "vendor/cache/new_#{name}" }
 
-        expect(file.binary?).to be_truthy
+        expect(file).to be_binary
       end
     end
   end
