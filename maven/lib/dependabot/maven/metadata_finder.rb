@@ -113,7 +113,7 @@ module Dependabot
 
       sig { returns(Nokogiri::XML::Document) }
       def dependency_pom_file
-        @dependency_pom_file = T.let(nil, T.nilable(Nokogiri::XML::Document))
+        @dependency_pom_file ||= T.let(nil, T.nilable(Nokogiri::XML::Document))
 
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
@@ -164,7 +164,8 @@ module Dependabot
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
-          Maven::FileParser::RepositoriesFinder.new(credentials: credentials, pom_fetcher: nil).central_repo_url
+          Dependabot::Maven::FileParser::RepositoriesFinder.new(credentials: credentials,
+                                                                pom_fetcher: nil).central_repo_url
       end
 
       sig { returns(String) }
@@ -176,8 +177,10 @@ module Dependabot
 
       sig { returns(T::Hash[String, String]) }
       def auth_headers
-        @auth_headers ||= T.let(Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url),
-                                T.nilable(T::Hash[String, String]))
+        @auth_headers ||= T.let(
+          Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url),
+          T.nilable(T::Hash[String, String])
+        )
       end
     end
   end
