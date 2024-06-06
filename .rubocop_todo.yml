@@ -35,11 +35,6 @@ RSpec/BeforeAfterAll:
 RSpec/ExampleLength:
   Max: 98
 
-# Offense count: 17
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ExpectActual:
-  Exclude:
-    - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
 
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
