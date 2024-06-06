@@ -480,11 +480,15 @@ internal static partial class MSBuildHelper
                 // We need to copy local package sources from the NuGet.Config file to the temp directory
                 foreach (var localSource in packageSources.Where(p => p.IsLocal))
                 {
-                    var subDir = localSource.Source.Split(nugetConfigDir)[1];
-                    var destPath = Path.Join(tempDir.FullName, subDir);
-                    if (Directory.Exists(localSource.Source))
+                    // if the source is relative to the original location, copy it to the temp directory
+                    if (PathHelper.IsSubdirectoryOf(nugetConfigDir!, localSource.Source))
                     {
-                        PathHelper.CopyDirectory(localSource.Source, destPath);
+                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSource.Source);
+                        string destPath = Path.Join(tempDir.FullName, sourceRelativePath);
+                        if (Directory.Exists(localSource.Source))
+                        {
+                            PathHelper.CopyDirectory(localSource.Source, destPath);
+                        }
                     }
                 }
             }
@@ -538,12 +542,12 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
             """);
 
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
-        await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Packages.props"), "<Project />");
 
         return tempProjectPath;
     }

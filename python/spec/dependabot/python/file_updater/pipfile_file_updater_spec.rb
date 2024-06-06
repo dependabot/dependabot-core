@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           .to eq(JSON.parse(lockfile.content)["_meta"]["requires"])
       end
 
-      context "that comes from a Poetry file and includes || logic" do
+      context "when from a Poetry file and including || logic" do
         let(:pipfile_fixture_name) { "exact_version" }
         let(:dependency_files) { [pipfile, lockfile, pyproject] }
         let(:pyproject) do
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "and includes a .python-version file" do
+      context "when including a .python-version file" do
         let(:dependency_files) { [pipfile, lockfile, python_version_file] }
         let(:python_version_file) do
           Dependabot::DependencyFile.new(
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
 
         it "updates only what it needs to" do
-          expect(json_lockfile["default"].key?("py")).to eq(false)
+          expect(json_lockfile["default"].key?("py")).to be(false)
           expect(json_lockfile["develop"]["py"]["version"]).to eq("==1.7.0")
           expect(json_lockfile["_meta"]["hash"])
             .to eq(JSON.parse(lockfile.content)["_meta"]["hash"])
@@ -367,15 +367,16 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
             .to eq("==2.18.4")
         end
 
-        context "that needs to be sanitized" do
+        context "when needing to be sanitized" do
           let(:setupfile_fixture_name) { "small_needs_sanitizing.py" }
+
           it "updates the dependency" do
             expect(json_lockfile["default"]["requests"]["version"])
               .to eq("==2.18.4")
           end
         end
 
-        context "that imports a setup.cfg" do
+        context "when importing a setup.cfg" do
           let(:dependency_files) do
             [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
           end
@@ -399,7 +400,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           end
         end
 
-        context "that imports its own setup.py" do
+        context "when importing its own setup.py" do
           let(:dependency_files) do
             [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
           end
@@ -474,7 +475,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
     context "with a requirements.txt" do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 
-      context "that looks like the output of `pipenv requirements`" do
+      context "when the output looks like `pipenv requirements`" do
         let(:pipfile_fixture_name) { "hard_names" }
         let(:lockfile_fixture_name) { "hard_names.lock" }
         let(:requirements_file) do
@@ -499,7 +500,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           end
         end
 
-        context "because there are no runtime dependencies" do
+        context "when there are no runtime dependencies" do
           let(:pipfile_fixture_name) { "only_dev" }
           let(:lockfile_fixture_name) { "only_dev.lock" }
           let(:requirements_file) do
@@ -539,7 +540,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "that looks like the output of `pipenv requirements --dev`" do
+      context "when the output looks like `pipenv requirements --dev`" do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "req-dev.txt",
@@ -563,7 +564,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "that is unrelated" do
+      context "when unrelated" do
         let(:requirements_file) do
           Dependabot::DependencyFile.new(
             name: "requirements.txt",

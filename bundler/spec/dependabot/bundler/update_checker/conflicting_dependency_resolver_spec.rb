@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker/conflicting_dependency_resolver"
 
 RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver) do
-  include_context "stub rubygems compact index"
+  include_context "when stubbing rubygems compact index"
 
   let(:resolver) do
     described_class.new(
@@ -64,7 +64,7 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
       let(:target_version) { "1.5.0" }
 
       it "returns an empty array" do
-        expect(conflicting_dependencies).to match_array([])
+        expect(conflicting_dependencies).to be_empty
       end
     end
   end

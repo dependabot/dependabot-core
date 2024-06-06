@@ -8,8 +8,35 @@ require "dependabot/nuget/update_checker"
 require "dependabot/nuget/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 RSpec.describe Dependabot::Nuget::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:version_class) { Dependabot::Nuget::Version }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
+  let(:csproj) do
+    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
+  end
+  let(:dependency_files) { [csproj] }
+  let(:dependency_version) { "1.1.1" }
+  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+  let(:dependency_requirements) do
+    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "nuget"
+    )
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -20,38 +47,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "nuget"
-    )
-  end
-  let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
-  end
-  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:dependency_version) { "1.1.1" }
-
-  let(:dependency_files) { [csproj] }
-  let(:csproj) do
-    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
-  end
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
-  let(:version_class) { Dependabot::Nuget::Version }
+  it_behaves_like "an update checker"
 
   def nuspec_url(name, version)
     "https://api.nuget.org/v3-flatcontainer/#{name.downcase}/#{version}/#{name.downcase}.nuspec"
@@ -65,7 +61,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     subject(:up_to_date?) { checker.up_to_date? }
 
     context "with a property dependency" do
-      context "whose property couldn't be found" do
+      context "when a dependency's property couldn't be found" do
         let(:dependency_name) { "Nuke.Common" }
         let(:dependency_requirements) do
           [{
@@ -78,7 +74,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
         let(:dependency_version) { "$(NukeVersion)" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
@@ -88,7 +84,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         let(:dependency_requirements) { [] }
         let(:dependency_version) { "2.0.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
   end
@@ -109,7 +105,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       expect(checker.latest_version).to eq("1.2.3")
     end
 
-    context "the package could not be found on any source" do
+    context "when the package could not be found on any source" do
       before do
         stub_request(:get, registration_index_url("microsoft.extensions.dependencymodel"))
           .to_return(status: 404)
@@ -140,11 +136,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
+
     it { is_expected.to be_nil }
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
+
     it { is_expected.to be_nil }
   end
 
@@ -164,12 +162,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      context "that is used for multiple dependencies" do
+      context "when a property is used for multiple dependencies" do
         let(:csproj_body) do
           fixture("csproj", "property_version.csproj")
         end
 
-        context "where all dependencies can update to the latest version" do
+        context "when all dependencies can update to the latest version" do
           before do
             allow(checker).to receive(:all_property_based_dependencies).and_return(
               [
@@ -195,10 +193,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
           end
 
-          it { is_expected.to eq(true) }
+          it { is_expected.to be(true) }
         end
 
-        context "where not all dependencies can update to the latest version" do
+        context "when all dependencies cannot update to the latest version" do
           before do
             allow(checker).to receive(:all_property_based_dependencies).and_return(
               [
@@ -224,7 +222,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(false)
           end
 
-          it { is_expected.to eq(false) }
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -315,10 +313,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         )
       end
 
-      context "the security vulnerability excludes all compatible packages" do
+      context "when the security vulnerability excludes all compatible packages" do
+        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
+
         let(:target_version) { "1.1.1" }
         let(:vulnerable_versions) { ["< 999.999.999"] } # it's all bad
-        subject(:updated_requirement_version) { updated_requirements[0].fetch(:requirement) }
 
         before do
           # only vulnerable versions are returned
@@ -369,9 +368,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
-      context "whose property couldn't be found" do
+      context "when a dependency's property couldn't be found" do
         let(:dependency_requirements) do
           [{
             requirement: "$(NukeVersion)",
@@ -383,7 +382,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
         let(:dependency_version) { "$(NukeVersion)" }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end
@@ -406,12 +405,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
 
-      context "that is used for multiple dependencies" do
+      context "when a property is used for multiple dependencies" do
         let(:csproj_body) do
           fixture("csproj", "property_version.csproj")
         end
 
-        context "where all dependencies can update to the latest version" do
+        context "when all dependencies can update to the latest version" do
           before do
             allow(checker).to receive(:latest_version).and_return("0.9.0")
             allow(checker).to receive(:all_property_based_dependencies).and_return(
@@ -439,7 +438,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
             expect(dummy_property_updater).to receive(:updated_dependencies).and_return([dependency])
 
-            subject
+            updated_dependencies
           end
         end
       end

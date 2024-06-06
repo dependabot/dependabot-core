@@ -114,7 +114,7 @@ RSpec.describe Dependabot::DependencyGroup do
         }
       end
 
-      context "before dependencies are assigned to the group" do
+      context "when no dependencies are assigned to the group" do
         it "returns true if the dependency matches a pattern" do
           expect(dependency_group.dependencies).to eq([])
           expect(dependency_group.contains?(test_dependency1)).to be_truthy
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::DependencyGroup do
         end
       end
 
-      context "after dependencies are assigned to the group" do
+      context "when dependencies are assigned to the group" do
         before do
           dependency_group.dependencies << test_dependency1
         end

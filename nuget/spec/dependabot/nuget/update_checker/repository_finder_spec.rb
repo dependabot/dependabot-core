@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       config_files: [config_file].compact
     )
   end
+
   let(:config_file) { nil }
   let(:credentials) do
     [{
@@ -43,6 +44,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
   end
 
   describe "local path in NuGet.Config" do
+    subject(:known_repositories) { finder.known_repositories }
+
     let(:config_file) do
       nuget_config_content = <<~XML
         <configuration>
@@ -62,8 +65,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
-    subject(:known_repositories) { finder.known_repositories }
-
     it "finds all local paths" do
       urls = known_repositories.map { |r| r[:url] }
       expected = [
@@ -77,6 +78,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
   end
 
   describe "environment variables in NuGet.Config" do
+    subject(:known_repositories) { finder.known_repositories }
+
     let(:config_file) do
       nuget_config_content = <<~XML
         <configuration>
@@ -98,9 +101,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
-    subject(:known_repositories) { finder.known_repositories }
-
-    context "are expanded" do
+    context "when expanded" do
       before do
         allow(Dependabot.logger).to receive(:warn)
         ENV["FEED_URL"] = "https://nuget.example.com/index.json"
@@ -193,8 +194,9 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         )
       end
 
-      context "that does not return PackageBaseAddress" do
+      context "when the PackageBaseAddress is not returned" do
         let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
+
         before do
           stub_request(:get, custom_repo_url)
             .to_return(
@@ -220,8 +222,9 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has URLs that need to be escaped" do
+      context "when URLs need to be escaped" do
         let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
+
         before do
           stub_request(:get, "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json")
             .to_return(
@@ -250,14 +253,14 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that 404s" do
+      context "when a request returns a 404 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 
         # TODO: Might want to raise here instead?
         it { is_expected.to eq([]) }
       end
 
-      context "that 403s" do
+      context "when a request returns a 403 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 403) }
 
         it "raises a useful error" do
@@ -361,7 +364,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       #   )
       # end
 
-      context "include the default repository" do
+      context "when including the default repository" do
         let(:config_file_fixture_name) { "include_default_disable_ext_sources.config" }
 
         it "with disable external source" do
@@ -397,7 +400,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that overrides the default package sources" do
+      context "when the spec overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
 
         before do
@@ -408,6 +411,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
               body: fixture("nuget_responses", "myget_base.json")
             )
         end
+
+        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
 
         it "when the default api key of default registry is provided without clear" do
           expect(dependency_urls).to match_array(
@@ -429,7 +434,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
           )
         end
 
-        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
         it "when the default api key of default registry is provided with clear" do
           expect(dependency_urls).to match_array(
             [{
@@ -451,7 +455,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that doesn't include the default repository" do
+      context "when not including the default repository" do
         let(:config_file_fixture_name) { "excludes_default.config" }
 
         it "still includes the default repository (as it wasn't cleared)" do
@@ -486,7 +490,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
           )
         end
 
-        context "and clears it" do
+        context "when spec clears default repo info" do
           let(:config_file_fixture_name) { "clears_default.config" }
 
           it "still excludes the default repository" do
@@ -510,10 +514,10 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
           end
         end
 
-        context "that has disabled package sources" do
+        context "when the spec has disabled package sources" do
           let(:config_file_fixture_name) { "disabled_sources.config" }
 
-          it "only includes the enabled package sources" do
+          it "when only including the enabled package sources" do
             expect(dependency_urls).to match_array(
               [{
                 base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
@@ -534,7 +538,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
           end
         end
 
-        context "that has disabled default package sources" do
+        context "when the spec has disabled default package sources" do
           let(:config_file_fixture_name) { "disabled_default_sources.config" }
 
           it "only includes the enable package sources" do
@@ -559,7 +563,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has a numeric key" do
+      context "when the spec has a numeric key" do
         let(:config_file_fixture_name) { "numeric_key.config" }
 
         before do
@@ -592,7 +596,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that only provides versioned `SearchQueryService`` entries" do
+      context "when only providing versioned `SearchQueryService`` entries" do
         let(:config_file_fixture_name) { "versioned_search.config" }
 
         before do
@@ -619,7 +623,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "includes repositories in the `trustedSigners` section" do
+      context "when including repositories in the `trustedSigners` section" do
         let(:config_file_fixture_name) { "with_trustedSigners.config" }
 
         before do
@@ -683,7 +687,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has a non-ascii key" do
+      context "when the repo URL has a non-ascii key" do
         let(:config_file_fixture_name) { "non_ascii_key.config" }
 
         before do
@@ -716,7 +720,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that uses the v2 API alongside the v3 API" do
+      context "when the repo URL uses the v2 API alongside the v3 API" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -773,7 +777,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has no base url in v2 API response" do
+      context "when the repo URL has no base url in v2 API response" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -868,7 +872,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "matching `packageSourceMapping` entries are honored" do
+      context "when matching `packageSourceMapping` entries are honored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>
@@ -917,7 +921,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "non-matching `packageSourceMapping` entries are ignored" do
+      context "when non-matching `packageSourceMapping` entries are ignored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>

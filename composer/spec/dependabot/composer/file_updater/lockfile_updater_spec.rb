@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     it { is_expected.to include "\"prefer-stable\":false" }
 
     context "when an old version of PHP is specified" do
-      context "as a platform requirement" do
+      context "when the version is specified as a platform requirement" do
         let(:project_name) { "old_php_platform" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "and an extension is specified that we don't have" do
+      context "when an extension is specified that we don't have" do
         let(:project_name) { "missing_extension" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -269,10 +269,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "that requires an environment variable (composer v1)" do
+    context "when an environment variable is required (composer v1)" do
       let(:project_name) { "v1/env_variable" }
 
-      context "that hasn't been provided" do
+      context "when the variable hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
           expect { updated_lockfile_content }.to raise_error do |error|
             expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
@@ -281,7 +281,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         end
       end
 
-      context "that has been provided" do
+      context "when the variable has been provided" do
         let(:updater) do
           described_class.new(
             dependency_files: files,
@@ -308,10 +308,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "that requires an environment variable (composer v2)" do
+    context "when an environment variable is required (composer v2)" do
       let(:project_name) { "env_variable" }
 
-      context "that hasn't been provided" do
+      context "when the variable hasn't been provided" do
         it "does not attempt to download and has details of the updated item" do
           expect(updated_lockfile_content).to include("\"version\":\"5.9.2\"")
         end
@@ -408,7 +408,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           .to include("22bde7b048a33c702d9737fc1446234fff9b1363")
       end
 
-      context "and is limited by a library's PHP version" do
+      context "when the sub dependency is limited by a library's PHP version" do
         let(:project_name) { "php_specified_in_library" }
 
         let(:dependency) do
@@ -691,32 +691,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when there are patches (composer v2)" do
-      let(:project_name) { "patches" }
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ehime/hello-world",
-          version: "1.0.5",
-          requirements: [{
-            file: "composer.json",
-            requirement: "1.0.5",
-            groups: [],
-            source: nil
-          }],
-          previous_version: "1.0.4",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "1.0.4",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-    end
-
-    context "regression spec for media-organizer" do
+    context "when running regression spec for media-organizer" do
       let(:project_name) { "media_organizer" }
 
       let(:dependency) do
@@ -780,7 +755,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "updating to a specific version when reqs would allow higher" do
+    context "when updating to a specific version even though requirements would allow higher version" do
       let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do

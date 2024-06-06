@@ -223,7 +223,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files
-        dependency_files.select { |df| df.name.match?(/\.([a-z]{2})?proj$/) }
+        dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

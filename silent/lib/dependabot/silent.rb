@@ -7,7 +7,7 @@ require "dependabot/silent/file_fetcher"
 require "dependabot/silent/file_parser"
 require "dependabot/silent/update_checker"
 require "dependabot/silent/file_updater"
-# require "dependabot/silent/metadata_finder" TODO
+require "dependabot/silent/metadata_finder"
 require "dependabot/silent/requirement"
 require "dependabot/silent/version"
 
@@ -18,3 +18,5 @@ Dependabot::PullRequestCreator::Labeler
 require "dependabot/dependency"
 Dependabot::Dependency
   .register_production_check("silent", ->(groups) { groups.empty? || groups.include?("prod") })
+
+Dependabot::MetadataFinders.register("silent", Dependabot::Silent::MetadataFinder)

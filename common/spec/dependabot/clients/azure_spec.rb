@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#fetch_commit" do
-    subject { client.fetch_commit(nil, branch) }
+    subject(:fetch_commit) { client.fetch_commit(nil, branch) }
 
     context "when response is 200" do
       before do
@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Clients::Azure do
           .to_return(status: 200, body: fixture("azure", "master_branch.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { fetch_commit }.to_not raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
     end
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
 
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
 
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
       end
     end
 
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
   end
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+        expect { create_commit }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
 
@@ -143,6 +143,7 @@ RSpec.describe Dependabot::Clients::Azure do
 
       context "when author_details is nil" do
         let(:author_details) { nil }
+
         it "pushes commit without author property" do
           create_commit
 
@@ -183,7 +184,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#create_pull_request" do
-    subject do
+    subject(:create_pull_request) do
       client.create_pull_request("pr_name", "source_branch", "target_branch",
                                  "", [], nil)
     end
@@ -201,7 +202,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::TagsCreationForbidden)
+        expect { create_pull_request }.to raise_error(Dependabot::Clients::Azure::TagsCreationForbidden)
       end
     end
 
@@ -213,7 +214,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+        expect { create_pull_request }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
   end
@@ -288,7 +289,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#pull_request" do
-    subject { client.pull_request(pull_request_id) }
+    subject(:pull_request) { client.pull_request(pull_request_id) }
 
     let(:pull_request_id) { "1" }
     let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
@@ -302,7 +303,7 @@ RSpec.describe Dependabot::Clients::Azure do
           .to_return(status: 200, body: response_body)
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_request }.to_not raise_error }
 
       it { is_expected.to eq(JSON.parse(response_body)) }
     end
@@ -315,7 +316,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+        expect { pull_request }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
       end
     end
 
@@ -327,7 +328,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { pull_request }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
   end
@@ -371,7 +372,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#get" do
-    context "Using auth headers" do
+    context "when using auth headers" do
       token = ":test_token"
       encoded_token = Base64.encode64(":test_token").delete("\n")
       bearer_token = "test_token"
@@ -417,8 +418,8 @@ RSpec.describe Dependabot::Clients::Azure do
       include_examples "#get using auth headers", bearer_token_data
     end
 
-    context "Retries" do
-      context "for GET" do
+    context "when dealing with Retries" do
+      context "when dealing with GET" do
         it "with failure count <= max_retries" do
           # Request succeeds (200) on second attempt.
           stub_request(:get, base_url)
@@ -439,10 +440,11 @@ RSpec.describe Dependabot::Clients::Azure do
         end
       end
 
-      context "for POST" do
-        before :each do
+      context "when dealing with POST" do
+        before do
           @request_body = "request body"
         end
+
         it "with failure count <= max_retries" do
           # Request succeeds on third attempt
           stub_request(:post, base_url)

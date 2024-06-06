@@ -8,34 +8,14 @@ require "dependabot/cargo/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Cargo::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com"
-    }]
-  end
-  let(:files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
-  end
-  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
-
+  let(:requirements) { previous_requirements }
+  let(:dependency_previous_version) { "0.1.38" }
+  let(:dependency_version) { "0.1.40" }
+  let(:dependency_name) { "time" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -46,14 +26,32 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       package_manager: "cargo"
     )
   end
-  let(:dependency_name) { "time" }
-  let(:dependency_version) { "0.1.40" }
-  let(:dependency_previous_version) { "0.1.38" }
-  let(:requirements) { previous_requirements }
-  let(:previous_requirements) do
-    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:manifest) do
+    Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
+  end
+  let(:files) { [manifest, lockfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 
@@ -74,7 +72,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
     context "without a lockfile" do
       let(:files) { [manifest] }
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         it "raises a helpful error" do
           expect { updater.updated_dependency_files }
             .to raise_error("No files changed!")

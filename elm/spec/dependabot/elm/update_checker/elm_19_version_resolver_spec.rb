@@ -41,24 +41,27 @@ RSpec.describe namespace::Elm19VersionResolver do
   let(:dependency_requirement) { "1.0.0" }
 
   describe "#latest_resolvable_version" do
-    subject do
+    subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(unlock_requirement: unlock_requirement)
     end
 
-    context "for an app" do
-      context "allowing no unlocks" do
+    context "when dealing with an app" do
+      context "when no unlocks" do
         let(:unlock_requirement) { :none }
+
         it { is_expected.to eq(elm_version(dependency_version)) }
       end
 
       context "with an update that only changes a single version" do
-        context ":own unlocks" do
+        context "when :own unlocks" do
           let(:unlock_requirement) { :own }
+
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
 
-        context ":all unlocks" do
+        context "when :all unlocks" do
           let(:unlock_requirement) { :all }
+
           it { is_expected.to eq(elm_version("1.1.0")) }
         end
       end
@@ -70,7 +73,7 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "3.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -86,7 +89,7 @@ RSpec.describe namespace::Elm19VersionResolver do
         let(:dependency_requirement) { "1.0.0" }
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }
+          expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
@@ -103,7 +106,7 @@ RSpec.describe namespace::Elm19VersionResolver do
 
         it { is_expected.to eq(elm_version(dependency_version)) }
 
-        context ":all unlocks" do
+        context "when :all unlocks" do
           let(:unlock_requirement) { :all }
 
           # TODO: Full unlocks don't work yet! We need to work on how we use elm

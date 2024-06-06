@@ -59,7 +59,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
         let(:target_version) { "1.0.0" }
 
         it "returns an empty array" do
-          expect(conflicting_dependencies).to match_array([])
+          expect(conflicting_dependencies).to be_empty
         end
       end
     end

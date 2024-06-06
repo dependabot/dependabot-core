@@ -8,8 +8,34 @@ require "dependabot/swift/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Swift::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:stub_upload_pack) do
+    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack")
+      .to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", upload_pack_fixture),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
+  let(:dependency) { dependencies.find { |dep| dep.name == name } }
+  let(:file_parser) do
+    Dependabot::Swift::FileParser.new(
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path,
+      source: nil
+    )
+  end
+  let(:dependencies) do
+    file_parser.parse
+  end
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
+  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:directory) { "/" }
+  let(:project_name) { "ReactiveCocoa" }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -21,38 +47,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       raise_on_ignored: raise_on_ignored
     )
   end
-  let(:project_name) { "ReactiveCocoa" }
-  let(:directory) { "/" }
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
-  let(:security_advisories) { [] }
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
 
-  let(:dependencies) do
-    file_parser.parse
-  end
-
-  let(:file_parser) do
-    Dependabot::Swift::FileParser.new(
-      dependency_files: dependency_files,
-      repo_contents_path: repo_contents_path,
-      source: nil
-    )
-  end
-
-  let(:dependency) { dependencies.find { |dep| dep.name == name } }
-
-  let(:stub_upload_pack) do
-    stub_request(:get, "#{url}.git/info/refs?service=git-upload-pack")
-      .to_return(
-        status: 200,
-        body: fixture("git", "upload_packs", upload_pack_fixture),
-        headers: {
-          "content-type" => "application/x-git-upload-pack-advertisement"
-        }
-      )
-  end
+  it_behaves_like "an update checker"
 
   context "with an up to date dependency" do
     let(:name) { "github.com/reactivecocoa/reactiveswift" }
@@ -106,10 +102,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
 
     describe "#updated_requirements" do
-      subject { checker.updated_requirements }
+      subject(:updated_requirements) { checker.updated_requirements }
 
       it "does not update them" do
-        expect(subject.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
+        expect(updated_requirements.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
       end
     end
   end

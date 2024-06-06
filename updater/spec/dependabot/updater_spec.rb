@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "for security only updates" do
+    context "when dealing with a security only updates" do
       context "when the dep has no version so we can't check vulnerability" do
         it "does not create pull request" do
           stub_update_checker(
@@ -1080,7 +1080,7 @@ RSpec.describe Dependabot::Updater do
     end
 
     context "when a list of dependencies is specified" do
-      context "and the job is to update a PR" do
+      context "when the job is to update a PR" do
         it "only attempts to update dependencies on the specified list" do
           stub_update_checker
 
@@ -1263,7 +1263,7 @@ RSpec.describe Dependabot::Updater do
             updater.run
           end
 
-          context "for a different version" do
+          context "when dealing with a different version" do
             it "updates the dependency" do
               stub_update_checker
 
@@ -1308,7 +1308,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "and the job is create a security PR" do
+      context "when the job is to create a security PR" do
         context "when the dependency is vulnerable" do
           it "creates the pull request" do
             stub_update_checker(vulnerable?: true)
@@ -1462,7 +1462,7 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when an unknown error is raised while updating dependencies (cloud) " do
+    context "when an unknown error is raised while updating dependencies (cloud)" do
       before do
         Dependabot::Experiments.register(:record_update_job_unknown_error, true)
       end

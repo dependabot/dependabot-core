@@ -3,9 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Test.Update;
 using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
@@ -16,10 +18,13 @@ public class DiscoveryWorkerTestBase
     protected static async Task TestDiscoveryAsync(
         string workspacePath,
         TestFile[] files,
-        ExpectedWorkspaceDiscoveryResult expectedResult)
+        ExpectedWorkspaceDiscoveryResult expectedResult,
+        MockNuGetPackage[]? packages = null)
     {
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
+            await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
+
             var worker = new DiscoveryWorker(new Logger(verbose: true));
             await worker.RunAsync(directoryPath, workspacePath, DiscoveryWorker.DiscoveryResultFileName);
         });
