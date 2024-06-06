@@ -21,21 +21,6 @@ module Dependabot
     extend T::Sig
     extend Forwardable
 
-    class InvalidUpdatedDependencies < DependabotError
-      extend T::Sig
-
-      sig { params(deps_no_previous_version: T::Array[String], deps_no_change: T::Array[String]).void }
-      def initialize(deps_no_previous_version:, deps_no_change:)
-        msg = ""
-        if deps_no_previous_version.any?
-          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
-        end
-        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
-
-        super(msg)
-      end
-    end
-
     sig { returns(T::Array[T.untyped]) }
     attr_reader :pull_requests
 

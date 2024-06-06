@@ -145,7 +145,7 @@ module Dependabot
       false
     end
 
-    sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).void }
+    sig { void }
     def check_dependencies_have_previous_version
       return if updated_dependencies.all?(&:requirements_changed?)
       return if updated_dependencies.all?(&:previous_version)

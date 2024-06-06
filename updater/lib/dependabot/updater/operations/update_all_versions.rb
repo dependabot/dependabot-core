@@ -76,6 +76,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -106,17 +107,6 @@ module Dependabot
 
           if updated_deps.empty?
             raise "Dependabot found some dependency requirements to unlock, yet it failed to update any dependencies"
-          end
-
-          # The PR will be rejected if this happens, so we avoid tainting the whole group by skipping.
-          deps_no_previous_version = updated_deps.reject(&:previous_version)
-          deps_no_change = updated_deps.reject(&:requirements_changed?)
-          if deps_no_previous_version.any? && deps_no_change.any?
-            msg = "Skipping #{dependency.name} because"
-            msg += " some dependencies bumped have no previous version" if deps_no_previous_version.any?
-            msg += " and" if deps_no_previous_version.any? && deps_no_change.any?
-            msg += " some dependencies bumped have no change in requirements" if deps_no_change.any?
-            return Dependabot.logger.info(msg)
           end
 
           if (existing_pr = existing_pull_request(updated_deps))
@@ -156,6 +146,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def log_up_to_date(dependency)
           Dependabot.logger.info(

@@ -21,6 +21,8 @@ module Dependabot
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/PerceivedComplexity
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
@@ -101,6 +103,8 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
