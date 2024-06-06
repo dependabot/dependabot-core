@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/errors"
 
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
@@ -16,7 +17,7 @@ module Dependabot
   class DependencyChange
     extend T::Sig
 
-    class InvalidUpdatedDependencies < DependabotError
+    class InvalidUpdatedDependencies < Dependabot::DependabotError
       extend T::Sig
 
       sig { params(deps_no_previous_version: T::Array[String], deps_no_change: T::Array[String]).void }
