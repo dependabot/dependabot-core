@@ -86,9 +86,9 @@ module Dependabot
         )
 
         if Experiments.enabled?("dependency_change_validation") && !dependency_change.previous_version?
-          deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version)
-          deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?)
-          msg = "Skipping change to #{dependency.name}: "
+          deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
+          deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
+          msg = "Skipping change to group #{group.name} in directory #{job.source.directory}: "
           if deps_no_previous_version.any?
             msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
           end
