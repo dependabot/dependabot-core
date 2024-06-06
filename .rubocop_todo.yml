@@ -135,16 +135,6 @@ RSpec/MessageChain:
 RSpec/MessageSpies:
   Enabled: false
 
-# Offense count: 8
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: hash, symbol
-RSpec/MetadataStyle:
-  Exclude:
-    - 'hex/spec/dependabot/hex/update_checker/version_resolver_spec.rb'
-    - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
-
 # Offense count: 1
 RSpec/MultipleDescribes:
   Exclude:
