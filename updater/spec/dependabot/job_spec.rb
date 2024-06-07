@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Job do
             )
           ]
 
-          expect(subject).to be(true)
+          expect(job.allowed_update?(dependency)).to be(true)
         end
       end
     end

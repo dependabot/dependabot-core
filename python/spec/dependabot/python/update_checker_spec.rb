@@ -162,10 +162,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_fix_version) { checker.lowest_security_fix_version }
 
     it "finds the lowest available non-vulnerable version" do
-      expect(subject).to eq(Gem::Version.new("2.0.1"))
+      expect(lowest_fix_version).to eq(Gem::Version.new("2.0.1"))
     end
 
     context "with a security vulnerability" do

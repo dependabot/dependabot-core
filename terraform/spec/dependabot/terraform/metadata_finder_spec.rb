@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
 
       it do
-        expect(subject).to eq("https://github.com/hashicorp/terraform-aws-consul")
+        expect(source_url).to eq("https://github.com/hashicorp/terraform-aws-consul")
       end
     end
 
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
 
       it do
-        expect(subject).to eq("https://github.com/hashicorp/terraform-provider-aws")
+        expect(source_url).to eq("https://github.com/hashicorp/terraform-provider-aws")
       end
     end
   end
