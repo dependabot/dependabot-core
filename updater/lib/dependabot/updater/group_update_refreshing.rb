@@ -31,6 +31,7 @@ module Dependabot
       sig { returns(Dependabot::DependencySnapshot) }
       attr_reader :dependency_snapshot
 
+      sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
       def upsert_pull_request_with_error_handling(dependency_change, group)
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
@@ -46,6 +47,7 @@ module Dependabot
       # - Replace existing PR if the dependencies involved have changed
       # - Update the existing PR if the dependencies and the target versions remain the same
       # - Supersede the existing PR if the dependencies are the same but the target versions have changed
+      sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
       def upsert_pull_request(dependency_change, group)
         if dependency_change.should_replace_existing_pr?
           Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
@@ -64,6 +66,7 @@ module Dependabot
         end
       end
 
+      sig { params(reason: Symbol, group: Dependabot::DependencyGroup).void }
       def close_pull_request(reason:, group:)
         reason_string = reason.to_s.tr("_", " ")
         Dependabot.logger.info(
