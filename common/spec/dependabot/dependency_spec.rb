@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Dependency do
         }]
       end
 
-      specify { expect { dependency }.to_not raise_error }
+      specify { expect { dependency }.not_to raise_error }
     end
   end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Dependency do
       let(:dependency1) { described_class.new(**args) }
       let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
 
-      specify { expect(dependency1).to_not eq(dependency2) }
+      specify { expect(dependency1).not_to eq(dependency2) }
     end
   end
 

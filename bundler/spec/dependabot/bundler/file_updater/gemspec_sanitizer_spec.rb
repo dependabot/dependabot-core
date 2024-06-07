@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
           bundler_project_dependency_file("gemfile_with_nested_block", filename: "example.gemspec").content
         end
 
-        specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
+        specify { expect { sanitizer.rewrite(content) }.not_to raise_error }
       end
     end
 

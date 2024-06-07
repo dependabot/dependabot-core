@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_no_data.json"))
       end
 
-      specify { expect { default_reviewers }.to_not raise_error }
+      specify { expect { default_reviewers }.not_to raise_error }
 
       it { is_expected.to eq([]) }
     end
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
       end
 
-      specify { expect { default_reviewers }.to_not raise_error }
+      specify { expect { default_reviewers }.not_to raise_error }
 
       it { is_expected.to eq([{ uuid: "{00000000-0000-0000-0000-000000000001}" }]) }
     end
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))
       end
 
-      specify { expect { default_reviewers }.to_not raise_error }
+      specify { expect { default_reviewers }.not_to raise_error }
 
       it {
         expect(subject).to eq(
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      specify { expect { create_pull_request }.to_not raise_error }
+      specify { expect { create_pull_request }.not_to raise_error }
     end
   end
 
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       client.current_user
     end
 
-    specify { expect { current_user }.to_not raise_error }
+    specify { expect { current_user }.not_to raise_error }
 
     it { is_expected.to eq("{11111111-6349-0000-aea6-111111111111}") }
   end
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
-      specify { expect { pull_requests }.to_not raise_error }
+      specify { expect { pull_requests }.not_to raise_error }
 
       it { is_expected.to eq([]) }
     end
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
-      specify { expect { pull_requests }.to_not raise_error }
+      specify { expect { pull_requests }.not_to raise_error }
 
       it {
         expect(subject).to eq([
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_with_match.json"))
       end
 
-      specify { expect { pull_requests }.to_not raise_error }
+      specify { expect { pull_requests }.not_to raise_error }
 
       it {
         expect(subject).to eq([
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 200, body: fixture("bitbucket", "pull_requests_no_match.json"))
       end
 
-      specify { expect { pull_requests }.to_not raise_error }
+      specify { expect { pull_requests }.not_to raise_error }
 
       it {
         expect(subject).to eq([
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      specify { expect { decline_pull_request }.to_not raise_error }
+      specify { expect { decline_pull_request }.not_to raise_error }
     end
 
     context "without provided comment" do
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
           .to_return(status: 201)
       end
 
-      specify { expect { decline_pull_request }.to_not raise_error }
+      specify { expect { decline_pull_request }.not_to raise_error }
     end
   end
 end

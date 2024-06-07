@@ -698,7 +698,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         it "doesn't persist any temporary changes to Bundler's root" do
           expect { checker.latest_resolvable_version }
-            .to_not(change(::Bundler, :root))
+            .not_to(change(::Bundler, :root))
         end
 
         context "when that requires other files" do
@@ -762,7 +762,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq(current_version)
+            expect(version).not_to eq(current_version)
           end
 
           context "when the Gemfile doesn't specify a git source" do
@@ -821,7 +821,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq(current_version)
+            expect(version).not_to eq(current_version)
           end
         end
 
@@ -1051,7 +1051,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
+            expect(version).not_to eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
           end
         end
 
@@ -1664,7 +1664,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
               expect(updated_requirements.count).to eq(1)
               expect(updated_requirements.first[:requirement]).to eq(">= 0")
-              expect(updated_requirements.first[:source]).to_not be_nil
+              expect(updated_requirements.first[:source]).not_to be_nil
             end
           end
         end

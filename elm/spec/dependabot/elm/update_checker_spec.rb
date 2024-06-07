@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end

@@ -135,7 +135,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         context "when dealing with a go 1.11 go.mod" do
           let(:project_name) { "go_1.11" }
 
-          it { is_expected.to_not include("go 1.") }
+          it { is_expected.not_to include("go 1.") }
           it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
         end
 
@@ -248,9 +248,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           it "removes old entries from the go.sum" do
             expect(subject)
-              .to_not include(%(rsc.io/quote v1.4.0 h1:))
+              .not_to include(%(rsc.io/quote v1.4.0 h1:))
             expect(subject)
-              .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+              .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
           describe "a non-existent dependency with a pseudo-version" do
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:project_name) { "no_top_level_package" }
 
             it "does not raise an error" do
-              expect { updater.updated_go_sum_content }.to_not raise_error
+              expect { updater.updated_go_sum_content }.not_to raise_error
             end
           end
 
@@ -307,9 +307,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
             it "removes old entries from the go.sum" do
               expect(subject)
-                .to_not include(%(rsc.io/quote v1.4.0 h1:))
+                .not_to include(%(rsc.io/quote v1.4.0 h1:))
               expect(subject)
-                .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+                .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
             end
 
             it "does not leave a temporary file lingering in the repo" do
@@ -378,7 +378,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             []
           end
 
-          it { is_expected.to_not include(%(rsc.io/quote)) }
+          it { is_expected.not_to include(%(rsc.io/quote)) }
         end
       end
     end
@@ -473,7 +473,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       it do
-        expect(subject).to_not include("github.com/pkg/errors")
+        expect(subject).not_to include("github.com/pkg/errors")
       end
     end
 

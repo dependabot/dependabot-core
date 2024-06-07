@@ -76,7 +76,7 @@ RSpec.describe namespace::Elm19VersionResolver do
           expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
-              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).not_to include("dependabot_20")
               expect(error.message).to include("do not work with Elm 0.19.0")
             end
         end
@@ -92,7 +92,7 @@ RSpec.describe namespace::Elm19VersionResolver do
           expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
-              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).not_to include("dependabot_20")
               expect(error.message).to include("object at project.dependencies")
             end
         end

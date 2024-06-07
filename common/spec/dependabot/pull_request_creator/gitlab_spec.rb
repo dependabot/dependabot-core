@@ -390,7 +390,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
 
           it "creates a commit and merge request with the right details" do
-            expect(creator.create).to_not be_nil
+            expect(creator.create).not_to be_nil
 
             expect(WebMock)
               .to have_requested(:post, "#{repo_api_url}/repository/commits")
@@ -409,10 +409,10 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
 
           it "creates a merge request but not a commit" do
-            expect(creator.create).to_not be_nil
+            expect(creator.create).not_to be_nil
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+              .not_to have_requested(:post, "#{repo_api_url}/repository/commits")
             expect(WebMock)
               .to have_requested(:post, "#{repo_api_url}/merge_requests")
           end
@@ -435,9 +435,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           expect(creator.create).to be_nil
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+            .not_to have_requested(:post, "#{repo_api_url}/repository/commits")
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/merge_requests")
+            .not_to have_requested(:post, "#{repo_api_url}/merge_requests")
         end
       end
     end

@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
           # Test that the temporary path isn't included in the error message
-          expect(error.message).to_not include("dependabot_20")
+          expect(error.message).not_to include("dependabot_20")
         end
       end
     end

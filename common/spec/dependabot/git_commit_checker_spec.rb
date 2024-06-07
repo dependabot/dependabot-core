@@ -1039,7 +1039,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { local_tag_for_latest_version }.to_not raise_error
+            expect { local_tag_for_latest_version }.not_to raise_error
           end
         end
 
@@ -1052,7 +1052,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             let(:raise_on_ignored) { true }
 
             it "doesn't raise an error" do
-              expect { local_tag_for_latest_version }.to_not raise_error
+              expect { local_tag_for_latest_version }.not_to raise_error
             end
           end
         end

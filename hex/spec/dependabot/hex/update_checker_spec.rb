@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -556,9 +556,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             let(:ref) { nil }
 
             it "updates the dependency" do
-              expect(latest_resolvable_version).to_not be_nil
+              expect(latest_resolvable_version).not_to be_nil
               expect(latest_resolvable_version)
-                .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+                .not_to eq("178ce1a2344515e9145599970313fcc190d4b881")
               expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
             end
           end
@@ -715,9 +715,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           let(:ref) { nil }
 
           it "updates the dependency" do
-            expect(new_version).to_not be_nil
+            expect(new_version).not_to be_nil
             expect(new_version)
-              .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+              .not_to eq("178ce1a2344515e9145599970313fcc190d4b881")
             expect(new_version).to match(/^[0-9a-f]{40}$/)
           end
         end
