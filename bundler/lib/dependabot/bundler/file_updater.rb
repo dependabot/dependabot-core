@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -27,7 +27,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         if gemfile && file_changed?(gemfile)
           updated_files <<
@@ -58,7 +58,7 @@ module Dependabot
 
         check_updated_files(updated_files)
 
-        base_dir = updated_files.first.directory
+        base_dir = T.must(updated_files.first).directory
         vendor_updater
           .updated_vendor_cache_files(base_directory: base_dir)
           .each do |file|

@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         it { is_expected.to be_falsey }
       end
 
-      context "when the config is in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         it { is_expected.to be_truthy }
       end
 
-      context "when the config is in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 

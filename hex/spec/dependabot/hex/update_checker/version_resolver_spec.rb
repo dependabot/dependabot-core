@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     context "with a dependency with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
 
-      it "raises a DependencyFileNotResolvable error", skip_ci: true do
+      it "raises a DependencyFileNotResolvable error", :skip_ci do
         expect { resolver.latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
