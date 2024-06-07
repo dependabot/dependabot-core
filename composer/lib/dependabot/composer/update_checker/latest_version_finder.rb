@@ -28,6 +28,10 @@ module Dependabot
           @latest_version ||= fetch_latest_version
         end
 
+        def allowed_versions
+          @allowed_versions ||= fetch_allowed_versions
+        end
+
         def lowest_security_fix_version
           @lowest_security_fix_version ||= fetch_lowest_security_fix_version
         end
@@ -40,10 +44,14 @@ module Dependabot
         attr_reader :ignored_versions
         attr_reader :security_advisories
 
+        def fetch_allowed_versions
+            versions = available_versions
+            versions = filter_prerelease_versions(versions)
+            filter_ignored_versions(versions)
+        end
+
         def fetch_latest_version
-          versions = available_versions
-          versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
+          versions = fetch_allowed_versions
           versions.max
         end
 

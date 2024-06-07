@@ -35,6 +35,12 @@ module Dependabot
             latest_allowable_version: latest_version_from_registry,
             requirements_to_unlock: :own
           ).latest_resolvable_version
+
+        unless allowed_versions.include?(@latest_resolvable_version)
+          raise "No latest version found is not in allowed list!"
+        end
+
+        @latest_resolvable_version
       end
 
       def lowest_security_fix_version
@@ -96,6 +102,10 @@ module Dependabot
 
       def latest_version_from_registry
         latest_version_finder.latest_version
+      end
+
+      def allowed_versions
+        latest_version_finder.allowed_versions
       end
 
       def latest_version_finder
