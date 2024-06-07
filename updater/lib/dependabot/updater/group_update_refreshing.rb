@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 # This module contains the methods required to refresh (upsert or recreate)
 # existing grouped pull requests.
@@ -12,6 +14,23 @@
 module Dependabot
   class Updater
     module GroupUpdateRefreshing
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(Dependabot::Service) }
+      attr_reader :service
+
+      sig { returns(Dependabot::Updater::ErrorHandler) }
+      attr_reader :error_handler
+
+      sig { returns(Dependabot::Job) }
+      attr_reader :job
+
+      sig { returns(Dependabot::DependencySnapshot) }
+      attr_reader :dependency_snapshot
+
       def upsert_pull_request_with_error_handling(dependency_change, group)
         if dependency_change.updated_dependencies.any?
           upsert_pull_request(dependency_change, group)
@@ -50,10 +69,10 @@ module Dependabot
         Dependabot.logger.info(
           "Telling backend to close pull request for the " \
           "#{group.name} group " \
-          "(#{job.dependencies.join(', ')}) - #{reason_string}"
+          "(#{job.dependencies&.join(', ')}) - #{reason_string}"
         )
 
-        service.close_pull_request(job.dependencies, reason)
+        service.close_pull_request(T.must(job.dependencies), reason)
       end
     end
   end
