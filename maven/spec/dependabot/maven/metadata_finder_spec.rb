@@ -288,7 +288,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         end
 
         it do
-          expect(subject).to eq("https://github.com/apache/maven-checkstyle-plugin")
+          expect(source_url).to eq("https://github.com/apache/maven-checkstyle-plugin")
         end
       end
     end

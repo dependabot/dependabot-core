@@ -39,7 +39,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
 
   describe ".files_requiring_update" do
     it do
-      expect(subject).to contain_exactly(
+      expect(files_requiring_update).to contain_exactly(
         project_dependency_file("package.json"),
         project_dependency_file("package-lock.json"),
         project_dependency_file("yarn.lock")
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
 
       it do
-        expect(subject).to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           project_dependency_file("packages/package2/package.json"),
           project_dependency_file("packages/package2/package-lock.json")
         )
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
 
       it do
-        expect(subject).to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           project_dependency_file("package.json"),
           project_dependency_file("package-lock.json")
         )
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
         end
 
         it do
-          expect(subject).to contain_exactly(
+          expect(files_requiring_update).to contain_exactly(
             project_dependency_file("package-lock.json"),
             project_dependency_file("packages/package1/package.json")
           )
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
 
       it do
-        expect(subject).to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           project_dependency_file("yarn.lock"),
           project_dependency_file("other_package/package.json"),
           project_dependency_file("packages/package1/package.json")
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
 
       it do
-        expect(subject).to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           # fetch-factory:
           project_dependency_file("package.json"),
           project_dependency_file("yarn.lock"),
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     end
 
     it do
-      expect(subject).to contain_exactly(
+      expect(paths_requiring_update_check).to contain_exactly(
         "."
       )
     end
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
 
       it do
-        expect(subject).to contain_exactly(
+        expect(paths_requiring_update_check).to contain_exactly(
           "packages/package2"
         )
       end

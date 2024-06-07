@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lsfv) { checker.lowest_security_fix_version }
 
     before do
       version_files_url = "https://repo.maven.apache.org/maven2/com/google/" \
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available version" do
-      expect(subject).to eq(version_class.new("23.4-jre"))
+      expect(lsfv).to eq(version_class.new("23.4-jre"))
     end
 
     context "with a security vulnerability" do
@@ -223,13 +223,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        expect(subject).to eq(version_class.new("23.5-jre"))
+        expect(lsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
 
   describe "#lowest_resolvable_security_fix_version" do
-    subject { checker.lowest_resolvable_security_fix_version }
+    subject(:lrsfv) { checker.lowest_resolvable_security_fix_version }
 
     let(:security_advisories) do
       [
@@ -249,14 +249,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available non-vulnerable version" do
-      expect(subject).to eq(version_class.new("23.5-jre"))
+      expect(lrsfv).to eq(version_class.new("23.5-jre"))
     end
 
     context "with version from multi-dependency property" do
       before { allow(checker).to receive(:version_comes_from_multi_dependency_property?).and_return(true) }
 
       it "finds the lowest available non-vulnerable version" do
-        expect(subject).to eq(version_class.new("23.5-jre"))
+        expect(lrsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
