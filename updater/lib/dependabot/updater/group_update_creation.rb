@@ -208,7 +208,11 @@ module Dependabot
 
         # Consider the dependency handled so no individual PR is raised since it is in this group.
         # Even if update is not possible, etc.
-        dependency_snapshot.add_handled_dependencies(dependency.name)
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependency_snapshot.add_handled_group_dependencies([{name: dependency.name, directory: job.source.directory}])
+        else
+          dependency_snapshot.add_handled_dependencies(dependency.name)
+        end
 
         if checker.up_to_date?
           log_up_to_date(dependency)
@@ -229,7 +233,11 @@ module Dependabot
           requirements_to_unlock: requirements_to_unlock
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        dependency_snapshot.add_handled_dependencies(dependency.name)
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependency_snapshot.add_handled_group_dependencies([{name: dependency.name, directory: job.source.directory}])
+        else
+          dependency_snapshot.add_handled_dependencies(dependency.name)
+        end
         error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
@@ -240,7 +248,11 @@ module Dependabot
       rescue StandardError => e
         # If there was an error we might not be able to determine if the dependency is in this
         # group due to semver grouping, so we consider it handled to avoid raising an individual PR.
-        dependency_snapshot.add_handled_dependencies(dependency.name)
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependency_snapshot.add_handled_group_dependencies([{name: dependency.name, directory: job.source.directory}])
+        else
+          dependency_snapshot.add_handled_dependencies(dependency.name)
+        end
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
