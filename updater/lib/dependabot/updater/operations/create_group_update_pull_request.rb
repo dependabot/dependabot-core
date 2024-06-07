@@ -93,7 +93,7 @@ module Dependabot
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
 
-          if T.must(job.source.directories).nil?
+          if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(group)
           else
             dependency_changes = T.must(job.source.directories).filter_map do |directory|
