@@ -12,7 +12,7 @@ module Dependabot
 
       private
 
-      sig { override.returns(T.nilable(T.any(Dependabot::Source, T.untyped))) }
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         case new_source_type
         when "git" then find_source_from_git_url
@@ -34,7 +34,7 @@ module Dependabot
         Source.from_url(url)
       end
 
-      sig { void }
+      sig { returns(T.noreturn) }
       def find_source_from_registry
         raise NotImplementedError
       end
