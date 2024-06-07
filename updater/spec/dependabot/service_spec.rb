@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Service do
 
       it "raises an InvalidUpdatedDependencies error" do
         expect { service.create_pull_request(dependency_change, base_sha) }
-          .to raise_error(Dependabot::Service::InvalidUpdatedDependencies)
+          .to raise_error(Dependabot::DependencyChange::InvalidUpdatedDependencies)
       end
     end
   end

@@ -356,6 +356,11 @@ module Dependabot
       end
     end
 
+    sig { returns(T::Boolean) }
+    def requirements_changed?
+      (requirements - T.must(previous_requirements)).any?
+    end
+
     private
 
     sig { void }

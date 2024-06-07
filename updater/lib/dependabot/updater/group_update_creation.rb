@@ -21,6 +21,7 @@ module Dependabot
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
@@ -76,17 +77,36 @@ module Dependabot
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
-        Dependabot::DependencyChange.new(
+        dependency_change = Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
+
+        if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
+          log_missing_previous_version(dependency_change)
+          return nil
+        end
+
+        dependency_change
       ensure
         cleanup_workspace
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      def log_missing_previous_version(dependency_change)
+        deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
+        deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
+        msg = "Skipping change to group #{group.name} in directory #{job.source.directory}: "
+        if deps_no_previous_version.any?
+          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
+        end
+        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
+        Dependabot.logger.info(msg)
+      end
 
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
