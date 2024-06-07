@@ -9,6 +9,7 @@ module Dependabot
   module Swift
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+
       private
 
       sig { override.returns(T.nilable(T.any(Dependabot::Source, T.untyped))) }
