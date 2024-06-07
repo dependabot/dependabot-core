@@ -37,7 +37,7 @@ module Dependabot
           ).latest_resolvable_version
 
         unless allowed_versions.include?(@latest_resolvable_version)
-          raise "No latest version found is not in allowed list!"
+          raise "Latest resolvable version is not in dependabot allowed list!"
         end
 
         @latest_resolvable_version
