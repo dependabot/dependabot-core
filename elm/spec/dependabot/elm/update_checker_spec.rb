@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it "is true" do
         pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
-        is_expected.to be(true)
+        expect(subject).to be(true)
       end
     end
 

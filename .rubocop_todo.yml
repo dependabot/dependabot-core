@@ -35,12 +35,6 @@ RSpec/BeforeAfterAll:
 RSpec/ExampleLength:
   Max: 98
 
-# Offense count: 17
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ExpectActual:
-  Exclude:
-    - 'swift/spec/dependabot/swift/native_requirement_spec.rb'
-
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
 # Include: **/*_spec*rb*, **/spec/**/*
@@ -61,6 +55,7 @@ RSpec/FilePath:
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/HooksBeforeExamples:
   Enabled: false
+
 
 # Offense count: 70
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
@@ -127,16 +122,6 @@ RSpec/MessageChain:
 # SupportedStyles: have_received, receive
 RSpec/MessageSpies:
   Enabled: false
-
-# Offense count: 8
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: hash, symbol
-RSpec/MetadataStyle:
-  Exclude:
-    - 'hex/spec/dependabot/hex/update_checker/version_resolver_spec.rb'
-    - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
 # Offense count: 1
 RSpec/MultipleDescribes:
@@ -332,8 +317,3 @@ RSpec/VerifiedDoubles:
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
     - 'updater/spec/dependabot/sentry/sentry_context_processor_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
-
-# Offense count: 2
-RSpec/VoidExpect:
-  Exclude:
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker/dependency_files_builder_spec.rb'

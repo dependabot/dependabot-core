@@ -914,7 +914,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with a private module proxy that can't be reached", vcr: true do
+    context "with a private module proxy that can't be reached", :vcr do
       before do
         artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
 

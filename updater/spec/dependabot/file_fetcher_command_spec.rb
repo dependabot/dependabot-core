@@ -43,7 +43,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       Dependabot::Experiments.reset!
     end
 
-    it "fetches the files and writes the fetched files to output.json", vcr: true do
+    it "fetches the files and writes the fetched files to output.json", :vcr do
       expect(api_client).not_to receive(:mark_job_as_processed)
 
       perform_job
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file["content_encoding"]).to eq("utf-8")
     end
 
-    context "when the fetcher raises a ToolVersionNotSupported error", vcr: true do
+    context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit).and_return("a" * 40)
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a file fetcher error (cloud)", vcr: true do
+    context "when the fetcher raises a file fetcher error (cloud)", :vcr do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the fetcher raises a file fetcher error (ghes)", vcr: true do
+    context "when the fetcher raises a file fetcher error (ghes)", :vcr do
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
@@ -232,7 +232,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when vendoring dependencies", vcr: true do
+    context "when vendoring dependencies", :vcr do
       let(:job_definition) do
         JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
       end
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
-    context "when the connectivity check is enabled", vcr: true do
+    context "when the connectivity check is enabled", :vcr do
       before do
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with("ENABLE_CONNECTIVITY_CHECK").and_return("1")
