@@ -48,24 +48,10 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
   before do
     allow(updater_instance)
-      .to receive(:latest_version)
-      .and_return(latest_version)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_version)
-      .and_return(latest_resolvable_version)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_version_with_no_unlock)
-      .and_return(latest_resolvable_version_with_no_unlock)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_previous_version)
-      .and_return(latest_resolvable_previous_version)
-
-    allow(updater_instance)
-      .to receive(:updated_requirements)
-      .and_return(updated_requirements)
+      .to receive_messages(latest_version: latest_version, latest_resolvable_version: latest_resolvable_version,
+                           latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
+                           latest_resolvable_previous_version: latest_resolvable_previous_version,
+                           updated_requirements: updated_requirements)
   end
 
   describe "#up_to_date?" do
