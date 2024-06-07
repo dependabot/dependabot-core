@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
@@ -16,6 +18,20 @@ require "dependabot/workspace"
 module Dependabot
   class Updater
     module GroupUpdateCreation
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(Dependabot::DependencySnapshot) }
+      attr_reader :dependency_snapshot
+
+      sig { returns(Dependabot::Updater::ErrorHandler) }
+      attr_reader :error_handler
+
+      sig { returns(Dependabot::Job) }
+      attr_reader :job
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -330,7 +346,7 @@ module Dependabot
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.setup(
-          repo_contents_path: job.repo_contents_path,
+          repo_contents_path: T.must(job.repo_contents_path),
           directory: Pathname.new(job.source.directory || "/").cleanpath
         )
       end
@@ -348,13 +364,13 @@ module Dependabot
       end
 
       def pr_exists_for_dependency_group?(group)
-        job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
       end
 
       def dependencies_in_existing_pr_for_group(group)
         job.existing_group_pull_requests.find do |pr|
           pr["dependency-group-name"] == group.name
-        end.fetch("dependencies", [])
+        end&.fetch("dependencies", [])
       end
 
       def deduce_updated_dependency(dependency, original_dependency)
