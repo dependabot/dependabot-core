@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 # This module extracts all helpers required to perform additional update job
 # error recording and logging for Security Updates since they are shared
@@ -7,6 +9,14 @@
 module Dependabot
   class Updater
     module SecurityUpdateHelpers
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(Dependabot::Service) }
+      attr_reader :service
+
       def record_security_update_not_needed_error(dependency)
         Dependabot.logger.info(
           "no security update needed as #{dependency.name} " \
