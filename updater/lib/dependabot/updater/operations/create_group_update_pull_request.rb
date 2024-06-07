@@ -49,9 +49,12 @@ module Dependabot
           @group = group
         end
 
-        sig { void }
+        sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def perform
-          return warn_group_is_empty(group) if group.dependencies.empty?
+          if group.dependencies.empty?
+            warn_group_is_empty(group)
+            return nil
+          end
 
           Dependabot.logger.info("Starting update group for '#{group.name}'")
 
