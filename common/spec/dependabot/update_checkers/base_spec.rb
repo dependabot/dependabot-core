@@ -95,7 +95,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       it { is_expected.to be_truthy }
 
       it "doesn't attempt to resolve the dependency" do
-        expect(updater_instance).to_not receive(:latest_resolvable_version)
+        expect(updater_instance).not_to receive(:latest_resolvable_version)
         up_to_date
       end
     end
@@ -246,9 +246,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_falsey }
 
         it "doesn't attempt to resolve the dependency" do
-          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).not_to receive(:latest_resolvable_version)
           expect(updater_instance)
-            .to_not receive(:latest_resolvable_version_with_no_unlock)
+            .not_to receive(:latest_resolvable_version_with_no_unlock)
           can_update
         end
       end
@@ -305,9 +305,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         it { is_expected.to be_falsey }
 
         it "doesn't attempt to resolve the dependency" do
-          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).not_to receive(:latest_resolvable_version)
           expect(updater_instance)
-            .to_not receive(:latest_version_resolvable_with_full_unlock?)
+            .not_to receive(:latest_version_resolvable_with_full_unlock?)
           can_update
         end
       end
@@ -372,7 +372,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       it { is_expected.to be_falsey }
 
       it "doesn't attempt to resolve the dependency" do
-        expect(updater_instance).to_not receive(:latest_resolvable_version)
+        expect(updater_instance).not_to receive(:latest_resolvable_version)
         can_update
       end
     end

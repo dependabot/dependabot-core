@@ -459,7 +459,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:current_version) { "1.1.0" }
 
       it "doesn't return pre-release" do
-        expect(finder.lowest_security_fix_version).to_not eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
+        expect(finder.lowest_security_fix_version).not_to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
   end

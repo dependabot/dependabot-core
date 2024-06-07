@@ -84,17 +84,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
       its(:content) do
         is_expected.to include "\"actions/setup-node@v1.1.0\"\n"
-        is_expected.to_not include "\"actions/setup-node@master\""
+        is_expected.not_to include "\"actions/setup-node@master\""
       end
 
       its(:content) do
         is_expected.to include "'actions/setup-node@v1.1.0'\n"
-        is_expected.to_not include "'actions/setup-node@master'"
+        is_expected.not_to include "'actions/setup-node@master'"
       end
 
       its(:content) do
         is_expected.to include "actions/setup-node@v1.1.0\n"
-        is_expected.to_not include "actions/setup-node@master"
+        is_expected.not_to include "actions/setup-node@master"
       end
 
       its(:content) { is_expected.to include "actions/checkout@master\n" }
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         its(:content) { is_expected.to include "actions/aws/ec2@v1.1.0\n" }
         its(:content) { is_expected.to include "actions/aws@v1.1.0\n" }
-        its(:content) { is_expected.to_not include "actions/aws/ec2@master" }
+        its(:content) { is_expected.not_to include "actions/aws/ec2@master" }
         its(:content) { is_expected.to include "actions/checkout@master\n" }
       end
 

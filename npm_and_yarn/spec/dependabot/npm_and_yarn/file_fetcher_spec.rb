@@ -165,7 +165,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).to include(".npmrc")
         expect(file_fetcher_instance.files.map(&:name))
-          .to_not include("package-lock.json")
+          .not_to include("package-lock.json")
       end
     end
   end
@@ -1117,7 +1117,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to include("packages/package2/package.json")
           expect(file_fetcher_instance.files.map(&:name))
-            .to_not include("packages/package/package.json")
+            .not_to include("packages/package/package.json")
         end
       end
 
@@ -1263,7 +1263,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to include("packages/package2/package.json")
         expect(file_fetcher_instance.files.map(&:name))
-          .to_not include("other_package/package.json")
+          .not_to include("other_package/package.json")
       end
     end
   end
@@ -1725,7 +1725,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         it "fetches the other workspaces, ignoring the empty folder" do
           expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name))
-            .to_not include("packages/package2/package.json")
+            .not_to include("packages/package2/package.json")
         end
       end
 
@@ -1825,7 +1825,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to include("packages/package2/package.json")
         expect(file_fetcher_instance.files.map(&:name))
-          .to_not include("other_package/package.json")
+          .not_to include("other_package/package.json")
       end
 
       context "when one of the repos isn't fetchable" do
@@ -1851,7 +1851,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         it "fetches package.json from the workspace dependencies it can" do
           expect(file_fetcher_instance.files.count).to eq(4)
           expect(file_fetcher_instance.files.map(&:name))
-            .to_not include("packages/package2/package.json")
+            .not_to include("packages/package2/package.json")
           expect(file_fetcher_instance.files.map(&:name))
             .to include("other_package/package.json")
         end

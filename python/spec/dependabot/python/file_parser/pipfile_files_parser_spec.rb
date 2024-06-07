@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:lockfile_fixture_name) { "only_dev.lock" }
 
       it "excludes the missing dependency" do
-        expect(dependencies.map(&:name)).to_not include("missing")
+        expect(dependencies.map(&:name)).not_to include("missing")
       end
 
       describe "the dependency" do
@@ -341,7 +341,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       let(:lockfile_fixture_name) { "git_source.lock" }
 
       it "excludes the git dependency" do
-        expect(dependencies.map(&:name)).to_not include("pythonfinder")
+        expect(dependencies.map(&:name)).not_to include("pythonfinder")
       end
 
       describe "the (non-git) dependency" do

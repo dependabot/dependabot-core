@@ -229,7 +229,7 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "doesn't include the plugin" do
           expect(dependencies.map(&:name))
-            .to_not include("${project.groupId}:maven-install-plugin")
+            .not_to include("${project.groupId}:maven-install-plugin")
         end
       end
     end

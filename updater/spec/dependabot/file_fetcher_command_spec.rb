@@ -197,7 +197,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "do not tells the backend about the error" do
-        expect(api_client).to_not receive(:record_update_job_unknown_error)
+        expect(api_client).not_to receive(:record_update_job_unknown_error)
         expect(api_client).to receive(:mark_job_as_processed)
 
         expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process

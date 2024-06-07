@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Clients::Azure do
           .to_return(status: 200, body: fixture("azure", "master_branch.json"))
       end
 
-      specify { expect { fetch_commit }.to_not raise_error }
+      specify { expect { fetch_commit }.not_to raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
     end
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Clients::Azure do
                   json_body = JSON.parse(req.body)
                   expect(json_body.fetch("commits").count).to eq(1)
                   expect(json_body.fetch("commits").first.keys)
-                    .to_not include("author")
+                    .not_to include("author")
                 end
             )
         end
@@ -258,7 +258,7 @@ RSpec.describe Dependabot::Clients::Azure do
           .to_return(status: 200, body: response_body)
       end
 
-      specify { expect { autocomplete_pull_request }.to_not raise_error }
+      specify { expect { autocomplete_pull_request }.not_to raise_error }
 
       it { is_expected.to eq(JSON.parse(response_body)) }
     end
@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Clients::Azure do
           .to_return(status: 200, body: response_body)
       end
 
-      specify { expect { pull_request }.to_not raise_error }
+      specify { expect { pull_request }.not_to raise_error }
 
       it { is_expected.to eq(JSON.parse(response_body)) }
     end
