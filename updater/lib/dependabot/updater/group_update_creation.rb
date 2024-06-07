@@ -15,6 +15,8 @@ require "dependabot/workspace"
 #
 module Dependabot
   class Updater
+    extend T::Sig
+
     module GroupUpdateCreation
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
@@ -22,6 +24,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
