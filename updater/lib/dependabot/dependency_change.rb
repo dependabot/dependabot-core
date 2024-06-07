@@ -139,7 +139,7 @@ module Dependabot
     end
 
     sig { returns(T::Boolean) }
-    def previous_version?
+    def all_have_previous_version?
       return true if updated_dependencies.all?(&:requirements_changed?)
       return true if updated_dependencies.all?(&:previous_version)
 
@@ -148,8 +148,7 @@ module Dependabot
 
     sig { void }
     def check_dependencies_have_previous_version
-      return if updated_dependencies.all?(&:requirements_changed?)
-      return if updated_dependencies.all?(&:previous_version)
+      return if all_have_previous_version?
 
       deps_no_previous_version = updated_dependencies.reject(&:previous_version)
       deps_no_change = updated_dependencies.reject(&:requirements_changed?)

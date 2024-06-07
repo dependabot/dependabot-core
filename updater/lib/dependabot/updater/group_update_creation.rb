@@ -84,7 +84,7 @@ module Dependabot
           dependency_group: group
         )
 
-        if Experiments.enabled?("dependency_change_validation") && !dependency_change.previous_version?
+        if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
           log_missing_previous_version(dependency_change)
           return nil
         end
