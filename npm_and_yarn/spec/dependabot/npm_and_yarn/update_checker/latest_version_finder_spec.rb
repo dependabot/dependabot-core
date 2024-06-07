@@ -72,7 +72,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version_from_registry }.to_not raise_error
+        expect { latest_version_from_registry }.not_to raise_error
       end
     end
 
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -766,7 +766,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         it "does not raise an error" do
           expect { version_finder.latest_version_from_registry }
-            .to_not raise_error
+            .not_to raise_error
         end
       end
 

@@ -95,7 +95,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "doesn't push a commit to GitHub" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, "#{watched_repo_url}/git/trees")
+          .not_to have_requested(:post, "#{watched_repo_url}/git/trees")
       end
 
       it "returns nil" do
@@ -424,7 +424,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         it "does not update the base branch" do
           updater.update
 
-          expect(WebMock).to_not have_requested(:patch, pull_request_url)
+          expect(WebMock).not_to have_requested(:patch, pull_request_url)
         end
       end
 
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             )
         end
 
-        specify { expect { updater.update }.to_not raise_error }
+        specify { expect { updater.update }.not_to raise_error }
       end
     end
 

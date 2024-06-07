@@ -149,13 +149,6 @@ RSpec/MultipleMemoizedHelpers:
 RSpec/NestedGroups:
   Max: 8
 
-# Offense count: 357
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: not_to, to_not
-RSpec/NotToNot:
-  Enabled: false
-
 # Offense count: 16
 RSpec/OverwritingSetup:
   Exclude:

@@ -229,7 +229,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
             )
           end
 
-          its(:content) { is_expected.to_not include("ruby '1.9.3'") }
+          its(:content) { is_expected.not_to include("ruby '1.9.3'") }
         end
       end
     end
