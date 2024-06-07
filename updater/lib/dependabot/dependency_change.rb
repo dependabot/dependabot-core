@@ -94,11 +94,6 @@ module Dependabot
       @pr_message = message
     end
 
-    sig { returns(T::Boolean) }
-    def blank?
-      updated_dependency_files.empty?
-    end
-
     sig { returns(String) }
     def humanized
       updated_dependencies.map do |dependency|
