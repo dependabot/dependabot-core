@@ -180,16 +180,6 @@ RSpec/PredicateMatcher:
     - 'python/spec/dependabot/python/file_parser/pyproject_files_parser_spec.rb'
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 35
-# This cop supports unsafe autocorrection (--autocorrect-all).
-RSpec/ReceiveMessages:
-  Exclude:
-#    - 'github_actions/spec/dependabot/github_actions/update_checker_spec.rb'
-#    - 'nuget/spec/dependabot/nuget/update_checker_spec.rb'
-#    - 'updater/spec/dependabot/dependency_change_spec.rb'
-#    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
-#    - 'updater/spec/dependabot/update_files_command_spec.rb'
-
 # Offense count: 4
 RSpec/RepeatedExample:
   Exclude:
