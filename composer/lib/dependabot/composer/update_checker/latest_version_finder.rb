@@ -45,9 +45,9 @@ module Dependabot
         attr_reader :security_advisories
 
         def fetch_allowed_versions
-            versions = available_versions
-            versions = filter_prerelease_versions(versions)
-            filter_ignored_versions(versions)
+          versions = available_versions
+          versions = filter_prerelease_versions(versions)
+          filter_ignored_versions(versions)
         end
 
         def fetch_latest_version
