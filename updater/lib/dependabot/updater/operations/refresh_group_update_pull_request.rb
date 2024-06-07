@@ -3,6 +3,7 @@
 
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
+require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match

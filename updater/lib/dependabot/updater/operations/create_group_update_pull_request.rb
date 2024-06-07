@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
+require "sorbet-runtime"
 
 # This class implements our strategy for creating a single Pull Request which
 # updates all outdated Dependencies within a specific project folder that match
