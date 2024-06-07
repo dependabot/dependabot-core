@@ -117,7 +117,7 @@ module Dependabot
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
           else
-            dependency_changes = job.source.directories.map do |directory|
+            dependency_changes = job.source.directories.filter_map do |directory|
               job.source.directory = directory
               dependency_snapshot.current_directory = directory
               compile_all_dependency_changes_for(dependency_snapshot.job_group)
