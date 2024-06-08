@@ -97,9 +97,8 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     before do
-      allow(job).to receive(:source).and_return(github_source)
-      allow(job).to receive(:credentials).and_return(job_credentials)
-      allow(job).to receive(:commit_message_options).and_return(commit_message_options)
+      allow(job).to receive_messages(source: github_source, credentials: job_credentials,
+                                     commit_message_options: commit_message_options)
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
 

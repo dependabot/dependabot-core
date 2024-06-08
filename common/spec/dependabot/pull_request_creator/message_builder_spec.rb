@@ -3471,9 +3471,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     pr_message = "PR message"
     commit_message = "Commit message"
     before do
-      allow(builder).to receive(:pr_name).and_return(pr_name)
-      allow(builder).to receive(:pr_message).and_return(pr_message)
-      allow(builder).to receive(:commit_message).and_return(commit_message)
+      allow(builder).to receive_messages(pr_name: pr_name, pr_message: pr_message, commit_message: commit_message)
     end
 
     it "returns a Message" do

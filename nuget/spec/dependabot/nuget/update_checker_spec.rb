@@ -169,27 +169,22 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "when all dependencies can update to the latest version" do
           before do
-            allow(checker).to receive(:all_property_based_dependencies).and_return(
-              [
-                Dependabot::Dependency.new(
-                  name: "Nuke.Common",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                ),
-                Dependabot::Dependency.new(
-                  name: "Nuke.CodeGeneration",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                )
-              ]
-            )
-
             property_updater_class = described_class::PropertyUpdater
             dummy_property_updater = instance_double(property_updater_class)
-            allow(checker).to receive(:latest_version).and_return("0.9.0")
-            allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
+            allow(checker).to receive_messages(all_property_based_dependencies: [
+              Dependabot::Dependency.new(
+                name: "Nuke.Common",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              ),
+              Dependabot::Dependency.new(
+                name: "Nuke.CodeGeneration",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              )
+            ], latest_version: "0.9.0", property_updater: dummy_property_updater)
             allow(dummy_property_updater).to receive(:update_possible?).and_return(true)
           end
 
@@ -198,27 +193,22 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "when all dependencies cannot update to the latest version" do
           before do
-            allow(checker).to receive(:all_property_based_dependencies).and_return(
-              [
-                Dependabot::Dependency.new(
-                  name: "Nuke.Common",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                ),
-                Dependabot::Dependency.new(
-                  name: "Nuke.CodeGeneration",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                )
-              ]
-            )
-
             property_updater_class = described_class::PropertyUpdater
             dummy_property_updater = instance_double(property_updater_class)
-            allow(checker).to receive(:latest_version).and_return("0.9.0")
-            allow(checker).to receive(:property_updater).and_return(dummy_property_updater)
+            allow(checker).to receive_messages(all_property_based_dependencies: [
+              Dependabot::Dependency.new(
+                name: "Nuke.Common",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              ),
+              Dependabot::Dependency.new(
+                name: "Nuke.CodeGeneration",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              )
+            ], latest_version: "0.9.0", property_updater: dummy_property_updater)
             allow(dummy_property_updater).to receive(:update_possible?).and_return(false)
           end
 
@@ -412,23 +402,20 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
         context "when all dependencies can update to the latest version" do
           before do
-            allow(checker).to receive(:latest_version).and_return("0.9.0")
-            allow(checker).to receive(:all_property_based_dependencies).and_return(
-              [
-                Dependabot::Dependency.new(
-                  name: "Nuke.Common",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                ),
-                Dependabot::Dependency.new(
-                  name: "Nuke.CodeGeneration",
-                  version: "0.1.434",
-                  requirements: dependency_requirements,
-                  package_manager: "nuget"
-                )
-              ]
-            )
+            allow(checker).to receive_messages(latest_version: "0.9.0", all_property_based_dependencies: [
+              Dependabot::Dependency.new(
+                name: "Nuke.Common",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              ),
+              Dependabot::Dependency.new(
+                name: "Nuke.CodeGeneration",
+                version: "0.1.434",
+                requirements: dependency_requirements,
+                package_manager: "nuget"
+              )
+            ])
           end
 
           it "delegates to PropertyUpdater" do
