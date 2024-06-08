@@ -17,6 +17,8 @@ require "dependabot/workspace"
 #
 module Dependabot
   class Updater
+    extend T::Sig
+
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
@@ -32,13 +34,16 @@ module Dependabot
       sig { returns(Dependabot::Job) }
       attr_reader :job
 
+      sig { returns(Dependabot::DependencyGroup) }
+      attr_reader :group
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { params(group: Dependabot::DependencyGroup).returns(Dependabot::DependencyChange) }
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
@@ -110,11 +115,10 @@ module Dependabot
       ensure
         cleanup_workspace
       end
+
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/PerceivedComplexity
-
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)

@@ -116,7 +116,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
           it "quietly ignores losing the race" do
             expect { labeler.create_default_labels_if_required }
-              .to_not raise_error
+              .not_to raise_error
             expect(labeler.labels_for_pr).to include("dependencies")
           end
         end
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           labeler.create_default_labels_if_required
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/labels")
         end
 
         context "when dealing with the label that is only present after paginating" do
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
           end
         end
 
@@ -230,7 +230,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
           end
         end
 
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
         it "does not create a 'dependencies' label" do
           labeler.create_default_labels_if_required
-          expect(WebMock).to_not have_requested(:post, "#{repo_api_url}/labels")
+          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/labels")
         end
 
         context "when label_language is true" do
@@ -283,7 +283,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
           end
         end
 
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
           end
         end
       end
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
             expect(labeler.labels_for_pr).to include("security")
           end
         end
@@ -429,7 +429,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           labeler.create_default_labels_if_required
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/labels")
         end
       end
 
@@ -440,7 +440,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           labeler.create_default_labels_if_required
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/labels")
         end
 
         context "when the label is not exist" do
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
           end
         end
       end
@@ -491,7 +491,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             labeler.create_default_labels_if_required
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/labels")
+              .not_to have_requested(:post, "#{repo_api_url}/labels")
             expect(labeler.labels_for_pr).to include("security")
           end
         end
@@ -574,7 +574,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       context "when dealing with an automerge candidate" do
         let(:automerge_candidate) { true }
 
-        it { is_expected.to_not include("automerge") }
+        it { is_expected.not_to include("automerge") }
 
         context "when dealing with a repo that has an automerge label" do
           let(:labels_fixture_name) { "labels_with_automerge_tag.json" }
@@ -589,12 +589,12 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         context "when dealing with a repo that has an automerge label" do
           let(:labels_fixture_name) { "labels_with_automerge_tag.json" }
 
-          it { is_expected.to_not include("automerge") }
+          it { is_expected.not_to include("automerge") }
         end
       end
 
       context "when dealing with a repo without patch, minor and major labels" do
-        it { is_expected.to_not include("patch") }
+        it { is_expected.not_to include("patch") }
       end
 
       context "when dealing with a repo that has patch, minor and major labels" do
@@ -611,7 +611,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             context "when the tags are for an auto-releasing tool" do
               let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
 
-              it { is_expected.to_not include("patch") }
+              it { is_expected.not_to include("patch") }
             end
           end
 
@@ -623,7 +623,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             context "when the tags are for an auto-releasing tool" do
               let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
 
-              it { is_expected.to_not include("patch") }
+              it { is_expected.not_to include("patch") }
             end
           end
 
@@ -636,7 +636,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             context "when the tags are for an auto-releasing tool" do
               let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
 
-              it { is_expected.to_not include("patch") }
+              it { is_expected.not_to include("patch") }
             end
           end
 
@@ -986,7 +986,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           label_pr
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/issues/1/labels")
+            .not_to have_requested(:post, "#{repo_api_url}/issues/1/labels")
         end
       end
     end

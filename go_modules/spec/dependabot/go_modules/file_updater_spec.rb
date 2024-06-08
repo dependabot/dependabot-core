@@ -70,14 +70,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
 
     it "includes an updated go.mod" do
-      expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+      expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
     end
 
     it "includes an updated go.sum" do
-      expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+      expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
     end
 
     context "with an indirect dependency update" do
@@ -85,11 +85,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:previous_requirements) { [] }
 
       it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
-        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
     end
 
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:files) { [go_mod] }
 
       it "doesn't add a toolchain directive" do
-        expect(updated_files.first.content).to_not include("toolchain")
+        expect(updated_files.first.content).not_to include("toolchain")
       end
     end
 
@@ -168,11 +168,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
-        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
 
       it "disables the tidy option" do
@@ -207,11 +207,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         it "includes an updated go.mod" do
-          expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+          expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
         end
 
         it "includes an updated go.sum" do
-          expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+          expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
         end
       end
     end
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         expect(modules_file.content)
-          .to_not include "github.com/pkg/errors v0.8.0"
+          .not_to include "github.com/pkg/errors v0.8.0"
         expect(modules_file.content).to include "github.com/pkg/errors v0.9.1"
       end
 
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             Format formats the stack of Frames according to the fmt.Formatter interface.
           LINE
         )
-        expect(stack_file.content).to_not include(
+        expect(stack_file.content).not_to include(
           <<~LINE
             segments from the beginning of the file path until the number of path
           LINE

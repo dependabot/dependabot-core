@@ -63,7 +63,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
     context "with valid version arrays" do
       let(:vulnerable_versions) { [Gem::Requirement.new(">= 1")] }
 
-      specify { expect { security_advisory }.to_not raise_error }
+      specify { expect { security_advisory }.not_to raise_error }
     end
   end
 

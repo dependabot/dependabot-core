@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       it "doesn't hit the main registry (since requested not to)" do
         finder.latest_version
-        expect(WebMock).to_not have_requested(:get, packagist_url)
+        expect(WebMock).not_to have_requested(:get, packagist_url)
       end
 
       context "when a 404 is returned" do
