@@ -1244,7 +1244,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "app/" }
 
           it "gets the file" do
-            expect { files }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
 
@@ -1265,7 +1265,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "/app" }
 
           it "gets the file" do
-            expect { files }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
 
@@ -1286,7 +1286,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "a/pp" }
 
           it "gets the file" do
-            expect { files }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
       end
@@ -1668,7 +1668,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               proc { "" }
             )
 
-          expect { clone_repo_contents }.to_not raise_error
+          expect { clone_repo_contents }.not_to raise_error
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).thrice
           expect(file_fetcher_instance).to have_received(:sleep).once
         end
@@ -1702,7 +1702,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
-          expect(file_fetcher_instance).to_not have_received(:sleep)
+          expect(file_fetcher_instance).not_to have_received(:sleep)
         end
       end
     end

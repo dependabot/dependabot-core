@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           bundler_project_dependency_file("gemfile_unevaluatable_ruby", filename: "example.gemspec")
         end
 
-        it { is_expected.to_not include("ruby '") }
+        it { is_expected.not_to include("ruby '") }
       end
 
       context "with an existing ruby version" do
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           end
 
           it { is_expected.to include("ruby '1.9.3'\n") }
-          it { is_expected.to_not include(%(ruby "2.2.0")) }
+          it { is_expected.not_to include(%(ruby "2.2.0")) }
           it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
         end
 
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           end
 
           it { is_expected.to include("ruby '1.9.3'\n") }
-          it { is_expected.to_not include(%(ruby "2.2.0")) }
+          it { is_expected.not_to include(%(ruby "2.2.0")) }
         end
 
         context "when loaded from a file" do
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
           end
 
           it { is_expected.to include("ruby '1.9.3'\n") }
-          it { is_expected.to_not include("ruby File.open") }
+          it { is_expected.not_to include("ruby File.open") }
         end
       end
     end

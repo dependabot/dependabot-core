@@ -79,7 +79,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "doesn't hit npm" do
         source_url
-        expect(WebMock).to_not have_requested(:get, npm_url)
+        expect(WebMock).not_to have_requested(:get, npm_url)
       end
     end
 
@@ -98,7 +98,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         expect(WebMock)
           .to have_requested(:get, npm_url + "/latest").once
         expect(WebMock)
-          .to_not have_requested(:get, npm_url)
+          .not_to have_requested(:get, npm_url)
       end
 
       context "with a monorepo that specifies a directory" do

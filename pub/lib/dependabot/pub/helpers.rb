@@ -1,9 +1,10 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
+require "digest"
 require "json"
 require "open3"
-require "digest"
+require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/logger"
@@ -14,17 +15,31 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Pub
     module Helpers
+      include Kernel
+
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      attr_reader :credentials
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      attr_reader :options
+
       def self.pub_helpers_path
         File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
       end
 
       def self.run_infer_sdk_versions(dir, url: nil)
-        stdout, _, status = Open3.capture3(
-          {},
-          File.join(pub_helpers_path, "infer_sdk_versions"),
-          *("--flutter-releases-url=#{url}" if url),
-          chdir: dir
-        )
+        env = {}
+        cmd = File.join(pub_helpers_path, "infer_sdk_versions")
+        opts = url ? "--flutter-releases-url=#{url}" : ""
+        stdout, _, status = Open3.capture3(env, cmd, opts, chdir: dir)
         return nil unless status.success?
 
         JSON.parse(stdout)
@@ -58,42 +73,10 @@ module Dependabot
         end
       end
 
-      def dependency_services_smallest_update
-        return @smallest_update if @smallest_update
-
-        security_advisories.each do |a|
-          # Sanity check, that we only get the advisories for a single package
-          # at a time. If we got all advisories for all current dependencies,
-          # the helper would be able to handle it, but we would need a better
-          # way to find the repository url.
-          if a.dependency_name != dependency.name
-            raise "Only expected advisories for #{dependency.name} got for #{a.dependency_name}"
-          end
-        end
-        vulnerable_versions = available_versions(dependency).select do |v|
-          security_advisories.any? { |a| a.vulnerable?(v) }
-        end
-        input = {
-          # For "smallest update" we don't cache the report to be shared between
-          # dependencies, but run a specific report for the current dependency.
-          target: dependency.name,
-          disallowed:
-            [
-              {
-                name: dependency.name,
-                url: repository_url(dependency),
-                versions: vulnerable_versions.map { |v| { range: v.to_s } }
-              }
-            ]
-        }
-        report = JSON.parse(run_dependency_services("report", stdin_data: JSON.generate(input)))["dependencies"]
-        @smallest_update = report.find { |d| d["name"] == dependency.name }["smallestUpdate"]
-      end
-
       def dependency_services_report
         sha256 = Digest::SHA256.new
         dependency_files.each do |f|
-          sha256 << (f.path + "\n" + f.content + "\n")
+          sha256 << (f.path + "\n" + T.must(f.content) + "\n")
         end
         hash = sha256.hexdigest
 
@@ -165,7 +148,7 @@ module Dependabot
       ## Returns the sdk versions
       def ensure_right_flutter_release(dir)
         versions = Helpers.run_infer_sdk_versions(
-          File.join(dir, dependency_files.first.directory),
+          File.join(dir, dependency_files.first&.directory),
           url: options[:flutter_releases_url]
         )
         flutter_ref =
@@ -251,7 +234,7 @@ module Dependabot
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
               "_PUB_TEST_SDK_VERSION" => sdk_versions["dart"]
             }
-            command_dir = File.join(temp_dir, dependency_files.first.directory)
+            command_dir = File.join(temp_dir, dependency_files.first&.directory)
 
             stdout, stderr, status = Open3.capture3(
               env.compact,
@@ -329,7 +312,7 @@ module Dependabot
             }
           end
         end
-        Dependency.new(**params)
+        Dependency.new(**T.unsafe(params))
       end
 
       # expects "auto" to already have been resolved to one of the other

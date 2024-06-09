@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       context "when the property contains a tricky to split string" do
         let(:property_name) { "accumulo.1.6.version" }
 
-        specify { expect { property_details }.to_not raise_error }
+        specify { expect { property_details }.not_to raise_error }
       end
 
       context "when there are duplicate tags then read the latest" do

@@ -549,7 +549,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
       its(:length) { is_expected.to eq(10) }
 
       it "excludes the source application / library" do
-        expect(dependencies.map(&:name)).to_not include("dependabot")
+        expect(dependencies.map(&:name)).not_to include("dependabot")
       end
 
       describe "top level dependencies" do

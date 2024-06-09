@@ -103,7 +103,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         `touch vendor/cache/ignored.txt`
       end
 
-      expect(updated_files.map(&:name)).to_not include(
+      expect(updated_files.map(&:name)).not_to include(
         "vendor/cache/ignored.txt"
       )
     end
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         `touch some-file.txt`
       end
 
-      expect(updated_files.map(&:name)).to_not include(
+      expect(updated_files.map(&:name)).not_to include(
         "some-file.txt"
       )
     end
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
 
       it "does not include the directory in the name" do
-        expect(updated_files.first.name).to_not include("nested")
+        expect(updated_files.first.name).not_to include("nested")
       end
 
       it "sets the right directory" do
