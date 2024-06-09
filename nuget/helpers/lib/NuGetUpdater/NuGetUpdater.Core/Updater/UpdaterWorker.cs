@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
@@ -40,9 +38,6 @@ public class UpdaterWorker
             case ".fsproj":
             case ".vbproj":
                 await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                break;
-            case ".json":
-                await RunForPackagesLockAsync(repoRootPath, workspacePath);
                 break;
             default:
                 _logger.Log($"File extension [{extension}] is not supported.");
@@ -122,20 +117,6 @@ public class UpdaterWorker
         }
     }
 
-    private async Task RunForPackagesLockAsync(
-        string repoRootPath,
-        string lockPath)
-    {
-        _logger.Log($"Running for lock file [{Path.GetRelativePath(repoRootPath, lockPath)}]");
-        if (!File.Exists(lockPath))
-        {
-            _logger.Log($"File [{lockPath}] does not exist.");
-            return;
-        }
-
-        await Process.Start("dotnet", $"restore --force-evaluate {Path.GetDirectoryName(lockPath)}").WaitForExitAsync();
-    }
-
     private async Task RunUpdaterAsync(
         string repoRootPath,
         string projectPath,
@@ -160,5 +141,11 @@ public class UpdaterWorker
 
         // Some repos use a mix of packages.config and PackageReference
         await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+
+        // Update lock file if exists
+        if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
+        {
+            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
+        }
     }
 }

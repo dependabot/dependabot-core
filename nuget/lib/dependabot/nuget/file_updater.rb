@@ -25,8 +25,7 @@ module Dependabot
           /^dotnet-tools\.json$/i,
           /^Directory\.Build\.props$/i,
           /^Directory\.Build\.targets$/i,
-          /^Packages\.props$/i,
-          /^packages\.lock\.json$/i
+          /^Packages\.props$/i
         ]
       end
 
@@ -35,11 +34,7 @@ module Dependabot
         base_dir = T.must(dependency_files.first).directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
-            if try_update_projects(dependency)
-              try_update_packages_lock_json(dependency)
-            else
-              try_update_json(dependency)
-            end
+            try_update_projects(dependency) || try_update_json(dependency)
           end
           updated_files = dependency_files.filter_map do |f|
             updated_content = File.read(dependency_file_path(f))
@@ -104,22 +99,6 @@ module Dependabot
         end
 
         false
-      end
-
-      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-      def try_update_packages_lock_json(dependency)
-        update_ran = T.let(false, T::Boolean)
-
-        if lock_files.any?
-          # run update for each lock file
-          lock_files.each do |lock_file|
-            lock_path = dependency_file_path(lock_file)
-
-            call_nuget_updater_tool(dependency, lock_path)
-          end
-          update_ran = true
-        end
-        update_ran
       end
 
       sig { params(dependency: Dependency, proj_path: String).void }
@@ -230,13 +209,6 @@ module Dependabot
       def packages_config_files
         dependency_files.select do |f|
           T.must(T.must(f.name.split("/").last).casecmp("packages.config")).zero?
-        end
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def lock_files
-        dependency_files.select do |f|
-          T.must(T.must(f.name.split("/").last).casecmp("packages.lock.json")).zero?
         end
       end
 
