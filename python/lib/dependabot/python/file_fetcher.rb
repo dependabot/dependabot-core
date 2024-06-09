@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -130,18 +130,19 @@ module Dependabot
       end
 
       def python_version_file
-        return @python_version_file if defined?(@python_version_file)
+        @python_version_file ||= T.let(
+          begin
+            file = fetch_support_file(".python-version")
+            return file if file
 
-        @python_version_file = fetch_support_file(".python-version")
+            return if [".", "/"].include?(directory)
 
-        return @python_version_file if @python_version_file
-        return if [".", "/"].include?(directory)
-
-        # Check the top-level for a .python-version file, too
-        reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-        @python_version_file ||=
-          fetch_support_file(File.join(reverse_path, ".python-version"))
-          &.tap { |f| f.name = ".python-version" }
+            reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
+            fetch_support_file(File.join(reverse_path, ".python-version"))
+              &.tap { |f| f.name = ".python-version" }
+          end,
+          T.nilable(DependencyFile)
+        )
       end
 
       def pipfile
@@ -294,7 +295,7 @@ module Dependabot
       end
 
       def project_files
-        project_files = []
+        project_files = T.let([], T::Array[Dependabot::DependencyFile])
         unfetchable_deps = []
 
         path_dependencies.each do |dep|
@@ -302,7 +303,7 @@ module Dependabot
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
           unfetchable_deps << if sdist_or_wheel?(path)
-                                e.file_path.gsub(%r{^/}, "")
+                                e.file_path&.gsub(%r{^/}, "")
                               else
                                 "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
                               end
@@ -311,7 +312,7 @@ module Dependabot
         poetry_path_dependencies.each do |path|
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << e.file_path.gsub(%r{^/}, "")
+          unfetchable_deps << e.file_path&.gsub(%r{^/}, "")
         end
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_deps if unfetchable_deps.any?
