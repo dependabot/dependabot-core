@@ -137,15 +137,16 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     subject(:test_subject) { builder.lockfiles }
 
     it do
-      is_expected.to contain_exactly(project_dependency_file("package-lock.json"), project_dependency_file("yarn.lock"))
+      expect(subject).to contain_exactly(project_dependency_file("package-lock.json"),
+                                         project_dependency_file("yarn.lock"))
     end
 
     context "with shrinkwraps" do
       let(:project_name) { "npm6/shrinkwrap" }
 
       it do
-        is_expected.to contain_exactly(project_dependency_file("package-lock.json"),
-                                       project_dependency_file("npm-shrinkwrap.json"))
+        expect(subject).to contain_exactly(project_dependency_file("package-lock.json"),
+                                           project_dependency_file("npm-shrinkwrap.json"))
       end
     end
   end
