@@ -41,7 +41,7 @@ RSpec.describe Dependabot::FileParsers::Base do
       let(:files) { [gemfile] }
 
       it "doesn't raise" do
-        expect { parser_instance }.to_not raise_error
+        expect { parser_instance }.not_to raise_error
       end
     end
 

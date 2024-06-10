@@ -111,7 +111,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, branch_update_url)
+          .not_to have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do
@@ -125,7 +125,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, branch_update_url)
+          .not_to have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do

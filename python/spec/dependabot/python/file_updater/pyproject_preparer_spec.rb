@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("pytest = \"3.7.4\"\n") }
 
       it "does not include the version for path deps" do
-        expect(freeze_top_level_dependencies_except).to_not include(
+        expect(freeze_top_level_dependencies_except).not_to include(
           "path = \"../toml\"\n" \
           "version = \"0.10.0\"\n"
         )
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("pytest = \"3.7.4\"\n") }
 
       it "does not include the version for path deps" do
-        expect(freeze_top_level_dependencies_except).to_not include(
+        expect(freeze_top_level_dependencies_except).not_to include(
           "path = \"toml-8.2.54.tar.gz\"\n" \
           "version = \"8.2.54\"\n"
         )
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("pytest = \"6.2.4\"\n") }
 
       it "does not include the version for url deps" do
-        expect(freeze_top_level_dependencies_except).to_not include(
+        expect(freeze_top_level_dependencies_except).not_to include(
           "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n" \
           "version = \"0.10.2\"\n"
         )

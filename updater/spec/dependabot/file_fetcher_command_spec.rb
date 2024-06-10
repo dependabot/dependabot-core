@@ -17,8 +17,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
   let(:job_id) { "123123" }
 
   before do
-    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
-    allow(Dependabot::Environment).to receive(:job_token).and_return("job_token")
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
 
     allow(api_client).to receive(:mark_job_as_processed)
@@ -26,9 +24,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     allow(api_client).to receive(:record_ecosystem_versions)
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 
-    allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
-    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
-    allow(Dependabot::Environment).to receive(:job_path).and_return(nil)
+    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "job_token",
+                                                       output_path: File.join(Dir.mktmpdir,
+                                                                              "output.json"),
+                                                       job_definition: job_definition,
+                                                       job_path: nil)
   end
 
   describe "#perform_job" do
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "do not tells the backend about the error" do
-        expect(api_client).to_not receive(:record_update_job_unknown_error)
+        expect(api_client).not_to receive(:record_update_job_unknown_error)
         expect(api_client).to receive(:mark_job_as_processed)
 
         expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process

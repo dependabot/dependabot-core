@@ -121,7 +121,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               json_body = JSON.parse(req.body)
               expect(json_body.fetch("commits").count).to eq(1)
               expect(json_body.fetch("commits").first.keys)
-                .to_not include("author")
+                .not_to include("author")
             end
         )
       expect(WebMock)
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
                   json_body = JSON.parse(req.body)
                   expect(json_body.fetch("commits").count).to eq(1)
                   expect(json_body.fetch("commits").first.keys)
-                    .to_not include("author")
+                    .not_to include("author")
                 end
             )
         end
@@ -240,7 +240,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
 
         it "creates a commit and pull request with the right details" do
-          expect(creator.create).to_not be_nil
+          expect(creator.create).not_to be_nil
 
           expect(WebMock)
             .to have_requested(
@@ -273,12 +273,12 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           expect(creator.create).to be_nil
 
           expect(WebMock)
-            .to_not have_requested(
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pushes?api-version=5.0"
             )
           expect(WebMock)
-            .to_not have_requested(
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pullrequests?api-version=5.0"
             )

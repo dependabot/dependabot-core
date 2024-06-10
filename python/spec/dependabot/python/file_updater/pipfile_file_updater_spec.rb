@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           .to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
                     "verify_ssl" => true }])
         expect(updated_lockfile.content)
-          .to_not include("pypi.org/simple")
+          .not_to include("pypi.org/simple")
         expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
       end
     end
