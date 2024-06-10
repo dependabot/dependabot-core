@@ -607,6 +607,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       context "with a requirement" do
         let(:req) { "^4.0.0" }
+        let(:git_pack_fixture_name) { "is-number" }
         let(:ref) { "master" }
         let(:old_req) { "^2.0.0" }
         let(:old_ref) { "master" }
@@ -628,8 +629,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               headers: git_header
             )
         end
-
-        let(:git_pack_fixture_name) { "is-number" }
 
         it "updates the package.json and the lockfiles" do
           expect(updated_files.map(&:name))
@@ -2449,6 +2448,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         context "with a requirement" do
           let(:req) { "^4.0.0" }
+          let(:git_pack_fixture_name) { "is-number" }
           let(:ref) { "master" }
           let(:old_req) { "^2.0.0" }
           let(:old_ref) { "master" }
@@ -2470,8 +2470,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 headers: git_header
               )
           end
-
-          let(:git_pack_fixture_name) { "is-number" }
 
           it "updates the package.json and the lockfiles" do
             expect(updated_files.map(&:name))

@@ -21,29 +21,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       commit: source_commit
     )
   end
-  let(:provider) { "github" }
-  let(:repo) { "gocardless/bump" }
-  let(:directory) { "/" }
-  let(:branch) { nil }
-  let(:source_commit) { nil }
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "region" => "us-east-1",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
-  before do
-    allow_any_instance_of(
-      Dependabot::Clients::CodeCommit
-    ).to receive(:cc_client).and_return(stubbed_cc_client)
-  end
-
   let(:repo_contents_path) { nil }
-
   let(:child_class) do
     Class.new(described_class) do
       def self.required_files_in?(filenames)
@@ -67,6 +45,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
       credentials: credentials,
       repo_contents_path: repo_contents_path
     )
+  end
+  let(:provider) { "github" }
+  let(:repo) { "gocardless/bump" }
+  let(:directory) { "/" }
+  let(:branch) { nil }
+  let(:source_commit) { nil }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "region" => "us-east-1",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+
+  before do
+    allow_any_instance_of(
+      Dependabot::Clients::CodeCommit
+    ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#commit" do
@@ -1162,6 +1161,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "with a directory" do
           let(:directory) { "/app" }
+          let(:url) do
+            repo_url + "/items?path=app&versionDescriptor.version=sha" \
+                       "&versionDescriptor.versionType=commit"
+          end
 
           let(:repo_contents_tree_url) do
             repo_url + "/items?path=app&versionDescriptor.version=sha" \
@@ -1181,11 +1184,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
               .to_return(status: 200,
                          body: fixture("azure", "no_files.json"),
                          headers: { "content-type" => "application/json" })
-          end
-
-          let(:url) do
-            repo_url + "/items?path=app&versionDescriptor.version=sha" \
-                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do
@@ -1373,12 +1371,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
       subject(:files) { file_fetcher_instance.files }
 
       let(:contents) { "foo=1.0.0" }
+      let(:fill_repo) { nil }
 
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
-      after { FileUtils.rm_rf(repo_path) }
 
-      let(:fill_repo) { nil }
+      after { FileUtils.rm_rf(repo_path) }
 
       before do
         Dir.chdir(repo_path) do
