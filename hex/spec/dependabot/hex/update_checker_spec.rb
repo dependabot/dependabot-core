@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "returns the expected version" do
           skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
-          expect(subject).to eq(Gem::Version.new("1.1.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
         end
       end
 

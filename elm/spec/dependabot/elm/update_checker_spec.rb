@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
   end
 
   describe "can_update?" do
-    subject { checker.can_update?(requirements_to_unlock: unlock_level) }
+    subject(:can_update) { checker.can_update?(requirements_to_unlock: unlock_level) }
 
     let(:unlock_level) { :own }
 
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it "is true" do
         pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
-        expect(subject).to be(true)
+        expect(can_update).to be(true)
       end
     end
 

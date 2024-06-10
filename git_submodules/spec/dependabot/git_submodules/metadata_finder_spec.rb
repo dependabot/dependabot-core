@@ -88,7 +88,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://github.com/example/manifesto.git" }
 
       it do
-        expect(subject)
+        expect(commits_url)
           .to eq("https://github.com/example/manifesto/compare/" \
                  "7638417db6d59f3c431d3e1f261cc637155684cd..." \
                  "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
 
       it do
-        expect(subject)
+        expect(commits_url)
           .to eq("https://bitbucket.org/example/manifesto/branches/" \
                  "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7" \
                  "..7638417db6d59f3c431d3e1f261cc637155684cd")
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
 
       it do
-        expect(subject)
+        expect(commits_url)
           .to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto/branchCompare" \
                  "?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
                  "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")

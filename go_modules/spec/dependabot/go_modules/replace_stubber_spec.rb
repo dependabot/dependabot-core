@@ -35,7 +35,7 @@ RSpec.describe Dependabot::GoModules::ReplaceStubber do
 
       it {
         expected = { "../../../../../../foo" => "./381363a4e394c2f6ca00811041688e9d27392a475483e843808b32a2f01a1088" }
-        expect(subject).to eq(expected)
+        expect(stubbed).to eq(expected)
       }
     end
   end
