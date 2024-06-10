@@ -114,7 +114,7 @@ module Dependabot
               )
               # add the dependencies in the group so individual updates don't try to update them
               dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
+                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
               )
               # also add dependencies that might be in the group, as a rebase would add them;
               # this avoids individual PR creation that immediately is superseded by a group PR supersede

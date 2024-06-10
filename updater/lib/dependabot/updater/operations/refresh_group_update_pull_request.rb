@@ -109,7 +109,7 @@ module Dependabot
               next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
 
               dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
+                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
               )
             end
 
@@ -118,7 +118,7 @@ module Dependabot
               return
             end
 
-            upsert_pull_request_with_error_handling(dependency_change, job_group)
+            upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
           end
         end
 
