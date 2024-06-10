@@ -514,7 +514,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(%w(Cargo.toml .cargo/config.toml src/s3/Cargo.toml))
           expect(file_fetcher_instance.files.map(&:support_file?))
-            .to match_array([false, true, false])
+            .to contain_exactly(false, true, false)
         end
       end
 
@@ -530,7 +530,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml .cargo/config.toml))
           expect(file_fetcher_instance.files.map(&:support_file?))
-            .to match_array([false, false, true])
+            .to contain_exactly(false, false, true)
         end
       end
     end
@@ -695,7 +695,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(Cargo.toml member/Cargo.toml excluded/Cargo.toml .cargo/config.toml))
       expect(file_fetcher_instance.files.map(&:support_file?))
-        .to match_array([false, false, true, true])
+        .to contain_exactly(false, false, true, true)
     end
   end
 

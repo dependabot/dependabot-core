@@ -191,22 +191,17 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
         it "updates both requirements" do
           expect(updated_requirements)
-            .to match_array(
-              [
-                {
-                  file: "apps/dependabot_business/mix.exs",
-                  requirement: "~> 1.5.0",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "apps/dependabot_web/mix.exs",
-                  requirement: "1.5.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
-            )
+            .to contain_exactly({
+              file: "apps/dependabot_business/mix.exs",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "apps/dependabot_web/mix.exs",
+              requirement: "1.5.0",
+              groups: [],
+              source: nil
+            })
         end
       end
     end

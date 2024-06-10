@@ -1477,37 +1477,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
         it "gets the right list of dependencies to update" do
           expect(resolver.dependency_updates_from_full_unlock)
-            .to match_array(
-              [{
-                dependency: Dependabot::Dependency.new(
-                  name: "vue",
-                  version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
-                  package_manager: "npm_and_yarn",
-                  requirements: [{
-                    file: "package.json",
-                    requirement: "2.5.20",
-                    groups: ["dependencies"],
-                    source: nil
-                  }]
-                ),
-                version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
-                previous_version: "2.5.20"
-              }, {
-                dependency: Dependabot::Dependency.new(
-                  name: "vue-template-compiler",
-                  version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
-                  package_manager: "npm_and_yarn",
-                  requirements: [{
-                    file: "package.json",
-                    requirement: "2.5.20",
-                    groups: ["dependencies"],
-                    source: nil
-                  }]
-                ),
-                version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
-                previous_version: "2.5.20"
-              }]
-            )
+            .to contain_exactly({
+              dependency: Dependabot::Dependency.new(
+                name: "vue",
+                version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "2.5.20",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
+              previous_version: "2.5.20"
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "vue-template-compiler",
+                version: Dependabot::NpmAndYarn::Version.new("2.5.20"),
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "package.json",
+                  requirement: "2.5.20",
+                  groups: ["dependencies"],
+                  source: nil
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("2.5.21"),
+              previous_version: "2.5.20"
+            })
         end
       end
     end
@@ -1531,37 +1529,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       it "gets the right list of dependencies to update" do
         expect(resolver.dependency_updates_from_full_unlock)
-          .to match_array(
-            [{
-              dependency: Dependabot::Dependency.new(
-                name: "react",
-                version: "15.2.0",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "package.json",
-                  requirement: "^15.2.0",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.npmjs.org" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: "15.2.0"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: "15.2.0",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "package.json",
-                  requirement: "^15.2.0",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.npmjs.org" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.2.0"
-            }]
-          )
+          .to contain_exactly({
+            dependency: Dependabot::Dependency.new(
+              name: "react",
+              version: "15.2.0",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^15.2.0",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.npmjs.org" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+            previous_version: "15.2.0"
+          }, {
+            dependency: Dependabot::Dependency.new(
+              name: "react-dom",
+              version: "15.2.0",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "package.json",
+                requirement: "^15.2.0",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.npmjs.org" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+            previous_version: "15.2.0"
+          })
       end
     end
 
@@ -1640,37 +1636,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       it "gets the right list of dependencies to update" do
         expect(resolver.dependency_updates_from_full_unlock)
-          .to match_array(
-            [{
-              dependency: Dependabot::Dependency.new(
-                name: "react",
-                version: "15.6.2",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: "15.6.2"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: "15.6.2",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.6.2"
-            }]
-          )
+          .to contain_exactly({
+            dependency: Dependabot::Dependency.new(
+              name: "react",
+              version: "15.6.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+            previous_version: "15.6.2"
+          }, {
+            dependency: Dependabot::Dependency.new(
+              name: "react-dom",
+              version: "15.6.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+            previous_version: "15.6.2"
+          })
       end
     end
 
@@ -1696,37 +1690,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
 
       it "gets the right list of dependencies to update" do
         expect(resolver.dependency_updates_from_full_unlock)
-          .to match_array(
-            [{
-              dependency: Dependabot::Dependency.new(
-                name: "react",
-                version: "15.6.2",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
-              previous_version: "15.6.2"
-            }, {
-              dependency: Dependabot::Dependency.new(
-                name: "react-dom",
-                version: "15.6.2",
-                package_manager: "npm_and_yarn",
-                requirements: [{
-                  file: "packages/package1/package.json",
-                  requirement: "15.6.2",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              ),
-              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
-              previous_version: "15.6.2"
-            }]
-          )
+          .to contain_exactly({
+            dependency: Dependabot::Dependency.new(
+              name: "react",
+              version: "15.6.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+            previous_version: "15.6.2"
+          }, {
+            dependency: Dependabot::Dependency.new(
+              name: "react-dom",
+              version: "15.6.2",
+              package_manager: "npm_and_yarn",
+              requirements: [{
+                file: "packages/package1/package.json",
+                requirement: "15.6.2",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }]
+            ),
+            version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+            previous_version: "15.6.2"
+          })
       end
     end
 

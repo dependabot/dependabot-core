@@ -1181,9 +1181,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "doesn't raise a path dependency error" do
         expect(file_fetcher_instance.files.count).to eq(3)
-        expect(file_fetcher_instance.files.map(&:name)).to match_array(
-          ["requirements-test.txt", "pyproject.toml", "setup.cfg"]
-        )
+        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml",
+                                                                           "setup.cfg")
       end
     end
 
