@@ -548,6 +548,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       let(:gitlab_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
       end
+      let(:dependency_version) { "1.4.0" }
+      let(:dependency_previous_version) { "1.3.0" }
       let(:source) do
         Dependabot::Source.new(
           provider: "gitlab",
@@ -563,9 +565,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                      body: gitlab_response,
                      headers: { "Content-Type" => "application/json" })
       end
-
-      let(:dependency_version) { "1.4.0" }
-      let(:dependency_previous_version) { "1.3.0" }
 
       it "gets the right text" do
         expect(releases_text)

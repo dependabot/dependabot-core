@@ -240,7 +240,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
   end
 
   describe "#requirements_array" do
-    subject { described_class.requirements_array(requirement_string) }
+    subject(:reqs) { described_class.requirements_array(requirement_string) }
 
     context "with multiple intersecting requirements" do
       let(:requirement_string) { ">=1.0.0 <=1.5.0" }

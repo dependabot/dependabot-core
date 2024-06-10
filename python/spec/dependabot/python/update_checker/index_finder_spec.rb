@@ -14,36 +14,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
       dependency: dependency
     )
   end
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:dependency_files) { [requirements_file] }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "requests",
-      version: "2.4.1",
-      requirements: [{
-        requirement: "==2.4.1",
-        file: "requirements.txt",
-        groups: ["dependencies"],
-        source: nil
-      }],
-      package_manager: "pip"
-    )
-  end
-
-  before do
-    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-  end
-
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
-
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
@@ -72,6 +44,32 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     )
   end
   let(:pip_conf_fixture_name) { "custom_index" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:dependency_files) { [requirements_file] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "requests",
+      version: "2.4.1",
+      requirements: [{
+        requirement: "==2.4.1",
+        file: "requirements.txt",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
+
+  before do
+    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+  end
 
   describe "#index_urls" do
     subject(:index_urls) { finder.index_urls }

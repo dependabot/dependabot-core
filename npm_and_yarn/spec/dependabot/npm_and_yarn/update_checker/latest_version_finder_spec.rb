@@ -8,16 +8,6 @@ require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:registry_base) { "https://registry.npmjs.org" }
-  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
-  let(:registry_response) { fixture("npm_responses", "#{escaped_dependency_name}.json") }
-  let(:login_form) { fixture("npm_responses", "login_form.html") }
-  before do
-    stub_request(:get, registry_listing_url)
-      .to_return(status: 200, body: registry_response)
-    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
-      .to_return(status: 200)
-  end
-
   let(:version_finder) do
     described_class.new(
       dependency: dependency,
@@ -32,7 +22,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -41,7 +30,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       "password" => "token"
     })]
   end
-
   let(:dependency_name) { "etag" }
   let(:escaped_dependency_name) { dependency_name.gsub("/", "%2F") }
   let(:unscoped_dependency_name) { dependency_name.split("/").last }
@@ -57,6 +45,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     )
   end
   let(:dependency_version) { "1.0.0" }
+  let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
+  let(:registry_response) { fixture("npm_responses", "#{escaped_dependency_name}.json") }
+  let(:login_form) { fixture("npm_responses", "login_form.html") }
+
+  before do
+    stub_request(:get, registry_listing_url)
+      .to_return(status: 200, body: registry_response)
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
+      .to_return(status: 200)
+  end
 
   describe "#latest_version_from_registry" do
     subject(:latest_version_from_registry) { version_finder.latest_version_from_registry }
@@ -72,7 +70,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version_from_registry }.to_not raise_error
+        expect { latest_version_from_registry }.not_to raise_error
       end
     end
 
@@ -85,7 +83,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -119,7 +117,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -131,7 +129,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_from_registry }.to_not raise_error
+          expect { latest_version_from_registry }.not_to raise_error
         end
       end
     end
@@ -766,7 +764,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         it "does not raise an error" do
           expect { version_finder.latest_version_from_registry }
-            .to_not raise_error
+            .not_to raise_error
         end
       end
 

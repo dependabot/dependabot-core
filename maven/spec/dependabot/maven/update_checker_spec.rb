@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lsfv) { checker.lowest_security_fix_version }
 
     before do
       version_files_url = "https://repo.maven.apache.org/maven2/com/google/" \
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available version" do
-      is_expected.to eq(version_class.new("23.4-jre"))
+      expect(lsfv).to eq(version_class.new("23.4-jre"))
     end
 
     context "with a security vulnerability" do
@@ -223,13 +223,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(lsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
 
   describe "#lowest_resolvable_security_fix_version" do
-    subject { checker.lowest_resolvable_security_fix_version }
+    subject(:lrsfv) { checker.lowest_resolvable_security_fix_version }
 
     let(:security_advisories) do
       [
@@ -249,14 +249,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(version_class.new("23.5-jre"))
+      expect(lrsfv).to eq(version_class.new("23.5-jre"))
     end
 
     context "with version from multi-dependency property" do
       before { allow(checker).to receive(:version_comes_from_multi_dependency_property?).and_return(true) }
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(lrsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
@@ -889,6 +889,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       context "when inheriting from a remote POM" do
         let(:pom_body) { fixture("poms", "remote_parent_pom.xml") }
+        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
+        let(:dependency_version) { "2.7" }
+        let(:dependency_requirements) do
+          [{
+            file: "pom.xml",
+            requirement: "2.7",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "log4j2.version" }
+          }]
+        end
 
         let(:struts_apps_maven_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -910,18 +921,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             .to_return(status: 200, body: struts_apps_maven_response)
           stub_request(:get, struts_parent_maven_url)
             .to_return(status: 200, body: struts_parent_maven_response)
-        end
-
-        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
-        let(:dependency_version) { "2.7" }
-        let(:dependency_requirements) do
-          [{
-            file: "pom.xml",
-            requirement: "2.7",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "log4j2.version" }
-          }]
         end
 
         it { is_expected.to be(false) }

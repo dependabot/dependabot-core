@@ -171,10 +171,12 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       context "with source code hosted on GitHub" do
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
+        let(:upload_pack_fixture) { "no_tags" }
         let(:service_pack_url) do
           "https://github.com/gocardless/business.git/info/refs" \
             "?service=git-upload-pack"
         end
+
         before do
           stub_request(:get, service_pack_url)
             .to_return(
@@ -185,8 +187,6 @@ RSpec.describe Dependabot::GitCommitChecker do
               }
             )
         end
-
-        let(:upload_pack_fixture) { "no_tags" }
 
         context "when there are no tags on GitHub" do
           let(:upload_pack_fixture) { "no_tags" }
@@ -299,6 +299,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
+        let(:upload_pack_fixture) { "business" }
         let(:service_pack_url) do
           "https://bitbucket.org/gocardless/business.git/info/refs" \
             "?service=git-upload-pack"
@@ -307,6 +308,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           "https://api.bitbucket.org/2.0/repositories/" \
             "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
+
         before do
           stub_request(:get, service_pack_url)
             .to_return(
@@ -317,8 +319,6 @@ RSpec.describe Dependabot::GitCommitChecker do
               }
             )
         end
-
-        let(:upload_pack_fixture) { "business" }
 
         context "when not included in a release" do
           before do
@@ -490,13 +490,13 @@ RSpec.describe Dependabot::GitCommitChecker do
                 ref: "master"
               }
             end
+            let(:ref) { "my_ref" }
+
             before do
               url = "https://dodgyhost.com/gocardless/business.git"
               stub_request(:get, url + "/info/refs?service=git-upload-pack")
                 .to_raise(Excon::Error::Timeout)
             end
-
-            let(:ref) { "my_ref" }
 
             it "raises a helpful error" do
               expect { checker.head_commit_for_current_branch }
@@ -524,7 +524,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#head_commit_for_current_branch" do
-    subject { checker.head_commit_for_current_branch }
+    subject(:head_commit) { checker.head_commit_for_current_branch }
 
     context "with a pinned dependency" do
       let(:source) do
@@ -745,7 +745,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               end
 
               it do
-                is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
+                expect(head_commit).to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
               end
             end
           end
@@ -874,9 +874,11 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "1a21311"
         }
       end
+      let(:upload_pack_fixture) { "monolog" }
 
       let(:repo_url) { "https://github.com/gocardless/business.git" }
       let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -887,8 +889,6 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           )
       end
-
-      let(:upload_pack_fixture) { "monolog" }
 
       it { is_expected.to be(true) }
 
@@ -924,9 +924,11 @@ RSpec.describe Dependabot::GitCommitChecker do
     subject { checker.head_commit_for_local_branch("example") }
 
     let(:tip_of_example) { "303b8a83c87d5c6d749926cf02620465a5dcd0f2" }
+    let(:upload_pack_fixture) { "monolog" }
 
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
     before do
       stub_request(:get, service_pack_url)
         .to_return(
@@ -937,8 +939,6 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         )
     end
-
-    let(:upload_pack_fixture) { "monolog" }
 
     it { is_expected.to eq(tip_of_example) }
   end
@@ -947,7 +947,9 @@ RSpec.describe Dependabot::GitCommitChecker do
     subject(:local_tag_for_latest_version) { checker.local_tag_for_latest_version }
 
     let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "no_tags" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
     before do
       stub_request(:get, service_pack_url)
         .to_return(
@@ -958,8 +960,6 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         )
     end
-
-    let(:upload_pack_fixture) { "no_tags" }
 
     context "with no tags on GitHub" do
       it { is_expected.to be_nil }
@@ -1039,7 +1039,7 @@ RSpec.describe Dependabot::GitCommitChecker do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { local_tag_for_latest_version }.to_not raise_error
+            expect { local_tag_for_latest_version }.not_to raise_error
           end
         end
 
@@ -1052,7 +1052,7 @@ RSpec.describe Dependabot::GitCommitChecker do
             let(:raise_on_ignored) { true }
 
             it "doesn't raise an error" do
-              expect { local_tag_for_latest_version }.to_not raise_error
+              expect { local_tag_for_latest_version }.not_to raise_error
             end
           end
         end
@@ -1386,9 +1386,11 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: source_commit
         }
       end
+      let(:upload_pack_fixture) { "actions-checkout" }
 
       let(:repo_url) { "https://github.com/actions/checkout.git" }
       let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -1399,8 +1401,6 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           )
       end
-
-      let(:upload_pack_fixture) { "actions-checkout" }
 
       context "when the source commit is a tag" do
         let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
@@ -1445,9 +1445,11 @@ RSpec.describe Dependabot::GitCommitChecker do
         ref: source_ref
       }
     end
+    let(:upload_pack_fixture) { "actions-checkout-moving-v2" }
 
     let(:repo_url) { "https://github.com/actions/checkout.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
     before do
       stub_request(:get, service_pack_url)
         .to_return(
@@ -1458,8 +1460,6 @@ RSpec.describe Dependabot::GitCommitChecker do
           }
         )
     end
-
-    let(:upload_pack_fixture) { "actions-checkout-moving-v2" }
 
     context "when moving major tag" do
       let(:source_ref) { "v2" }

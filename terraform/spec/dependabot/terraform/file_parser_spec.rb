@@ -350,7 +350,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "origin_label::github::cloudposse/terraform-null-label::tags/0.3.7"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.3.7")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -369,7 +369,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "logs::github::cloudposse/terraform-aws-s3-log-storage::tags/0.2.2"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.2")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -388,7 +388,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "distribution_label::bitbucket::cloudposse/terraform-null-label"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to eq([{
             requirement: nil,
@@ -407,7 +407,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "dns::github::cloudposse/terraform-aws-route53-cluster-zone::tags/0.2.5"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
           expect(dependency.requirements).to eq([{
             requirement: nil,
@@ -426,7 +426,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "duplicate_label::github::cloudposse/terraform-null-label::tags/0.3.7"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.3.7")
           expect(dependency.requirements).to eq([{
             requirement: nil,
@@ -445,7 +445,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "github_ssh_without_protocol::github::cloudposse/terraform-aws-jenkins::tags/0.4.0"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
           expect(dependency.requirements).to eq([{
             requirement: nil,
@@ -477,7 +477,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         it "has the right details for the child_module_one child_label git dependency (uses git@github.com)" do
           dependency = dependencies.find { |x| x.name == "child::github::cloudposse/terraform-aws-jenkins::tags/0.4.0" }
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -496,7 +496,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "child::github::cloudposse/terraform-aws-s3-log-storage::tags/0.2.2"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.2")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -513,7 +513,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         it "has the right details for the child_module_one distribution_label duplicate git repo different provider" do
           dependency = dependencies.find { |x| x.name == "distribution_label::github::cloudposse/terraform-null-label" }
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -532,7 +532,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "distribution_label::bitbucket::cloudposse/terraform-null-label"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -551,7 +551,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "dns_dup::github::cloudposse/terraform-aws-route53-cluster-zone::tags/0.2.5"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "dns::github::cloudposse/terraform-aws-route53-cluster-zone::tags/0.2.5"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -599,7 +599,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "codecommit_repo::codecommit::test-repo::0.10.0"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.10.0")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -618,7 +618,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name.include? "unknown_repo::git_provider::repo_name/git_repo("
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to contain_exactly({
             requirement: nil,
@@ -644,7 +644,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find do |x|
             x.name == "gitlab_ssh_without_protocol::gitlab::cloudposse/terraform-aws-jenkins::tags/0.4.0"
           end
-          expect(dependency).to_not be_nil
+          expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
           expect(dependency.requirements).to eq([{
             requirement: nil,
@@ -922,7 +922,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with a private module proxy that can't be reached", vcr: true do
+    context "with a private module proxy that can't be reached", :vcr do
       before do
         artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
 

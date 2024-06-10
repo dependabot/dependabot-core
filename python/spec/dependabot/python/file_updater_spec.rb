@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       it "delegates to PipfileFileUpdater" do
         expect(described_class::PipfileFileUpdater)
           .to receive(:new).and_call_original
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       it "delegates to PipfileFileUpdater" do
         expect(described_class::PipfileFileUpdater)
           .to receive(:new).and_call_original
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end
@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       it "delegates to RequirementFileUpdater" do
         expect(described_class::RequirementFileUpdater)
           .to receive(:new).and_call_original
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end
@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       it "delegates to PoetryFileUpdater" do
         expect(described_class::PoetryFileUpdater)
           .to receive(:new).and_call_original
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end
@@ -387,7 +387,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       it "delegates to RequirementFileUpdater" do
         expect(described_class::RequirementFileUpdater)
           .to receive(:new).and_call_original
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
       end
     end

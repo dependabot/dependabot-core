@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_details }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
 
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -259,6 +259,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
     context "with a private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
+      let(:subprocess_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {},
+          error_class: error_class
+        )
+      end
       let(:source) { { type: "rubygems" } }
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
@@ -288,14 +295,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
-      end
-
-      let(:subprocess_error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: error_message,
-          error_context: {},
-          error_class: error_class
-        )
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }
@@ -486,7 +485,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         it "fetches the latest SHA-1 hash" do
           commit_sha = finder.latest_version_details[:commit_sha]
           expect(commit_sha).to match(/^[0-9a-f]{40}$/)
-          expect(commit_sha).to_not eq(current_version)
+          expect(commit_sha).not_to eq(current_version)
         end
 
         context "when the gem has a bad branch" do

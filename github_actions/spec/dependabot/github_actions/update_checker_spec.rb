@@ -480,8 +480,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       before do
         checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(false)
-        allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return(reference)
+        allow(git_commit_checker).to receive_messages(branch_or_ref_in_release?: false,
+                                                      head_commit_for_current_branch: reference)
 
         allow(Dir).to receive(:chdir).and_yield
 
@@ -571,7 +571,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("1.0.0"))
       end
     end
 
@@ -579,7 +579,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:ignored_versions) { ["= 1.0.0"] }
 
       it "doesn't return ignored versions" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("2.0.0"))
       end
     end
 
@@ -598,7 +598,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "still proposes an upgrade" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("2.0.0"))
       end
     end
   end

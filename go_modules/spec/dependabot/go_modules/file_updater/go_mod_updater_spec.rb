@@ -69,11 +69,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       it "updated the dependency" do
-        is_expected.to include(%(rsc.io/quote v1.5.2\n))
+        expect(updated_go_mod_content).to include(%(rsc.io/quote v1.5.2\n))
       end
 
       it "retained the previous change" do
-        is_expected.to include(%(rsc.io/qr v0.1.1\n))
+        expect(updated_go_mod_content).to include(%(rsc.io/qr v0.1.1\n))
       end
     end
 
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         context "when dealing with a go 1.11 go.mod" do
           let(:project_name) { "go_1.11" }
 
-          it { is_expected.to_not include("go 1.") }
+          it { is_expected.not_to include("go 1.") }
           it { is_expected.to include("module github.com/dependabot/vgotest\n\nrequire") }
         end
 
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include("go 1.13") }
 
           it "doesn't add additional go 1.17 requirement sections" do
-            is_expected.to include("require").once
+            expect(updated_go_mod_content).to include("require").once
           end
         end
 
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include("go 1.17") }
 
           it "preserves the two requirements sections" do
-            is_expected.to include("require").twice
+            expect(updated_go_mod_content).to include("require").twice
           end
         end
 
@@ -240,17 +240,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_sum" }
 
           it "adds new entries to the go.sum" do
-            is_expected
+            expect(updated_go_mod_content)
               .to include(%(rsc.io/quote v1.5.2 h1:))
-            is_expected
+            expect(updated_go_mod_content)
               .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
           end
 
           it "removes old entries from the go.sum" do
-            is_expected
-              .to_not include(%(rsc.io/quote v1.4.0 h1:))
-            is_expected
-              .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+            expect(updated_go_mod_content)
+              .not_to include(%(rsc.io/quote v1.4.0 h1:))
+            expect(updated_go_mod_content)
+              .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
           describe "a non-existent dependency with a pseudo-version" do
@@ -285,7 +285,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             let(:project_name) { "no_top_level_package" }
 
             it "does not raise an error" do
-              expect { updater.updated_go_sum_content }.to_not raise_error
+              expect { updater.updated_go_sum_content }.not_to raise_error
             end
           end
 
@@ -299,17 +299,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
 
             it "adds new entries to the go.sum" do
-              is_expected
+              expect(updated_go_mod_content)
                 .to include(%(rsc.io/quote v1.5.2 h1:))
-              is_expected
+              expect(updated_go_mod_content)
                 .to include(%(rsc.io/quote v1.5.2/go.mod h1:))
             end
 
             it "removes old entries from the go.sum" do
-              is_expected
-                .to_not include(%(rsc.io/quote v1.4.0 h1:))
-              is_expected
-                .to_not include(%(rsc.io/quote v1.4.0/go.mod h1:))
+              expect(updated_go_mod_content)
+                .not_to include(%(rsc.io/quote v1.4.0 h1:))
+              expect(updated_go_mod_content)
+                .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
             end
 
             it "does not leave a temporary file lingering in the repo" do
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
 
         it do
-          is_expected.to include(
+          expect(updated_go_mod_content).to include(
             %(github.com/mattn/go-isatty v0.0.12 // indirect\n)
           )
         end
@@ -378,7 +378,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             []
           end
 
-          it { is_expected.to_not include(%(rsc.io/quote)) }
+          it { is_expected.not_to include(%(rsc.io/quote)) }
         end
       end
     end
@@ -429,7 +429,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:dependency_version) { "v0.0.12" }
 
         it do
-          is_expected
+          expect(updated_go_mod_content)
             .to include(%(github.com/mattn/go-isatty v0.0.12 // indirect\n))
         end
       end
@@ -446,7 +446,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         let(:dependency_version) { "v1.3.0" }
 
         it do
-          is_expected
+          expect(updated_go_mod_content)
             .to include(%(rsc.io/sampler v1.3.0 // indirect\n))
         end
       end
@@ -473,7 +473,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
 
       it do
-        is_expected.to_not include("github.com/pkg/errors")
+        expect(updated_go_mod_content).not_to include("github.com/pkg/errors")
       end
     end
 

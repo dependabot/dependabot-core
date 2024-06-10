@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
-            expect(error.message).to_not include("dependabot_20")
+            expect(error.message).not_to include("dependabot_20")
             expect(error.message).to include("requires a nightly version")
           end
       end
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
-            expect(error.message).to_not include("dependabot_20")
+            expect(error.message).not_to include("dependabot_20")
             expect(error.message)
               .to include("feature `metabuild` is required")
           end
@@ -208,7 +208,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             # Test that the temporary path isn't included in the error message
-            expect(error.message).to_not include("dependabot_20")
+            expect(error.message).not_to include("dependabot_20")
             expect(error.message)
               .to include("no matching package named `no_exist_bad_time` found")
           end
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
-              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).not_to include("dependabot_20")
               expect(error.message)
                 .to include("no matching package named `no_exist_bad_time`")
             end
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
-              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).not_to include("dependabot_20")
               expect(error.message.downcase)
                 .to include("invalid character `;` in package name")
             end
@@ -542,7 +542,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           expect { latest_resolvable_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
-              expect(error.message).to_not include("dependabot_20")
+              expect(error.message).not_to include("dependabot_20")
 
               # Test that the right details are included
               expect(error.message).to include("wasn't a root")

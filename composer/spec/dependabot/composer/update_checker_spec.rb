@@ -125,6 +125,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a git dependency" do
       let(:project_name) { "git_source" }
+      let(:upload_pack_fixture) { "monolog" }
 
       let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
       let(:requirements) do
@@ -145,6 +146,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         "https://github.com/dependabot/monolog.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -156,14 +158,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           )
       end
 
-      let(:upload_pack_fixture) { "monolog" }
-
       it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }
     end
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     before do
       allow(checker).to receive(:latest_resolvable_version)
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(Gem::Version.new("1.0.2"))
+      expect(lowest_security_fix_version).to eq(Gem::Version.new("1.0.2"))
     end
 
     context "with a security vulnerability" do
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.22.1"))
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("1.22.1"))
       end
     end
   end
@@ -321,8 +321,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a private registry" do
       let(:project_name) { "private_registry" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency_name) { "dependabot/dummy-pkg-a" }
       let(:dependency_version) { nil }
       let(:requirements) do
@@ -333,6 +331,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+
+      before { `composer clear-cache --quiet` }
 
       before do
         url = "https://php.fury.io/dependabot-throwaway/packages.json"
@@ -358,7 +358,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
         it "returns the expected version" do
           skip("skipped because env var GEMFURY_DEPLOY_TOKEN is not set") if gemfury_deploy_token.nil?
-          is_expected.to be >= Gem::Version.new("2.2.0")
+          expect(latest_resolvable_version).to be >= Gem::Version.new("2.2.0")
         end
       end
 
@@ -542,7 +542,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       it "logs an error" do
         allow(Dependabot.logger).to receive(:error)
 
-        is_expected.to be_nil
+        expect(latest_resolvable_version).to be_nil
         expect(Dependabot.logger).to have_received(:error).with(
           a_string_starting_with("Your requirements could not be resolved to an installable set of packages.")
         ).once

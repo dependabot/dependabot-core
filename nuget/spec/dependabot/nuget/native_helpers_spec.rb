@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
                                                dependency: dependency,
                                                is_transitive: is_transitive,
                                                credentials: [])
-        expect(Dependabot.logger).to_not have_received(:error)
+        expect(Dependabot.logger).not_to have_received(:error)
       end
     end
   end

@@ -37,13 +37,13 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { "== 1.3.0" }
 
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.0")) }
-      it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.3.1")) }
+      it { is_expected.not_to be_satisfied_by(Gem::Version.new("1.3.1")) }
 
       context "with a v-prefix" do
         let(:requirement_string) { "== v1.3.0" }
 
         it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.0")) }
-        it { is_expected.to_not be_satisfied_by(Gem::Version.new("1.3.1")) }
+        it { is_expected.not_to be_satisfied_by(Gem::Version.new("1.3.1")) }
       end
     end
 
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Python::Requirement do
 
       it "implements arbitrary equality" do
         expect(requirement).to be_satisfied_by(version_class.new("1.3.0"))
-        expect(requirement).to_not be_satisfied_by(version_class.new("1.3"))
+        expect(requirement).not_to be_satisfied_by(version_class.new("1.3"))
       end
     end
 

@@ -54,8 +54,8 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently or output to stdout" do
-      expect { expect { updated_files }.to_not(output.to_stdout) }
-        .to_not(change { Dir.entries(tmp_path) })
+      expect { expect { updated_files }.not_to(output.to_stdout) }
+        .not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do

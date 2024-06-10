@@ -394,7 +394,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       its(:length) { is_expected.to eq(1) }
 
       it "is not included" do
-        expect(dependencies.map(&:name)).to_not include("statesman")
+        expect(dependencies.map(&:name)).not_to include("statesman")
       end
     end
 
@@ -415,7 +415,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       its(:length) { is_expected.to eq(15) }
 
       it "does not include the path dependency" do
-        expect(dependencies.map(&:name)).to_not include("example")
+        expect(dependencies.map(&:name)).not_to include("example")
       end
 
       it "includes the path dependency's sub-dependency" do
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile_specification") }
 
         it "includes the path dependency" do
-          expect(dependencies.map(&:name)).to_not include("example")
+          expect(dependencies.map(&:name)).not_to include("example")
         end
       end
     end
@@ -844,7 +844,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         its(:length) { is_expected.to eq(1) }
 
         it "is not included" do
-          expect(dependencies.map(&:name)).to_not include("statesman")
+          expect(dependencies.map(&:name)).not_to include("statesman")
         end
       end
     end

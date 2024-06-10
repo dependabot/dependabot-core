@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Source do
         }
       end
 
-      specify { expect { source }.to_not raise_error }
+      specify { expect { source }.not_to raise_error }
     end
 
     context "with a hostname but no api_endpoint" do

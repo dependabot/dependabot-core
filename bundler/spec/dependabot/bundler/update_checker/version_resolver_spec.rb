@@ -128,9 +128,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         context "when attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
-          include_context "when stubbing rubygems versions api"
-
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
+
+          include_context "when stubbing rubygems versions api"
 
           its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
 
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
             it "is nil" do
               skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-              is_expected.to be_nil
+              expect(latest_resolvable_version_details).to be_nil
             end
           end
         end
@@ -390,7 +390,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         expect { latest_resolvable_version_details }
           .to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
           # Test that the temporary path isn't included in the error message
-          expect(error.message).to_not include("dependabot_20")
+          expect(error.message).not_to include("dependabot_20")
         end
       end
     end
@@ -483,7 +483,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         it "is nil" do
           skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-          is_expected.to be_nil
+          expect(latest_resolvable_version_details).to be_nil
         end
       end
 

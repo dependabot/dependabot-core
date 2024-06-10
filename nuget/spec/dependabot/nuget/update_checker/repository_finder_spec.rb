@@ -400,6 +400,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
 
       context "when the spec overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
+        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -409,8 +410,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
               body: fixture("nuget_responses", "myget_base.json")
             )
         end
-
-        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
 
         it "when the default api key of default registry is provided without clear" do
           expect(dependency_urls).to contain_exactly({

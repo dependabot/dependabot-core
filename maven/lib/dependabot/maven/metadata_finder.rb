@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -9,14 +9,17 @@ require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/utils/auth_headers_finder"
 require "dependabot/registry_client"
+require "sorbet-runtime"
 
 module Dependabot
   module Maven
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         tmp_source = look_up_source_in_pom(dependency_pom_file)
         return tmp_source if tmp_source
@@ -26,14 +29,15 @@ module Dependabot
         tmp_source = look_up_source_in_pom(parent)
         return unless tmp_source
 
-        return tmp_source if tmp_source.repo.end_with?(dependency_artifact_id)
+        return tmp_source if tmp_source.repo.end_with?(T.must(dependency_artifact_id))
 
         tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
+      sig { params(tmp_source: Dependabot::Source).returns(T::Boolean) }
       def repo_has_subdir_for_dep?(tmp_source)
-        @repo_has_subdir_for_dep ||= {}
-        return @repo_has_subdir_for_dep[tmp_source] if @repo_has_subdir_for_dep.key?(tmp_source)
+        @repo_has_subdir_for_dep ||= T.let({}, T.nilable(T::Hash[Dependabot::Source, T::Boolean]))
+        return T.must(@repo_has_subdir_for_dep[tmp_source]) if @repo_has_subdir_for_dep.key?(tmp_source)
 
         fetcher =
           Dependabot::Maven::FileFetcher.new(source: tmp_source, credentials: credentials)
@@ -41,18 +45,19 @@ module Dependabot
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false)
                  .select { |f| f.type == "dir" }
-                 .any? { |f| dependency_artifact_id.end_with?(f.name) }
+                 .any? { |f| T.must(dependency_artifact_id).end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         # If we are attempting to find a branch, we should fail over to the default branch and retry once only
         unless tmp_source.branch.to_s.empty?
           tmp_source.branch = nil
           retry
         end
-        @repo_has_subdir_for_dep[tmp_source] = false
+        T.must(@repo_has_subdir_for_dep)[tmp_source] = false
       rescue Dependabot::RepoNotFound
-        @repo_has_subdir_for_dep[tmp_source] = false
+        T.must(@repo_has_subdir_for_dep)[tmp_source] = false
       end
 
+      sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Dependabot::Source)) }
       def look_up_source_in_pom(pom)
         potential_source_urls = [
           pom.at_css("project > url")&.content,
@@ -67,15 +72,16 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      sig { params(source_url: T.nilable(String), pom: Nokogiri::XML::Document).returns(T.nilable(String)) }
       def substitute_properties_in_source_url(source_url, pom)
         return unless source_url
         return source_url unless source_url.include?("${")
 
         regex = Maven::FileParser::PROPERTY_REGEX
-        property_name = source_url.match(regex).named_captures["property"]
+        property_name = T.must(source_url.match(regex)).named_captures["property"]
         doc = pom.dup
         doc.remove_namespaces!
-        nm = property_name.sub(/^pom\./, "").sub(/^project\./, "")
+        nm = T.must(property_name).sub(/^pom\./, "").sub(/^project\./, "")
         property_value =
           loop do
             candidate_node =
@@ -92,6 +98,7 @@ module Dependabot
         substitute_properties_in_source_url(url, pom)
       end
 
+      sig { params(pom: T.any(String, Nokogiri::XML::Document)).returns(T.nilable(String)) }
       def source_from_anywhere_in_pom(pom)
         github_urls = []
         pom.to_s.scan(Source::SOURCE_REGEX) do
@@ -99,12 +106,15 @@ module Dependabot
         end
 
         github_urls.find do |url|
-          repo = Source.from_url(url).repo
-          repo.end_with?(dependency_artifact_id)
+          repo = T.must(Source.from_url(url)).repo
+          repo.end_with?(T.must(dependency_artifact_id))
         end
       end
 
+      sig { returns(Nokogiri::XML::Document) }
       def dependency_pom_file
+        @dependency_pom_file ||= T.let(nil, T.nilable(Nokogiri::XML::Document))
+
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
         response = Dependabot::RegistryClient.get(
@@ -117,12 +127,14 @@ module Dependabot
         @dependency_pom_file = Nokogiri::XML("")
       end
 
+      sig { returns(T.nilable(String)) }
       def dependency_artifact_id
         _group_id, artifact_id = dependency.name.split(":")
 
         artifact_id
       end
 
+      sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Nokogiri::XML::Document)) }
       def parent_pom_file(pom)
         doc = pom.dup
         doc.remove_namespaces!
@@ -138,30 +150,37 @@ module Dependabot
               "#{artifact_id}-#{version}.pom"
 
         response = Dependabot::RegistryClient.get(
-          url: substitute_properties_in_source_url(url, pom),
+          url: T.must(substitute_properties_in_source_url(url, pom)),
           headers: auth_headers
         )
 
         Nokogiri::XML(response.body)
       end
 
+      sig { returns(String) }
       def maven_repo_url
         source = dependency.requirements
-                           .find { |r| r&.fetch(:source) }&.fetch(:source)
+                           .find { |r| r.fetch(:source) }&.fetch(:source)
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
-          Maven::FileParser::RepositoriesFinder.new(credentials: credentials).central_repo_url
+          Dependabot::Maven::FileParser::RepositoriesFinder.new(credentials: credentials,
+                                                                pom_fetcher: nil).central_repo_url
       end
 
+      sig { returns(String) }
       def maven_repo_dependency_url
         group_id, artifact_id = dependency.name.split(":")
 
-        "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
+        "#{maven_repo_url}/#{T.must(group_id).tr('.', '/')}/#{artifact_id}"
       end
 
+      sig { returns(T::Hash[String, String]) }
       def auth_headers
-        @auth_headers ||= Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
+        @auth_headers ||= T.let(
+          Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url),
+          T.nilable(T::Hash[String, String])
+        )
       end
     end
   end

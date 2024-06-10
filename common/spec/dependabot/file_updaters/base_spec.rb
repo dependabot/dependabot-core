@@ -52,7 +52,7 @@ RSpec.describe Dependabot::FileUpdaters::Base do
       let(:files) { [gemfile] }
 
       it "doesn't raise" do
-        expect { updater_instance }.to_not raise_error
+        expect { updater_instance }.not_to raise_error
       end
     end
 
@@ -93,6 +93,6 @@ RSpec.describe Dependabot::FileUpdaters::Base do
     its(:content) { is_expected.to eq("codes") }
     its(:directory) { is_expected.to eq(file.directory) }
 
-    specify { expect { updated_file }.to_not(change(file, :content)) }
+    specify { expect { updated_file }.not_to(change(file, :content)) }
   end
 end

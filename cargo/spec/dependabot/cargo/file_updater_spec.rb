@@ -59,14 +59,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(1) }
 
     context "without a lockfile" do
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
           expect(updated_lockfile_content).to include(
             "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
           )
         end

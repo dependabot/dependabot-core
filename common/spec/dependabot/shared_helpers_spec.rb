@@ -301,7 +301,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:command) { "yes | foo=1 &  'na=1'  name  > file" }
 
     it do
-      is_expected.to eq("yes \\| foo\\=1 \\& \\'na\\=1\\' name \\> file")
+      expect(escape_command).to eq("yes \\| foo\\=1 \\& \\'na\\=1\\' name \\> file")
     end
 
     context "when empty" do
@@ -407,14 +407,13 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
+    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
+    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     def with_git_configured(&block)
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
     end
-
-    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
-    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
-    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when the global .gitconfig has a safe directory" do
       before do
