@@ -672,7 +672,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       let(:ignored_versions) { ["< 1.14.13"] }
 
       it "doesn't raise an error" do
-        expect { checker.latest_version }.to_not raise_error
+        expect { checker.latest_version }.not_to raise_error
       end
     end
 
@@ -682,7 +682,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       let(:ignored_versions) { ["> 1.8.0"] }
 
       it "doesn't raise an error" do
-        expect { checker.latest_version }.to_not raise_error
+        expect { checker.latest_version }.not_to raise_error
       end
     end
 
@@ -692,7 +692,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       let(:ignored_versions) { [">= 0"] }
 
       it "doesn't raise an error" do
-        expect { checker.latest_version }.to_not raise_error
+        expect { checker.latest_version }.not_to raise_error
       end
     end
 

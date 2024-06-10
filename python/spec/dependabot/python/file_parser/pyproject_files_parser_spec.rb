@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       its(:length) { is_expected.to eq(15) }
 
       it "doesn't include the Python requirement" do
-        expect(dependencies.map(&:name)).to_not include("python")
+        expect(dependencies.map(&:name)).not_to include("python")
       end
 
       context "with a string declaration" do
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "dir_dependency.toml" }
 
         it "excludes path dependency" do
-          expect(dependency_names).to_not include("toml")
+          expect(dependency_names).not_to include("toml")
         end
 
         it "includes non-path dependencies" do
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
 
         it "excludes git dependency" do
-          expect(dependency_names).to_not include("toml")
+          expect(dependency_names).not_to include("toml")
         end
 
         it "includes non-git dependencies" do
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "url_dependency.toml" }
 
         it "excludes url dependency" do
-          expect(dependency_names).to_not include("toml")
+          expect(dependency_names).not_to include("toml")
         end
 
         it "includes non-url dependencies" do
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:pyproject_fixture_name) { "poetry_non_package_mode.toml" }
 
         it "parses correctly with no metadata" do
-          expect { parser.dependency_set }.to_not raise_error
+          expect { parser.dependency_set }.not_to raise_error
         end
       end
     end
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       its(:length) { is_expected.to eq(36) }
 
       it "doesn't include the Python requirement" do
-        expect(dependencies.map(&:name)).to_not include("python")
+        expect(dependencies.map(&:name)).not_to include("python")
       end
 
       describe "a development sub-dependency" do
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:poetry_lock_fixture_name) { "dir_dependency.lock" }
 
         it "excludes the path dependency" do
-          expect(dependency_names).to_not include("toml")
+          expect(dependency_names).not_to include("toml")
         end
 
         it "includes non-path dependencies" do
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:poetry_lock_fixture_name) { "git_dependency.lock" }
 
         it "excludes the git dependency" do
-          expect(dependencies.map(&:name)).to_not include("toml")
+          expect(dependencies.map(&:name)).not_to include("toml")
         end
       end
 
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         let(:poetry_lock_fixture_name) { "url_dependency.lock" }
 
         it "excludes the url dependency" do
-          expect(dependencies.map(&:name)).to_not include("toml")
+          expect(dependencies.map(&:name)).not_to include("toml")
         end
       end
 

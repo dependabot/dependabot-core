@@ -826,7 +826,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         expect(repo_obj[0][:url]).to eq(credentials[0]["index-url"])
 
         user_pass = "#{credentials[0]['user']}:#{credentials[0]['password']}@"
-        expect(repo_obj[0][:url]).to_not include(user_pass)
+        expect(repo_obj[0][:url]).not_to include(user_pass)
       end
     end
   end

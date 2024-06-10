@@ -61,10 +61,10 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
 
     it "doesn't store the files permanently" do
       expect { updated_lockfile_content }
-        .to_not(change { Dir.entries(tmp_path) })
+        .not_to(change { Dir.entries(tmp_path) })
     end
 
-    it { expect { updated_lockfile_content }.to_not output.to_stdout }
+    it { expect { updated_lockfile_content }.not_to output.to_stdout }
 
     it "updates the dependency version in the lockfile" do
       expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
@@ -342,7 +342,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       it "updates the dependency version in the lockfile" do
         expect(updated_lockfile_content).to include("phoenix.git")
         expect(updated_lockfile_content)
-          .to_not include("178ce1a2344515e9145599970313fcc190d4b881")
+          .not_to include("178ce1a2344515e9145599970313fcc190d4b881")
       end
     end
 

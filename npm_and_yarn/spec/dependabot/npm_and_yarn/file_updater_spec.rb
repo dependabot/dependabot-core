@@ -80,13 +80,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 
       it "updates the files" do
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.count).to eq(3)
       end
 
       it "native helpers don't output to stdout" do
-        expect { updated_files }.to_not output.to_stdout
+        expect { updated_files }.not_to output.to_stdout
       end
     end
 
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             "is-number@jonschlinkert/is-number:"
           )
 
-          expect(updated_yarn_lock.content).to_not include("d5ac0584ee")
+          expect(updated_yarn_lock.content).not_to include("d5ac0584ee")
           expect(updated_yarn_lock.content).to include(
             "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
           )
@@ -359,7 +359,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             expect(updated_yarn_lock.content).to include("is-number")
             expect(updated_yarn_lock.content).to include("0c6b15a88b")
-            expect(updated_yarn_lock.content).to_not include("af885e2e890")
+            expect(updated_yarn_lock.content).not_to include("af885e2e890")
           end
 
           context "when the lockfile has an outdated source" do
@@ -383,7 +383,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               expect(updated_yarn_lock.content).to include(
                 "is-number@https://github.com/jonschlinkert/is-number.git"
               )
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
             end
           end
 
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               expect(updated_yarn_lock.content)
                 .to include('slick-carousel@git://github.com/brianfryer/slick":')
               expect(updated_yarn_lock.content).to include("a2aa3fec")
-              expect(updated_yarn_lock.content).to_not include("280b56016")
+              expect(updated_yarn_lock.content).not_to include("280b56016")
             end
           end
 
@@ -459,7 +459,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
               expect(updated_yarn_lock.content).to include("is-number")
               expect(updated_yarn_lock.content).to include("0c6b15a88bc")
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
               expect(updated_yarn_lock.content)
                 .to include("is-number@git+ssh://git@github.com:jonschlinkert")
             end
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 .to include("is-number@https://dummy-token@github.com/" \
                             "jonschlinkert/is-number.git#master")
               expect(updated_yarn_lock.content).to include("0c6b15a88b")
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
             end
           end
         end
@@ -3120,8 +3120,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           expect(lockfile.content).to include(%("lodash@npm:1.3.1, lodash@npm:^1.3.1":))
-          expect(lockfile.content).to_not include("lodash@npm:^1.2.1:")
-          expect(lockfile.content).to_not include("workspace-aggregator")
+          expect(lockfile.content).not_to include("lodash@npm:^1.2.1:")
+          expect(lockfile.content).not_to include("workspace-aggregator")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package.content).to include("\"./packages/*\",\n")
@@ -3156,7 +3156,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@npm:0.4.0")
-            expect(lockfile.content).to_not include("workspace-aggregator")
+            expect(lockfile.content).not_to include("workspace-aggregator")
           end
 
           it "does not add the dependency to the top-level workspace" do
@@ -3292,9 +3292,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "removes details of the old version" do
           expect(updated_yarn_lock.content)
-            .to_not include("babel-register@^6.24.1:")
+            .not_to include("babel-register@^6.24.1:")
           expect(updated_yarn_lock.content)
-            .to_not include("integrity sha512-")
+            .not_to include("integrity sha512-")
         end
       end
 
@@ -3358,7 +3358,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content).to include("rimraf@2.6.3")
 
           # Cleaned up in fix-duplicates.js
-          expect(updated_yarn_lock.content).to_not include("rimraf-2.6.2")
+          expect(updated_yarn_lock.content).not_to include("rimraf-2.6.2")
         end
       end
 
@@ -3457,8 +3457,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           expect(lockfile.content).to include("lodash@1.3.1, lodash@^1.3.1:")
-          expect(lockfile.content).to_not include("lodash@^1.2.1:")
-          expect(lockfile.content).to_not include("workspace-aggregator")
+          expect(lockfile.content).not_to include("lodash@^1.2.1:")
+          expect(lockfile.content).not_to include("workspace-aggregator")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package.content).to include("\"./packages/*\",\n")
@@ -3493,7 +3493,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@0.4.0:")
-            expect(lockfile.content).to_not include("workspace-aggregator")
+            expect(lockfile.content).not_to include("workspace-aggregator")
           end
         end
 

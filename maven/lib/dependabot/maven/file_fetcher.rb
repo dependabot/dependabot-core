@@ -1,8 +1,9 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
 require "sorbet-runtime"
+
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -69,7 +70,7 @@ module Dependabot
             relative_path,
             relative_path.end_with?(".xml") ? nil : "pom.xml"
           ].compact.reject(&:empty?)
-          path = Pathname.new(File.join(*name_parts)).cleanpath.to_path
+          path = Pathname.new(File.join(name_parts)).cleanpath.to_path
 
           next [] if fetched_filenames.include?(path)
 
@@ -84,7 +85,7 @@ module Dependabot
           fetched_filenames += [child_pom.name] + fetched_files.map(&:name)
           fetched_files
         rescue Dependabot::DependencyFileNotFound
-          raise unless fetch_file_from_host(path, fetch_submodules: true)
+          fetch_file_from_host(T.must(path), fetch_submodules: true)
 
           [] # Ignore any child submodules (since we can't update them)
         end
@@ -98,7 +99,7 @@ module Dependabot
         full_path_parts =
           [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
 
-        full_path = Pathname.new(File.join(*full_path_parts)).cleanpath.to_path
+        full_path = Pathname.new(File.join(full_path_parts)).cleanpath.to_path
 
         return [] if full_path.start_with?("..")
 
@@ -132,7 +133,7 @@ module Dependabot
           relative_parent_path.end_with?(".xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
 
-        Pathname.new(File.join(*name_parts)).cleanpath.to_path
+        Pathname.new(File.join(name_parts)).cleanpath.to_path
       end
 
       def fetched_pom_is_parent(pom, parent_pom)

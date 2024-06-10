@@ -316,7 +316,7 @@ RSpec.describe Dependabot::DependencyFile do
       let(:file1) { described_class.new(name: "Gemfile", content: "a") }
       let(:file2) { described_class.new(name: "Gemfile", content: "b") }
 
-      specify { expect(file1).to_not eq(file2) }
+      specify { expect(file1).not_to eq(file2) }
     end
   end
 

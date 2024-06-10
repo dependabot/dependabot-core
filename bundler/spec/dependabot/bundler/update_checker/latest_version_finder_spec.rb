@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version_details }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
 
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:raise_on_ignored) { true }
 
           it "doesn't raise an error" do
-            expect { latest_version_details }.to_not raise_error
+            expect { latest_version_details }.not_to raise_error
           end
         end
       end
@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         it "fetches the latest SHA-1 hash" do
           commit_sha = finder.latest_version_details[:commit_sha]
           expect(commit_sha).to match(/^[0-9a-f]{40}$/)
-          expect(commit_sha).to_not eq(current_version)
+          expect(commit_sha).not_to eq(current_version)
         end
 
         context "when the gem has a bad branch" do
