@@ -6,13 +6,6 @@ require "dependabot/clients/bitbucket"
 
 RSpec.describe Dependabot::Clients::Bitbucket do
   let(:current_user_url) { "https://api.bitbucket.org/2.0/user?fields=uuid" }
-
-  before do
-    stub_request(:get, current_user_url)
-      .with(headers: { "Authorization" => "Bearer #{access_token}" })
-      .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
-  end
-
   let(:access_token) { "access_token" }
   let(:credentials) do
     [Dependabot::Credential.new({
@@ -29,6 +22,12 @@ RSpec.describe Dependabot::Clients::Bitbucket do
   let(:source) { Dependabot::Source.from_url(base_url + "/src/master/") }
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
+  end
+
+  before do
+    stub_request(:get, current_user_url)
+      .with(headers: { "Authorization" => "Bearer #{access_token}" })
+      .to_return(status: 200, body: fixture("bitbucket", "current_user.json"))
   end
 
   describe "#default_reviewers" do

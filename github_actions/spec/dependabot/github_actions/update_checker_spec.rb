@@ -480,8 +480,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       before do
         checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(false)
-        allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return(reference)
+        allow(git_commit_checker).to receive_messages(branch_or_ref_in_release?: false,
+                                                      head_commit_for_current_branch: reference)
 
         allow(Dir).to receive(:chdir).and_yield
 

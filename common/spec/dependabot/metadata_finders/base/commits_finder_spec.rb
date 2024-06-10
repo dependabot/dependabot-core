@@ -26,6 +26,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       package_manager: package_manager
     )
   end
+  let(:service_pack_url) do
+    "https://github.com/gocardless/business.git/info/refs" \
+      "?service=git-upload-pack"
+  end
+  let(:upload_pack_fixture) { "business" }
   let(:package_manager) { "dummy" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
@@ -43,6 +48,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       repo: "gocardless/#{dependency_name}"
     )
   end
+
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -53,12 +59,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         }
       )
   end
-
-  let(:service_pack_url) do
-    "https://github.com/gocardless/business.git/info/refs" \
-      "?service=git-upload-pack"
-  end
-  let(:upload_pack_fixture) { "business" }
 
   describe "#commits_url" do
     subject(:commits_url) { builder.commits_url }
