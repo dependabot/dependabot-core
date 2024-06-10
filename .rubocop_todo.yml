@@ -198,11 +198,6 @@ RSpec/RepeatedExampleGroupBody:
 RSpec/RepeatedExampleGroupDescription:
   Enabled: false
 
-# Offense count: 251
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ScatteredLet:
-  Enabled: false
-
 # Offense count: 36
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/ScatteredSetup:

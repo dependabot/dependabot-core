@@ -870,6 +870,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     context "when the dependencies have an underscore followed by sha-like strings" do
       let(:dependency_name) { "nixos/nix" }
+      let(:version) { "2.1.3" }
       let(:tags_fixture_name) { "nixos-nix.json" }
       let(:repo_url) do
         "https://registry.hub.docker.com/v2/nixos/nix/"
@@ -877,6 +878,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:headers_response) do
         fixture("docker", "registry_manifest_headers", "generic.json")
       end
+
       before do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: registry_tags)
@@ -888,8 +890,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             headers: JSON.parse(headers_response)
           )
       end
-
-      let(:version) { "2.1.3" }
 
       it "ignores the sha-like part" do
         expect(latest_version).to eq("2.10.0")

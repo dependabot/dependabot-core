@@ -71,15 +71,15 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
       end
+      let(:labels_fixture_name) { "labels_with_dependencies.json" }
       let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
+
       before do
         stub_request(:get, "#{repo_api_url}/labels?per_page=100")
           .to_return(status: 200,
                      body: fixture("github", labels_fixture_name),
                      headers: json_header)
       end
-
-      let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
       context "when the 'dependencies' label doesn't yet exist" do
         let(:labels_fixture_name) { "labels_without_dependencies.json" }
@@ -506,15 +506,15 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
       end
+      let(:labels_fixture_name) { "labels_with_dependencies.json" }
       let(:repo_api_url) { "https://api.github.com/repos/#{source.repo}" }
+
       before do
         stub_request(:get, "#{repo_api_url}/labels?per_page=100")
           .to_return(status: 200,
                      body: fixture("github", labels_fixture_name),
                      headers: json_header)
       end
-
-      let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
       context "when a 'dependencies' label exists" do
         let(:labels_fixture_name) { "labels_with_dependencies.json" }

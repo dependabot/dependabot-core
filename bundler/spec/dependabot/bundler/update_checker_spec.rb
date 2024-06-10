@@ -304,6 +304,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 }
               }]
             end
+            let(:upload_pack_fixture) { "business" }
 
             before do
               stub_request(:get, rubygems_url + "versions/business.json")
@@ -320,8 +321,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   headers: git_header
                 )
             end
-
-            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_version)
@@ -883,6 +882,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 }
               }]
             end
+            let(:upload_pack_fixture) { "business" }
 
             before do
               stub_request(:get, rubygems_url + "versions/business.json")
@@ -899,8 +899,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   headers: git_header
                 )
             end
-
-            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_resolvable_version)
@@ -964,6 +962,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
             context "when updating the gem results in a conflict" do
               let(:dependency_files) { bundler_project_dependency_files("git_source_with_tag_conflict") }
+              let(:dependency_name) { "onfido" }
+              let(:current_version) do
+                "7b36eac82a7e42049052a58af0a7943fe0363714"
+              end
+              let(:requirements) do
+                [{
+                  file: "Gemfile",
+                  requirement: ">= 0",
+                  groups: [],
+                  source: {
+                    type: "git",
+                    url: "https://github.com/hvssle/onfido",
+                    branch: "master",
+                    ref: "v0.4.0"
+                  }
+                }]
+              end
 
               before do
                 allow_any_instance_of(Dependabot::GitCommitChecker)
@@ -980,25 +995,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                     body: fixture("git", "upload_packs", "onfido"),
                     headers: git_header
                   )
-              end
-
-              let(:dependency_name) { "onfido" }
-              let(:current_version) do
-                "7b36eac82a7e42049052a58af0a7943fe0363714"
-              end
-
-              let(:requirements) do
-                [{
-                  file: "Gemfile",
-                  requirement: ">= 0",
-                  groups: [],
-                  source: {
-                    type: "git",
-                    url: "https://github.com/hvssle/onfido",
-                    branch: "master",
-                    ref: "v0.4.0"
-                  }
-                }]
               end
 
               it { is_expected.to eq(dependency.version) }
@@ -1108,6 +1104,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when updating the gem results in a conflict" do
           let(:dependency_files) { bundler_project_dependency_files("git_source_with_conflict") }
+          let(:dependency_name) { "onfido" }
+          let(:current_version) { "1.13.0" }
+          let(:requirements) do
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/hvssle/onfido",
+                branch: "master",
+                ref: "master"
+              }
+            }]
+          end
 
           before do
             allow_any_instance_of(Dependabot::GitCommitChecker)
@@ -1130,22 +1141,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               .to receive(:latest_resolvable_version_details)
               .with(remove_git_source: true)
               .and_return(version: Gem::Version.new("2.0.0"))
-          end
-
-          let(:dependency_name) { "onfido" }
-          let(:current_version) { "1.13.0" }
-          let(:requirements) do
-            [{
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/hvssle/onfido",
-                branch: "master",
-                ref: "master"
-              }
-            }]
           end
 
           it { is_expected.to be_nil }
