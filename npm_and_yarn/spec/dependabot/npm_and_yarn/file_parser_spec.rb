@@ -571,6 +571,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "when specifying a semver requirement" do
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
+            let(:git_pack_fixture_name) { "is-number" }
 
             before do
               git_url = "https://github.com/jonschlinkert/is-number.git"
@@ -586,8 +587,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   headers: git_header
                 )
             end
-
-            let(:git_pack_fixture_name) { "is-number" }
 
             its(:length) { is_expected.to eq(1) }
 

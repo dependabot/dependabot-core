@@ -127,6 +127,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:github_url) do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
+      let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       let(:github_status) { 200 }
 
@@ -140,8 +141,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
                      body: changelog_body,
                      headers: { "Content-Type" => "application/json" })
       end
-
-      let(:changelog_body) { fixture("github", "changelog_contents.json") }
 
       context "with a changelog" do
         let(:github_response) { fixture("github", "business_files.json") }
@@ -936,6 +935,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             suggested_changelog_url: suggested_changelog_url
           )
         end
+        let(:github_contents_response) do
+          fixture("github", "business_files.json")
+        end
+        let(:github_changelog_url) do
+          "https://api.github.com/repos/mperham/sidekiq/contents/" \
+            "Pro-Changes.md?ref=master"
+        end
         let(:suggested_changelog_url) do
           "github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
         end
@@ -949,15 +955,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             .to_return(status: 200,
                        body: suggested_github_response,
                        headers: { "Content-Type" => "application/json" })
-        end
-
-        let(:github_contents_response) do
-          fixture("github", "business_files.json")
-        end
-
-        let(:github_changelog_url) do
-          "https://api.github.com/repos/mperham/sidekiq/contents/" \
-            "Pro-Changes.md?ref=master"
         end
 
         it { is_expected.to eq(expected_pruned_changelog) }

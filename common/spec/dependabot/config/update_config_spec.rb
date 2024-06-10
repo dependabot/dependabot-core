@@ -127,14 +127,14 @@ RSpec.describe Dependabot::Config::UpdateConfig do
           package_manager: "fake-package-manager"
         )
       end
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "very-cool-package", versions: [">= 0"])]
+      end
+
       before do
         Dependabot::Dependency.register_name_normaliser("fake-package-manager", lambda { |name|
                                                                                   name.downcase.gsub(/[_=]/, "-")
                                                                                 })
-      end
-
-      let(:ignore_conditions) do
-        [Dependabot::Config::IgnoreCondition.new(dependency_name: "very-cool-package", versions: [">= 0"])]
       end
 
       it "normalizes the dependency name to match" do

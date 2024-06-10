@@ -345,17 +345,6 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           "https://github.com/actions/checkout.git/info/refs" \
             "?service=git-upload-pack"
         end
-        before do
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", "checkout"),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
-        end
-
         let(:workflow_file_body) do
           fixture("workflow_files", "pinned_sources_version_comments.yml")
         end
@@ -413,6 +402,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               metadata: { declaration_string: "actions/checkout@v2.2.0" }
             }]
           )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "checkout"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
         end
 
         it "updates SHA version" do

@@ -66,14 +66,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         directory: directory
       )
     end
-    let(:url) { "https://api.github.com/repos/dependabot-fixtures/dependabot-yarn-lfs-fixture/contents/" }
-    let(:repo) { "dependabot-fixtures/dependabot-yarn-lfs-fixture" }
-    let(:repo_contents_path) { Dir.mktmpdir }
-    after { FileUtils.rm_rf(repo_contents_path) }
-
     let(:file_fetcher_instance) do
       described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
     end
+    let(:url) { "https://api.github.com/repos/dependabot-fixtures/dependabot-yarn-lfs-fixture/contents/" }
+    let(:repo) { "dependabot-fixtures/dependabot-yarn-lfs-fixture" }
+    let(:repo_contents_path) { Dir.mktmpdir }
+
+    after { FileUtils.rm_rf(repo_contents_path) }
 
     it "pulls files from lfs after cloning" do
       # Calling #files triggers the clone

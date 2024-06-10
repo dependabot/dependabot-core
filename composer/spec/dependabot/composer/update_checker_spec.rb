@@ -125,6 +125,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a git dependency" do
       let(:project_name) { "git_source" }
+      let(:upload_pack_fixture) { "monolog" }
 
       let(:dependency_version) { "5267b03b1e4861c4657ede17a88f13ef479db482" }
       let(:requirements) do
@@ -145,6 +146,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         "https://github.com/dependabot/monolog.git/info/refs" \
           "?service=git-upload-pack"
       end
+
       before do
         stub_request(:get, service_pack_url)
           .to_return(
@@ -155,8 +157,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             }
           )
       end
-
-      let(:upload_pack_fixture) { "monolog" }
 
       it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }
     end
@@ -321,8 +321,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a private registry" do
       let(:project_name) { "private_registry" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency_name) { "dependabot/dummy-pkg-a" }
       let(:dependency_version) { nil }
       let(:requirements) do
@@ -333,6 +331,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           source: nil
         }]
       end
+
+      before { `composer clear-cache --quiet` }
 
       before do
         url = "https://php.fury.io/dependabot-throwaway/packages.json"

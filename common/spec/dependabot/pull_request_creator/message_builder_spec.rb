@@ -843,6 +843,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
+      let(:commits_response) { fixture("github", "commits.json") }
 
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -852,8 +853,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
-
-      let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
 
@@ -946,6 +945,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
+      let(:commits_response) { fixture("github", "commits.json") }
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "go_modules", rules: { patterns: ["*"] })
       end
@@ -959,8 +959,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
-
-      let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }
 

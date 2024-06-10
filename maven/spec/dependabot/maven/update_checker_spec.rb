@@ -889,6 +889,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       context "when inheriting from a remote POM" do
         let(:pom_body) { fixture("poms", "remote_parent_pom.xml") }
+        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
+        let(:dependency_version) { "2.7" }
+        let(:dependency_requirements) do
+          [{
+            file: "pom.xml",
+            requirement: "2.7",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "log4j2.version" }
+          }]
+        end
 
         let(:struts_apps_maven_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -910,18 +921,6 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             .to_return(status: 200, body: struts_apps_maven_response)
           stub_request(:get, struts_parent_maven_url)
             .to_return(status: 200, body: struts_parent_maven_response)
-        end
-
-        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
-        let(:dependency_version) { "2.7" }
-        let(:dependency_requirements) do
-          [{
-            file: "pom.xml",
-            requirement: "2.7",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "log4j2.version" }
-          }]
         end
 
         it { is_expected.to be(false) }

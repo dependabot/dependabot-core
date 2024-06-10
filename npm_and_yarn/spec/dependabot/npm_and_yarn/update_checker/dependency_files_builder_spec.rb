@@ -14,6 +14,14 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
       credentials: credentials
     )
   end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "abind",
+      version: "1.0.5",
+      requirements: [],
+      package_manager: "npm_and_yarn"
+    )
+  end
 
   let(:credentials) do
     [Dependabot::Credential.new({
@@ -28,15 +36,6 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
 
   def project_dependency_file(file_name)
     dependency_files.find { |f| f.name == file_name }
-  end
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "abind",
-      version: "1.0.5",
-      requirements: [],
-      package_manager: "npm_and_yarn"
-    )
   end
 
   describe "#write_temporary_dependency_files" do
