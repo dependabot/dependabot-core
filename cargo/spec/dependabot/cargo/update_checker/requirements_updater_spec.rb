@@ -184,6 +184,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
               its([:requirement]) { is_expected.to eq(">=1.2.0, <1.6.0") }
             end
+
+            context "when patch version is missing" do
+              let(:req_string) { "> 1.0, < 1.2" }
+
+              its([:requirement]) { is_expected.to eq("> 1.0, < 1.6") }
+            end
           end
 
           context "with `less than equal`" do
@@ -201,6 +207,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
               let(:req_string) { ">=1.2.0, <=1.4.0-dev" }
 
               its([:requirement]) { is_expected.to eq(">=1.2.0, <=1.5.0") }
+            end
+
+            context "when patch version is missing" do
+              let(:req_string) { "> 1.0, <= 1.2" }
+
+              its([:requirement]) { is_expected.to eq("> 1.0, <= 1.5") }
             end
           end
         end
