@@ -368,7 +368,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     context "with a rubygems source" do
       let(:current_version) { "1.2.0" }
@@ -383,7 +383,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.3.0"))
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("1.3.0"))
       end
 
       context "with a security vulnerability" do
@@ -398,7 +398,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "finds the lowest available non-vulnerable version" do
-          is_expected.to eq(Gem::Version.new("1.4.0"))
+          expect(lowest_security_fix_version).to eq(Gem::Version.new("1.4.0"))
         end
       end
     end
@@ -558,7 +558,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    subject { checker.conflicting_dependencies }
+    subject(:conflicting_dependencies) { checker.conflicting_dependencies }
 
     include_context "when stubbing rubygems compact index"
     include_context "when stubbing rubygems versions api"
@@ -593,7 +593,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
 
     it do
-      is_expected.to eq(
+      expect(conflicting_dependencies).to eq(
         [{
           "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
           "name" => "dummy-pkg-b",
@@ -605,7 +605,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    subject { checker.latest_resolvable_version }
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
     include_context "when stubbing rubygems compact index"
     include_context "when stubbing rubygems versions api"
@@ -1218,7 +1218,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         it "Gem version is 2.0.1" do
           skip "This test intermittently fails, which often trips up external contributors"
-          is_expected.to eq(Gem::Version.new("2.0.1"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("2.0.1"))
         end
       end
     end
