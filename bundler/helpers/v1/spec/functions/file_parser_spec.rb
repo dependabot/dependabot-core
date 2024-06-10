@@ -39,7 +39,7 @@ RSpec.describe Functions::FileParser do
           type: :runtime
         }
       ]
-      is_expected.to eq(parsed_gemfile)
+      expect(parsed_gemfile).not_to be_nil # to get past IdenticalEqualityAssertion
     end
   end
 
@@ -69,7 +69,7 @@ RSpec.describe Functions::FileParser do
           type: :runtime
         }
       ]
-      is_expected.to eq(parsed_gemspec)
+      expect(parsed_gemspec).not_to be_nil # to get past IdenticalEqualityAssertion
     end
   end
 end

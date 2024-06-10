@@ -539,7 +539,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix) { checker.lowest_security_fix_version }
 
     let(:target_version) { "1.0.1" }
 
@@ -562,7 +562,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:target_version) { "1.2.1" }
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.2.1"))
+        expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
       end
     end
   end

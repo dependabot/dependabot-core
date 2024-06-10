@@ -450,7 +450,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         it "finds the changelog" do
-          is_expected.to eq(
+          expect(changelog_url).to eq(
             "https://github.com/actions/checkout/blob/master/CHANGELOG.md"
           )
         end
@@ -546,7 +546,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       it "gets the right URL" do
-        is_expected.to eq(
+        expect(changelog_url).to eq(
           "https://gitlab.com/org/business/blob/master/CHANGELOG.md"
         )
       end
@@ -631,7 +631,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       it "gets the right URL" do
-        is_expected.to eq(
+        expect(changelog_url).to eq(
           "https://dev.azure.com/contoso/MyProject/_git/business?path=/CHANGELOG.md"
         )
       end
@@ -710,7 +710,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       end
 
       it "gets the right URL" do
-        is_expected.to eq(
+        expect(changelog_url).to eq(
           "https://bitbucket.org/org/business/src/default/CHANGELOG.md"
         )
       end

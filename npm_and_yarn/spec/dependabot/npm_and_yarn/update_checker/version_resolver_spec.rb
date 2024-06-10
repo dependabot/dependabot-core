@@ -1827,7 +1827,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     describe "#latest_resolvable_previous_version" do
-      subject do
+      subject(:lrv) do
         resolver.latest_resolvable_previous_version(latest_allowable_version)
       end
 
@@ -1935,7 +1935,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it "picks the lowest requirements max version" do
-          is_expected.to eq("0.14.9")
+          expect(lrv).to eq("0.14.9")
         end
       end
 

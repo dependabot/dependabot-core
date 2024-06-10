@@ -35,7 +35,7 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
 
   describe ".files_requiring_update" do
     it do
-      is_expected.to contain_exactly(
+      expect(files_requiring_update).to contain_exactly(
         project_dependency_file("packages/package1/package-lock.json"),
         project_dependency_file("packages/package3/yarn.lock")
       )
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
       end
 
       it do
-        is_expected.to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           project_dependency_file("packages/package4/package-lock.json")
         )
       end

@@ -524,7 +524,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#head_commit_for_current_branch" do
-    subject { checker.head_commit_for_current_branch }
+    subject(:head_commit) { checker.head_commit_for_current_branch }
 
     context "with a pinned dependency" do
       let(:source) do
@@ -745,7 +745,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               end
 
               it do
-                is_expected.to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
+                expect(head_commit).to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
               end
             end
           end
