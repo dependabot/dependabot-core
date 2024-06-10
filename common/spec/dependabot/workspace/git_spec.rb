@@ -114,8 +114,8 @@ RSpec.describe Dependabot::Workspace::Git do
         expect(workspace.change_attempts.first.memo).to eq("timecop")
         expect(workspace.change_attempts.first.error).not_to be_nil
         expect(workspace.change_attempts.first.error.message).to eq("uh oh")
-        expect(workspace.change_attempts.first.error?).to be_truthy
-        expect(workspace.change_attempts.first.success?).to be_falsy
+        expect(workspace.change_attempts.first).to be_error
+        expect(workspace.change_attempts.first).not_to be_success
       end
 
       context "when there are untracked/ignored files" do
@@ -243,8 +243,8 @@ RSpec.describe Dependabot::Workspace::Git do
         )
         expect(workspace.change_attempts.first.memo).to eq("Update timecop")
         expect(workspace.change_attempts.first.error).to be_nil
-        expect(workspace.change_attempts.first.error?).to be_falsy
-        expect(workspace.change_attempts.first.success?).to be_truthy
+        expect(workspace.change_attempts.first).not_to be_error
+        expect(workspace.change_attempts.first).to be_success
       end
     end
   end
