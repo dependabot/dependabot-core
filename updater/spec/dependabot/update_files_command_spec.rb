@@ -25,10 +25,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
   before do
     allow(Dependabot::Service).to receive(:new).and_return(service)
-    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
-    allow(Dependabot::Environment).to receive(:job_token).and_return("mock_token")
-    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
-    allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(nil)
+    allow(Dependabot::Environment).to receive_messages(job_id: job_id, job_token: "mock_token",
+                                                       job_definition: job_definition, repo_contents_path: nil)
   end
 
   describe "#perform_job" do
@@ -187,7 +185,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
       it "captures the exception and does not records the update job unknown error api" do
         expect(service).to receive(:capture_exception)
-        expect(service).to_not receive(:record_update_job_unknown_error)
+        expect(service).not_to receive(:record_update_job_unknown_error)
 
         perform_job
         Dependabot::Experiments.reset!

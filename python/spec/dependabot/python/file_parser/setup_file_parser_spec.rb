@@ -152,7 +152,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
 
           it "excludes the dependency importing a version" do
             expect(dependencies.count).to eq(14)
-            expect(dependencies.map(&:name)).to_not include("acme")
+            expect(dependencies.map(&:name)).not_to include("acme")
           end
         end
       end

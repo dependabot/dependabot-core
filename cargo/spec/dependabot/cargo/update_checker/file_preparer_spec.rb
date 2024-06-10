@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             expect(prepared_manifest_file.content)
               .to include('time = ">= 0.1.12"')
             expect(prepared_manifest_file.content)
-              .to_not include('time = "<= 0.1.12"')
+              .not_to include('time = "<= 0.1.12"')
           end
         end
 
