@@ -4,6 +4,7 @@
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
 require "dependabot/workspace"
+require "sorbet-runtime"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -15,13 +16,18 @@ require "dependabot/workspace"
 #
 module Dependabot
   class Updater
+    extend T::Sig
+
     module GroupUpdateCreation
+      extend T::Sig
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
