@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -151,7 +151,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -305,15 +305,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "with a dependency with a private organization" do
       let(:mixfile_body) { fixture("mixfiles", "private_package") }
-      let(:lockfile_body) { fixture("lockfiles", "private_package") }
-
-      before { `mix hex.organization deauth dependabot` }
-
       let(:dependency_name) { "example_package_a" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
+      let(:lockfile_body) { fixture("lockfiles", "private_package") }
+
+      before { `mix hex.organization deauth dependabot` }
 
       context "with good credentials" do
         let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
@@ -332,7 +331,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "returns the expected version" do
           skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
-          is_expected.to eq(Gem::Version.new("1.1.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
         end
       end
 
@@ -406,15 +405,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "with a dependency from a private repo" do
       let(:mixfile_body) { fixture("mixfiles", "private_repo") }
-      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
-
-      before { `mix hex.repo remove dependabot` }
-
       let(:dependency_name) { "jason" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
+      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
+
+      before { `mix hex.repo remove dependabot` }
 
       context "with good credentials" do
         let(:credentials) do
@@ -586,9 +584,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             let(:ref) { nil }
 
             it "updates the dependency" do
-              expect(latest_resolvable_version).to_not be_nil
+              expect(latest_resolvable_version).not_to be_nil
               expect(latest_resolvable_version)
-                .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+                .not_to eq("178ce1a2344515e9145599970313fcc190d4b881")
               expect(latest_resolvable_version).to match(/^[0-9a-f]{40}$/)
             end
           end
@@ -745,9 +743,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           let(:ref) { nil }
 
           it "updates the dependency" do
-            expect(new_version).to_not be_nil
+            expect(new_version).not_to be_nil
             expect(new_version)
-              .to_not eq("178ce1a2344515e9145599970313fcc190d4b881")
+              .not_to eq("178ce1a2344515e9145599970313fcc190d4b881")
             expect(new_version).to match(/^[0-9a-f]{40}$/)
           end
         end

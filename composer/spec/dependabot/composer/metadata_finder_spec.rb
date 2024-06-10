@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
         it "doesn't hit packagist" do
           source_url
-          expect(WebMock).to_not have_requested(:get, packagist_url)
+          expect(WebMock).not_to have_requested(:get, packagist_url)
         end
       end
     end

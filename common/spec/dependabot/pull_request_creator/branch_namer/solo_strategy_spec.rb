@@ -229,7 +229,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::SoloStrategy do
         end
 
         it do
-          is_expected.to eq("dependabot/maven/springframework.version-23.6-jre")
+          expect(new_branch_name).to eq("dependabot/maven/springframework.version-23.6-jre")
         end
       end
 

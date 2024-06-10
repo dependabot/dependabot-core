@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
           )
       end
 
-      specify { expect { fetch_commit }.to_not raise_error }
+      specify { expect { fetch_commit }.not_to raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
 

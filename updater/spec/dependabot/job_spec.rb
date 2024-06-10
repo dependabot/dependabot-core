@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Job do
           ]
         end
 
-        it "should be allowed" do
+        it "is allowed" do
           dependency.metadata[:all_versions] = [
             Dependabot::Dependency.new(
               name: dependency_name,
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Job do
             )
           ]
 
-          is_expected.to be(true)
+          expect(job.allowed_update?(dependency)).to be(true)
         end
       end
     end

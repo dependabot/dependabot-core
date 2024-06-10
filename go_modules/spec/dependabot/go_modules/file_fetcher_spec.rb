@@ -55,7 +55,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:branch) { "without-go-sum" }
 
     it "doesn't raise an error" do
-      expect { file_fetcher_instance.files }.to_not raise_error
+      expect { file_fetcher_instance.files }.not_to raise_error
     end
   end
 
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
 
     it "clones them" do
-      expect { file_fetcher_instance.files }.to_not raise_error
+      expect { file_fetcher_instance.files }.not_to raise_error
       expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
     end
 

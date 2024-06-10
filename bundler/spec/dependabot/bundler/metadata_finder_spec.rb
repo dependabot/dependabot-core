@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
               :get,
               "https://gems.example.com/api/v1/gems/business.json"
             )
-          expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+          expect(WebMock).not_to have_requested(:get, rubygems_gemspec_url)
         end
 
         context "when with no source" do
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
               .to eq("https://github.com/gocardless/business")
             expect(WebMock)
               .to have_requested(:get, "https://gems.greysteil.com/api/v1/gems/business.json")
-            expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+            expect(WebMock).not_to have_requested(:get, rubygems_gemspec_url)
           end
         end
       end
@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
               :get,
               "https://rubygems.org/api/v1/gems/business.json"
             )
-          expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+          expect(WebMock).not_to have_requested(:get, rubygems_gemspec_url)
         end
 
         context "when the response doesn't match" do

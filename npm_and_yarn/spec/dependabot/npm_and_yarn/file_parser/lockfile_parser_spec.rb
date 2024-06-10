@@ -33,7 +33,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it "excludes the dependency" do
           # Lockfile contains 11 dependencies but one is an alias
           expect(dependencies.count).to eq(10)
-          expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+          expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
         end
       end
 
@@ -125,7 +125,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it "generates updated lockfile which excludes empty version dependencies." do
           # excluding empty version
           expect(dependencies.count).to eq(9)
-          expect(dependencies.map(&:name)).to_not include("encoding")
+          expect(dependencies.map(&:name)).not_to include("encoding")
         end
       end
 
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it "excludes the dependency" do
           # Lockfile contains 11 dependencies but one is an alias
           expect(dependencies.count).to eq(10)
-          expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+          expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
         end
       end
 

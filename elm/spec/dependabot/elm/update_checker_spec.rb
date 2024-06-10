@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
   end
 
   describe "can_update?" do
-    subject { checker.can_update?(requirements_to_unlock: unlock_level) }
+    subject(:can_update) { checker.can_update?(requirements_to_unlock: unlock_level) }
 
     let(:unlock_level) { :own }
 
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
       it "is true" do
         pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
-        is_expected.to be(true)
+        expect(can_update).to be(true)
       end
     end
 
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:raise_on_ignored) { true }
 
       it "doesn't raise an error" do
-        expect { latest_version }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         it "doesn't raise an error" do
-          expect { latest_version }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end

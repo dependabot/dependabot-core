@@ -432,8 +432,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "with a private registry" do
       let(:project_name) { "private_registry" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "dependabot/dummy-pkg-a",
@@ -454,6 +452,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           package_manager: "composer"
         )
       end
+
+      before { `composer clear-cache --quiet` }
 
       context "with good credentials" do
         let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
@@ -480,8 +480,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "with a laravel nova" do
       let(:project_name) { "laravel_nova" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "laravel/nova",
@@ -502,6 +500,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           package_manager: "composer"
         )
       end
+
+      before { `composer clear-cache --quiet` }
 
       context "with bad credentials" do
         let(:credentials) do
@@ -611,7 +611,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content)
           .to include('"5267b03b1e4861c4657ede17a88f13ef479db482"')
         expect(updated_lockfile_content)
-          .to_not include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
+          .not_to include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
         expect(updated_lockfile_content).to include('"version":"dev-example"')
 
         # Does update the specified dependency
@@ -620,7 +620,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).to include('"version":"v1.6.0"')
 
         # Cleans up the additions we made
-        expect(updated_lockfile_content).to_not include('"support": {')
+        expect(updated_lockfile_content).not_to include('"support": {')
       end
     end
 

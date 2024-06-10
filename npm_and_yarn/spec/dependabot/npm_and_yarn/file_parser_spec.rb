@@ -491,7 +491,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it "doesn't include the path-based dependency" do
             expect(top_level_dependencies.length).to eq(3)
-            expect(top_level_dependencies.map(&:name)).to_not include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("etag")
           end
         end
 
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
               it "is excluded" do
                 expect(top_level_dependencies.map(&:name))
-                  .to_not include("is-number")
+                  .not_to include("is-number")
               end
             end
           end
@@ -571,6 +571,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "when specifying a semver requirement" do
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
+            let(:git_pack_fixture_name) { "is-number" }
 
             before do
               git_url = "https://github.com/jonschlinkert/is-number.git"
@@ -586,8 +587,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   headers: git_header
                 )
             end
-
-            let(:git_pack_fixture_name) { "is-number" }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -1073,7 +1072,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it "doesn't include the path-based dependency" do
             expect(top_level_dependencies.length).to eq(3)
-            expect(top_level_dependencies.map(&:name)).to_not include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("etag")
           end
         end
 
@@ -1086,7 +1085,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           it "doesn't include the submodule dependency" do
-            expect(dependencies.map(&:name)).to_not include("pino-pretty")
+            expect(dependencies.map(&:name)).not_to include("pino-pretty")
           end
         end
 
@@ -1095,7 +1094,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it "doesn't include the link dependency" do
             expect(top_level_dependencies.length).to eq(3)
-            expect(top_level_dependencies.map(&:name)).to_not include("etag")
+            expect(top_level_dependencies.map(&:name)).not_to include("etag")
           end
         end
 
@@ -1105,7 +1104,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
             expect(top_level_dependencies.map(&:name)).to eq(["etag"])
-            expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+            expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
           end
         end
 
@@ -1115,7 +1114,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           it "doesn't include the aliased dependency" do
             expect(top_level_dependencies.length).to eq(1)
             expect(top_level_dependencies.map(&:name)).to eq(["etag"])
-            expect(dependencies.map(&:name)).to_not include("my-fetch-factory")
+            expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
           end
         end
 

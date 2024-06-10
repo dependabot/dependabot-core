@@ -26,6 +26,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       package_manager: package_manager
     )
   end
+  let(:service_pack_url) do
+    "https://github.com/gocardless/business.git/info/refs" \
+      "?service=git-upload-pack"
+  end
+  let(:upload_pack_fixture) { "business" }
   let(:package_manager) { "dummy" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
@@ -43,6 +48,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       repo: "gocardless/#{dependency_name}"
     )
   end
+
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -54,12 +60,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       )
   end
 
-  let(:service_pack_url) do
-    "https://github.com/gocardless/business.git/info/refs" \
-      "?service=git-upload-pack"
-  end
-  let(:upload_pack_fixture) { "business" }
-
   describe "#commits_url" do
     subject(:commits_url) { builder.commits_url }
 
@@ -68,8 +68,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "business" }
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "compare/v1.3.0...v1.4.0")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "compare/v1.3.0...v1.4.0")
       end
 
       context "without a previous version" do
@@ -92,8 +92,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { nil }
 
         it do
-          is_expected.to eq("https://github.com/gocardless/business/" \
-                            "compare/v1.3.0...v1.4.0")
+          expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                    "compare/v1.3.0...v1.4.0")
         end
       end
     end
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "business" }
 
       it do
-        is_expected
+        expect(commits_url)
           .to eq("https://github.com/gocardless/business/commits/v1.4.0")
       end
 
@@ -162,8 +162,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "commits/business-1.4")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "commits/business-1.4")
       end
 
       context "when dealing with a monorepo" do
@@ -225,16 +225,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it do
-          is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                            "commits/@pollyjs/ember@0.2.0/packages/ember")
+          expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                    "commits/@pollyjs/ember@0.2.0/packages/ember")
         end
 
         context "without a previous version" do
           let(:dependency_previous_version) { "0.0.3" }
 
           it do
-            is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+            expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                      "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
 
@@ -242,8 +242,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { "master" }
 
           it do
-            is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+            expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                      "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
       end
@@ -257,8 +257,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "commits/1.4.0")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "commits/1.4.0")
       end
     end
 
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "no_tags" }
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/commits")
+        expect(commits_url).to eq("https://github.com/gocardless/business/commits")
       end
     end
 
@@ -503,7 +503,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:upload_pack_fixture) { "business" }
 
         it do
-          is_expected
+          expect(commits_url)
             .to eq("https://github.com/gocardless/business/compare/" \
                    "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
         end
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             end
 
             it do
-              is_expected
+              expect(commits_url)
                 .to eq("https://github.com/gocardless/business/commits")
             end
           end
@@ -540,7 +540,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             let(:upload_pack_fixture) { "business" }
 
             it do
-              is_expected
+              expect(commits_url)
                 .to eq("https://github.com/gocardless/business/compare/" \
                        "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
             end
@@ -609,8 +609,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/" \
-                            "compare/v1.3.0...v1.4.0")
+          expect(commits_url).to eq("https://gitlab.com/org/business/" \
+                                    "compare/v1.3.0...v1.4.0")
         end
       end
 
@@ -618,7 +618,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/commits/v1.4.0")
+          expect(commits_url).to eq("https://gitlab.com/org/business/commits/v1.4.0")
         end
       end
 
@@ -627,7 +627,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/commits/master")
+          expect(commits_url).to eq("https://gitlab.com/org/business/commits/master")
         end
       end
     end
@@ -672,8 +672,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/" \
-                            "branches/compare/v1.4.0..v1.3.0")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/" \
+                                    "branches/compare/v1.4.0..v1.3.0")
         end
       end
 
@@ -681,7 +681,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected
+          expect(commits_url)
             .to eq("https://bitbucket.org/org/business/commits/tag/v1.4.0")
         end
       end
@@ -691,7 +691,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/commits")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/commits")
         end
       end
 
@@ -700,7 +700,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/commits")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/commits")
         end
       end
     end
@@ -745,8 +745,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
-                            "branchCompare?baseVersion=GTv1.3.0&targetVersion=GTv1.4.0")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                                    "branchCompare?baseVersion=GTv1.3.0&targetVersion=GTv1.4.0")
         end
       end
 
@@ -754,7 +754,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected
+          expect(commits_url)
             .to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits?itemVersion=GTv1.4.0")
         end
       end
@@ -778,9 +778,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
 
           it "gets the right URL" do
-            is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
-                              "branchCompare?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
-                              "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
+            expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                                      "branchCompare?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
+                                      "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
           end
         end
 
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { nil }
 
           it "gets the right URL" do
-            is_expected
+            expect(commits_url)
               .to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits" \
                      "?itemVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
           end
@@ -801,7 +801,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
         end
       end
 
@@ -810,7 +810,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
         end
       end
     end
@@ -823,7 +823,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   end
 
   describe "#commits" do
-    subject { builder.commits }
+    subject(:commits) { builder.commits }
 
     context "with old and new tags" do
       let(:dependency_previous_version) { "1.3.0" }
@@ -851,7 +851,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to eq(
+          expect(commits).to eq(
             [
               {
                 message: "[12]() Remove _SEPA_ calendar (replaced by TARGET)",
@@ -981,7 +981,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits relevant to the given path" do
-            is_expected.to contain_exactly({
+           is_expected.to contain_exactly({
               message: "feat: Custom persister support\n\n" \
                        "* feat: Custom persister support\r\n\r\n" \
                        "* Create a @pollyjs/persister package\r\n" \
@@ -1006,6 +1006,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               html_url: "https://github.com/Netflix/pollyjs/commit/" \
                         "ebf6474d0008e9e76249a78473263894dd0668dc"
             })
+
           end
         end
       end
@@ -1051,7 +1052,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
                       "f275e318641f185b8a15a2220e7c189b1769f84c"
           })
-        end
+       end
       end
 
       context "with a azure repo" do
@@ -1086,7 +1087,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to contain_exactly({
+         is_expected.to contain_exactly({
             message: "Merged PR 2: Deleted README.md",
             sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
             html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \

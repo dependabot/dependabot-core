@@ -320,13 +320,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     context "when dealing with a scoped package name" do
       let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
-      let(:target_version) { "2.0.2" }
-      before do
-        allow_any_instance_of(described_class::VersionResolver)
-          .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("1.7.0"))
-      end
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -339,6 +332,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           }],
           package_manager: "npm_and_yarn"
         )
+      end
+      let(:target_version) { "2.0.2" }
+
+      before do
+        allow_any_instance_of(described_class::VersionResolver)
+          .to receive(:latest_resolvable_version)
+          .and_return(Gem::Version.new("1.7.0"))
       end
 
       it { is_expected.to be_truthy }
@@ -418,11 +418,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           package_manager: "npm_and_yarn"
         )
       end
+      let(:upload_pack_fixture) { "is-number" }
+      let(:commit_compare_response) do
+        fixture("github", "commit_compare_diverged.json")
+      end
       let(:registry_listing_url) { "https://registry.npmjs.org/is-number" }
       let(:registry_response) do
         fixture("npm_responses", "is_number.json")
       end
       let(:current_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+
       before do
         git_url = "https://github.com/jonschlinkert/is-number.git"
         git_header = {
@@ -445,11 +450,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             body: commit_compare_response,
             headers: { "Content-Type" => "application/json" }
           )
-      end
-
-      let(:upload_pack_fixture) { "is-number" }
-      let(:commit_compare_response) do
-        fixture("github", "commit_compare_diverged.json")
       end
 
       context "with a branch" do
@@ -539,7 +539,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix) { checker.lowest_security_fix_version }
 
     let(:target_version) { "1.0.1" }
 
@@ -562,7 +562,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:target_version) { "1.2.1" }
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.2.1"))
+        expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
       end
     end
   end
@@ -1761,24 +1761,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   context "when types dependency specified" do
     let(:dependency_name) { "jquery" }
-    let(:target_version) { "3.6.0" }
-    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
-    let(:types_response) do
-      fixture("npm_responses", "types_jquery.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url)
-        .to_return(status: 200, body: types_response)
-      stub_request(:get, types_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url + "/3.3.10")
-        .to_return(status: 200)
-      stub_request(:get, types_listing_url + "/3.5.14")
-        .to_return(status: 200)
-    end
-
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1795,6 +1777,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         groups: [],
         source: nil
       }]
+    end
+    let(:target_version) { "3.6.0" }
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
+    let(:types_response) do
+      fixture("npm_responses", "types_jquery.json")
+    end
+
+    before do
+      stub_request(:get, registry_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url)
+        .to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/3.3.10")
+        .to_return(status: 200)
+      stub_request(:get, types_listing_url + "/3.5.14")
+        .to_return(status: 200)
     end
 
     it "returns both dependencies for update" do
@@ -1832,12 +1832,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   context "when types dependency is not specified" do
     let(:dependency_name) { "jquery" }
-    let(:target_version) { "3.6.0" }
-    before do
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-    end
-
     let(:dependency_files) { project_dependency_files("yarn/ts_missing_types") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1855,6 +1849,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+    let(:target_version) { "3.6.0" }
+
+    before do
+      stub_request(:get, registry_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+    end
 
     it "returns only one dependency" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
@@ -1865,22 +1865,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   context "when no update to @types available" do
     let(:dependency_name) { "jquery" }
-    let(:target_version) { "3.6.0" }
-    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
-    let(:types_response) do
-      fixture("npm_responses", "types_jquery.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url)
-        .to_return(status: 200, body: types_response)
-      stub_request(:get, types_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url + "/3.5.14")
-        .to_return(status: 200)
-    end
-
     let(:dependency_files) { project_dependency_files("yarn/ts_no_type_update") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1898,6 +1882,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+    let(:target_version) { "3.6.0" }
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
+    let(:types_response) do
+      fixture("npm_responses", "types_jquery.json")
+    end
+
+    before do
+      stub_request(:get, registry_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url)
+        .to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/3.5.14")
+        .to_return(status: 200)
+    end
 
     it "only updates original package" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
@@ -1908,24 +1908,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   context "when types is a normal dependency" do
     let(:dependency_name) { "node-forge" }
-    let(:target_version) { "1.3.1" }
-    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fnode-forge" }
-    let(:types_response) do
-      fixture("npm_responses", "types_node-forge.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url)
-        .to_return(status: 200, body: types_response)
-      stub_request(:get, types_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, types_listing_url + "/1.0.0")
-        .to_return(status: 200)
-      stub_request(:get, types_listing_url + "/1.0.1")
-        .to_return(status: 200)
-    end
-
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1943,6 +1925,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
+    let(:target_version) { "1.3.1" }
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fnode-forge" }
+    let(:types_response) do
+      fixture("npm_responses", "types_node-forge.json")
+    end
+
+    before do
+      stub_request(:get, registry_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url)
+        .to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/1.0.0")
+        .to_return(status: 200)
+      stub_request(:get, types_listing_url + "/1.0.1")
+        .to_return(status: 200)
+    end
 
     it "returns 2 dependencies to update" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
@@ -1954,26 +1954,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
   context "when types dependency is checked and updated original package exists" do
     let(:registry_listing_url) { "https://registry.yarnpkg.com/node-forge" }
-    let(:registry_response) do
-      fixture("npm_responses", "node-forge.json")
-    end
-    let(:types_listing_url) { "https://registry.npmjs.org/@types%2Fnode-forge" }
-    let(:types_response) do
-      fixture("npm_responses", "types_node-forge.json")
-    end
-    before do
-      stub_request(:get, registry_listing_url)
-        .to_return(status: 200, body: registry_response)
-      stub_request(:get, registry_listing_url + "/latest")
-        .to_return(status: 200, body: "{}")
-      stub_request(:get, registry_listing_url + "/1.3.1")
-        .to_return(status: 200)
-      stub_request(:get, types_listing_url)
-        .to_return(status: 200, body: types_response)
-      stub_request(:head, "https://registry.npmjs.org/@types/node-forge/-/node-forge-1.0.1.tgz")
-        .to_return(status: 200)
-    end
-
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -1990,6 +1970,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         groups: [],
         source: nil
       }]
+    end
+    let(:registry_response) do
+      fixture("npm_responses", "node-forge.json")
+    end
+    let(:types_listing_url) { "https://registry.npmjs.org/@types%2Fnode-forge" }
+    let(:types_response) do
+      fixture("npm_responses", "types_node-forge.json")
+    end
+
+    before do
+      stub_request(:get, registry_listing_url)
+        .to_return(status: 200, body: registry_response)
+      stub_request(:get, registry_listing_url + "/latest")
+        .to_return(status: 200, body: "{}")
+      stub_request(:get, registry_listing_url + "/1.3.1")
+        .to_return(status: 200)
+      stub_request(:get, types_listing_url)
+        .to_return(status: 200, body: types_response)
+      stub_request(:head, "https://registry.npmjs.org/@types/node-forge/-/node-forge-1.0.1.tgz")
+        .to_return(status: 200)
     end
 
     it "returns 0 dependencies to update" do
