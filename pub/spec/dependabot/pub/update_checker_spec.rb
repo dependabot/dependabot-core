@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       it "can update" do
-        expect(checker.vulnerable?).to be_truthy
+        expect(checker).to be_vulnerable
         expect(checker.lowest_resolvable_security_fix_version).to eq("2.0.0")
         expect(updated_dependencies).to eq [
           {

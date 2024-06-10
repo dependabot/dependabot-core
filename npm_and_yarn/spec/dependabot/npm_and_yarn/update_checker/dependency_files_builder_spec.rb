@@ -74,7 +74,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
         expect(Dir.children(".")).to match_array(
           %w(package.json .npmrc)
         )
-        expect(File.read(".npmrc")).to be_empty
+        expect(File.empty?(".npmrc")).to be(true)
       end
     end
   end
@@ -89,7 +89,7 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
         expect(Dir.children(".")).to match_array(
           %w(package.json .npmrc .yarnrc)
         )
-        expect(File.read(".npmrc")).not_to be_empty
+        expect(File.empty?(".npmrc")).to be(true)
       end
     end
   end
