@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/gradle/file_parser"
 
@@ -7,6 +9,8 @@ module Dependabot
   module Gradle
     class FileParser
       class RepositoriesFinder
+        extend T::Sig
+
         SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
         SUPPORTED_SETTINGS_FILE_NAMES = %w(settings.gradle settings.gradle.kts).freeze
 
@@ -58,14 +62,14 @@ module Dependabot
           subproject_blocks = []
 
           buildfile_content.scan(/(?:^|\s)allprojects\s*\{/) do
-            mtch = Regexp.last_match
+            mtch = T.must(Regexp.last_match)
             subproject_blocks <<
               mtch.post_match[0..closing_bracket_index(mtch.post_match)]
           end
 
           if top_level_buildfile != target_dependency_file
             buildfile_content.scan(/(?:^|\s)subprojects\s*\{/) do
-              mtch = Regexp.last_match
+              mtch = T.must(Regexp.last_match)
               subproject_blocks <<
                 mtch.post_match[0..closing_bracket_index(mtch.post_match)]
             end
@@ -82,7 +86,7 @@ module Dependabot
           own_buildfile_urls = []
 
           subproject_buildfile_content = buildfile_content.dup.scan(/(?:^|\s)subprojects\s*\{/) do
-            mtch = Regexp.last_match
+            mtch = T.must(Regexp.last_match)
             buildfile_content.gsub(
               mtch.post_match[0..closing_bracket_index(mtch.post_match)],
               ""
@@ -101,7 +105,7 @@ module Dependabot
           dependency_resolution_management_repositories = []
 
           settings_file_content.scan(/(?:^|\s)dependencyResolutionManagement\s*\{/) do
-            mtch = Regexp.last_match
+            mtch = T.must(Regexp.last_match)
             dependency_resolution_management_repositories <<
               mtch.post_match[0..closing_bracket_index(mtch.post_match)]
           end
@@ -114,7 +118,7 @@ module Dependabot
 
           repository_blocks = []
           buildfile_content.scan(REPOSITORIES_BLOCK_START) do
-            mtch = Regexp.last_match
+            mtch = T.must(Regexp.last_match)
             repository_blocks <<
               mtch.post_match[0..closing_bracket_index(mtch.post_match)]
           end
@@ -129,7 +133,7 @@ module Dependabot
             repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
-              repository_urls << Regexp.last_match.named_captures.fetch("url")
+              repository_urls << T.must(Regexp.last_match).named_captures.fetch("url")
             end
           end
 
