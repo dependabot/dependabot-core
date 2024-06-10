@@ -392,7 +392,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev"
+            "url" => "http://172.17.0.1:8000"
           })]
         end
 
@@ -405,7 +405,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
-            "url" => "https://dependabot-private.fly.dev"
+            "url" => "http://172.17.0.1:8000"
           })]
         end
 
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev",
+            "url" => "http://172.17.0.1:8000",
             "public_key_fingerprint" => "SHA256:jn36tNgSXuEljoob8fkejX9LIyXqCcwShjRGps7RVgw"
           })]
         end
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev",
+            "url" => "http://172.17.0.1:8000",
             "public_key_fingerprint" => "SHA256:kejX9LIyXqCcwShjRGps7RVgjn36tNgSXuEljoob8fw"
           })]
         end
@@ -464,7 +464,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             "type" => "hex_repository",
             "repo" => "dependabot",
             "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-            "url" => "https://dependabot-private.fly.dev"
+            "url" => "http://172.17.0.1:8000"
           })]
         end
 
