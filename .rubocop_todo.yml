@@ -212,16 +212,6 @@ RSpec/ScatteredSetup:
     - 'nuget/spec/dependabot/nuget/file_fetcher_spec.rb'
     - 'python/spec/dependabot/python/file_fetcher_spec.rb'
 
-# Offense count: 24
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: string, symbol
-RSpec/SharedExamples:
-  Exclude:
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'pub/spec/spec_helper.rb'
-    - 'updater/spec/dependabot/service_spec.rb'
-
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, IgnoreMetadata.
 # Include: **/*_spec.rb

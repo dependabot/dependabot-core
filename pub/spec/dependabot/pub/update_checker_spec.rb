@@ -709,7 +709,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "with a git dependency" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "git_dependency" }
 
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when working for a flutter project" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "requires_flutter" }
     let(:requirements_to_unlock) { :all }
@@ -808,7 +808,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when working for a flutter project requiring a flutter beta" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "requires_latest_beta" }
     let(:requirements_to_unlock) { :all }
