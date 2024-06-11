@@ -136,7 +136,7 @@ module Dependabot
 
       # Lowest available security fix version not checking resolvability
       # @return [Dependabot::<package manager>::Version, #to_s] version class
-      sig { overridable.returns(Dependabot::Version) }
+      sig { overridable.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         raise NotImplementedError, "#{self.class} must implement #lowest_security_fix_version"
       end
