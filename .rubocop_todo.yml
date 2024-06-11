@@ -271,4 +271,3 @@ RSpec/VerifiedDoubles:
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
     - 'updater/spec/dependabot/sentry/sentry_context_processor_spec.rb'
     - 'updater/spec/dependabot/update_files_command_spec.rb'
-

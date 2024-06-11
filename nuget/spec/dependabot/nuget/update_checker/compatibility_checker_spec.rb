@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
       dependency: dependency
     )
   end
+
   let(:repo_contents_path) { write_tmp_repo(dependency_files) }
   let(:source) do
     Dependabot::Source.new(
@@ -247,7 +248,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
           )
       end
 
-      context "checks the `.nupkg` contents" do
+      context "when checking the `.nupkg` contents" do
         let(:version) { "5.0.2" }
 
         it "returns the correct data" do

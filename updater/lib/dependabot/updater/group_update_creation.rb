@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
@@ -15,12 +17,33 @@ require "dependabot/workspace"
 #
 module Dependabot
   class Updater
+    extend T::Sig
+
     module GroupUpdateCreation
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(Dependabot::DependencySnapshot) }
+      attr_reader :dependency_snapshot
+
+      sig { returns(Dependabot::Updater::ErrorHandler) }
+      attr_reader :error_handler
+
+      sig { returns(Dependabot::Job) }
+      attr_reader :job
+
+      sig { returns(Dependabot::DependencyGroup) }
+      attr_reader :group
+
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
 
@@ -60,10 +83,10 @@ module Dependabot
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
-            dep.name.casecmp(dependency.name).zero?
+            dep.name.casecmp(dependency.name)&.zero?
           end
 
-          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
+          dependency_change = create_change_for(T.must(lead_dependency), updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
@@ -76,18 +99,38 @@ module Dependabot
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
-        Dependabot::DependencyChange.new(
+        dependency_change = Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
+
+        if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
+          log_missing_previous_version(dependency_change)
+          return nil
+        end
+
+        dependency_change
       ensure
         cleanup_workspace
       end
+
+      # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      def log_missing_previous_version(dependency_change)
+        deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
+        deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
+        msg = "Skipping change to group #{group.name} in directory #{job.source.directory}: "
+        if deps_no_previous_version.any?
+          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
+        end
+        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
+        Dependabot.logger.info(msg)
+      end
 
+      sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::FileParsers::Base) }
       def dependency_file_parser(dependency_files)
         Dependabot::FileParsers.for_package_manager(job.package_manager).new(
           dependency_files: dependency_files,
@@ -103,6 +146,15 @@ module Dependabot
       # list of dependencies to be updated
       #
       # This method **must** return false in the event of an error
+      sig do
+        params(
+          lead_dependency: Dependabot::Dependency,
+          updated_dependencies: T::Array[Dependabot::Dependency],
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          dependency_group: Dependabot::DependencyGroup
+        )
+          .returns(T.any(Dependabot::DependencyChange, FalseClass))
+      end
       def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
         Dependabot::DependencyChangeBuilder.create_from(
           job: job,
@@ -133,6 +185,14 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          group: Dependabot::DependencyGroup
+        )
+          .returns(T::Array[Dependabot::Dependency])
+      end
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(
           dependency,
@@ -169,7 +229,7 @@ module Dependabot
           requirements_to_unlock: requirements_to_unlock
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        dependency_snapshot.add_handled_dependencies(dependency)
+        dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
@@ -185,16 +245,27 @@ module Dependabot
         [] # return an empty set
       end
 
+      sig { params(dependency: Dependabot::Dependency).void }
       def log_up_to_date(dependency)
         Dependabot.logger.info(
           "No update needed for #{dependency.name} #{dependency.version}"
         )
       end
 
+      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def raise_on_ignored?(dependency)
         job.ignore_conditions_for(dependency).any?
       end
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          dependency_group: Dependabot::DependencyGroup,
+          raise_on_ignored: T::Boolean
+        )
+          .returns(Dependabot::UpdateCheckers::Base)
+      end
       def update_checker_for(dependency, dependency_files, dependency_group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
@@ -210,6 +281,7 @@ module Dependabot
         )
       end
 
+      sig { params(dependency: Dependabot::Dependency).void }
       def log_checking_for_update(dependency)
         Dependabot.logger.info(
           "Checking if #{dependency.name} #{dependency.version} needs updating"
@@ -217,6 +289,7 @@ module Dependabot
         job.log_ignore_conditions_for(dependency)
       end
 
+      sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
       def all_versions_ignored?(dependency, checker)
         if job.security_updates_only?
           Dependabot.logger.info("Lowest security fix version is #{checker.lowest_security_fix_version}")
@@ -234,6 +307,14 @@ module Dependabot
       # SemVer Grouping rules have to be applied after we have a checker, because we need to know the latest version.
       # Other rules are applied earlier in the process.
       # rubocop:disable Metrics/AbcSize
+      sig do
+        params(
+          group: Dependabot::DependencyGroup,
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base
+        )
+          .returns(T::Boolean)
+      end
       def semver_rules_allow_grouping?(group, dependency, checker)
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless group.rules["update-types"]
@@ -252,15 +333,16 @@ module Dependabot
         # Ensure that semver components are of the same type and can be compared with each other.
         return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
 
-        return group.rules["update-types"].include?("major") if latest[:major] > current[:major]
-        return group.rules["update-types"].include?("minor") if latest[:minor] > current[:minor]
-        return group.rules["update-types"].include?("patch") if latest[:patch] > current[:patch]
+        return T.must(group.rules["update-types"]).include?("major") if T.must(latest[:major]) > T.must(current[:major])
+        return T.must(group.rules["update-types"]).include?("minor") if T.must(latest[:minor]) > T.must(current[:minor])
+        return T.must(group.rules["update-types"]).include?("patch") if T.must(latest[:patch]) > T.must(current[:patch])
 
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
       end
       # rubocop:enable Metrics/AbcSize
 
+      sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
       def semver_segments(version)
         {
           major: version.segments[0] || 0,
@@ -269,6 +351,7 @@ module Dependabot
         }
       end
 
+      sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
       def requirements_to_unlock(checker)
         if !checker.requirements_unlocked_or_can_be?
           if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -282,6 +365,7 @@ module Dependabot
         end
       end
 
+      sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }
       def log_requirements_for_update(requirements_to_unlock, checker)
         Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -292,6 +376,7 @@ module Dependabot
         )
       end
 
+      sig { params(group: Dependabot::DependencyGroup).void }
       def warn_group_is_empty(group)
         Dependabot.logger.warn(
           "Skipping update group for '#{group.name}' as it does not match any allowed dependencies."
@@ -306,37 +391,52 @@ module Dependabot
         DEBUG
       end
 
+      sig { void }
       def prepare_workspace
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.setup(
-          repo_contents_path: job.repo_contents_path,
+          repo_contents_path: T.must(job.repo_contents_path),
           directory: Pathname.new(job.source.directory || "/").cleanpath
         )
       end
 
+      sig do
+        params(dependency: Dependabot::Dependency)
+          .returns(T.nilable(T::Array[Dependabot::Workspace::ChangeAttempt]))
+      end
       def store_changes(dependency)
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.store_change(memo: "Updating #{dependency.name}")
       end
 
+      sig { void }
       def cleanup_workspace
         return unless job.clone? && job.repo_contents_path
 
         Dependabot::Workspace.cleanup!
       end
 
+      sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def pr_exists_for_dependency_group?(group)
-        job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
       end
 
+      sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
       def dependencies_in_existing_pr_for_group(group)
         job.existing_group_pull_requests.find do |pr|
           pr["dependency-group-name"] == group.name
-        end.fetch("dependencies", [])
+        end&.fetch("dependencies", [])
       end
 
+      sig do
+        params(
+          dependency: T.nilable(Dependabot::Dependency),
+          original_dependency: T.nilable(Dependabot::Dependency)
+        )
+          .returns(T.nilable(Dependabot::Dependency))
+      end
       def deduce_updated_dependency(dependency, original_dependency)
         return nil if dependency.nil? || original_dependency.nil?
         return nil if original_dependency.version == dependency.version

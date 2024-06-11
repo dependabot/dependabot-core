@@ -9,33 +9,7 @@ require "dependabot/elm/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Elm::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:files) { [elm_json_file] }
-  let(:elm_json_file) do
-    Dependabot::DependencyFile.new(
-      content: fixture("elm_jsons", elm_json_file_fixture_name),
-      name: "elm.json"
-    )
-  end
-  let(:elm_json_file_fixture_name) { "app.json" }
-
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "elm/regex",
@@ -56,7 +30,31 @@ RSpec.describe Dependabot::Elm::FileUpdater do
       package_manager: "elm"
     )
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:elm_json_file_fixture_name) { "app.json" }
+  let(:elm_json_file) do
+    Dependabot::DependencyFile.new(
+      content: fixture("elm_jsons", elm_json_file_fixture_name),
+      name: "elm.json"
+    )
+  end
+  let(:files) { [elm_json_file] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   before { FileUtils.mkdir_p(tmp_path) }
 
@@ -64,14 +62,14 @@ RSpec.describe Dependabot::Elm::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(1) }
 
     describe "the elm.json file" do

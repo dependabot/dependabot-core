@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -29,7 +29,7 @@ module Dependabot
             content.gsub(original_declaration_replacement_regex) do |mtch|
               # If the "declaration" is setting an option (e.g., no-binary)
               # ignore it, since it isn't actually a declaration
-              next mtch if Regexp.last_match.pre_match.match?(/--.*\z/)
+              next mtch if Regexp.last_match&.pre_match&.match?(/--.*\z/)
 
               updated_dependency_declaration_string
             end

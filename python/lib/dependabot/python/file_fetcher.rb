@@ -294,7 +294,7 @@ module Dependabot
       end
 
       def project_files
-        project_files = []
+        project_files = T.let([], T::Array[Dependabot::DependencyFile])
         unfetchable_deps = []
 
         path_dependencies.each do |dep|
@@ -302,7 +302,7 @@ module Dependabot
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
           unfetchable_deps << if sdist_or_wheel?(path)
-                                e.file_path.gsub(%r{^/}, "")
+                                e.file_path&.gsub(%r{^/}, "")
                               else
                                 "\"#{dep[:name]}\" at #{cleanpath(File.join(directory, dep[:file]))}"
                               end
@@ -311,7 +311,7 @@ module Dependabot
         poetry_path_dependencies.each do |path|
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound => e
-          unfetchable_deps << e.file_path.gsub(%r{^/}, "")
+          unfetchable_deps << e.file_path&.gsub(%r{^/}, "")
         end
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_deps if unfetchable_deps.any?

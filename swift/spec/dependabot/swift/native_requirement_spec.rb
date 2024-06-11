@@ -13,28 +13,28 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
 
   describe ".new" do
     it "parses different ways of declaring requirements" do
-      expect('from: "1.0.0"').to parse_as(">= 1.0.0, < 2.0.0")
-      expect('from : "1.0.0"').to parse_as(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('from: "1.0.0"').to_s).to eq(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('from : "1.0.0"').to_s).to eq(">= 1.0.0, < 2.0.0")
 
-      expect('exact: "1.0.0"').to parse_as("= 1.0.0")
-      expect('exact : "1.0.0"').to parse_as("= 1.0.0")
+      expect(described_class.new('exact: "1.0.0"').to_s).to eq("= 1.0.0")
+      expect(described_class.new('exact : "1.0.0"').to_s).to eq("= 1.0.0")
 
-      expect('.upToNextMajor(from: "1.0.0")').to parse_as(">= 1.0.0, < 2.0.0")
-      expect('.upToNextMajor (from: "1.0.0")').to parse_as(">= 1.0.0, < 2.0.0")
-      expect('.upToNextMajor( from: "1.0.0" )').to parse_as(">= 1.0.0, < 2.0.0")
-      expect('.upToNextMajor (from : "1.0.0")').to parse_as(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('.upToNextMajor(from: "1.0.0")').to_s).to eq(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('.upToNextMajor (from: "1.0.0")').to_s).to eq(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('.upToNextMajor( from: "1.0.0" )').to_s).to eq(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('.upToNextMajor (from : "1.0.0")').to_s).to eq(">= 1.0.0, < 2.0.0")
 
-      expect('.upToNextMinor(from: "1.0.0")').to parse_as(">= 1.0.0, < 1.1.0")
-      expect('.upToNextMinor (from: "1.0.0")').to parse_as(">= 1.0.0, < 1.1.0")
-      expect('.upToNextMinor( from: "1.0.0" )').to parse_as(">= 1.0.0, < 1.1.0")
-      expect('.upToNextMinor (from : "1.0.0")').to parse_as(">= 1.0.0, < 1.1.0")
+      expect(described_class.new('.upToNextMinor(from: "1.0.0")').to_s).to eq(">= 1.0.0, < 1.1.0")
+      expect(described_class.new('.upToNextMinor (from: "1.0.0")').to_s).to eq(">= 1.0.0, < 1.1.0")
+      expect(described_class.new('.upToNextMinor( from: "1.0.0" )').to_s).to eq(">= 1.0.0, < 1.1.0")
+      expect(described_class.new('.upToNextMinor (from : "1.0.0")').to_s).to eq(">= 1.0.0, < 1.1.0")
 
-      expect('.exact("1.0.0")').to parse_as("= 1.0.0")
-      expect('.exact ("1.0.0")').to parse_as("= 1.0.0")
-      expect('.exact( "1.0.0" )').to parse_as("= 1.0.0")
+      expect(described_class.new('.exact("1.0.0")').to_s).to eq("= 1.0.0")
+      expect(described_class.new('.exact ("1.0.0")').to_s).to eq("= 1.0.0")
+      expect(described_class.new('.exact( "1.0.0" )').to_s).to eq("= 1.0.0")
 
-      expect('"1.0.0"..<"2.0.0"').to parse_as(">= 1.0.0, < 2.0.0")
-      expect('"1.0.0"..."2.0.0"').to parse_as(">= 1.0.0, <= 2.0.0")
+      expect(described_class.new('"1.0.0"..<"2.0.0"').to_s).to eq(">= 1.0.0, < 2.0.0")
+      expect(described_class.new('"1.0.0"..."2.0.0"').to_s).to eq(">= 1.0.0, <= 2.0.0")
     end
   end
 end

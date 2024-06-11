@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
@@ -10,6 +12,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Terraform
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
       include FileSelector
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
@@ -36,8 +40,8 @@ module Dependabot
         end
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
-        if updated_lockfile_content && lockfile.content != updated_lockfile_content
-          updated_files << updated_file(file: lockfile, content: updated_lockfile_content)
+        if updated_lockfile_content && T.must(lockfile).content != updated_lockfile_content
+          updated_files << updated_file(file: T.must(lockfile), content: updated_lockfile_content)
         end
 
         updated_files.compact!
@@ -137,12 +141,18 @@ module Dependabot
                .sub(hashes_object_regex, "")
       end
 
+      sig do
+        params(
+          new_req: T::Hash[Symbol, T.untyped]
+        )
+          .returns([String, String, Regexp])
+      end
       def lockfile_details(new_req)
-        content = lockfile.content.dup
+        content = T.must(lockfile).content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
 
-        [content, provider_source, declaration_regex]
+        [T.must(content), provider_source, declaration_regex]
       end
 
       def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
@@ -164,7 +174,7 @@ module Dependabot
           linux_arm64
         )
 
-        base_dir = dependency_files.first.directory
+        base_dir = T.must(dependency_files.first).directory
         lockfile_hash_removed = remove_provider_h1_hashes(content, declaration_regex)
 
         # This runs in the same directory as the actual lockfile update so
@@ -198,7 +208,7 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
-            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
           end
           raise if @retrying_lock || !e.message.include?("terraform init")
@@ -226,7 +236,7 @@ module Dependabot
         content, provider_source, declaration_regex = lockfile_details(new_req)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        base_dir = dependency_files.first.directory
+        base_dir = T.must(dependency_files.first).directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           # Determine the provider using the original manifest files
           platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
@@ -242,17 +252,17 @@ module Dependabot
           )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
-          updated_dependency = updated_lockfile.scan(declaration_regex).first
+          updated_dependency = T.cast(updated_lockfile.scan(declaration_regex).first, String)
 
           # Terraform will occasionally update h1 hashes without updating the version of the dependency
           # Here we make sure the dependency's version actually changes in the lockfile
-          unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) ==
-                 content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
+          unless T.cast(updated_dependency.scan(declaration_regex).first, String).scan(/^\s*version\s*=.*/) ==
+                 T.cast(content.scan(declaration_regex).first, String).scan(/^\s*version\s*=.*/)
             content.sub!(declaration_regex, updated_dependency)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
-            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
           end
           raise if @retrying_lock || !e.message.include?("terraform init")
@@ -276,8 +286,8 @@ module Dependabot
           output = e.message
 
           if output.match?(PRIVATE_MODULE_ERROR)
-            repo = output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
-            if repo.match?(GIT_HTTPS_PREFIX)
+            repo = T.must(output.match(PRIVATE_MODULE_ERROR)).named_captures.fetch("repo")
+            if repo&.match?(GIT_HTTPS_PREFIX)
               repo = repo.sub(GIT_HTTPS_PREFIX, "")
               repo = repo.sub(/\.git$/, "")
             end
@@ -363,6 +373,7 @@ module Dependabot
         source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
       end
 
+      sig { params(provider_source: String).returns(Regexp) }
       def lockfile_declaration_regex(provider_source)
         /
           (?:(?!^\}).)*

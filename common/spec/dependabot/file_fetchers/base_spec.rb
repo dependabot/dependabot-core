@@ -21,28 +21,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       commit: source_commit
     )
   end
-  let(:provider) { "github" }
-  let(:repo) { "gocardless/bump" }
-  let(:directory) { "/" }
-  let(:branch) { nil }
-  let(:source_commit) { nil }
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "region" => "us-east-1",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
-  before do
-    allow_any_instance_of(
-      Dependabot::Clients::CodeCommit
-    ).to receive(:cc_client).and_return(stubbed_cc_client)
-  end
   let(:repo_contents_path) { nil }
-
   let(:child_class) do
     Class.new(described_class) do
       def self.required_files_in?(filenames)
@@ -66,6 +45,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
       credentials: credentials,
       repo_contents_path: repo_contents_path
     )
+  end
+  let(:provider) { "github" }
+  let(:repo) { "gocardless/bump" }
+  let(:directory) { "/" }
+  let(:branch) { nil }
+  let(:source_commit) { nil }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "region" => "us-east-1",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+
+  before do
+    allow_any_instance_of(
+      Dependabot::Clients::CodeCommit
+    ).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#commit" do
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it { is_expected.to eq("bb218f56b14c9653891f9e74264a383fa43fefbd") }
 
-        context "that can't be found" do
+        context "when branch can't be found" do
           before do
             stub_request(:get, url + "/git/refs/heads/my_branch")
               .with(headers: { "Authorization" => "token token" })
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that returns an array (because it is a substring)" do
+        context "when returning an array (because it is a substring)" do
           before do
             stub_request(:get, url + "/git/refs/heads/my_branch")
               .with(headers: { "Authorization" => "token token" })
@@ -299,14 +299,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     end
 
     context "with a GitHub source" do
+      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
       its(:length) { is_expected.to eq(1) }
 
-      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -316,7 +318,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("octokit") }
@@ -347,7 +349,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "is stripped" do
-            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+            expect(files_find.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
           end
         end
 
@@ -372,7 +374,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "with a directory specified" do
-        context "that ends in a slash" do
+        context "when ending in a slash" do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
 
@@ -383,7 +385,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that begins with a slash" do
+        context "when beginning with a slash" do
           let(:directory) { "/app" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
 
@@ -394,7 +396,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that includes a slash" do
+        context "when including a slash" do
           let(:directory) { "a/pp" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/a/pp/" }
 
@@ -445,6 +447,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:content) { is_expected.to include("octokit") }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end
@@ -477,7 +480,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("octokit") }
         end
 
-        context "that is in a submodule (shallow)" do
+        context "when the file is in a submodule (shallow)" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -541,7 +544,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that is in a submodule (deep)" do
+        context "when the file is in a submodule (deep)" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -615,7 +618,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that is in a symlinked directory" do
+        context "when the file is in a symlinked directory" do
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -693,6 +696,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           "https://api.github.com/repos/#{repo}/git/blobs/" \
             "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
+
         before do
           stub_request(:get, url + "requirements.txt?ref=sha")
             .with(headers: { "Authorization" => "token token" })
@@ -725,6 +729,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         context "with a directory specified" do
           let(:directory) { "app/" }
           let(:url) { "https://api.github.com/repos/#{repo}/contents/app/" }
+
           before do
             stub_request(:get, url.gsub(%r{/$}, "") + "?ref=sha")
               .with(headers: { "Authorization" => "token token" })
@@ -761,7 +766,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("octokit") }
@@ -790,7 +795,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           it "is stripped" do
-            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+            expect(files_find.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
           end
         end
       end
@@ -800,7 +805,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           child_class.new(source: source, credentials: credentials)
         end
 
-        context "that ends in a slash" do
+        context "when ending with a slash" do
           let(:directory) { "app/" }
           let(:url) { project_url + "/repository/files/app%2F" }
 
@@ -811,7 +816,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that begins with a slash" do
+        context "when beginning with a slash" do
           let(:directory) { "/app" }
           let(:url) { project_url + "/repository/files/app%2F" }
 
@@ -822,7 +827,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that includes a slash" do
+        context "when including a slash" do
           let(:directory) { "a/pp" }
           let(:url) { project_url + "/repository/files/a%2Fpp%2F" }
 
@@ -880,7 +885,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           child_class.new(source: source, credentials: credentials)
         end
 
-        context "that ends in a slash" do
+        context "when ending with a slash" do
           let(:directory) { "app/" }
           let(:url) { repo_url + "/src/sha/app/requirements.txt" }
 
@@ -890,7 +895,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that begins with a slash" do
+        context "when beginning with a slash" do
           let(:directory) { "/app" }
           let(:url) { repo_url + "/src/sha/app/requirements.txt" }
 
@@ -900,7 +905,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that includes a slash" do
+        context "when including a slash" do
           let(:directory) { "a/pp" }
           let(:url) { repo_url + "/src/sha/a/pp/requirements.txt" }
 
@@ -966,7 +971,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("required_rubygems_version") }
         end
 
-        context "that can't be found" do
+        context "when the file can't be found" do
           before do
             stub_request(:get, repo_contents_url)
               .to_return(status: 200,
@@ -1023,7 +1028,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           child_class.new(source: source, credentials: credentials)
         end
 
-        context "that ends in a slash" do
+        context "when ending in a slash" do
           let(:directory) { "app/" }
           let(:url) do
             repo_url + "/items?path=app/requirements.txt" \
@@ -1037,7 +1042,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that begins with a slash" do
+        context "when beginning with a slash" do
           let(:directory) { "/app" }
           let(:url) do
             repo_url + "/items?path=app/requirements.txt" \
@@ -1051,7 +1056,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "that includes a slash" do
+        context "when including a slash" do
           let(:directory) { "a/pp" }
           let(:url) do
             repo_url + "/items?path=a/pp/requirements.txt" \
@@ -1141,7 +1146,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to include("required_rubygems_version") }
         end
 
-        context "that can't be found" do
+        context "when the file can't be found" do
           before do
             stub_request(:get, repo_contents_url)
               .to_return(status: 200,
@@ -1156,6 +1161,10 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         context "with a directory" do
           let(:directory) { "/app" }
+          let(:url) do
+            repo_url + "/items?path=app&versionDescriptor.version=sha" \
+                       "&versionDescriptor.versionType=commit"
+          end
 
           let(:repo_contents_tree_url) do
             repo_url + "/items?path=app&versionDescriptor.version=sha" \
@@ -1175,11 +1184,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
               .to_return(status: 200,
                          body: fixture("azure", "no_files.json"),
                          headers: { "content-type" => "application/json" })
-          end
-
-          let(:url) do
-            repo_url + "/items?path=app&versionDescriptor.version=sha" \
-                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do
@@ -1210,18 +1214,18 @@ RSpec.describe Dependabot::FileFetchers::Base do
       its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
-        subject { files.find { |file| file.name == "requirements.txt" } }
+        subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 
         it { is_expected.to be_a(Dependabot::DependencyFile) }
         its(:content) { is_expected.to include("required_rubygems_version") }
       end
 
-      context "with a directory specified" do
+      context "with directory path specified" do
         let(:file_fetcher_instance) do
           child_class.new(source: source, credentials: credentials)
         end
 
-        context "that ends in a slash" do
+        context "when ending with a slash" do
           before do
             stubbed_cc_client
               .stub_responses(
@@ -1234,15 +1238,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "app/" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
 
-        context "that beings with a slash" do
+        context "when beginning with a slash" do
           before do
             stubbed_cc_client
               .stub_responses(
@@ -1255,15 +1259,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "/app" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
 
-        context "that includes a slash" do
+        context "when including a slash" do
           before do
             stubbed_cc_client
               .stub_responses(
@@ -1276,11 +1280,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 file_content: "foo"
               )
           end
+
           let(:directory) { "a/pp" }
 
           it "gets the file" do
-            files
-            expect { subject }.to_not raise_error
+            expect { files }.not_to raise_error
           end
         end
       end
@@ -1360,17 +1364,20 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
   context "with repo_contents_path" do
     let(:repo_contents_path) { Dir.mktmpdir }
+
     after { FileUtils.rm_rf(repo_contents_path) }
 
     describe "#files" do
       subject(:files) { file_fetcher_instance.files }
 
       let(:contents) { "foo=1.0.0" }
+      let(:fill_repo) { nil }
 
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
+
       after { FileUtils.rm_rf(repo_path) }
-      let(:fill_repo) { nil }
+
       before do
         Dir.chdir(repo_path) do
           `git init --initial-branch main .`
@@ -1443,21 +1450,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises RepoNotFound" do
-          expect { subject }
+          expect { files }
             .to raise_error(Dependabot::RepoNotFound)
         end
       end
 
-      context "file not found" do
+      context "when the file is not found" do
         it "raises DependencyFileNotFound" do
-          expect { subject }
+          expect { files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
             expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
 
-      context "symlink" do
+      context "when the directory is symlinked" do
         let(:fill_repo) do
           Dir.mkdir("symlinked")
           file_path = File.join("symlinked", "requirements.txt")
@@ -1470,6 +1477,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:type) { is_expected.to include("symlink") }
+
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
           end
@@ -1495,9 +1503,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
         end
 
-        context "file not found" do
+        context "when the file is not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }
+            expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
@@ -1528,9 +1536,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
       context "with a directory specified" do
         let(:directory) { "/nested" }
 
-        context "file not found" do
+        context "when the file is not found" do
           it "raises DependencyFileNotFound" do
-            expect { subject }
+            expect { files }
               .to raise_error(Dependabot::DependencyFileNotFound) do |error|
               expect(error.file_path).to eq("/nested/requirements.txt")
             end
@@ -1590,7 +1598,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a not found error" do
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
         end
       end
 
@@ -1600,7 +1608,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         it "raises a not found error" do
-          expect { subject }.to raise_error(Dependabot::BranchNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::BranchNotFound)
         end
       end
 
@@ -1629,7 +1637,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               )
             )
 
-          expect { subject }.to raise_error(Dependabot::OutOfDisk)
+          expect { clone_repo_contents }.to raise_error(Dependabot::OutOfDisk)
         end
       end
 
@@ -1658,7 +1666,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               proc { "" }
             )
 
-          expect { subject }.to_not raise_error
+          expect { clone_repo_contents }.not_to raise_error
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).thrice
           expect(file_fetcher_instance).to have_received(:sleep).once
         end
@@ -1675,7 +1683,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
               retryable_error
             )
 
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).exactly(6).times
           expect(file_fetcher_instance).to have_received(:sleep).exactly(5).times
         end
@@ -1690,9 +1698,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
               )
             )
 
-          expect { subject }.to raise_error(Dependabot::RepoNotFound)
+          expect { clone_repo_contents }.to raise_error(Dependabot::RepoNotFound)
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
-          expect(file_fetcher_instance).to_not have_received(:sleep)
+          expect(file_fetcher_instance).not_to have_received(:sleep)
         end
       end
     end

@@ -10,6 +10,7 @@ public partial class DiscoveryWorkerTests
         public async Task DiscoversDependencies()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("global.json", """
@@ -35,13 +36,15 @@ public partial class DiscoveryWorkerTests
                         ]
                     },
                     ExpectedProjectCount = 0,
-                });
+                }
+            );
         }
 
         [Fact]
         public async Task ReportsFailure()
         {
             await TestDiscoveryAsync(
+                packages: [],
                 workspacePath: "",
                 files: [
                     ("global.json", """
@@ -65,7 +68,8 @@ public partial class DiscoveryWorkerTests
                         ExpectedDependencyCount = 0,
                     },
                     ExpectedProjectCount = 0,
-                });
+                }
+            );
         }
     }
 }

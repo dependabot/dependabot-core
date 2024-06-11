@@ -1,20 +1,20 @@
 PATH
   remote: bundler
   specs:
-    dependabot-bundler (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-bundler (0.260.0)
+      dependabot-common (= 0.260.0)
       parallel (~> 1.24)
 
 PATH
   remote: cargo
   specs:
-    dependabot-cargo (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-cargo (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: common
   specs:
-    dependabot-common (0.258.0)
+    dependabot-common (0.260.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -37,107 +37,107 @@ PATH
 PATH
   remote: composer
   specs:
-    dependabot-composer (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-composer (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: devcontainers
   specs:
-    dependabot-devcontainers (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-devcontainers (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: docker
   specs:
-    dependabot-docker (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-docker (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: elm
   specs:
-    dependabot-elm (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-elm (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: git_submodules
   specs:
-    dependabot-git_submodules (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-git_submodules (0.260.0)
+      dependabot-common (= 0.260.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: github_actions
   specs:
-    dependabot-github_actions (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-github_actions (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: go_modules
   specs:
-    dependabot-go_modules (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-go_modules (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: gradle
   specs:
-    dependabot-gradle (0.258.0)
-      dependabot-common (= 0.258.0)
-      dependabot-maven (= 0.258.0)
+    dependabot-gradle (0.260.0)
+      dependabot-common (= 0.260.0)
+      dependabot-maven (= 0.260.0)
 
 PATH
   remote: hex
   specs:
-    dependabot-hex (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-hex (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: maven
   specs:
-    dependabot-maven (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-maven (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-npm_and_yarn (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: nuget
   specs:
-    dependabot-nuget (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-nuget (0.260.0)
+      dependabot-common (= 0.260.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: pub
   specs:
-    dependabot-pub (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-pub (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: python
   specs:
-    dependabot-python (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-python (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: silent
   specs:
-    dependabot-silent (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-silent (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: swift
   specs:
-    dependabot-swift (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-swift (0.260.0)
+      dependabot-common (= 0.260.0)
 
 PATH
   remote: terraform
   specs:
-    dependabot-terraform (0.258.0)
-      dependabot-common (= 0.258.0)
+    dependabot-terraform (0.260.0)
+      dependabot-common (= 0.260.0)
 
 GEM
   remote: https://rubygems.org/
@@ -161,10 +161,13 @@ GEM
     aws-sigv4 (1.8.0)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.2.0)
+    bigdecimal (3.1.8)
     citrus (3.0.2)
     commonmarker (0.23.10)
-    crack (0.4.5)
+    crack (1.0.0)
+      bigdecimal
       rexml
+    csv (3.3.0)
     debug (1.9.2)
       irb (~> 1.10)
       reline (>= 0.3.8)
@@ -191,7 +194,8 @@ GEM
     http-accept (1.7.0)
     http-cookie (1.0.5)
       domain_name (~> 0.5)
-    httparty (0.21.0)
+    httparty (0.22.0)
+      csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
     io-console (0.7.2)
@@ -206,7 +210,8 @@ GEM
     mime-types-data (3.2023.1205)
     mini_mime (1.1.5)
     mini_portile2 (2.8.5)
-    multi_xml (0.6.0)
+    multi_xml (0.7.1)
+      bigdecimal (~> 3.1)
     netrc (0.11.0)
     nokogiri (1.16.0-aarch64-linux)
       racc (~> 1.4)
@@ -238,15 +243,15 @@ GEM
     parser (3.3.1.0)
       ast (~> 2.4.1)
       racc
-    prism (0.24.0)
+    prism (0.29.0)
     psych (5.1.2)
       stringio
     public_suffix (5.0.4)
     racc (1.7.3)
     rainbow (3.1.1)
     rake (13.1.0)
-    rbi (0.1.10)
-      prism (>= 0.18.0, < 0.25)
+    rbi (0.1.13)
+      prism (>= 0.18.0, < 1.0.0)
       sorbet-runtime (>= 0.5.9204)
     rdoc (6.6.3.1)
       psych (>= 4.0.0)
@@ -258,7 +263,8 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rexml (3.2.6)
+    rexml (3.2.8)
+      strscan (>= 3.0.9)
     rspec (3.12.0)
       rspec-core (~> 3.12.0)
       rspec-expectations (~> 3.12.0)
@@ -334,6 +340,7 @@ GEM
       thor (>= 0.19.2)
     stackprof (0.2.25)
     stringio (3.1.0)
+    strscan (3.1.0)
     tapioca (0.13.3)
       bundler (>= 2.2.25)
       netrc (>= 0.11.0)
@@ -410,4 +417,4 @@ DEPENDENCIES
   webrick (>= 1.7)
 
 BUNDLED WITH
-   2.5.9
+   2.5.11

@@ -9,8 +9,52 @@ require "dependabot/maven/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Maven::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
+  end
+  let(:maven_central_version_files_url) do
+    "https://repo.maven.apache.org/maven2/" \
+      "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+  end
+  let(:maven_central_releases) do
+    fixture("maven_central_metadata", "with_release.xml")
+  end
+  let(:version_class) { Dependabot::Maven::Version }
+  let(:maven_central_metadata_url) do
+    "https://repo.maven.apache.org/maven2/" \
+      "com/google/guava/guava/maven-metadata.xml"
+  end
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:dependency_files) { [pom] }
+  let(:dependency_version) { "23.3-jre" }
+  let(:dependency_name) { "com.google.guava:guava" }
+  let(:dependency_requirements) do
+    [{
+      file: "pom.xml",
+      requirement: "23.3-jre",
+      groups: [],
+      metadata: { packaging_type: "jar" },
+      source: nil
+    }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: dependency_requirements,
+      package_manager: "maven"
+    )
+  end
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -21,51 +65,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     )
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "maven"
-    )
-  end
-  let(:dependency_requirements) do
-    [{
-      file: "pom.xml",
-      requirement: "23.3-jre",
-      groups: [],
-      metadata: { packaging_type: "jar" },
-      source: nil
-    }]
-  end
-  let(:dependency_name) { "com.google.guava:guava" }
-  let(:dependency_version) { "23.3-jre" }
-
-  let(:dependency_files) { [pom] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
-  let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/maven-metadata.xml"
-  end
-  let(:version_class) { Dependabot::Maven::Version }
-  let(:maven_central_releases) do
-    fixture("maven_central_metadata", "with_release.xml")
-  end
-
-  let(:maven_central_version_files_url) do
-    "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
-  end
+  it_behaves_like "an update checker"
 
   before do
     stub_request(:get, maven_central_metadata_url)
@@ -73,13 +73,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     stub_request(:head, maven_central_version_files_url)
       .to_return(status: 200)
   end
-  let(:pom) do
-    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
 
   describe "#latest_version" do
     subject { checker.latest_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when Maven Central doesn't return a release tag" do
@@ -127,7 +124,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "when that's what we're using" do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -154,6 +151,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.0.html")
       end
+
       it { is_expected.to eq(version_class.new("23.0")) }
     end
 
@@ -184,15 +182,16 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
       it { is_expected.to eq(version_class.new("23.0")) }
 
-      context "that affects multiple dependencies" do
+      context "when the property affects multiple dependencies" do
         let(:pom_body) { fixture("poms", "property_pom.xml") }
+
         it { is_expected.to eq(version_class.new("23.0")) }
       end
     end
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lsfv) { checker.lowest_security_fix_version }
 
     before do
       version_files_url = "https://repo.maven.apache.org/maven2/com/google/" \
@@ -202,7 +201,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available version" do
-      is_expected.to eq(version_class.new("23.4-jre"))
+      expect(lsfv).to eq(version_class.new("23.4-jre"))
     end
 
     context "with a security vulnerability" do
@@ -224,13 +223,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(lsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
 
   describe "#lowest_resolvable_security_fix_version" do
-    subject { checker.lowest_resolvable_security_fix_version }
+    subject(:lrsfv) { checker.lowest_resolvable_security_fix_version }
 
     let(:security_advisories) do
       [
@@ -250,20 +249,21 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(version_class.new("23.5-jre"))
+      expect(lrsfv).to eq(version_class.new("23.5-jre"))
     end
 
     context "with version from multi-dependency property" do
       before { allow(checker).to receive(:version_comes_from_multi_dependency_property?).and_return(true) }
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(lrsfv).to eq(version_class.new("23.5-jre"))
       end
     end
   end
 
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "when the version comes from a property" do
@@ -312,12 +312,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         it { is_expected.to eq(version_class.new("23.0")) }
       end
 
-      context "that affects multiple dependencies" do
+      context "when the property affects multiple dependencies" do
         let(:pom_body) { fixture("poms", "property_pom.xml") }
+
         it { is_expected.to be_nil }
       end
 
-      context "for a repeated dependency" do
+      context "when dealing with a repeated dependency" do
         let(:pom_body) { fixture("poms", "repeated_pom.xml") }
         let(:maven_central_metadata_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -351,9 +352,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             source: nil
           }]
         end
+
         it { is_expected.to eq(version_class.new("23.0")) }
 
-        context "that affects multiple dependencies" do
+        context "when the property affects multiple dependencies" do
           let(:pom_body) do
             fixture("poms", "repeated_multi_property_pom.xml")
           end
@@ -363,6 +365,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               property_source: "pom.xml"
             }
           end
+
           it { is_expected.to be_nil }
         end
 
@@ -382,6 +385,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
               source: nil
             }]
           end
+
           it { is_expected.to eq(version_class.new("23.0")) }
         end
       end
@@ -431,7 +435,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         )
       end
 
-      context "for a dependency inherited by others" do
+      context "when dealing with a dependency inherited by others" do
         let(:dependency_requirements) do
           [{
             requirement: "23.0-jre",
@@ -453,7 +457,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         it { is_expected.to eq(version_class.new("23.6-jre")) }
       end
 
-      context "for a dependency that uses a property from its parent" do
+      context "when dealing with a dependency that uses a property from its parent" do
         let(:dependency_requirements) do
           [{
             requirement: "2.5.6",
@@ -487,6 +491,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
+
     it { is_expected.to eq(version_class.new("23.6-jre")) }
 
     context "with a security vulnerability" do
@@ -589,15 +594,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+    subject(:latest_version_resolvable_with_full_unlock) { checker.send(:latest_version_resolvable_with_full_unlock?) }
 
     context "with no latest version" do
       before { allow(checker).to receive(:latest_version).and_return(nil) }
+
       it { is_expected.to be_falsey }
     end
 
     context "with a non-property pom" do
       let(:pom_body) { fixture("poms", "basic_pom.xml") }
+
       it { is_expected.to be_falsey }
     end
 
@@ -664,13 +671,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(true)
+        expect(latest_version_resolvable_with_full_unlock).to be(true)
       end
     end
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    subject { checker.send(:updated_dependencies_after_full_unlock) }
+    subject(:checker_updated_dependencies_after_full_unlock) { checker.send(:updated_dependencies_after_full_unlock) }
 
     context "with a property pom" do
       let(:dependency_name) { "org.springframework:spring-beans" }
@@ -734,7 +741,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             }
           )
           .and_call_original
-        expect(subject).to eq(
+        expect(checker_updated_dependencies_after_full_unlock).to eq(
           [
             Dependabot::Dependency.new(
               name: "org.springframework:spring-beans",
@@ -809,7 +816,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE&802" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
   end
 
@@ -818,7 +826,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "when the current version isn't normal" do
       let(:dependency_version) { "RELEASE&802" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
   end
 
@@ -827,7 +836,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
 
     context "with a basic POM" do
       let(:pom_body) { fixture("poms", "basic_pom.xml") }
-      it { is_expected.to eq(true) }
+
+      it { is_expected.to be(true) }
     end
 
     context "with a property POM" do
@@ -846,9 +856,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }
         }]
       end
-      it { is_expected.to eq(true) }
 
-      context "that inherits from a parent POM" do
+      it { is_expected.to be(true) }
+
+      context "when inheriting from a parent POM" do
         let(:dependency_files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
@@ -873,11 +884,22 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
 
-      context "that inherits from a remote POM" do
+      context "when inheriting from a remote POM" do
         let(:pom_body) { fixture("poms", "remote_parent_pom.xml") }
+        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
+        let(:dependency_version) { "2.7" }
+        let(:dependency_requirements) do
+          [{
+            file: "pom.xml",
+            requirement: "2.7",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "log4j2.version" }
+          }]
+        end
 
         let(:struts_apps_maven_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -901,19 +923,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
             .to_return(status: 200, body: struts_parent_maven_response)
         end
 
-        let(:dependency_name) { "org.apache.logging.log4j:log4j-api" }
-        let(:dependency_version) { "2.7" }
-        let(:dependency_requirements) do
-          [{
-            file: "pom.xml",
-            requirement: "2.7",
-            groups: [],
-            source: nil,
-            metadata: { property_name: "log4j2.version" }
-          }]
-        end
-
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

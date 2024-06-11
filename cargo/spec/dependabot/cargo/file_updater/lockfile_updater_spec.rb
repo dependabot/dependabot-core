@@ -56,10 +56,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
     it "doesn't store the files permanently" do
       expect { updated_lockfile_content }
-        .to_not(change { Dir.entries(tmp_path) })
+        .not_to(change { Dir.entries(tmp_path) })
     end
 
-    it { expect { updated_lockfile_content }.to_not output.to_stdout }
+    it { expect { updated_lockfile_content }.not_to output.to_stdout }
 
     context "when using a toolchain file that is too old" do
       let(:toolchain_file) do
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
       end
 
-      context "because an existing requirement is no good" do
+      context "when an existing requirement is not sufficient" do
         let(:dependency_version) { "0.1.38" }
         let(:requirements) do
           [{ file: "Cargo.toml", requirement: "0.3.20", groups: [], source: nil }]
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
           CHECKSUM
         )
-        expect(updated_lockfile_content).to_not include(
+        expect(updated_lockfile_content).not_to include(
           <<~CHECKSUM
             checksum = "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
           CHECKSUM
@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
 
         it "raises a DependencyFileNotResolvable error" do
-          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect { updated_lockfile_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include("unexpected end of input while parsing major version")
           end
         end
@@ -267,7 +267,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               checksum = "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
             CHECKSUM
           )
-          expect(updated_lockfile_content).to_not include("[metadata]")
+          expect(updated_lockfile_content).not_to include("[metadata]")
         end
       end
 
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content)
               .to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#" \
                           "be9b8dfcaf449453cbf83ac85260ee80323f4f77")
-            expect(updated_lockfile_content).to_not include("git+https://")
+            expect(updated_lockfile_content).not_to include("git+https://")
 
             content = updated_lockfile_content
             expect(content.scan('name = "utf8-ranges"').count).to eq(1)
@@ -411,7 +411,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content).to include(
             "aec3f58d903a7d2a9dc2bf0e41a746f4530e0cab6b615494e058f67a3ef947fb"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "bc2a4457b0c25dae6fee3dcd631ccded31e97d689b892c26554e096aa08dd136"
           )
         end
@@ -464,7 +464,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content).to include(
             "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
           )
         end
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content).to include(
             "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "b3a89a0c46ba789b8a247d4c567aed4d7c68e624672d238b45cc3ec20dc9f940"
           )
         end

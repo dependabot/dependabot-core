@@ -10,6 +10,34 @@ require "webrick"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Pub::FileUpdater do
+  let(:project) { "can_update" }
+  let(:dependency_files) do
+    files = project_dependency_files(project)
+    files.each do |file|
+      # Simulate that the lockfile was from localhost:
+      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+    end
+    files
+  end
+  let(:dependencies) { [dependency] }
+  let(:updater) do
+    described_class.new(
+      dependencies: dependencies,
+      dependency_files: dependency_files,
+      credentials: [{
+        "type" => "hosted",
+        "host" => "pub.dartlang.org",
+        "username" => "x-access-token",
+        "password" => "token"
+      }],
+      options: {
+        pub_hosted_url: "http://localhost:#{@server[:Port]}"
+      }
+    )
+  end
+  let(:sample) { "simple" }
+  let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
+
   it_behaves_like "a dependency file updater"
 
   before(:all) do
@@ -42,9 +70,6 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     end
   end
 
-  let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
-  let(:sample) { "simple" }
-
   def manifest(files)
     files.find { |f| f.name == "pubspec.yaml" }.content
   end
@@ -52,34 +77,6 @@ RSpec.describe Dependabot::Pub::FileUpdater do
   def lockfile(files)
     files.find { |f| f.name == "pubspec.lock" }.content
   end
-
-  let(:updater) do
-    described_class.new(
-      dependencies: dependencies,
-      dependency_files: dependency_files,
-      credentials: [{
-        "type" => "hosted",
-        "host" => "pub.dartlang.org",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
-      options: {
-        pub_hosted_url: "http://localhost:#{@server[:Port]}"
-      }
-    )
-  end
-
-  let(:dependencies) { [dependency] }
-
-  let(:dependency_files) do
-    files = project_dependency_files(project)
-    files.each do |file|
-      # Simulate that the lockfile was from localhost:
-      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
-    end
-    files
-  end
-  let(:project) { "can_update" }
 
   describe "#updated_dependency_files unlock none" do
     let(:dependency) do
@@ -91,6 +88,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to eq manifest(dependency_files)
@@ -109,6 +107,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock, and updates the content-hash" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to eq manifest(dependency_files)
@@ -140,6 +139,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         package_manager: "pub"
       )
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to include "collection: ^1.15.0"
@@ -188,6 +188,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         )
       ]
     end
+
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to include "protobuf: ^2.0.0"

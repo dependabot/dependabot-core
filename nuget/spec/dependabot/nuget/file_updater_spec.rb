@@ -16,8 +16,38 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     config.include(NuGetSearchStubs)
   end
 
-  it_behaves_like "a dependency file updater"
-
+  let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
+  let(:previous_requirements) do
+    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
+  end
+  let(:requirements) do
+    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], source: nil }]
+  end
+  let(:dependency_previous_version) { "1.0.0" }
+  let(:dependency_version) { "1.1.1" }
+  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      previous_version: dependency_previous_version,
+      requirements: requirements,
+      previous_requirements: previous_requirements,
+      package_manager: "nuget"
+    )
+  end
+  # project_dependency files comes back with directory files first, we need the closest project at the top
+  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+  let(:directory) { "/" }
+  let(:project_name) { "file_updater_dirsproj" }
+  let(:dependencies) { [dependency] }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:file_updater_instance) do
     Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
                                       source: source,
@@ -32,38 +62,8 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       repo_contents_path: repo_contents_path
     )
   end
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
-  let(:dependencies) { [dependency] }
-  let(:project_name) { "file_updater_dirsproj" }
-  let(:directory) { "/" }
-  # project_dependency files comes back with directory files first, we need the closest project at the top
-  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      previous_version: dependency_previous_version,
-      requirements: requirements,
-      previous_requirements: previous_requirements,
-      package_manager: "nuget"
-    )
-  end
-  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:dependency_version) { "1.1.1" }
-  let(:dependency_previous_version) { "1.0.0" }
-  let(:requirements) do
-    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], source: nil }]
-  end
-  let(:previous_requirements) do
-    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
-  end
-  let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
+
+  it_behaves_like "a dependency file updater"
 
   before do
     stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
@@ -79,9 +79,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         puts dependency_files.map(&:name)
-        expect(updated_files.map(&:name)).to match_array([
-          "Proj1/Proj1/Proj1.csproj"
-        ])
+        expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
           {
@@ -90,7 +88,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         )
       end
 
-      context "that has only deleted lines" do
+      context "when the file has only deleted lines" do
         before do
           allow(File).to receive(:read)
             .and_call_original
@@ -116,10 +114,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_previous_version) { "1.0.0" }
 
     it "updates the wildcard project" do
-      expect(updated_files.map(&:name)).to match_array([
-        "Proj1/Proj1/Proj1.csproj",
-        "Proj2/Proj2.csproj"
-      ])
+      expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj", "Proj2/Proj2.csproj")
 
       expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
         {

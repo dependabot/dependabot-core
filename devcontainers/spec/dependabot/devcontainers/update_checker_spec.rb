@@ -8,8 +8,22 @@ require "dependabot/devcontainers/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Devcontainers::UpdateChecker do
-  it_behaves_like "an update checker"
-
+  let(:dependency) { dependencies.find { |dep| dep.name == name } }
+  let(:file_parser) do
+    Dependabot::Devcontainers::FileParser.new(
+      dependency_files: dependency_files,
+      repo_contents_path: repo_contents_path,
+      source: nil
+    )
+  end
+  let(:dependencies) do
+    file_parser.parse
+  end
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:security_advisories) { [] }
+  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -22,27 +36,9 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
     )
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-  let(:dependency_files) { project_dependency_files(project_name, directory: directory) }
-  let(:security_advisories) { [] }
-  let(:ignored_versions) { [] }
-  let(:raise_on_ignored) { false }
+  it_behaves_like "an update checker"
 
-  let(:dependencies) do
-    file_parser.parse
-  end
-
-  let(:file_parser) do
-    Dependabot::Devcontainers::FileParser.new(
-      dependency_files: dependency_files,
-      repo_contents_path: repo_contents_path,
-      source: nil
-    )
-  end
-
-  let(:dependency) { dependencies.find { |dep| dep.name == name } }
-
-  shared_context "in root" do
+  shared_context "when the config is in root" do
     let(:project_name) { "config_in_root" }
     let(:directory) { "/" }
   end
@@ -53,13 +49,13 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
     context "when feature is out-of-date" do
       let(:name) { "ghcr.io/codspace/versioning/foo" }
 
-      context "and config in root" do
-        include_context "in root"
+      context "when the config is in root" do
+        include_context "when the config is in root"
 
         it { is_expected.to be_falsey }
       end
 
-      context "and config in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 
@@ -70,13 +66,13 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
     context "when feature is already up-to-date" do
       let(:name) { "ghcr.io/codspace/versioning/bar" }
 
-      context "and config in root" do
-        include_context "in root"
+      context "when the config is in root" do
+        include_context "when the config is in root"
 
         it { is_expected.to be_truthy }
       end
 
-      context "and config in .devcontainer folder " do
+      context "when the config is in .devcontainer folder" do
         let(:project_name) { "config_in_dot_devcontainer_folder" }
         let(:directory) { "/.devcontainer" }
 
@@ -86,23 +82,23 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
   end
 
   describe "#latest_version" do
-    subject { checker.latest_version.to_s }
+    subject(:latest_version) { checker.latest_version.to_s }
 
     let(:name) { "ghcr.io/codspace/versioning/foo" }
     let(:current_version) { "1.1.0" }
 
-    include_context "in root"
+    include_context "when the config is in root"
 
     context "when all later versions are being ignored" do
       let(:ignored_versions) { ["> #{current_version}"] }
 
       it { is_expected.to eq(current_version) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -112,7 +108,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
       it { is_expected.to eq("2.0.0") }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
 
         it { is_expected.to eq("2.0.0") }

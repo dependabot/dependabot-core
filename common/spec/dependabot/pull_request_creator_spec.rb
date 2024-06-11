@@ -69,14 +69,12 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:dummy_message_builder) do
     instance_double(described_class::MessageBuilder)
   end
+
   before do
     allow(described_class::MessageBuilder)
       .to receive(:new).once.and_return(dummy_message_builder)
-    allow(dummy_message_builder)
-      .to receive(:commit_message)
-      .and_return("Commit msg")
-    allow(dummy_message_builder).to receive(:pr_name).and_return("PR name")
-    allow(dummy_message_builder).to receive(:pr_message).and_return("PR msg")
+    allow(dummy_message_builder).to receive_messages(commit_message: "Commit msg", pr_name: "PR name",
+                                                     pr_message: "PR msg")
   end
 
   describe "#create" do
@@ -146,7 +144,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             creator.create
           end
 
-          context "one of which has a previous version, the other not" do
+          context "when one has a previous version, the other does not" do
             let(:dependencies) { [dependency, dependency_with_lock] }
             let(:dependency_with_lock) do
               Dependabot::Dependency.new(
@@ -373,10 +371,6 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a dependency group" do
-      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
-      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
-      let(:dummy_creator) { instance_double(described_class::Github) }
-
       subject(:creator_with_group) do
         described_class.new(
           source: source,
@@ -394,6 +388,10 @@ RSpec.describe Dependabot::PullRequestCreator do
           dependency_group: dependency_group
         )
       end
+
+      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
 
       it "delegates to PullRequestCreator::Github with correct params" do
         expect(described_class::Github)
