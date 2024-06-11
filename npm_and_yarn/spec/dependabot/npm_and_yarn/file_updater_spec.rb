@@ -57,11 +57,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
   before do
     FileUtils.mkdir_p(tmp_path)
   end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

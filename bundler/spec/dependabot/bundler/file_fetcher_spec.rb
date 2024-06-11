@@ -28,10 +28,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
   before do
     stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
@@ -49,6 +45,10 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         headers: { "content-type" => "application/json" }
       )
   end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with a directory" do
     let(:directory) { "/test" }

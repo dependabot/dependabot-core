@@ -36,8 +36,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     stub_request(:get, "https://example.com/status").to_return(
       status: 200,
@@ -47,6 +45,8 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     stub_request(:get, "https://initd.org/status").to_return(status: 404)
     stub_request(:get, "https://pypi.org/status").to_return(status: 404)
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

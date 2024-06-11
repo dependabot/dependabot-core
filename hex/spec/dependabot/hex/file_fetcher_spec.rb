@@ -27,10 +27,6 @@ RSpec.describe Dependabot::Hex::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
   before do
     stub_request(:get, url + "?ref=sha")
       .with(headers: { "Authorization" => "token token" })
@@ -56,6 +52,10 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         headers: json_header
       )
   end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the mix.exs and mix.lock" do
     expect(file_fetcher_instance.files.count).to eq(2)
