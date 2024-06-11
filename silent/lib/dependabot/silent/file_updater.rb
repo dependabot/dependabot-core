@@ -46,7 +46,7 @@ module SilentPackageManager
     def updated_file_content(file)
       original_content = JSON.parse(T.must(file.content))
       original_content.each do |name, info|
-        next unless name == T.must(dependency).name
+        next unless name == dependency&.name
 
         # If this was a multi-version update, assume we've updated all versions to be the same.
         info.delete("versions") if info["versions"]
