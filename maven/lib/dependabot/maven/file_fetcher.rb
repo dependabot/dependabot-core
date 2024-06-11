@@ -63,7 +63,10 @@ module Dependabot
         end
       end
 
-      sig { params(pom: Dependabot::DependencyFile, fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile]) }
+      sig do
+        params(pom: Dependabot::DependencyFile,
+               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+      end
       def recursively_fetch_child_poms(pom, fetched_filenames:)
         base_path = File.dirname(pom.name)
         doc = Nokogiri::XML(pom.content)
@@ -96,7 +99,10 @@ module Dependabot
         end
       end
 
-      sig { params(pom: Dependabot::DependencyFile, fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile]) }
+      sig do
+        params(pom: Dependabot::DependencyFile,
+               fetched_filenames: T::Array[String]).returns(T::Array[Dependabot::DependencyFile])
+      end
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)
 
