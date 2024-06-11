@@ -981,7 +981,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits relevant to the given path" do
-            expect(subject).to contain_exactly({
+            expect(commits).to contain_exactly({
               message: "feat: Custom persister support\n\n" \
                        "* feat: Custom persister support\r\n\r\n" \
                        "* Create a @pollyjs/persister package\r\n" \
@@ -1039,7 +1039,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Added signature for changeset f275e318641f",
             sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
             html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
@@ -1086,7 +1086,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Merged PR 2: Deleted README.md",
             sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
             html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
@@ -1123,7 +1123,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits" do
-            expect(subject).to contain_exactly({
+            expect(commits).to contain_exactly({
               message: "Merged PR 2: Deleted README.md",
               sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
               html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
@@ -1178,7 +1178,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Add find command\n",
             sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
             html_url: "https://gitlab.com/org/business/commit/" \

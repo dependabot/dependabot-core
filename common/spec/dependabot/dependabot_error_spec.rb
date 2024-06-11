@@ -11,7 +11,7 @@ RSpec.describe Dependabot::DependabotError do
   end
 
   describe "#message" do
-    subject { error.message }
+    subject(:error_message) { error.message }
 
     let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
@@ -32,7 +32,7 @@ RSpec.describe Dependabot::DependabotError do
       end
 
       it do
-        expect(subject).to eq(
+        expect(error_message).to eq(
           "Error (/Users/x/code/dependabot-core/cargo/dependabot_tmp_dir) " \
           "failed to load https://github.com/dependabot"
         )
@@ -123,10 +123,10 @@ RSpec.describe Dependabot::DependabotError do
     let(:source) { "source" }
 
     describe "#message" do
-      subject { error.message }
+      subject(:error_message) { error.message }
 
       it do
-        expect(subject).to eq(
+        expect(error_message).to eq(
           "The following source could not be reached as it requires authentication (and any provided details were " \
           "invalid or lacked the required permissions): source"
         )
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::DependabotError do
         end
 
         it do
-          expect(subject).to eq(
+          expect(error_message).to eq(
             "The following source could not be reached as it requires authentication (and any provided details were " \
             "invalid or lacked the required permissions): npm.fury.io/<redacted>"
           )
@@ -152,10 +152,10 @@ RSpec.describe Dependabot::DependabotError do
     let(:source) { "source" }
 
     describe "#message" do
-      subject { error.message }
+      subject(:error_message) { error.message }
 
       it do
-        expect(subject).to eq(
+        expect(error_message).to eq(
           "The following source timed out: source"
         )
       end
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::DependabotError do
         end
 
         it do
-          expect(subject).to eq(
+          expect(error_message).to eq(
             "The following source timed out: npm.fury.io/<redacted>"
           )
         end
@@ -179,10 +179,10 @@ RSpec.describe Dependabot::DependabotError do
     let(:source) { "source" }
 
     describe "#message" do
-      subject { error.message }
+      subject(:error_message) { error.message }
 
       it do
-        expect(subject).to eq(
+        expect(error_message).to eq(
           "Could not verify the SSL certificate for source"
         )
       end
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::DependabotError do
         end
 
         it do
-          expect(subject).to eq(
+          expect(error_message).to eq(
             "Could not verify the SSL certificate for npm.fury.io/<redacted>"
           )
         end
@@ -208,10 +208,10 @@ RSpec.describe Dependabot::DependabotError do
     end
 
     describe "#message" do
-      subject { error.message }
+      subject(:error_message) { error.message }
 
       it do
-        expect(subject).to eq(
+        expect(error_message).to eq(
           "The following git URLs could not be retrieved: " \
           "https://bitbucket.org/gocardless/"
         )
