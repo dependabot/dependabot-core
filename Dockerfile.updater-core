@@ -119,7 +119,6 @@ RUN gem update --system $RUBYGEMS_VERSION
 ARG BUNDLER_V2_VERSION=2.5.14
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
- rm -rf /var/lib/gems/*/cache/* && \
  bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
  bundle config set --local path 'vendor' && \
  bundle config set --local frozen 'true' && \
