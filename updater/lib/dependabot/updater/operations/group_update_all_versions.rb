@@ -126,10 +126,10 @@ module Dependabot
           end
 
           groups_without_pr.each do |group|
-            result = run_update_for(group)
-            if result
+            grouped_update_result = run_grouped_update_for(group)
+            if grouped_update_result
               # Add the actual updated dependencies to the handled list so they don't get updated individually.
-              dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name))
+              dependency_snapshot.add_handled_dependencies(grouped_update_result.updated_dependencies.map(&:name))
             else
               # The update failed, add the suspected dependencies to the handled list so they don't update individually.
               dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
@@ -138,7 +138,7 @@ module Dependabot
         end
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
-        def run_update_for(group)
+        def run_grouped_update_for(group)
           Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.new(
             service: service,
             job: job,
