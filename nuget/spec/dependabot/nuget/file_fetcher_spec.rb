@@ -35,7 +35,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
     stub_request(:get, File.join(url, ".config?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
