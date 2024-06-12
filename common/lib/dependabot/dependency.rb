@@ -165,6 +165,7 @@ module Dependabot
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
+        "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
         "removed" => removed? ? true : nil
