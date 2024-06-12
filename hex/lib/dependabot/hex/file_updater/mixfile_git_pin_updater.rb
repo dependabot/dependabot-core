@@ -1,13 +1,17 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
 require "dependabot/shared_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Hex
     class FileUpdater
       class MixfileGitPinUpdater
+        extend T::Sig
+
+        sig { params(dependency_name: String, mixfile_content: String, previous_pin: String, updated_pin: String).void }
         def initialize(dependency_name:, mixfile_content:,
                        previous_pin:, updated_pin:)
           @dependency_name = dependency_name
@@ -16,6 +20,7 @@ module Dependabot
           @updated_pin     = updated_pin
         end
 
+        sig { returns(String) }
         def updated_content
           updated_content = update_pin(mixfile_content)
 
@@ -26,11 +31,19 @@ module Dependabot
 
         private
 
+        sig { returns(String) }
         attr_reader :dependency_name
+
+        sig { returns(String) }
         attr_reader :mixfile_content
+
+        sig { returns(String) }
         attr_reader :previous_pin
+
+        sig { returns(String) }
         attr_reader :updated_pin
 
+        sig { params(content: String).returns(String) }
         def update_pin(content)
           requirement_line_regex =
             /
@@ -43,6 +56,7 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Boolean) }
         def content_should_change?
           previous_pin == updated_pin
         end
