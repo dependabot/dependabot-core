@@ -24,11 +24,20 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
   end
   let(:repo_contents_path) { Dir.mktmpdir }
 
+<<<<<<< Updated upstream
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: github_credentials,
                         repo_contents_path: repo_contents_path)
+=======
+  after do
+    FileUtils.rm_rf(repo_contents_path)
+>>>>>>> Stashed changes
   end
   let(:directory) { "/" }
+
+  after { FileUtils.rm_rf(repo_contents_path) }
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name))

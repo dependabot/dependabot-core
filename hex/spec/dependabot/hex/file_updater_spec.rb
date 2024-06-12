@@ -56,7 +56,44 @@ RSpec.describe Dependabot::Hex::FileUpdater do
       package_manager: "hex"
     )
   end
+<<<<<<< Updated upstream
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+=======
+  let(:lockfile_fixture_name) { "exact_version" }
+  let(:mixfile_fixture_name) { "exact_version" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:mixfile) do
+    Dependabot::DependencyFile.new(
+      content: fixture("mixfiles", mixfile_fixture_name),
+      name: "mix.exs"
+    )
+  end
+  let(:files) { [mixfile, lockfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  before { FileUtils.mkdir_p(tmp_path) }
+>>>>>>> Stashed changes
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

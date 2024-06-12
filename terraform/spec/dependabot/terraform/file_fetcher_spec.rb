@@ -20,6 +20,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     )
   end
 
+<<<<<<< Updated upstream
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
   end
@@ -27,6 +28,13 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   let(:project_name) { "provider" }
   let(:directory) { "/" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
+=======
+  after do
+    FileUtils.rm_rf(repo_contents_path)
+  end
+
+  it_behaves_like "a dependency file fetcher"
+>>>>>>> Stashed changes
 
   context "with Terraform files" do
     let(:project_name) { "versions_file" }

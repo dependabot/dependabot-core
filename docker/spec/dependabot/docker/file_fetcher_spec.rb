@@ -35,6 +35,30 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       "password" => "token"
     }]
   end
+<<<<<<< Updated upstream
+=======
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: nil
+    )
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+>>>>>>> Stashed changes
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with no Dockerfile or Kubernetes YAML file" do
     before do

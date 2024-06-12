@@ -306,6 +306,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a GitHub source" do
+<<<<<<< Updated upstream
+=======
+      let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
+>>>>>>> Stashed changes
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -316,8 +321,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       its(:length) { is_expected.to eq(1) }
 
+<<<<<<< Updated upstream
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
 
+=======
+>>>>>>> Stashed changes
       describe "the file" do
         subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }
 

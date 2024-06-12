@@ -54,12 +54,45 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       package_manager: "docker"
     )
   end
+<<<<<<< Updated upstream
   let(:dependency_name) { "ubuntu" }
   let(:version) { "17.04" }
   let(:source) { { tag: version } }
   let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
   let(:registry_tags) { fixture("docker", "registry_tags", tags_fixture_name) }
   let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+=======
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:raise_on_ignored) { false }
+  let(:ignored_versions) { [] }
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: [],
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
+  end
+
+  before do
+    auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+    stub_request(:get, auth_url)
+      .and_return(status: 200, body: { token: "token" }.to_json)
+
+    stub_request(:get, repo_url + "tags/list")
+      .and_return(status: 200, body: registry_tags)
+  end
+>>>>>>> Stashed changes
+
+  it_behaves_like "an update checker"
 
   def stub_tag_with_no_digest(tag)
     stub_request(:head, repo_url + "manifests/#{tag}")

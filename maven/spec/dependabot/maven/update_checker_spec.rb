@@ -28,6 +28,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     )
   end
 
+<<<<<<< Updated upstream
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -35,6 +36,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       requirements: dependency_requirements,
       package_manager: "maven"
     )
+=======
+  before do
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
+    stub_request(:head, maven_central_version_files_url)
+      .to_return(status: 200)
+>>>>>>> Stashed changes
   end
   let(:dependency_requirements) do
     [{
@@ -78,6 +86,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
   end
   let(:pom_body) { fixture("poms", "basic_pom.xml") }
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }

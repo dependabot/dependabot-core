@@ -25,6 +25,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       directory: directory
     )
   end
+<<<<<<< Updated upstream
   let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
   let(:go_mod_fixture_name) { "go.mod" }
   let(:source) do
@@ -33,9 +34,19 @@ RSpec.describe Dependabot::GoModules::FileParser do
       repo: "gocardless/bump",
       directory: directory
     )
+=======
+  let(:files) { [go_mod] }
+  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+
+  after do
+    # Reset to the default go toolchain after each test
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+>>>>>>> Stashed changes
   end
   let(:repo_contents_path) { nil }
   let(:directory) { "/" }
+
+  it_behaves_like "a dependency file parser"
 
   it "requires a go.mod to be present" do
     expect do

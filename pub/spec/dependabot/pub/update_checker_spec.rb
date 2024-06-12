@@ -71,6 +71,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     )
   end
 
+<<<<<<< Updated upstream
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
@@ -83,9 +84,17 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       requirements: requirements,
       package_manager: "pub"
     )
+=======
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
+    end
+>>>>>>> Stashed changes
   end
   let(:dependency_version) { "0.0.0" }
 
+<<<<<<< Updated upstream
   let(:requirements_update_strategy) { nil } # nil means "auto".
   let(:dependency_name) { "retry" }
   let(:requirements) { [] }
@@ -98,6 +107,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       if defined?(git_dir)
         file.content.gsub!("$GIT_DIR", git_dir)
         file.content.gsub!("$REF", dependency_version)
+=======
+  before do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.mount_proc "/api/packages/#{package}" do |_req, res|
+        res.body = File.read(File.join("..", "..", "..", f))
+>>>>>>> Stashed changes
       end
     end
     files
@@ -105,10 +121,27 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   let(:project) { "can_update" }
   let(:directory) { nil }
 
+<<<<<<< Updated upstream
   let(:can_update) { checker.can_update?(requirements_to_unlock: requirements_to_unlock) }
   let(:updated_dependencies) do
     checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock).map(&:to_h)
+=======
+  after(:all) do
+    @server.shutdown
   end
+
+  before(:all) do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    dev_null = WEBrick::Log.new("/dev/null", 7)
+    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
+    Thread.new do
+      @server.start
+    end
+>>>>>>> Stashed changes
+  end
+
+  it_behaves_like "an update checker"
 
   context "when given an outdated dependency, not requiring unlock" do
     let(:dependency_name) { "collection" }

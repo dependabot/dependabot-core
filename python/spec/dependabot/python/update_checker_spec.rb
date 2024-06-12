@@ -29,6 +29,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       requirements_update_strategy: requirements_update_strategy
     )
   end
+<<<<<<< Updated upstream
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -36,6 +37,13 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       "username" => "x-access-token",
       "password" => "token"
     })]
+=======
+  let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
+  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+
+  before do
+    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+>>>>>>> Stashed changes
   end
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
@@ -82,6 +90,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
 
   let(:dependency) { requirements_dependency }
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }

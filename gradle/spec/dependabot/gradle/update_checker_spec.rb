@@ -46,6 +46,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
 
+<<<<<<< Updated upstream
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -53,12 +54,19 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       requirements: dependency_requirements,
       package_manager: "gradle"
     )
+=======
+  before do
+    stub_request(:get, maven_central_metadata_url)
+      .to_return(status: 200, body: maven_central_releases)
+>>>>>>> Stashed changes
   end
   let(:dependency_requirements) do
     [{ file: "build.gradle", requirement: "23.3-jre", groups: [], source: nil }]
   end
   let(:dependency_name) { "com.google.guava:guava" }
   let(:dependency_version) { "23.3-jre" }
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }

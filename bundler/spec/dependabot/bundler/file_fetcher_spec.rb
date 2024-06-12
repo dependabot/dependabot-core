@@ -6,6 +6,31 @@ require "dependabot/bundler/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Bundler::FileFetcher do
+<<<<<<< Updated upstream
+=======
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:directory) { "/" }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+>>>>>>> Stashed changes
   before do
     stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
@@ -28,6 +53,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
+<<<<<<< Updated upstream
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -50,6 +76,8 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     }]
   end
 
+=======
+>>>>>>> Stashed changes
   context "with a directory" do
     let(:directory) { "/test" }
     let(:url) { "https://api.github.com/repos/gocardless/bump/contents/test" }

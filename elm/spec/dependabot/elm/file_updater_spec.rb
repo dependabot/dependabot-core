@@ -58,7 +58,37 @@ RSpec.describe Dependabot::Elm::FileUpdater do
       package_manager: "elm"
     )
   end
+<<<<<<< Updated upstream
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+=======
+  let(:elm_json_file_fixture_name) { "app.json" }
+  let(:elm_json_file) do
+    Dependabot::DependencyFile.new(
+      content: fixture("elm_jsons", elm_json_file_fixture_name),
+      name: "elm.json"
+    )
+  end
+  let(:files) { [elm_json_file] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  before { FileUtils.mkdir_p(tmp_path) }
+>>>>>>> Stashed changes
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

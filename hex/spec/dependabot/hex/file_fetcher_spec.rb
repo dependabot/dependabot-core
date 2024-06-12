@@ -6,6 +6,30 @@ require "dependabot/hex/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Hex::FileFetcher do
+<<<<<<< Updated upstream
+=======
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:json_header) { { "content-type" => "application/json" } }
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
+>>>>>>> Stashed changes
   before do
     stub_request(:get, url + "?ref=sha")
       .with(headers: { "Authorization" => "token token" })
@@ -36,6 +60,7 @@ RSpec.describe Dependabot::Hex::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
+<<<<<<< Updated upstream
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -57,6 +82,8 @@ RSpec.describe Dependabot::Hex::FileFetcher do
     }]
   end
 
+=======
+>>>>>>> Stashed changes
   it "fetches the mix.exs and mix.lock" do
     expect(file_fetcher_instance.files.count).to eq(2)
     expect(file_fetcher_instance.files.map(&:name))

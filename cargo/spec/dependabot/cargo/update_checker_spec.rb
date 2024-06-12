@@ -66,11 +66,22 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       package_manager: "cargo"
     )
   end
+<<<<<<< Updated upstream
   let(:requirements) do
     [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+=======
+  let(:crates_fixture_name) { "#{dependency_name}.json" }
+  let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
+  let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
+
+  before do
+    stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
+>>>>>>> Stashed changes
   end
   let(:dependency_name) { "time" }
   let(:dependency_version) { "0.1.38" }
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }

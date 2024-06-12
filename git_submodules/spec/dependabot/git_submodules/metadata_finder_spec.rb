@@ -45,6 +45,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
   end
   let(:url) { "https://github.com/example/manifesto.git" }
 
+<<<<<<< Updated upstream
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -52,7 +53,18 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       "username" => "x-access-token",
       "password" => "token"
     }]
+=======
+  before do
+    # Not hosted on GitHub Enterprise Server
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+>>>>>>> Stashed changes
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

@@ -38,6 +38,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     )
   end
 
+<<<<<<< Updated upstream
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -45,9 +46,21 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       "username" => "x-access-token",
       "password" => "token"
     })]
+=======
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+    stub_request(:get, "https://initd.org/status").to_return(status: 404)
+    stub_request(:get, "https://pypi.org/status").to_return(status: 404)
+>>>>>>> Stashed changes
   end
   let(:dependency_name) { "luigi" }
   let(:version) { "1.0" }
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

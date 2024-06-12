@@ -13,6 +13,30 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+<<<<<<< Updated upstream
+=======
+  let(:dependency_name) { "business" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: "1.0",
+      requirements:
+        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
+      previous_requirements:
+        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
+      package_manager: "bundler"
+    )
+  end
+
+>>>>>>> Stashed changes
   before do
     stub_request(:get, "https://example.com/status").to_return(
       status: 200,
@@ -29,6 +53,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
   it_behaves_like "a dependency metadata finder"
 
+<<<<<<< Updated upstream
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -51,6 +76,8 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
   end
   let(:dependency_name) { "business" }
 
+=======
+>>>>>>> Stashed changes
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 

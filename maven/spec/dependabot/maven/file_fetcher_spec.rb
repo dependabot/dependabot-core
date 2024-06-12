@@ -39,6 +39,34 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       "password" => "token"
     }]
   end
+<<<<<<< Updated upstream
+=======
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha"))
+      .with(headers: { "Authorization" => "token token" })
+      .to_return(
+        status: 404
+      )
+  end
+
+  it_behaves_like "a dependency file fetcher"
+>>>>>>> Stashed changes
 
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }

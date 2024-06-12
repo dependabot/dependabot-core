@@ -6,6 +6,31 @@ require "dependabot/npm_and_yarn/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
+<<<<<<< Updated upstream
+=======
+  let(:json_header) { { "content-type" => "application/json" } }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:directory) { "/" }
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
+
+>>>>>>> Stashed changes
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -36,6 +61,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
+<<<<<<< Updated upstream
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -58,6 +84,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   end
   let(:json_header) { { "content-type" => "application/json" } }
 
+=======
+>>>>>>> Stashed changes
   context "with .yarn data stored in git-lfs" do
     let(:source) do
       Dependabot::Source.new(

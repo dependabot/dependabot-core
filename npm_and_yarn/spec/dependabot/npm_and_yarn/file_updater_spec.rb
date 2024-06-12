@@ -61,8 +61,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   end
   let(:source) { nil }
 
+<<<<<<< Updated upstream
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
+=======
+  before do
+    FileUtils.mkdir_p(tmp_path)
+  end
+>>>>>>> Stashed changes
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

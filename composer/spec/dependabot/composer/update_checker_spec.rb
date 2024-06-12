@@ -29,6 +29,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     )
   end
 
+<<<<<<< Updated upstream
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -53,7 +54,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
+=======
+  before do
+    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
+    stub_request(:get, url).to_return(status: 200, body: packagist_response)
+>>>>>>> Stashed changes
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }

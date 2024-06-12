@@ -55,7 +55,22 @@ RSpec.describe Dependabot::Python::FileUpdater do
       "password" => "token"
     })]
   end
+<<<<<<< Updated upstream
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+=======
+  let(:dependency_files) { [requirements] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: dependency_files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  before { FileUtils.mkdir_p(tmp_path) }
+>>>>>>> Stashed changes
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

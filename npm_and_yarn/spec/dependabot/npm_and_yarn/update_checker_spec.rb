@@ -43,6 +43,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
   let(:options) { {} }
 
+<<<<<<< Updated upstream
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -67,6 +68,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     )
   end
   let(:dependency_version) { "1.0.0" }
+=======
+  before do
+    stub_request(:get, registry_listing_url)
+      .to_return(status: 200, body: registry_response)
+    stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
+      .to_return(status: 200)
+  end
+
+  it_behaves_like "an update checker"
+>>>>>>> Stashed changes
 
   describe "#vulnerable?" do
     context "when the dependency has multiple versions" do

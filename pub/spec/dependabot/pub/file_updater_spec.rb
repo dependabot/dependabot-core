@@ -69,6 +69,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     )
   end
 
+<<<<<<< Updated upstream
   let(:dependencies) { [dependency] }
 
   let(:dependency_files) do
@@ -76,10 +77,52 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     files.each do |file|
       # Simulate that the lockfile was from localhost:
       file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+=======
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
+>>>>>>> Stashed changes
     end
     files
   end
+<<<<<<< Updated upstream
   let(:project) { "can_update" }
+=======
+
+  before do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.mount_proc "/api/packages/#{package}" do |_req, res|
+        res.body = File.read(File.join("..", "..", "..", f))
+      end
+    end
+  end
+
+  after(:all) do
+    @server.shutdown
+  end
+
+  before(:all) do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    dev_null = WEBrick::Log.new("/dev/null", 7)
+    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
+    Thread.new do
+      @server.start
+    end
+  end
+
+  it_behaves_like "a dependency file updater"
+
+  def manifest(files)
+    files.find { |f| f.name == "pubspec.yaml" }.content
+  end
+
+  def lockfile(files)
+    files.find { |f| f.name == "pubspec.lock" }.content
+  end
+>>>>>>> Stashed changes
 
   describe "#updated_dependency_files unlock none" do
     let(:dependency) do

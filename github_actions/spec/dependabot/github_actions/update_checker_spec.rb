@@ -77,7 +77,22 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     )
   end
 
+<<<<<<< Updated upstream
   let(:upload_pack_fixture) { "setup-node" }
+=======
+  before do
+    stub_request(:get, service_pack_url)
+      .to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", upload_pack_fixture),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
+>>>>>>> Stashed changes
+
+  it_behaves_like "an update checker"
 
   shared_context "with multiple git sources" do
     let(:upload_pack_fixture) { "checkout" }

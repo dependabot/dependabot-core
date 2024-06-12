@@ -12,6 +12,35 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
+<<<<<<< Updated upstream
+=======
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
+  end
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  let(:dependency_name) { "monolog/monolog" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: "1.0",
+      requirements: requirements,
+      package_manager: "composer"
+    )
+  end
+
+>>>>>>> Stashed changes
   before do
     packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, packagist_url).to_return(status: 200, body: packagist_response)
@@ -25,6 +54,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
   it_behaves_like "a dependency metadata finder"
 
+<<<<<<< Updated upstream
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -52,6 +82,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
 
+=======
+>>>>>>> Stashed changes
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
