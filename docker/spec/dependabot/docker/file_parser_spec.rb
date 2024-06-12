@@ -141,9 +141,6 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         stub_request(:head, repo_url + "manifests/12.04.5")
           .and_return(status: 200, body: "", headers: digest_headers)
-      end
-
-      before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url)
           .and_return(status: 200, body: { token: "token" }.to_json)
@@ -248,9 +245,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
 
-        before { digest_headers["docker_content_digest"] = "nomatch" }
-
         before do
+          digest_headers["docker_content_digest"] = "nomatch"
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
             .and_return(status: 200, body: "", headers: digest_headers)
@@ -797,9 +793,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
 
-        before { digest_headers["docker_content_digest"] = "nomatch" }
-
         before do
+          digest_headers["docker_content_digest"] = "nomatch"
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
             .and_return(status: 200, body: "", headers: digest_headers)

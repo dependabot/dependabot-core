@@ -180,48 +180,39 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
         before do
           allow(builder)
-            .to receive(:fetch_dependency_tags)
-            .and_return(
-              %w(
-                @pollyjs/utils@0.1.0
-                @pollyjs/persister@0.2.0
-                @pollyjs/persister@0.1.0
-                @pollyjs/node-server@0.2.0
-                @pollyjs/node-server@0.1.0
-                @pollyjs/node-server@0.0.2
-                @pollyjs/node-server@0.0.1
-                @pollyjs/ember-cli@0.2.1
-                @pollyjs/ember-cli@0.2.0
-                @pollyjs/ember-cli@0.1.0
-                @pollyjs/ember-cli@0.0.2
-                @pollyjs/ember-cli@0.0.1
-                @pollyjs/ember@0.2.1
-                @pollyjs/ember@0.2.0
-                @pollyjs/ember@0.1.0
-                @pollyjs/ember@0.0.2
-                @pollyjs/ember@0.0.1
-                @pollyjs/core@0.3.0
-                @pollyjs/core@0.2.0
-                @pollyjs/core@0.1.0
-                @pollyjs/core@0.0.2
-                @pollyjs/core@0.0.1
-                @pollyjs/cli@0.1.1
-                @pollyjs/cli@0.1.0
-                @pollyjs/cli@0.0.2
-                @pollyjs/cli@0.0.1
-                @pollyjs/adapter@0.3.0
-                @pollyjs/adapter@0.2.0
-                @pollyjs/adapter@0.1.0
-                @pollyjs/adapter@0.0.2
-                @pollyjs/adapter@0.0.1
-              )
-            )
-        end
-
-        before do
-          allow(builder)
-            .to receive(:reliable_source_directory?)
-            .and_return(true)
+            .to receive_messages(fetch_dependency_tags: %w(
+              @pollyjs/utils@0.1.0
+              @pollyjs/persister@0.2.0
+              @pollyjs/persister@0.1.0
+              @pollyjs/node-server@0.2.0
+              @pollyjs/node-server@0.1.0
+              @pollyjs/node-server@0.0.2
+              @pollyjs/node-server@0.0.1
+              @pollyjs/ember-cli@0.2.1
+              @pollyjs/ember-cli@0.2.0
+              @pollyjs/ember-cli@0.1.0
+              @pollyjs/ember-cli@0.0.2
+              @pollyjs/ember-cli@0.0.1
+              @pollyjs/ember@0.2.1
+              @pollyjs/ember@0.2.0
+              @pollyjs/ember@0.1.0
+              @pollyjs/ember@0.0.2
+              @pollyjs/ember@0.0.1
+              @pollyjs/core@0.3.0
+              @pollyjs/core@0.2.0
+              @pollyjs/core@0.1.0
+              @pollyjs/core@0.0.2
+              @pollyjs/core@0.0.1
+              @pollyjs/cli@0.1.1
+              @pollyjs/cli@0.1.0
+              @pollyjs/cli@0.0.2
+              @pollyjs/cli@0.0.1
+              @pollyjs/adapter@0.3.0
+              @pollyjs/adapter@0.2.0
+              @pollyjs/adapter@0.1.0
+              @pollyjs/adapter@0.0.2
+              @pollyjs/adapter@0.0.1
+            ), reliable_source_directory?: true)
         end
 
         it do
@@ -935,30 +926,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           before do
             allow(builder)
-              .to receive(:fetch_dependency_tags)
-              .and_return(
-                %w(
-                  @pollyjs/ember-cli@0.2.1
-                  @pollyjs/ember-cli@0.2.0
-                  @pollyjs/ember-cli@0.1.0
-                  @pollyjs/ember-cli@0.0.2
-                  @pollyjs/ember-cli@0.0.1
-                  @pollyjs/ember@0.2.1
-                  @pollyjs/ember@0.2.0
-                  @pollyjs/ember@0.1.0
-                  @pollyjs/ember@0.0.2
-                  @pollyjs/ember@0.0.1
-                )
-              )
-          end
-
-          before do
-            allow(builder)
-              .to receive(:reliable_source_directory?)
-              .and_return(true)
-          end
-
-          before do
+              .to receive_messages(fetch_dependency_tags: %w(
+                @pollyjs/ember-cli@0.2.1
+                @pollyjs/ember-cli@0.2.0
+                @pollyjs/ember-cli@0.1.0
+                @pollyjs/ember-cli@0.0.2
+                @pollyjs/ember-cli@0.0.1
+                @pollyjs/ember@0.2.1
+                @pollyjs/ember@0.2.0
+                @pollyjs/ember@0.1.0
+                @pollyjs/ember@0.0.2
+                @pollyjs/ember@0.0.1
+              ), reliable_source_directory?: true)
             stub_request(
               :get,
               "https://api.github.com/repos/netflix/pollyjs/commits?" \

@@ -332,9 +332,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      before { `composer clear-cache --quiet` }
-
       before do
+        `composer clear-cache --quiet`
         url = "https://php.fury.io/dependabot-throwaway/packages.json"
         stub_request(:get, url)
           .to_return(status: 200, body: fixture("gemfury_response.json"))

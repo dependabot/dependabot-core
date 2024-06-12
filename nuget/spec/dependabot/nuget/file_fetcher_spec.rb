@@ -33,9 +33,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
   before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
     stub_request(:get, File.join(url, ".config?ref=sha"))

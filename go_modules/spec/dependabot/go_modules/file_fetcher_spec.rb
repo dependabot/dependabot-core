@@ -25,8 +25,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
   it_behaves_like "a dependency file fetcher"
 
-  after { FileUtils.rm_rf(repo_contents_path) }
-
   after do
     FileUtils.rm_rf(repo_contents_path)
   end
