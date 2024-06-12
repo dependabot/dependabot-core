@@ -12,6 +12,17 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         include SecurityUpdateHelpers
 
+        class SecurityUpdateError < StandardError
+          def initialize(message:, error_context:)
+            super(message)
+            @error_context = error_context
+          end
+
+          def sentry_context
+            { extra: @error_context }
+          end
+        end
+
         def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
           # If we haven't been given data for the vulnerable dependency,
@@ -68,6 +79,16 @@ module Dependabot
             error: e,
             error_type: "inconsistent_registry_response",
             error_detail: e.message
+          )
+        rescue StandardError => e
+          # error_handler.handle_dependency_error(error: e, dependency: dependency)
+          log_error_for_security_update_failure(dependency: dependency)
+        end
+
+        def log_error_for_security_update_failure(dependency:)
+          raise SecurityUpdateError.new(
+            message: "Security Update Error, No files were updated!",
+            error_context: dependency
           )
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependency)
