@@ -80,8 +80,7 @@ module Dependabot
             error_type: "inconsistent_registry_response",
             error_detail: e.message
           )
-        rescue StandardError => e
-          # error_handler.handle_dependency_error(error: e, dependency: dependency)
+        rescue StandardError
           log_error_for_security_update_failure(dependency: dependency)
         end
 
