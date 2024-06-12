@@ -14,7 +14,7 @@ module Dependabot
         @updated_dependencies = []
 
         @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hsh|
-          hsh[file.path] = { file: file, changed: false, changes: 0 }
+          hsh[file.path] = { file: file, updated_dependencies: [], changed: false, changes: 0 }
         end
 
         @vendored_dependency_batch = {}
@@ -45,8 +45,15 @@ module Dependabot
       end
 
       def merge(dependency_change)
-        merge_dependency_changes(dependency_change.updated_dependencies)
-        merge_file_changes(dependency_change.updated_dependency_files)
+        if feature_enabled?(:dependency_has_directory)
+          merge_file_and_dependency_changes_to_batch(
+            dependency_change.updated_dependencies, 
+            dependency_change.updated_dependency_files
+          )
+        else
+          merge_dependency_changes(dependency_change.updated_dependencies)
+          merge_file_changes(dependency_change.updated_dependency_files)
+        end
 
         Dependabot.logger.debug("Dependencies updated:")
         debug_updated_dependencies
@@ -93,6 +100,33 @@ module Dependabot
                        end
 
         batch[file.path] = { file: file, changed: true, changes: change_count + 1 }
+      end
+
+      # FIXME: This is one of the harder changes to make
+      # we can either store the updated dpeendencies on the updated_dependnecy_file object
+      # or we can save the directory on the updated_dependency themselves
+      # Here I take a hybrid approach and end up saving the file separate from the updated dependencies list that goes on it
+      def merge_file_and_dependency_changes(updated_dependencies, updated_dependency_files)
+        updated_dependency_files.each do |updated_file|
+          if updated_file.vendored_file?
+            merge_file_to_batch(updated_file, @vendored_dependency_batch, updated_dependencies)
+          else
+            merge_file_to_batch(updated_file, @dependency_file_batch, updated_dependencies)
+          end
+        end
+      end
+
+      def merge_file_and_dependency_changes_to_batch(file, batch, updated_dependencies)
+        change_count = if (existing_file = batch[file.path])
+                         existing_file.fetch(:change_count, 0)
+                       else
+                         # The file is newly encountered
+                         Dependabot.logger.debug("File #{file.operation}d: '#{file.path}'")
+                         0
+                       end
+
+        updated_dependencies_list = merge_dependency_changes(updated_dependencies)
+        batch[file.path] = { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
       end
 
       def debug_updated_dependencies
