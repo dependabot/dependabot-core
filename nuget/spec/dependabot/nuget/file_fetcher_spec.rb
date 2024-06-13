@@ -31,8 +31,6 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -41,7 +39,10 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       .to_return(
         status: 404
       )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with a .csproj" do
     before do

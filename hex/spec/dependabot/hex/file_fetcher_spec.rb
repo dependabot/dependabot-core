@@ -27,8 +27,6 @@ RSpec.describe Dependabot::Hex::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     stub_request(:get, url + "?ref=sha")
@@ -54,7 +52,10 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         body: fixture("github", "contents_elixir_lockfile.json"),
         headers: json_header
       )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the mix.exs and mix.lock" do
     expect(file_fetcher_instance.files.count).to eq(2)

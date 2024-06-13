@@ -65,14 +65,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     )
   end
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, maven_central_metadata_url)
       .to_return(status: 200, body: maven_central_releases)
     stub_request(:head, maven_central_version_files_url)
       .to_return(status: 200)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }

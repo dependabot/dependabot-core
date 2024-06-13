@@ -28,6 +28,8 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     )
   end
 
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
   it_behaves_like "a dependency file fetcher"
 
   def stub_content_request(path, fixture)
@@ -45,8 +47,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       .with(headers: { "Authorization" => "token token" })
       .to_return(status: 404)
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with a basic buildfile" do
     before do

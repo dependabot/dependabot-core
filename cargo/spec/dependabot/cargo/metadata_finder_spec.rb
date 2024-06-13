@@ -35,8 +35,6 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     stub_request(:get, "https://example.com/status").to_return(
       status: 200,
@@ -44,6 +42,8 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
       headers: {}
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

@@ -49,8 +49,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     )
   end
 
-  it_behaves_like "an update checker"
-
   before do
     auth_url = "https://auth.docker.io/token?service=registry.docker.io"
     stub_request(:get, auth_url)
@@ -59,6 +57,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     stub_request(:get, repo_url + "tags/list")
       .and_return(status: 200, body: registry_tags)
   end
+
+  it_behaves_like "an update checker"
 
   def stub_tag_with_no_digest(tag)
     stub_request(:head, repo_url + "manifests/#{tag}")
