@@ -112,13 +112,11 @@ module Dependabot
       @handled_dependencies[@current_directory] = set
     end
 
-    # Adds dependencies to every directory since grouped updates attempt to update
-    # every dependency across every directory
-    sig { params(dependency_names: T.any(String, T::Array[String])).void }
-    def add_handled_group_dependencies(dependency_names)
+    sig { params(dependencies_hash: T::Array[T::Hash[Symbol, String]]).void }
+    def add_handled_group_dependencies(dependencies_hash)
       raise "Current directory not set" if @current_directory == ""
 
-      @handled_dependencies.each_key do |dir|
+      dependencies_hash.each do |dir, dependency_names|
         set = @handled_dependencies[dir] || Set.new
         set += Array(dependency_names)
         @handled_dependencies[dir] = set
