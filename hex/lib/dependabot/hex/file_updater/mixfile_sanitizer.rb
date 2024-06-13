@@ -34,6 +34,9 @@ module Dependabot
 
         private
 
+        sig { returns(String) }
+        attr_reader :mixfile_content
+
         sig { params(configuration: String).returns(String) }
         def prevent_config_path_loading(configuration)
           configuration
