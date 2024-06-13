@@ -60,9 +60,8 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         body: fixture("github", "contents_cargo_config.json"),
         headers: json_header
       )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   it_behaves_like "a dependency file fetcher"
 

@@ -27,8 +27,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     FileUtils.rm_rf(repo_contents_path)
   end
 
-  after { FileUtils.rm_rf(repo_contents_path) }
-
   it_behaves_like "a dependency file fetcher"
 
   it "fetches the go.mod and go.sum" do

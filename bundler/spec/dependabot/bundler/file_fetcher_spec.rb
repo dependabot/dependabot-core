@@ -45,9 +45,8 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         body: fixture("github", "tool_versions_content.json"),
         headers: { "content-type" => "application/json" }
       )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   it_behaves_like "a dependency file fetcher"
 
