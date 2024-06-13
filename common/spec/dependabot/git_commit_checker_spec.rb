@@ -296,6 +296,14 @@ RSpec.describe Dependabot::GitCommitChecker do
           allow_any_instance_of(DummyPackageManager::MetadataFinder)
             .to receive(:look_up_source)
             .and_return(Dependabot::Source.from_url(source_url))
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", upload_pack_fixture),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
         end
 
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
@@ -307,17 +315,6 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:bitbucket_url) do
           "https://api.bitbucket.org/2.0/repositories/" \
             "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
-        end
-
-        before do
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", upload_pack_fixture),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
         end
 
         context "when not included in a release" do
