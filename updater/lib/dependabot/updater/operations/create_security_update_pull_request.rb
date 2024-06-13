@@ -80,17 +80,11 @@ module Dependabot
             error_type: "inconsistent_registry_response",
             error_detail: e.message
           )
-        rescue StandardError
-          log_error_for_security_update_failure(dependency: dependency)
-        end
-
-        def log_error_for_security_update_failure(dependency:)
-          raise SecurityUpdateError.new(
-            message: "Security Update Error, No files were updated!",
-            error_context: dependency
-          )
-        rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
+        rescue StandardError => standard_ex
+          security_ex = SecurityUpdateError.new(message: "Security Update Error, #{standard_ex.message}",
+          error_context: standard_ex.instance_variable_get(:@error_context))
+          security_ex.set_backtrace(standard_ex.backtrace)
+          error_handler.handle_dependency_error(error: security_ex, dependency: dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
