@@ -239,6 +239,27 @@ RSpec.describe Dependabot::Dependency do
         expect(to_h).to eq(expected)
       end
     end
+
+    context "when a directory is specified" do
+      let(:dependency_args) do
+        {
+          name: "dep",
+          requirements: [],
+          package_manager: "dummy",
+          directory: "/home"
+        }
+      end
+
+      it do
+        expected = {
+          "name" => "dep",
+          "package_manager" => "dummy",
+          "requirements" => [],
+          "directory" => "/home"
+        }
+        expect(to_h).to eq(expected)
+      end
+    end
   end
 
   describe "#subdependency_metadata" do
