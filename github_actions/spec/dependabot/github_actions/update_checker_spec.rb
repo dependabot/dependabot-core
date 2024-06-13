@@ -64,8 +64,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     )
   end
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -76,6 +74,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }
       )
   end
+
+  it_behaves_like "an update checker"
 
   shared_context "with multiple git sources" do
     let(:upload_pack_fixture) { "checkout" }

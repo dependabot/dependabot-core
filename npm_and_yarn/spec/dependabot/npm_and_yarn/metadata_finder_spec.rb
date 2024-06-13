@@ -192,9 +192,11 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     end
 
     context "when the npm link 404s" do
-      before { stub_request(:get, npm_url).to_return(status: 404) }
-      before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
-      before { stub_request(:get, npm_url + "/latest").to_return(status: 404) }
+      before do
+        stub_request(:get, npm_url).to_return(status: 404)
+        stub_request(:get, npm_url + "/latest").to_return(status: 404)
+        stub_request(:get, npm_url + "/latest").to_return(status: 404)
+      end
 
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) { fixture("npm_responses", "etag.json") }

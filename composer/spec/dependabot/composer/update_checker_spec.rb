@@ -47,12 +47,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     )
   end
 
-  it_behaves_like "an update checker"
-
   before do
     url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject(:latest_version) { checker.latest_version }
@@ -332,9 +332,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      before { `composer clear-cache --quiet` }
-
       before do
+        `composer clear-cache --quiet`
         url = "https://php.fury.io/dependabot-throwaway/packages.json"
         stub_request(:get, url)
           .to_return(status: 200, body: fixture("gemfury_response.json"))

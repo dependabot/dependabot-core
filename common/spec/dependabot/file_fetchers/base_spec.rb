@@ -307,8 +307,6 @@ RSpec.describe Dependabot::FileFetchers::Base do
     context "with a GitHub source" do
       let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
 
-      its(:length) { is_expected.to eq(1) }
-
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
           .with(headers: { "Authorization" => "token token" })
@@ -316,6 +314,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
                      body: fixture("github", "gemfile_content.json"),
                      headers: { "content-type" => "application/json" })
       end
+
+      its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
         subject(:files_find) { files.find { |file| file.name == "requirements.txt" } }

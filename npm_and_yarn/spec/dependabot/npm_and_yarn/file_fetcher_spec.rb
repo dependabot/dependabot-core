@@ -28,8 +28,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -57,6 +55,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         headers: json_header
       )
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with .yarn data stored in git-lfs" do
     let(:source) do

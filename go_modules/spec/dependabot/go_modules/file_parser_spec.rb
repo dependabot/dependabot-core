@@ -30,12 +30,12 @@ RSpec.describe Dependabot::GoModules::FileParser do
   let(:files) { [go_mod] }
   let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
 
-  it_behaves_like "a dependency file parser"
-
   after do
     # Reset to the default go toolchain after each test
     ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
   end
+
+  it_behaves_like "a dependency file parser"
 
   it "requires a go.mod to be present" do
     expect do

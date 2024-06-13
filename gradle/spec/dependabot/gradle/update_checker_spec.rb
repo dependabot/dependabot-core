@@ -51,12 +51,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       "com/google/guava/guava/maven-metadata.xml"
   end
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, maven_central_metadata_url)
       .to_return(status: 200, body: maven_central_releases)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }
