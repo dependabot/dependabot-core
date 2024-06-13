@@ -38,10 +38,6 @@ module Dependabot
         def prevent_config_path_loading(configuration)
           configuration
             .gsub(/^\s*config_path:.*(?:,|$)/, "")
-            .gsub(NESTED_VERSION_FILE_READ_BANG, 'String.trim("0.0.1")')
-            .gsub(NESTED_VERSION_FILE_READ, 'String.trim({:ok, "0.0.1"})')
-            .gsub(PIPED_VERSION_FILE_READ, '{:ok, "0.0.1"}')
-            .gsub(PIPED_VERSION_FILE_READ_BANG, '"0.0.1"')
         end
 
         sig { params(configuration: String).returns(String) }
