@@ -242,14 +242,6 @@ RSpec/UnspecifiedException:
   Exclude:
     - 'updater/spec/dependabot/job_spec.rb'
 
-# Offense count: 3
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: constant, string
-RSpec/VerifiedDoubleReference:
-  Exclude:
-    - 'updater/spec/dependabot/updater/operations/refresh_group_update_pull_request_spec.rb'
-
 # Offense count: 26
 # Configuration parameters: IgnoreNameless, IgnoreSymbolicNames.
 RSpec/VerifiedDoubles:
