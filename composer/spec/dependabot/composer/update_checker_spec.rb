@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       expect(latest_resolvable_version.segments.count).to eq(3)
     end
 
-    it { is_expected.to be >= Gem::Version.new("1.0.0") }
+    it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
     context "with a composer v1 lockfile" do
       let(:project_name) { "v1/exact_version" }
@@ -209,11 +209,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
 
-      it { is_expected.to eq(Gem::Version.new("1.0.1")) }
+      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
     end
 
     context "without a lockfile" do
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.22.0") }
 
       context "when there are conflicts at the version specified" do
         let(:project_name) { "conflicts" }
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a dev dependency" do
       let(:project_name) { "development_dependencies" }
 
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.22.0") }
     end
 
     context "with a path source" do
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "when it is not the dependency we're checking" do
-        it { is_expected.to be >= Gem::Version.new("1.0.2") }
+        it { is_expected.to be >= Gem::Version.new("1.22.0") }
       end
 
       context "when it is the dependency we're checking" do
@@ -377,8 +377,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        it "does not raise an error as there is no request for version update" do
-          expect(latest_resolvable_version).to be >= Gem::Version.new("2.1.0")
+        it "raises a helpful error message" do
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
+              expect(error)
+                .to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+              expect(error.source).to eq("php.fury.io")
+            end
         end
       end
 
@@ -392,8 +397,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        it "does not raise an error, as there is no update to the dependency" do
-          expect(latest_resolvable_version).to be >= Gem::Version.new("2.1.0")
+        it "raises a helpful error message" do
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
+              expect(error)
+                .to be_a(Dependabot::PrivateSourceAuthenticationFailure)
+              expect(error.source).to eq("php.fury.io")
+            end
         end
       end
     end
@@ -479,7 +489,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       let(:ignored_versions) { [">= 2.8.0"] }
 
       it "is the highest resolvable version" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.5"))
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
       end
 
       context "when the blocking dependency is a git dependency" do
@@ -588,7 +598,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
     context "with a git source dependency that's not the dependency we're checking with an alias" do
@@ -604,7 +614,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
     context "with a git source dependency that's not the dependency we're checking with a stability flag" do
@@ -645,7 +655,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       # fine - the below is just what we get with Composer at the moment
       # because we disabled downloading the files in
       # DependabotInstallationManager.
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
     context "with a git source dependency that's not the dependency we're checking with a git URL" do
@@ -661,7 +671,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be >= Gem::Version.new("1.0.1") }
+      it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
     context "with a git source dependency that's not the dependency we're checking that is unreachable" do
@@ -677,15 +687,25 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it "does not raise an error as there is no request for dependency version update." do
-        expect(subject).to be >= Gem::Version.new("1.0.1")
+      it "raises a helpful error" do
+        expect { checker.latest_resolvable_version }
+          .to raise_error do |error|
+            expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+            expect(error.dependency_urls)
+              .to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
       end
 
       context "with a git URL" do
         let(:project_name) { "git_source_unreachable_git_url" }
 
-        it "does not raise an error as there is no request for dependency version update." do
-          expect(subject).to be >= Gem::Version.new("1.0.1")
+        it "raises a helpful error" do
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
+              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
+              expect(error.dependency_urls)
+                .to eq(["git@github.com:no-exist-sorry/monolog"])
+            end
         end
       end
     end
@@ -711,7 +731,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           )
       end
 
-      it { is_expected.to be_nil }
+      it { is_expected.to be >= Gem::Version.new("3.0.2") }
     end
 
     context "when an autoload is specified" do
@@ -727,7 +747,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be >= Gem::Version.new("5.2.7") }
+      it { is_expected.to be >= Gem::Version.new("5.2.30") }
     end
 
     context "when a sub-dependency would block the update" do
@@ -744,7 +764,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       # 5.5.0 series and up require an update to illuminate/contracts
-      it { is_expected.to be >= Gem::Version.new("5.2.0") }
+      it { is_expected.to be >= Gem::Version.new("5.6.23") }
     end
 
     context "with an invalid composer.json file" do
@@ -761,7 +781,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
 
-    it { is_expected.to eq(Gem::Version.new("1.0.1")) }
+    it { is_expected.to eq(Gem::Version.new("1.21.0")) }
 
     context "with an insecure version" do
       let(:dependency_version) { "1.0.1" }
@@ -775,7 +795,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         ]
       end
 
-      it { is_expected.to eq(Gem::Version.new("1.0.1")) }
+      it { is_expected.to eq(Gem::Version.new("1.16.0")) }
     end
   end
 

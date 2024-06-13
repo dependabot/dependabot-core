@@ -146,23 +146,6 @@ RSpec/OverwritingSetup:
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
 
 
-# Offense count: 47
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: Strict, EnforcedStyle, AllowedExplicitMatchers.
-# SupportedStyles: inflected, explicit
-RSpec/PredicateMatcher:
-  Exclude:
-    - 'common/spec/dependabot/dependency_file_spec.rb'
-    - 'common/spec/dependabot/dependency_group_spec.rb'
-    - 'common/spec/dependabot/experiments_spec.rb'
-    - 'common/spec/dependabot/file_updaters/artifact_updater_spec.rb'
-    - 'common/spec/dependabot/file_updaters/vendor_updater_spec.rb'
-    - 'common/spec/dependabot/workspace/git_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_parser/pyproject_files_parser_spec.rb'
-    - 'updater/spec/dependabot/job_spec.rb'
-
 # Offense count: 4
 RSpec/RepeatedExample:
   Exclude:
@@ -246,14 +229,6 @@ RSpec/SubjectStub:
 RSpec/UnspecifiedException:
   Exclude:
     - 'updater/spec/dependabot/job_spec.rb'
-
-# Offense count: 3
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: constant, string
-RSpec/VerifiedDoubleReference:
-  Exclude:
-    - 'updater/spec/dependabot/updater/operations/refresh_group_update_pull_request_spec.rb'
 
 # Offense count: 26
 # Configuration parameters: IgnoreNameless, IgnoreSymbolicNames.
