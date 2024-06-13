@@ -14,7 +14,7 @@ final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials, $latestAllowableVersion] = $args;
+        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
         $httpBasicCredentials = [];
 
@@ -75,8 +75,7 @@ final class UpdateChecker
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
         if ($composer->getLocker()->isLocked()) {
-            $dependencyNameWithVersion = $dependencyName . ':' . $latestAllowableVersion;
-            $install->setUpdateAllowList([$dependencyNameWithVersion]);
+            $install->setUpdateAllowList([$dependencyName]);
         }
 
         $install->run();
