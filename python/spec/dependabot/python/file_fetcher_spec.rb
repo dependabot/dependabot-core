@@ -292,9 +292,6 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "contents_python_pipfile.json"),
             headers: { "content-type" => "application/json" }
           )
-      end
-
-      before do
         stub_request(:get, url + "Pipfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(

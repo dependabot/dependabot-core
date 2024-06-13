@@ -29,6 +29,7 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   end
 
   before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     stub_request(:get, File.join(url, ".ruby-version?ref=sha"))
       .with(headers: { "Authorization" => "token token" })
       .to_return(

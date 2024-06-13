@@ -170,25 +170,6 @@ RSpec/RepeatedExampleGroupBody:
 RSpec/RepeatedExampleGroupDescription:
   Enabled: false
 
-# Offense count: 36
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ScatteredSetup:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/file_fetcher_spec.rb'
-    - 'cargo/spec/dependabot/cargo/file_fetcher_spec.rb'
-    - 'common/spec/dependabot/clients/bitbucket_spec.rb'
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb'
-    - 'composer/spec/dependabot/composer/update_checker_spec.rb'
-    - 'docker/spec/dependabot/docker/file_parser_spec.rb'
-    - 'elm/spec/dependabot/elm/file_fetcher_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_fetcher_spec.rb'
-    - 'gradle/spec/dependabot/gradle/update_checker/multi_dependency_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/file_fetcher_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/metadata_finder_spec.rb'
-    - 'nuget/spec/dependabot/nuget/file_fetcher_spec.rb'
-    - 'python/spec/dependabot/python/file_fetcher_spec.rb'
-
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, IgnoreMetadata.
 # Include: **/*_spec.rb
