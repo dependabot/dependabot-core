@@ -34,6 +34,7 @@ module Dependabot
                 source: dep["source"] && symbolize_keys(dep["source"]),
                 file: dep["from"]
               }],
+              directory: source&.directory,
               package_manager: "hex"
             )
         end

@@ -123,7 +123,8 @@ module Dependabot
               packaging_type: packaging_type(pom, dependency_node),
               classifier: dependency_classifier(dependency_node, pom)
             }.merge(property_details).compact
-          }]
+          }],
+          directory: source&.directory,
         )
       end
 

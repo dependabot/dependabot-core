@@ -105,7 +105,8 @@ module Dependabot
             groups: [],
             file: file.name,
             source: source
-          ]
+          ],
+          directory: source&.directory,
         )
       end
 
@@ -130,7 +131,8 @@ module Dependabot
               registry_hostname: hostname,
               module_identifier: "#{namespace}/#{name}"
             }
-          ]
+          ],
+          directory: source&.directory,
         )
       end
 

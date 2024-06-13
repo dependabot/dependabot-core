@@ -25,7 +25,8 @@ module DummyPackageManager
               groups: [],
               file: dependency_file.name,
               source: nil
-            ]
+            ],
+            directory: source&.directory,
           )
         end
       end

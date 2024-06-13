@@ -73,6 +73,7 @@ module Dependabot
           name: details["Path"],
           version: version,
           requirements: details["Indirect"] ? [] : reqs,
+          directory: source&.directory,
           package_manager: "go_modules"
         )
       end
