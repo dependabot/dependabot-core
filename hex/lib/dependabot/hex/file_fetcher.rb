@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -13,14 +13,16 @@ module Dependabot
 
       APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
       STRING_ARG = %{(?:["'](.*?)["'])}
-      SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
+      SUPPORTED_METHODS = T.let(%w(eval_file require_file).join("|").freeze, String)
       SUPPORT_FILE = /Code\.(?:#{SUPPORTED_METHODS})\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/
       PATH_DEPS_REGEX = /{.*path: ?#{STRING_ARG}.*}/
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("mix.exs")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a mix.exs."
       end
@@ -37,25 +39,27 @@ module Dependabot
 
       private
 
+      sig { returns(T.nilable(DependencyFile)) }
       def mixfile
-        @mixfile ||= fetch_file_from_host("mix.exs")
+        fetch_file_from_host("mix.exs")
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        return @lockfile if defined?(@lockfile)
-
-        @lockfile = fetch_lockfile
+        @lockfile ||= T.let(fetch_lockfile, T.nilable(DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def fetch_lockfile
         fetch_file_from_host("mix.lock")
       rescue Dependabot::DependencyFileNotFound
         nil
       end
 
+      sig { returns(T::Array[String]) }
       def umbrella_app_directories
-        apps_path = mixfile.content.match(APPS_PATH_REGEX)
-                           &.named_captures&.fetch("path")
+        apps_path = T.must(T.must(mixfile).content).match(APPS_PATH_REGEX)
+                     &.named_captures&.fetch("path")
         return [] unless apps_path
 
         repo_contents(dir: apps_path)
@@ -63,10 +67,12 @@ module Dependabot
           .map { |f| File.join(apps_path, f.name) }
       end
 
+      sig { returns(T::Array[String]) }
       def sub_project_directories
-        mixfile.content.scan(PATH_DEPS_REGEX).flatten
+        T.must(T.must(mixfile).content).scan(PATH_DEPS_REGEX).flatten
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def subapp_mixfiles
         subapp_directories = []
         subapp_directories += umbrella_app_directories
@@ -86,18 +92,20 @@ module Dependabot
         []
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def support_files
         mixfiles = [mixfile] + subapp_mixfiles
 
         mixfiles.flat_map do |mixfile|
-          mixfile_dir = mixfile.path.to_s.delete_prefix("/").delete_suffix("/mix.exs")
+          mixfile_dir = mixfile&.path&.to_s&.delete_prefix("/")&.delete_suffix("/mix.exs")
 
-          mixfile.content.gsub("__DIR__", "\"#{mixfile_dir}\"").scan(SUPPORT_FILE).map do |support_file_args|
-            path = Pathname.new(File.join(*support_file_args.compact.reverse))
-                           .cleanpath.to_path
+          mixfile&.content&.gsub("__DIR__", "\"#{mixfile_dir}\"")&.scan(SUPPORT_FILE)&.map do |support_file_args|
+            path = Pathname.new(File.join(Array(support_file_args).compact.reverse))
+                           .cleanpath
+                           .to_path
             fetch_file_from_host(path).tap { |f| f.support_file = true }
           end
-        end
+        end.compact
       end
     end
   end
