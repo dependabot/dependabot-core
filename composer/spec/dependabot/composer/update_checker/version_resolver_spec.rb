@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("2.0.4")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
     context "with an application using a >= PHP constraint" do
@@ -118,7 +118,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "1.0.2" }
       let(:requirements_to_unlock) { :none }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.0.2")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
     context "with a library that requires itself" do
@@ -266,8 +266,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         }]
       end
 
-      it "does not raises an Dependabot::GitDependenciesNotReachable error, as there is no update." do
-        expect(subject).to eq(Dependabot::Composer::Version.new("1.0.1"))
+      it "raises a Dependabot::GitDependenciesNotReachable error" do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls)
+              .to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
       end
     end
 
