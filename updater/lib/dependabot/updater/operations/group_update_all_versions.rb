@@ -114,6 +114,7 @@ module Dependabot
               )
 
               if Dependabot::Experiments.enabled?(:dependency_has_directory)
+
                 # A grouped version update gets its directories from user-defined update configs.
                 # A multi-directory grouped update will iterate each group over every directory.
                 # Therefore, we can skip a grouped dependency if it's been updated in *any* directory
