@@ -110,13 +110,13 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-ARG RUBYGEMS_VERSION=3.5.11
+ARG RUBYGEMS_VERSION=3.5.14
 RUN gem update --system $RUBYGEMS_VERSION
 
 # When bumping Bundler, need to also:
 # * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
 # * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
-ARG BUNDLER_V2_VERSION=2.5.11
+ARG BUNDLER_V2_VERSION=2.5.14
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
