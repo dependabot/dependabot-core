@@ -269,6 +269,14 @@ RSpec.describe Dependabot::DependencyChange do
   end
 
   describe "#matches_existing_pr?" do
+    before do
+      Dependabot::Experiments.register("dependency_has_directory", true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
     context "when no existing pull requests are found" do
       let(:job) do
         instance_double(Dependabot::Job,
