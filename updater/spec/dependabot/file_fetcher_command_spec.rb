@@ -57,13 +57,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a ToolVersionNotSupported error", :vcr do
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit).and_return("a" * 40)
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:files).and_return([])
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:ecosystem_versions)
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive_messages(commit: "a" * 40, files: [])
+        allow(my_file_fetcher).to receive(:ecosystem_versions)
           .and_raise(Dependabot::ToolVersionNotSupported.new("Bundler", "1.7", "2.x"))
       end
 
@@ -81,10 +80,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a BranchNotFound error" do
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit)
-          .and_raise(Dependabot::BranchNotFound, "my_branch")
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:commit).and_raise(Dependabot::BranchNotFound, "my_branch")
       end
 
       it "tells the backend about the error (and doesn't re-raise it)" do
@@ -104,11 +104,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
       let(:provider) { job_definition.dig("job", "source", "provider") }
       let(:repo) { job_definition.dig("job", "source", "repo") }
       let(:source) { ::Dependabot::Source.new(provider: provider, repo: repo) }
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
 
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit)
-          .and_raise(Dependabot::RepoNotFound, source)
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:commit).and_raise(Dependabot::RepoNotFound, source)
       end
 
       it "tells the backend about the error (and doesn't re-raise it)" do
@@ -125,10 +125,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a file fetcher error (cloud)", :vcr do
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit)
-          .and_raise(StandardError, "my_branch")
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:commit).and_raise(StandardError, "my_branch")
         Dependabot::Experiments.register(:record_update_job_unknown_error, true)
       end
 
@@ -173,10 +174,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a file fetcher error (ghes)", :vcr do
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit)
-          .and_raise(StandardError, "my_branch")
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:commit).and_raise(StandardError, "my_branch")
       end
 
       it "tells the backend about the error via update job error api (and doesn't re-raise it)" do
@@ -206,6 +208,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     context "when the fetcher raises a rate limited error" do
       let(:reset_at) { Time.now + 30 }
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
 
       before do
         exception = Octokit::TooManyRequests.new(
@@ -213,9 +216,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
             "X-RateLimit-Reset" => reset_at
           }
         )
-        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
-          .to receive(:commit)
-          .and_raise(exception)
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:commit).and_raise(exception)
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do
@@ -274,10 +276,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       context "when the fetcher raises a BranchNotFound error while cloning" do
+        let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
         before do
-          allow_any_instance_of(DummyPackageManager::FileFetcher)
-            .to receive(:clone_repo_contents)
-            .and_raise(Dependabot::BranchNotFound, "my_branch")
+          allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+          allow(my_file_fetcher).to receive(:clone_repo_contents).and_raise(Dependabot::BranchNotFound, "my_branch")
         end
 
         it "tells the backend about the error (and doesn't re-raise it)" do
@@ -294,10 +297,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       context "when the fetcher raises a OutOfDisk error while cloning" do
+        let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
         before do
-          allow_any_instance_of(DummyPackageManager::FileFetcher)
-            .to receive(:clone_repo_contents)
-            .and_raise(Dependabot::OutOfDisk)
+          allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+          allow(my_file_fetcher).to receive(:clone_repo_contents).and_raise(Dependabot::OutOfDisk)
         end
 
         it "tells the backend about the error (and doesn't re-raise it)" do

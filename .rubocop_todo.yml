@@ -6,22 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 39
-RSpec/AnyInstance:
-  Exclude:
-    - 'bundler/helpers/v1/spec/shared_contexts.rb'
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/clients/codecommit_spec.rb'
-    - 'common/spec/dependabot/file_fetchers/base_spec.rb'
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
-    - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
-    - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
-
 # Offense count: 7
 RSpec/BeforeAfterAll:
   Exclude:

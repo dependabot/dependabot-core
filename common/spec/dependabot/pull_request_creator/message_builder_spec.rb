@@ -1741,10 +1741,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "when there is a change in maintainer" do
+        let(:my_instance) { instance_double(Dependabot::MetadataFinders::Base) }
+
         before do
-          allow_any_instance_of(Dependabot::MetadataFinders::Base)
-            .to receive(:maintainer_changes)
-            .and_return("Maintainer change")
+          allow(Dependabot::MetadataFinders::Base).to receive(:new).and_return(my_instance)
+          allow(my_instance).to receive(:maintainer_changes).and_return("Maintainer change")
         end
 
         it "has the right text" do

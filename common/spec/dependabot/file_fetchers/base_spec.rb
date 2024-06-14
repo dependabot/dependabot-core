@@ -61,11 +61,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
     })]
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+  let(:my_instance) { instance_double(Dependabot::Clients::CodeCommit) }
 
   before do
-    allow_any_instance_of(
-      Dependabot::Clients::CodeCommit
-    ).to receive(:cc_client).and_return(stubbed_cc_client)
+    allow(Dependabot::Clients::CodeCommit).to receive(:new).and_return(my_instance)
+    allow(my_instance).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#commit" do

@@ -208,9 +208,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         context "when head of the gem's branch is included in a release" do
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(true)
           end
 
@@ -218,9 +220,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         context "when head of the gem's branch is not included in a release" do
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
@@ -267,9 +271,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "when the reference isn't included in the new version" do
+            let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker)
-                .to receive(:branch_or_ref_in_release?)
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:branch_or_ref_in_release?)
                 .and_return(false)
             end
 
@@ -281,9 +287,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "when the reference is included in the new version" do
+            let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker)
-                .to receive(:branch_or_ref_in_release?)
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:branch_or_ref_in_release?)
                 .and_return(true)
             end
 
@@ -732,9 +740,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         context "when the head of the branch isn't released" do
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
@@ -765,9 +775,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         context "when the head of the branch is released" do
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(true)
           end
 
@@ -790,10 +802,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               }
             }]
           end
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
@@ -834,9 +847,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "when the reference isn't included in the new version" do
+            let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker)
-                .to receive(:branch_or_ref_in_release?)
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:branch_or_ref_in_release?)
                 .and_return(false)
             end
 
@@ -849,9 +864,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           context "when the reference is included in the new version" do
+            let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
+
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker)
-                .to receive(:branch_or_ref_in_release?)
+              allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:branch_or_ref_in_release?)
                 .and_return(true)
             end
 
@@ -969,10 +986,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   }
                 }]
               end
+              let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
               before do
-                allow_any_instance_of(Dependabot::GitCommitChecker)
-                  .to receive(:branch_or_ref_in_release?)
+                allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+                allow(my_instance).to receive(:branch_or_ref_in_release?)
                   .and_return(false)
                 refs_url = "https://github.com/hvssle/onfido.git/info/refs"
                 git_header = {
@@ -1011,10 +1029,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
           let(:dependency_name) { "dependabot-test-ruby-package" }
           let(:current_version) { "81073f9462f228c6894e3e384d0718def310d99f" }
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
             stub_request(
               :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
@@ -1059,10 +1078,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               }
             }]
           end
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
@@ -1109,11 +1129,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               }
             }]
           end
+          let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker)
-              .to receive(:branch_or_ref_in_release?)
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:branch_or_ref_in_release?)
               .and_return(false)
+
             git_url = "https://github.com/hvssle/onfido.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
@@ -1574,10 +1596,11 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }
           }]
         end
+        let(:my_instance) { instance_double(Dependabot::GitCommitChecker) }
 
         before do
-          allow_any_instance_of(Dependabot::GitCommitChecker)
-            .to receive(:branch_or_ref_in_release?)
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(my_instance)
+          allow(my_instance).to receive(:branch_or_ref_in_release?)
             .and_return(false)
           stub_request(
             :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
@@ -1598,6 +1621,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "delegates to Bundler::RequirementsUpdater with the right params" do
+          allow(my_instance).to receive(:branch_or_ref_in_release?)
+            .and_return(false)
           expect(requirements_updater)
             .to receive(:new).with(
               requirements: requirements,

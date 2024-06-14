@@ -30,9 +30,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   end
 
   before do
-    allow_any_instance_of(
-      described_class
-    ).to receive(:cc_client).and_return(stubbed_cc_client)
+    allow(client).to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#fetch_commit" do
@@ -58,9 +56,10 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       context "without credentials" do
         let(:credentials) { [] }
 
-        before { ENV["AWS_REGION"] = "us-east-1" }
+        before { ENV.fetch("AWS_REGION", nil) => "us-east-1" }
 
         it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
+        #        it { is_expected.to raise_exception }
       end
     end
 
