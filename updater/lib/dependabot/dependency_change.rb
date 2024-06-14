@@ -199,9 +199,10 @@ module Dependabot
     def directory
       return "" if updated_dependency_files.empty?
 
-      updated_dependency_files.first.directory
+      T.must(updated_dependency_files.first).directory
     end
 
+    sig { returns(T::Boolean) }
     def should_consider_directory?
       grouped_update? && Dependabot::Experiments.enabled?("dependency_has_directory")
     end
