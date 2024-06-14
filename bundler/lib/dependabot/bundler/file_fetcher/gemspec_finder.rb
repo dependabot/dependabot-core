@@ -60,7 +60,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def current_dir
-          @current_dir ||= T.let(T.must(gemfile).name.rpartition("/").first, T.nilable(String))
+          @current_dir ||= T.let(gemfile&.name&.rpartition("/")&.first, T.nilable(String))
           @current_dir = nil if @current_dir == ""
           @current_dir
         end
