@@ -69,20 +69,11 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   let(:sample) { "simple" }
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
 
-  it_behaves_like "an update checker"
-
-  before(:all) do
-    # Because we do the networking in dependency_services we have to run an
-    # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
-    Thread.new do
-      @server.start
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
     end
-  end
-
-  after(:all) do
-    @server.shutdown
   end
 
   before do
@@ -97,12 +88,21 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  after do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
+  after(:all) do
+    @server.shutdown
+  end
+
+  before(:all) do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    dev_null = WEBrick::Log.new("/dev/null", 7)
+    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
+    Thread.new do
+      @server.start
     end
   end
+
+  it_behaves_like "an update checker"
 
   context "when given an outdated dependency, not requiring unlock" do
     let(:dependency_name) { "collection" }
@@ -536,7 +536,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "when a newer non-vulnerable version is available" do
       it "updates to the lowest non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("3.0.0"))
+        expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new("3.0.0"))
       end
     end
 
@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       it "can update" do
-        expect(checker.vulnerable?).to be_truthy
+        expect(checker).to be_vulnerable
         expect(checker.lowest_resolvable_security_fix_version).to eq("2.0.0")
         expect(updated_dependencies).to eq [
           {
@@ -613,7 +613,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
     it "keeps current version if it is not vulnerable" do
-      is_expected.to eq(Gem::Version.new("2.0.0"))
+      expect(lowest_security_fix_version).to eq(Gem::Version.new("2.0.0"))
     end
 
     context "with a security vulnerability on older versions" do
@@ -628,7 +628,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("3.0.0"))
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("3.0.0"))
       end
 
       # it "returns nil for git versions" # tested elsewhere under `context "With a git dependency"`
@@ -709,7 +709,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "with a git dependency" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "git_dependency" }
 
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when working for a flutter project" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "requires_flutter" }
     let(:requirements_to_unlock) { :all }
@@ -808,7 +808,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   end
 
   context "when working for a flutter project requiring a flutter beta" do
-    include_context :uses_temp_dir
+    include_context "with temp dir"
 
     let(:project) { "requires_latest_beta" }
     let(:requirements_to_unlock) { :all }

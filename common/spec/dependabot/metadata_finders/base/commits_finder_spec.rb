@@ -26,6 +26,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       package_manager: package_manager
     )
   end
+  let(:service_pack_url) do
+    "https://github.com/gocardless/business.git/info/refs" \
+      "?service=git-upload-pack"
+  end
+  let(:upload_pack_fixture) { "business" }
   let(:package_manager) { "dummy" }
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
@@ -43,6 +48,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       repo: "gocardless/#{dependency_name}"
     )
   end
+
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -54,12 +60,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       )
   end
 
-  let(:service_pack_url) do
-    "https://github.com/gocardless/business.git/info/refs" \
-      "?service=git-upload-pack"
-  end
-  let(:upload_pack_fixture) { "business" }
-
   describe "#commits_url" do
     subject(:commits_url) { builder.commits_url }
 
@@ -68,8 +68,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "business" }
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "compare/v1.3.0...v1.4.0")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "compare/v1.3.0...v1.4.0")
       end
 
       context "without a previous version" do
@@ -92,8 +92,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { nil }
 
         it do
-          is_expected.to eq("https://github.com/gocardless/business/" \
-                            "compare/v1.3.0...v1.4.0")
+          expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                    "compare/v1.3.0...v1.4.0")
         end
       end
     end
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "business" }
 
       it do
-        is_expected
+        expect(commits_url)
           .to eq("https://github.com/gocardless/business/commits/v1.4.0")
       end
 
@@ -162,8 +162,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "commits/business-1.4")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "commits/business-1.4")
       end
 
       context "when dealing with a monorepo" do
@@ -180,61 +180,52 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
         before do
           allow(builder)
-            .to receive(:fetch_dependency_tags)
-            .and_return(
-              %w(
-                @pollyjs/utils@0.1.0
-                @pollyjs/persister@0.2.0
-                @pollyjs/persister@0.1.0
-                @pollyjs/node-server@0.2.0
-                @pollyjs/node-server@0.1.0
-                @pollyjs/node-server@0.0.2
-                @pollyjs/node-server@0.0.1
-                @pollyjs/ember-cli@0.2.1
-                @pollyjs/ember-cli@0.2.0
-                @pollyjs/ember-cli@0.1.0
-                @pollyjs/ember-cli@0.0.2
-                @pollyjs/ember-cli@0.0.1
-                @pollyjs/ember@0.2.1
-                @pollyjs/ember@0.2.0
-                @pollyjs/ember@0.1.0
-                @pollyjs/ember@0.0.2
-                @pollyjs/ember@0.0.1
-                @pollyjs/core@0.3.0
-                @pollyjs/core@0.2.0
-                @pollyjs/core@0.1.0
-                @pollyjs/core@0.0.2
-                @pollyjs/core@0.0.1
-                @pollyjs/cli@0.1.1
-                @pollyjs/cli@0.1.0
-                @pollyjs/cli@0.0.2
-                @pollyjs/cli@0.0.1
-                @pollyjs/adapter@0.3.0
-                @pollyjs/adapter@0.2.0
-                @pollyjs/adapter@0.1.0
-                @pollyjs/adapter@0.0.2
-                @pollyjs/adapter@0.0.1
-              )
-            )
-        end
-
-        before do
-          allow(builder)
-            .to receive(:reliable_source_directory?)
-            .and_return(true)
+            .to receive_messages(fetch_dependency_tags: %w(
+              @pollyjs/utils@0.1.0
+              @pollyjs/persister@0.2.0
+              @pollyjs/persister@0.1.0
+              @pollyjs/node-server@0.2.0
+              @pollyjs/node-server@0.1.0
+              @pollyjs/node-server@0.0.2
+              @pollyjs/node-server@0.0.1
+              @pollyjs/ember-cli@0.2.1
+              @pollyjs/ember-cli@0.2.0
+              @pollyjs/ember-cli@0.1.0
+              @pollyjs/ember-cli@0.0.2
+              @pollyjs/ember-cli@0.0.1
+              @pollyjs/ember@0.2.1
+              @pollyjs/ember@0.2.0
+              @pollyjs/ember@0.1.0
+              @pollyjs/ember@0.0.2
+              @pollyjs/ember@0.0.1
+              @pollyjs/core@0.3.0
+              @pollyjs/core@0.2.0
+              @pollyjs/core@0.1.0
+              @pollyjs/core@0.0.2
+              @pollyjs/core@0.0.1
+              @pollyjs/cli@0.1.1
+              @pollyjs/cli@0.1.0
+              @pollyjs/cli@0.0.2
+              @pollyjs/cli@0.0.1
+              @pollyjs/adapter@0.3.0
+              @pollyjs/adapter@0.2.0
+              @pollyjs/adapter@0.1.0
+              @pollyjs/adapter@0.0.2
+              @pollyjs/adapter@0.0.1
+            ), reliable_source_directory?: true)
         end
 
         it do
-          is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                            "commits/@pollyjs/ember@0.2.0/packages/ember")
+          expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                    "commits/@pollyjs/ember@0.2.0/packages/ember")
         end
 
         context "without a previous version" do
           let(:dependency_previous_version) { "0.0.3" }
 
           it do
-            is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+            expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                      "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
 
@@ -242,8 +233,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { "master" }
 
           it do
-            is_expected.to eq("https://github.com/netflix/pollyjs/" \
-                              "commits/@pollyjs/ember@0.2.0/packages/ember")
+            expect(commits_url).to eq("https://github.com/netflix/pollyjs/" \
+                                      "commits/@pollyjs/ember@0.2.0/packages/ember")
           end
         end
       end
@@ -257,8 +248,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/" \
-                          "commits/1.4.0")
+        expect(commits_url).to eq("https://github.com/gocardless/business/" \
+                                  "commits/1.4.0")
       end
     end
 
@@ -287,7 +278,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:upload_pack_fixture) { "no_tags" }
 
       it do
-        is_expected.to eq("https://github.com/gocardless/business/commits")
+        expect(commits_url).to eq("https://github.com/gocardless/business/commits")
       end
     end
 
@@ -503,7 +494,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:upload_pack_fixture) { "business" }
 
         it do
-          is_expected
+          expect(commits_url)
             .to eq("https://github.com/gocardless/business/compare/" \
                    "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
         end
@@ -531,7 +522,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             end
 
             it do
-              is_expected
+              expect(commits_url)
                 .to eq("https://github.com/gocardless/business/commits")
             end
           end
@@ -540,7 +531,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             let(:upload_pack_fixture) { "business" }
 
             it do
-              is_expected
+              expect(commits_url)
                 .to eq("https://github.com/gocardless/business/compare/" \
                        "7638417db6d59f3c431d3e1f261cc637155684cd...v1.4.0")
             end
@@ -609,8 +600,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/" \
-                            "compare/v1.3.0...v1.4.0")
+          expect(commits_url).to eq("https://gitlab.com/org/business/" \
+                                    "compare/v1.3.0...v1.4.0")
         end
       end
 
@@ -618,7 +609,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/commits/v1.4.0")
+          expect(commits_url).to eq("https://gitlab.com/org/business/commits/v1.4.0")
         end
       end
 
@@ -627,7 +618,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://gitlab.com/org/business/commits/master")
+          expect(commits_url).to eq("https://gitlab.com/org/business/commits/master")
         end
       end
     end
@@ -672,8 +663,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/" \
-                            "branches/compare/v1.4.0..v1.3.0")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/" \
+                                    "branches/compare/v1.4.0..v1.3.0")
         end
       end
 
@@ -681,7 +672,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected
+          expect(commits_url)
             .to eq("https://bitbucket.org/org/business/commits/tag/v1.4.0")
         end
       end
@@ -691,7 +682,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/commits")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/commits")
         end
       end
 
@@ -700,7 +691,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://bitbucket.org/org/business/commits")
+          expect(commits_url).to eq("https://bitbucket.org/org/business/commits")
         end
       end
     end
@@ -745,8 +736,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "1.3.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
-                            "branchCompare?baseVersion=GTv1.3.0&targetVersion=GTv1.4.0")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                                    "branchCompare?baseVersion=GTv1.3.0&targetVersion=GTv1.4.0")
         end
       end
 
@@ -754,7 +745,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_previous_version) { "0.3.0" }
 
         it "gets the right URL" do
-          is_expected
+          expect(commits_url)
             .to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits?itemVersion=GTv1.4.0")
         end
       end
@@ -778,9 +769,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
 
           it "gets the right URL" do
-            is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
-                              "branchCompare?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
-                              "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
+            expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                                      "branchCompare?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
+                                      "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
           end
         end
 
@@ -789,7 +780,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           let(:dependency_previous_version) { nil }
 
           it "gets the right URL" do
-            is_expected
+            expect(commits_url)
               .to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits" \
                      "?itemVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
           end
@@ -801,7 +792,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
         end
       end
 
@@ -810,7 +801,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         let(:dependency_version) { "0.5.0" }
 
         it "gets the right URL" do
-          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+          expect(commits_url).to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
         end
       end
     end
@@ -823,7 +814,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   end
 
   describe "#commits" do
-    subject { builder.commits }
+    subject(:commits) { builder.commits }
 
     context "with old and new tags" do
       let(:dependency_previous_version) { "1.3.0" }
@@ -851,7 +842,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to eq(
+          expect(commits).to eq(
             [
               {
                 message: "[12]() Remove _SEPA_ calendar (replaced by TARGET)",
@@ -935,30 +926,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           before do
             allow(builder)
-              .to receive(:fetch_dependency_tags)
-              .and_return(
-                %w(
-                  @pollyjs/ember-cli@0.2.1
-                  @pollyjs/ember-cli@0.2.0
-                  @pollyjs/ember-cli@0.1.0
-                  @pollyjs/ember-cli@0.0.2
-                  @pollyjs/ember-cli@0.0.1
-                  @pollyjs/ember@0.2.1
-                  @pollyjs/ember@0.2.0
-                  @pollyjs/ember@0.1.0
-                  @pollyjs/ember@0.0.2
-                  @pollyjs/ember@0.0.1
-                )
-              )
-          end
-
-          before do
-            allow(builder)
-              .to receive(:reliable_source_directory?)
-              .and_return(true)
-          end
-
-          before do
+              .to receive_messages(fetch_dependency_tags: %w(
+                @pollyjs/ember-cli@0.2.1
+                @pollyjs/ember-cli@0.2.0
+                @pollyjs/ember-cli@0.1.0
+                @pollyjs/ember-cli@0.0.2
+                @pollyjs/ember-cli@0.0.1
+                @pollyjs/ember@0.2.1
+                @pollyjs/ember@0.2.0
+                @pollyjs/ember@0.1.0
+                @pollyjs/ember@0.0.2
+                @pollyjs/ember@0.0.1
+              ), reliable_source_directory?: true)
             stub_request(
               :get,
               "https://api.github.com/repos/netflix/pollyjs/commits?" \
@@ -981,36 +960,31 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits relevant to the given path" do
-            is_expected.to match_array(
-              [
-                {
-                  message: "feat: Custom persister support\n\n" \
-                           "* feat: Custom persister support\r\n\r\n" \
-                           "* Create a @pollyjs/persister package\r\n" \
-                           "* Move out shared utils into their own " \
-                           "@pollyjs/utils package\r\n" \
-                           "* Add support to register a custom persister " \
-                           "(same way as an adapter)\r\n" \
-                           "* Add more tests\r\n\r\n" \
-                           "* docs: Custom adapter & persister docs\r\n\r\n" \
-                           "* test: Add custom persister test",
-                  sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
-                  html_url: "https://github.com/Netflix/pollyjs/commit/" \
-                            "8bb313cc08716b80076c6f68d056396ce4b4d282"
-                },
-                {
-                  message: "chore: Publish\n\n" \
-                           " - @pollyjs/adapter@0.2.0\n" \
-                           " - @pollyjs/core@0.2.0\n" \
-                           " - @pollyjs/ember@0.2.0\n" \
-                           " - @pollyjs/persister@0.1.0\n" \
-                           " - @pollyjs/utils@0.1.0",
-                  sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
-                  html_url: "https://github.com/Netflix/pollyjs/commit/" \
-                            "ebf6474d0008e9e76249a78473263894dd0668dc"
-                }
-              ]
-            )
+            expect(subject).to contain_exactly({
+              message: "feat: Custom persister support\n\n" \
+                       "* feat: Custom persister support\r\n\r\n" \
+                       "* Create a @pollyjs/persister package\r\n" \
+                       "* Move out shared utils into their own " \
+                       "@pollyjs/utils package\r\n" \
+                       "* Add support to register a custom persister " \
+                       "(same way as an adapter)\r\n" \
+                       "* Add more tests\r\n\r\n" \
+                       "* docs: Custom adapter & persister docs\r\n\r\n" \
+                       "* test: Add custom persister test",
+              sha: "8bb313cc08716b80076c6f68d056396ce4b4d282",
+              html_url: "https://github.com/Netflix/pollyjs/commit/" \
+                        "8bb313cc08716b80076c6f68d056396ce4b4d282"
+            }, {
+              message: "chore: Publish\n\n" \
+                       " - @pollyjs/adapter@0.2.0\n" \
+                       " - @pollyjs/core@0.2.0\n" \
+                       " - @pollyjs/ember@0.2.0\n" \
+                       " - @pollyjs/persister@0.1.0\n" \
+                       " - @pollyjs/utils@0.1.0",
+              sha: "ebf6474d0008e9e76249a78473263894dd0668dc",
+              html_url: "https://github.com/Netflix/pollyjs/commit/" \
+                        "ebf6474d0008e9e76249a78473263894dd0668dc"
+            })
           end
         end
       end
@@ -1044,23 +1018,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Added signature for changeset f275e318641f",
-                sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
-                html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
-                          "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
-              },
-              {
-                message: "Eliminate use of deprecated PGError constant from " \
-                         "specs",
-                sha: "f275e318641f185b8a15a2220e7c189b1769f84c",
-                html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
-                          "f275e318641f185b8a15a2220e7c189b1769f84c"
-              }
-            ]
-          )
+          expect(subject).to contain_exactly({
+            message: "Added signature for changeset f275e318641f",
+            sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
+            html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
+                      "deae742eacfa985bd20f47a12a8fee6ce2e0447c"
+          }, {
+            message: "Eliminate use of deprecated PGError constant from " \
+                     "specs",
+            sha: "f275e318641f185b8a15a2220e7c189b1769f84c",
+            html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
+                      "f275e318641f185b8a15a2220e7c189b1769f84c"
+          })
         end
       end
 
@@ -1096,22 +1065,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Merged PR 2: Deleted README.md",
-                sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
-                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                          "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
-              },
-              {
-                message: "Added README.md file",
-                sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
-                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                          "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
-              }
-            ]
-          )
+          expect(subject).to contain_exactly({
+            message: "Merged PR 2: Deleted README.md",
+            sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+            html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                      "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+          }, {
+            message: "Added README.md file",
+            sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+            html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                      "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+          })
         end
 
         context "with a dependency that has a git source" do
@@ -1138,22 +1102,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits" do
-            is_expected.to match_array(
-              [
-                {
-                  message: "Merged PR 2: Deleted README.md",
-                  sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
-                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                            "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
-                },
-                {
-                  message: "Added README.md file",
-                  sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
-                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
-                            "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
-                }
-              ]
-            )
+            expect(subject).to contain_exactly({
+              message: "Merged PR 2: Deleted README.md",
+              sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+              html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                        "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+            }, {
+              message: "Added README.md file",
+              sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+              html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                        "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+            })
           end
 
           context "when receiving a 404 response" do
@@ -1198,36 +1157,29 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          is_expected.to match_array(
-            [
-              {
-                message: "Add find command\n",
-                sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
-              },
-              {
-                message: "...\n",
-                sha: "4ac81646582f254b3e86653b8fcd5eda6d8bb45d",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
-              },
-              {
-                message: "MP version\n",
-                sha: "4e5081f867631f10d8a29dc6853a052f52241fab",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "4e5081f867631f10d8a29dc6853a052f52241fab"
-              },
-              {
-                message: "BUG: added 'force_consistent' keyword argument " \
-                         "with default True\n\nThe bug fix is necessary to " \
-                         "pass the test turbomole_h3o2m.py.\n",
-                sha: "e718899ddcdc666311d08497401199e126428163",
-                html_url: "https://gitlab.com/org/business/commit/" \
-                          "e718899ddcdc666311d08497401199e126428163"
-              }
-            ]
-          )
+          expect(subject).to contain_exactly({
+            message: "Add find command\n",
+            sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87"
+          }, {
+            message: "...\n",
+            sha: "4ac81646582f254b3e86653b8fcd5eda6d8bb45d",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "4ac81646582f254b3e86653b8fcd5eda6d8bb45d"
+          }, {
+            message: "MP version\n",
+            sha: "4e5081f867631f10d8a29dc6853a052f52241fab",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "4e5081f867631f10d8a29dc6853a052f52241fab"
+          }, {
+            message: "BUG: added 'force_consistent' keyword argument " \
+                     "with default True\n\nThe bug fix is necessary to " \
+                     "pass the test turbomole_h3o2m.py.\n",
+            sha: "e718899ddcdc666311d08497401199e126428163",
+            html_url: "https://gitlab.com/org/business/commit/" \
+                      "e718899ddcdc666311d08497401199e126428163"
+          })
         end
 
         context "with a dependency that has a git source" do

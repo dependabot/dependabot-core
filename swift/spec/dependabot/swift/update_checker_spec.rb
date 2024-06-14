@@ -136,10 +136,10 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
 
     describe "#updated_requirements" do
-      subject { checker.updated_requirements }
+      subject(:updated_requirements) { checker.updated_requirements }
 
       it "updates them to match new version" do
-        expect(subject.first[:requirement]).to eq("= 12.0.1")
+        expect(updated_requirements.first[:requirement]).to eq("= 12.0.1")
       end
     end
   end
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::Swift::Version.new("10.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("10.0.0"))
       end
     end
 
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       let(:ignored_versions) { ["= 10.0.0"] }
 
       it "doesn't return ignored versions" do
-        is_expected.to eq(Dependabot::Swift::Version.new("11.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("11.0.0"))
       end
     end
   end
@@ -235,14 +235,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       before { stub_upload_pack }
 
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::Swift::Version.new("10.0.0"))
+        expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Swift::Version.new("10.0.0"))
       end
 
       context "with ignored versions" do
         let(:ignored_versions) { ["= 10.0.0"] }
 
         it "doesn't return ignored versions" do
-          is_expected.to eq(Dependabot::Swift::Version.new("11.0.0"))
+          expect(lowest_resolvable_security_fix_version).to eq(Dependabot::Swift::Version.new("11.0.0"))
         end
       end
     end

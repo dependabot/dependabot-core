@@ -285,6 +285,11 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     subject(:head_commit_for_ref) { checker.head_commit_for_ref(ref) }
 
     let(:ref) { "v1.0.0" }
+    let(:service_pack_url) do
+      "https://github.com/gocardless/business.git/info/refs" \
+        "?service=git-upload-pack"
+    end
+    let(:upload_pack_fixture) { "business" }
 
     before do
       stub_request(:get, service_pack_url)
@@ -296,13 +301,6 @@ RSpec.describe Dependabot::GitMetadataFetcher do
           }
         )
     end
-
-    let(:service_pack_url) do
-      "https://github.com/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
-    end
-
-    let(:upload_pack_fixture) { "business" }
 
     it "gets the correct commit SHA (not the tag SHA)" do
       expect(head_commit_for_ref)

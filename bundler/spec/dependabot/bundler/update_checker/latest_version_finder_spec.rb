@@ -259,6 +259,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
 
     context "with a private rubygems source" do
       let(:dependency_files) { bundler_project_dependency_files("specified_source") }
+      let(:subprocess_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: error_message,
+          error_context: {},
+          error_class: error_class
+        )
+      end
       let(:source) { { type: "rubygems" } }
       let(:registry_url) { "https://repo.fury.io/greysteil/" }
       let(:gemfury_business_url) do
@@ -288,14 +295,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
-      end
-
-      let(:subprocess_error) do
-        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-          message: error_message,
-          error_context: {},
-          error_class: error_class
-        )
       end
 
       its([:version]) { is_expected.to eq(Gem::Version.new("1.9.0")) }

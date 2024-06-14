@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
       end
 
       it {
-        is_expected.to eq(
+        expect(project_reference_paths).to eq(
           %w(
             ../src/TheLibrary.csproj
           )

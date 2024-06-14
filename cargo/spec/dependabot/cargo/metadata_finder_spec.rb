@@ -35,8 +35,6 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     stub_request(:get, "https://example.com/status").to_return(
       status: 200,
@@ -45,10 +43,16 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     )
   end
 
+  it_behaves_like "a dependency metadata finder"
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
     let(:crates_url) { "https://crates.io/api/v1/crates/bitflags" }
+    let(:crates_response) do
+      fixture("crates_io_responses", crates_fixture_name)
+    end
+    let(:crates_fixture_name) { "bitflags.json" }
 
     before do
       stub_request(:get, crates_url)
@@ -57,11 +61,6 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
           body: crates_response
         )
     end
-
-    let(:crates_response) do
-      fixture("crates_io_responses", crates_fixture_name)
-    end
-    let(:crates_fixture_name) { "bitflags.json" }
 
     context "when there is a github link in the crates.io response" do
       let(:crates_fixture_name) { "bitflags.json" }

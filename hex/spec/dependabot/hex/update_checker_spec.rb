@@ -275,15 +275,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "with a dependency with a private organization" do
       let(:mixfile_body) { fixture("mixfiles", "private_package") }
-      let(:lockfile_body) { fixture("lockfiles", "private_package") }
-
-      before { `mix hex.organization deauth dependabot` }
-
       let(:dependency_name) { "example_package_a" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
+      let(:lockfile_body) { fixture("lockfiles", "private_package") }
+
+      before { `mix hex.organization deauth dependabot` }
 
       context "with good credentials" do
         let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
@@ -302,7 +301,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
         it "returns the expected version" do
           skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
-          is_expected.to eq(Gem::Version.new("1.1.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
         end
       end
 
@@ -376,15 +375,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
     context "with a dependency from a private repo" do
       let(:mixfile_body) { fixture("mixfiles", "private_repo") }
-      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
-
-      before { `mix hex.repo remove dependabot` }
-
       let(:dependency_name) { "jason" }
       let(:version) { "1.0.0" }
       let(:dependency_requirements) do
         [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
       end
+      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
+
+      before { `mix hex.repo remove dependabot` }
 
       context "with good credentials" do
         let(:credentials) do
