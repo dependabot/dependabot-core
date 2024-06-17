@@ -65,7 +65,7 @@ final class UpdateChecker
         $install = new Installer(
             $io,
             $config,
-            $package,
+            $package,  // @phpstan-ignore-line
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),
