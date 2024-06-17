@@ -45,7 +45,7 @@ public partial class EntryPointTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "path/to/some directory with spaces",
+                    Path = "path/to/some directory with spaces",
                     Projects = [
                         new()
                         {
@@ -134,7 +134,7 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -200,7 +200,7 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = "path/to",
+                    Path = "path/to",
                     Projects = [
                         new()
                         {
@@ -267,7 +267,7 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = workspacePath,
+                    Path = workspacePath,
                     Projects = [
                         new()
                         {
@@ -326,7 +326,7 @@ public partial class EntryPointTests
             },
             expectedResult: new()
             {
-                FilePath = "path/to",
+                Path = "path/to",
                 Projects = [
                     new()
                     {
@@ -366,6 +366,8 @@ public partial class EntryPointTests
         {
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
             {
+                expectedResult = expectedResult with { Path = Path.Combine(path, expectedResult.Path) };
+
                 var sb = new StringBuilder();
                 var writer = new StringWriter(sb);
 

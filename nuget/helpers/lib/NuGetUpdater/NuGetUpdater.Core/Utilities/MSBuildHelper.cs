@@ -544,6 +544,7 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>

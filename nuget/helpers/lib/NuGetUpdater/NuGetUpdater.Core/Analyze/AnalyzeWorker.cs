@@ -30,13 +30,16 @@ public partial class AnalyzeWorker
     {
         var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
         var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
-        var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.FilePath);
+        var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
+
+        _logger.Log($"Starting analysis of {dependencyInfo.Name}...");
 
         // We need to find all projects which have the given dependency. Even in cases that they
         // have it transitively may require that peer dependencies be updated in the project.
         var projectsWithDependency = discovery.Projects
             .Where(p => p.Dependencies.Any(d => d.Name.Equals(dependencyInfo.Name, StringComparison.OrdinalIgnoreCase)))
             .ToImmutableArray();
+        var foundDependency = projectsWithDependency.Length > 0;
         var projectFrameworks = projectsWithDependency
             .SelectMany(p => p.TargetFrameworks)
             .Distinct()
@@ -49,29 +52,39 @@ public partial class AnalyzeWorker
             .Select(d => d.Name)
             .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
 
-        bool versionComesFromMultiDependencyProperty = DoesDependencyUseMultiDependencyProperty(
-            discovery,
-            dependencyInfo,
-            projectsWithDependency);
+        bool versionComesFromMultiDependencyProperty = false;
+        NuGetVersion? updatedVersion = null;
+        ImmutableArray<Dependency> updatedDependencies = [];
 
-        var updatedVersion = await FindUpdatedVersionAsync(
-            startingDirectory,
-            dependencyInfo,
-            projectFrameworks,
-            _logger,
-            CancellationToken.None);
-
-        var updatedDependencies = updatedVersion is not null
-            ? await FindUpdatedDependenciesAsync(
-                startingDirectory,
+        if (foundDependency)
+        {
+            _logger.Log($"  Calculating multi-dependency property.");
+            versionComesFromMultiDependencyProperty = DoesDependencyUseMultiDependencyProperty(
                 discovery,
-                projectsWithDependency,
-                projectFrameworks,
-                projectDependencyNames,
                 dependencyInfo,
-                updatedVersion,
-                _logger)
-            : [];
+                projectsWithDependency);
+
+            _logger.Log($"  Finding updated version.");
+            updatedVersion = await FindUpdatedVersionAsync(
+                startingDirectory,
+                dependencyInfo,
+                projectFrameworks,
+                _logger,
+                CancellationToken.None);
+
+            _logger.Log($"  Finding updated peer dependencies.");
+            updatedDependencies = updatedVersion is not null
+                ? await FindUpdatedDependenciesAsync(
+                    startingDirectory,
+                    discovery,
+                    projectsWithDependency,
+                    projectFrameworks,
+                    projectDependencyNames,
+                    dependencyInfo,
+                    updatedVersion,
+                    _logger)
+                : [];
+        }
 
         var result = new AnalysisResult
         {
@@ -81,7 +94,9 @@ public partial class AnalyzeWorker
             UpdatedDependencies = updatedDependencies,
         };
 
-        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, result);
+        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, result, _logger);
+
+        _logger.Log($"Analysis complete.");
     }
 
     internal static async Task<T> DeserializeJsonFileAsync<T>(string path, string fileType)
@@ -207,9 +222,9 @@ public partial class AnalyzeWorker
         Logger logger)
     {
         // Determine updated peer dependencies
-        var workspacePath = PathHelper.JoinPath(repoRoot, discovery.FilePath);
+        var workspacePath = PathHelper.JoinPath(repoRoot, discovery.Path);
         // We need any project path so the dependency finder can locate the nuget.config
-        var projectPath = projectsWithDependency.First().FilePath;
+        var projectPath = Path.Combine(workspacePath, projectsWithDependency.First().FilePath);
 
         // Create distinct list of dependencies taking the highest version of each
         var dependencyResult = await DependencyFinder.GetDependenciesAsync(
@@ -251,7 +266,7 @@ public partial class AnalyzeWorker
         });
     }
 
-    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result)
+    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, Logger logger)
     {
         if (!Directory.Exists(analysisDirectory))
         {
@@ -259,6 +274,9 @@ public partial class AnalyzeWorker
         }
 
         var resultPath = Path.Combine(analysisDirectory, $"{dependencyName}.json");
+
+        logger.Log($"  Writing analysis result to [{resultPath}].");
+
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
         await File.WriteAllTextAsync(path: resultPath, resultJson);
     }

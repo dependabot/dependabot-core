@@ -154,7 +154,7 @@ module Dependabot
           analysis_folder_path: String, credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_analyze_tool(repo_root: discovery_file_path:, dependency_file_path:,
+      def self.run_nuget_analyze_tool(repo_root:, discovery_file_path:, dependency_file_path:,
                                       analysis_folder_path:, credentials:)
         (command, fingerprint) = get_nuget_analyze_tool_command(repo_root: repo_root,
                                                                 discovery_file_path: discovery_file_path,

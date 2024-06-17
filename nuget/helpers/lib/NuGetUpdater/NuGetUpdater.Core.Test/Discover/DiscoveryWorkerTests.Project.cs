@@ -37,7 +37,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -108,7 +108,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     ExpectedProjectCount = 2,
                     Projects = [
                         new()
@@ -189,7 +189,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -299,7 +299,7 @@ public partial class DiscoveryWorkerTests
                     ],
                     expectedResult: new()
                     {
-                        FilePath = "",
+                        Path = "",
                         ExpectedProjectCount = 5,
                         Projects = [
                             new()
@@ -365,7 +365,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -407,7 +407,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = []
                 }
             );
@@ -438,7 +438,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -493,7 +493,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "test",
+                    Path = "test",
                     Projects = [
                         new()
                         {
@@ -569,7 +569,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "solutions",
+                    Path = "solutions",
                     Projects = [
                         new()
                         {

@@ -8,8 +8,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      latest_version: latest_version,
-      source_details: source_details
+      latest_version: latest_version
     )
   end
 
@@ -153,20 +152,33 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
               file: "my.csproj",
               requirement: "23.6-jre",
               groups: ["dependencies"],
-              source: {
-                type: "nuget_repo",
-                url: "https://api.nuget.org/v3/index.json",
-                source_url: nil,
-                nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-                            "microsoft.extensions.dependencymodel/1.2.3/" \
-                            "microsoft.extensions.dependencymodel.nuspec"
-              }
+              source: nil
             }, {
               file: "another/my.csproj",
               requirement: "[23.0,)",
               groups: ["dependencies"],
               source: nil
             })
+          end
+        end
+
+        context "and one is a range requirement" do
+          let(:other_requirement_string) { "[23.0,)" }
+
+          it "updates only the specific requirement" do
+            expect(updater.updated_requirements).to match_array(
+              [{
+                file: "my.csproj",
+                requirement: "23.6-jre",
+                groups: ["dependencies"],
+                source: nil
+              }, {
+                file: "another/my.csproj",
+                requirement: "[23.0,)",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
           end
         end
       end
