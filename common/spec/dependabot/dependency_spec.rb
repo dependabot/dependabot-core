@@ -91,17 +91,17 @@ RSpec.describe Dependabot::Dependency do
     end
 
     context "when two dependencies are equal" do
-      let(:dependency1) { described_class.new(**args) }
-      let(:dependency2) { described_class.new(**args) }
+      let(:first_dependency) { described_class.new(**args) }
+      let(:second_dependency) { described_class.new(**args) }
 
-      specify { expect(dependency1).to eq(dependency2) }
+      specify { expect(first_dependency).to eq(second_dependency) }
     end
 
     context "when two dependencies are not equal" do
-      let(:dependency1) { described_class.new(**args) }
-      let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
+      let(:first_dependency) { described_class.new(**args) }
+      let(:second_dependency) { described_class.new(**args.merge(name: "dep2")) }
 
-      specify { expect(dependency1).not_to eq(dependency2) }
+      specify { expect(first_dependency).not_to eq(second_dependency) }
     end
   end
 
@@ -327,19 +327,19 @@ RSpec.describe Dependabot::Dependency do
     end
 
     it "isn't utilized by the equality operator" do
-      dependency1 = described_class.new(
+      first_dependency = described_class.new(
         name: "dep",
         requirements: [],
         package_manager: "dummy",
         metadata: { foo: 42 }
       )
-      dependency2 = described_class.new(
+      second_dependency = described_class.new(
         name: "dep",
         requirements: [],
         package_manager: "dummy",
         metadata: { foo: 43 }
       )
-      expect(dependency1).to eq(dependency2)
+      expect(first_dependency).to eq(second_dependency)
     end
   end
 

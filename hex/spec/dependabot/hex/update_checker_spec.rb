@@ -615,14 +615,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     context "with an umbrella application" do
       let(:mixfile_body) { fixture("mixfiles", "umbrella") }
       let(:lockfile_body) { fixture("lockfiles", "umbrella") }
-      let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
-      let(:sub_mixfile1) do
+      let(:files) { [mixfile, lockfile, sub_first_mixfile, sub_second_mixfile] }
+      let(:sub_first_mixfile) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_business/mix.exs",
           content: fixture("mixfiles", "dependabot_business")
         )
       end
-      let(:sub_mixfile2) do
+      let(:sub_second_mixfile) do
         Dependabot::DependencyFile.new(
           name: "apps/dependabot_web/mix.exs",
           content: fixture("mixfiles", "dependabot_web")

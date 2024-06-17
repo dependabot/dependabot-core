@@ -11,7 +11,7 @@ RSpec.describe Dependabot::DependencyGroup do
   let(:name) { "test_group" }
   let(:rules) { { "patterns" => ["test-*"] } }
 
-  let(:test_dependency1) do
+  let(:test_first_dependency) do
     Dependabot::Dependency.new(
       name: "test-dependency-1",
       package_manager: "bundler",
@@ -27,7 +27,7 @@ RSpec.describe Dependabot::DependencyGroup do
     )
   end
 
-  let(:test_dependency2) do
+  let(:test_second_dependency) do
     Dependabot::Dependency.new(
       name: "test-dependency-2",
       package_manager: "bundler",
@@ -95,12 +95,12 @@ RSpec.describe Dependabot::DependencyGroup do
 
     context "when dependencies have been assigned" do
       before do
-        dependency_group.dependencies << test_dependency1
+        dependency_group.dependencies << test_first_dependency
       end
 
       it "returns the dependencies" do
-        expect(dependency_group.dependencies).to include(test_dependency1)
-        expect(dependency_group.dependencies).not_to include(test_dependency2)
+        expect(dependency_group.dependencies).to include(test_first_dependency)
+        expect(dependency_group.dependencies).not_to include(test_second_dependency)
       end
     end
   end
@@ -117,12 +117,12 @@ RSpec.describe Dependabot::DependencyGroup do
       context "when no dependencies are assigned to the group" do
         it "returns true if the dependency matches a pattern" do
           expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(test_dependency1)).to be(true)
+          expect(dependency_group.contains?(test_first_dependency)).to be(true)
         end
 
         it "returns false if the dependency is specifically excluded" do
           expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(test_dependency2)).to be(false)
+          expect(dependency_group.contains?(test_second_dependency)).to be(false)
         end
 
         it "returns false if the dependency does not match any patterns" do
@@ -133,21 +133,21 @@ RSpec.describe Dependabot::DependencyGroup do
 
       context "when dependencies are assigned to the group" do
         before do
-          dependency_group.dependencies << test_dependency1
+          dependency_group.dependencies << test_first_dependency
         end
 
         it "returns true if the dependency is in the dependency list" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(test_dependency1)).to be(true)
+          expect(dependency_group.dependencies).to include(test_first_dependency)
+          expect(dependency_group.contains?(test_first_dependency)).to be(true)
         end
 
         it "returns false if the dependency is specifically excluded" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(test_dependency2)).to be(false)
+          expect(dependency_group.dependencies).to include(test_first_dependency)
+          expect(dependency_group.contains?(test_second_dependency)).to be(false)
         end
 
         it "returns false if the dependency is not in the dependency list and does not match a pattern" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.dependencies).to include(test_first_dependency)
           expect(dependency_group.contains?(production_dependency)).to be(false)
         end
       end
@@ -165,8 +165,8 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns false if the dependency does not match the specified type" do
-        expect(dependency_group.contains?(test_dependency1)).to be(false)
-        expect(dependency_group.contains?(test_dependency2)).to be(false)
+        expect(dependency_group.contains?(test_first_dependency)).to be(false)
+        expect(dependency_group.contains?(test_second_dependency)).to be(false)
       end
 
       context "when a dependency is specifically excluded" do
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns true if the dependency matches the specified type and a pattern" do
-        expect(dependency_group.contains?(test_dependency1)).to be(true)
+        expect(dependency_group.contains?(test_first_dependency)).to be(true)
       end
 
       it "returns false if the dependency only matches the pattern" do
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
 
       it "returns false if the dependency matches the specified type and pattern but is excluded" do
-        expect(dependency_group.contains?(test_dependency2)).to be(false)
+        expect(dependency_group.contains?(test_second_dependency)).to be(false)
       end
     end
   end

@@ -71,13 +71,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         Dependabot::Dependency.new(
           name: "foo",
           version: "1.0.0",
-          requirements: (foo_v1.requirements + foo_v2.requirements).uniq,
+          requirements: (foo_first_version.requirements + foo_second_version.requirements).uniq,
           package_manager: "npm_and_yarn",
-          metadata: { all_versions: [foo_v1, foo_v2] }
+          metadata: { all_versions: [foo_first_version, foo_second_version] }
         )
       end
 
-      let(:foo_v1) do
+      let(:foo_first_version) do
         Dependabot::Dependency.new(
           name: "foo",
           version: "1.0.0",
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      let(:foo_v2) do
+      let(:foo_second_version) do
         Dependabot::Dependency.new(
           name: "foo",
           version: "2.0.0",

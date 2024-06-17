@@ -652,12 +652,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     context "with multiple requirements" do
       let(:requirements) do
         [
-          { file: "req.txt", requirement: req1, groups: [], source: nil },
-          { file: "req2.txt", requirement: req2, groups: [], source: nil }
+          { file: "req.txt", requirement: first_requirement, groups: [], source: nil },
+          { file: "req2.txt", requirement: second_requirement, groups: [], source: nil }
         ]
       end
-      let(:req1) { "~=2.0" }
-      let(:req2) { "<=2.5.0" }
+      let(:first_requirement) { "~=2.0" }
+      let(:second_requirement) { "<=2.5.0" }
       let(:version) { nil }
 
       it { is_expected.to eq(Gem::Version.new("2.5.0")) }

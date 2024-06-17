@@ -288,35 +288,35 @@ RSpec.describe Dependabot::DependencyFile do
 
   describe "#==" do
     context "when two dependency files are equal" do
-      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
-      let(:file2) { described_class.new(name: "Gemfile", content: "a") }
+      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
+      let(:second_file) { described_class.new(name: "Gemfile", content: "a") }
 
-      specify { expect(file1).to eq(file2) }
+      specify { expect(first_file).to eq(second_file) }
     end
 
     context "when two dependency files are equal, but one is a support file" do
-      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
-      let(:file2) do
+      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
+      let(:second_file) do
         described_class.new(name: "Gemfile", content: "a", support_file: true)
       end
 
-      specify { expect(file1).to eq(file2) }
+      specify { expect(first_file).to eq(second_file) }
     end
 
     context "when two dependency files are equal, but one is a vendored file" do
-      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
-      let(:file2) do
+      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
+      let(:second_file) do
         described_class.new(name: "Gemfile", content: "a", vendored_file: true)
       end
 
-      specify { expect(file1).to eq(file2) }
+      specify { expect(first_file).to eq(second_file) }
     end
 
     context "when two dependency files are not equal" do
-      let(:file1) { described_class.new(name: "Gemfile", content: "a") }
-      let(:file2) { described_class.new(name: "Gemfile", content: "b") }
+      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
+      let(:second_file) { described_class.new(name: "Gemfile", content: "b") }
 
-      specify { expect(file1).not_to eq(file2) }
+      specify { expect(first_file).not_to eq(second_file) }
     end
   end
 

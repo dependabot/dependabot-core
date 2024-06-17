@@ -281,8 +281,8 @@ RSpec.describe Dependabot::Cargo::FileParser do
               manifest,
               lockfile,
               workspace_child,
-              workspace_child2,
-              workspace_child3
+              second_workspace_child,
+              third_workspace_child
             ]
           end
           let(:workspace_child) do
@@ -291,19 +291,19 @@ RSpec.describe Dependabot::Cargo::FileParser do
               content: fixture("manifests", "workspace_child")
             )
           end
-          let(:workspace_child2) do
+          let(:second_workspace_child) do
             Dependabot::DependencyFile.new(
               name: "src/sub_crate2/Cargo.toml",
-              content: workspace_child2_body
+              content: second_workspace_child_body
             )
           end
-          let(:workspace_child3) do
+          let(:third_workspace_child) do
             Dependabot::DependencyFile.new(
               name: "src/sub_crate3/Cargo.toml",
-              content: workspace_child2_body
+              content: second_workspace_child_body
             )
           end
-          let(:workspace_child2_body) do
+          let(:second_workspace_child_body) do
             fixture("manifests", "workspace_child_with_path_dependency")
           end
 

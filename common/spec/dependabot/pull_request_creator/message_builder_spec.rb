@@ -238,7 +238,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.5.0",
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           it { is_expected.to eq("Bump business and business2") }
 
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies with the same name" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business",
               version: "2.3.0",
@@ -340,13 +340,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           it { is_expected.to eq("Bump business") }
         end
 
         context "with three dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.5.0",
@@ -356,7 +356,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -366,7 +366,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3] }
+          let(:dependencies) { [dependency, second_dependency, third_dependency] }
 
           it { is_expected.to eq("Bump business, business2 and business3") }
         end
@@ -716,7 +716,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.5.0",
@@ -726,7 +726,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           it "includes both dependencies" do
             expect(pr_name)
@@ -735,7 +735,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies with the same name" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business",
               version: "2.3.0",
@@ -745,13 +745,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           it { is_expected.to eq("Update requirements for business") }
         end
 
         context "with three dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.5.0",
@@ -761,7 +761,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -771,7 +771,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3] }
+          let(:dependencies) { [dependency, second_dependency, third_dependency] }
 
           it "includes all three dependencies" do
             expect(pr_name)
@@ -857,7 +857,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
 
       context "with two dependencies" do
-        let(:dependency2) do
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "business2",
             version: "1.5.0",
@@ -867,13 +867,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-        let(:dependencies) { [dependency, dependency2] }
+        let(:dependencies) { [dependency, second_dependency] }
 
         it { is_expected.to eq("Bump the all-the-things group with 2 updates") }
       end
 
       context "with two dependencies with the same name" do
-        let(:dependency2) do
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "business",
             version: "1.5.0",
@@ -883,13 +883,13 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-        let(:dependencies) { [dependency, dependency2] }
+        let(:dependencies) { [dependency, second_dependency] }
 
         it { is_expected.to eq("Bump the all-the-things group with 1 update") }
       end
 
       context "with three dependencies" do
-        let(:dependency2) do
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "business2",
             version: "1.5.0",
@@ -899,7 +899,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-        let(:dependency3) do
+        let(:third_dependency) do
           Dependabot::Dependency.new(
             name: "business3",
             version: "1.5.0",
@@ -909,7 +909,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-        let(:dependencies) { [dependency, dependency2, dependency3] }
+        let(:dependencies) { [dependency, second_dependency, third_dependency] }
 
         it { is_expected.to eq("Bump the all-the-things group with 3 updates") }
       end
@@ -922,7 +922,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             directory: "directory"
           )
         end
-        let(:dependency2) do
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "business2",
             version: "1.5.0",
@@ -932,7 +932,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             previous_requirements: []
           )
         end
-        let(:dependencies) { [dependency, dependency2] }
+        let(:dependencies) { [dependency, second_dependency] }
 
         it "includes the directory" do
           expect(pr_name)
@@ -964,7 +964,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with two dependencies" do
         let(:metadata) { { directory: "/foo" } }
-        let(:dependency2) do
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "business2",
             version: "1.5.0",
@@ -975,7 +975,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             metadata: { directory: "/bar" }
           )
         end
-        let(:dependencies) { [dependency, dependency2] }
+        let(:dependencies) { [dependency, second_dependency] }
 
         it { is_expected.to eq("Bump the go_modules group across 2 directories with 2 updates") }
       end
@@ -1759,8 +1759,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "when updating multiple dependencies" do
-        let(:dependencies) { [dependency, dependency2] }
-        let(:dependency2) do
+        let(:dependencies) { [dependency, second_dependency] }
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
             version: "1.7.0",
@@ -1899,7 +1899,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               }]
             )
           end
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "statesman",
               version: "1.5.0",
@@ -2018,7 +2018,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2028,7 +2028,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           before do
             business2_repo_url =
@@ -2097,7 +2097,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies with the same name" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business",
               version: "1.5.0",
@@ -2107,7 +2107,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           it "has the correct message" do
             expect(pr_message).to start_with(
@@ -2118,7 +2118,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with three dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2128,7 +2128,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2138,7 +2138,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3] }
+          let(:dependencies) { [dependency, second_dependency, third_dependency] }
 
           before do
             business2_repo_url =
@@ -2227,7 +2227,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with five or more dependencies" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2237,7 +2237,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2247,7 +2247,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency4) do
+          let(:fourth_dependency) do
             Dependabot::Dependency.new(
               name: "business4",
               version: "2.1.1",
@@ -2257,7 +2257,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency5) do
+          let(:fifth_dependency) do
             Dependabot::Dependency.new(
               name: "business5",
               version: "0.17.0",
@@ -2267,7 +2267,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3, dependency4, dependency5] }
+          let(:dependencies) { [dependency, second_dependency, third_dependency, fourth_dependency, fifth_dependency] }
 
           before do
             (2..5).each do |i|
@@ -2326,7 +2326,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with five or more dependencies with same name" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2336,7 +2336,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2346,7 +2346,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency4) do
+          let(:fourth_dependency) do
             Dependabot::Dependency.new(
               name: "business4",
               version: "2.1.1",
@@ -2356,7 +2356,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency5) do
+          let(:fifth_dependency) do
             Dependabot::Dependency.new(
               name: "business5",
               version: "0.17.0",
@@ -2366,7 +2366,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency6) do
+          let(:sixth_dependency) do
             Dependabot::Dependency.new(
               name: "business6",
               version: "0.5.4",
@@ -2377,7 +2377,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) do
-            [dependency, dependency2, dependency3, dependency4, dependency5, dependency5, dependency6]
+            [dependency, second_dependency, third_dependency, fourth_dependency, fifth_dependency, fifth_dependency,
+             sixth_dependency]
           end
 
           before do
@@ -2439,7 +2440,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with five or more dependencies with some duplicates" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2449,7 +2450,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2459,7 +2460,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency4) do
+          let(:fourth_dependency) do
             Dependabot::Dependency.new(
               name: "business4",
               version: "2.1.1",
@@ -2469,7 +2470,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency5) do
+          let(:fifth_dependency) do
             Dependabot::Dependency.new(
               name: "business5",
               version: "0.17.0",
@@ -2479,7 +2480,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency6) do
+          let(:sixth_dependency) do
             Dependabot::Dependency.new(
               name: "business6",
               version: "0.5.4",
@@ -2489,7 +2490,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency7) do
+          let(:seventh_dependency) do
             Dependabot::Dependency.new(
               name: "business6",
               version: "0.5.4",
@@ -2499,7 +2500,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency8) do
+          let(:eighth_dependency) do
             Dependabot::Dependency.new(
               name: "business6",
               version: "1.5.0",
@@ -2510,8 +2511,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
           let(:dependencies) do
-            [dependency, dependency2, dependency3, dependency4, dependency5, dependency5, dependency6, dependency7,
-             dependency8]
+            [dependency, second_dependency, third_dependency, fourth_dependency, fifth_dependency, fifth_dependency,
+             sixth_dependency, seventh_dependency,
+             eighth_dependency]
           end
 
           before do
@@ -2574,7 +2576,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with ignore conditions" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2584,7 +2586,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency3) do
+          let(:third_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2594,7 +2596,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency4) do
+          let(:fourth_dependency) do
             Dependabot::Dependency.new(
               name: "business4",
               version: "2.1.1",
@@ -2604,7 +2606,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency5) do
+          let(:fifth_dependency) do
             Dependabot::Dependency.new(
               name: "business5",
               version: "0.17.0",
@@ -2614,7 +2616,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency, dependency2, dependency3, dependency4, dependency5] }
+          let(:dependencies) { [dependency, second_dependency, third_dependency, fourth_dependency, fifth_dependency] }
 
           before do
             (2..5).each do |i|
@@ -2690,7 +2692,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business3",
               version: "1.5.0",
@@ -2700,7 +2702,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               previous_requirements: []
             )
           end
-          let(:dependencies) { [dependency1, dependency2] }
+          let(:dependencies) { [dependency1, second_dependency] }
 
           before do
             (2..5).each do |i|
@@ -2800,7 +2802,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies in the same directory" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2811,7 +2813,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               metadata: { directory: "/foo" }
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           before do
             business2_repo_url =
@@ -2862,7 +2864,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies in different directories" do
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -2873,7 +2875,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               metadata: { directory: "/bar" }
             )
           end
-          let(:dependencies) { [dependency, dependency2] }
+          let(:dependencies) { [dependency, second_dependency] }
 
           before do
             business2_repo_url =
@@ -2925,7 +2927,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with table for one directory and no table for the other" do
-          let(:dependencies2) do
+          let(:second_dependencies) do
             (1..5).map do |index|
               Dependabot::Dependency.new(
                 name: "business#{index + 1}",
@@ -2938,7 +2940,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
             end
           end
-          let(:dependencies) { dependencies2 + [dependency] }
+          let(:dependencies) { second_dependencies + [dependency] }
 
           before do
             json_header = { "Content-Type" => "application/json" }
@@ -2987,7 +2989,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
 
             before do
-              dependencies2.push(removed_dependency)
+              second_dependencies.push(removed_dependency)
             end
 
             it "lists the dependency as removed in the table" do
@@ -2999,7 +3001,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with table for one directory come first and no table for the other" do
-          let(:dependencies1) do
+          let(:first_dependencies) do
             (1..5).map do |index|
               Dependabot::Dependency.new(
                 name: "business#{index + 1}",
@@ -3012,7 +3014,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
             end
           end
-          let(:dependency2) do
+          let(:second_dependency) do
             Dependabot::Dependency.new(
               name: "business2",
               version: "1.8.0",
@@ -3023,7 +3025,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               metadata: { directory: "/bar" }
             )
           end
-          let(:dependencies) { dependencies1 + [dependency] + [dependency2] }
+          let(:dependencies) { first_dependencies + [dependency] + [second_dependency] }
 
           before do
             json_header = { "Content-Type" => "application/json" }
@@ -3065,7 +3067,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a table for both directories" do
-          let(:dependencies1) do
+          let(:first_dependencies) do
             (1..5).map do |index|
               Dependabot::Dependency.new(
                 name: "business#{index + 1}",
@@ -3078,7 +3080,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
             end
           end
-          let(:dependencies2) do
+          let(:second_dependencies) do
             (1..5).map do |index|
               Dependabot::Dependency.new(
                 name: "business#{index + 1}",
@@ -3091,7 +3093,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
             end
           end
-          let(:dependencies) { dependencies1 + dependencies2 + [dependency] }
+          let(:dependencies) { first_dependencies + second_dependencies + [dependency] }
 
           before do
             json_header = { "Content-Type" => "application/json" }
@@ -3174,8 +3176,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       context "when updating multiple dependencies" do
-        let(:dependencies) { [dependency, dependency2] }
-        let(:dependency2) do
+        let(:dependencies) { [dependency, second_dependency] }
+        let(:second_dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
             version: "1.7.0",

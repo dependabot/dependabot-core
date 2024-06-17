@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_v1) do
+  let(:first_version_lockfile) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
 
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_v2) do
+  let(:second_version_lockfile) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
 
@@ -55,11 +55,11 @@ RSpec.describe Dependabot::Bundler::Helpers do
     end
 
     it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
+      expect(described_method(first_version_lockfile)).to eql("1")
     end
 
     it "is 2 if it was bundled with a v2.x version" do
-      expect(described_method(lockfile_bundled_with_v2)).to eql("2")
+      expect(described_method(second_version_lockfile)).to eql("2")
     end
 
     it "is 2 if it was bundled with a future version" do
@@ -81,11 +81,11 @@ RSpec.describe Dependabot::Bundler::Helpers do
     end
 
     it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
+      expect(described_method(first_version_lockfile)).to eql("1")
     end
 
     it "is 2 if it was bundled with a v2.x version" do
-      expect(described_method(lockfile_bundled_with_v2)).to eql("2")
+      expect(described_method(second_version_lockfile)).to eql("2")
     end
 
     it "reports the version if it was bundled with a future version" do

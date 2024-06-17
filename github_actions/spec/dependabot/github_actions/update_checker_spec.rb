@@ -159,17 +159,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:upload_pack_fixture) { "run-vcpkg" }
 
         context "when there's a branch named like a higher version" do
-          let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
+          let(:tip_of_version_six) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
 
-          let(:reference) { tip_of_v6 }
+          let(:reference) { tip_of_version_six }
 
           it { is_expected.to be_truthy }
         end
 
         context "when there's no branch named like a higher version" do
-          let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
+          let(:tip_of_version_ten) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
-          let(:reference) { tip_of_v10 }
+          let(:reference) { tip_of_version_ten }
 
           it { is_expected.to be_falsey }
         end
@@ -383,17 +383,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:upload_pack_fixture) { "run-vcpkg" }
 
       context "when a branch named like a higher version" do
-        let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
+        let(:tip_of_version_six) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
 
-        let(:reference) { tip_of_v6 }
+        let(:reference) { tip_of_version_six }
 
         it { is_expected.to eq(Gem::Version.new("10.5")) }
       end
 
       context "when no branch named like a higher version" do
-        let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
+        let(:tip_of_version_ten) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
-        let(:reference) { tip_of_v10 }
+        let(:reference) { tip_of_version_ten }
 
         it { is_expected.to eq(Gem::Version.new("10.5")) }
       end
@@ -646,11 +646,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a git commit SHA pointing to the tip of a branch named like a version" do
       let(:upload_pack_fixture) { "run-vcpkg" }
-      let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
-      let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
+      let(:tip_of_version_six) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
+      let(:tip_of_version_ten) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
       context "when it's not the latest version" do
-        let(:reference) { tip_of_v6 }
+        let(:reference) { tip_of_version_six }
 
         let(:expected_requirements) do
           [{
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: tip_of_v10,
+              ref: tip_of_version_ten,
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       context "when it's also the latest version" do
-        let(:reference) { tip_of_v6 }
+        let(:reference) { tip_of_version_six }
 
         let(:expected_requirements) do
           [{
@@ -681,7 +681,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: tip_of_v10,
+              ref: tip_of_version_ten,
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }

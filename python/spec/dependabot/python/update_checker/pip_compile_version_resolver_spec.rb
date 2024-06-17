@@ -149,17 +149,17 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       context "with multiple requirement.in files" do
         let(:dependency_files) do
-          [manifest_file, manifest_file2, generated_file, generated_file2]
+          [manifest_file, second_manifest_file, generated_file, second_generated_file2]
         end
 
-        let(:manifest_file2) do
+        let(:second_manifest_file) do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.in",
             content:
               fixture("pip_compile_files", manifest_fixture_name2)
           )
         end
-        let(:generated_file2) do
+        let(:second_generated_file2) do
           Dependabot::DependencyFile.new(
             name: "requirements/dev.txt",
             content: fixture("requirements", generated_fixture_name2)
