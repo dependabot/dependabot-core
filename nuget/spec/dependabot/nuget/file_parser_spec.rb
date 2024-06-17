@@ -423,7 +423,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      it "reports the expected resutls" do
+      it "reports the expected results" do
         run_parser_test do |parser|
           dependencies = parser.parse
           dependency = dependencies.find { |d| d.name == "Microsoft.Build.Traversal" }
