@@ -493,8 +493,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           .and_return(Gem::Version.new("2.4.2"))
       end
 
-      # set latest allowable version from registry to 2.4.2
-
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
         expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
@@ -775,8 +773,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("3.0.2"))
       end
-
-      # set latest allowable version from registry to 3.0.2
 
       it { is_expected.to be >= Gem::Version.new("3.0.2") }
     end
