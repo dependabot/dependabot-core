@@ -46,7 +46,6 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, analysis_json.path unless analysis_json.content
 
           Dependabot.logger.info("#{File.basename(analysis_json.path)} analysis content: #{analysis_json.content}")
-          puts "#{File.basename(analysis_json.path)} analysis content: #{analysis_json.content}"
 
           parsed_json = T.let(JSON.parse(T.must(analysis_json.content)), T::Hash[String, T.untyped])
           DependencyAnalysis.from_json(parsed_json)

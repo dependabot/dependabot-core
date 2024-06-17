@@ -104,7 +104,8 @@ internal static class VersionFinder
             ? versionRange.MinVersion
             : null;
 
-        return version => versionRange.Satisfies(version)
+        return version => (currentVersion is null || version > currentVersion)
+            && versionRange.Satisfies(version)
             && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
             && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
             && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));

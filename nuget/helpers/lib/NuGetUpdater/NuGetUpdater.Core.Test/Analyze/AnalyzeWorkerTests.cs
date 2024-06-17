@@ -122,7 +122,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         FilePath = "./project.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
+                            new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
                     },
                     new()
@@ -130,7 +130,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         FilePath = "./project2.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [
-                            new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult),
+                            new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
                     },
                 ],
@@ -155,6 +155,62 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task FailsToUpdateMultiPropertyVersion()
+    {
+        // Package.A and Package.B happen to share some versions but would fail to update in sync with each other.
+        var evaluationResult = new EvaluationResult(EvaluationResultType.Success, "$(TestPackageVersion)", "4.5.0", "TestPackageVersion", ErrorMessage: null);
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Package.A", "4.5.0", "net8.0"), // initial package versions match, purely by accident
+                MockNuGetPackage.CreateSimplePackage("Package.A", "4.9.2", "net8.0"), // subsequent versions do not match
+                MockNuGetPackage.CreateSimplePackage("Package.A", "4.9.3", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.2", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Package.A", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                        ],
+                    },
+                    new()
+                    {
+                        FilePath = "./project2.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Package.B", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
+                        ],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Package.A",
+                Version = "4.5.0",
+                IgnoredVersions = [Requirement.Parse("> 4.9.2")],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "4.5.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = true,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
 
     [Fact]
     public async Task ReturnsUpToDate_ForMissingVersionProperty()

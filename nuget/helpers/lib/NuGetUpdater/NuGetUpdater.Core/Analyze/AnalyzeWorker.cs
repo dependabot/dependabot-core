@@ -107,6 +107,12 @@ public partial class AnalyzeWorker
                     _logger,
                     CancellationToken.None)
                 : [];
+
+            //TODO: At this point we should add the peer dependencies to a queue where
+            // we will analyze them one by one to see if they themselves are part of a
+            // multi-dependency property. Basically looping this if-body until we have
+            // emptied the queue and have a complete list of updated dependencies. We
+            // should track the dependenciesToUpdate as they have already been analyzed.
         }
 
         var result = new AnalysisResult
@@ -260,6 +266,12 @@ public partial class AnalyzeWorker
 
         foreach (var version in orderedVersions)
         {
+            var existsForAll = await VersionFinder.DoVersionsExistAsync(packageIds, version, nugetContext, logger, cancellationToken);
+            if (!existsForAll)
+            {
+                continue;
+            }
+
             var isCompatible = await AreAllPackagesCompatibleAsync(
                 packageIds,
                 version,
