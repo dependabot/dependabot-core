@@ -32,18 +32,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
       directory: directory
     )
   end
-  let(:directory) { "/" }
-  let(:parser) do
-    described_class.new(dependency_files: files,
-                        source: source,
-                        repo_contents_path: repo_contents_path)
-  end
-  let(:repo_contents_path) { write_tmp_repo(files) }
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
-  let(:csproj_file) do
-    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
-  end
-  let(:additional_files) { [] }
   let(:files) { [csproj_file] + additional_files }
 
   it_behaves_like "a dependency file parser"
@@ -318,7 +306,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
 
-      context "that is nested" do
+      context "when it is nested" do
         let(:directory) { "/dir" }
         let(:packages_config) do
           Dependabot::DependencyFile.new(
@@ -961,7 +949,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "packages referenced in implicitly included `.targets` file are reported" do
+    context "when packages referenced in implicitly included `.targets` file are reported" do
       let(:additional_files) { [directory_build_targets] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(

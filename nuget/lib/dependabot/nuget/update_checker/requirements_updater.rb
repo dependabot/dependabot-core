@@ -78,7 +78,7 @@ module Dependabot
           Dependabot::Nuget::Version
         end
 
-        sig { returns(T.nilable(Dependabot::Nuget::Version))}
+        sig { returns(T.nilable(Dependabot::Nuget::Version)) }
         def clean_version
           return unless @dependency_details&.version
 

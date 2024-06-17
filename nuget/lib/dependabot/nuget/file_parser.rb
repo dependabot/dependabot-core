@@ -18,7 +18,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "cache_manager"
 
-      sig { returns(T::Hash[String, T::Array[Dependabot::Dependency]])}
+      sig { returns(T::Hash[String, T::Array[Dependabot::Dependency]]) }
       def self.file_dependency_cache
         T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
       end

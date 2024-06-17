@@ -170,29 +170,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
             })
           end
         end
-
-        context "and one is a range requirement" do
-          let(:other_requirement_string) { "[23.0,)" }
-
-          it "updates only the specific requirement" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "my.csproj",
-                requirement: "23.6-jre",
-                groups: ["dependencies"],
-                source: {
-                  type: "nuget_repo",
-                  source_url: "https://nuget.example.com/some.package"
-                }
-              }, {
-                file: "another/my.csproj",
-                requirement: "[23.0,)",
-                groups: ["dependencies"],
-                source: nil
-              }]
-            )
-          end
-        end
       end
     end
   end

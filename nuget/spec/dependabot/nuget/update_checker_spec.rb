@@ -55,39 +55,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: dependency_requirements,
-      package_manager: "nuget"
-    )
-  end
-  let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
-  end
-  let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-  let(:dependency_version) { "1.1.1" }
-
-  let(:dependency_files) { [csproj] }
-  let(:csproj) do
-    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
-  end
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
-  let(:version_class) { Dependabot::Nuget::Version }
-
   it_behaves_like "an update checker"
 
   def run_analyze_test(&_block)
@@ -206,7 +173,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
       it "reports the expected result" do
         run_analyze_test do |checker|
-          expect(checker.up_to_date?).to eq(true)
+          expect(checker.up_to_date?).to be(true)
         end
       end
     end
@@ -253,7 +220,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
       it "reports the expected result" do
         run_analyze_test do |checker|
-          expect(checker.up_to_date?).to eq(true)
+          expect(checker.up_to_date?).to be(true)
         end
       end
     end
@@ -324,14 +291,14 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
       it "reports the expected result" do
         run_analyze_test do |checker|
-          expect(checker.up_to_date?).to eq(false)
+          expect(checker.up_to_date?).to be(false)
         end
       end
     end
   end
 
   describe "#latest_resolvable_version" do
-    context "it always returns `nil` to force a full unlock" do
+    context "when a partial unlock cannot be performed" do
       before do
         intercept_native_tools(
           discovery_content_hash: {
@@ -391,7 +358,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         )
       end
 
-      it "reports the expected result" do
+      it "reports `nil`" do
         run_analyze_test do |checker|
           expect(checker.latest_resolvable_version).to be_nil
         end
@@ -400,7 +367,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    context "it always returns `nil` to force a full unlock" do
+    context "when a full unlock cannot be performed" do
       before do
         intercept_native_tools(
           discovery_content_hash: {
@@ -460,7 +427,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         )
       end
 
-      it "reports the expected result" do
+      it "returns `nil`" do
         run_analyze_test do |checker|
           expect(checker.latest_resolvable_version_with_no_unlock).to be_nil
         end
@@ -543,7 +510,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
       it "reports the expected result" do
         run_analyze_test do |checker|
-          expect(checker.requirements_unlocked_or_can_be?).to eq(true)
+          expect(checker.requirements_unlocked_or_can_be?).to be(true)
         end
       end
     end

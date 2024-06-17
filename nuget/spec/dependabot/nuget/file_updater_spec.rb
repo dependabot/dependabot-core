@@ -52,6 +52,14 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
 
+  before do
+    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
+    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
+                       "microsoft.extensions.dependencymodel/1.0.0/" \
+                       "microsoft.extensions.dependencymodel.nuspec")
+      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
+  end
+
   it_behaves_like "a dependency file updater"
 
   def run_update_test(&_block)
@@ -102,16 +110,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       end
   end
 
-  before do
-    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
-                       "microsoft.extensions.dependencymodel/1.0.0/" \
-                       "microsoft.extensions.dependencymodel.nuspec")
-      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
-  end
-
-  it_behaves_like "a dependency file updater"
-
   describe "#updated_dependency_files" do
     before do
       intercept_native_tools(
@@ -154,9 +152,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         run_update_test do |updater|
-          expect(updater.updated_dependency_files.map(&:name)).to match_array([
-            "Proj1/Proj1/Proj1.csproj"
-          ])
+          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
           expect(updater.send(:testonly_update_tooling_calls)).to eq(
             {
@@ -254,10 +250,8 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
     it "updates the wildcard project" do
       run_update_test do |updater|
-        expect(updater.updated_dependency_files.map(&:name)).to match_array([
-          "Proj1/Proj1/Proj1.csproj",
-          "Proj2/Proj2.csproj"
-        ])
+        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
+                                                                                "Proj2/Proj2.csproj")
 
         expect(updater.send(:testonly_update_tooling_calls)).to eq(
           {
