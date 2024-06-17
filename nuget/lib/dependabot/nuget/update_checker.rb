@@ -53,9 +53,10 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        dep_details = updated_dependency_details.find { |d| d.name.casecmp?(dependency.name) }
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: update_analysis.dependency_analysis.updated_version
+          dependency_details: dep_details
         ).updated_requirements
       end
 
@@ -83,7 +84,7 @@ module Dependabot
 
       sig { returns(AnalysisJsonReader) }
       def request_analysis
-        discovery_file_path = DiscoveryJsonReader.discovery_file_path
+        discovery_file_path = DiscoveryJsonReader.get_discovery_file_path_from_dependency_files(dependency_files)
         analysis_folder_path = AnalysisJsonReader.temp_directory
 
         write_dependency_info
@@ -128,12 +129,8 @@ module Dependabot
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def discovered_dependencies
-        discovery_json = DiscoveryJsonReader.discovery_json
-        return Dependabot::FileParsers::Base::DependencySet.new unless discovery_json
-
-        DiscoveryJsonReader.new(
-          discovery_json: discovery_json
-        ).dependency_set
+        discovery_json_reader = DiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
+        discovery_json_reader.dependency_set
       end
 
       sig { override.returns(T::Boolean) }
@@ -145,7 +142,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         dependencies = discovered_dependencies.dependencies
-        update_analysis.dependency_analysis.updated_dependencies.filter_map do |dependency_details|
+        updated_dependency_details.filter_map do |dependency_details|
           dep = dependencies.find { |d| d.name.casecmp(dependency_details.name)&.zero? }
           next unless dep
 
@@ -153,16 +150,33 @@ module Dependabot
           # For peer dependencies, instruct updater to not directly update this dependency
           metadata = { information_only: true } unless dependency.name.casecmp(dependency_details.name)&.zero?
 
+          # rebuild the new requirements with the updated dependency details
+          updated_reqs = dep.requirements.map do |r|
+            r = r.clone
+            r[:requirement] = dependency_details.version
+            r[:source] = {
+              type: "nuget_repo",
+              source_url: dependency_details.info_url
+            }
+            r
+          end
+
           Dependency.new(
             name: dep.name,
             version: dependency_details.version,
-            requirements: dep.requirements,
+            requirements: updated_reqs,
             previous_version: dep.version,
             previous_requirements: dep.requirements,
             package_manager: dep.package_manager,
             metadata: metadata
           )
         end
+      end
+
+      sig { returns(T::Array[Dependabot::Nuget::DependencyDetails]) }
+      def updated_dependency_details
+        @updated_dependency_details ||= T.let(update_analysis.dependency_analysis.updated_dependencies,
+                                              T.nilable(T::Array[Dependabot::Nuget::DependencyDetails]))
       end
 
       sig { returns(T::Boolean) }

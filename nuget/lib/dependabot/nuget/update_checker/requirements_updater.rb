@@ -9,6 +9,7 @@
 require "sorbet-runtime"
 
 require "dependabot/update_checkers/base"
+require "dependabot/nuget/discovery/dependency_details"
 require "dependabot/nuget/version"
 
 module Dependabot
@@ -20,20 +21,18 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            latest_version: T.nilable(T.any(String, Dependabot::Nuget::Version))
+            dependency_details: T.nilable(Dependabot::Nuget::DependencyDetails)
           )
             .void
         end
-        def initialize(requirements:, latest_version:)
+        def initialize(requirements:, dependency_details:)
           @requirements = requirements
-          return unless latest_version
-
-          @latest_version = T.let(version_class.new(latest_version), Dependabot::Nuget::Version)
+          @dependency_details = dependency_details
         end
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements
-          return requirements unless latest_version
+          return requirements unless clean_version
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -51,13 +50,21 @@ module Dependabot
                 # version
                 req[:requirement].sub(
                   /#{Nuget::Version::VERSION_PATTERN}/o,
-                  latest_version.to_s
+                  clean_version.to_s
                 )
               end
 
             next req if new_req == req.fetch(:requirement)
 
-            req.merge(requirement: new_req)
+            new_source = req[:source]&.dup
+            unless @dependency_details.nil?
+              new_source = {
+                type: "nuget_repo",
+                source_url: @dependency_details.info_url
+              }
+            end
+
+            req.merge({ requirement: new_req, source: new_source })
           end
         end
 
@@ -66,12 +73,16 @@ module Dependabot
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(Dependabot::Nuget::Version)) }
-        attr_reader :latest_version
-
         sig { returns(T.class_of(Dependabot::Nuget::Version)) }
         def version_class
           Dependabot::Nuget::Version
+        end
+
+        sig { returns(T.nilable(Dependabot::Nuget::Version))}
+        def clean_version
+          return unless @dependency_details&.version
+
+          version_class.new(@dependency_details.version)
         end
 
         sig { params(req_string: String).returns(String) }
@@ -83,7 +94,7 @@ module Dependabot
           precision = T.must(req_string.split("*").first).split(/\.|\-/).count
           wildcard_section = req_string.partition(/(?=[.\-]\*)/).last
 
-          version_parts = T.must(latest_version).segments.first(precision)
+          version_parts = T.must(clean_version).segments.first(precision)
           version = version_parts.join(".")
 
           version + wildcard_section

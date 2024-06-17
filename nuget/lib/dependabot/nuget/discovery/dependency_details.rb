@@ -22,6 +22,7 @@ module Dependabot
         is_transitive = T.let(json.fetch("IsTransitive"), T::Boolean)
         is_override = T.let(json.fetch("IsOverride"), T::Boolean)
         is_update = T.let(json.fetch("IsUpdate"), T::Boolean)
+        info_url = T.let(json.fetch("InfoUrl"), T.nilable(String))
 
         DependencyDetails.new(name: name,
                               version: version,
@@ -32,7 +33,8 @@ module Dependabot
                               is_direct: is_direct,
                               is_transitive: is_transitive,
                               is_override: is_override,
-                              is_update: is_update)
+                              is_update: is_update,
+                              info_url: info_url)
       end
 
       sig do
@@ -45,10 +47,11 @@ module Dependabot
                is_direct: T::Boolean,
                is_transitive: T::Boolean,
                is_override: T::Boolean,
-               is_update: T::Boolean).void
+               is_update: T::Boolean,
+               info_url: T.nilable(String)).void
       end
       def initialize(name:, version:, type:, evaluation:, target_frameworks:, is_dev_dependency:, is_direct:,
-                     is_transitive:, is_override:, is_update:)
+                     is_transitive:, is_override:, is_update:, info_url:)
         @name = name
         @version = version
         @type = type
@@ -59,6 +62,7 @@ module Dependabot
         @is_transitive = is_transitive
         @is_override = is_override
         @is_update = is_update
+        @info_url = info_url
       end
 
       sig { returns(String) }
@@ -90,6 +94,9 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       attr_reader :is_update
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :info_url
     end
   end
 end

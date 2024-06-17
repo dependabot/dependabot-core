@@ -367,8 +367,6 @@ public partial class EntryPointTests
         {
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
             {
-                expectedResult = expectedResult with { Path = Path.Combine(path, expectedResult.Path) };
-
                 var sb = new StringBuilder();
                 var writer = new StringWriter(sb);
 

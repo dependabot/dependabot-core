@@ -52,7 +52,6 @@ public partial class AnalyzeWorker
                 d.EvaluationResult?.RootPropertyName is not null)
             ).ToImmutableArray();
 
-        bool canUpdate = false;
         bool usesMultiDependencyProperty = false;
         NuGetVersion? updatedVersion = null;
         ImmutableArray<Dependency> updatedDependencies = [];
@@ -99,7 +98,7 @@ public partial class AnalyzeWorker
             _logger.Log($"  Finding updated peer dependencies.");
             updatedDependencies = updatedVersion is not null
                 ? await FindUpdatedDependenciesAsync(
-                    startingDirectory,
+                    repoRoot,
                     discovery,
                     dependenciesToUpdate,
                     updatedVersion,
@@ -380,12 +379,16 @@ public partial class AnalyzeWorker
             projectFrameworks,
             packageIds,
             updatedVersion,
-            logger);
+            nugetContext,
+            logger,
+            cancellationToken);
 
         // Filter dependencies by whether any project references them
-        return dependencyResult.GetDependencies()
+        var dependencies = dependencyResult.GetDependencies()
             .Where(d => projectDependencyNames.Contains(d.Name))
             .ToImmutableArray();
+
+        return dependencies;
     }
 
     internal static ImmutableArray<MultiDependency> DetermineMultiDependencyDetails(

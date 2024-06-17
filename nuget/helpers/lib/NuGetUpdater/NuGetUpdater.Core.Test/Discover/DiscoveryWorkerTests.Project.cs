@@ -387,6 +387,59 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task TargetFrameworkCanBeResolvedFromImplicitlyImportedFile()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>$(SomeTfm)</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <SomeTfm>net8.0</SomeTfm>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "Directory.Build.props",
+                            Dependencies = [],
+                        },
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new("SomeTfm", "net8.0", "Directory.Build.props"),
+                                new("TargetFramework", "$(SomeTfm)", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
 
         public async Task NoDependenciesReturnedIfNoTargetFrameworkCanBeResolved()
         {

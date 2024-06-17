@@ -14,16 +14,18 @@ module Dependabot
       sig { params(json: T::Hash[String, T.untyped]).returns(WorkspaceDiscovery) }
       def self.from_json(json)
         path = T.let(json.fetch("Path"), String)
+        path = "/" + path unless path.start_with?("/")
         projects = T.let(json.fetch("Projects"), T::Array[T::Hash[String, T.untyped]]).filter_map do |project|
-          ProjectDiscovery.from_json(project)
+          ProjectDiscovery.from_json(project, path)
         end
         directory_packages_props = DirectoryPackagesPropsDiscovery
                                    .from_json(T.let(json.fetch("DirectoryPackagesProps"),
-                                                    T.nilable(T::Hash[String, T.untyped])))
+                                                    T.nilable(T::Hash[String, T.untyped])), path)
         global_json = DependencyFileDiscovery
-                      .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])))
+                      .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])), path)
         dotnet_tools_json = DependencyFileDiscovery
-                            .from_json(T.let(json.fetch("DotNetToolsJson"), T.nilable(T::Hash[String, T.untyped])))
+                            .from_json(T.let(json.fetch("DotNetToolsJson"),
+                                             T.nilable(T::Hash[String, T.untyped])), path)
 
         WorkspaceDiscovery.new(path: path,
                                projects: projects,

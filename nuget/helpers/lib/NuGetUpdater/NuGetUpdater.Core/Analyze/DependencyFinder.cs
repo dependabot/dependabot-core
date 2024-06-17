@@ -13,7 +13,9 @@ internal static class DependencyFinder
         IEnumerable<NuGetFramework> frameworks,
         ImmutableHashSet<string> packageIds,
         NuGetVersion version,
-        Logger logger)
+        NuGetContext nugetContext,
+        Logger logger,
+        CancellationToken cancellationToken)
     {
         var versionString = version.ToNormalizedString();
         var packages = packageIds
@@ -29,8 +31,17 @@ internal static class DependencyFinder
                 framework.ToString(),
                 packages,
                 logger);
-            result.Add(framework, [.. dependencies.Select(d => d with { IsTransitive = false })]);
+            var updatedDependencies = new List<Dependency>();
+            foreach (var dependency in dependencies)
+            {
+                var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependency.Name, dependency.Version!, cancellationToken);
+                var updatedDependency = dependency with { IsTransitive = false, InfoUrl = infoUrl };
+                updatedDependencies.Add(updatedDependency);
+            }
+
+            result.Add(framework, updatedDependencies.ToImmutableArray());
         }
+
         return result.ToImmutable();
     }
 }

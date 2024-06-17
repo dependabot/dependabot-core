@@ -39,6 +39,7 @@ public partial class DiscoveryWorker
             workspacePath = workspacePath[1..];
         }
 
+        string initialWorkspacePath = workspacePath;
         workspacePath = Path.Combine(repoRootPath, workspacePath);
 
         DotNetToolsJsonDiscoveryResult? dotNetToolsJsonDiscovery = null;
@@ -75,7 +76,7 @@ public partial class DiscoveryWorker
 
         var result = new WorkspaceDiscoveryResult
         {
-            Path = workspacePath,
+            Path = initialWorkspacePath,
             DotNetToolsJson = dotNetToolsJsonDiscovery,
             GlobalJson = globalJsonDiscovery,
             DirectoryPackagesProps = directoryPackagesPropsDiscovery,

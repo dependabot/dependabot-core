@@ -7,7 +7,6 @@ using NuGetUpdater.Core.Test.Update;
 using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
-using Xunit.Sdk;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
@@ -24,7 +23,6 @@ public class DiscoveryWorkerTestBase
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
-            expectedResult = expectedResult with { Path = Path.Combine(directoryPath, expectedResult.Path) };
 
             var worker = new DiscoveryWorker(new Logger(verbose: true));
             await worker.RunAsync(directoryPath, workspacePath, DiscoveryWorker.DiscoveryResultFileName);

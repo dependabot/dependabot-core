@@ -69,6 +69,7 @@ public class AnalyzeWorkerTestBase
                 AssertEx.Equal(expectedDependency.TargetFrameworks, actualDependency.TargetFrameworks);
                 Assert.Equal(expectedDependency.IsDirect, actualDependency.IsDirect);
                 Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
+                Assert.Equal(expectedDependency.InfoUrl, actualDependency.InfoUrl);
             }
         }
     }
