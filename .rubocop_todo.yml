@@ -99,7 +99,6 @@ RSpec/IteratedExpectation:
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
 
-
 # Offense count: 3
 RSpec/MessageChain:
   Exclude:
@@ -122,12 +121,6 @@ RSpec/MultipleExpectations:
 RSpec/MultipleMemoizedHelpers:
   Max: 30
 
-# Offense count: 500
-# Configuration parameters: EnforcedStyle, IgnoreSharedExamples.
-# SupportedStyles: always, named_only
-RSpec/NamedSubject:
-  Enabled: false
-
 # Offense count: 3871
 # Configuration parameters: AllowedGroups.
 RSpec/NestedGroups:
@@ -146,6 +139,7 @@ RSpec/OverwritingSetup:
     - 'python/spec/dependabot/python/update_checker_spec.rb'
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
+
 
 # Offense count: 4
 RSpec/RepeatedExample:
