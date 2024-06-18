@@ -77,9 +77,9 @@ RSpec/InstanceVariable:
     - 'bundler/helpers/v2/spec/ruby_version_spec.rb'
     - 'common/spec/dependabot/clients/azure_spec.rb'
     - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
+ #   - 'pub/spec/dependabot/pub/file_updater_spec.rb'
+ #   - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
+  #  - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
 # Offense count: 22
 RSpec/IteratedExpectation:
