@@ -69,6 +69,7 @@ module Dependabot
           name: name,
           version: version_for(requirement)&.to_s,
           requirements: direct ? requirements : [],
+          directory: source&.directory,
           package_manager: "elm"
         )
       end
