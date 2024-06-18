@@ -12,7 +12,7 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         include SecurityUpdateHelpers
 
-        class SecurityUpdateError < StandardError
+        class SecurityUpdateFailure < StandardError
           def initialize(message:, error_context:)
             super(message)
             @error_context = error_context
@@ -59,7 +59,9 @@ module Dependabot
           if target_dependencies.empty?
             record_security_update_dependency_not_found
           else
-            target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+            target_dependencies.each do |dep|
+              check_and_create_pr_with_error_handling(dep)
+            end
           end
         end
 
@@ -80,11 +82,10 @@ module Dependabot
             error_type: "inconsistent_registry_response",
             error_detail: e.message
           )
-        rescue StandardError => standard_ex
-          security_ex = SecurityUpdateError.new(message: "Security Update Error, #{standard_ex.message}",
-          error_context: standard_ex.instance_variable_get(:@error_context))
-          security_ex.set_backtrace(standard_ex.backtrace)
-          error_handler.handle_dependency_error(error: security_ex, dependency: dependency)
+        rescue Dependabot::NpmAndYarn::FileUpdater::NoChangeError => e
+          handle_security_update_failure_error(e, dependency)
+        rescue StandardError => e
+          error_handler.handle_dependency_error(error: e, dependency: dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -281,6 +282,17 @@ module Dependabot
             }.compact
           end
         end
+
+        # rubocop:disable Naming/MethodParameterName
+        def handle_security_update_failure_error(ex, dependency)
+          security_ex = SecurityUpdateFailure.new(message:
+          "Security Update Error, No files were updated!",
+                                                  error_context:
+                                                  ex.instance_variable_get(:@error_context))
+          security_ex.set_backtrace(ex.backtrace)
+          error_handler.handle_dependency_error(error: security_ex, dependency: dependency)
+        end
+        # rubocop:enable Naming/MethodParameterName
       end
     end
   end
