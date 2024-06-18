@@ -288,35 +288,35 @@ RSpec.describe Dependabot::DependencyFile do
 
   describe "#==" do
     context "when two dependency files are equal" do
-      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
-      let(:second_file) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file_one) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file_two) { described_class.new(name: "Gemfile", content: "a") }
 
-      specify { expect(first_file).to eq(second_file) }
+      specify { expect(file_one).to eq(file_two) }
     end
 
     context "when two dependency files are equal, but one is a support file" do
-      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
-      let(:second_file) do
+      let(:file_one) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file_two) do
         described_class.new(name: "Gemfile", content: "a", support_file: true)
       end
 
-      specify { expect(first_file).to eq(second_file) }
+      specify { expect(file_one).to eq(file_two) }
     end
 
     context "when two dependency files are equal, but one is a vendored file" do
-      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
-      let(:second_file) do
+      let(:file_one) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file_two) do
         described_class.new(name: "Gemfile", content: "a", vendored_file: true)
       end
 
-      specify { expect(first_file).to eq(second_file) }
+      specify { expect(file_one).to eq(file_two) }
     end
 
     context "when two dependency files are not equal" do
-      let(:first_file) { described_class.new(name: "Gemfile", content: "a") }
-      let(:second_file) { described_class.new(name: "Gemfile", content: "b") }
+      let(:file_one) { described_class.new(name: "Gemfile", content: "a") }
+      let(:file_two) { described_class.new(name: "Gemfile", content: "b") }
 
-      specify { expect(first_file).not_to eq(second_file) }
+      specify { expect(file_one).not_to eq(file_two) }
     end
   end
 
