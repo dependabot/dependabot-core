@@ -504,6 +504,7 @@ $update_config = $config_file.update_config(
 )
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
+$commit = fetcher.commit
 $files = fetch_files(fetcher)
 return if $files.empty?
 
@@ -728,6 +729,22 @@ dependencies.each do |dep|
   ).message
 
   puts " => #{msg.pr_name.downcase}"
+
+  assignee = (ENV["PULL_REQUESTS_ASSIGNEE"] || ENV["GITLAB_ASSIGNEE_ID"])&.to_i
+  assignees = assignee ? [assignee] : assignee
+  pr_creator = Dependabot::PullRequestCreator.new(
+    source: $source,
+    base_commit: $commit,
+    dependencies: updated_deps,
+    files: updated_files,
+    credentials:  $options[:credentials],
+    assignees: assignees,
+    author_details: { name: "Dependabot", email: "no-reply@github.com" },
+    label_language: true,
+  )
+  pull_request = pr_creator.create
+
+  puts "submitted"
 
   if $options[:write]
     updated_files.each do |updated_file|
