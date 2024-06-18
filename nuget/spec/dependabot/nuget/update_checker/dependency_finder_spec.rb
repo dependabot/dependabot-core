@@ -48,6 +48,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
   end
 
   # Can get transitive dependencies
+
   describe "#transitive_dependencies", :vcr do
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
@@ -57,21 +58,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
   context "when the api.nuget.org is not hit due to absence in the NuGet.Config" do
     subject(:transitive_dependencies) { finder.transitive_dependencies }
 
-    let(:dependency_version) { "42.42.42" }
-    let(:nuget_config_body) { fixture("configs", "example.com_nuget.config") }
-    let(:nuget_config) { Dependabot::DependencyFile.new(name: "NuGet.Config", content: nuget_config_body) }
-    let(:dependency_files) { [csproj, nuget_config] }
-
-    def create_nupkg(nuspec_name, nuspec_fixture_path)
-      content = Zip::OutputStream.write_buffer do |zio|
-        zio.put_next_entry("#{nuspec_name}.nuspec")
-        zio.write(fixture("nuspecs", nuspec_fixture_path))
-      end
-      content.rewind
-      content.sysread
-    end
-
-    before(:context) do
+    before do
       disallowed_urls = %w(
         https://api.nuget.org/v3/index.json
         https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/42.42.42/microsoft.extensions.dependencymodel.nuspec
@@ -91,6 +78,20 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::DependencyFinder do
       stub_request(:get, "https://api.example.com/v3-flatcontainer/microsoft.netcore.platforms/43.43.43/microsoft.netcore.platforms.43.43.43.nupkg")
         .to_return(status: 200, body: create_nupkg("Microsoft.NETCore.Platforms",
                                                    "Microsoft.NETCore.Platforms_43.43.43_faked.nuspec"))
+    end
+
+    let(:dependency_version) { "42.42.42" }
+    let(:nuget_config_body) { fixture("configs", "example.com_nuget.config") }
+    let(:nuget_config) { Dependabot::DependencyFile.new(name: "NuGet.Config", content: nuget_config_body) }
+    let(:dependency_files) { [csproj, nuget_config] }
+
+    def create_nupkg(nuspec_name, nuspec_fixture_path)
+      content = Zip::OutputStream.write_buffer do |zio|
+        zio.put_next_entry("#{nuspec_name}.nuspec")
+        zio.write(fixture("nuspecs", nuspec_fixture_path))
+      end
+      content.rewind
+      content.sysread
     end
 
     # this test doesn't really care about the dependency count, we just need to ensure that `api.nuget.org` wasn't hit
