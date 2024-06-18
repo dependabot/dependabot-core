@@ -59,8 +59,8 @@ module Dependabot
           if target_dependencies.empty?
             record_security_update_dependency_not_found
           else
-            target_dependencies.each do |dep|
-              check_and_create_pr_with_error_handling(dep)
+
+            target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
             end
           end
         end
