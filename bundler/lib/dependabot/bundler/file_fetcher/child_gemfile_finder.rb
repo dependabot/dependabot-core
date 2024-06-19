@@ -33,7 +33,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :gemfile
 
-        sig { params(node: T.untyped).returns(T::Array[T.untyped]) }
+        sig { params(node: T.untyped).returns(T::Array[String]) }
         def find_child_gemfile_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
