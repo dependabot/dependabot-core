@@ -104,9 +104,9 @@ module Dependabot
       def merge_file_and_dependency_changes(updated_dependencies, updated_dependency_files)
         updated_dependency_files.each do |updated_file|
           if updated_file.vendored_file?
-            merge_file_to_batch(updated_file, @vendored_dependency_batch, updated_dependencies)
+            merge_file_and_dependency_changes_to_batch(updated_file, @vendored_dependency_batch, updated_dependencies)
           else
-            merge_file_to_batch(updated_file, @dependency_file_batch, updated_dependencies)
+            merge_file_and_dependency_changes_to_batch(updated_file, @dependency_file_batch, updated_dependencies)
           end
         end
       end
