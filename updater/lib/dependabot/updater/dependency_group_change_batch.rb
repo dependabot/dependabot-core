@@ -47,7 +47,7 @@ module Dependabot
       def merge(dependency_change)
         if Dependabot::Experiments.enabled?(:dependency_has_directory)
           merge_file_and_dependency_changes(
-            dependency_change.updated_dependencies, 
+            dependency_change.updated_dependencies,
             dependency_change.updated_dependency_files
           )
         else
@@ -121,7 +121,8 @@ module Dependabot
                        end
 
         updated_dependencies_list = batch[file.path][updated_dependencies] + updated_dependencies
-        batch[file.path] = { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
+        batch[file.path] =
+          { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
       end
 
       def debug_updated_dependencies
