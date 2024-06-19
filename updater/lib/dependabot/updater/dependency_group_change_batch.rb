@@ -120,7 +120,7 @@ module Dependabot
                          0
                        end
 
-        updated_dependencies_list = batch[file.path][updated_dependencies] + updated_dependencies
+        updated_dependencies_list = batch[file.path][updated_dependencies].concat(updated_dependencies)
         batch[file.path] =
           { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
       end
