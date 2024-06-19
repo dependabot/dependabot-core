@@ -99,8 +99,9 @@ module Dependabot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
+        # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         sig { returns(T::Array[Dependabot::DependencyGroup]) }
-        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
+        def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
@@ -155,6 +156,7 @@ module Dependabot
             end
           end
         end
+        # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
         def run_grouped_update_for(group)
