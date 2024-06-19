@@ -45,8 +45,8 @@ module Dependabot
       end
 
       def merge(dependency_change)
-        if feature_enabled?(:dependency_has_directory)
-          merge_file_and_dependency_changes_to_batch(
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          merge_file_and_dependency_changes(
             dependency_change.updated_dependencies, 
             dependency_change.updated_dependency_files
           )
@@ -69,9 +69,7 @@ module Dependabot
 
       private
 
-      # We should retain a list of all dependencies that we change, in future we may need to account for the folder
-      # in which these changes are made to permit-cross folder updates of the same dependency.
-      #
+      # We should retain a list of all dependencies that we change.
       # This list may contain duplicates if we make iterative updates to a Dependency within a single group, but
       # rather than re-write the Dependency objects to account for the changes from the lowest previous version
       # to the final version, we should defer it to the Dependabot::PullRequestCreator::MessageBuilder as a
@@ -102,10 +100,6 @@ module Dependabot
         batch[file.path] = { file: file, changed: true, changes: change_count + 1 }
       end
 
-      # FIXME: This is one of the harder changes to make
-      # we can either store the updated dpeendencies on the updated_dependnecy_file object
-      # or we can save the directory on the updated_dependency themselves
-      # Here I take a hybrid approach and end up saving the file separate from the updated dependencies list that goes on it
       def merge_file_and_dependency_changes(updated_dependencies, updated_dependency_files)
         updated_dependency_files.each do |updated_file|
           if updated_file.vendored_file?
@@ -125,7 +119,7 @@ module Dependabot
                          0
                        end
 
-        updated_dependencies_list = merge_dependency_changes(updated_dependencies)
+        updated_dependencies_list = batch[file.path][updated_dependencies] + updated_dependencies
         batch[file.path] = { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
       end
 
