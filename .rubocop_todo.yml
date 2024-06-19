@@ -86,11 +86,6 @@ RSpec/MessageChain:
 RSpec/MessageSpies:
   Enabled: false
 
-# Offense count: 1
-RSpec/MultipleDescribes:
-  Exclude:
-    - 'common/spec/dependabot/errors_spec.rb'
-
 # Offense count: 1380
 RSpec/MultipleExpectations:
   Max: 17
