@@ -25,7 +25,7 @@ module Dependabot
           ast = Parser::CurrentRuby.parse(gemfile&.content)
           find_path_gemspec_paths(ast)
         rescue Parser::SyntaxError
-          raise Dependabot::DependencyFileNotParseable, T.must(gemfile&.path)
+          raise Dependabot::DependencyFileNotParseable, T.must(gemfile).path
         end
 
         private
@@ -33,7 +33,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :gemfile
 
-        sig { params(node: T.untyped).returns(T::Array[T.untyped]) }
+        sig { params(node: T.untyped).returns(T::Array[String]) }
         def find_path_gemspec_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
@@ -49,7 +49,7 @@ module Dependabot
             end
 
             path = T.must(path_node).loc.expression.source.gsub(/['"]/, "")
-            return [clean_path(path)]
+            return [clean_path(path).to_s] # Convert Pathname to string
           end
 
           node.children.flat_map do |child_node|
