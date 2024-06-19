@@ -29,6 +29,7 @@ module Dependabot
         RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
+        PIP_COMPILE_COMMAND = "pyenv exec pip-compile"
 
         attr_reader :dependencies
         attr_reader :dependency_files
@@ -99,10 +100,10 @@ module Dependabot
           options = pip_compile_options(filename)
           options_fingerprint = pip_compile_options_fingerprint(options)
 
-          name_part = "pyenv exec pip-compile " \
+          name_part = "#{PIP_COMPILE_COMMAND} " \
                       "#{options} -P " \
                       "#{dependency.name}"
-          fingerprint_name_part = "pyenv exec pip-compile " \
+          fingerprint_name_part = "#{PIP_COMPILE_COMMAND} " \
                                   "#{options_fingerprint} -P " \
                                   "<dependency_name>"
 
