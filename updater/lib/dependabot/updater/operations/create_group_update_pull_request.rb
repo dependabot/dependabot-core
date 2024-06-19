@@ -89,12 +89,6 @@ module Dependabot
         sig { returns(Dependabot::DependencyGroup) }
         attr_reader :group
 
-        # FIXME:
-        # - every time the directory changes we lose track of the updated_dependencies from the previous directory
-        # for a grouped udpate
-        # - we want to list the updated dependencies under each updated_dependency_file. We will have to keep the current list
-        # of updated dependencies for backwards compatibility for now. We lose the list of updated dependencies for each directory
-        # after the dependency_change.merge_changes! call.
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

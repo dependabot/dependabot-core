@@ -129,7 +129,6 @@ module Dependabot
       updated_dependencies.map { |x| x.name.downcase }.uniq.sort != T.must(job.dependencies).map(&:downcase).uniq.sort
     end
 
-    # Now that updated_dependency_files can store the updated_dependencies too, we need to make sure they don't get lost
     sig { params(dependency_changes: T::Array[DependencyChange]).void }
     def merge_changes!(dependency_changes)
       dependency_changes.each do |dependency_change|
@@ -175,7 +174,7 @@ module Dependabot
 
     private
 
-    # FIXME: this needs to be updated to also consider the directory once it's in teh existing-group-pull-requests repsonse
+    # FIXME: this needs to be updated to also consider the directory once it's in existing-group-pull-requests
     sig { returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
     def updated_dependencies_set
       Set.new(
