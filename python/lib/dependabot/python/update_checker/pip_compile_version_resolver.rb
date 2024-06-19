@@ -32,7 +32,7 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
-        PIP_COMPILE_COMMAND = "pip-compile"
+        PIP_COMPILE_COMMAND = "pyenv exec pip-compile"
 
         attr_reader :dependency
         attr_reader :dependency_files
