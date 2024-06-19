@@ -59,6 +59,7 @@ module Dependabot
       @dependency_group = dependency_group
 
       @pr_message = T.let(nil, T.nilable(Dependabot::PullRequestCreator::Message))
+      ensure_dependencies_have_directories
     end
 
     sig { returns(Dependabot::PullRequestCreator::Message) }
@@ -180,10 +181,30 @@ module Dependabot
           {
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
+            "directory" => should_consider_directory? ? dep.directory : nil,
             "dependency-removed" => dep.removed? ? true : nil
           }.compact
         end
       )
+    end
+
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    def ensure_dependencies_have_directories
+      updated_dependencies.each do |dep|
+        dep.directory = directory
+      end
+    end
+
+    sig { returns(String) }
+    def directory
+      return "" if updated_dependency_files.empty?
+
+      T.must(updated_dependency_files.first).directory
+    end
+
+    sig { returns(T::Boolean) }
+    def should_consider_directory?
+      grouped_update? && Dependabot::Experiments.enabled?("dependency_has_directory")
     end
   end
 end
