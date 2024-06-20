@@ -176,7 +176,13 @@ module Dependabot
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
       directories.each do |dir|
         @current_directory = dir
-        @dependencies[dir] = parse_files!
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependencies = parse_files!
+          dependencies_with_dir = dependencies.each { |dep| dep.directory = dir }
+          @dependencies[dir] = dependencies_with_dir
+        else
+          @dependencies[dir] = parse_files!
+        end
       end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
