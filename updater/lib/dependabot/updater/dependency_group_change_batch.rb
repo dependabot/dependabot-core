@@ -46,6 +46,10 @@ module Dependabot
 
       def merge(dependency_change)
         if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          # FIXME: we shouldn't have to rely on this but because CreateGroupUpdatePullRequest explicitly checks
+          # the DependencyChange.updated_dependencies, we need to add the updated dependencies to the global list
+          merge_dependency_changes(dependency_change.updated_dependencies)
+
           merge_file_and_dependency_changes(
             dependency_change.updated_dependencies,
             dependency_change.updated_dependency_files
@@ -122,6 +126,7 @@ module Dependabot
 
         previous_updated_dependencies = batch[file.path][updated_dependencies] || []
         updated_dependencies_list = previous_updated_dependencies.concat(updated_dependencies)
+
         batch[file.path] =
           { file: file, updated_dependencies: updated_dependencies_list, changed: true, changes: change_count + 1 }
       end
