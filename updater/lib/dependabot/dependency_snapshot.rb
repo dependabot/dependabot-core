@@ -112,11 +112,11 @@ module Dependabot
       @handled_dependencies[@current_directory] = set
     end
 
-    sig { params(dependencies: T::Array[{name: T.nilable(String), directory: T.nilable(String)}]).void }
+    sig { params(dependencies: T::Array[{ name: T.nilable(String), directory: T.nilable(String) }]).void }
     def add_handled_group_dependencies(dependencies)
       raise "Current directory not set" if @current_directory == ""
 
-      dependencies.group_by{ |d| d[:directory] }.each do |dir, dependency_hash|
+      dependencies.group_by { |d| d[:directory] }.each do |dir, dependency_hash|
         set = @handled_dependencies[dir] || Set.new
         set.merge(dependency_hash.map { |d| d[:name] })
         @handled_dependencies[dir] = set
@@ -130,10 +130,12 @@ module Dependabot
       T.must(@handled_dependencies[@current_directory])
     end
 
+    # rubocop:disable Performance/Sum
     sig { returns(T::Set[String]) }
     def handled_group_dependencies
       T.must(@handled_dependencies.values.reduce(&:+))
     end
+    # rubocop:enable Performance/Sum
 
     sig { params(dir: String).void }
     def current_directory=(dir)
