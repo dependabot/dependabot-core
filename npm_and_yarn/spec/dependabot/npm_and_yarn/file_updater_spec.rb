@@ -3666,8 +3666,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
       let(:files) { project_dependency_files(project_name) }
 
-      describe "simple case" do
-        let(:project_name) { "pnpm/simple" }
+      describe "simple pnpm version 6 scenario" do
+        let(:project_name) { "pnpm/simple/pnpm_6" }
 
         it "keeps the lockfileVersion" do
           expect(updated_pnpm_lock.content).to include("lockfileVersion: '6.0'")
@@ -3675,6 +3675,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "has details of the updated item" do
           expect(updated_pnpm_lock.content).to include("fetch-factory@0.0.2")
+        end
+      end
+
+      describe "simple pnpm version 9 scenario" do
+        let(:project_name) { "pnpm/simple/pnpm_9" }
+
+        it "keeps the lockfileVersion" do
+          expect(updated_pnpm_lock.content).to include("lockfileVersion: '9.0'")
         end
       end
 

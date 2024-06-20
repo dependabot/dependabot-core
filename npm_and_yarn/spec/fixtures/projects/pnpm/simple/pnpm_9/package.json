@@ -1,0 +1,6 @@
+{
+  "packageManager": "pnpm@9.4.0",
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  }
+}
