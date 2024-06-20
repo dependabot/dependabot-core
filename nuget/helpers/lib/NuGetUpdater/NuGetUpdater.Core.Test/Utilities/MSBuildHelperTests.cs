@@ -478,7 +478,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Some.Package", "1.2.0", DependencyType.PackageReference),
                 new Dependency("Some.Other.Package", "1.0.0", DependencyType.PackageReference),
             };
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, null, new Logger(true));
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Some.Package", resolvedDependencies[0].Name);
@@ -491,6 +491,57 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNew()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNew)}_");
+
+        // the package `Some.Package` was already updated from 1.0.0 to 1.2.0, but this causes a conflict with
+        // `Some.Other.Package` that needs to be resolved
+
+        // Azure Core 1.22.0 requires System.Text.Json to be from 4.6.0 to 4.7.2
+        
+        try
+        {
+            // <PackageReference Include="System.Text.Json" Version="4.6.0" />
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
+                // new Dependency("System.Text.Json", "4.6.0", DependencyType.PackageReference),
+            };
+            var update = new[]
+            {
+                new Dependency("System.Text.Json", "4.7.2", DependencyType.Unknown)
+            };
+            // not in existing, unsolveable, etc scenarios
+
+            // param of packages need to update
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
+            Assert.Equal("1.22.0", resolvedDependencies[0].Version);
+            Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
+            Assert.Equal("4.7.2", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+    
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {

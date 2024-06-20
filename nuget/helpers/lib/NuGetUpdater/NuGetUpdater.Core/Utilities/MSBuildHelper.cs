@@ -13,6 +13,7 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
+using NuGet;
 using NuGet.Configuration;
 using NuGet.Versioning;
 
@@ -309,7 +310,179 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger) 
+    {
+        if (Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true")
+        {
+            return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
+        }
+        else
+        {
+            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
+        }
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
+        PackageManager packageManager = new PackageManager();
+        try
+        {
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+
+            // simple cases first
+            // if restore failed, nothing we can do
+            // if (exitCode != 0)
+            // {
+            //     return null;
+            // }
+
+            // if no problems found, just return the current set
+            // if (!stdOut.Contains("NU1608"))
+            // {
+            //     return packages;
+            // }
+            // Put existing packages here
+            List<PackageToUpdate> existingPackages = new List<PackageToUpdate>();
+            // add packages to existingPackages
+            foreach(var existingPackage in packages){
+                PackageToUpdate package = new PackageToUpdate
+                {
+                    packageName = existingPackage.Name,
+                    currentVersion = existingPackage.Version,
+                };
+                existingPackages.Add(package);
+            }
+
+            // Task awaiting to pass in
+            Task<List<PackageToUpdate>> taskExisting = Task.FromResult(existingPackages);
+            List<PackageToUpdate> existing = await taskExisting;
+
+            // Put package to update here
+            List<PackageToUpdate> packagesToUpdate = new List<PackageToUpdate>();
+                        // Find the new version each package should update to
+            foreach (var package in update)
+            {
+                var packageName = package.Name;
+                var versions = package.Version; 
+
+                if (versions != null)
+                {
+                    packagesToUpdate.Add(new PackageToUpdate
+                    {
+                        packageName = packageName,
+                        newVersion = versions.ToString(),
+                        // secondVersion = secondVersionToUpdateTo.ToString(),
+                    });
+                }
+            }
+
+            // Task awaiting to pass in
+            Task<List<PackageToUpdate>> toUpdate = Task.FromResult(packagesToUpdate);
+            List<PackageToUpdate> packagesNeedingUpdates = await toUpdate;
+        
+
+            List<PackageToUpdate> existingDuplicate = new List<PackageToUpdate>(existing);
+            int added = 0;
+
+            // Check if the package is already there and replace with new version
+            foreach(PackageToUpdate packageDupe in existingDuplicate){
+                foreach(PackageToUpdate package in packagesToUpdate){
+                    if(package.packageName == packageDupe.packageName){
+                        packageDupe.newVersion = package.newVersion;
+                    }
+                }
+            }
+
+            // IF package isnt there, add it to the existing list
+            foreach(PackageToUpdate package in packagesToUpdate){
+                if(!existingDuplicate.Contains(package)){
+                    existingDuplicate.Add(package);
+                    added++;
+                }
+            } 
+
+            Task<List<PackageToUpdate>> taskExistingDuplicate = Task.FromResult(existingDuplicate);
+
+            // If you have to use the duplicate list
+            if(added > 0){
+
+                // make relationships
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework);
+
+                // update all to new versions
+                foreach (var package in existingDuplicate)
+                {
+                    string updateResult = await packageManager.UpdateVersion(taskExistingDuplicate, package, targetFramework);
+                }
+            } 
+            
+            // Editing existing list
+            else {
+                // Add existing versions to existing list
+                await packageManager.UpdateExistingPackagesWithNewVersions(existing, packagesNeedingUpdates);
+                
+                // Make relationships
+                await packageManager.PopulatePackageDependenciesAsync(existing, targetFramework);
+                
+                // Update all to new versions
+                foreach (var package in existingPackages)
+                {
+                    string updateResult = await packageManager.UpdateVersion(taskExisting, package, targetFramework);
+                }
+            }
+
+            // Make new list to remove to prevent issues
+            List<PackageToUpdate> packagesToRemove = new List<PackageToUpdate>();
+            
+            foreach(PackageToUpdate existingPackageDupe in existingDuplicate){
+                if(!existing.Contains(existingPackageDupe) && existingPackageDupe.isSpecific == true){
+                    packagesToRemove.Add(existingPackageDupe);
+                }
+            }
+
+            foreach (PackageToUpdate package in packagesToRemove)
+            {
+                existingDuplicate.Remove(package);
+            }
+
+            if(existingDuplicate != null){
+                existing = existingDuplicate;
+            }
+
+            // Convert back to dependency
+            List<Dependency> candidatePackages = new List<Dependency>();
+            foreach(PackageToUpdate package in existing){
+                var dependency = new Dependency(
+                    package.packageName,
+                    package.newVersion,
+                    DependencyType.Unknown, 
+                    null,                   
+                    null,                   
+                    false,                  
+                    false,                  
+                    false,                  
+                    false,                  
+                    false                  
+                );
+                candidatePackages.Add(dependency);
+            }
+            Dependency[] candidatePackagesArray = candidatePackages.ToArray();
+            return candidatePackagesArray;
+
+            // use dependency
+
+            // no package resolution set found
+            // return null;
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
