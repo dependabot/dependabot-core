@@ -617,6 +617,7 @@ end
 puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
 # rubocop:disable Metrics/BlockLength
+my_array_deps = []
 checker_count = 0
 dependencies.each do |dep|
   checker_count += 1
@@ -709,7 +710,9 @@ dependencies.each do |dep|
   # Removal is only supported for transitive dependencies which are removed as a
   # side effect of the parent update
   deps_to_update = updated_deps.reject(&:removed?)
-  updater = file_updater_for(deps_to_update)
+  my_array_deps.push(updated_deps[0])
+
+  updater = file_updater_for(my_array_deps)
   updated_files = updater.updated_dependency_files
 
   updated_deps = updated_deps.reject do |d|
@@ -735,7 +738,7 @@ dependencies.each do |dep|
   pr_creator = Dependabot::PullRequestCreator.new(
     source: $source,
     base_commit: $commit,
-    dependencies: updated_deps,
+    dependencies: my_array_deps,
     files: updated_files,
     credentials:  $options[:credentials],
     assignees: assignees,
