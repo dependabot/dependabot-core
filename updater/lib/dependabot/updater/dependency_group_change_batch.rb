@@ -127,7 +127,7 @@ module Dependabot
                          0
                        end
 
-        previous_updated_dependencies = batch[file.path][:updated_dependencies] || []
+        previous_updated_dependencies = batch.dig(file.path, :updated_dependencies) || []
         updated_dependencies_list = previous_updated_dependencies.concat(updated_dependencies)
 
         batch[file.path] =
