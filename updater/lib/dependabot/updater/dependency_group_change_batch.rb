@@ -102,7 +102,7 @@ module Dependabot
 
         batch[file.path] = {
           file: file,
-          updated_dependencies: batch[file.path][:updated_dependencies] || [],
+          updated_dependencies: batch.dig(file.path, :updated_dependencies) || [],
           changed: true,
           changes: change_count + 1
         }
