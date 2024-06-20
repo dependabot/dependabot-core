@@ -45,17 +45,16 @@ module Dependabot
       end
 
       def merge(dependency_change)
-        if Dependabot::Experiments.enabled?(:dependency_has_directory)
-          # FIXME: we shouldn't have to rely on this but because CreateGroupUpdatePullRequest explicitly checks
-          # the DependencyChange.updated_dependencies, we need to add the updated dependencies to the global list
-          merge_dependency_changes(dependency_change.updated_dependencies)
+        # FIXME: we shouldn't have to rely on this but because CreateGroupUpdatePullRequest explicitly checks
+        # the DependencyChange.updated_dependencies, we need to add the updated dependencies to the global list
+        merge_dependency_changes(dependency_change.updated_dependencies)
 
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
           merge_file_and_dependency_changes(
             dependency_change.updated_dependencies,
             dependency_change.updated_dependency_files
           )
         else
-          merge_dependency_changes(dependency_change.updated_dependencies)
           merge_file_changes(dependency_change.updated_dependency_files)
         end
 

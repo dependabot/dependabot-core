@@ -69,56 +69,61 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
           job: job,
           updated_dependency_files: updated_dependency_files,
           updated_dependencies: updated_dependencies,
-          dependency_group: group,
+          dependency_group: group
         )
       end
 
       let(:updated_dependency_files) do
         [
-          Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-updated-gemfile", directory: "/"),
-          Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "mock-updated-gemfile-lock", directory: "/hello/.."),
-          Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-updated-package-json", directory: "/elsewhere"),
-          Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "unknown"),
-          Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "../../oob")
+          Dependabot::DependencyFile.new(
+            name: "Gemfile", content: "mock-updated-gemfile", directory: "/"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock", content: "mock-updated-gemfile-lock", directory: "/hello/.."
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile", content: "mock-updated-package-json", directory: "/elsewhere"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile", content: "mock-package-json", directory: "unknown"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile", content: "mock-package-json", directory: "../../oob"
+          )
         ]
       end
 
-      let(:test_dependency1) do
-        Dependabot::Dependency.new(
-          name: "test-dependency-1",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["test"],
-              source: nil
-            }
-          ],
-          directory: "/"
-        )
-      end
-
-      let(:test_dependency2) do
-        Dependabot::Dependency.new(
-          name: "test-dependency-2",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["test"],
-              source: nil
-            }
-          ],
-          directory: "/hello/.."
-        )
-      end
-
       let(:updated_dependencies) do
-        [test_dependency1, test_dependency2]
+        [
+          Dependabot::Dependency.new(
+            name: "test-dependency-1",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["test"],
+                source: nil
+              }
+            ],
+            directory: "/"
+          ),
+          Dependabot::Dependency.new(
+            name: "test-dependency-2",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["test"],
+                source: nil
+              }
+            ],
+            directory: "/hello/.."
+          )
+        ]
       end
 
       let(:group) do
@@ -143,10 +148,9 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
         # Eventually this should be narrowed down so that only the files that were modified
         # by the newly merged dependency_change have their updated_dependencies updated.
         dependency_file_batch = batch.instance_variable_get(:@dependency_file_batch)
-        expect(dependency_file_batch["/Gemfile"][:updated_dependencies]).to include(test_dependency1)
-        expect(dependency_file_batch["/Gemfile"][:updated_dependencies]).to include(test_dependency2)
-        expect(dependency_file_batch["/Gemfile.lock"][:updated_dependencies]).to include(test_dependency1)
-        expect(dependency_file_batch["/Gemfile.lock"][:updated_dependencies]).to include(test_dependency2)
+        expect(dependency_file_batch["/Gemfile"][:updated_dependencies]).to eq(updated_dependencies)
+        expect(dependency_file_batch["/Gemfile.lock"][:updated_dependencies]).to eq(updated_dependencies)
+        expect(dependency_file_batch["/unknown/Gemfile"][:updated_dependencies]).to eq(updated_dependencies)
       end
     end
   end
