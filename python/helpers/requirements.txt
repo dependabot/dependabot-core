@@ -1,6 +1,6 @@
 pip==24.0
 pip-tools==7.4.1
-flake8==7.0.0
+flake8==7.1.0
 hashin==1.0.1
 pipenv==2023.12.1
 plette==2.1.0
