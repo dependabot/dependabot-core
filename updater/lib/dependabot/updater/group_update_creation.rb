@@ -52,8 +52,12 @@ module Dependabot
         )
         original_dependencies = dependency_snapshot.dependencies
 
+        Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
-          if dependency_snapshot.handled_group_dependencies.include?(dependency.name)
+          # We check dependency_snapshot.handled_dependencies instead of handled_group_dependencies here 
+          # because we still want to update a dependency if it's been updated in another manifest files, 
+          # but we shold skip it if it's been updated in _the same_ manifest file
+          if dependency_snapshot.handled_dependencies.include?(dependency.name)
             Dependabot.logger.info(
               "Skipping #{dependency.name} as it has already been handled by a previous group"
             )
