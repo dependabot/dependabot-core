@@ -22,6 +22,7 @@ module Dependabot
         super(path)
         @initial_head_sha = T.let(head_sha, String)
         configure_git
+        run_shell_command("git lfs install") if lfs_enabled?(path.to_s)
       end
 
       sig { returns(T::Boolean) }
@@ -167,6 +168,18 @@ module Dependabot
       sig { params(message: String).void }
       def debug(message)
         Dependabot.logger.debug("[workspace] #{message}")
+      end
+
+      sig { params(path: String).returns(T.nilable(T::Boolean)) }
+      def lfs_enabled?(path)
+        filepath = File.join(path, ".gitattributes")
+        T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+                                          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+                                                       .include?("filter=lfs")
+      rescue StandardError => e
+        Dependabot.logger.warn("An error has occurred: #{e.message}")
+        # this should not be needed, but I don't trust 'should'
+        T.let(false, T::Boolean)
       end
     end
   end

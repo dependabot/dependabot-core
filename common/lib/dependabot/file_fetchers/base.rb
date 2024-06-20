@@ -441,12 +441,8 @@ module Dependabot
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
 
-      sig do
-        params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
-          .returns(T::Array[OpenStruct])
-      end
-      def _fetch_repo_contents(path, fetch_submodules: false,
-                               raise_errors: true)
+      sig { params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean).returns(T::Array[OpenStruct]) }
+      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true)
         path = path.gsub(" ", "%20")
         provider, repo, tmp_path, commit =
           _full_specification_for(path, fetch_submodules: fetch_submodules)
@@ -476,10 +472,7 @@ module Dependabot
         retry
       end
 
-      sig do
-        params(provider: String, repo: String, path: String, commit: String)
-          .returns(T::Array[OpenStruct])
-      end
+      sig { params(provider: String, repo: String, path: String, commit: String).returns(T::Array[OpenStruct]) }
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
         case provider
         when "github"
@@ -831,8 +824,12 @@ module Dependabot
                                  " --recurse-submodules=on-demand"
                                end
               # Need to fetch the commit due to the --depth 1 above.
-              SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
-
+              if lfs_enabled?(path.to_s)
+                SharedHelpers.run_shell_command("git lfs install")
+                SharedHelpers.run_shell_command("git-lfs-fetch #{fetch_options.string} origin #{source.commit}")
+              else
+                SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
+              end
               reset_options = StringIO.new
               reset_options << "--hard"
               reset_options << if submodule_cloning_failed
@@ -861,18 +858,41 @@ module Dependabot
 
       sig { params(path: String).returns(T::Array[String]) }
       def find_submodules(path)
-        SharedHelpers.run_shell_command(
-          <<~CMD
-            git -C #{path} ls-files --stage
-          CMD
-        ).split("\n").filter_map do |line|
+        lfs_enabled = lfs_enabled?(path) if lfs_enabled.nil?
+        SharedHelpers.run_shell_command("git-lfs-checkout") if lfs_enabled
+        command_string = get_command_string(path, lfs_enabled)
+        #  eep command_string
+        SharedHelpers.run_shell_command(command_string).split("\n").filter_map do |line|
           info = line.split
 
           type = info.first
           path = T.must(info.last)
-
           next path if type == DependencyFile::Mode::SUBMODULE
         end
+      rescue SharedHelpers::HelperSubprocessFailed => e
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client") if lfs_enabled
+        Dependabot.logger.error(e.message)
+        raise e.exception("Message: #{e.message}")
+      end
+
+      sig { params(path: String).returns(T.nilable(T::Boolean)) }
+      def lfs_enabled?(path)
+        filepath = File.join(path, ".gitattributes")
+        T.let(true, T::Boolean) if File.exist?(filepath) && File.readable?(filepath) &&
+                                          SharedHelpers.run_shell_command("cat #{filepath} | grep \"filter=lfs\"")
+                                                       .include?("filter=lfs")
+      rescue StandardError => e
+        Dependabot.logger.warn("An error has occurred: #{e.message}")
+        # this should not be needed, but I don't trust 'should'
+        T.let(false, T::Boolean)
+      end
+
+      sig { params(path: String, lfs_enabled: T.nilable(T::Boolean)).returns(String) }
+      def get_command_string(path, lfs_enabled)
+        return "git -C #{path} ls-files --stage" unless lfs_enabled
+
+        Dependabot.logger.warn("LFS is enabled in this repo.  Please use an LFS enabled client")
+        return "cd #{path};git-lfs ls-files --stage"
       end
     end
   end
