@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/pull_request_creator/message_builder"
 
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
