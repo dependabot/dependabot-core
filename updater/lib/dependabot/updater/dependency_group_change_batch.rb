@@ -100,8 +100,12 @@ module Dependabot
                          0
                        end
 
-        # We explicitly keep updated_dependencies as an empty list if the :dependency_has_directory ff is not enabled
-        batch[file.path] = { file: file, updated_dependencies: [], changed: true, changes: change_count + 1 }
+        batch[file.path] = {
+          file: file,
+          updated_dependencies: batch[file.path][:updated_dependencies] || [],
+          changed: true,
+          changes: change_count + 1
+        }
       end
 
       def merge_file_and_dependency_changes(updated_dependencies, updated_dependency_files)
