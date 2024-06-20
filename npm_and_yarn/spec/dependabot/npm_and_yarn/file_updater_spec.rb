@@ -3679,10 +3679,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       describe "simple pnpm version 9 scenario" do
-        let(:project_name) { "pnpm/simple/pnpm_9" }
+        context "when packageManager property mentioned in package.json" do
+          let(:project_name) { "pnpm/simple/pnpm_9" }
 
-        it "keeps the lockfileVersion" do
-          expect(updated_pnpm_lock.content).to include("lockfileVersion: '9.0'")
+          it "keeps the lockfileVersion" do
+            expect(updated_pnpm_lock.content).to include("lockfileVersion: '9.0'")
+          end
+        end
+
+        context "when packageManager property is not mentioned in package.json" do
+          let(:project_name) { "pnpm/simple/pnpm_no_package_manager" }
+
+          it "keeps the lockfileVersion" do
+            expect(updated_pnpm_lock.content).to include("lockfileVersion: '9.0'")
+          end
         end
       end
 
