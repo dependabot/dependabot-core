@@ -458,14 +458,20 @@ module Dependabot
         )
         dependency_snapshot.handled_dependencies << dependency.name
 
-        Dependabot::Dependency.new(
+        dependency_params = {
           name: dependency.name,
           version: dependency.version,
           previous_version: original_dependency.version,
           requirements: dependency.requirements,
           previous_requirements: original_dependency.requirements,
           package_manager: dependency.package_manager
-        )
+        }
+
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependency_params[:directory] = dependency.directory
+        end
+
+        Dependabot::Dependency.new(**dependency_params)
       end
     end
   end
