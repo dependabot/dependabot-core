@@ -174,7 +174,6 @@ module Dependabot
 
     private
 
-    # FIXME: this needs to be updated to also consider the directory once it's in existing-group-pull-requests
     sig { returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
     def updated_dependencies_set
       Set.new(
