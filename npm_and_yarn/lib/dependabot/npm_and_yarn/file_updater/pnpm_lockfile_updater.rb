@@ -43,6 +43,7 @@ module Dependabot
         FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print:]]+GET (?<dependency_url>.*): Forbidden - 403/
         MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*): Not Found - 404/
         UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
+        MISSING_PACKAGE_IN_REPO = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*):  - 404/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -100,7 +101,7 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, url
           end
 
-          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE].each do |regexp|
+          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE, MISSING_PACKAGE_IN_REPO].each do |regexp|
             next unless error_message.match?(regexp)
 
             dependency_url = error_message.match(regexp).named_captures["dependency_url"]
@@ -122,6 +123,8 @@ module Dependabot
           package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
           missing_dep = lockfile_dependencies(pnpm_lock)
                         .find { |dep| dep.name == package_name }
+
+          raise PrivateSourceAuthenticationFailure, package_name unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
