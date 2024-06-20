@@ -54,7 +54,7 @@ COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
 
 # Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-COPY --from=docker.io/library/ruby:3.3.1-bookworm --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=docker.io/library/ruby:3.3.3-bookworm --chown=dependabot:dependabot /usr/local /usr/local
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 22.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
