@@ -62,7 +62,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
   let(:my_instance) { instance_double(Dependabot::Clients::CodeCommit) }
-  #let(:files) { file_fetcher_instance.files }
+  # let(:files) { file_fetcher_instance.files }
 
   before do
     allow(Dependabot::Clients::CodeCommit).to receive(:new).and_return(my_instance)
@@ -1307,20 +1307,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "when a dependency file can't be found" do
-        let(:my_error) { Dependabot::DependencyFileNotFound.new, "/requirements2.txt" }
+        let(:my_error) { Dependabot::DependencyFileNotFound.new("/requirements2.txt") }
+        let(:local_file_fetcher) { instance_double(described_class) }
+
         before do
-          allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "sha", "/requirements2.txt")
-                                                  .and_raise(my_error)
+          allow(described_class).to receive(:new).and_return(local_file_fetcher)
+          allow(local_file_fetcher).to receive(:files).and_raise(my_error)
+                                                      .and_raise(my_error)
           stubbed_cc_client
             .stub_responses(
               :get_file,
               "FileDoesNotExistException"
             )
-
         end
 
         it "raises a custom error" do
-          expect { file_fetcher_instance.files }
+          expect { local_file_fetcher.files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
             expect(error.file_path).to eq("/requirements2.txt")
           end
