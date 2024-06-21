@@ -1,9 +1,7 @@
-lockfileVersion: '6.0'
-
+lockfileVersion: "6.0"
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
-
 dependencies:
   next:
     specifier: ^13.2.4
@@ -11,4 +9,3 @@ dependencies:
   gsap:
     specifier: npm:@gsap/business@^3.12.4
     version: /@gsap/business@3.12.4
-    
