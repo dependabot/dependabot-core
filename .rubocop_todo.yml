@@ -51,25 +51,6 @@ RSpec/FilePath:
     - 'nuget/spec/dependabot/nuget/update_checker/repository_finder_spec.rb'
     - 'nuget/spec/dependabot/nuget/update_checker/tfm_finder_spec.rb'
 
-# Offense count: 70
-# Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
-RSpec/IndexedLet:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/helper_spec.rb'
-    - 'cargo/spec/dependabot/cargo/file_parser_spec.rb'
-    - 'common/spec/dependabot/dependency_file_spec.rb'
-    - 'common/spec/dependabot/dependency_group_spec.rb'
-    - 'common/spec/dependabot/dependency_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'github_actions/spec/dependabot/github_actions/update_checker_spec.rb'
-    - 'hex/spec/dependabot/hex/file_parser_spec.rb'
-    - 'hex/spec/dependabot/hex/file_updater/lockfile_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/file_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/update_checker_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_updater/pip_compile_file_updater_spec.rb'
-    - 'python/spec/dependabot/python/update_checker/latest_version_finder_spec.rb'
-
 # Offense count: 29
 # Configuration parameters: AssignmentOnly.
 RSpec/InstanceVariable:
