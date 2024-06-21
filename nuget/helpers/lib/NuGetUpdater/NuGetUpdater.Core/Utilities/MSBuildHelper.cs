@@ -384,72 +384,72 @@ internal static partial class MSBuildHelper
         
 
             List<PackageToUpdate> existingDuplicate = new List<PackageToUpdate>(existing);
-            int added = 0;
+        int added = 0;
 
-            // Check if the package is already there and replace with new version
-            foreach(PackageToUpdate packageDupe in existingDuplicate){
-                foreach(PackageToUpdate package in packagesToUpdate){
-                    if(package.packageName == packageDupe.packageName){
-                        packageDupe.newVersion = package.newVersion;
-                    }
-                }
+        // If package isnt there, add it to the existing list
+        foreach(PackageToUpdate package in packagesToUpdate){
+            if(!existingDuplicate.Any(p => p.packageName == package.packageName)){
+                existingDuplicate.Add(package);
+                added++;
             }
+        } 
 
-            // IF package isnt there, add it to the existing list
-            foreach(PackageToUpdate package in packagesToUpdate){
-                if(!existingDuplicate.Contains(package)){
-                    existingDuplicate.Add(package);
-                    added++;
-                }
-            } 
+        Task<List<PackageToUpdate>> taskExistingDuplicate = Task.FromResult(existingDuplicate);
 
-            Task<List<PackageToUpdate>> taskExistingDuplicate = Task.FromResult(existingDuplicate);
+        // If you have to use the duplicate list
+        if(added > 0){
+            await packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesNeedingUpdates);
 
-            // If you have to use the duplicate list
-            if(added > 0){
+            // Make relationships
+            await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework);
 
-                // make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework);
-
-                // update all to new versions
-                foreach (var package in existingDuplicate)
-                {
-                    string updateResult = await packageManager.UpdateVersion(taskExistingDuplicate, package, targetFramework);
-                }
-            } 
-            
-            // Editing existing list
-            else {
-                // Add existing versions to existing list
-                await packageManager.UpdateExistingPackagesWithNewVersions(existing, packagesNeedingUpdates);
-                
-                // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existing, targetFramework);
-                
-                // Update all to new versions
-                foreach (var package in existingPackages)
-                {
-                    string updateResult = await packageManager.UpdateVersion(taskExisting, package, targetFramework);
-                }
-            }
-
-            // Make new list to remove to prevent issues
-            List<PackageToUpdate> packagesToRemove = new List<PackageToUpdate>();
-            
-            foreach(PackageToUpdate existingPackageDupe in existingDuplicate){
-                if(!existing.Contains(existingPackageDupe) && existingPackageDupe.isSpecific == true){
-                    packagesToRemove.Add(existingPackageDupe);
-                }
-            }
-
-            foreach (PackageToUpdate package in packagesToRemove)
+            // Update all to new versions
+            foreach (var package in existingDuplicate)
             {
-                existingDuplicate.Remove(package);
+                Console.WriteLine("MAIN PACKAGE NAME: " + package.packageName + " CURR AND NEW VERSION " + package.currentVersion + " " + package.newVersion);
+                string updateResult = await packageManager.UpdateVersion(taskExistingDuplicate, package, targetFramework);
+                Console.WriteLine($"Duplicate Update result for {package.packageName}: {updateResult}");
             }
+        } 
+        
+        // Editing existing list
+        else {
+            
+            // Add existing versions to exisitng list
+            await packageManager.UpdateExistingPackagesWithNewVersions(existing, packagesNeedingUpdates);
+            
+            // Make relationships
+            await packageManager.PopulatePackageDependenciesAsync(existing, targetFramework);
+            
+            // Update all to new versions
+            foreach (var package in existingPackages)
+            {
+                Console.WriteLine("MAIN PACKAGE NAME: " + package.packageName + " CURR AND NEW VERSION " + package.currentVersion + " " + package.newVersion);
+                string updateResult = await packageManager.UpdateVersion(taskExisting, package, targetFramework);
+                Console.WriteLine($"Update result for {package.packageName}: {updateResult}");
+            }
+        }
 
-            if(existingDuplicate != null){
-                existing = existingDuplicate;
+        // Make new list to remove to prevent issues
+        List<PackageToUpdate> packagesToRemove = new List<PackageToUpdate>();
+        
+        foreach(PackageToUpdate existingPackageDupe in existingDuplicate){
+            Console.WriteLine("TRYING TO REMOVE " + existingPackageDupe.packageName + " is SPECIFIC? " + existingPackageDupe.isSpecific);
+
+            if(!existing.Contains(existingPackageDupe) && existingPackageDupe.isSpecific == true){
+                Console.WriteLine("REMOVING " + existingPackageDupe.packageName);
+                 packagesToRemove.Add(existingPackageDupe);
             }
+        }
+
+        foreach (PackageToUpdate package in packagesToRemove)
+        {
+            existingDuplicate.Remove(package);
+        }
+
+        if(existingDuplicate != null){
+            existing = existingDuplicate;
+        }
 
             // Convert back to dependency
             List<Dependency> candidatePackages = new List<Dependency>();

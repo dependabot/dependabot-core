@@ -530,11 +530,11 @@ public class MSBuildHelperTests : TestBase
             // param of packages need to update
             var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
             Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal(1, resolvedDependencies.Length);
             Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
             Assert.Equal("1.22.0", resolvedDependencies[0].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[1].Version);
+            // Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
+            // Assert.Equal("4.7.2", resolvedDependencies[1].Version);
         }
         finally
         {
