@@ -11,4 +11,3 @@ dependencies:
   gsap:
     specifier: npm:@gsap/business@^3.12.4
     version: /@gsap/business@3.12.4
-
