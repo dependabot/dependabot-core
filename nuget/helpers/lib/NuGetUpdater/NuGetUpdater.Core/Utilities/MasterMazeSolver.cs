@@ -4,8 +4,6 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
-namespace NuGetUpdater.Core;
-
 // Data type to store information of a given package
 public class PackageToUpdate
 {
@@ -13,7 +11,7 @@ public class PackageToUpdate
     public string currentVersion { get; set; }
     public string newVersion { get; set; }
 
-    // Second version in case there's a "bounds" on the package versio
+    // Second version in case there's a "bounds" on the package version
     public string secondVersion { get; set; }
 
     // Bool to determine if a package has to be a specific version
@@ -170,9 +168,12 @@ public class PackageManager
                             dependencyPackage.secondVersion = secondVersion;
                         }
 
+                        var parents = GetParentPackages(package);
+                        // package.isSpecific = true;
+
                         // Add each dependency to the list and declare the top package as a specific version
                         dependencyList.Add(dependencyPackage);
-                        package.isSpecific = true;
+                        
                     }
                 }
             }
@@ -232,6 +233,7 @@ public class PackageManager
                 PackageToUpdate checkInExisting = packages.FirstOrDefault(p => p.packageName == dependency.packageName);
                 if(checkInExisting != null)
                 {
+                    checkInExisting.isSpecific = dependency.isSpecific;
                     AddDependency(package, checkInExisting);
                 }
                 else 
