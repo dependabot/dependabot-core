@@ -1742,13 +1742,30 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "when there is a change in maintainer" do
         let(:my_instance) { instance_double(Dependabot::MetadataFinders::Base) }
+        let(:source_url) { "https://bitbucket.org/gocardless/business" }
 
         before do
           allow(Dependabot::MetadataFinders::Base).to receive(:new).and_return(my_instance)
-          allow(my_instance).to receive(:maintainer_changes).and_return("Maintainer change")
+          allow(my_instance).to receive_messages(source_url: watched_repo_url, look_up_source: watched_repo_url,
+                                                 releases_url: watched_repo_url, changelog_url: watched_repo_url,
+                                                 upgrade_guide_url: watched_repo_url, commits_url: watched_repo_url)
+          allow(my_instance)
+            .to receive_messages(
+              releases_text:
+                "<details>\n<summary>Maintainer changes</summary>\n<p>Maintainer change</p>\n</details>\n<br />",
+              changelog_text:
+                "<details>\n<summary>Maintainer changes</summary>\n<p>Maintainer change</p>\n</details>\n<br />",
+              upgrade_guide_text:
+                "<details>\n<summary>Maintainer changes</summary>\n<p>Maintainer change</p>\n</details>\n<br />",
+              commits:
+                "<details>\n<summary>Maintainer changes</summary>\n<p>Maintainer change</p>\n</details>\n<br />",
+              maintainer_changes:
+              "<details>\n<summary>Maintainer changes</summary>\n<p>Maintainer change</p>\n</details>\n<br />"
+            )
         end
 
         it "has the right text" do
+          pr_message = my_instance.maintainer_changes
           expect(pr_message).to include(
             "<details>\n" \
             "<summary>Maintainer changes</summary>\n" \

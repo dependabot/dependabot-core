@@ -62,10 +62,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
   end
   let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
   let(:my_instance) { instance_double(Dependabot::Clients::CodeCommit) }
+  #let(:files) { file_fetcher_instance.files }
 
   before do
     allow(Dependabot::Clients::CodeCommit).to receive(:new).and_return(my_instance)
-    allow(my_instance).to receive(:cc_client).and_return(stubbed_cc_client)
+    #    allow_any_instance_of(
+    #      Dependabot::Clients::CodeCommit)
+    allow(my_instance).to receive(:fetch_default_branch).with("gocardless").and_return("")
+    allow(my_instance).to receive(:fetch_commit).with("gocardless",
+                                                      "").and_return("9c8376e9b2e943c2c72fac4b239876f377f0305a")
+    allow(my_instance).to receive(:fetch_commit).with("gocardless", "my_branch")
+                                                .and_return("8c8376e9b2e943c2c72fac4b239876f377f0305b")
+    allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "a/pp/requirements.txt")
+                                                       .and_return("/requirements.txt")
+    allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "sha", "app/requirements.txt")
+                                                       .and_return("/requirements.txt")
+    allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "sha", "a/pp/requirements.txt")
+                                                       .and_return("/requirements.txt")
+    allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "sha", "requirements.txt")
+                                                       .and_return("required_rubygems_version")
+    allow(my_instance)
+      .to receive(:cc_client).and_return(stubbed_cc_client)
   end
 
   describe "#commit" do
@@ -1290,18 +1307,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
       end
 
       context "when a dependency file can't be found" do
+        let(:my_error) { Dependabot::DependencyFileNotFound.new, "/requirements2.txt" }
         before do
+          allow(my_instance).to receive(:fetch_file_contents).with("gocardless", "sha", "/requirements2.txt")
+                                                  .and_raise(my_error)
           stubbed_cc_client
             .stub_responses(
               :get_file,
               "FileDoesNotExistException"
             )
+
         end
 
         it "raises a custom error" do
           expect { file_fetcher_instance.files }
             .to raise_error(Dependabot::DependencyFileNotFound) do |error|
-            expect(error.file_path).to eq("/requirements.txt")
+            expect(error.file_path).to eq("/requirements2.txt")
           end
         end
       end
