@@ -69,6 +69,13 @@ module Dependabot
 
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
+          # Exception raised to handle issue that arises when buildfiles function (see this file)
+          # removes the build file that contains the dependency itself. So no build file exists to
+          # update dependency, This behaviour is erratic and happens for exteremely small number of users
+          # can be handled once a permanent solution is found.
+
+          raise "No files have changed!" if buildfile.nil?
+
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
           elsif new_req.dig(:metadata, :dependency_set)
