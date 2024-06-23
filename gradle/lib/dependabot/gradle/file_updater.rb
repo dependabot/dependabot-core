@@ -71,8 +71,8 @@ module Dependabot
 
           # Exception raised to handle issue that arises when buildfiles function (see this file)
           # removes the build file that contains the dependency itself. So no build file exists to
-          # update dependency, This behaviour is erratic and happens for extremely small number of users
-          # can be handled once a permanent solution is found.
+          # update dependency, This behaviour is evident for only extremely small number of users
+          # that have added separate repos as sub-modules in parent projects
 
           raise "No files changed!" if buildfile.nil?
 
