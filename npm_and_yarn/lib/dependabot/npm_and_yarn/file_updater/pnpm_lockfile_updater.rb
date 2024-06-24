@@ -141,7 +141,7 @@ module Dependabot
             content = updated_package_json_content(file)
             source = "  \"dependencies\""
             target = "  \"packageManager\": \"pnpm@#{version}.0.0\",\n  \"dependencies\""
-            content = content.to_s.gsub(source, target)
+            content = content.to_s.gsub(source, target) unless content.to_s.include?("Error:") || version.nil?
             File.write(path, content)
           end
         end
