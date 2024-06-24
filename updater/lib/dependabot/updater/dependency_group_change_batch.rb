@@ -49,14 +49,10 @@ module Dependabot
         # the DependencyChange.updated_dependencies, we need to add the updated dependencies to the global list
         merge_dependency_changes(dependency_change.updated_dependencies)
 
-        if Dependabot::Experiments.enabled?(:dependency_has_directory)
-          merge_file_and_dependency_changes(
-            dependency_change.updated_dependencies,
-            dependency_change.updated_dependency_files
-          )
-        else
-          merge_file_changes(dependency_change.updated_dependency_files)
-        end
+        merge_file_and_dependency_changes(
+          dependency_change.updated_dependencies,
+          dependency_change.updated_dependency_files
+        )
 
         Dependabot.logger.debug("Dependencies updated:")
         debug_updated_dependencies
@@ -79,33 +75,6 @@ module Dependabot
       # presentation concern.
       def merge_dependency_changes(updated_dependencies)
         @updated_dependencies.concat(updated_dependencies)
-      end
-
-      def merge_file_changes(updated_dependency_files)
-        updated_dependency_files.each do |updated_file|
-          if updated_file.vendored_file?
-            merge_file_to_batch(updated_file, @vendored_dependency_batch)
-          else
-            merge_file_to_batch(updated_file, @dependency_file_batch)
-          end
-        end
-      end
-
-      def merge_file_to_batch(file, batch)
-        change_count = if (existing_file = batch[file.path])
-                         existing_file.fetch(:change_count, 0)
-                       else
-                         # The file is newly encountered
-                         Dependabot.logger.debug("File #{file.operation}d: '#{file.path}'")
-                         0
-                       end
-
-        batch[file.path] = {
-          file: file,
-          updated_dependencies: batch.dig(file.path, :updated_dependencies) || [],
-          changed: true,
-          changes: change_count + 1
-        }
       end
 
       def merge_file_and_dependency_changes(updated_dependencies, updated_dependency_files)

@@ -55,15 +55,7 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       end
     end
 
-    context "when the :dependency_has_directory ff is enabled" do
-      before do
-        Dependabot::Experiments.register(:dependency_has_directory, true)
-      end
-
-      after do
-        Dependabot::Experiments.reset!
-      end
-
+    context "when there are multiple directories" do
       let(:dependency_change) do
         Dependabot::DependencyChange.new(
           job: job,

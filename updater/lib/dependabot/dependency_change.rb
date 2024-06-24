@@ -182,7 +182,7 @@ module Dependabot
           {
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
-            "directory" => should_consider_directory? ? dep.directory : nil,
+            "directory" => dep.directory,
             "dependency-removed" => dep.removed? ? true : nil
           }.compact
         end
@@ -201,11 +201,6 @@ module Dependabot
       return "" if updated_dependency_files.empty?
 
       T.must(updated_dependency_files.first).directory
-    end
-
-    sig { returns(T::Boolean) }
-    def should_consider_directory?
-      grouped_update? && Dependabot::Experiments.enabled?("dependency_has_directory")
     end
   end
 end
