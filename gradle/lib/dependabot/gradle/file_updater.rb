@@ -12,6 +12,17 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      class BuildFileNotFound < StandardError
+        def initialize(message:, error_context:)
+          super(message)
+          @error_context = error_context
+        end
+
+        def sentry_context
+          { extra: @error_context }
+        end
+      end
+
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
 
@@ -71,10 +82,15 @@ module Dependabot
 
           # Exception raised to handle issue that arises when buildfiles function (see this file)
           # removes the build file that contains the dependency itself. So no build file exists to
-          # update dependency, This behaviour is evident for only extremely small number of users
+          # update dependency, This behaviour is evident for extremely small number of users
           # that have added separate repos as sub-modules in parent projects
 
-          raise "No files changed!" if buildfile.nil?
+          if buildfile.nil?
+            raise BuildFileNotFound.new(
+              message: "No build file found to update the dependency.",
+              error_context: dependency.name
+            )
+          end
 
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
