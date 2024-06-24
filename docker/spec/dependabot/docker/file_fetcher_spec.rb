@@ -32,9 +32,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with no Dockerfile or Kubernetes YAML file" do
     before do

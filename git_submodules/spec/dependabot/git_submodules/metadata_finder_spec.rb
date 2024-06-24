@@ -42,8 +42,6 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     # Not hosted on GitHub Enterprise Server
     stub_request(:get, "https://example.com/status").to_return(
@@ -52,6 +50,8 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       headers: {}
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://github.com/example/manifesto.git" }
 
       it do
-        is_expected
+        expect(commits_url)
           .to eq("https://github.com/example/manifesto/compare/" \
                  "7638417db6d59f3c431d3e1f261cc637155684cd..." \
                  "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
 
       it do
-        is_expected
+        expect(commits_url)
           .to eq("https://bitbucket.org/example/manifesto/branches/" \
                  "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7" \
                  "..7638417db6d59f3c431d3e1f261cc637155684cd")
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://contoso@dev.azure.com/contoso/MyProject/_git/manifesto" }
 
       it do
-        is_expected
+        expect(commits_url)
           .to eq("https://dev.azure.com/contoso/MyProject/_git/manifesto/branchCompare" \
                  "?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
                  "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")

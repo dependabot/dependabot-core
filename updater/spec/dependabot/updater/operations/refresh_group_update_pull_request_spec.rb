@@ -70,6 +70,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
     before do
       stub_rubygems_calls
+      Dependabot::Experiments.register("dependency_has_directory", true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
     end
 
     it "updates the existing pull request without errors" do
@@ -272,15 +277,15 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     let(:group) do
-      instance_double("Dependabot::DependencyGroup", rules: { "update-types" => update_types })
+      instance_double(Dependabot::DependencyGroup, rules: { "update-types" => update_types })
     end
 
     let(:dependency) do
-      instance_double("Dependabot::Dependency", version: current_version)
+      instance_double(Dependabot::Dependency, version: current_version)
     end
 
     let(:checker) do
-      instance_double("Dependabot::UpdateCheckers::Base", latest_version: latest_version)
+      instance_double(Dependabot::UpdateCheckers::Base, latest_version: latest_version)
     end
 
     before do

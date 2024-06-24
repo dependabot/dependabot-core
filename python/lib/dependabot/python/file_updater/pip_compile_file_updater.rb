@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "open3"
@@ -400,10 +400,13 @@ module Dependabot
             args << index_url if index_url
 
             begin
-              native_helper_hashes = SharedHelpers.run_helper_subprocess(
-                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-                function: "get_dependency_hash",
-                args: args
+              native_helper_hashes = T.cast(
+                SharedHelpers.run_helper_subprocess(
+                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                  function: "get_dependency_hash",
+                  args: args
+                ),
+                T::Array[T::Hash[String, String]]
               ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
 
               hashes.concat(native_helper_hashes)
@@ -548,7 +551,7 @@ module Dependabot
         # If the files we need to update require one another then we need to
         # update them in the right order
         def order_filenames_for_compilation(filenames)
-          ordered_filenames = []
+          ordered_filenames = T.let([], T::Array[String])
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=

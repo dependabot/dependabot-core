@@ -64,11 +64,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   let(:crates_response) { fixture("crates_io_responses", crates_fixture_name) }
   let(:crates_url) { "https://crates.io/api/v1/crates/#{dependency_name}" }
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, crates_url).to_return(status: 200, body: crates_response)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -195,10 +195,10 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(Gem::Version.new("0.1.39"))
+      expect(lowest_security_fix_version).to eq(Gem::Version.new("0.1.39"))
     end
 
     context "with a security vulnerability" do
@@ -213,7 +213,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("0.1.40"))
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("0.1.40"))
       end
     end
   end

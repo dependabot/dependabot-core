@@ -63,8 +63,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
   before do
     stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
@@ -73,15 +71,15 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
   end
 
+  it_behaves_like "a dependency file updater"
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { file_updater_instance.updated_dependency_files }
 
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         puts dependency_files.map(&:name)
-        expect(updated_files.map(&:name)).to match_array([
-          "Proj1/Proj1/Proj1.csproj"
-        ])
+        expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
         expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
           {
@@ -116,10 +114,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_previous_version) { "1.0.0" }
 
     it "updates the wildcard project" do
-      expect(updated_files.map(&:name)).to match_array([
-        "Proj1/Proj1/Proj1.csproj",
-        "Proj2/Proj2.csproj"
-      ])
+      expect(updated_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj", "Proj2/Proj2.csproj")
 
       expect(file_updater_instance.send(:testonly_update_tooling_calls)).to eq(
         {

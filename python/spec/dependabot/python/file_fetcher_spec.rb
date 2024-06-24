@@ -148,6 +148,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements.json")
       end
+      let(:requirements_fixture_name) { "requirements_content.json" }
 
       before do
         stub_request(:get, url + "requirements.txt?ref=sha")
@@ -158,8 +159,6 @@ RSpec.describe Dependabot::Python::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
       end
-
-      let(:requirements_fixture_name) { "requirements_content.json" }
 
       it "fetches the requirements.txt file" do
         expect(file_fetcher_instance.files.count).to eq(1)
@@ -293,9 +292,6 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "contents_python_pipfile.json"),
             headers: { "content-type" => "application/json" }
           )
-      end
-
-      before do
         stub_request(:get, url + "Pipfile.lock?ref=sha")
           .with(headers: { "Authorization" => "token token" })
           .to_return(
@@ -1182,9 +1178,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "doesn't raise a path dependency error" do
         expect(file_fetcher_instance.files.count).to eq(3)
-        expect(file_fetcher_instance.files.map(&:name)).to match_array(
-          ["requirements-test.txt", "pyproject.toml", "setup.cfg"]
-        )
+        expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml",
+                                                                           "setup.cfg")
       end
     end
 

@@ -250,22 +250,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "Cargo.toml",
-                  requirement: "^1.5.0",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/Cargo.toml",
-                  requirement: "^1.*.*",
-                  groups: [],
-                  source: nil
-                }
-              ]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "Cargo.toml",
+              requirement: "^1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/Cargo.toml",
+              requirement: "^1.*.*",
+              groups: [],
+              source: nil
+            })
           end
         end
 
@@ -420,22 +415,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.*.*" }
 
           it "updates only the required requirements" do
-            expect(updater.updated_requirements).to match_array(
-              [
-                {
-                  file: "Cargo.toml",
-                  requirement: req_string,
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "another/Cargo.toml",
-                  requirement: "^1.*.*",
-                  groups: [],
-                  source: nil
-                }
-              ]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "Cargo.toml",
+              requirement: req_string,
+              groups: [],
+              source: nil
+            }, {
+              file: "another/Cargo.toml",
+              requirement: "^1.*.*",
+              groups: [],
+              source: nil
+            })
           end
         end
       end

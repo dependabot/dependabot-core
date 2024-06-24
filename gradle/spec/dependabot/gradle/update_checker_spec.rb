@@ -51,12 +51,12 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       "com/google/guava/guava/maven-metadata.xml"
   end
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, maven_central_metadata_url)
       .to_return(status: 200, body: maven_central_releases)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -169,10 +169,10 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(version_class.new("23.4-jre"))
+      expect(lowest_security_fix_version).to eq(version_class.new("23.4-jre"))
     end
 
     context "with a security vulnerability" do
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(version_class.new("23.5-jre"))
+        expect(lowest_security_fix_version).to eq(version_class.new("23.5-jre"))
       end
     end
   end

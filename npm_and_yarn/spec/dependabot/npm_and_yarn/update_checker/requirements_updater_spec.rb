@@ -304,19 +304,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.x.x" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "package.json",
-                requirement: "^1.5.0",
-                groups: [],
-                source: nil
-              }, {
-                file: "another/package.json",
-                requirement: "^1.x.x",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "package.json",
+              requirement: "^1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/package.json",
+              requirement: "^1.x.x",
+              groups: [],
+              source: nil
+            })
           end
 
           context "when one of them is a pre-release" do
@@ -329,19 +327,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
               end
 
               it "updates the non-prerelease requirement" do
-                expect(updater.updated_requirements).to match_array(
-                  [{
-                    file: "package.json",
-                    requirement: "1.1.0-alpha.1",
-                    groups: [],
-                    source: nil
-                  }, {
-                    file: "another/package.json",
-                    requirement: "1.1.0-alpha.1",
-                    groups: [],
-                    source: nil
-                  }]
-                )
+                expect(updater.updated_requirements).to contain_exactly({
+                  file: "package.json",
+                  requirement: "1.1.0-alpha.1",
+                  groups: [],
+                  source: nil
+                }, {
+                  file: "another/package.json",
+                  requirement: "1.1.0-alpha.1",
+                  groups: [],
+                  source: nil
+                })
               end
             end
           end
@@ -621,19 +617,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.x.x" }
 
           it "updates the requirement that needs to be updated" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "package.json",
-                requirement: "^1.2.3",
-                groups: [],
-                source: nil
-              }, {
-                file: "another/package.json",
-                requirement: "^1.x.x",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "package.json",
+              requirement: "^1.2.3",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/package.json",
+              requirement: "^1.x.x",
+              groups: [],
+              source: nil
+            })
           end
 
           context "when dealing with the same file" do
@@ -652,19 +646,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
             end
 
             it "updates both requirements" do
-              expect(updater.updated_requirements).to match_array(
-                [{
-                  requirement: "1.5.x",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: nil
-                }, {
-                  requirement: "^1.5.0",
-                  file: "package.json",
-                  groups: ["devDependencies"],
-                  source: nil
-                }]
-              )
+              expect(updater.updated_requirements).to contain_exactly({
+                requirement: "1.5.x",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }, {
+                requirement: "^1.5.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source: nil
+              })
             end
           end
         end

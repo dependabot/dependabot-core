@@ -252,13 +252,13 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         }]
       end
 
-      its(:length) { is_expected.to eq(4) }
-
       before do
         mock_service_pack_request("docker/setup-qemu-action")
         mock_service_pack_request("docker/setup-buildx-action")
         mock_service_pack_request("docker/login-action")
       end
+
+      its(:length) { is_expected.to eq(4) }
 
       context "when dealing with the first dependency" do
         subject(:dependency) { dependencies.first }

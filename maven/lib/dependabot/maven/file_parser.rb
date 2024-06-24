@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers"
@@ -46,7 +47,7 @@ module Dependabot
       def pomfile_dependencies(pom)
         dependency_set = DependencySet.new
 
-        errors = []
+        errors = T.let([], T::Array[Dependabot::DependencyFileNotEvaluatable])
         doc = Nokogiri::XML(pom.content)
         doc.remove_namespaces!
 
@@ -64,7 +65,7 @@ module Dependabot
           errors << e
         end
 
-        raise errors.first if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end
@@ -72,7 +73,7 @@ module Dependabot
       def extensionfile_dependencies(extension)
         dependency_set = DependencySet.new
 
-        errors = []
+        errors = T.let([], T::Array[Dependabot::DependencyFileNotEvaluatable])
         doc = Nokogiri::XML(extension.content)
         doc.remove_namespaces!
 
@@ -83,7 +84,7 @@ module Dependabot
           errors << e
         end
 
-        raise errors.first if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end

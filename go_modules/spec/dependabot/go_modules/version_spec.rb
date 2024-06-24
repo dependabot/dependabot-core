@@ -78,13 +78,13 @@ RSpec.describe Dependabot::GoModules::Version do
   end
 
   describe "#inspect" do
-    subject { version.inspect }
+    subject(:version_inspect) { version.inspect }
 
     context "with a version that Gem::Version would mangle" do
       let(:version_string) { "1.0.0-pre1" }
 
       it "doesn't mangle it" do
-        is_expected.to eq "#<Dependabot::GoModules::Version \"1.0.0-pre1\">"
+        expect(version_inspect).to eq "#<Dependabot::GoModules::Version \"1.0.0-pre1\">"
       end
     end
   end
@@ -184,7 +184,9 @@ RSpec.describe Dependabot::GoModules::Version do
       "v1.1.0-rc0",
       "v1.1.0-rc5",
       "v1.1.0-rc6",
-      "v1.1.0"
+      "v1.1.0",
+      "v1.34.2-20220907172603-9a877cf260e1.1",
+      "v1.34.2-20220907172603-9a877cf260e1.2"
     ]
     sorted_versions.combination(2).each do |lhs, rhs|
       it "'#{lhs}' < '#{rhs}'" do
