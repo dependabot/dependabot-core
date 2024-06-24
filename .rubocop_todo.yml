@@ -22,14 +22,6 @@ RSpec/AnyInstance:
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
-# Offense count: 7
-RSpec/BeforeAfterAll:
-  Exclude:
-    - 'nuget/spec/dependabot/nuget/update_checker/dependency_finder_spec.rb'
-    - 'pub/spec/dependabot/pub/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-
 # Offense count: 1286
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
@@ -93,11 +85,6 @@ RSpec/MessageChain:
 # SupportedStyles: have_received, receive
 RSpec/MessageSpies:
   Enabled: false
-
-# Offense count: 1
-RSpec/MultipleDescribes:
-  Exclude:
-    - 'common/spec/dependabot/errors_spec.rb'
 
 # Offense count: 1380
 RSpec/MultipleExpectations:
