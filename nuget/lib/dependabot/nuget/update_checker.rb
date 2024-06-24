@@ -37,7 +37,7 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T.nilable(Dependabot::Nuget::Version)) }
+      sig { override.returns(Dependabot::Version) }
       def lowest_security_fix_version
         lowest_security_fix_version_details&.fetch(:version)
       end
