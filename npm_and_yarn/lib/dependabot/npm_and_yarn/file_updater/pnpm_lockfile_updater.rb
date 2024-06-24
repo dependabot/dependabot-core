@@ -51,7 +51,9 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               run_pnpm_updater
 
-              write_final_package_json_files
+              version = Helpers.pnpm_version_numeric(pnpm_lock)
+
+              write_final_package_json_files(version)
 
               run_pnpm_install
 
@@ -132,11 +134,15 @@ module Dependabot
           raise PrivateSourceAuthenticationFailure, reg
         end
 
-        def write_final_package_json_files
+        def write_final_package_json_files(version)
           package_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, updated_package_json_content(file))
+            content = updated_package_json_content(file)
+            source = "  \"dependencies\""
+            target = "  \"packageManager\": \"pnpm@#{version}.0.0\",\n  \"dependencies\""
+            content = content.to_s.gsub(source, target)
+            File.write(path, content)
           end
         end
 
