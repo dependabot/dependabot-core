@@ -43,28 +43,22 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       package = File.basename(f, ".json")
       @server.unmount "/api/packages/#{package}"
     end
-  end
-
-  before do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.mount_proc "/api/packages/#{package}" do |_req, res|
-        res.body = File.read(File.join("..", "..", "..", f))
-      end
-    end
-  end
-
-  after(:all) do
     @server.shutdown
   end
 
-  before(:all) do
+  before do
     # Because we do the networking in dependency_services we have to run an
     # actual web server.
     dev_null = WEBrick::Log.new("/dev/null", 7)
     @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
     Thread.new do
       @server.start
+    end
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.mount_proc "/api/packages/#{package}" do |_req, res|
+        res.body = File.read(File.join("..", "..", "..", f))
+      end
     end
   end
 
