@@ -69,9 +69,15 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   let(:sample) { "simple" }
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
 
-  it_behaves_like "an update checker"
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      @server.unmount "/api/packages/#{package}"
+    end
+    @server.shutdown
+  end
 
-  before(:all) do
+  before do
     # Because we do the networking in dependency_services we have to run an
     # actual web server.
     dev_null = WEBrick::Log.new("/dev/null", 7)
@@ -79,13 +85,6 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     Thread.new do
       @server.start
     end
-  end
-
-  after(:all) do
-    @server.shutdown
-  end
-
-  before do
     sample_files.each do |f|
       package = File.basename(f, ".json")
       @server.mount_proc "/api/packages/#{package}" do |_req, res|
@@ -97,12 +96,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
-  after do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
-    end
-  end
+  it_behaves_like "an update checker"
 
   context "when given an outdated dependency, not requiring unlock" do
     let(:dependency_name) { "collection" }
@@ -555,7 +549,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
 
       it "can update" do
-        expect(checker.vulnerable?).to be_truthy
+        expect(checker).to be_vulnerable
         expect(checker.lowest_resolvable_security_fix_version).to eq("2.0.0")
         expect(updated_dependencies).to eq [
           {

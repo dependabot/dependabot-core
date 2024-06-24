@@ -184,7 +184,9 @@ RSpec.describe Dependabot::GoModules::Version do
       "v1.1.0-rc0",
       "v1.1.0-rc5",
       "v1.1.0-rc6",
-      "v1.1.0"
+      "v1.1.0",
+      "v1.34.2-20220907172603-9a877cf260e1.1",
+      "v1.34.2-20220907172603-9a877cf260e1.2"
     ]
     sorted_versions.combination(2).each do |lhs, rhs|
       it "'#{lhs}' < '#{rhs}'" do

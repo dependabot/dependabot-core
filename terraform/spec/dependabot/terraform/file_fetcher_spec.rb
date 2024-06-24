@@ -20,11 +20,11 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   after do
     FileUtils.rm_rf(repo_contents_path)
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with Terraform files" do
     let(:project_name) { "versions_file" }

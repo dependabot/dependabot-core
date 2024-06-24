@@ -66,9 +66,6 @@ RSpec.describe Dependabot::Clients::Bitbucket do
         stub_request(:get, default_reviewers_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
           .to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
-      end
-
-      before do
         stub_request(:get, current_user_url)
           .with(headers: { "Authorization" => "Bearer #{access_token}" })
           .to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))

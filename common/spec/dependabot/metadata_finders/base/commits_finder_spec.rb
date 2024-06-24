@@ -180,48 +180,39 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
         before do
           allow(builder)
-            .to receive(:fetch_dependency_tags)
-            .and_return(
-              %w(
-                @pollyjs/utils@0.1.0
-                @pollyjs/persister@0.2.0
-                @pollyjs/persister@0.1.0
-                @pollyjs/node-server@0.2.0
-                @pollyjs/node-server@0.1.0
-                @pollyjs/node-server@0.0.2
-                @pollyjs/node-server@0.0.1
-                @pollyjs/ember-cli@0.2.1
-                @pollyjs/ember-cli@0.2.0
-                @pollyjs/ember-cli@0.1.0
-                @pollyjs/ember-cli@0.0.2
-                @pollyjs/ember-cli@0.0.1
-                @pollyjs/ember@0.2.1
-                @pollyjs/ember@0.2.0
-                @pollyjs/ember@0.1.0
-                @pollyjs/ember@0.0.2
-                @pollyjs/ember@0.0.1
-                @pollyjs/core@0.3.0
-                @pollyjs/core@0.2.0
-                @pollyjs/core@0.1.0
-                @pollyjs/core@0.0.2
-                @pollyjs/core@0.0.1
-                @pollyjs/cli@0.1.1
-                @pollyjs/cli@0.1.0
-                @pollyjs/cli@0.0.2
-                @pollyjs/cli@0.0.1
-                @pollyjs/adapter@0.3.0
-                @pollyjs/adapter@0.2.0
-                @pollyjs/adapter@0.1.0
-                @pollyjs/adapter@0.0.2
-                @pollyjs/adapter@0.0.1
-              )
-            )
-        end
-
-        before do
-          allow(builder)
-            .to receive(:reliable_source_directory?)
-            .and_return(true)
+            .to receive_messages(fetch_dependency_tags: %w(
+              @pollyjs/utils@0.1.0
+              @pollyjs/persister@0.2.0
+              @pollyjs/persister@0.1.0
+              @pollyjs/node-server@0.2.0
+              @pollyjs/node-server@0.1.0
+              @pollyjs/node-server@0.0.2
+              @pollyjs/node-server@0.0.1
+              @pollyjs/ember-cli@0.2.1
+              @pollyjs/ember-cli@0.2.0
+              @pollyjs/ember-cli@0.1.0
+              @pollyjs/ember-cli@0.0.2
+              @pollyjs/ember-cli@0.0.1
+              @pollyjs/ember@0.2.1
+              @pollyjs/ember@0.2.0
+              @pollyjs/ember@0.1.0
+              @pollyjs/ember@0.0.2
+              @pollyjs/ember@0.0.1
+              @pollyjs/core@0.3.0
+              @pollyjs/core@0.2.0
+              @pollyjs/core@0.1.0
+              @pollyjs/core@0.0.2
+              @pollyjs/core@0.0.1
+              @pollyjs/cli@0.1.1
+              @pollyjs/cli@0.1.0
+              @pollyjs/cli@0.0.2
+              @pollyjs/cli@0.0.1
+              @pollyjs/adapter@0.3.0
+              @pollyjs/adapter@0.2.0
+              @pollyjs/adapter@0.1.0
+              @pollyjs/adapter@0.0.2
+              @pollyjs/adapter@0.0.1
+            ), reliable_source_directory?: true)
         end
 
         it do
@@ -935,30 +926,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
           before do
             allow(builder)
-              .to receive(:fetch_dependency_tags)
-              .and_return(
-                %w(
-                  @pollyjs/ember-cli@0.2.1
-                  @pollyjs/ember-cli@0.2.0
-                  @pollyjs/ember-cli@0.1.0
-                  @pollyjs/ember-cli@0.0.2
-                  @pollyjs/ember-cli@0.0.1
-                  @pollyjs/ember@0.2.1
-                  @pollyjs/ember@0.2.0
-                  @pollyjs/ember@0.1.0
-                  @pollyjs/ember@0.0.2
-                  @pollyjs/ember@0.0.1
-                )
-              )
-          end
-
-          before do
-            allow(builder)
-              .to receive(:reliable_source_directory?)
-              .and_return(true)
-          end
-
-          before do
+              .to receive_messages(fetch_dependency_tags: %w(
+                @pollyjs/ember-cli@0.2.1
+                @pollyjs/ember-cli@0.2.0
+                @pollyjs/ember-cli@0.1.0
+                @pollyjs/ember-cli@0.0.2
+                @pollyjs/ember-cli@0.0.1
+                @pollyjs/ember@0.2.1
+                @pollyjs/ember@0.2.0
+                @pollyjs/ember@0.1.0
+                @pollyjs/ember@0.0.2
+                @pollyjs/ember@0.0.1
+              ), reliable_source_directory?: true)
             stub_request(
               :get,
               "https://api.github.com/repos/netflix/pollyjs/commits?" \
@@ -981,7 +960,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits relevant to the given path" do
-            expect(subject).to contain_exactly({
+            expect(commits).to contain_exactly({
               message: "feat: Custom persister support\n\n" \
                        "* feat: Custom persister support\r\n\r\n" \
                        "* Create a @pollyjs/persister package\r\n" \
@@ -1039,7 +1018,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Added signature for changeset f275e318641f",
             sha: "deae742eacfa985bd20f47a12a8fee6ce2e0447c",
             html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
@@ -1086,7 +1065,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Merged PR 2: Deleted README.md",
             sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
             html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
@@ -1123,7 +1102,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it "returns an array of commits" do
-            expect(subject).to contain_exactly({
+            expect(commits).to contain_exactly({
               message: "Merged PR 2: Deleted README.md",
               sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
               html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
@@ -1178,7 +1157,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
 
         it "returns an array of commits" do
-          expect(subject).to contain_exactly({
+          expect(commits).to contain_exactly({
             message: "Add find command\n",
             sha: "8d7d08fb9a7a439b3e6a1e6a1a34cbdb4273de87",
             html_url: "https://gitlab.com/org/business/commit/" \

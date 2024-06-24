@@ -56,14 +56,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#vulnerable?" do
     context "when the dependency has multiple versions" do
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       it "returns false when there is a newer version available" do
-        expect(checker.up_to_date?).to be_falsy
+        expect(checker).not_to be_up_to_date
       end
     end
 
@@ -177,7 +177,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       it "is up to date because there's nothing to update" do
-        expect(checker.up_to_date?).to be_truthy
+        expect(checker).to be_up_to_date
       end
     end
   end

@@ -42,8 +42,6 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     # Not hosted on GitHub Enterprise Server
     stub_request(:get, "https://example.com/status").to_return(
@@ -52,6 +50,8 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       headers: {}
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

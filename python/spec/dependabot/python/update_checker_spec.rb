@@ -76,11 +76,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }

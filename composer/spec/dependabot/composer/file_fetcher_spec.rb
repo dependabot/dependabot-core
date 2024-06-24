@@ -27,8 +27,6 @@ RSpec.describe Dependabot::Composer::FileFetcher do
     )
   end
 
-  it_behaves_like "a dependency file fetcher"
-
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -54,6 +52,8 @@ RSpec.describe Dependabot::Composer::FileFetcher do
         headers: { "content-type" => "application/json" }
       )
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the composer.json and composer.lock" do
     expect(file_fetcher_instance.files.map(&:name))

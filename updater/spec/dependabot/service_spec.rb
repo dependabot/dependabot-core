@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Service do
 
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some gems" }
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "some gems")
       ]
     end
 
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::Service do
 
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some gems" }
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "some gems")
       ]
     end
 

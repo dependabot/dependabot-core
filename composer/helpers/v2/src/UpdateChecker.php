@@ -8,7 +8,9 @@ use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
+use Composer\Package\Link;
 use Composer\Package\PackageInterface;
+use Composer\Package\Version\VersionParser;
 
 final class UpdateChecker
 {
@@ -48,10 +50,22 @@ final class UpdateChecker
             $io->loadConfiguration($config);
         }
 
+        $package = $composer->getPackage();
+
+        $versionParser = new VersionParser();
+
+        $constraint = $versionParser->parseConstraints($latestAllowableVersion); // your version constraint
+        $packageLink = new Link($package->getName(), $dependencyName, $constraint);
+
+        $requires = $package->getRequires();
+        $requires[$dependencyName] = $packageLink;
+
+        $package->setRequires($requires);
+
         $install = new Installer(
             $io,
             $config,
-            $composer->getPackage(),  // @phpstan-ignore-line
+            $package,  // @phpstan-ignore-line
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),
@@ -75,8 +89,7 @@ final class UpdateChecker
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
         if ($composer->getLocker()->isLocked()) {
-            $dependencyNameWithVersion = $dependencyName . ':' . $latestAllowableVersion;
-            $install->setUpdateAllowList([$dependencyNameWithVersion]);
+            $install->setUpdateAllowList([$dependencyName]);
         }
 
         $install->run();

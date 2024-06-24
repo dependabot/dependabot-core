@@ -59,8 +59,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("2.0.4")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
     context "with an application using a >= PHP constraint" do
@@ -68,12 +69,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
 
       context "when the minimum version is invalid" do
         let(:dependency_version) { "4.2.0" }
         let(:string_req) { "4.2.0" }
+        let(:latest_allowable_version) { Gem::Version.new("4.3.1") }
 
         it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
       end
@@ -85,6 +88,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
+        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
         it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
       end
@@ -103,7 +107,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with a dependency that's provided by another dep" do
       let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
-      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
@@ -118,7 +122,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_version) { "1.0.2" }
       let(:requirements_to_unlock) { :none }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.0.2")) }
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
     end
 
     context "with a library that requires itself" do
@@ -266,8 +270,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         }]
       end
 
-      it "does not raises an Dependabot::GitDependenciesNotReachable error, as there is no update." do
-        expect(subject).to eq(Dependabot::Composer::Version.new("1.0.1"))
+      it "raises a Dependabot::GitDependenciesNotReachable error" do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls)
+              .to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
       end
     end
 

@@ -97,9 +97,6 @@ RSpec.describe namespace::MultiDependencyUpdater do
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-  end
-
-  before do
     stub_request(:get, jcenter_metadata_url_protoc)
       .to_return(
         status: 200,
