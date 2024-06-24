@@ -123,7 +123,7 @@ module Dependabot
           missing_dep = lockfile_dependencies(pnpm_lock)
                         .find { |dep| dep.name == package_name }
 
-          raise PrivateSourceAuthenticationFailure, package_name unless missing_dep
+          raise MissingDependencyInRegistry, package_name unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,

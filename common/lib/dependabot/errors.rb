@@ -191,6 +191,11 @@ module Dependabot
         "error-type": "private_source_authentication_failure",
         "error-detail": { source: error.source }
       }
+    when Dependabot::MissingDependencyInRegistry
+      {
+        "error-type": "missing_dependency_in_registry",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceTimedOut
       {
         "error-type": "private_source_timed_out",
@@ -508,6 +513,20 @@ module Dependabot
     def initialize(environment_variable)
       @environment_variable = environment_variable
       super("Missing environment variable #{@environment_variable}")
+    end
+  end
+
+  class MissingDependencyInRegistry < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: T.nilable(String)).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(T.must(source)), String)
+      msg = "The following dependency can not be found in registry: #{@source}"
+      super(msg)
     end
   end
 

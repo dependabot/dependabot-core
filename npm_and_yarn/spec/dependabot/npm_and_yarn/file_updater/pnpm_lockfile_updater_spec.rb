@@ -221,7 +221,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+          .to raise_error(Dependabot::MissingDependencyInRegistry)
       end
     end
   end
