@@ -6,13 +6,6 @@
 # Note that changes in the inspected code, or installation of new
 # versions of RuboCop, may require this file to be generated again.
 
-# Offense count: 7
-RSpec/BeforeAfterAll:
-  Exclude:
-    - 'nuget/spec/dependabot/nuget/update_checker/dependency_finder_spec.rb'
-    - 'pub/spec/dependabot/pub/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
 # Offense count: 1286
 # Configuration parameters: CountAsOne.
@@ -78,11 +71,6 @@ RSpec/MessageChain:
 RSpec/MessageSpies:
   Enabled: false
 
-# Offense count: 1
-RSpec/MultipleDescribes:
-  Exclude:
-    - 'common/spec/dependabot/errors_spec.rb'
-
 # Offense count: 1380
 RSpec/MultipleExpectations:
   Max: 17
@@ -91,12 +79,6 @@ RSpec/MultipleExpectations:
 # Configuration parameters: AllowSubject.
 RSpec/MultipleMemoizedHelpers:
   Max: 30
-
-# Offense count: 500
-# Configuration parameters: EnforcedStyle, IgnoreSharedExamples.
-# SupportedStyles: always, named_only
-RSpec/NamedSubject:
-  Enabled: false
 
 # Offense count: 3871
 # Configuration parameters: AllowedGroups.
