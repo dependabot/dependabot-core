@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "docker_registry2"
@@ -7,10 +7,13 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "sorbet-runtime"
 
 module Dependabot
   module Docker
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
@@ -39,11 +42,12 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
         dockerfiles.each do |dockerfile|
-          dockerfile.content.each_line do |line|
+          T.must(dockerfile.content).each_line do |line|
             next unless FROM_LINE.match?(line)
 
             parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
@@ -75,15 +79,18 @@ module Dependabot
 
       private
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
         dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
+      sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
       def version_from(parsed_from_line)
         parsed_from_line.fetch("tag") || parsed_from_line.fetch("digest")
       end
 
+      sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T::Hash[String, T.nilable(String)]) }
       def source_from(parsed_from_line)
         source = {}
 
@@ -96,6 +103,7 @@ module Dependabot
         source
       end
 
+      sig { override.void }
       def check_required_files
         # Just check if there are any files at all.
         return if dependency_files.any?
@@ -103,6 +111,7 @@ module Dependabot
         raise "No Dockerfile!"
       end
 
+      sig { params(file: T.untyped).returns(Dependabot::FileParsers::Base::DependencySet) }
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
@@ -130,6 +139,10 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
+      sig do
+        params(file: T.untyped, details: T.untyped,
+               version: T.nilable(T.any(String, Dependabot::Version))).returns(Dependabot::Dependency)
+      end
       def build_image_dependency(file, details, version)
         Dependency.new(
           name: details.fetch("image"),
@@ -144,6 +157,7 @@ module Dependabot
         )
       end
 
+      sig { params(json_obj: T.anything).returns(T.untyped) }
       def deep_fetch_images(json_obj)
         case json_obj
         when Hash then deep_fetch_images_from_hash(json_obj)
@@ -152,6 +166,7 @@ module Dependabot
         end
       end
 
+      sig { params(json_object: T.untyped).returns(T::Array[T.untyped]) }
       def deep_fetch_images_from_hash(json_object)
         img = json_object.fetch("image", nil)
 
@@ -167,11 +182,13 @@ module Dependabot
         images + json_object.values.flat_map { |obj| deep_fetch_images(obj) }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
         dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
       end
 
+      sig { params(img_hash: T::Hash[String, T.nilable(String)]).returns(T::Array[String]) }
       def parse_helm(img_hash)
         tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
         return [] unless tag_value
@@ -179,7 +196,7 @@ module Dependabot
         repo = img_hash.fetch("repository", nil)
         return [] unless repo
 
-        tag_details = tag_value.to_s.match(TAG_WITH_DIGEST).named_captures
+        tag_details = T.must(tag_value.to_s.match(TAG_WITH_DIGEST)).named_captures
         tag = tag_details["tag"]
         return [repo] unless tag
 

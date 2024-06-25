@@ -1,18 +1,17 @@
 using System.Collections.Immutable;
 
+using NuGet.Build.Tasks;
+
+using NuGetUpdater.Core.Test.Update;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities;
 
 using TestFile = (string Path, string Content);
 
-public class MSBuildHelperTests
+public class MSBuildHelperTests : TestBase
 {
-    public MSBuildHelperTests()
-    {
-        MSBuildHelper.RegisterMSBuild();
-    }
-
     [Fact]
     public void GetRootedValue_FindsValue()
     {
@@ -20,10 +19,10 @@ public class MSBuildHelperTests
         var projectContents = """
             <Project>
                 <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>net8.0</TargetFramework>
                 </PropertyGroup>
                 <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                    <PackageReference Include="Some.Package" Version="$(PackageVersion1)" />
                 </ItemGroup>
             </Project>
             """;
@@ -41,10 +40,10 @@ public class MSBuildHelperTests
         Assert.Equal("""
             <Project>
                 <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>net8.0</TargetFramework>
                 </PropertyGroup>
                 <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="1.1.1" />
+                    <PackageReference Include="Some.Package" Version="1.1.1" />
                 </ItemGroup>
             </Project>
             """, evaluatedValue);
@@ -57,10 +56,10 @@ public class MSBuildHelperTests
         var projectContents = """
             <Project>
                 <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>net8.0</TargetFramework>
                 </PropertyGroup>
                 <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(PackageVersion1)" />
+                    <PackageReference Include="Some.Package" Version="$(PackageVersion1)" />
                 </ItemGroup>
             </Project>
             """;
@@ -110,15 +109,16 @@ public class MSBuildHelperTests
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
-    public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
+    [InlineData("<Project><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><TargetFrameworkVersion Condition='False'>v4.7.2</TargetFrameworkVersion></PropertyGroup></Project>", "netstandard2.0", null)]
+    [InlineData("<Project><PropertyGroup><TargetFramework>$(PropertyThatCannotBeResolved)</TargetFramework></PropertyGroup></Project>", null, null)]
+    public async Task TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
     {
         var projectPath = Path.GetTempFileName();
         try
         {
             File.WriteAllText(projectPath, projectContents);
             var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
-            var buildFile = ProjectBuildFile.Open(Path.GetDirectoryName(projectPath)!, projectPath);
-            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikers(ImmutableArray.Create(buildFile));
+            var (_buildFiles, actualTfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(Path.GetDirectoryName(projectPath)!, projectPath);
             AssertEx.Equal(expectedTfms, actualTfms);
         }
         finally
@@ -129,10 +129,13 @@ public class MSBuildHelperTests
 
     [Theory]
     [MemberData(nameof(GetTopLevelPackageDependencyInfosTestData))]
-    public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies)
+    public async Task TopLevelPackageDependenciesCanBeDetermined(TestFile[] buildFileContents, Dependency[] expectedTopLevelDependencies, MockNuGetPackage[] testPackages)
     {
         using var testDirectory = new TemporaryDirectory();
         var buildFiles = new List<ProjectBuildFile>();
+
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, testDirectory.DirectoryPath);
+
         foreach (var (path, content) in buildFileContents)
         {
             var fullPath = Path.Combine(testDirectory.DirectoryPath, path);
@@ -148,30 +151,29 @@ public class MSBuildHelperTests
     public async Task AllPackageDependenciesCanBeTraversed()
     {
         using var temp = new TemporaryDirectory();
-        var expectedDependencies = new Dependency[]
-        {
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+        MockNuGetPackage[] testPackages =
+        [
+            MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "netstandard2.0", [(null, [("Package.B", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "netstandard2.0", [(null, [("Package.C", "3.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.C", "3.0.0", "netstandard2.0", [(null, [("Package.D", "4.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.D", "4.0.0", "netstandard2.0"),
+        ];
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, temp.DirectoryPath);
+
+        Dependency[] expectedDependencies =
+        [
             new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-        };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            new("Package.A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
+            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+        ];
+        Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
             temp.DirectoryPath,
             "netstandard2.0",
-            [new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown)]);
+            [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)]
+        );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -179,101 +181,126 @@ public class MSBuildHelperTests
     public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists()
     {
         using var temp = new TemporaryDirectory();
-        var expectedDependencies = new Dependency[]
-        {
-            new("Castle.Core", "4.4.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.AspNet.TelemetryCorrelation", "1.0.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Caching.Abstractions", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Caching.Memory", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DiagnosticAdapter", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.PlatformAbstractions", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Moq", "4.16.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("MSTest.TestFramework", "2.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("System", "4.1.311.2", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Collections.Concurrent", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Collections.Immutable", "1.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Collections.NonGeneric", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Collections.Specialized", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel.TypeConverter", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Core", "3.5.21022.801", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("System.Data.Common", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Diagnostics.PerformanceCounter", "4.5.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Diagnostics.StackTrace", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Dynamic.Runtime", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.IO.FileSystem.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Linq", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Linq.Expressions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Net.WebHeaderCollection", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ObjectModel", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Private.DataContractSerialization", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Reflection.Emit", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Reflection.Emit.ILGeneration", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Reflection.Emit.Lightweight", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Reflection.Metadata", "1.4.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Reflection.TypeExtensions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.InteropServices.RuntimeInformation", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.Numerics", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.Serialization.Json", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.Serialization.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Security.Claims", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Security.Cryptography.OpenSsl", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Security.Cryptography.Primitives", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Security.Principal", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Text.RegularExpressions", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading.Thread", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading.ThreadPool", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Xml.ReaderWriter", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Xml.XDocument", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Xml.XmlDocument", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Xml.XmlSerializer", "4.3.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-        };
+        MockNuGetPackage[] testPackages =
+        [
+            MockNuGetPackage.CreateSimplePackage("Package.1A", "1.0.0", "net8.0", [(null, [("Package.1B", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1B", "2.0.0", "net8.0", [(null, [("Package.1C", "3.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1C", "3.0.0", "net8.0", [(null, [("Package.1D", "4.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1D", "4.0.0", "net8.0", [(null, [("Package.1E", "5.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1E", "5.0.0", "net8.0", [(null, [("Package.1F", "6.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1F", "6.0.0", "net8.0", [(null, [("Package.1G", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1G", "7.0.0", "net8.0", [(null, [("Package.1H", "8.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1H", "8.0.0", "net8.0", [(null, [("Package.1I", "9.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1I", "9.0.0", "net8.0", [(null, [("Package.1J", "10.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1J", "10.0.0", "net8.0", [(null, [("Package.1K", "11.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1K", "11.0.0", "net8.0", [(null, [("Package.1L", "12.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1L", "12.0.0", "net8.0", [(null, [("Package.1M", "13.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1M", "13.0.0", "net8.0", [(null, [("Package.1N", "14.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1N", "14.0.0", "net8.0", [(null, [("Package.1O", "15.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1O", "15.0.0", "net8.0", [(null, [("Package.1P", "16.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1P", "16.0.0", "net8.0", [(null, [("Package.1Q", "17.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1Q", "17.0.0", "net8.0", [(null, [("Package.1R", "18.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1R", "18.0.0", "net8.0", [(null, [("Package.1S", "19.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1S", "19.0.0", "net8.0", [(null, [("Package.1T", "20.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1T", "20.0.0", "net8.0", [(null, [("Package.1U", "21.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1U", "21.0.0", "net8.0", [(null, [("Package.1V", "22.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1V", "22.0.0", "net8.0", [(null, [("Package.1W", "23.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1W", "23.0.0", "net8.0", [(null, [("Package.1X", "24.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1X", "24.0.0", "net8.0", [(null, [("Package.1Y", "25.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1Y", "25.0.0", "net8.0", [(null, [("Package.1Z", "26.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.1Z", "26.0.0", "net8.0", [(null, [("Package.2A", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2A", "1.0.0", "net8.0", [(null, [("Package.2B", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2B", "2.0.0", "net8.0", [(null, [("Package.2C", "3.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2C", "3.0.0", "net8.0", [(null, [("Package.2D", "4.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2D", "4.0.0", "net8.0", [(null, [("Package.2E", "5.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2E", "5.0.0", "net8.0", [(null, [("Package.2F", "6.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2F", "6.0.0", "net8.0", [(null, [("Package.2G", "7.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2G", "7.0.0", "net8.0", [(null, [("Package.2H", "8.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2H", "8.0.0", "net8.0", [(null, [("Package.2I", "9.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2I", "9.0.0", "net8.0", [(null, [("Package.2J", "10.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2J", "10.0.0", "net8.0", [(null, [("Package.2K", "11.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2K", "11.0.0", "net8.0", [(null, [("Package.2L", "12.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2L", "12.0.0", "net8.0", [(null, [("Package.2M", "13.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2M", "13.0.0", "net8.0", [(null, [("Package.2N", "14.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2N", "14.0.0", "net8.0", [(null, [("Package.2O", "15.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2O", "15.0.0", "net8.0", [(null, [("Package.2P", "16.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2P", "16.0.0", "net8.0", [(null, [("Package.2Q", "17.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2Q", "17.0.0", "net8.0", [(null, [("Package.2R", "18.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2R", "18.0.0", "net8.0", [(null, [("Package.2S", "19.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2S", "19.0.0", "net8.0", [(null, [("Package.2T", "20.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2T", "20.0.0", "net8.0", [(null, [("Package.2U", "21.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2U", "21.0.0", "net8.0", [(null, [("Package.2V", "22.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2V", "22.0.0", "net8.0", [(null, [("Package.2W", "23.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2W", "23.0.0", "net8.0", [(null, [("Package.2X", "24.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2X", "24.0.0", "net8.0", [(null, [("Package.2Y", "25.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2Y", "25.0.0", "net8.0", [(null, [("Package.2Z", "26.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Package.2Z", "26.0.0", "net8.0"),
+        ];
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, temp.DirectoryPath);
+
+        Dependency[] expectedDependencies =
+        [
+            new("Package.1A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new("Package.1B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1R", "18.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new("Package.1S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new("Package.2B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2R", "18.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new("Package.2S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.2Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+        ];
         var packages = new[]
         {
-            new Dependency("System", "4.1.311.2", DependencyType.Unknown),
-            new Dependency("System.Core", "3.5.21022.801", DependencyType.Unknown),
-            new Dependency("Moq", "4.16.1", DependencyType.Unknown),
-            new Dependency("Castle.Core", "4.4.1", DependencyType.Unknown),
-            new Dependency("MSTest.TestAdapter", "2.1.0", DependencyType.Unknown),
-            new Dependency("MSTest.TestFramework", "2.1.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.Agent.Intercept", "2.4.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.DependencyCollector", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.PerfCounterCollector", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.Web", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.ApplicationInsights.WindowsServer", "2.10.0", DependencyType.Unknown),
-            new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown)
+            new Dependency("Package.1A", "1.0.0", DependencyType.Unknown),
+            new Dependency("Package.1R", "18.0.0", DependencyType.Unknown),
+            new Dependency("Package.2A", "1.0.0", DependencyType.Unknown),
+            new Dependency("Package.2R", "18.0.0", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages);
         for (int i = 0; i < actualDependencies.Length; i++)
         {
             var ad = actualDependencies[i];
@@ -288,31 +315,26 @@ public class MSBuildHelperTests
     public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
     {
         using var temp = new TemporaryDirectory();
-        var expectedDependencies = new Dependency[]
-        {
-            new("Microsoft.Bcl.AsyncInterfaces", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-            new("Microsoft.Extensions.Logging", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Logging.Abstractions", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Options", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Microsoft.Extensions.Primitives", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.ComponentModel.Annotations", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Diagnostics.DiagnosticSource", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-        };
+        MockNuGetPackage[] testPackages =
+        [
+            MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Package.C", "3.0.0", "net8.0"),
+        ];
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, temp.DirectoryPath);
+
+        Dependency[] expectedDependencies =
+        [
+            new("Package.A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+        ];
         var packages = new[]
         {
-            new Dependency("Microsoft.Extensions.Http", "7.0.0", DependencyType.Unknown),
-            new Dependency("Newtonsoft.Json", "12.0.1", DependencyType.Unknown, IsUpdate: true)
+            new Dependency("Package.A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new Dependency("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+            new Dependency("Package.C", "3.0.0", DependencyType.Unknown, IsUpdate: true)
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "netstandard2.0", packages);
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages);
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -348,75 +370,9 @@ public class MSBuildHelperTests
             var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
                 temp.DirectoryPath,
                 temp.DirectoryPath,
-                "netstandard2.0",
-                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
+                "net8.0",
+                [new Dependency("Some.Package", "4.5.11", DependencyType.Unknown)]
             );
-        }
-        finally
-        {
-            // Restore the NuGet caches.
-            Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
-            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllPackageDependencies_LocalNuGetRepos_AreCopiedToTempProject()
-    {
-        // If we end up using this EnvVar pattern again I think it'd be worth it to abstract it out into an IDisposable.
-        var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
-        var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
-        var logger = new Logger(verbose: true);
-        try
-        {
-            // First create a fake local nuget repository
-            using var restoreDir = new TemporaryDirectory();
-
-            var restoreNuGetPackagesDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "packages");
-            Environment.SetEnvironmentVariable("NUGET_PACKAGES", restoreNuGetPackagesDirectory);
-            var restoreNuGetHttpCacheDirectory = Path.Combine(restoreDir.DirectoryPath, ".nuget", "v3-cache");
-            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", restoreNuGetHttpCacheDirectory);
-
-            using var temp = new TemporaryDirectory();
-            using (var restoreProjectTemp = new TemporaryDirectory())
-            {
-                // dotnet restore .csproj with things we want
-                await MSBuildHelper.DependenciesAreCoherentAsync(restoreProjectTemp.DirectoryPath, restoreProjectTemp.DirectoryPath, "netstandard2.0",
-                    [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)], logger);
-                Assert.True(Directory.Exists(restoreNuGetPackagesDirectory), "packages directory didn't exist");
-                PathHelper.CopyDirectory(restoreNuGetPackagesDirectory, Path.Combine(temp.DirectoryPath, "local_repo"));
-            }
-
-            // It is important to have empty NuGet caches for this test, so override them with temp directories.
-            var tempNuGetPackagesDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "packages");
-            Environment.SetEnvironmentVariable("NUGET_PACKAGES", tempNuGetPackagesDirectory);
-            var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
-            Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
-
-            // Write the NuGet.config.
-            await File.WriteAllTextAsync(
-                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
-                <?xml version="1.0" encoding="utf-8"?>
-                <configuration>
-                  <packageSources>
-                    <clear />
-                    <add key="local-repo" value="local_repo" />
-                  </packageSources>
-                </configuration>
-                """);
-            var expectedDependencies = new Dependency[]
-            {
-                new("Newtonsoft.Json", "4.5.11", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-                new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            };
-            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
-                temp.DirectoryPath,
-                temp.DirectoryPath,
-                "netstandard2.0",
-                [new Dependency("Newtonsoft.Json", "4.5.11", DependencyType.Unknown)]
-            );
-            Assert.False(Directory.Exists(tempNuGetHttpCacheDirectory), "The .nuget/.v3-cache directory was created, meaning http was used.");
-            AssertEx.Equal(expectedDependencies, actualDependencies);
         }
         finally
         {
@@ -442,47 +398,38 @@ public class MSBuildHelperTests
             var tempNuGetHttpCacheDirectory = Path.Combine(temp.DirectoryPath, ".nuget", "v3-cache");
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
-            // First validate that we are unable to find dependencies for the package version without a NuGet.config.
-            var dependenciesNoNuGetConfig = await MSBuildHelper.GetAllPackageDependenciesAsync(
-                temp.DirectoryPath,
-                temp.DirectoryPath,
-                "netstandard2.0",
-                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]);
-            Assert.Equal([], dependenciesNoNuGetConfig);
+            // create two local package sources with different packages available in each
+            string localSource1 = Path.Combine(temp.DirectoryPath, "localSource1");
+            Directory.CreateDirectory(localSource1);
+            string localSource2 = Path.Combine(temp.DirectoryPath, "localSource2");
+            Directory.CreateDirectory(localSource2);
 
-            // Write the NuGet.config and try again.
-            await File.WriteAllTextAsync(
-                Path.Combine(temp.DirectoryPath, "NuGet.Config"), """
-                <?xml version="1.0" encoding="utf-8"?>
+            // `Package.A` will only live in `localSource1` and will have a dependency on `Package.B` which is only
+            // available in `localSource2`
+            MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Package.B", "2.0.0")])]).WriteToDirectory(localSource1);
+            MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net8.0").WriteToDirectory(localSource2);
+            await File.WriteAllTextAsync(Path.Join(temp.DirectoryPath, "NuGet.Config"), """
                 <configuration>
                   <packageSources>
-                    <clear />
-                    <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
-                    <add key="dotnet-public" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json" />
+                    <add key="localSource1" value="./localSource1" />
+                    <add key="localSource2" value="./localSource2" />
                   </packageSources>
                 </configuration>
                 """);
 
-            var expectedDependencies = new Dependency[]
-            {
-                new("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"]),
-                new("System.Buffers", "4.5.1", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Collections.Immutable", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Memory", "4.5.5", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Numerics.Vectors", "4.4.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Reflection.Metadata", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Runtime.CompilerServices.Unsafe", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Text.Encoding.CodePages", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("System.Threading.Tasks.Extensions", "4.5.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("Microsoft.CodeAnalysis.Analyzers", "3.3.4", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-                new("NETStandard.Library", "2.0.3", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            };
-            var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            Dependency[] expectedDependencies =
+            [
+                new("Package.A", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            ];
+
+            Dependency[] actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
                 temp.DirectoryPath,
                 temp.DirectoryPath,
-                "netstandard2.0",
-                [new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0-3.23457.5", DependencyType.Unknown)]
+                "net8.0",
+                [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)]
             );
+
             AssertEx.Equal(expectedDependencies, actualDependencies);
         }
         finally
@@ -490,6 +437,58 @@ public class MSBuildHelperTests
             // Restore the NuGet caches.
             Environment.SetEnvironmentVariable("NUGET_PACKAGES", nugetPackagesDirectory);
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", nugetHttpCacheDirectory);
+        }
+    }
+
+    [Fact]
+    public async Task DependencyConflictsCanBeResolved()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolved)}_");
+        MockNuGetPackage[] testPackages =
+        [
+            // some base packages
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"),
+            // some packages that are hard-locked to specific versions of the previous package
+            MockNuGetPackage.CreateSimplePackage("Some.Other.Package", "1.0.0", "net8.0", [(null, [("Some.Package", "[1.0.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Some.Other.Package", "1.1.0", "net8.0", [(null, [("Some.Package", "[1.1.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Some.Other.Package", "1.2.0", "net8.0", [(null, [("Some.Package", "[1.2.0]")])]),
+        ];
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, repoRoot.FullName);
+
+        // the package `Some.Package` was already updated from 1.0.0 to 1.2.0, but this causes a conflict with
+        // `Some.Other.Package` that needs to be resolved
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.2.0" />
+                    <PackageReference Include="Some.Other.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Some.Package", "1.2.0", DependencyType.PackageReference),
+                new Dependency("Some.Other.Package", "1.0.0", DependencyType.PackageReference),
+            };
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("Some.Package", resolvedDependencies[0].Name);
+            Assert.Equal("1.2.0", resolvedDependencies[0].Version);
+            Assert.Equal("Some.Other.Package", resolvedDependencies[1].Name);
+            Assert.Equal("1.2.0", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
         }
     }
 
@@ -504,7 +503,7 @@ public class MSBuildHelperTests
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+                        <PackageReference Include="Some.Package" Version="12.0.1" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -513,10 +512,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         ];
 
@@ -529,7 +532,7 @@ public class MSBuildHelperTests
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json">
+                        <PackageReference Include="Some.Package">
                             <Version>12.0.1</Version>
                         </PackageReference>
                       </ItemGroup>
@@ -540,10 +543,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "12.0.1", "12.0.1", null, null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         ];
 
@@ -556,10 +563,10 @@ public class MSBuildHelperTests
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                        <SomePackageVersion>12.0.1</SomePackageVersion>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -568,10 +575,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(SomePackageVersion)", "12.0.1", "SomePackageVersion", null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         ];
 
@@ -585,11 +596,11 @@ public class MSBuildHelperTests
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>netstandard2.0</TargetFramework>
-                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
-                        <NewtonsoftJsonVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</NewtonsoftJsonVersion>
+                        <SomePackageVersion>12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</SomePackageVersion>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -598,10 +609,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(SomePackageVersion)", "12.0.1", "SomePackageVersion", null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         ];
 
@@ -615,11 +630,11 @@ public class MSBuildHelperTests
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>netstandard2.0</TargetFramework>
-                        <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
-                        <NewtonsoftJsonVersion Condition="'$(PropertyThatDoesNotExist)' == 'true'">13.0.1</NewtonsoftJsonVersion>
+                        <SomePackageVersion>12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="'$(PropertyThatDoesNotExist)' == 'true'">13.0.1</SomePackageVersion>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -628,10 +643,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(SomePackageVersion)", "12.0.1", "SomePackageVersion", null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         };
 
@@ -645,11 +664,11 @@ public class MSBuildHelperTests
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>netstandard2.0</TargetFramework>
-                        <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">12.0.1</NewtonsoftJsonVersion>
-                        <NewtonsoftJsonVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</NewtonsoftJsonVersion>
+                        <SomePackageVersion Condition="$(SomePackageVersion) == ''">12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(PropertyThatDoesNotExist) == 'true'">13.0.1</SomePackageVersion>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -658,10 +677,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(SomePackageVersion)", "12.0.1", "SomePackageVersion", null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         ];
 
@@ -675,11 +698,11 @@ public class MSBuildHelperTests
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>netstandard2.0</TargetFramework>
-                        <NewtonsoftJsonVersion Condition="'$(NewtonsoftJsonVersion)' == ''">12.0.1</NewtonsoftJsonVersion>
-                        <NewtonsoftJsonVersion Condition="'$(PropertyThatDoesNotExist)' == 'true'">13.0.1</NewtonsoftJsonVersion>
+                        <SomePackageVersion Condition="'$(SomePackageVersion)' == ''">12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="'$(PropertyThatDoesNotExist)' == 'true'">13.0.1</SomePackageVersion>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -688,10 +711,14 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Newtonsoft.Json",
+                    "Some.Package",
                     "12.0.1",
                     DependencyType.PackageReference,
-                    new(EvaluationResultType.Success, "$(NewtonsoftJsonVersion)", "12.0.1", "NewtonsoftJsonVersion", null))
+                    new(EvaluationResultType.Success, "$(SomePackageVersion)", "12.0.1", "SomePackageVersion", null))
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0")
             }
         };
 
@@ -704,18 +731,18 @@ public class MSBuildHelperTests
                 ("Packages.props", """
                         <Project>
                           <ItemGroup>
-                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                            <PackageReference Update="Package.A" Version="1.6.0" />
+                            <PackageReference Update="Package.B" Version="5.1.4" />
                           </ItemGroup>
                         </Project>
                     """),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Azure.Identity" Version="1.6.1" />
+                        <PackageReference Include="Package.A" Version="1.6.1" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -724,16 +751,22 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Azure.Identity",
+                    "Package.A",
                     "1.6.0",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
-                    "Microsoft.Data.SqlClient",
+                    "Package.B",
                     "5.1.4",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.6.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.6.1", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "5.1.4", "net8.0"),
             }
         ];
 
@@ -746,18 +779,18 @@ public class MSBuildHelperTests
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
+                        <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Azure.Identity" />
+                        <PackageReference Include="Package.A" />
                       </ItemGroup>
                     </Project>
                     """),
                 ("Packages.props", """
                         <Project>
                           <ItemGroup>
-                            <PackageReference Update="Azure.Identity" Version="1.6.0" />
-                            <PackageReference Update="Microsoft.Data.SqlClient" Version="5.1.4" />
+                            <PackageReference Update="Package.A" Version="1.6.0" />
+                            <PackageReference Update="Package.B" Version="5.1.4" />
                           </ItemGroup>
                         </Project>
                     """)
@@ -766,16 +799,21 @@ public class MSBuildHelperTests
             new Dependency[]
             {
                 new(
-                    "Azure.Identity",
+                    "Package.A",
                     "1.6.0",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "1.6.0", "1.6.0", null, null)),
                 new(
-                    "Microsoft.Data.SqlClient",
+                    "Package.B",
                     "5.1.4",
                     DependencyType.PackageReference,
                     EvaluationResult: new(EvaluationResultType.Success, "5.1.4", "5.1.4", null, null),
                     IsUpdate: true),
+            },
+            new MockNuGetPackage[]
+            {
+                MockNuGetPackage.CreateSimplePackage("Package.A", "1.6.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.B", "5.1.4", "net8.0"),
             }
         ];
     }

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -42,6 +42,7 @@ module Dependabot
         Source.from_url(source_url)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def source_from_description
         potential_source_urls = []
         desc = pypi_listing.dig("info", "description")
@@ -54,8 +55,8 @@ module Dependabot
         # Looking for a source where the repo name exactly matches the
         # dependency name
         match_url = potential_source_urls.find do |url|
-          repo = Source.from_url(url).repo
-          repo.downcase.end_with?(normalised_dependency_name)
+          repo = Source.from_url(url)&.repo
+          repo&.downcase&.end_with?(normalised_dependency_name)
         end
 
         return match_url if match_url
@@ -64,14 +65,18 @@ module Dependabot
         # mentioned when the link is followed
         @source_from_description ||=
           potential_source_urls.find do |url|
-            full_url = Source.from_url(url).url
+            full_url = Source.from_url(url)&.url
+            next unless full_url
+
             response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
           end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def source_from_homepage
         return unless homepage_body
 
@@ -81,21 +86,24 @@ module Dependabot
         end
 
         match_url = potential_source_urls.find do |url|
-          repo = Source.from_url(url).repo
-          repo.downcase.end_with?(normalised_dependency_name)
+          repo = Source.from_url(url)&.repo
+          repo&.downcase&.end_with?(normalised_dependency_name)
         end
 
         return match_url if match_url
 
         @source_from_homepage ||=
           potential_source_urls.find do |url|
-            full_url = Source.from_url(url).url
+            full_url = Source.from_url(url)&.url
+            next unless full_url
+
             response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
           end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def homepage_body
         homepage_url = pypi_listing.dig("info", "home_page")
@@ -121,7 +129,7 @@ module Dependabot
 
       def pypi_listing
         return @pypi_listing unless @pypi_listing.nil?
-        return @pypi_listing = {} if dependency.version.include?("+")
+        return @pypi_listing = {} if dependency.version&.include?("+")
 
         possible_listing_urls.each do |url|
           response = fetch_authed_url(url)
@@ -140,8 +148,8 @@ module Dependabot
 
       def fetch_authed_url(url)
         if url.match(%r{(.*)://(.*?):(.*)@([^@]+)$}) &&
-           Regexp.last_match.captures[1].include?("@")
-          protocol, user, pass, url = Regexp.last_match.captures
+           Regexp.last_match&.captures&.[](1)&.include?("@")
+          protocol, user, pass, url = T.must(Regexp.last_match).captures
 
           Dependabot::RegistryClient.get(
             url: "#{protocol}://#{url}",

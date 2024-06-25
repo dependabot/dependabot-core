@@ -6,10 +6,12 @@ require "dependabot/go_modules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GoModules::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:repo) { "dependabot-fixtures/go-modules-lib" }
-  let(:branch) { "master" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: github_credentials,
+                        repo_contents_path: repo_contents_path)
+  end
+  let(:repo_contents_path) { Dir.mktmpdir }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -18,17 +20,14 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       branch: branch
     )
   end
-  let(:repo_contents_path) { Dir.mktmpdir }
-  after { FileUtils.rm_rf(repo_contents_path) }
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: github_credentials,
-                        repo_contents_path: repo_contents_path)
-  end
-  let(:directory) { "/" }
+  let(:branch) { "master" }
+  let(:repo) { "dependabot-fixtures/go-modules-lib" }
 
   after do
     FileUtils.rm_rf(repo_contents_path)
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name))
@@ -54,7 +53,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:branch) { "without-go-sum" }
 
     it "doesn't raise an error" do
-      expect { file_fetcher_instance.files }.to_not raise_error
+      expect { file_fetcher_instance.files }.not_to raise_error
     end
   end
 
@@ -73,7 +72,7 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
     let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
 
     it "clones them" do
-      expect { file_fetcher_instance.files }.to_not raise_error
+      expect { file_fetcher_instance.files }.not_to raise_error
       expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
     end
 

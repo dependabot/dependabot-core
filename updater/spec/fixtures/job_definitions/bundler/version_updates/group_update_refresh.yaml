@@ -15,6 +15,7 @@ job:
       dependencies:
         - dependency-name: dummy-pkg-b
           dependency-version: 1.2.0
+          directory: "/"
   updating-a-pull-request: true
   lockfile-only: false
   update-subdependencies: false

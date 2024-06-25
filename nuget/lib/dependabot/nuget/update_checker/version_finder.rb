@@ -187,12 +187,11 @@ module Dependabot
         end
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
-
           ignored_versions.each do |req|
-            ignore_req = requirement_class.new(parse_requirement_string(req))
+            ignore_reqs = parse_requirement_string(req).map { |r| requirement_class.new(r) }
             filtered =
               filtered
-              .reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+              .reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
           if @raise_on_ignored && filter_lower_versions(filtered).empty? &&

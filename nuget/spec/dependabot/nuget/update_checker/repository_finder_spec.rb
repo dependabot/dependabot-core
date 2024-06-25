@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       config_files: [config_file].compact
     )
   end
+
   let(:config_file) { nil }
   let(:credentials) do
     [{
@@ -43,6 +44,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
   end
 
   describe "local path in NuGet.Config" do
+    subject(:known_repositories) { finder.known_repositories }
+
     let(:config_file) do
       nuget_config_content = <<~XML
         <configuration>
@@ -62,8 +65,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
-    subject(:known_repositories) { finder.known_repositories }
-
     it "finds all local paths" do
       urls = known_repositories.map { |r| r[:url] }
       expected = [
@@ -77,6 +78,8 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
   end
 
   describe "environment variables in NuGet.Config" do
+    subject(:known_repositories) { finder.known_repositories }
+
     let(:config_file) do
       nuget_config_content = <<~XML
         <configuration>
@@ -98,13 +101,16 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       )
     end
 
-    subject(:known_repositories) { finder.known_repositories }
-
-    context "are expanded" do
+    context "when expanded" do
       before do
         allow(Dependabot.logger).to receive(:warn)
         ENV["FEED_URL"] = "https://nuget.example.com/index.json"
         ENV["THIS_VARIBLE_EXISTS"] = "replacement-text"
+        ENV.delete("THIS_VARIABLE_DOES_NOT")
+      end
+
+      after do
+        ENV.delete("THIS_VARIBLE_EXISTS")
         ENV.delete("THIS_VARIABLE_DOES_NOT")
       end
 
@@ -117,11 +123,6 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
             The variable '%THIS_VARIABLE_DOES_NOT%' could not be expanded in NuGet.Config
           WARN
         )
-      end
-
-      after do
-        ENV.delete("THIS_VARIBLE_EXISTS")
-        ENV.delete("THIS_VARIABLE_DOES_NOT")
       end
     end
   end
@@ -193,8 +194,9 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         )
       end
 
-      context "that does not return PackageBaseAddress" do
+      context "when the PackageBaseAddress is not returned" do
         let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
+
         before do
           stub_request(:get, custom_repo_url)
             .to_return(
@@ -220,8 +222,9 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has URLs that need to be escaped" do
+      context "when URLs need to be escaped" do
         let(:custom_repo_url) { "https://www.myget.org/F/exceptionless/api with spaces/v3/index.json" }
+
         before do
           stub_request(:get, "https://www.myget.org/F/exceptionless/api%20with%20spaces/v3/index.json")
             .to_return(
@@ -250,14 +253,14 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that 404s" do
+      context "when a request returns a 404 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 
         # TODO: Might want to raise here instead?
         it { is_expected.to eq([]) }
       end
 
-      context "that 403s" do
+      context "when a request returns a 403 response" do
         before { stub_request(:get, custom_repo_url).to_return(status: 403) }
 
         it "raises a useful error" do
@@ -361,44 +364,43 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       #   )
       # end
 
-      context "include the default repository" do
+      context "when including the default repository" do
         let(:config_file_fixture_name) { "include_default_disable_ext_sources.config" }
 
         it "with disable external source" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "index.json",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                                "registration1/microsoft.extensions.dependencymodel/index.json",
-              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "flatcontainer/microsoft.extensions." \
-                            "dependencymodel/index.json",
-              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "query?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
-              repository_type: "v3"
-            }, {
-              base_url: "https://api.nuget.org/v3-flatcontainer/",
-              registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://api.nuget.org/v3/index.json",
-              versions_url: "https://api.nuget.org/v3-flatcontainer/" \
-                            "microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://azuresearch-usnc.nuget.org/query" \
-                          "?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "registration1/microsoft.extensions.dependencymodel/index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+            repository_type: "v3"
+          }, {
+            base_url: "https://api.nuget.org/v3-flatcontainer/",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://api.nuget.org/v3/index.json",
+            versions_url: "https://api.nuget.org/v3-flatcontainer/" \
+                          "microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://azuresearch-usnc.nuget.org/query" \
+                        "?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "that overrides the default package sources" do
+      context "when the spec overrides the default package sources" do
         let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
+        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
 
         before do
           repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
@@ -410,65 +412,80 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "when the default api key of default registry is provided without clear" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "index.json",
-              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "flatcontainer/microsoft.extensions." \
-                            "dependencymodel/index.json",
-              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "query?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
 
-        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
         it "when the default api key of default registry is provided with clear" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "index.json",
-              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "flatcontainer/microsoft.extensions." \
-                            "dependencymodel/index.json",
-              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "query?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "that doesn't include the default repository" do
+      context "when not including the default repository" do
         let(:config_file_fixture_name) { "excludes_default.config" }
 
         it "still includes the default repository (as it wasn't cleared)" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://api.nuget.org/v3-flatcontainer/",
-              registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://api.nuget.org/v3/index.json",
-              versions_url: "https://api.nuget.org/v3-flatcontainer/" \
-                            "microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://azuresearch-usnc.nuget.org/query" \
-                          "?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }, {
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://api.nuget.org/v3-flatcontainer/",
+            registration_url: "https://api.nuget.org/v3/registration5-gz-semver2/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://api.nuget.org/v3/index.json",
+            versions_url: "https://api.nuget.org/v3-flatcontainer/" \
+                          "microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://azuresearch-usnc.nuget.org/query" \
+                        "?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          }, {
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+            repository_type: "v3"
+          })
+        end
+
+        context "when spec clears default repo info" do
+          let(:config_file_fixture_name) { "clears_default.config" }
+
+          it "still excludes the default repository" do
+            expect(dependency_urls).to contain_exactly({
               base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
               registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
                                 "microsoft.extensions.dependencymodel/index.json",
@@ -482,84 +499,56 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
                           "&prerelease=true&semVerLevel=2.0.0",
               auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
               repository_type: "v3"
-            }]
-          )
-        end
-
-        context "and clears it" do
-          let(:config_file_fixture_name) { "clears_default.config" }
-
-          it "still excludes the default repository" do
-            expect(dependency_urls).to match_array(
-              [{
-                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                  "microsoft.extensions.dependencymodel/index.json",
-                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                                "index.json",
-                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "flatcontainer/microsoft.extensions." \
-                              "dependencymodel/index.json",
-                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "query?q=microsoft.extensions.dependencymodel" \
-                            "&prerelease=true&semVerLevel=2.0.0",
-                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
-                repository_type: "v3"
-              }]
-            )
+            })
           end
         end
 
-        context "that has disabled package sources" do
+        context "when the spec has disabled package sources" do
           let(:config_file_fixture_name) { "disabled_sources.config" }
 
-          it "only includes the enabled package sources" do
-            expect(dependency_urls).to match_array(
-              [{
-                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                  "microsoft.extensions.dependencymodel/index.json",
-                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                                "index.json",
-                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "flatcontainer/microsoft.extensions." \
-                              "dependencymodel/index.json",
-                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "query?q=microsoft.extensions.dependencymodel" \
-                            "&prerelease=true&semVerLevel=2.0.0",
-                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
-                repository_type: "v3"
-              }]
-            )
+          it "when only including the enabled package sources" do
+            expect(dependency_urls).to contain_exactly({
+              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            })
           end
         end
 
-        context "that has disabled default package sources" do
+        context "when the spec has disabled default package sources" do
           let(:config_file_fixture_name) { "disabled_default_sources.config" }
 
           it "only includes the enable package sources" do
-            expect(dependency_urls).to match_array(
-              [{
-                base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-                registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                  "microsoft.extensions.dependencymodel/index.json",
-                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                                "index.json",
-                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "flatcontainer/microsoft.extensions." \
-                              "dependencymodel/index.json",
-                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "query?q=microsoft.extensions.dependencymodel" \
-                            "&prerelease=true&semVerLevel=2.0.0",
-                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
-                repository_type: "v3"
-              }]
-            )
+            expect(dependency_urls).to contain_exactly({
+              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                                "microsoft.extensions.dependencymodel/index.json",
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            })
           end
         end
       end
 
-      context "that has a numeric key" do
+      context "when the spec has a numeric key" do
         let(:config_file_fixture_name) { "numeric_key.config" }
 
         before do
@@ -572,27 +561,25 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "index.json",
-              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "flatcontainer/microsoft.extensions." \
-                            "dependencymodel/index.json",
-              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "query?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "that only provides versioned `SearchQueryService`` entries" do
+      context "when only providing versioned `SearchQueryService`` entries" do
         let(:config_file_fixture_name) { "versioned_search.config" }
 
         before do
@@ -605,21 +592,19 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/",
-              registration_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/registrations2/microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
-              versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/",
+            registration_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/registrations2/microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json",
+            versions_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/query2/?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "includes repositories in the `trustedSigners` section" do
+      context "when including repositories in the `trustedSigners` section" do
         let(:config_file_fixture_name) { "with_trustedSigners.config" }
 
         before do
@@ -683,7 +668,7 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
       end
 
-      context "that has a non-ascii key" do
+      context "when the repo URL has a non-ascii key" do
         let(:config_file_fixture_name) { "non_ascii_key.config" }
 
         before do
@@ -696,27 +681,25 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                              "index.json",
-              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                            "flatcontainer/microsoft.extensions." \
-                            "dependencymodel/index.json",
-              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
-                          "query?q=microsoft.extensions.dependencymodel" \
-                          "&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "index.json",
+            versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "flatcontainer/microsoft.extensions." \
+                          "dependencymodel/index.json",
+            search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                        "query?q=microsoft.extensions.dependencymodel" \
+                        "&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "that uses the v2 API alongside the v3 API" do
+      context "when the repo URL uses the v2 API alongside the v3 API" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -745,35 +728,33 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url:
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url:
                 "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json",
-              versions_url:
+            versions_url:
                 "https://www.myget.org/F/exceptionless/api/v3/" \
                 "flatcontainer/microsoft.extensions.dependencymodel/index.json",
-              search_url:
+            search_url:
                 "https://www.myget.org/F/exceptionless/api/v3/" \
                 "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }, {
-              base_url: "https://www.nuget.org/api/v2",
-              repository_url: "https://www.nuget.org/api/v2",
-              versions_url:
+            auth_header: {},
+            repository_type: "v3"
+          }, {
+            base_url: "https://www.nuget.org/api/v2",
+            repository_url: "https://www.nuget.org/api/v2",
+            versions_url:
                 "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }]
-          )
+            auth_header: {},
+            repository_type: "v2"
+          })
         end
       end
 
-      context "that has no base url in v2 API response" do
+      context "when the repo URL has no base url in v2 API response" do
         let(:config_file_fixture_name) { "with_v2_endpoints.config" }
 
         before do
@@ -802,73 +783,71 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "gets the right URLs" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
-              registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
-                                "microsoft.extensions.dependencymodel/index.json",
-              repository_url:
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            registration_url: "https://www.myget.org/F/exceptionless/api/v3/registration1/" \
+                              "microsoft.extensions.dependencymodel/index.json",
+            repository_url:
                 "https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json",
-              versions_url:
+            versions_url:
                 "https://www.myget.org/F/exceptionless/api/v3/" \
                 "flatcontainer/microsoft.extensions.dependencymodel/index.json",
-              search_url:
+            search_url:
                 "https://www.myget.org/F/exceptionless/api/v3/" \
                 "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }, {
-              base_url: "https://www.nuget.org/api/v2/",
-              repository_url: "https://www.nuget.org/api/v2/",
-              versions_url:
+            auth_header: {},
+            repository_type: "v3"
+          }, {
+            base_url: "https://www.nuget.org/api/v2/",
+            repository_url: "https://www.nuget.org/api/v2/",
+            versions_url:
                 "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }, {
-              base_url: "https://www.myget.org/F/azure-appservice/api/v2",
-              repository_url: "https://www.myget.org/F/azure-appservice/api/v2",
-              versions_url:
+            auth_header: {},
+            repository_type: "v2"
+          }, {
+            base_url: "https://www.myget.org/F/azure-appservice/api/v2",
+            repository_url: "https://www.myget.org/F/azure-appservice/api/v2",
+            versions_url:
                 "https://www.myget.org/F/azure-appservice/api/v2/" \
                 "FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }, {
-              base_url: "https://www.myget.org/F/azure-appservice-staging/api/v2",
-              repository_url:
+            auth_header: {},
+            repository_type: "v2"
+          }, {
+            base_url: "https://www.myget.org/F/azure-appservice-staging/api/v2",
+            repository_url:
                 "https://www.myget.org/F/azure-appservice-staging/api/v2",
-              versions_url:
+            versions_url:
                 "https://www.myget.org/F/azure-appservice-staging/api/v2/" \
                 "FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }, {
-              base_url: "https://www.myget.org/F/fusemandistfeed/api/v2",
-              repository_url: "https://www.myget.org/F/fusemandistfeed/api/v2",
-              versions_url:
+            auth_header: {},
+            repository_type: "v2"
+          }, {
+            base_url: "https://www.myget.org/F/fusemandistfeed/api/v2",
+            repository_url: "https://www.myget.org/F/fusemandistfeed/api/v2",
+            versions_url:
                 "https://www.myget.org/F/fusemandistfeed/api/v2/" \
                 "FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }, {
-              base_url: "https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/",
-              repository_url:
+            auth_header: {},
+            repository_type: "v2"
+          }, {
+            base_url: "https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/",
+            repository_url:
                 "https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/",
-              versions_url:
+            versions_url:
                 "https://www.myget.org/F/30de4ee06dd54956a82013fa17a3accb/" \
                 "FindPackagesById()?id=" \
                 "'Microsoft.Extensions.DependencyModel'",
-              auth_header: {},
-              repository_type: "v2"
-            }]
-          )
+            auth_header: {},
+            repository_type: "v2"
+          })
         end
       end
 
-      context "matching `packageSourceMapping` entries are honored" do
+      context "when matching `packageSourceMapping` entries are honored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>
@@ -903,21 +882,19 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "matches on the best pattern" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://nuget.example.com/source2/PackageBaseAddress",
-              registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://nuget.example.com/source2/index.json",
-              versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://nuget.example.com/source2/PackageBaseAddress",
+            registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://nuget.example.com/source2/index.json",
+            versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
 
-      context "non-matching `packageSourceMapping` entries are ignored" do
+      context "when non-matching `packageSourceMapping` entries are ignored" do
         let(:config_file) do
           nuget_config_content = <<~XML
             <configuration>
@@ -954,33 +931,31 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
         end
 
         it "returns all sources" do
-          expect(dependency_urls).to match_array(
-            [{
-              base_url: "https://nuget.example.com/source1/PackageBaseAddress",
-              registration_url: "https://nuget.example.com/source1/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://nuget.example.com/source1/index.json",
-              versions_url: "https://nuget.example.com/source1/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://nuget.example.com/source1/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }, {
-              base_url: "https://nuget.example.com/source2/PackageBaseAddress",
-              registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://nuget.example.com/source2/index.json",
-              versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }, {
-              base_url: "https://nuget.example.com/source3/PackageBaseAddress",
-              registration_url: "https://nuget.example.com/source3/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
-              repository_url: "https://nuget.example.com/source3/index.json",
-              versions_url: "https://nuget.example.com/source3/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://nuget.example.com/source3/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
-              auth_header: {},
-              repository_type: "v3"
-            }]
-          )
+          expect(dependency_urls).to contain_exactly({
+            base_url: "https://nuget.example.com/source1/PackageBaseAddress",
+            registration_url: "https://nuget.example.com/source1/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://nuget.example.com/source1/index.json",
+            versions_url: "https://nuget.example.com/source1/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://nuget.example.com/source1/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          }, {
+            base_url: "https://nuget.example.com/source2/PackageBaseAddress",
+            registration_url: "https://nuget.example.com/source2/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://nuget.example.com/source2/index.json",
+            versions_url: "https://nuget.example.com/source2/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://nuget.example.com/source2/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          }, {
+            base_url: "https://nuget.example.com/source3/PackageBaseAddress",
+            registration_url: "https://nuget.example.com/source3/RegistrationsBaseUrl/microsoft.extensions.dependencymodel/index.json",
+            repository_url: "https://nuget.example.com/source3/index.json",
+            versions_url: "https://nuget.example.com/source3/PackageBaseAddress/microsoft.extensions.dependencymodel/index.json",
+            search_url: "https://nuget.example.com/source3/SearchQueryService?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
+            auth_header: {},
+            repository_type: "v3"
+          })
         end
       end
     end

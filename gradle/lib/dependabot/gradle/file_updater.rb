@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
@@ -8,6 +10,8 @@ require "dependabot/gradle/file_parser"
 module Dependabot
   module Gradle
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
 
@@ -159,7 +163,7 @@ module Dependabot
         result = string.dup
 
         string.scan(Gradle::FileParser::PROPERTY_REGEX) do
-          prop_name = Regexp.last_match.named_captures.fetch("property_name")
+          prop_name = T.must(Regexp.last_match).named_captures.fetch("property_name")
           property_value = property_value_finder.property_value(
             property_name: prop_name,
             callsite_buildfile: buildfile

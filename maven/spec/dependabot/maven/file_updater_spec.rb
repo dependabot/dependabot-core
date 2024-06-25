@@ -8,47 +8,7 @@ require "dependabot/maven/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Maven::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
-    )
-  end
-  let(:dependency_files) { [pom] }
-  let(:dependencies) { [dependency] }
-  let(:pom) do
-    Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "org.apache.httpcomponents:httpclient",
-      version: "4.6.1",
-      requirements: [{
-        file: "pom.xml",
-        requirement: "4.6.1",
-        groups: dependency_groups,
-        source: nil,
-        metadata: { packaging_type: "jar" }
-      }],
-      previous_requirements: [{
-        file: "pom.xml",
-        requirement: "4.5.3",
-        groups: dependency_groups,
-        source: nil,
-        metadata: { packaging_type: "jar" }
-      }],
-      package_manager: "maven"
-    )
-  end
+  let(:dependency_groups) { ["test"] }
   let(:mockk_dependency) do
     Dependabot::Dependency.new(
       name: "io.mockk:mockk",
@@ -76,7 +36,47 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       package_manager: "maven"
     )
   end
-  let(:dependency_groups) { ["test"] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "org.apache.httpcomponents:httpclient",
+      version: "4.6.1",
+      requirements: [{
+        file: "pom.xml",
+        requirement: "4.6.1",
+        groups: dependency_groups,
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      previous_requirements: [{
+        file: "pom.xml",
+        requirement: "4.5.3",
+        groups: dependency_groups,
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      package_manager: "maven"
+    )
+  end
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(content: pom_body, name: "pom.xml")
+  end
+  let(:dependencies) { [dependency] }
+  let(:dependency_files) { [pom] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: dependency_files,
+      dependencies: dependencies,
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -100,14 +100,16 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           .to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
       end
 
-      context "handles dependencies with classifiers" do
+      context "when handling dependencies with classifiers" do
         let(:dependencies) { [dependency, mockk_dependency] }
+
         its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
       context "with rogue whitespace" do
         let(:pom_body) { fixture("poms", "whitespace.xml") }
         let(:dependency_groups) { [] }
+
         its(:content) { is_expected.to include("<version> 4.6.1 </version>") }
       end
 
@@ -176,6 +178,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) do
           is_expected.to include("<version>1.6.0.RELEASE</version>")
         end
+
         its(:content) { is_expected.to include("<version>0.7.9</version>") }
       end
 
@@ -257,7 +260,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
-          its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
+          its(:content) { is_expected.not_to include "<version>2.10.4</version>" }
         end
 
         context "when both versions are hard-coded, and are identical" do
@@ -285,9 +288,9 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
 
           its(:content) { is_expected.to include "<version>3.0.0-M2</version>" }
-          its(:content) { is_expected.to_not include "<version>2.10.4</versio" }
+          its(:content) { is_expected.not_to include "<version>2.10.4</version>" }
 
-          context "but have different scopes" do
+          context "when they have different scopes" do
             let(:pom_body) { fixture("poms", "repeated_dev_and_prod.xml") }
             let(:dependency) do
               Dependabot::Dependency.new(
@@ -324,7 +327,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             end
 
             its(:content) { is_expected.to include "<version>3.0.0-M2</versio" }
-            its(:content) { is_expected.to_not include "<version>2.10.4</vers" }
+            its(:content) { is_expected.not_to include "<version>2.10.4</vers" }
           end
         end
       end
@@ -377,7 +380,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         its(:content) { is_expected.to include "<version>23.6-jre</version>" }
       end
 
-      context "pom with dependency version defined by a property" do
+      context "when there is a pom with dependency version defined by a property" do
         let(:pom) do
           Dependabot::DependencyFile.new(
             content: pom_body,
@@ -639,7 +642,11 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
     end
 
-    context "the updated extensions.xml file" do
+    context "when there is a updated extensions.xml file" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "extensions.xml" }
+      end
+
       let(:dependency_files) { [pom, extensions] }
       let(:extensions) do
         Dependabot::DependencyFile.new(
@@ -669,14 +676,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "extensions.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>0.4.7</version>") }
     end
 
     context "when updating an annotationProcessorPaths dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -706,14 +713,14 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
-      end
-
       its(:content) { is_expected.to include("<version>2.18.0</version>") }
     end
 
     context "when updating a plugin artifactItem dependency" do
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
       let(:pom) do
         Dependabot::DependencyFile.new(
           name: "pom.xml",
@@ -741,10 +748,6 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           }],
           package_manager: "maven"
         )
-      end
-
-      subject(:updated_extensions_file) do
-        updated_files.find { |f| f.name == "pom.xml" }
       end
 
       its(:content) { is_expected.to include("<version>0.9.5</version>") }
@@ -803,7 +806,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      context "for a dependency inherited by others" do
+      context "when dealing with a dependency inherited by others" do
         let(:dependency_requirements) do
           [{
             requirement: "23.6-jre",
@@ -850,7 +853,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
-      context "for a dependency that uses a property from its parent" do
+      context "when dealing with a dependency that uses a property from its parent" do
         let(:dependency_requirements) do
           [{
             requirement: "2.6.0",
@@ -879,7 +882,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
-      context "for a dependency that needs to be updated in another file" do
+      context "when dealing with a dependency that needs to be updated in another file" do
         let(:dependency_requirements) do
           [{
             requirement: "4.11",
@@ -940,7 +943,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      context "for a dependency in a normal and custom named pom" do
+      context "when dealing with a dependency in a normal and custom named pom" do
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -1071,7 +1074,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         )
       end
 
-      context "for a dependencies in a pom and its parent do" do
+      context "when dealing with a dependencies in a pom and its parent do" do
         let(:dependencies) do
           [
             Dependabot::Dependency.new(

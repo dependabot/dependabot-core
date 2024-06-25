@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 require "uri"
 
 require "dependabot/bundler/update_checker"
@@ -15,6 +16,16 @@ module Dependabot
   module Bundler
     class UpdateChecker
       module SharedBundlerHelpers
+        include Kernel
+
+        extend T::Sig
+        extend T::Helpers
+
+        abstract!
+
+        sig { returns(T::Hash[Symbol, T.untyped]) }
+        attr_reader :options
+
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
@@ -191,7 +202,8 @@ module Dependabot
               next false unless uri.scheme&.match?(/https?/o)
 
               Dependabot::RegistryClient.get(
-                url: uri.to_s
+                url: uri.to_s,
+                headers: { "Accept-Encoding" => "gzip" }
               ).status == 200
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false
@@ -215,6 +227,9 @@ module Dependabot
             )
           end
         end
+
+        sig { abstract.returns(String) }
+        def bundler_version; end
 
         def write_temporary_dependency_files
           dependency_files.each do |file|

@@ -8,34 +8,14 @@ require "dependabot/cargo/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Cargo::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
   end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com"
-    }]
-  end
-  let(:files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
-  end
-  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
-  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
-
+  let(:requirements) { previous_requirements }
+  let(:dependency_previous_version) { "0.1.38" }
+  let(:dependency_version) { "0.1.40" }
+  let(:dependency_name) { "time" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -46,35 +26,53 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       package_manager: "cargo"
     )
   end
-  let(:dependency_name) { "time" }
-  let(:dependency_version) { "0.1.40" }
-  let(:dependency_previous_version) { "0.1.38" }
-  let(:requirements) { previous_requirements }
-  let(:previous_requirements) do
-    [{ file: "Cargo.toml", requirement: "0.1.12", groups: [], source: nil }]
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
+  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
+  let(:manifest_body) { fixture("manifests", manifest_fixture_name) }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(name: "Cargo.lock", content: lockfile_body)
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:manifest) do
+    Dependabot::DependencyFile.new(name: "Cargo.toml", content: manifest_body)
+  end
+  let(:files) { [manifest, lockfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
 
   before { FileUtils.mkdir_p(tmp_path) }
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(1) }
 
     context "without a lockfile" do
       let(:files) { [manifest] }
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         it "raises a helpful error" do
           expect { updater.updated_dependency_files }
             .to raise_error("No files changed!")
@@ -132,7 +130,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
           expect(updated_lockfile_content).to include(
             "d825be0eb33fda1a7e68012d51e9c7f451dc1a69391e7fdc197060bb8c56667b"
           )
-          expect(updated_lockfile_content).to_not include(
+          expect(updated_lockfile_content).not_to include(
             "d5d788d3aa77bc0ef3e9621256885555368b47bd495c13dd2e7413c89f845520"
           )
         end

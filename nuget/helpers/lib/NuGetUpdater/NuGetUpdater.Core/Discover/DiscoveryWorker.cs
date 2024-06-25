@@ -2,6 +2,10 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Microsoft.Build.Construction;
+using Microsoft.Build.Definition;
+using Microsoft.Build.Evaluation;
+
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
@@ -26,17 +30,16 @@ public partial class DiscoveryWorker
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
     {
-        MSBuildHelper.RegisterMSBuild();
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
 
-        // When running under unit tests, the workspace path may not be rooted.
-        if (!Path.IsPathRooted(workspacePath) || !Directory.Exists(workspacePath))
+        // the `workspacePath` variable is relative to a repository root, so a rooted path actually isn't rooted; the
+        // easy way to deal with this is to just trim the leading "/" if it exists
+        if (workspacePath.StartsWith("/"))
         {
-            workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
+            workspacePath = workspacePath[1..];
         }
-        else if (workspacePath == "/")
-        {
-            workspacePath = repoRootPath;
-        }
+
+        workspacePath = Path.Combine(repoRootPath, workspacePath);
 
         DotNetToolsJsonDiscoveryResult? dotNetToolsJsonDiscovery = null;
         GlobalJsonDiscoveryResult? globalJsonDiscovery = null;
@@ -115,25 +118,115 @@ public partial class DiscoveryWorker
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
     {
         _logger.Log($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
-        var projectPaths = FindProjectFiles(workspacePath);
-        if (projectPaths.IsEmpty)
+        var entryPoints = FindEntryPoints(workspacePath);
+        var projects = ExpandEntryPointsIntoProjects(entryPoints);
+        if (projects.IsEmpty)
         {
             _logger.Log("  No project files found.");
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projectPaths);
+        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projects);
     }
 
-    private static ImmutableArray<string> FindProjectFiles(string workspacePath)
+    private static ImmutableArray<string> FindEntryPoints(string workspacePath)
     {
-        return Directory.EnumerateFiles(workspacePath, "*.*proj", SearchOption.AllDirectories)
+        return Directory.EnumerateFiles(workspacePath)
             .Where(path =>
             {
-                var extension = Path.GetExtension(path).ToLowerInvariant();
-                return extension == ".proj" || extension == ".csproj" || extension == ".fsproj" || extension == ".vbproj";
+                string extension = Path.GetExtension(path).ToLowerInvariant();
+                switch (extension)
+                {
+                    case ".sln":
+                    case ".proj":
+                    case ".csproj":
+                    case ".fsproj":
+                    case ".vbproj":
+                        return true;
+                    default:
+                        return false;
+                }
             })
             .ToImmutableArray();
+    }
+
+    private static ImmutableArray<string> ExpandEntryPointsIntoProjects(IEnumerable<string> entryPoints)
+    {
+        HashSet<string> expandedProjects = new();
+        HashSet<string> seenProjects = new();
+        Stack<string> filesToExpand = new(entryPoints);
+        while (filesToExpand.Count > 0)
+        {
+            string candidateEntryPoint = filesToExpand.Pop();
+            if (seenProjects.Add(candidateEntryPoint))
+            {
+                string extension = Path.GetExtension(candidateEntryPoint).ToLowerInvariant();
+                if (extension == ".sln")
+                {
+                    SolutionFile solution = SolutionFile.Parse(candidateEntryPoint);
+                    foreach (ProjectInSolution project in solution.ProjectsInOrder)
+                    {
+                        filesToExpand.Push(project.AbsolutePath);
+                    }
+                }
+                else if (extension == ".proj")
+                {
+                    IEnumerable<string> foundProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectFile", "ProjectReference");
+                    foreach (string foundProject in foundProjects)
+                    {
+                        filesToExpand.Push(foundProject);
+                    }
+                }
+                else
+                {
+                    // .csproj, .fsproj, .vbproj
+                    // keep this project and check for references
+                    expandedProjects.Add(candidateEntryPoint);
+                    IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
+                    foreach (string referencedProject in referencedProjects)
+                    {
+                        filesToExpand.Push(referencedProject);
+                    }
+                }
+            }
+        }
+
+        return expandedProjects.ToImmutableArray();
+    }
+
+    private static IEnumerable<string> ExpandItemGroupFilesFromProject(string projectPath, params string[] itemTypes)
+    {
+        if (!File.Exists(projectPath))
+        {
+            return [];
+        }
+
+        using ProjectCollection projectCollection = new();
+        Project project = Project.FromFile(projectPath, new ProjectOptions
+        {
+            LoadSettings = ProjectLoadSettings.IgnoreMissingImports | ProjectLoadSettings.IgnoreEmptyImports | ProjectLoadSettings.IgnoreInvalidImports,
+            ProjectCollection = projectCollection,
+        });
+
+        HashSet<string> allowableItemTypes = new(itemTypes, StringComparer.OrdinalIgnoreCase);
+        List<ProjectItem> projectItems = project.Items.Where(i => allowableItemTypes.Contains(i.ItemType)).ToList();
+        string projectDir = Path.GetDirectoryName(projectPath)!;
+        HashSet<string> seenItems = new(StringComparer.OrdinalIgnoreCase);
+        List<string> foundItems = new();
+        foreach (ProjectItem projectItem in projectItems)
+        {
+            // referenced projects commonly use the Windows-style directory separator which can cause problems on Unix
+            // but Windows is able to handle a Unix-style path, so we normalize everything to that then normalize again
+            // with regards to relative paths, e.g., "some/path/" + "..\other\file" => "some/other/file"
+            string referencedProjectPath = Path.Join(projectDir, projectItem.EvaluatedInclude.NormalizePathToUnix());
+            string normalizedReferenceProjectPath = new FileInfo(referencedProjectPath).FullName;
+            if (seenItems.Add(normalizedReferenceProjectPath))
+            {
+                foundItems.Add(normalizedReferenceProjectPath);
+            }
+        }
+
+        return foundItems;
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)

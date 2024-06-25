@@ -79,6 +79,9 @@ module Dependabot
     sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
     attr_reader :previous_requirements
 
+    sig { returns(T.nilable(String)) }
+    attr_accessor :directory
+
     sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
     attr_reader :subdependency_metadata
 
@@ -96,13 +99,14 @@ module Dependabot
         version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
         previous_requirements: T.nilable(T::Array[T::Hash[T.any(Symbol, String), T.untyped]]),
+        directory: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil,
+                   previous_version: nil, previous_requirements: nil, directory: nil,
                    subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = T.let(
@@ -121,6 +125,7 @@ module Dependabot
         T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
       )
       @package_manager = package_manager
+      @directory = directory
       unless top_level? || subdependency_metadata == []
         @subdependency_metadata = T.let(
           subdependency_metadata&.map { |h| symbolize_keys(h) },
@@ -160,6 +165,7 @@ module Dependabot
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
+        "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
         "removed" => removed? ? true : nil
@@ -354,6 +360,11 @@ module Dependabot
       else
         []
       end
+    end
+
+    sig { returns(T::Boolean) }
+    def requirements_changed?
+      (requirements - T.must(previous_requirements)).any?
     end
 
     private

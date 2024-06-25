@@ -141,7 +141,11 @@ module Dependabot
             raise UnfixableRequirement if req.start_with?(">")
 
             req.sub(VERSION_REGEX) do |old_version|
-              update_greatest_version(old_version, target_version)
+              if req.start_with?("<=")
+                update_version_string(old_version)
+              else
+                update_greatest_version(old_version, target_version)
+              end
             end
           end.join(", ")
         rescue UnfixableRequirement

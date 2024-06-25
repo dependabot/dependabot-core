@@ -14,31 +14,33 @@ RSpec.describe Dependabot::Nuget::FileParser do
     config.include(NuGetSearchStubs)
   end
 
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [csproj_file] + additional_files }
-  let(:additional_files) { [] }
-  let(:csproj_file) do
-    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
   end
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
-  let(:repo_contents_path) { write_tmp_repo(files) }
+  let(:directory) { "/" }
   let(:parser) do
     described_class.new(dependency_files: files,
                         source: source,
                         repo_contents_path: repo_contents_path)
   end
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
+  let(:repo_contents_path) { write_tmp_repo(files) }
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
+  let(:csproj_file) do
+    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
   end
+  let(:additional_files) { [] }
+  let(:files) { [csproj_file] + additional_files }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
-    let(:dependencies) { parser.parse }
     subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
+    let(:dependencies) { parser.parse }
 
     context "with a single project file" do
       before do
@@ -48,6 +50,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         stub_search_results_with_versions_v3("microsoft.extensions.platformabstractions", ["1.1.0"])
         stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
       end
+
       its(:length) { is_expected.to eq(5) }
 
       describe "the Microsoft.Extensions.DependencyModel dependency" do
@@ -104,6 +107,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
         stub_search_results_with_versions_v3("serilog", ["2.3.0"])
       end
+
       its(:length) { is_expected.to eq(6) }
 
       describe "the Microsoft.Extensions.DependencyModel dependency" do
@@ -212,7 +216,8 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
 
-      context "that is nested" do
+      context "when the dependency is nested" do
+        let(:directory) { "/dir" }
         let(:packages_config) do
           Dependabot::DependencyFile.new(
             name: "dir/packages.config",
@@ -240,7 +245,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.0",
-                file: "dir/packages.config",
+                file: "packages.config",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -259,7 +264,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.1",
-                file: "dir/packages.config",
+                file: "packages.config",
                 groups: ["devDependencies"],
                 source: nil
               }]
@@ -505,7 +510,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "discovered dependencies are reported" do
+    context "when discovered dependencies are reported" do
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
           name: "my.csproj",
@@ -701,13 +706,10 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
       it "does not return the `.csproj` with an unresolvable TFM" do
         expect(dependencies.length).to eq(0)
-        expect(Dependabot.logger).to have_received(:warn).with(
-          "Excluding project file 'my.csproj' due to unresolvable target framework"
-        )
       end
     end
 
-    context "packages referenced in implicitly included `.targets` file are reported" do
+    context "when packages are referenced in implicitly included `.targets` file" do
       let(:additional_files) { [directory_build_targets] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
@@ -751,7 +753,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "project <TargetFramework> element can be resolved from implicitly imported file" do
+    context "when the project <TargetFramework> element can be resolved from implicitly imported file" do
       let(:additional_files) { [directory_build_props] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(

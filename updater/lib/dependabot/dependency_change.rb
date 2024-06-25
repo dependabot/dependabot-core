@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/errors"
+require "dependabot/pull_request_creator/message_builder"
 
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
@@ -15,6 +17,21 @@ require "sorbet-runtime"
 module Dependabot
   class DependencyChange
     extend T::Sig
+
+    class InvalidUpdatedDependencies < Dependabot::DependabotError
+      extend T::Sig
+
+      sig { params(deps_no_previous_version: T::Array[String], deps_no_change: T::Array[String]).void }
+      def initialize(deps_no_previous_version:, deps_no_change:)
+        msg = ""
+        if deps_no_previous_version.any?
+          msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
+        end
+        msg += "No requirements change for: '#{deps_no_change.join(', ')}'" if deps_no_change.any?
+
+        super(msg)
+      end
+    end
 
     sig { returns(Dependabot::Job) }
     attr_reader :job
@@ -43,6 +60,7 @@ module Dependabot
       @dependency_group = dependency_group
 
       @pr_message = T.let(nil, T.nilable(Dependabot::PullRequestCreator::Message))
+      ensure_dependencies_have_directories
     end
 
     sig { returns(Dependabot::PullRequestCreator::Message) }
@@ -123,6 +141,26 @@ module Dependabot
     end
 
     sig { returns(T::Boolean) }
+    def all_have_previous_version?
+      return true if updated_dependencies.all?(&:requirements_changed?)
+      return true if updated_dependencies.all?(&:previous_version)
+
+      false
+    end
+
+    sig { void }
+    def check_dependencies_have_previous_version
+      return if all_have_previous_version?
+
+      deps_no_previous_version = updated_dependencies.reject(&:previous_version)
+      deps_no_change = updated_dependencies.reject(&:requirements_changed?)
+      raise InvalidUpdatedDependencies.new(
+        deps_no_previous_version: deps_no_previous_version.map(&:name),
+        deps_no_change: deps_no_change.map(&:name)
+      )
+    end
+
+    sig { returns(T::Boolean) }
     def matches_existing_pr?
       if grouped_update?
         # We only want PRs for the same group that have the same versions
@@ -144,10 +182,30 @@ module Dependabot
           {
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
+            "directory" => should_consider_directory? ? dep.directory : nil,
             "dependency-removed" => dep.removed? ? true : nil
           }.compact
         end
       )
+    end
+
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    def ensure_dependencies_have_directories
+      updated_dependencies.each do |dep|
+        dep.directory = directory
+      end
+    end
+
+    sig { returns(String) }
+    def directory
+      return "" if updated_dependency_files.empty?
+
+      T.must(updated_dependency_files.first).directory
+    end
+
+    sig { returns(T::Boolean) }
+    def should_consider_directory?
+      grouped_update? && Dependabot::Experiments.enabled?("dependency_has_directory")
     end
   end
 end

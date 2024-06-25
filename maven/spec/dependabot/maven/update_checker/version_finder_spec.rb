@@ -87,6 +87,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   describe "#latest_version_details when the dependency has a classifier" do
+    subject { finder.latest_version_details }
+
     let(:dependency_name) { "io.mockk:mockk" }
     let(:dependency_version) { "1.0.0" }
     let(:dependency_requirements) do
@@ -98,14 +100,15 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         metadata: { packaging_type: "jar", classifier: "sources" }
       }]
     end
-    subject { finder.latest_version_details }
 
     its([:version]) { is_expected.to eq(version_class.new("1.10.0")) }
   end
 
   describe "#latest_version_details" do
-    subject { finder.latest_version_details }
+    subject(:latest_version_details) { finder.latest_version_details }
+
     its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
@@ -139,6 +142,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.7.html")
       end
+
       its([:version]) do
         is_expected.to eq(version_class.new("23.7-rc1-android"))
       end
@@ -158,15 +162,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           "com/thoughtworks/xstream/xstream/1.4.12-java7/xstream-1.4.12-java7.jar"
       end
       let(:dependency_version) { "1.4.11-java7" }
+
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
 
-      context "and the type is native-mt" do
+      context "when the type is native-mt" do
         let(:dependency_version) { "1.4.11-native-mt" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
             "com/thoughtworks/xstream/" \
             "xstream/1.4.12-native-mt/xstream-1.4.12-native-mt.jar"
         end
+
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.12-native-mt"))
         end
@@ -189,6 +195,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           "com/thoughtworks/xstream/xstream/1.4.12/xstream-1.4.12.jar"
       end
       let(:dependency_version) { "1.4.11.1" }
+
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
     end
 
@@ -217,7 +224,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("3.2.2")) }
 
-      context "and that's what we're using" do
+      context "when that's what we're using" do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
@@ -230,24 +237,27 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             "commons-collections-20040616.html"
           )
         end
+
         its([:version]) { is_expected.to eq(version_class.new("20040616")) }
       end
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_details }.not_to raise_error
       end
     end
 
     context "when already on the latest version" do
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
     end
@@ -262,12 +272,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -282,6 +294,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
@@ -295,6 +308,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("21.0")) }
     end
 
@@ -308,6 +322,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
     end
 
@@ -320,6 +335,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.0.html")
       end
+
       its([:version]) { is_expected.to eq(version_class.new("23.0")) }
     end
 
@@ -347,11 +363,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
-      context "that is a gitlab maven repository" do
+      context "when gitlab maven repository is used" do
         let(:credentials) do
           [
             Dependabot::Credential.new({
@@ -383,12 +400,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
         end
       end
 
-      context "but no auth details" do
+      context "when there is no auth details" do
         let(:credentials) do
           [Dependabot::Credential.new({
             "type" => "maven_repository",
@@ -402,6 +420,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         end
 
         its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("https://private.registry.org/repo")
         end
@@ -416,7 +435,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
           it "raises a helpful error" do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
-            expect { subject }
+            expect { latest_version_details }
               .to raise_error(error_class) do |error|
               expect(error.source).to eq("https://private.registry.org/repo")
             end
@@ -489,6 +508,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://private.registry.org/repo")
       end
@@ -498,7 +518,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_files) { project_dependency_files("invalid_repository_url") }
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect { latest_version_details }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
           expect(error.message).to start_with("bad URI(is not URI?): \"http://host:port/content/groups/public")
         end
       end
@@ -560,6 +580,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
 
       its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
@@ -567,7 +588,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
 
   describe "#lowest_security_fix_version_details" do
-    subject { finder.lowest_security_fix_version_details }
+    subject(:lowest_security_fix_version_details) { finder.lowest_security_fix_version_details }
 
     let(:dependency_version) { "18.0" }
     let(:security_advisories) do
@@ -589,6 +610,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
 
     its([:version]) { is_expected.to eq(version_class.new("20.0")) }
+
     its([:source_url]) do
       is_expected.to eq("https://repo.maven.apache.org/maven2")
     end
@@ -617,13 +639,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:ignored_versions) { ["[17.0,)"] }
 
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(lowest_security_fix_version_details).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { lowest_security_fix_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -631,10 +654,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { lowest_security_fix_version_details }.not_to raise_error
         end
       end
     end
@@ -642,12 +666,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
   describe "#versions" do
     subject(:versions) { finder.versions }
+
     its(:count) { is_expected.to eq(70) }
 
     describe "the first version" do
       subject { versions.first }
 
       its([:version]) { is_expected.to eq(version_class.new("r03")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -657,6 +683,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       subject { versions.last }
 
       its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+
       its([:source_url]) do
         is_expected.to eq("https://repo.maven.apache.org/maven2")
       end
@@ -704,6 +731,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         subject { versions.first }
 
         its([:version]) { is_expected.to eq(version_class.new("r03")) }
+
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
@@ -713,12 +741,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         subject { versions.last }
 
         its([:version]) { is_expected.to eq(version_class.new("23.7-rc1-jre")) }
+
         its([:source_url]) do
           is_expected.to eq("http://repository.jboss.org/maven2")
         end
       end
 
-      context "that augment the central repo" do
+      context "when augmenting the central repo" do
         before do
           body =
             fixture("maven_central_metadata", "with_date_releases.xml")
@@ -735,6 +764,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           subject { versions.first }
 
           its([:version]) { is_expected.to eq(version_class.new("r01")) }
+
           its([:source_url]) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end
@@ -744,6 +774,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
           subject { versions.last }
 
           its([:version]) { is_expected.to eq(version_class.new("20040616")) }
+
           its([:source_url]) do
             is_expected.to eq("https://repo.maven.apache.org/maven2")
           end

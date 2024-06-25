@@ -2,7 +2,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities
 {
-    public class SdkPackageUpdaterHelperTests
+    public class SdkPackageUpdaterHelperTests : TestBase
     {
         [Fact]
         public async Task DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()
@@ -167,7 +167,7 @@ namespace NuGetUpdater.Core.Test.Utilities
 
         private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
         {
-            var buildFiles = await MSBuildHelper.LoadBuildFilesAsync(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
+            var (buildFiles, _tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
             var buildFilePaths = buildFiles.Select(f => f.RelativePath.NormalizePathToUnix()).ToArray();
             return buildFilePaths;
         }

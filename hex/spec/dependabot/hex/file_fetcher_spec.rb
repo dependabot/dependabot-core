@@ -6,20 +6,6 @@ require "dependabot/hex/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Hex::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: "/"
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
-  let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -28,10 +14,21 @@ RSpec.describe Dependabot::Hex::FileFetcher do
       "password" => "token"
     }]
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  let(:json_header) { { "content-type" => "application/json" } }
+  let(:url) { "https://api.github.com/repos/gocardless/bump/contents/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
 
   before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
     stub_request(:get, url + "?ref=sha")
       .with(headers: { "Authorization" => "token token" })
       .to_return(
@@ -55,7 +52,10 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         body: fixture("github", "contents_elixir_lockfile.json"),
         headers: json_header
       )
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the mix.exs and mix.lock" do
     expect(file_fetcher_instance.files.count).to eq(2)
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to include("apps/bank/mix.exs")
         expect(file_fetcher_instance.files.map(&:name))
-          .to_not include("apps/bank_web/mix.exs")
+          .not_to include("apps/bank_web/mix.exs")
       end
     end
 

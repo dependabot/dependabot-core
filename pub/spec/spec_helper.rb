@@ -29,7 +29,7 @@ def run_git(args, dir)
   stdout
 end
 
-shared_context :uses_temp_dir do
+shared_context "with temp dir" do
   around do |example|
     Dir.mktmpdir("rspec-") do |dir|
       @temp_dir = dir

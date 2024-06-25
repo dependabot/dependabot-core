@@ -59,6 +59,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
@@ -68,29 +69,32 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
 
-      context "the minimum version of which is invalid" do
+      context "when the minimum version is invalid" do
         let(:dependency_version) { "4.2.0" }
         let(:string_req) { "4.2.0" }
+        let(:latest_allowable_version) { Gem::Version.new("4.3.1") }
 
         it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
       end
     end
 
     context "with an application using a ^ PHP constraint" do
-      context "the minimum version of which is invalid" do
+      context "when the minimum version is invalid" do
         let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
+        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
         it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
       end
     end
 
-    context "updating a subdependency that's not required anymore" do
+    context "when updating a subdependency that's not required anymore" do
       let(:project_name) { "subdependency_no_longer_required" }
       let(:requirements) { [] }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
@@ -103,7 +107,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with a dependency that's provided by another dep" do
       let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
-      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+      let(:latest_allowable_version) { Gem::Version.new("1.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
