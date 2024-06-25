@@ -29,7 +29,8 @@ module Dependabot
         RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
-        PIP_COMPILE_COMMAND = "pyenv exec uv pip compile"
+        PIP_COMPILE_COMMAND = "pyenv exec pip-compile"
+        # PIP_COMPILE_COMMAND = "pyenv exec uv pip compile"
 
         attr_reader :dependencies
         attr_reader :dependency_files
