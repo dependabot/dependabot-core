@@ -11,10 +11,6 @@ RSpec/AnyInstance:
   Exclude:
     - 'bundler/helpers/v1/spec/shared_contexts.rb'
     - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/clients/codecommit_spec.rb'
-    - 'common/spec/dependabot/file_fetchers/base_spec.rb'
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
     - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
     - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
