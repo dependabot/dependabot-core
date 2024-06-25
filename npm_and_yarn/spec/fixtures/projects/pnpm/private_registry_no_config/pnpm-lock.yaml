@@ -1,0 +1,11 @@
+lockfileVersion: "6.0"
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+dependencies:
+  next:
+    specifier: ^13.2.4
+    version: 13.5.6(@babel/core@7.23.9)(react-dom@18.2.0)(react@18.2.0)(sass@1.71.1)
+  gsap:
+    specifier: npm:@gsap/business@^3.12.4
+    version: /@gsap/business@3.12.4
