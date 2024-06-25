@@ -110,18 +110,17 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-# RubyGems & Bundler should be bumped together following these steps:
-# * Bump RubyGems version below. That will also automatically update the default Bundler version.
-# * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`.
-# * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
-#
-# Note that RubyGems & Bundler versions are currently released in sync, but
-# RubyGems version is one major ahead. So when bumping to RubyGems 3.y.z, Bundler
-# version will jump to 2.y.z
 ARG RUBYGEMS_VERSION=3.5.14
 RUN gem update --system $RUBYGEMS_VERSION
 
-RUN bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
+# When bumping Bundler, need to also:
+# * Regenerate `updater/Gemfile.lock` via `BUNDLE_GEMFILE=updater/Gemfile bundle lock --update --bundler`
+# * Regenerate `Gemfile.lock` via `bundle lock --update --bundler`.
+ARG BUNDLER_V2_VERSION=2.5.14
+
+RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
+ rm -rf /var/lib/gems/*/cache/* && \
+ bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
  bundle config set --local path 'vendor' && \
  bundle config set --local frozen 'true' && \
  bundle config set --local without 'development' && \
