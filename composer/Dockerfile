@@ -1,6 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COMPOSER_V1_VERSION=1.10.27
-ARG COMPOSER_V2_VERSION=2.6.5
+ARG COMPOSER_V2_VERSION=2.7.4
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
   && apt-get upgrade -y \

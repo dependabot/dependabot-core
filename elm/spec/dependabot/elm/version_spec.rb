@@ -6,6 +6,7 @@ require "dependabot/elm/version"
 
 RSpec.describe Dependabot::Elm::Version do
   subject(:version) { described_class.new(version_string) }
+
   let(:version_string) { "1.0.0" }
 
   describe ".correct?" do
@@ -13,17 +14,20 @@ RSpec.describe Dependabot::Elm::Version do
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+
+      it { is_expected.to be(true) }
     end
 
     context "with nil" do
       let(:version_string) { nil }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "1.0.0a" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
   end
 
@@ -32,6 +36,7 @@ RSpec.describe Dependabot::Elm::Version do
 
     context "with a valid string" do
       let(:version_string) { "1.0.0" }
+
       it { is_expected.to eq "1.0.0" }
     end
   end
@@ -39,19 +44,22 @@ RSpec.describe Dependabot::Elm::Version do
   describe "#<=>" do
     subject { version <=> other_version }
 
-    context "compared to a Gem::Version" do
-      context "that is lower" do
+    context "when comparing to a Gem::Version" do
+      context "when lower" do
         let(:other_version) { Gem::Version.new("0.9.0") }
+
         it { is_expected.to eq(1) }
       end
 
-      context "that is equal" do
+      context "when equal" do
         let(:other_version) { Gem::Version.new("1.0.0") }
+
         it { is_expected.to eq(0) }
       end
 
-      context "that is greater" do
+      context "when greater" do
         let(:other_version) { Gem::Version.new("1.1.0") }
+
         it { is_expected.to eq(-1) }
       end
     end
@@ -59,16 +67,19 @@ RSpec.describe Dependabot::Elm::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
+
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
-      it { is_expected.to eq(true) }
+
+      it { is_expected.to be(true) }
     end
 
     context "with an invalid version" do
       let(:version_string) { "0.9.0" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
   end
 end

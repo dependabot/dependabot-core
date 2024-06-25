@@ -9,18 +9,18 @@ require "dependabot/config/update_config"
 RSpec.describe Dependabot::Config::File do
   describe "#parse" do
     it "parses the config file" do
-      cfg = Dependabot::Config::File.parse(fixture("configfile", "bundler-daily.yml"))
+      cfg = described_class.parse(fixture("configfile", "bundler-daily.yml"))
       expect(cfg.updates.size).to eq(1)
     end
 
     it "rejects version:1 config file" do
-      expect { Dependabot::Config::File.parse("version: 1\n") }
+      expect { described_class.parse("version: 1\n") }
         .to raise_error(Dependabot::Config::InvalidConfigError)
     end
   end
 
   describe "File" do
-    let(:config) { Dependabot::Config::File.parse(fixture("configfile", "npm-weekly.yml")) }
+    let(:config) { described_class.parse(fixture("configfile", "npm-weekly.yml")) }
 
     describe "#update_config" do
       it "maps package_manager to package-ecosystem" do
@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Config::File do
     end
 
     describe "#parse" do
-      let(:config) { Dependabot::Config::File.parse(fixture("configfile", "ignore-conditions.yml")) }
+      let(:config) { described_class.parse(fixture("configfile", "ignore-conditions.yml")) }
       let(:update_config) { config.update_config("npm_and_yarn") }
 
       it "loads ignore conditions" do

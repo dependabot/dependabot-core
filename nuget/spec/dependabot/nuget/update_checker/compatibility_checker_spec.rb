@@ -3,19 +3,30 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/compatibility_checker"
 require "dependabot/nuget/update_checker/repository_finder"
 require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::CompatibilityChecker do
   subject(:checker) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency_urls: dependency_urls,
-      dependency: dependency,
-      tfm_finder: tfm_finder
+      dependency: dependency
     )
   end
 
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:dependency_urls) do
     Dependabot::Nuget::RepositoryFinder.new(
       dependency: dependency,
@@ -47,14 +58,6 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
     [{ file: "my.csproj", requirement: "5.0.2", groups: ["dependencies"], source: nil }]
   end
 
-  let(:tfm_finder) do
-    Dependabot::Nuget::TfmFinder.new(
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: "test/repo"
-    )
-  end
-
   let(:dependency_files) { [csproj] }
   let(:csproj) do
     Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
@@ -72,7 +75,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
     XML
   end
 
-  context "#compatible?" do
+  describe "#compatible?" do
     subject(:compatible) { checker.compatible?(version) }
 
     before do
@@ -245,7 +248,7 @@ RSpec.describe Dependabot::Nuget::CompatibilityChecker do
           )
       end
 
-      context "checks the `.nupkg` contents" do
+      context "when checking the `.nupkg` contents" do
         let(:version) { "5.0.2" }
 
         it "returns the correct data" do

@@ -3,6 +3,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
 require "dependabot/bundler/file_updater/git_pin_replacer"
 require "dependabot/bundler/file_updater/git_source_remover"
@@ -93,6 +94,7 @@ module Dependabot
           files += [
             lockfile,
             ruby_version_file,
+            tool_versions_file,
             *imported_ruby_files,
             *specification_files
           ].compact
@@ -102,8 +104,10 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :dependency, :replacement_git_pin,
-                    :latest_allowable_version
+        attr_reader :dependency_files
+        attr_reader :dependency
+        attr_reader :replacement_git_pin
+        attr_reader :latest_allowable_version
 
         def remove_git_source?
           @remove_git_source
@@ -127,10 +131,10 @@ module Dependabot
             .reject { |f| f.name.end_with?(".gemspec") }
             .reject { |f| f.name.end_with?(".specification") }
             .reject { |f| f.name.end_with?(".lock") }
-            .reject { |f| f.name.end_with?(".ruby-version") }
             .reject { |f| f.name == "Gemfile" }
             .reject { |f| f.name == "gems.rb" }
             .reject { |f| f.name == "gems.locked" }
+            .reject(&:support_file?)
         end
 
         def lockfile
@@ -149,6 +153,10 @@ module Dependabot
 
         def ruby_version_file
           dependency_files.find { |f| f.name == ".ruby-version" }
+        end
+
+        def tool_versions_file
+          dependency_files.find { |f| f.name == ".tool-versions" }
         end
 
         def path_gemspecs
@@ -266,8 +274,8 @@ module Dependabot
           return "0.0.1" unless lockfile
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_content).specs
-                                     .select { |s| gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_content).specs
+                                .select { |s| gemspec_sources.include?(s.source.class) }
 
           gem_name =
             FileUpdater::GemspecDependencyNameFinder

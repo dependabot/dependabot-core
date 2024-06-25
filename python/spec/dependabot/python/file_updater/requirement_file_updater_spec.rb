@@ -75,19 +75,66 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       context "when only the minor version is specified" do
         let(:requirements_fixture_name) { "minor_version_specified.txt" }
         let(:previous_requirement_string) { "==2.6" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when a local version is specified" do
         let(:requirements_fixture_name) { "local_version.txt" }
         let(:previous_requirement_string) { "==2.6.1+gc.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       end
 
       context "when there is a comment" do
         let(:requirements_fixture_name) { "comments.txt" }
         let(:previous_requirement_string) { "==2.6.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1  # Comment!\n" }
+      end
+
+      context "with an unknown package" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "some_unknown_package",
+            version: "24.3.3",
+            requirements: [{
+              file: "requirements.txt",
+              requirement: updated_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "requirements.txt",
+              requirement: previous_requirement_string,
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:requirements_fixture_name) { "hashes_unknown_package.txt" }
+        let(:previous_requirement_string) { "==24.3.3" }
+        let(:updated_requirement_string) { "==24.4.0" }
+
+        context "when package is not in default index" do
+          it "raises an error" do
+            expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when package is in default index" do
+          before do
+            allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+              .and_return([{ "hash" => "1234567890abcdef" }])
+          end
+
+          its(:content) do
+            is_expected.to include "some_unknown_package==24.4.0"
+            is_expected.to include "--hash=sha256:1234567890abcdef"
+          end
+        end
       end
 
       context "when there is a range" do
@@ -135,6 +182,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
             package_manager: "pip"
           )
         end
+
         its(:content) { is_expected.to include "\nSQLAlchemy==1.2.10\n" }
         its(:content) { is_expected.to include "Flask-SQLAlchemy==1.2.9\n" }
       end
@@ -172,7 +220,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           )
         end
 
-        context "using a sha512 algorithm" do
+        context "when using a sha512 algorithm" do
           let(:requirements_fixture_name) { "hashes_512.txt" }
 
           its(:content) do
@@ -261,7 +309,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
             )
           end
 
-          context "moving to multiple hashes" do
+          context "when moving to multiple hashes" do
             let(:requirements_fixture_name) { "hashes_single_to_multiple.txt" }
             let(:dependency) do
               Dependabot::Dependency.new(
@@ -300,6 +348,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       context "when there are unused lines" do
         let(:requirements_fixture_name) { "invalid_lines.txt" }
         let(:previous_requirement_string) { "==2.6.1" }
+
         its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
         its(:content) { is_expected.to include "# This is just a comment" }
       end
@@ -346,6 +395,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_file) do
         updated_files.find { |f| f.name == "setup.py" }
       end
+
       let(:dependency_files) { [setup] }
       let(:setup) do
         Dependabot::DependencyFile.new(
@@ -453,6 +503,7 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
       subject(:updated_setup_cfg_file) do
         updated_files.find { |f| f.name == "setup.cfg" }
       end
+
       let(:dependency_files) { [setup_cfg] }
       let(:setup_cfg) do
         Dependabot::DependencyFile.new(

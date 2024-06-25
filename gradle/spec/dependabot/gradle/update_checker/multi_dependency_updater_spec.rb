@@ -16,6 +16,22 @@ RSpec.describe namespace::MultiDependencyUpdater do
       ignored_versions: ignored_versions
     )
   end
+  ########################
+  # Dependency set setup #
+  ########################
+
+  let(:jcenter_metadata_url_protoc) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protoc/maven-metadata.xml"
+  end
+  let(:jcenter_metadata_url_protobuf_java) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java/maven-metadata.xml"
+  end
+  let(:jcenter_metadata_url_protobuf_java_util) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
+  end
 
   let(:version_class) { Dependabot::Gradle::Version }
   let(:credentials) { [] }
@@ -81,26 +97,6 @@ RSpec.describe namespace::MultiDependencyUpdater do
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-  end
-
-  ########################
-  # Dependency set setup #
-  ########################
-
-  let(:jcenter_metadata_url_protoc) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protoc/maven-metadata.xml"
-  end
-  let(:jcenter_metadata_url_protobuf_java) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protobuf-java/maven-metadata.xml"
-  end
-  let(:jcenter_metadata_url_protobuf_java_util) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
-  end
-
-  before do
     stub_request(:get, jcenter_metadata_url_protoc)
       .to_return(
         status: 200,
@@ -122,11 +118,12 @@ RSpec.describe namespace::MultiDependencyUpdater do
     subject { updater.update_possible? }
 
     context "with a property version" do
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "without a target version" do
         let(:target_version_details) { nil }
-        it { is_expected.to eq(false) }
+
+        it { is_expected.to be(false) }
       end
 
       context "when one dependency is missing the target version" do
@@ -139,7 +136,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
             )
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
 
@@ -160,11 +157,12 @@ RSpec.describe namespace::MultiDependencyUpdater do
       let(:dependency_name) { "com.google.protobuf:protoc" }
       let(:dependency_version) { "3.6.1" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "without a target version" do
         let(:target_version_details) { nil }
-        it { is_expected.to eq(false) }
+
+        it { is_expected.to be(false) }
       end
 
       context "when one dependency is missing the target version" do
@@ -177,7 +175,7 @@ RSpec.describe namespace::MultiDependencyUpdater do
             )
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end

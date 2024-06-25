@@ -45,7 +45,6 @@ job:
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
-  grouped-update: true
   dependency-groups:
     - name: first
       rules:
@@ -70,7 +69,6 @@ job:
     - dependency-a
     - dependency-b
   updating-a-pull-request: true
-  grouped-update: true
   dependency-group-to-refresh: first
   existing-group-pull-requests:
     - dependency-group-name: first

@@ -6,6 +6,7 @@ require "bundler"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/bundler/file_updater"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 
@@ -54,8 +55,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials, :options
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
@@ -92,6 +96,7 @@ module Dependabot
 
           write_gemspecs(top_level_gemspecs)
           write_ruby_version_file
+          write_tool_versions_file
           write_gemspecs(path_gemspecs)
           write_specification_files
           write_imported_ruby_files
@@ -109,6 +114,14 @@ module Dependabot
           path = ruby_version_file.name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
           File.write(path, ruby_version_file.content)
+        end
+
+        def write_tool_versions_file
+          return unless tool_versions_file
+
+          path = tool_versions_file.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, tool_versions_file.content)
         end
 
         def write_gemspecs(files)
@@ -154,6 +167,10 @@ module Dependabot
 
         def ruby_version_file
           dependency_files.find { |f| f.name == ".ruby-version" }
+        end
+
+        def tool_versions_file
+          dependency_files.find { |f| f.name == ".tool-versions" }
         end
 
         def post_process_lockfile(lockfile_body)
@@ -213,8 +230,8 @@ module Dependabot
                                        .dependency_name || File.basename(path, ".gemspec")
 
           gemspec_specs =
-            ::Bundler::LockfileParser.new(sanitized_lockfile_body).specs
-                                     .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
+            CachedLockfileParser.parse(sanitized_lockfile_body).specs
+                                .select { |s| s.name == gem_name && gemspec_sources.include?(s.source.class) }
 
           gemspec_specs.first&.version || "0.0.1"
         end
@@ -265,7 +282,6 @@ module Dependabot
             .reject { |f| f.name.end_with?(".gemspec") }
             .reject { |f| f.name.end_with?(".specification") }
             .reject { |f| f.name.end_with?(".lock") }
-            .reject { |f| f.name.end_with?(".ruby-version") }
             .reject { |f| f.name == "Gemfile" }
             .reject { |f| f.name == "gems.rb" }
             .reject { |f| f.name == "gems.locked" }

@@ -4,19 +4,20 @@
 require "dependabot/nuget/nuget_config_credential_helpers"
 
 RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
+  subject(:result) { user_nuget_config_contents_during_and_after_action }
+
   let(:user_nuget_config_contents_during_and_after_action) do
-    path = Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path
+    path = described_class.user_nuget_config_path
     content_during_action = nil
-    Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+    described_class.patch_nuget_config_for_action(credentials) do
       content_during_action = File.read(path)
     end
     content_after_action = File.read(path)
     { content_during_action: content_during_action, content_after_action: content_after_action }
   end
 
-  subject(:result) { user_nuget_config_contents_during_and_after_action }
   let(:default_nuget_config_contents) do
-    File.read(Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path)
+    File.read(described_class.user_nuget_config_path)
   end
 
   describe "user level NuGet.Config patching" do
@@ -64,10 +65,10 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
 
       context "when exception is raised" do
         it "restores the original file after an exception" do
-          Dependabot::Nuget::NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          described_class.patch_nuget_config_for_action(credentials) do
             raise "This exception was raised when the NuGet.Config file was patched"
           end
-          nuget_config_content = File.read(Dependabot::Nuget::NuGetConfigCredentialHelpers.user_nuget_config_path)
+          nuget_config_content = File.read(described_class.user_nuget_config_path)
           expect(nuget_config_content).to eq(default_nuget_config_contents)
         end
       end

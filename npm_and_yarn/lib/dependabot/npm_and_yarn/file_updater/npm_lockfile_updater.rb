@@ -33,7 +33,10 @@ module Dependabot
 
         private
 
-        attr_reader :lockfile, :dependencies, :dependency_files, :credentials
+        attr_reader :lockfile
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
@@ -418,7 +421,7 @@ module Dependabot
           end
 
           if error_message.include?("EBADENGINE")
-            msg = "Dependabot uses Node.js #{`node --version`} and NPM #{`npm --version`}. " \
+            msg = "Dependabot uses Node.js #{`node --version`.strip} and NPM #{`npm --version`.strip}. " \
                   "Due to the engine-strict setting, the update will not succeed."
             raise Dependabot::DependencyFileNotResolvable, msg
           end

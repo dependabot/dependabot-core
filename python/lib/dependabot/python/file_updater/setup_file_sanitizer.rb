@@ -21,7 +21,7 @@ module Dependabot
           # in the lockfile.
           content =
             "from setuptools import setup\n\n" \
-            "setup(name=\"sanitized-package\",version=\"0.0.1\"," \
+            "setup(name=\"#{package_name}\",version=\"0.0.1\"," \
             "install_requires=#{install_requires_array.to_json}," \
             "extras_require=#{extras_require_hash.to_json}"
 
@@ -31,7 +31,8 @@ module Dependabot
 
         private
 
-        attr_reader :setup_file, :setup_cfg
+        attr_reader :setup_file
+        attr_reader :setup_cfg
 
         def include_pbr?
           setup_requires_array.any? { |d| d.start_with?("pbr") }
@@ -83,6 +84,12 @@ module Dependabot
                 setup_cfg&.dup&.tap { |f| f.name = "setup.cfg" }
               ].compact
             ).dependency_set
+        end
+
+        def package_name
+          content = setup_file.content
+          match = content.match(/name\s*=\s*['"](?<package_name>[^'"]+)['"]/)
+          match ? match[:package_name] : "default_package_name"
         end
       end
     end

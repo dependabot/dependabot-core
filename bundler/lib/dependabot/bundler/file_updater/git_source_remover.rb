@@ -1,13 +1,17 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
+require "sorbet-runtime"
+
 require "dependabot/bundler/file_updater"
 
 module Dependabot
   module Bundler
     class FileUpdater
       class GitSourceRemover
+        extend T::Sig
+
         attr_reader :dependency
 
         def initialize(dependency:)
@@ -73,7 +77,7 @@ module Dependabot
           end
 
           def remove_git_related_kwargs(kwargs_node)
-            good_key_index = nil
+            good_key_index = T.let(nil, T.nilable(Integer))
             hash_pairs = kwargs_node.children
 
             hash_pairs.each_with_index do |hash_pair, index|

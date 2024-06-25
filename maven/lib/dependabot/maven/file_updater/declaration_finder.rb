@@ -10,12 +10,18 @@ module Dependabot
   module Maven
     class FileUpdater
       class DeclarationFinder
-        DECLARATION_REGEX =
-          %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-             <plugin>.*?(?:<plugin>.*?</plugin>.*)?</plugin>|<extension>.*?</extension>|
-             <path>.*?</path>}mx
+        DECLARATION_REGEX = %r{
+              <parent>.*?</parent>|
+              <dependency>.*?</dependency>|
+              <plugin>.*?(?:<plugin>.*?</plugin>.*)?</plugin>|
+              <extension>.*?</extension>|
+              <path>.*?</path>|
+              <artifactItem>.*?</artifactItem>
+            }mx
 
-        attr_reader :dependency, :declaring_requirement, :dependency_files
+        attr_reader :dependency
+        attr_reader :declaring_requirement
+        attr_reader :dependency_files
 
         def initialize(dependency:, dependency_files:, declaring_requirement:)
           @dependency            = dependency

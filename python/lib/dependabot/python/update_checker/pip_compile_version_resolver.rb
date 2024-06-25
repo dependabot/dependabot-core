@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "open3"
@@ -33,7 +33,10 @@ module Dependabot
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
 
-        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
@@ -410,7 +413,7 @@ module Dependabot
         # If the files we need to update require one another then we need to
         # update them in the right order
         def order_filenames_for_compilation(filenames)
-          ordered_filenames = []
+          ordered_filenames = T.let([], T::Array[String])
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=

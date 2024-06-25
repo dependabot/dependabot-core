@@ -4,17 +4,27 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::TfmFinder do
-  subject(:finder) do
-    described_class.new(
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: "test/repo"
-    )
+  subject(:frameworks) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
+    described_class.frameworks(dependency)
   end
 
+  let(:project_name) { "tfm_finder" }
+  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: "/").reverse }
+  let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -24,44 +34,11 @@ RSpec.describe Dependabot::Nuget::TfmFinder do
     )
   end
 
-  let(:dependency_files) { [exe_proj, lib_proj] }
-  let(:exe_proj) do
-    Dependabot::DependencyFile.new(
-      name: "my.csproj",
-      content: fixture("csproj", "transitive_project_reference.csproj")
-    )
-  end
-  let(:lib_proj) do
-    Dependabot::DependencyFile.new(
-      name: "ref/another.csproj",
-      content: fixture("csproj", "transitive_referenced_project.csproj")
-    )
-  end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-
-  before do
-    allow(finder).to receive(:project_file_contains_dependency?).with(exe_proj, any_args).and_return(true)
-  end
-
   describe "#frameworks" do
     context "when checking for a transitive dependency" do
       let(:dependency_requirements) { [] }
       let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
       let(:dependency_version) { "1.1.1" }
-
-      subject(:frameworks) { finder.frameworks(dependency) }
-
-      before do
-        allow(finder).to receive(:project_file_contains_dependency?).with(lib_proj, dependency).and_return(true)
-      end
 
       its(:length) { is_expected.to eq(2) }
     end
@@ -72,12 +49,6 @@ RSpec.describe Dependabot::Nuget::TfmFinder do
       end
       let(:dependency_name) { "Serilog" }
       let(:dependency_version) { "2.3.0" }
-
-      subject(:frameworks) { finder.frameworks(dependency) }
-
-      before do
-        allow(finder).to receive(:project_file_contains_dependency?).with(lib_proj, dependency).and_return(false)
-      end
 
       its(:length) { is_expected.to eq(1) }
     end

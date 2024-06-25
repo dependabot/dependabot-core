@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers"
@@ -28,9 +29,11 @@ module Dependabot
                             "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
+      PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
+                                       "configuration > artifactItems > artifactItem"
 
       # Regex to get the property name from a declaration that uses a property
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
+      PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
 
       def parse
         dependency_set = DependencySet.new
@@ -44,7 +47,7 @@ module Dependabot
       def pomfile_dependencies(pom)
         dependency_set = DependencySet.new
 
-        errors = []
+        errors = T.let([], T::Array[Dependabot::DependencyFileNotEvaluatable])
         doc = Nokogiri::XML(pom.content)
         doc.remove_namespaces!
 
@@ -55,14 +58,14 @@ module Dependabot
           errors << e
         end
 
-        doc.css(PLUGIN_SELECTOR).each do |dependency_node|
+        doc.css(PLUGIN_SELECTOR, PLUGIN_ARTIFACT_ITEMS_SELECTOR).each do |dependency_node|
           dep = dependency_from_plugin_node(pom, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
         end
 
-        raise errors.first if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end
@@ -70,7 +73,7 @@ module Dependabot
       def extensionfile_dependencies(extension)
         dependency_set = DependencySet.new
 
-        errors = []
+        errors = T.let([], T::Array[Dependabot::DependencyFileNotEvaluatable])
         doc = Nokogiri::XML(extension.content)
         doc.remove_namespaces!
 
@@ -81,7 +84,7 @@ module Dependabot
           errors << e
         end
 
-        raise errors.first if errors.any? && dependency_set.dependencies.none?
+        raise T.must(errors.first) if errors.any? && dependency_set.dependencies.none?
 
         dependency_set
       end

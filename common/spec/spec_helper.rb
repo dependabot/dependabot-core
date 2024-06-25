@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "rspec/its"
@@ -6,8 +6,27 @@ require "rspec/sorbet"
 require "webmock/rspec"
 require "vcr"
 require "debug"
+require "simplecov"
+require "simplecov_json_formatter"
 require "stackprof"
 require "uri"
+
+# SimpleCov _must_ be started before any dependabot code is loaded
+SimpleCov.start do
+  command_name "test-process-#{ENV.fetch('TEST_ENV_NUMBER', 1)}"
+  add_filter "/spec/"
+  if ENV["CI"]
+    formatter SimpleCov::Formatter::SimpleFormatter
+  else
+    formatter SimpleCov::Formatter::MultiFormatter.new([
+      SimpleCov::Formatter::SimpleFormatter,
+      SimpleCov::Formatter::HTMLFormatter
+    ])
+  end
+  enable_coverage :branch
+  primary_coverage :branch
+  minimum_coverage line: 0, branch: 0
+end
 
 require "dependabot/dependency_file"
 require "dependabot/experiments"
@@ -76,13 +95,40 @@ VCR.configure do |config|
   end
 
   # Let's you set default VCR mode with VCR=all for re-recording
-  # episodes. :once is VCR default
-  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :once
+  # episodes. We use :none here to avoid recording new cassettes
+  # in CI if it doesn't already exist for a test
+  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :none
   config.default_cassette_options = { record: record_mode }
 end
 
 def fixture(*name)
   File.read(File.join("spec", "fixtures", File.join(*name)))
+end
+
+# Creates a temporary directory and writes the provided files into it.
+#
+# @param files [DependencyFile] the files to be written into the temporary directory
+def write_tmp_repo(files,
+                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+  FileUtils.mkdir_p(tmp_dir_path)
+  tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
+  tmp_repo_path = Pathname.new(tmp_repo).expand_path
+  FileUtils.mkpath(tmp_repo_path)
+
+  files.each do |file|
+    path = tmp_repo_path.join(file.name)
+    FileUtils.mkpath(path.dirname)
+    File.write(path, file.content)
+  end
+
+  Dir.chdir(tmp_repo_path) do
+    Dependabot::SharedHelpers.run_shell_command("git init")
+    Dependabot::SharedHelpers.run_shell_command("git add --all")
+    Dependabot::SharedHelpers.run_shell_command("git commit -m init")
+  end
+
+  tmp_repo_path.to_s
 end
 
 # Creates a temporary directory and copies in any files from the specified

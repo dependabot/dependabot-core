@@ -282,6 +282,41 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         expect(WebMock)
           .to have_requested(:post, "#{repo_api_url}/merge_requests")
       end
+
+      context "with author details" do
+        let(:author_details) do
+          {
+            email: "no-reply@example.com",
+            name: "Dependabot"
+          }
+        end
+
+        it "pushes a commit to GitLab and creates and set the proper author details" do
+          creator.create
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/repository/commits")
+            .with(
+              body: {
+                branch: branch_name,
+                commit_message: commit_message,
+                actions: [
+                  {
+                    action: "update",
+                    file_path: files[0].directory + "/" + files[0].name,
+                    content: files[0].content,
+                    encoding: "base64"
+                  }
+                ],
+                author_email: "no-reply@example.com",
+                author_name: "Dependabot"
+              }
+            )
+
+          expect(WebMock)
+            .to have_requested(:post, "#{repo_api_url}/merge_requests")
+        end
+      end
     end
 
     context "with a symlink" do
@@ -333,7 +368,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         )
       end
 
-      context "but a merge request to this branch doesn't" do
+      context "when a merge request to this branch doesn't exist" do
         before do
           stub_request(:get, "#{repo_api_url}/merge_requests")
             .with(
@@ -345,7 +380,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             ).to_return(status: 200, body: "[]", headers: json_header)
         end
 
-        context "and the commit doesn't already exists on that branch" do
+        context "when the commit doesn't already exists on that branch" do
           before do
             stub_request(:get, "#{repo_api_url}/repository/commits")
               .with(query: { ref_name: branch_name })
@@ -355,7 +390,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
 
           it "creates a commit and merge request with the right details" do
-            expect(creator.create).to_not be_nil
+            expect(creator.create).not_to be_nil
 
             expect(WebMock)
               .to have_requested(:post, "#{repo_api_url}/repository/commits")
@@ -364,7 +399,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
         end
 
-        context "and a commit already exists on that branch" do
+        context "when a commit already exists on that branch" do
           before do
             stub_request(:get, "#{repo_api_url}/repository/commits")
               .with(query: { ref_name: branch_name })
@@ -374,17 +409,17 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           end
 
           it "creates a merge request but not a commit" do
-            expect(creator.create).to_not be_nil
+            expect(creator.create).not_to be_nil
 
             expect(WebMock)
-              .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+              .not_to have_requested(:post, "#{repo_api_url}/repository/commits")
             expect(WebMock)
               .to have_requested(:post, "#{repo_api_url}/merge_requests")
           end
         end
       end
 
-      context "and a merge request to this branch already exists" do
+      context "when a merge request to this branch already exists" do
         before do
           stub_request(:get, "#{repo_api_url}/merge_requests")
             .with(
@@ -400,9 +435,9 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           expect(creator.create).to be_nil
 
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/repository/commits")
+            .not_to have_requested(:post, "#{repo_api_url}/repository/commits")
           expect(WebMock)
-            .to_not have_requested(:post, "#{repo_api_url}/merge_requests")
+            .not_to have_requested(:post, "#{repo_api_url}/merge_requests")
         end
       end
     end

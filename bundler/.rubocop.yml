@@ -1,1 +1,10 @@
 inherit_from: ../.rubocop.yml
+
+inherit_mode:
+  merge:
+    - Exclude
+
+Sorbet/TrueSigil:
+  Enabled: true
+  Exclude:
+    - "helpers/**/monkey_patches/*.rb"

@@ -1,4 +1,5 @@
-using System.Threading.Tasks;
+using System.Linq;
+using System.Text;
 
 using Xunit;
 
@@ -8,167 +9,182 @@ public partial class UpdateWorkerTests
 {
     public class Sdk : UpdateWorkerTestBase
     {
-        public Sdk()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Theory]
         [InlineData("net472")]
-        [InlineData("netstandard2.0")]
-        [InlineData("net5.0")]
-        [InlineData("net6.0")]
         [InlineData("net7.0")]
         [InlineData("net8.0")]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude(string tfm)
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", tfm),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", tfm),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>{tfm}</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>{tfm}</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>{tfm}</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>{tfm}</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceInclude()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json">
-                      <Version>9.0.1</Version>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package">
+                          <Version>9.0.1</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json">
-                      <Version>13.0.1</Version>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package">
+                          <Version>13.0.1</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """
+              );
         }
 
         [Fact]
         public async Task UpdateVersions_InProjectFile_ForDuplicatePackageReferenceInclude()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                    <PackageReference Include="Newtonsoft.Json">
-                        <Version>9.0.1</Version>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                        <PackageReference Include="Some.Package">
+                            <Version>9.0.1</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                    <PackageReference Include="Newtonsoft.Json">
-                        <Version>13.0.1</Version>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                        <PackageReference Include="Some.Package">
+                            <Version>13.0.1</Version>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task PartialUpdate_InMultipleProjectFiles_ForVersionConstraint()
         {
-            // update Newtonsoft.Json from 12.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            // update Some.Package from 12.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-                    <ProjectReference Include="../Project/Project.csproj" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="12.0.1" />
+                        <ProjectReference Include="../Project/Project.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     (Path: "src/Project/Project.csproj", Content: """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+                            <PackageReference Include="Some.Package" Version="[12.0.1, 13.0.0)" />
                           </ItemGroup>
                         </Project>
                         """),
                 ],
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                    <ProjectReference Include="../Project/Project.csproj" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                        <ProjectReference Include="../Project/Project.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     (Path: "src/Project/Project.csproj", Content: """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="[12.0.1, 13.0.0)" />
+                            <PackageReference Include="Some.Package" Version="[12.0.1, 13.0.0)" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -176,77 +192,84 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
-        public async Task NoChange_WhenPackageHasVersionConstraint()
-        {
-            // Dependency package has version constraint
-            await TestNoChangeforProject("AWSSDK.Core", "3.3.21.19", "3.7.300.20",
-                projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AWSSDK.S3" Version="3.3.17.3" />
-                    <PackageReference Include="AWSSDK.Core" Version="3.3.21.19" />
-                  </ItemGroup>
-                </Project>
-                """);
-        }
-
-        [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude_Windows()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                    // necessary for the `net8.0-windows10.0.19041.0` TFM
+                    new("Microsoft.Windows.SDK.NET.Ref", "10.0.19041.31", Files:
+                    [
+                        ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
+                            <FileList Name="Windows SDK .NET 6.0">
+                              <!-- contents omitted -->
+                            </FileList>
+                            """)),
+                        ("data/RuntimeList.xml", Encoding.UTF8.GetBytes("""
+                            <FileList Name="Windows SDK .NET 6.0" TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="6.0" FrameworkName="Microsoft.Windows.SDK.NET.Ref">
+                              <!-- contents omitted -->
+                            </FileList>
+                            """)),
+                    ]),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-                    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+                        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-                    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+                        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InMultipleProjectFiles_ForPackageReferenceInclude()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <ProjectReference Include="lib\Library.csproj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="lib\Library.csproj" />
+                      </ItemGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("lib/Library.csproj", $"""
@@ -256,27 +279,27 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: $"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <ProjectReference Include="lib\Library.csproj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="lib\Library.csproj" />
+                      </ItemGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("lib/Library.csproj", $"""
@@ -286,7 +309,7 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
@@ -294,94 +317,120 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData("$(NewtonsoftJsonVersion")]
-        [InlineData("$NewtonsoftJsonVersion)")]
-        [InlineData("$NewtonsoftJsonVersion")]
-        [InlineData("NewtonsoftJsonVersion)")]
+        [InlineData("$(SomePackageVersion")]
+        [InlineData("$SomePackageVersion)")]
+        [InlineData("$SomePackageVersion")]
+        [InlineData("SomePackageVersion)")]
         public async Task Update_InvalidFile_DoesNotThrow(string versionString)
         {
-            await TestNoChangeforProject("Newtonsoft.Json", "9.0.1", "13.0.1",
-                $"""
-                <Project Sdk="Microsoft.NET.Sdk">">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonVersion>9.0.1</NewtonsoftJsonVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="{versionString}" />
-                  </ItemGroup>
-                </Project>
-                """);
+            await TestNoChangeforProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
+                projectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="{versionString}" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateFindsNearestNugetConfig_AndSucceeds()
         {
-            // Clean the cache to ensure we don't find a cached version of packages.
-            await ProcessEx.RunAsync("dotnet", "nuget locals -c all");
-            // If the Top-Level NugetConfig was found we would have failed.
-            var privateNugetContent = """
+            //
+            // this test needs a very specific setup to run, so we have to do it manually
+            //
+            using TemporaryDirectory tempDirectory = new();
+
+            // the top-level NuGet.Config has a package feed that doesn't exist
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.DirectoryPath, "NuGet.Config"), """
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
-
                   <packageSources>
                     <clear />
-                    <add key="nuget_PrivateFeed" value="https://api.nuget.org/v3/index.json" />
+                    <add key="local-feed" value="/var/path/that/does/not/exist" />
                   </packageSources>
                 </configuration>
-                """;
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
-                projectFile: (Path: "Directory/Project.csproj", Content: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>netstandard2.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                      </ItemGroup>
-                    </Project>
-                    """),
                 """
+            );
+
+            // now place the "real" test files under `src/`
+            string srcDirectory = Path.Combine(tempDirectory.DirectoryPath, "src");
+            Directory.CreateDirectory(srcDirectory);
+
+            // the project file
+            string projectPath = Path.Combine(srcDirectory, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
+                    <TargetFramework>net8.0</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                    <PackageReference Include="Some.Package" Version="1.0.0" />
                   </ItemGroup>
                 </Project>
-                """,
-                additionalFiles:
+                """
+            );
+            // another NuGet.Config, but with a usable package feed
+            string packageFeedLocation = Path.Combine(tempDirectory.DirectoryPath, "test-package-feed");
+            Directory.CreateDirectory(packageFeedLocation);
+            await File.WriteAllTextAsync(Path.Combine(srcDirectory, "NuGet.Config"), $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="local-feed" value="{packageFeedLocation}" />
+                  </packageSources>
+                </configuration>
+                """
+            );
+            // populate some packages
+            foreach (MockNuGetPackage package in MockNuGetPackage.CommonPackages.Concat(
                 [
-                    (Path: "NuGet.config", Content: $"""
-                        <?xml version="1.0" encoding="utf-8"?>
-                        <configuration>
-                          <packageSources>
-                            <clear />
-                            <add key="nuget_PublicFeed" value="https://api.nuget.org/v3/BROKEN.json" />
-                          </packageSources>
-                        </configuration>
-                        """),
-                    (Path: "Directory/NuGet.config", Content: privateNugetContent)
-                ]);
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0")
+                ]))
+            {
+                package.WriteToDirectory(packageFeedLocation);
+            }
+
+            //
+            // do the update
+            //
+            UpdaterWorker worker = new(new(verbose: true));
+            await worker.RunAsync(tempDirectory.DirectoryPath, projectPath, "Some.Package", "1.0.0", "1.1.0", isTransitive: false);
+
+            //
+            // verify the update occurred
+            //
+            string actualProjectContents = await File.ReadAllTextAsync(projectPath);
+            Assert.Contains("Version=\"1.1.0\"", actualProjectContents);
         }
 
         [Fact]
         public async Task UpdateReturnsEmptyArray_WhenBuildFails()
         {
-            // Clean the cache to ensure we don't find a cached version of packages.
-            await ProcessEx.RunAsync("dotnet", $"nuget locals -c all");
-            await TestNoChangeforProject("Newtonsoft.Json", "9.0.1", "13.0.1",
-                """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+            await TestNoChangeforProject("Some.Package", "9.0.1", "13.0.1",
+                packages: [], // nothing specified, update will fail
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     (Path: "NuGet.config", Content: """
@@ -396,198 +445,236 @@ public partial class UpdateWorkerTests
                           </packageSources>
                         </configuration>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateExactMatchVersionAttribute_InProjectFile_ForPackageReferenceInclude()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                    <PropertyGroup>
-                        <TargetFramework>net6.0</TargetFramework>
-                    </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
 
-                    <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="[9.0.1]" />
-                    </ItemGroup>
-                </Project>
-                """,
+                        <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="[9.0.1]" />
+                        </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                    <PropertyGroup>
-                        <TargetFramework>net6.0</TargetFramework>
-                    </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
 
-                    <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" />
-                    </ItemGroup>
-                </Project>
-                """);
+                        <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="[13.0.1]" />
+                        </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task AddPackageReference_InProjectFile_ForTransientDependency()
         {
-            // add transient System.Text.Json from 5.0.1 to 5.0.2
-            await TestUpdateForProject("System.Text.Json", "5.0.1", "5.0.2", isTransitive: true,
+            // add transient package Some.Transient.Dependency from 5.0.1 to 5.0.2
+            await TestUpdateForProject("Some.Transient.Dependency", "5.0.1", "5.0.2", isTransitive: true,
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.1.3", "net8.0", [(null, [("Some.Transient.Dependency", "5.0.1")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transient.Dependency", "5.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transient.Dependency", "5.0.2", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>netcoreapp3.1</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" Version="3.1.3" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="3.1.3" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>netcoreapp3.1</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" Version="3.1.3" />
-                    <PackageReference Include="System.Text.Json" Version="5.0.2" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="3.1.3" />
+                        <PackageReference Include="Some.Transient.Dependency" Version="5.0.2" />
+                      </ItemGroup>
 
-                </Project>
-                """);
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForAnalyzerPackageReferenceInclude()
         {
-            // update Microsoft.CodeAnalysis.Analyzers from 3.3.0 to 3.3.4
-            await TestUpdateForProject("Microsoft.CodeAnalysis.Analyzers", "3.3.0", "3.3.4",
+            // update Some.Analyzer from 3.3.0 to 3.3.4
+            await TestUpdateForProject("Some.Analyzer", "3.3.0", "3.3.4",
+                packages:
+                [
+                    MockNuGetPackage.CreateAnalyzerPackage("Some.Analyzer", "3.3.0"),
+                    MockNuGetPackage.CreateAnalyzerPackage("Some.Analyzer", "3.3.4"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.0">
-                      <PrivateAssets>all</PrivateAssets>
-                      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Analyzer" Version="3.3.0">
+                          <PrivateAssets>all</PrivateAssets>
+                          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
-                      <PrivateAssets>all</PrivateAssets>
-                      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-                    </PackageReference>
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Analyzer" Version="3.3.4">
+                          <PrivateAssets>all</PrivateAssets>
+                          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                        </PackageReference>
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForMultiplePackageReferences()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.JSON" Version="9.0.1" />
-                    <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.PACKAGE" Version="9.0.1" />
+                        <PackageReference Update="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" />
-                    <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.PACKAGE" Version="13.0.1" />
+                        <PackageReference Update="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceUpdate()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                    <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Update="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                    <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Update="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InDirectoryPackages_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -595,23 +682,23 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageVersion Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -621,32 +708,39 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageVersion Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateExactMatchVersionAttribute_InDirectoryPackages_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -654,23 +748,23 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="[9.0.1]" />
+                            <PackageVersion Include="Some.Package" Version="[9.0.1]" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -680,407 +774,471 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="[13.0.1]" />
+                            <PackageVersion Include="Some.Package" Version="[13.0.1]" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceIncludeWithExactVersion()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="[$(SomePackagePackageVersion)]" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="[$(NewtonsoftJsonPackageVersion)]" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="[$(SomePackagePackageVersion)]" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateDifferentCasedPropertyValue_InProjectFile_ForPackageReferenceInclude()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(somepackagepackageversion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(newtonsoftjsonpackageversion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(somepackagepackageversion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceInclude()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateExactMatchPropertyValue_InProjectFile_ForPackageReferenceInclude()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>[9.0.1]</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>[13.0.1]</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttributeAndPropertyValue_InProjectFile_ForMultiplePackageReferences()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProjectFile_ForPackageReferenceUpdate()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                    <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Update="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                    <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Update="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InDirectoryProps_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateExactMatchPropertyValue_InDirectoryProps_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>[9.0.1]</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>[9.0.1]</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>[13.0.1]</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>[13.0.1]</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateVersionOverrideAttributeAndPropertyValue_InProjectFileAndDirectoryProps_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" VersionOverride="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" VersionOverride="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" VersionOverride="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InDirectoryProps_ForGlobalPackageReference()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1088,19 +1246,19 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <GlobalPackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -1110,193 +1268,219 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <GlobalPackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InDirectoryProps_ForGlobalPackageReference()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <GlobalPackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <GlobalPackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InDirectoryProps_ForPackageReferenceInclude()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial project
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     // initial props file
                     ("Directory.Build.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // expected project
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props file
                     ("Directory.Build.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProps_ForPackageReferenceInclude()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial project
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <Import Project="my-properties.props" />
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="my-properties.props" />
 
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     // initial props file
                     ("my-properties.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // expected project
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <Import Project="my-properties.props" />
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="my-properties.props" />
 
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackagePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props file
                     ("my-properties.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProps_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1306,30 +1490,30 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Version.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props files
@@ -1341,50 +1525,57 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Version.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValue_InProps_ThenSubstituted_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
                           <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>$(NewtonsoftJsonVersion)</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -1398,16 +1589,16 @@ public partial class UpdateWorkerTests
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props files
@@ -1416,11 +1607,11 @@ public partial class UpdateWorkerTests
                           <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>$(NewtonsoftJsonVersion)</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
@@ -1431,63 +1622,70 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePropertyValues_InProps_ThenRedefinedAndSubstituted_ForPackageVersion()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
                           <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>$(SomePackageVersion)</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Version.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJSONVersion>9.0.1</NewtonsoftJSONVersion>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePACKAGEVersion>9.0.1</SomePACKAGEVersion>
+                            <SomePackagePackageVersion>9.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" />
-                  </ItemGroup>
-                </Project>
-                """,
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props files
@@ -1496,184 +1694,223 @@ public partial class UpdateWorkerTests
                           <Import Project="Version.props" />
                           <PropertyGroup>
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                            <SomePackagePackageVersion>$(SomePackageVersion)</SomePackagePackageVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                            <PackageVersion Include="Some.Package" Version="$(SomePackagePackageVersion)" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Version.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJSONVersion>13.0.1</NewtonsoftJSONVersion>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                            <SomePACKAGEVersion>13.0.1</SomePACKAGEVersion>
+                            <SomePackagePackageVersion>13.0.1</SomePackagePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePeerDependencyWithInlineVersion()
         {
-            await TestUpdateForProject("Microsoft.Extensions.Http", "2.2.0", "7.0.0",
+            await TestUpdateForProject("Some.Package", "2.2.0", "7.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.2.0", "net8.0", [(null, [("Peer.Package", "2.2.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net8.0", [(null, [("Peer.Package", "7.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "2.2.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "7.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="2.2.0" />
+                        <PackageReference Include="Peer.Package" Version="2.2.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.0" />
+                        <PackageReference Include="Peer.Package" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatePeerDependencyFromPropertyInSameFile()
         {
-            await TestUpdateForProject("Microsoft.Extensions.Http", "2.2.0", "7.0.0",
+            await TestUpdateForProject("Some.Package", "2.2.0", "7.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.2.0", "net8.0", [(null, [("Peer.Package", "2.2.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net8.0", [(null, [("Peer.Package", "7.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "2.2.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "7.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <MicrosoftExtensionsHttpVersion>2.2.0</MicrosoftExtensionsHttpVersion>
-                    <MicrosoftExtensionsLoggingVersion>2.2.0</MicrosoftExtensionsLoggingVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>2.2.0</SomePackageVersion>
+                        <PeerPackageVersion>2.2.0</PeerPackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                        <PackageReference Include="Peer.Package" Version="$(PeerPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <MicrosoftExtensionsHttpVersion>7.0.0</MicrosoftExtensionsHttpVersion>
-                    <MicrosoftExtensionsLoggingVersion>7.0.0</MicrosoftExtensionsLoggingVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>7.0.0</SomePackageVersion>
+                        <PeerPackageVersion>7.0.0</PeerPackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                        <PackageReference Include="Peer.Package" Version="$(PeerPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatePeerDependencyFromPropertyInDifferentFile()
         {
-            await TestUpdateForProject("Microsoft.Extensions.Http", "2.2.0", "7.0.0",
+            await TestUpdateForProject("Some.Package", "2.2.0", "7.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.2.0", "net8.0", [(null, [("Peer.Package", "2.2.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net8.0", [(null, [("Peer.Package", "7.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "2.2.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "7.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <Import Project="Versions.props" />
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="Versions.props" />
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                        <PackageReference Include="Peer.Package" Version="$(PeerPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
-                            <MicrosoftExtensionsHttpVersion>2.2.0</MicrosoftExtensionsHttpVersion>
-                            <MicrosoftExtensionsLoggingVersion>2.2.0</MicrosoftExtensionsLoggingVersion>
+                            <SomePackageVersion>2.2.0</SomePackageVersion>
+                            <PeerPackageVersion>2.2.0</PeerPackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <Import Project="Versions.props" />
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="$(MicrosoftExtensionsHttpVersion)" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="Versions.props" />
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                        <PackageReference Include="Peer.Package" Version="$(PeerPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
-                            <MicrosoftExtensionsHttpVersion>7.0.0</MicrosoftExtensionsHttpVersion>
-                            <MicrosoftExtensionsLoggingVersion>7.0.0</MicrosoftExtensionsLoggingVersion>
+                            <SomePackageVersion>7.0.0</SomePackageVersion>
+                            <PeerPackageVersion>7.0.0</PeerPackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatePeerDependencyWithInlineVersionAndMultipleTfms()
         {
-            await TestUpdateForProject("Microsoft.Extensions.Http", "2.2.0", "7.0.0",
+            await TestUpdateForProject("Some.Package", "2.2.0", "7.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.2.0", "net7.0", [(null, [("Peer.Package", "2.2.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net7.0", [(null, [("Peer.Package", "7.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "2.2.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Peer.Package", "7.0.0", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="2.2.0" />
+                        <PackageReference Include="Peer.Package" Version="2.2.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.0" />
+                        <PackageReference Include="Peer.Package" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task NoUpdateForPeerDependenciesWhichAreHigherVersion()
         {
-            await TestUpdateForProject("Microsoft.Identity.Web", "2.13.0", "2.13.2",
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [(null, [("Transitive.Dependency", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Transitive.Dependency", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "1.1.0", "net8.0"), // we shouldn't update to this
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Azure.Identity" />
-                    <PackageReference Include="Azure.Security.KeyVault.Keys" />
-                    <PackageReference Include="Azure.Security.KeyVault.Secrets" />
-                    <PackageReference Include="Microsoft.Identity.Web" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Transitive.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -1681,27 +1918,23 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Azure.Identity" Version="1.9.0" />
-                            <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.5.0" />
-                            <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.5.0" />
-                            <PackageVersion Include="Microsoft.Identity.Web" Version="2.13.0" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Transitive.Dependency" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Azure.Identity" />
-                    <PackageReference Include="Azure.Security.KeyVault.Keys" />
-                    <PackageReference Include="Azure.Security.KeyVault.Secrets" />
-                    <PackageReference Include="Microsoft.Identity.Web" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Transitive.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -1711,149 +1944,155 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Azure.Identity" Version="1.9.0" />
-                            <PackageVersion Include="Azure.Security.KeyVault.Keys" Version="4.5.0" />
-                            <PackageVersion Include="Azure.Security.KeyVault.Secrets" Version="4.5.0" />
-                            <PackageVersion Include="Microsoft.Identity.Web" Version="2.13.2" />
+                            <PackageVersion Include="Some.Package" Version="1.1.0" />
+                            <PackageVersion Include="Transitive.Dependency" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdatingToNotCompatiblePackageDoesNothing()
         {
-            await TestUpdateForProject("Microsoft.AspNetCore.Authentication.JwtBearer", "3.1.18", "7.0.5",
+            // can't upgrade to the newer package because of a TFM mismatch
+            await TestNoChangeforProject("Some.Package", "7.0.0", "8.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "8.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netcoreapp3.1</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.18" />
-                  </ItemGroup>
-                </Project>
-                """,
-                expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netcoreapp3.1</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.18" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdatingToNotCompatiblePackageDoesNothingWithSingleOfMultileTfmNotSupported()
         {
-            // the requested package upgrade is supported on net7.0, but not netcoreapp3.1, so we skip the whole thing
-            await TestUpdateForProject("Microsoft.AspNetCore.Authentication.JwtBearer", "3.1.18", "7.0.5",
+            // can't upgrade to the newer package because one of the TFMs doesn't match
+            await TestNoChangeforProject("Some.Package", "7.0.0", "8.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "8.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>netcoreapp3.1;net7.0</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.18" />
-                  </ItemGroup>
-                </Project>
-                """,
-                expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks>netcoreapp3.1;net7.0</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.18" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_WhereTargetFrameworksIsSelfReferential()
         {
-            // update Newtonsoft.Json from 9.0.1 to 13.0.1
-            await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "netstandard2.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "netstandard2.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
-                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('netstandard2.0'))">$(TargetFrameworks);netstandard2.0</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
+                        <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net8.0'))">$(TargetFrameworks);net8.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
-                    <TargetFrameworks Condition="!$(TargetFrameworks.Contains('netstandard2.0'))">$(TargetFrameworks);netstandard2.0</TargetFrameworks>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net472'))">$(TargetFrameworks);net472</TargetFrameworks>
+                        <TargetFrameworks Condition="!$(TargetFrameworks.Contains('net8.0'))">$(TargetFrameworks);net8.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task UpdateOfNonExistantPackageDoesNothingEvenIfTransitiveDependencyIsPresent()
         {
-            // package Microsoft.Extensions.Http isn't present, but one of its transitive dependencies is
-            await TestUpdateForProject("Microsoft.Extensions.Http", "2.2.0", "7.0.0",
+            // package Some.Package isn't in the project, but one of its transitive dependencies is
+            await TestNoChangeforProject("Some.Package", "2.2.0", "7.0.0",
+                packages:
+                [
+                    // these packages exist in the feed, but aren't used
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.2.0", "net8.0", [(null, [("Transitive.Dependency", "2.2.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.0", "net8.0", [(null, [("Transitive.Dependency", "7.0.0")])]),
+                    // one of these is used, but we can't update to it
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "2.2.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "7.0.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
-                  </ItemGroup>
-                </Project>
-                """,
-                expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Transitive.Dependency" Version="2.2.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task AvoidPackageDowngradeWhenUpdatingDependency()
         {
-            await TestUpdateForProject("Microsoft.VisualStudio.Sdk.TestFramework.Xunit", "17.2.7", "17.6.16",
+            // updating from 1.0.0 to 1.1.0 of Some.Package should not cause a downgrade warning of Some.Dependency; it
+            // should be pulled along, even when the TFM is pulled from a different file.  unrelated packages are ignored
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [(null, [("Some.Dependency", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Some.Dependency", "1.1.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.1.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Unrelated.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Unrelated.Package", "1.1.0", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
-                    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-                    <RootNamespace />
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
+                        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+                        <RootNamespace />
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
-                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" />
-                    <PackageReference Include="Moq" />
-                    <PackageReference Include="xunit.runner.visualstudio" />
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Package" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("Directory.Packages.props", """
@@ -1863,45 +2102,37 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework" Version="17.2.7" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" Version="17.2.7" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.6.36389" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Text.Data" Version="17.6.268" />
-                            <PackageVersion Include="Moq" Version="4.18.2" />
-                            <PackageVersion Include="xunit" Version="2.5.0" />
-                            <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Some.Dependency" Version="1.0.0" />
+                            <PackageVersion Include="Unrelated.Package" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Directory.Build.props", """
                         <Project>
                           <PropertyGroup>
-                            <PreferredTargetFramework>net7.0</PreferredTargetFramework>
+                            <PreferredTargetFramework>net8.0</PreferredTargetFramework>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
-                    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-                    <RootNamespace />
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>$(PreferredTargetFramework)</TargetFramework>
+                        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+                        <RootNamespace />
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework" />
-                    <PackageReference Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" />
-                    <PackageReference Include="Moq" />
-                    <PackageReference Include="xunit.runner.visualstudio" />
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Package" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -1911,47 +2142,50 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework" Version="17.6.16" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Sdk.TestFramework.Xunit" Version="17.6.16" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.6.36389" />
-                            <PackageVersion Include="Microsoft.VisualStudio.Text.Data" Version="17.6.268" />
-                            <PackageVersion Include="Moq" Version="4.18.4" />
-                            <PackageVersion Include="xunit" Version="2.5.0" />
-                            <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
+                            <PackageVersion Include="Some.Package" Version="1.1.0" />
+                            <PackageVersion Include="Some.Dependency" Version="1.1.0" />
+                            <PackageVersion Include="Unrelated.Package" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """),
                     ("Directory.Build.props", """
                         <Project>
                           <PropertyGroup>
-                            <PreferredTargetFramework>net7.0</PreferredTargetFramework>
+                            <PreferredTargetFramework>net8.0</PreferredTargetFramework>
                           </PropertyGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task AddTransitiveDependencyByAddingPackageReferenceAndVersion()
         {
-            await TestUpdateForProject("System.Text.Json", "5.0.0", "5.0.2", isTransitive: true,
+            await TestUpdateForProject("Some.Transitive.Dependency", "5.0.0", "5.0.2", isTransitive: true,
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.1.3", "net8.0", [(null, [("Some.Transitive.Dependency", "5.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "5.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "5.0.2", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -1959,26 +2193,26 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                            <PackageVersion Include="Some.Package" Version="3.1.3" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" />
-                    <PackageReference Include="System.Text.Json" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                        <PackageReference Include="Some.Transitive.Dependency" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props files
@@ -1988,35 +2222,43 @@ public partial class UpdateWorkerTests
                             <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
-                            <PackageVersion Include="System.Text.Json" Version="5.0.2" />
+                            <PackageVersion Include="Some.Package" Version="3.1.3" />
+                            <PackageVersion Include="Some.Transitive.Dependency" Version="5.0.2" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task PinTransitiveDependencyByAddingPackageVersion()
         {
-            await TestUpdateForProject("System.Text.Json", "5.0.0", "5.0.2", isTransitive: true,
+            await TestUpdateForProject("Some.Transitive.Dependency", "5.0.0", "5.0.2", isTransitive: true,
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.1.3", "net8.0", [(null, [("Some.Transitive.Dependency", "5.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "5.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "5.0.2", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     // initial props files
                     ("Directory.Packages.props", """
                         <Project>
@@ -2025,26 +2267,26 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
+                            <PackageVersion Include="Some.Package" Version="3.1.3" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
+                    <Project Sdk="Microsoft.NET.Sdk">
 
-                  <PropertyGroup>
-                    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
+                      <PropertyGroup>
+                        <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Mongo2Go" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // expected props files
@@ -2055,28 +2297,34 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="Mongo2Go" Version="3.1.3" />
-                            <PackageVersion Include="System.Text.Json" Version="5.0.2" />
+                            <PackageVersion Include="Some.Package" Version="3.1.3" />
+                            <PackageVersion Include="Some.Transitive.Dependency" Version="5.0.2" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task PropsFileNameWithDifferentCasing()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("Directory.Build.props", """
@@ -2088,22 +2336,22 @@ public partial class UpdateWorkerTests
                     ("Versions.Props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                            <SomePackageVersion>12.0.1</SomePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // no change
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // no change
@@ -2116,7 +2364,7 @@ public partial class UpdateWorkerTests
                     ("Versions.Props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                            <SomePackageVersion>13.0.1</SomePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
@@ -2128,27 +2376,32 @@ public partial class UpdateWorkerTests
         public async Task VersionAttributeWithDifferentCasing_VersionNumberInline()
         {
             // the version attribute in the project has an all lowercase name
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" version="12.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" version="12.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
             );
         }
 
@@ -2156,17 +2409,22 @@ public partial class UpdateWorkerTests
         public async Task VersionAttributeWithDifferentCasing_VersionNumberInProperty()
         {
             // the version attribute in the project has an all lowercase name
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("Directory.Build.props", """
@@ -2177,22 +2435,22 @@ public partial class UpdateWorkerTests
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
+                            <SomePackageVersion>12.0.1</SomePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
                 ],
                 // no change
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     // no change
@@ -2205,7 +2463,7 @@ public partial class UpdateWorkerTests
                     ("Versions.props", """
                         <Project>
                           <PropertyGroup>
-                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                            <SomePackageVersion>13.0.1</SomePackageVersion>
                           </PropertyGroup>
                         </Project>
                         """)
@@ -2216,20 +2474,27 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task DirectoryPackagesPropsDoesCentralPackagePinningGetsUpdatedIfTransitiveFlagIsSet()
         {
-            await TestUpdateForProject("xunit.assert", "2.5.2", "2.5.3",
+            await TestUpdateForProject("Some.Package.Extensions", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "1.0.0", "net7.0", [(null, [("Some.Package", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "1.1.0", "net7.0", [(null, [("Some.Package", "1.0.0")])]),
+                ],
                 isTransitive: true,
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package.Extensions" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
+                    ("Directory.Build.props", "<Project />"),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -2237,22 +2502,22 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="xunit" Version="2.5.2" />
-                            <PackageVersion Include="xunit.assert" Version="2.5.2" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Some.Package.Extensions" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package.Extensions" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -2262,8 +2527,8 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="xunit" Version="2.5.2" />
-                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Some.Package.Extensions" Version="1.1.0" />
                           </ItemGroup>
                         </Project>
                         """)
@@ -2274,18 +2539,24 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task DirectoryPackagesPropsDoesNotGetDuplicateEntryIfCentralTransitivePinningIsUsed()
         {
-            await TestUpdateForProject("xunit.assert", "2.5.2", "2.5.3",
+            await TestUpdateForProject("Some.Package.Extensions", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "1.0.0", "net7.0", [(null, [("Some.Package", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "1.1.0", "net7.0", [(null, [("Some.Package", "1.0.0")])]),
+                ],
                 isTransitive: true,
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package.Extensions" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("Directory.Packages.props", """
@@ -2295,22 +2566,22 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="xunit" Version="2.5.2" />
-                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Some.Package.Extensions" Version="1.1.0" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="xunit" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package.Extensions" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("Directory.Packages.props", """
@@ -2320,8 +2591,8 @@ public partial class UpdateWorkerTests
                             <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageVersion Include="xunit" Version="2.5.2" />
-                            <PackageVersion Include="xunit.assert" Version="2.5.3" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Some.Package.Extensions" Version="1.1.0" />
                           </ItemGroup>
                         </Project>
                         """)
@@ -2332,170 +2603,300 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task PackageWithFourPartVersionCanBeUpdated()
         {
-            await TestUpdateForProject("AWSSDK.Core", "3.7.204.13", "3.7.204.14",
+            await TestUpdateForProject("Some.Package", "1.2.3.4", "1.2.3.5",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3.4", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3.5", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AWSSDK.Core" Version="3.7.204.13" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3.4" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net7.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AWSSDK.Core" Version="3.7.204.14" />
-                  </ItemGroup>
-                </Project>
-                """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3.5" />
+                      </ItemGroup>
+                    </Project>
+                    """
             );
         }
 
         [Fact]
         public async Task PackageWithOnlyBuildTargetsCanBeUpdated()
         {
-            await TestUpdateForProject("Microsoft.Windows.Compatibility", "7.0.0", "8.0.0",
+            await TestUpdateForProject("Some.Package", "7.0.0", "7.1.0",
+                packages:
+                [
+                    new("Some.Package", "7.0.0", Files: [("buildTransitive/net7.0/_._", [])]),
+                    new("Some.Package", "7.1.0", Files: [("buildTransitive/net7.0/_._", [])]),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Windows.Compatibility" Version="7.0.0" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net5.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.0" />
-                  </ItemGroup>
-                </Project>
-                """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
             );
         }
 
         [Fact]
         public async Task UpdatePackageVersionFromPropertiesWithAndWithoutConditions()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion>12.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</SomePackageVersion>
+                        <SomePackageVersion>12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion Condition="$(UseLegacyVersion7) == 'true'">7.0.1</SomePackageVersion>
+                        <SomePackageVersion>13.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
             );
         }
 
         [Fact]
         public async Task UpdatePackageVersionFromPropertyWithConditionCheckingForEmptyString()
         {
-            await TestUpdateForProject("Newtonsoft.Json", "12.0.1", "13.0.1",
+            await TestUpdateForProject("Some.Package", "12.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "12.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">12.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion Condition="$(SomePackageVersion) == ''">12.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonVersion Condition="$(NewtonsoftJsonVersion) == ''">13.0.1</NewtonsoftJsonVersion>
-                    <NewtonsoftJsonVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</NewtonsoftJsonVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-                  </ItemGroup>
-                </Project>
-                """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion Condition="$(SomePackageVersion) == ''">13.0.1</SomePackageVersion>
+                        <SomePackageVersion Condition="$(UseLegacyVersion9) == 'true'">9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
             );
         }
 
         [Fact]
         public async Task NoChange_IfThereAreIncoherentVersions()
         {
-            // Make sure we don't update if there are incoherent versions
-            await TestNoChangeforProject("Microsoft.EntityFrameworkCore.SqlServer", "2.1.0", "2.2.0",
+            // trying to update `Transitive.Dependency` to 1.1.0 would normally pull `Some.Package` from 1.0.0 to 1.1.0,
+            // but the TFM doesn't allow it
+            await TestNoChangeforProject("Transitive.Dependency", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net7.0", [(null, [("Transitive.Dependency", "[1.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0", [(null, [("Transitive.Dependency", "[1.1.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "1.0.0", "net7.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "1.1.0", "net7.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netcoreapp2.1</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Options" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.0" />
-                    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net7.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                        <PackageReference Include="Transitive.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task NoChange_IfTargetFrameworkCouldNotBeEvaluated()
         {
             // Make sure we don't throw if the project's TFM is an unresolvable property
-            await TestNoChangeforProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+            await TestNoChangeforProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>$(PropertyThatCannotBeResolved)</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                        <PackageReference Include="Some.Package" Version="7.0.1" />
                       </ItemGroup>
                     </Project>
                     """
-                );
+            );
+        }
+
+        [Fact]
+        public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
+        {
+            // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
+            // still process the update
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates()
+        {
+            // the property `$(SomeUnresolvableProperty)` cannot be resolved
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Other.Package", "1.0.0", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Other.Package" Version="$(SomeUnresolvableProperty)" />
+                        <PackageReference Include="Some.Package" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Other.Package" Version="$(SomeUnresolvableProperty)" />
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage()
+        {
+            // updating Some.Package from 3.3.30 requires that Some.Package.Extensions also be updated
+            await TestUpdateForProject("Some.Package", "3.3.30", "3.4.3",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.3.30", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.4.0", "net8.0"), // this will be ignored
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "3.4.3", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "3.3.30", "net8.0", [(null, [("Some.Package", "[3.3.30]")])]), // the dependency version is very strict with []
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "3.4.0", "net8.0", [(null, [("Some.Package", "[3.4.0]")])]), // this will be ignored
+                    MockNuGetPackage.CreateSimplePackage("Some.Package.Extensions", "3.4.3", "net8.0", [(null, [("Some.Package", "[3.4.3]")])]),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="3.3.30" />
+                        <PackageReference Include="Some.Package.Extensions" Version="3.3.30" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="3.4.3" />
+                        <PackageReference Include="Some.Package.Extensions" Version="3.4.3" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
     }
 }

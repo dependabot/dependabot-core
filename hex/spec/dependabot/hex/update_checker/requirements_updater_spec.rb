@@ -30,17 +30,20 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }
 
-    specify { expect(updater.updated_requirements.count).to eq(1) }
-
-    let(:mixfile_req_string) { "~> 1.0.0" }
     let(:latest_resolvable_version) { nil }
+    let(:mixfile_req_string) { "~> 1.0.0" }
+
+    specify { expect(updater.updated_requirements.count).to eq(1) }
 
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
+
       its([:requirement]) { is_expected.to eq(mixfile_req_string) }
     end
 
     context "with a git dependency" do
+      subject { updater.updated_requirements }
+
       let(:latest_resolvable_version) do
         "aa218f56b14c9653891f9e74264a383fa43fefbd"
       end
@@ -66,11 +69,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
           ref: nil
         }
       end
-      subject { updater.updated_requirements }
+
       it { is_expected.to eq([mixfile_req, git_req]) }
 
       context "when asked to update the source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
+
         before { git_req.merge!(source: { type: "git", ref: "v1.2.0" }) }
 
         it "updates the git requirement, but not the registry one" do
@@ -83,61 +87,72 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
     context "when there is a resolvable version" do
       let(:latest_resolvable_version) { "1.5.0" }
 
-      context "and a full version was previously specified" do
+      context "when a full version was previously specified" do
         let(:mixfile_req_string) { "1.2.3" }
+
         its([:requirement]) { is_expected.to eq("1.5.0") }
 
         context "with an == operator" do
           let(:mixfile_req_string) { "== 1.2.3" }
+
           its([:requirement]) { is_expected.to eq("== 1.5.0") }
         end
       end
 
-      context "and a partial version was previously specified" do
+      context "when a partial version was previously specified" do
         let(:mixfile_req_string) { "0.1" }
+
         its([:requirement]) { is_expected.to eq("1.5") }
       end
 
-      context "and the new version has fewer digits than the old one" do
+      context "when the new version has fewer digits than the old one" do
         let(:mixfile_req_string) { "1.1.0.1" }
+
         its([:requirement]) { is_expected.to eq("1.5.0") }
       end
 
-      context "and a tilde was previously specified" do
+      context "when a tilde was previously specified" do
         let(:mixfile_req_string) { "~> 0.2.3" }
+
         its([:requirement]) { is_expected.to eq("~> 1.5.0") }
 
-        context "specified at two digits" do
+        context "when the specification is two digits" do
           let(:mixfile_req_string) { "~> 0.2" }
+
           its([:requirement]) { is_expected.to eq("~> 1.5") }
         end
 
-        context "that is already satisfied" do
+        context "when the specification is already satisfied" do
           let(:mixfile_req_string) { "~> 1.2" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
-      context "and a < was previously specified" do
+      context "when a < was previously specified" do
         let(:mixfile_req_string) { "< 1.2.3" }
+
         its([:requirement]) { is_expected.to eq("< 1.5.1") }
 
-        context "that is already satisfied" do
+        context "when the specification is already satisfied" do
           let(:mixfile_req_string) { "< 2.0.0" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
-      context "and there were multiple specifications" do
+      context "when there are multiple specifications" do
         let(:mixfile_req_string) { "> 1.0.0 and < 1.2.0" }
+
         its([:requirement]) { is_expected.to eq("> 1.0.0 and < 1.6.0") }
 
-        context "that are already satisfied" do
+        context "when the specifications are already satisfied" do
           let(:mixfile_req_string) { "> 1.0.0 and < 2.0.0" }
+
           its([:requirement]) { is_expected.to eq(mixfile_req_string) }
         end
 
-        context "specified with an or" do
+        context "when the specification is specified with an or" do
           let(:latest_resolvable_version) { "2.5.0" }
 
           let(:mixfile_req_string) { "~> 0.2 or ~> 1.0" }
@@ -146,14 +161,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
             is_expected.to eq("~> 0.2 or ~> 1.0 or ~> 2.5")
           end
 
-          context "one of which is already satisfied" do
+          context "when a specification is already satisfied" do
             let(:mixfile_req_string) { "~> 0.2 or < 3.0.0" }
+
             its([:requirement]) { is_expected.to eq(mixfile_req_string) }
           end
         end
       end
 
-      context "and multiple mix.exs files specified the dependency" do
+      context "when there are multiple mix.exs files specification in the dependency" do
         subject(:updated_requirements) { updater.updated_requirements }
 
         let(:requirements) do
@@ -175,22 +191,17 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
         it "updates both requirements" do
           expect(updated_requirements)
-            .to match_array(
-              [
-                {
-                  file: "apps/dependabot_business/mix.exs",
-                  requirement: "~> 1.5.0",
-                  groups: [],
-                  source: nil
-                },
-                {
-                  file: "apps/dependabot_web/mix.exs",
-                  requirement: "1.5.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
-            )
+            .to contain_exactly({
+              file: "apps/dependabot_business/mix.exs",
+              requirement: "~> 1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "apps/dependabot_web/mix.exs",
+              requirement: "1.5.0",
+              groups: [],
+              source: nil
+            })
         end
       end
     end

@@ -1,0 +1,41 @@
+{
+    "name": "joshuaestes/server-tools",
+    "description": "Collection of command line tools to help with server management and maintenance",
+    "keywords": [],
+    "homepage": "https://github.com/JoshuaEstes/ServerTools",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Joshua Estes",
+            "homepage": "http://joshuaestes.me"
+        },
+        {
+            "name": "Contributors",
+            "homepage": "https://github.com/JoshuaEstes/ServerTools/graphs/contributors"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.2",
+        "symfony/console": ">=2.1,<=2.3@dev",
+        "symfony/process": ">=2.1,<=2.3@dev",
+        "symfony/yaml": ">=2.1,<=2.3@dev",
+        "symfony/finder": ">=2.1,<=2.3@dev",
+        "symfony/filesystem": ">=2.1,<=2.3@dev"
+    },
+    "replace": {
+        "JoshuaEstes/ServerTools": "self.version"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*",
+        "mikey179/vfsStream": "*"
+    },
+    "autoload": {
+        "psr-0": { "": "src/" }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.0-dev"
+        }
+    }
+}

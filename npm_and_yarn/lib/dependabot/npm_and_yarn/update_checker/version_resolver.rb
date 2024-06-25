@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
@@ -21,6 +23,8 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class VersionResolver
+        extend T::Sig
+
         require_relative "latest_version_finder"
 
         TIGHTLY_COUPLED_MONOREPOS = {
@@ -44,7 +48,15 @@ module Dependabot
         # what ts-jest requests\n
         YARN_BERRY_PEER_DEP_ERROR_REGEX =
           /
-            YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+            YN0060:.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+          /x
+
+        # Error message returned by `yarn add` (for Yarn berry v4):
+        # YN0060: │ react is listed by your project with version 15.2.0, \
+        # which doesn't satisfy what react-dom (p89012) requests (^16.0.0).
+        YARN_BERRY_V4_PEER_DEP_ERROR_REGEX =
+          /
+            YN0060:.+\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)\s\((?<info_hash>\w+)\)\srequests
           /x
 
         # Error message returned by `pnpm update`:
@@ -154,8 +166,13 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version, :repo_contents_path, :dependency_group
+        sig { returns(Dependabot::Dependency) }
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :latest_allowable_version
+        attr_reader :repo_contents_path
+        attr_reader :dependency_group
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -344,28 +361,34 @@ module Dependabot
           []
         end
 
+        # rubocop:disable Metrics/AbcSize
+        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def handle_peer_dependency_errors(message)
           errors = []
           if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
             message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << Regexp.last_match&.named_captures
             end
           elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
             message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
-              errors << Regexp.last_match.named_captures
+              errors << T.must(Regexp.last_match).named_captures
+            end
+          elsif message.match?(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX) do
+              errors << T.must(Regexp.last_match).named_captures
             end
           elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
             message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
-              captures = Regexp.last_match.named_captures
-              captures["requiring_dep"].tr!(" ", "@")
+              captures = T.must(Regexp.last_match).named_captures
+              T.must(captures["requiring_dep"]).tr!(" ", "@")
               errors << captures
             end
           else
@@ -373,6 +396,7 @@ module Dependabot
           end
           errors
         end
+        # rubocop:enable Metrics/AbcSize
 
         def unmet_peer_dependencies
           peer_dependency_errors
@@ -634,7 +658,7 @@ module Dependabot
           git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
 
           if git_source
-            "#{dependency.name}@#{git_req[:source][:url]}##{version}"
+            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -699,7 +723,7 @@ module Dependabot
         end
 
         def version_regex
-          version_class::VERSION_PATTERN
+          Dependabot::NpmAndYarn::Version::VERSION_PATTERN
         end
       end
     end

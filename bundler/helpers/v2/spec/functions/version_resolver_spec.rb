@@ -5,8 +5,8 @@ require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::VersionResolver do
-  include_context "in a temporary bundler directory"
-  include_context "stub rubygems compact index"
+  include_context "when in a temporary bundler directory"
+  include_context "when stubbing rubygems compact index"
 
   let(:version_resolver) do
     described_class.new(
@@ -36,6 +36,9 @@ RSpec.describe Functions::VersionResolver do
     stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.1.gemspec.rz")
       .to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.1.gemspec.rz"))
 
+    stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.5.gemspec.rz")
+      .to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.5.gemspec.rz"))
+
     stub_request(:get, %r{quick/Marshal.4.8/business-.*.gemspec.rz})
       .to_return(status: 200, body: fixture("rubygems_responses", "business-1.0.0.gemspec.rz"))
   end
@@ -52,7 +55,7 @@ RSpec.describe Functions::VersionResolver do
     its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::CompactIndex") }
 
     context "with a private gemserver source" do
-      include_context "stub rubygems compact index"
+      include_context "when stubbing rubygems compact index"
 
       let(:project_name) { "specified_source" }
       let(:requirement_string) { ">= 0" }
@@ -102,12 +105,12 @@ RSpec.describe Functions::VersionResolver do
       its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
     end
 
-    context "with no update possible due to a version conflict" do
+    context "when there's a version conflict with a subdep also listed as a top level dependency" do
       let(:project_name) { "version_conflict_with_listed_subdep" }
       let(:dependency_name) { "rspec-mocks" }
       let(:requirement_string) { ">= 0" }
 
-      its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
+      its([:version]) { is_expected.to be > Gem::Version.new("3.6.0") }
     end
   end
 end

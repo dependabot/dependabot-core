@@ -53,6 +53,8 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
           @suggested_changelog_url = suggested_changelog_url
+          # strip fragment from URL, if present
+          @suggested_changelog_url = @suggested_changelog_url&.split("#")&.first
 
           @new_version = T.let(nil, T.nilable(String))
           @changelog_from_suggested_url = T.let(nil, T.untyped)
@@ -127,7 +129,7 @@ module Dependabot
           suggested_source_client = github_client_for_source(T.must(suggested_source))
           tmp_files = T.unsafe(suggested_source_client).contents(suggested_source&.repo, opts)
 
-          filename = T.must(T.must(suggested_changelog_url).split("/").last).split("#").first
+          filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
@@ -295,6 +297,7 @@ module Dependabot
           when "gitlab" then fetch_gitlab_file_list
           when "azure" then fetch_azure_file_list
           when "codecommit" then [] # TODO: Fetch Files from Codecommit
+          when "example" then []
           else raise "Unexpected repo provider '#{T.must(source).provider}'"
           end
         end

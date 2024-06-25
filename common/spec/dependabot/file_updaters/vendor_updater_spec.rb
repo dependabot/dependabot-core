@@ -57,7 +57,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         f.name == "vendor/cache/business-1.5.0.gem"
       end
 
-      expect(file.binary?).to be_truthy
+      expect(file).to be_binary
     end
 
     it "marks created files as such" do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
 
       expect(file.deleted).to be_falsey
-      expect(file.deleted?).to be_falsey
+      expect(file).not_to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
     end
 
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
 
       expect(file.deleted).to be_falsey
-      expect(file.deleted?).to be_falsey
+      expect(file).not_to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
     end
 
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
 
       expect(file.deleted).to be_truthy
-      expect(file.deleted?).to be_truthy
+      expect(file).to be_deleted
       expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
     end
 
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         `touch vendor/cache/ignored.txt`
       end
 
-      expect(updated_files.map(&:name)).to_not include(
+      expect(updated_files.map(&:name)).not_to include(
         "vendor/cache/ignored.txt"
       )
     end
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
         `touch some-file.txt`
       end
 
-      expect(updated_files.map(&:name)).to_not include(
+      expect(updated_files.map(&:name)).not_to include(
         "some-file.txt"
       )
     end
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
           f.name == "vendor/cache/iso8859.txt"
         end
 
-        expect(file.binary?).to be_truthy
+        expect(file).to be_binary
       end
 
       it "does not mark all files as binary" do
@@ -139,11 +139,11 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
           f.name == "vendor/cache/utf8.txt"
         end
 
-        expect(file.binary?).to be_falsy
+        expect(file).not_to be_binary
       end
     end
 
-    context "in a directory" do
+    context "when in a directory" do
       let(:project_name) { "nested_vendor_gems" }
       let(:directory) { "nested" }
 
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       end
 
       it "does not include the directory in the name" do
-        expect(updated_files.first.name).to_not include("nested")
+        expect(updated_files.first.name).not_to include("nested")
       end
 
       it "sets the right directory" do
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
 
         file = updated_files.find { |f| f.name == "vendor/cache/new_#{name}" }
 
-        expect(file.binary?).to be_truthy
+        expect(file).to be_binary
       end
     end
   end
