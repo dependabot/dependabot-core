@@ -356,7 +356,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           describe "updates the submodule/build.gradle file" do
             it "raises a DependencyFileNotFound error" do
               expect { updated_files.find { |f| f.name == "submodule/build.gradle" } }
-                .to raise_error(Dependabot::DependencyFileNotFound)
+                .to raise_error(Dependabot::DependencyFileNotResolvable)
             end
           end
         end

@@ -73,7 +73,7 @@ module Dependabot
           # update dependency, This behaviour is evident for extremely small number of users
           # that have added separate repos as sub-modules in parent projects
 
-          raise DependencyFileNotFound.new(nil, "No build file found to update the dependency") if buildfile.nil?
+          raise DependencyFileNotResolvable, "No build file found to update the dependency" if buildfile.nil?
 
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
