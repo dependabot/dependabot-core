@@ -65,6 +65,7 @@ module Dependabot
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == old_req[:file]
           next if new_req[:requirement] == old_req[:requirement]
+
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
           # Exception raised to handle issue that arises when buildfiles function (see this file)
@@ -72,9 +73,7 @@ module Dependabot
           # update dependency, This behaviour is evident for extremely small number of users
           # that have added separate repos as sub-modules in parent projects
 
-          if buildfile.nil?
-            raise DependencyFileNotFound.new(nil, "No build file found to update the dependency")
-          end
+          raise DependencyFileNotFound.new(nil, "No build file found to update the dependency") if buildfile.nil?
 
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
