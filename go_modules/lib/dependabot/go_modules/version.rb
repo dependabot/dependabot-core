@@ -30,7 +30,7 @@ module Dependabot
         @version_string = version.to_s.gsub(/^v/, "")
         version = version.gsub(/^v/, "") if version.is_a?(String)
         version = version.to_s.split("+").first if version.to_s.include?("+")
-        version, @prerelease = version.to_s.split("-") if version.to_s.include?("-")
+        version, @prerelease = version.to_s.split("-", 2) if version.to_s.include?("-")
 
         super
       end

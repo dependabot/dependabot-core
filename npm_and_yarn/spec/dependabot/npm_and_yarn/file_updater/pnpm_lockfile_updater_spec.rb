@@ -195,5 +195,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a private registry with no configuration" do
+      let(:dependency_name) { "next" }
+      let(:version) { "14.2.4" }
+      let(:previous_version) { "13.2.4" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^14.2.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^13.2.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/private_registry_no_config" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound)
+      end
+    end
   end
 end
