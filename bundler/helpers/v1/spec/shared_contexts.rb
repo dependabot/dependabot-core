@@ -27,10 +27,12 @@ RSpec.shared_context "when in a temporary bundler directory" do
 end
 
 RSpec.shared_context "without caching rubygems" do
+  let(:my_instance) { instance_double(Bundler::CompactIndexClient::Updater) }
+
   before do
     # Stub Bundler to stop it using a cached versions of Rubygems
-    allow_any_instance_of(Bundler::CompactIndexClient::Updater)
-      .to receive(:etag_for).and_return("")
+    allow(Bundler::CompactIndexClient::Updater).to receive(:new).and_return(my_instance)
+    allow(my_instance).to receive(:etag_for).and_return("")
   end
 end
 

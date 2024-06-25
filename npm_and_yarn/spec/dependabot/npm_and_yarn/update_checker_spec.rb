@@ -334,11 +334,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
       let(:target_version) { "2.0.2" }
+      let(:my_instance) { instance_double(described_class::VersionResolver) }
 
       before do
-        allow_any_instance_of(described_class::VersionResolver)
-          .to receive(:latest_resolvable_version)
-          .and_return(Gem::Version.new("1.7.0"))
+        allow(described_class::VersionResolver).to receive(:new).and_return(my_instance)
+        allow(my_instance).to receive(:latest_resolvable_version).and_return(Gem::Version.new("1.7.0"))
       end
 
       it { is_expected.to be_truthy }

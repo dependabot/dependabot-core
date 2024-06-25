@@ -28,11 +28,19 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   let(:client) do
     described_class.for_source(source: source, credentials: credentials)
   end
+  let(:my_instance) { instance_double(described_class) }
 
   before do
-    allow_any_instance_of(
-      described_class
-    ).to receive(:cc_client).and_return(stubbed_cc_client)
+    # allow_any_instance_of(
+    #  described_class
+    # ).to receive(:cc_client).and_return(stubbed_cc_client)
+    allow(described_class).to receive(:new).and_return(my_instance)
+    allow(my_instance).to receive(:cc_client).and_return(stubbed_cc_client)
+    allow(stubbed_cc_client).to receive(:get_branch).and_raise(Aws::CodeCommit::Errors::BranchDoesNotExistException.new(
+                                                                 "Sorry", "alpha"
+                                                               ))
+    allow(my_instance).to receive(:fetch_commit).with(nil,
+                                                      "master").and_return("9c8376e9b2e943c2c72fac4b239876f377f0305a")
   end
 
   describe "#fetch_commit" do
@@ -70,6 +78,9 @@ RSpec.describe Dependabot::Clients::CodeCommit do
           :get_branch,
           "BranchDoesNotExistException"
         )
+        allow(my_instance).to receive(:fetch_commit).and_raise(Aws::CodeCommit::Errors::BranchDoesNotExistException.new(
+                                                                 "Sorry", "alpha"
+                                                               ))
       end
 
       it "raises a helpful error" do

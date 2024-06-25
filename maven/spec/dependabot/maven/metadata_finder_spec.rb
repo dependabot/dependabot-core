@@ -107,6 +107,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
         context "when not matching the name of the artifact" do
           let(:url) { "https://api.github.com/repos/square/unrelated_name" }
+          let(:my_instance) { instance_double(Dependabot::FileFetchers::Base) }
 
           before do
             stub_request(:get, parent_url)
@@ -115,8 +116,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 body: fixture("poms", "parent-unrelated-3.10.0.xml")
               )
 
-            allow_any_instance_of(Dependabot::FileFetchers::Base)
-              .to receive(:commit).and_return("sha")
+            allow(Dependabot::FileFetchers::Base).to receive(:new).and_return(my_instance)
+            allow(my_instance).to receive(:commit).and_return("sha")
             stub_request(:get, url + "/contents/?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
@@ -139,9 +140,12 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           end
 
           context "when the repo 404s" do
+            let(:my_instance) { instance_double(Dependabot::FileFetchers::Base) }
+            let(:repo_contents_fixture_nm) { "not_found.json" }
+
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base)
-                .to receive(:commit).and_call_original
+              allow(Dependabot::FileFetchers::Base).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:commit).and_call_original
               stub_request(:get, url)
                 .with(headers: { "Authorization" => "token token" })
                 .to_return(
@@ -151,15 +155,16 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 )
             end
 
-            let(:repo_contents_fixture_nm) { "not_found.json" }
-
             it { is_expected.to be_nil }
           end
 
           context "when the branch can't be found" do
+            let(:my_instance) { instance_double(Dependabot::FileFetchers::Base) }
+            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base)
-                .to receive(:commit).and_call_original
+              allow(Dependabot::FileFetchers::Base).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:commit).and_call_original
               stub_request(:get, parent_url)
                 .to_return(
                   status: 200,
@@ -191,15 +196,16 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 )
             end
 
-            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
-
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
           context "when neither the branch nor default branch can be found" do
+            let(:my_instance) { instance_double(Dependabot::FileFetchers::Base) }
+            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+
             before do
-              allow_any_instance_of(Dependabot::FileFetchers::Base)
-                .to receive(:commit).and_call_original
+              allow(Dependabot::FileFetchers::Base).to receive(:new).and_return(my_instance)
+              allow(my_instance).to receive(:commit).and_call_original
               stub_request(:get, parent_url)
                 .to_return(
                   status: 200,
@@ -234,8 +240,6 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                   headers: { "content-type" => "application/json" }
                 )
             end
-
-            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
 
             it { is_expected.to be_nil }
           end

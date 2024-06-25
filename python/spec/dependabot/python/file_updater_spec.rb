@@ -52,8 +52,12 @@ RSpec.describe Dependabot::Python::FileUpdater do
       credentials: credentials
     )
   end
+  let(:my_instance) { instance_double(described_class) }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  before do
+    allow(described_class).to receive(:new).and_return(my_instance)
+    FileUtils.mkdir_p(tmp_path)
+  end
 
   it_behaves_like "a dependency file updater"
 
@@ -405,7 +409,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       let(:replaces_base) { false }
 
       before do
-        allow_any_instance_of(described_class).to receive(:check_required_files).and_return(true)
+        allow(my_instance).to receive(:check_required_files).and_return(true)
         allow(Dependabot::Python::AuthedUrlBuilder).to receive(:authed_url).and_return("authed_url")
       end
 

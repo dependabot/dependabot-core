@@ -142,8 +142,11 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         )
       end
 
+      let(:my_file_fetcher) { instance_double(Dependabot::Bundler::FileFetcher) }
+
       before do
-        allow_any_instance_of(Dependabot::Bundler::FileUpdater).to receive(:updated_dependency_files).and_return([])
+        allow(Dependabot::Bundler::FileFetcher).to receive :new.and_return(my_file_fetcher)
+        allow(my_file_fetcher).to receive(:updated_dependency_files).and_return([])
       end
 
       it "raises an exception" do
