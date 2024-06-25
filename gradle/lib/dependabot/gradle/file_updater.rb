@@ -12,17 +12,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      class BuildFileNotFound < StandardError
-        def initialize(message:, error_context:)
-          super(message)
-          @error_context = error_context
-        end
-
-        def sentry_context
-          { extra: @error_context }
-        end
-      end
-
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
 
@@ -67,7 +56,6 @@ module Dependabot
 
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
-
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(dependency.previous_requirements)
@@ -77,7 +65,6 @@ module Dependabot
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == old_req[:file]
           next if new_req[:requirement] == old_req[:requirement]
-
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
           # Exception raised to handle issue that arises when buildfiles function (see this file)
@@ -86,10 +73,7 @@ module Dependabot
           # that have added separate repos as sub-modules in parent projects
 
           if buildfile.nil?
-            raise BuildFileNotFound.new(
-              message: "No build file found to update the dependency.",
-              error_context: dependency.name
-            )
+            raise DependencyFileNotFound.new(nil, "No build file found to update the dependency")
           end
 
           if new_req.dig(:metadata, :property_name)
