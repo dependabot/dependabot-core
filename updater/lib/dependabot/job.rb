@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "wildcard_matcher"
 
 require "dependabot/config/ignore_condition"
@@ -377,12 +378,6 @@ module Dependabot
           Dependabot.logger.info(msg)
         end
       end
-    end
-
-    # Remove this once the API always sends groups for grouped refresh jobs
-    sig { params(group: String).void }
-    def override_group_to_refresh_due_to_old_defaults(group)
-      @dependency_group_to_refresh = group
     end
 
     private

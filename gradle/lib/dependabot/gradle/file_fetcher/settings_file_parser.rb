@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/gradle/file_fetcher"
 
@@ -7,6 +9,8 @@ module Dependabot
   module Gradle
     class FileFetcher
       class SettingsFileParser
+        extend T::Sig
+
         def initialize(settings_file:)
           @settings_file = settings_file
         end
@@ -14,18 +18,18 @@ module Dependabot
         def included_build_paths
           paths = []
           comment_free_content.scan(function_regex("includeBuild")) do
-            arg = Regexp.last_match.named_captures.fetch("args")
-            paths << arg.gsub(/["']/, "").strip
+            arg = T.must(Regexp.last_match).named_captures.fetch("args")
+            paths << T.must(arg).gsub(/["']/, "").strip
           end
           paths.uniq
         end
 
         def subproject_paths
-          subprojects = []
+          subprojects = T.let([], T::Array[String])
 
           comment_free_content.scan(function_regex("include")) do
-            args = Regexp.last_match.named_captures.fetch("args")
-            args = args.split(",")
+            args = T.must(Regexp.last_match).named_captures.fetch("args")
+            args = T.must(args).split(",")
             args = args.filter_map { |p| p.gsub(/["']/, "").strip }
             subprojects += args
           end

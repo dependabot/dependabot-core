@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 $LOAD_PATH.unshift(__dir__ + "/../lib")
@@ -11,6 +11,12 @@ require "dependabot/service"
 require "dependabot/setup"
 require "dependabot/update_files_command"
 require "debug" if ENV["DEBUG"]
+
+flamegraph = ENV.fetch("FLAMEGRAPH", nil)
+if flamegraph
+  require "stackprof"
+  require "flamegraph"
+end
 
 class UpdaterKilledError < StandardError; end
 
@@ -30,7 +36,15 @@ trap("TERM") do
 end
 
 begin
-  Dependabot::UpdateFilesCommand.new.run
+  RubyVM::YJIT.enable if Dependabot::Environment.job_id.to_i.even?
+
+  if flamegraph
+    Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
+      Dependabot::UpdateFilesCommand.new.run
+    end
+  else
+    Dependabot::UpdateFilesCommand.new.run
+  end
 rescue Dependabot::RunFailure
   exit 1
 end

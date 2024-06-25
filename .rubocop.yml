@@ -1,4 +1,6 @@
 ---
+inherit_from: .rubocop_todo.yml
+
 require:
   - rubocop-performance
   - rubocop-rspec
@@ -12,7 +14,10 @@ AllCops:
     - "*/spec/fixtures/**/*"
     - "vendor/**/*"
     - "dry-run/**/*"
+    - "bundler/helpers/v1/patched_bundler"
+    - "bundler/helpers/spec_helpers/*"
   NewCops: enable
+  TargetRubyVersion: 3.1
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
@@ -226,10 +231,12 @@ Performance/UnfreezeString:
   Enabled: true
 Performance/UriDefaultParser:
   Enabled: true
-Style/AccessorGrouping:
+RSpec/IndexedLet:
   Enabled: false
+Style/AccessorGrouping:
+  EnforcedStyle: 'separated'
 Style/ArgumentsForwarding:
-  Enabled: true
+  Enabled: false
 Style/ArrayCoercion:
   Enabled: false
 Style/BisectedAttrAccessor:
@@ -345,12 +352,6 @@ Sorbet/StrongSigil:
 RSpec:
   Include:
     - "**/spec/**/*"
-
-# TODO: Fix these and re-enable
-RSpec/FilePath:
-  Enabled: false
-RSpec/SpecFilePathFormat:
-  Enabled: false
 
 # TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
 # in order to keep the upgrade diff small, they will be enabled/fixed in

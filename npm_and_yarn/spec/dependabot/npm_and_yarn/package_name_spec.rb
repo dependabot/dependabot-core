@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -14,6 +14,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
       expect { described_class.new("@npm/thingy") }.not_to raise_error
       expect { described_class.new("@jane/foo.js") }.not_to raise_error
       expect { described_class.new("@_foo/bar") }.not_to raise_error
+      expect { described_class.new("@_foo/_leading-underscore") }.not_to raise_error
+      expect { described_class.new("@_foo/.leading-dot") }.not_to raise_error
     end
 
     it "raises an error for invalid package names" do
@@ -27,9 +29,9 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
 
       expect { described_class.new("🤷") }.to raise_error(described_class::InvalidPackageName)
 
-      expect { described_class.new(nil) }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new([]) }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new({}) }.to raise_error(described_class::InvalidPackageName)
+      expect { described_class.new(nil) }.to raise_error(TypeError)
+      expect { described_class.new([]) }.to raise_error(TypeError)
+      expect { described_class.new({}) }.to raise_error(TypeError)
     end
   end
 

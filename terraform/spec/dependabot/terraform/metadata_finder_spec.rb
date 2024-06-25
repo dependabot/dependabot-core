@@ -7,8 +7,19 @@ require "dependabot/terraform/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Terraform::MetadataFinder do
-  it_behaves_like "a dependency metadata finder"
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
 
+  let(:dependency_name) { "rtfeldman/elm-css" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "origin_label",
@@ -39,18 +50,8 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       package_manager: "terraform"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "rtfeldman/elm-css" }
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -90,6 +91,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       let(:registry_url) do
         "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8/download"
       end
+
       before do
         stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json")
           .to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
@@ -99,7 +101,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/hashicorp/terraform-aws-consul")
+        expect(source_url).to eq("https://github.com/hashicorp/terraform-aws-consul")
       end
     end
 
@@ -139,7 +141,7 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
 
       it do
-        is_expected.to eq("https://github.com/hashicorp/terraform-provider-aws")
+        expect(source_url).to eq("https://github.com/hashicorp/terraform-provider-aws")
       end
     end
   end

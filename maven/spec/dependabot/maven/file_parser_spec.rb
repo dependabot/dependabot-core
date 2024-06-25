@@ -8,14 +8,6 @@ require "dependabot/maven/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Maven::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [pom] }
-  let(:pom) do
-    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
-  end
-  let(:pom_body) { fixture("poms", "basic_pom.xml") }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -23,11 +15,19 @@ RSpec.describe Dependabot::Maven::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:pom_body) { fixture("poms", "basic_pom.xml") }
+  let(:pom) do
+    Dependabot::DependencyFile.new(name: "pom.xml", content: pom_body)
+  end
+  let(:files) { [pom] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    context "for top-level dependencies" do
+    context "when dealing with top-level dependencies" do
       its(:length) { is_expected.to eq(3) }
 
       describe "the first dependency" do
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for dependencyManagement dependencies" do
+    context "when dealing with dependencyManagement dependencies" do
       let(:pom_body) do
         fixture("poms", "dependency_management_pom.xml")
       end
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for plugin dependencies" do
+    context "when dealing with plugin dependencies" do
       let(:pom_body) { fixture("poms", "plugin_dependencies_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
 
-      context "missing a groupId" do
+      context "when dealing with missing a groupId" do
         let(:pom_body) do
           fixture("poms", "plugin_dependencies_missing_group_id.xml")
         end
@@ -229,12 +229,58 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "doesn't include the plugin" do
           expect(dependencies.map(&:name))
-            .to_not include("${project.groupId}:maven-install-plugin")
+            .not_to include("${project.groupId}:maven-install-plugin")
         end
       end
     end
 
-    context "for extension dependencies" do
+    context "when dealing with plugin dependencies with artifactItems" do
+      let(:pom_body) { fixture("poms", "plugin_dependencies_artifactItems_pom.xml") }
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "the first artifactItem dependency" do
+        subject(:dependency) { dependencies[1] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name)
+            .to eq("com.eclipsesource.minimal-json:minimal-json")
+          expect(dependency.version).to eq("0.9.4")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.9.4",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+
+      describe "the second artifactItem dependency" do
+        subject(:dependency) { dependencies[2] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name)
+            .to eq("org.ow2.asm:asm")
+          expect(dependency.version).to eq("9.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "9.1",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
+    context "when dealing with extension dependencies" do
       let(:pom_body) do
         fixture("poms", "extension_dependencies_pom.xml")
       end
@@ -262,7 +308,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for annotationProcessorPaths dependencies" do
+    context "when dealing with annotationProcessorPaths dependencies" do
       let(:pom_body) do
         fixture("poms", "annotation_processor_paths_dependencies.xml")
       end
@@ -289,7 +335,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for pluginManagement dependencies" do
+    context "when dealing with pluginManagement dependencies" do
       let(:pom_body) do
         fixture("poms", "plugin_management_dependencies_pom.xml")
       end
@@ -317,7 +363,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for versions defined by a property" do
+    context "when dealing with versions defined by a property" do
       let(:pom_body) { fixture("poms", "property_pom.xml") }
 
       its(:length) { is_expected.to eq(4) }
@@ -395,7 +441,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
 
-      context "where the property is the project version" do
+      context "when the property is the project version" do
         let(:pom_body) { fixture("poms", "project_version_pom.xml") }
 
         its(:length) { is_expected.to eq(3) }
@@ -436,7 +482,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             )
         end
 
-        context "and is required for all dependencies" do
+        context "when the property is required for all dependencies" do
           let(:pom_body) { fixture("poms", "missing_property_all.xml") }
 
           it "raises a helpful error" do
@@ -449,7 +495,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
 
-      context "that inherits from a parent POM downloaded for support" do
+      context "when inheriting from a parent POM downloaded for support" do
         let(:files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
@@ -484,7 +530,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a version inherited from a parent pom" do
+    context "when dealing with a version inherited from a parent pom" do
       let(:pom_body) { fixture("poms", "pom_with_parent.xml") }
 
       its(:length) { is_expected.to eq(8) }
@@ -511,7 +557,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a groupId inherited from a parent pom" do
+    context "when dealing with a groupId inherited from a parent pom" do
       let(:files) { [pom, child_pom] }
       let(:pom_body) { fixture("poms", "sigtran.pom") }
       let(:child_pom) do
@@ -547,7 +593,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a version range" do
+    context "when dealing with a version range" do
       let(:pom_body) { fixture("poms", "range_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
@@ -572,7 +618,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a hard requirement" do
+    context "when dealing with a hard requirement" do
       let(:pom_body) { fixture("poms", "hard_requirement_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
@@ -597,7 +643,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a versionless requirement" do
+    context "when dealing a versionless requirement" do
       let(:pom_body) { fixture("poms", "versionless_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
@@ -622,7 +668,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for an empty version requirement" do
+    context "when dealing with an empty version requirement" do
       let(:pom_body) { fixture("poms", "empty_version_pom.xml") }
 
       its(:length) { is_expected.to eq(2) }
@@ -683,7 +729,7 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
-    context "for a dependency with compiler plugins" do
+    context "when dealing with a dependency with compiler plugins" do
       let(:pom_body) { fixture("poms", "compiler_plugins.xml") }
 
       its(:length) { is_expected.to eq(2) }

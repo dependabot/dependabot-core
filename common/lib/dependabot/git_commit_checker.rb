@@ -133,6 +133,13 @@ module Dependabot
     end
 
     sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    def local_ref_for_latest_version_lower_precision
+      allowed_refs = local_tag_for_pinned_sha ? allowed_version_tags : allowed_version_refs
+
+      max_local_tag_for_lower_precision(allowed_refs)
+    end
+
+    sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
     def local_tag_for_latest_version
       max_local_tag(allowed_version_tags)
     end
@@ -239,6 +246,11 @@ module Dependabot
     end
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    def max_local_tag_for_lower_precision(tags)
+      max_local_tag(select_lower_precision(tags))
+    end
+
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
     def max_local_tag(tags)
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 
@@ -251,6 +263,14 @@ module Dependabot
       current_precision = precision(T.must(dependency.version))
 
       tags.select { |tag| precision(scan_version(tag.name)) == current_precision }
+    end
+
+    # Find the latest version with a lower precision as the pinned version.
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
+    def select_lower_precision(tags)
+      current_precision = precision(T.must(dependency.version))
+
+      tags.select { |tag| precision(scan_version(tag.name)) <= current_precision }
     end
 
     sig { params(version: String).returns(Integer) }

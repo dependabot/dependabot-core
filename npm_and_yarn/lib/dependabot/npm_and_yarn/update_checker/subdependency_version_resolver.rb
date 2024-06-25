@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -53,8 +53,12 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions, :latest_allowable_version, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :ignored_versions
+        attr_reader :latest_allowable_version
+        attr_reader :repo_contents_path
 
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
@@ -111,7 +115,8 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 2
 
-          sleep(rand(3.0..10.0)) && retry
+          sleep(rand(3.0..10.0))
+          retry
         end
 
         def run_yarn_berry_updater(path, lockfile_name)

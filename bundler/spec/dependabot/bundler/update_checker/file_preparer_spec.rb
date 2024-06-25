@@ -57,8 +57,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
             is_expected.to include(%("business", ">= 1.4.3", "<= 5.0.0"\n))
           end
 
-          context "that is a git SHA" do
+          context "when that is a git SHA" do
             let(:latest_allowable_version) { "d12ca5e" }
+
             its(:content) do
               is_expected.to include(%("business", ">= 1.4.3"\n))
             end
@@ -66,8 +67,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
         end
 
         context "with a gems.rb and gems.locked setup" do
-          let(:dependency_files) { bundler_project_dependency_files("gems_rb") }
           subject { prepared_dependency_files.find { |f| f.name == "gems.rb" } }
+
+          let(:dependency_files) { bundler_project_dependency_files("gems_rb") }
 
           it "returns the right files" do
             expect(prepared_dependency_files.map(&:name))
@@ -80,6 +82,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
         context "when asked not to unlock the requirement" do
           let(:unlock_requirement) { false }
+
           its(:content) { is_expected.to include(%("business", "~> 1.4.0"\n)) }
 
           context "with a latest allowable version" do
@@ -92,7 +95,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
         end
       end
 
-      context "within a source block" do
+      context "when within a source block" do
         let(:dependency_files) { bundler_project_dependency_files("source_block_gemfile") }
         let(:version) { "1.4.3" }
 
@@ -102,12 +105,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
       context "with multiple requirements" do
         let(:dependency_files) { bundler_project_dependency_files("gemfile_multiple_requirements") }
         let(:version) { "1.4.3" }
+
         its(:content) do
           is_expected.to eq(%(gem "business", ">= 1.4.3", require: true\n))
         end
 
-        context "given as an array" do
+        context "when given as an array" do
           let(:dependency_files) { bundler_project_dependency_files("gemfile_multiple_requirements_array") }
+
           its(:content) do
             is_expected.to eq(%(gem "business", ">= 1.4.3", require: true\n))
           end
@@ -121,7 +126,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
         its(:content) { is_expected.to include(%("prius", ">= 0", git:)) }
 
-        context "and a version specified" do
+        context "when a version specified" do
           let(:dependency_files) { bundler_project_dependency_files("git_source_with_version_gemfile") }
           let(:dependency_name) { "dependabot-test-ruby-package" }
 
@@ -132,19 +137,22 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
           end
         end
 
-        context "that should be removed" do
+        context "when that should be removed" do
           let(:remove_git_source) { true }
+
           its(:content) { is_expected.to include(%("prius", ">= 0"\n)) }
           its(:content) { is_expected.to include(%("que", git:)) }
 
           context "with a tag (i.e., multiple git-related arguments)" do
             let(:dependency_files) { bundler_project_dependency_files("git_source_gemfile") }
             let(:dependency_name) { "que" }
+
             its(:content) { is_expected.to include(%("que", ">= 0"\n)) }
           end
 
           context "with non-git tags at the start" do
             let(:dependency_files) { bundler_project_dependency_files("non_git_tags_at_start_gemfile") }
+
             its(:content) do
               is_expected.to eq(%(gem "prius", ">= 0", require: false\n))
             end
@@ -152,6 +160,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
           context "with non-git tags at the end" do
             let(:dependency_files) { bundler_project_dependency_files("non_git_tags_at_end_gemfile") }
+
             its(:content) do
               is_expected.to eq(%(gem "prius", ">= 0", require: false\n))
             end
@@ -159,6 +168,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
           context "with non-git tags on a subsequent line" do
             let(:dependency_files) { bundler_project_dependency_files("non_git_tags_on_newline_gemfile") }
+
             its(:content) do
               is_expected.to eq(%(gem "prius", ">= 0", require: false\n))
             end
@@ -166,6 +176,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
           context "with git tags on a subsequent line" do
             let(:dependency_files) { bundler_project_dependency_files("git_tags_on_newline_gemfile") }
+
             its(:content) do
               is_expected.to eq(%(gem "prius", ">= 0", require: false\n))
             end
@@ -173,18 +184,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
           context "with a custom tag" do
             let(:dependency_files) { bundler_project_dependency_files("custom_tag_gemfile") }
+
             its(:content) { is_expected.to eq(%(gem "prius", ">= 0"\n)) }
           end
 
           context "with a comment" do
             let(:dependency_files) { bundler_project_dependency_files("comment_gemfile") }
+
             its(:content) { is_expected.to eq(%(gem "prius", ">= 0" # My gem\n)) }
           end
         end
 
-        context "that should have its tag replaced" do
+        context "when the tag should be replaced" do
           let(:dependency_name) { "business" }
           let(:replacement_git_pin) { "v5.1.0" }
+
           its(:content) { is_expected.to include(%(ref: "v5.1.0"\n)) }
         end
       end
@@ -215,18 +229,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
             )
           end
 
-          its(:content) { is_expected.to_not include("ruby '1.9.3'") }
+          its(:content) { is_expected.not_to include("ruby '1.9.3'") }
         end
       end
     end
 
     describe "the updated gemspec" do
-      let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
-      let(:version) { "1.4.3" }
-
       subject do
         prepared_dependency_files.find { |f| f.name == "example.gemspec" }
       end
+
+      let(:dependency_files) { bundler_project_dependency_files("gemfile_small_example") }
+      let(:version) { "1.4.3" }
 
       its(:content) { is_expected.to include("'business', '>= 1.4.3'\n") }
 
@@ -243,6 +257,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
 
           context "with no requirements, either" do
             let(:requirements) { [] }
+
             its(:content) { is_expected.to include(%("gitlab", ">= 0"\n)) }
           end
 
@@ -255,6 +270,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
                 groups: [:default]
               }]
             end
+
             its(:content) { is_expected.to include(%("gitlab", ">= 1.4"\n)) }
           end
         end
@@ -264,13 +280,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
         let(:version) { "1.4.3" }
         let(:gemspec_fixture_name) { "multiple_requirements" }
         let(:dependency_files) { bundler_project_dependency_files("gemspec_multiple_requirements") }
+
         its(:content) do
           is_expected.to eq(%(spec.add_dependency "business", ">= 1.4.3"\n))
         end
 
-        context "given as an array" do
+        context "when given as an array" do
           let(:dependency_files) { bundler_project_dependency_files("gemspec_multiple_requirements_array") }
           let(:gemspec_fixture_name) { "multiple_requirements_array" }
+
           its(:content) do
             is_expected.to eq(%(spec.add_dependency "business", ">= 1.4.3"\n))
           end
@@ -280,6 +298,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
       context "with parentheses" do
         let(:version) { "1.4.3" }
         let(:dependency_files) { bundler_project_dependency_files("gemfile_multiple_requirements_parenthesis") }
+
         its(:content) do
           is_expected.to eq(%(spec.add_dependency("business", ">= 1.4.3")\n))
         end
@@ -287,16 +306,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
     end
 
     describe "the updated path gemspec" do
+      subject { prepared_dependency_files.find { |f| f.name == "some/example.gemspec" } }
+
       let(:dependency_files) do
         bundler_project_dependency_files("nested_gemspec")
       end
-      subject { prepared_dependency_files.find { |f| f.name == "some/example.gemspec" } }
+
       let(:version) { "1.4.3" }
 
       its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
 
       context "when the file requires sanitizing" do
         subject { prepared_dependency_files.find { |f| f.name == "example.gemspec" } }
+
         let(:dependency_files) { bundler_project_dependency_files("gemfile_with_require") }
 
         its(:content) { is_expected.to include("begin\nrequire ") }
@@ -305,12 +327,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
     end
 
     describe "the updated child gemfile" do
-      let(:dependency_files) { bundler_project_dependency_files("nested_gemfile") }
-      let(:version) { "1.4.3" }
-
       subject do
         prepared_dependency_files.find { |f| f.name == "backend/Gemfile" }
       end
+
+      let(:dependency_files) { bundler_project_dependency_files("nested_gemfile") }
+      let(:version) { "1.4.3" }
 
       its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
       its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }

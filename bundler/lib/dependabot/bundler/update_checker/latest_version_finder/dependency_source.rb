@@ -21,8 +21,11 @@ module Dependabot
           GIT = "git"
           OTHER = "other"
 
-          attr_reader :dependency, :dependency_files, :repo_contents_path,
-                      :credentials, :options
+          attr_reader :dependency
+          attr_reader :dependency_files
+          attr_reader :repo_contents_path
+          attr_reader :credentials
+          attr_reader :options
 
           def initialize(dependency:,
                          dependency_files:,
@@ -90,7 +93,8 @@ module Dependabot
             @rubygems_versions ||=
               begin
                 response = Dependabot::RegistryClient.get(
-                  url: dependency_rubygems_uri
+                  url: dependency_rubygems_uri,
+                  headers: { "Accept-Encoding" => "gzip" }
                 )
 
                 JSON.parse(response.body)

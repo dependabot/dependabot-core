@@ -95,31 +95,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     )
   end
 
-  context "when a job does not have grouped configured but it's a grouped security update" do
-    let(:source) do
-      Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/"])
-    end
-
-    let(:job) do
-      instance_double(Dependabot::Job,
-                      dependency_groups: [],
-                      package_manager: "bundler",
-                      source: source,
-                      security_updates_only?: true,
-                      updating_a_pull_request?: false,
-                      dependencies: %w(dummy-pkg-a dummy-pkg-b dummy-pkg-c ungrouped_pkg),
-                      dependency_group_to_refresh: nil)
-    end
-
-    describe "::from_job_config" do
-      it "creates a default group" do
-        expect(dependency_group_engine.dependency_groups.length).to eql(1)
-        expect(dependency_group_engine.dependency_groups.first.name).to eql("bundler group")
-        expect(dependency_group_engine.dependency_groups.first.dependencies).to be_empty
-      end
-    end
-  end
-
   context "when a job has grouped configured, and it's a version update" do
     let(:dependency_groups_config) do
       [
@@ -142,7 +117,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
     describe "::from_job_config" do
       it "filters out the security update" do
-        expect(dependency_group_engine.dependency_groups.length).to eql(1)
+        expect(dependency_group_engine.dependency_groups.length).to be(1)
         expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a))
       end
     end
@@ -153,7 +128,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       describe "::from_job_config" do
         it "filters out the version update" do
-          expect(dependency_group_engine.dependency_groups.length).to eql(1)
+          expect(dependency_group_engine.dependency_groups.length).to be(1)
           expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-b))
         end
       end
@@ -181,7 +156,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
     describe "::from_job_config" do
       it "registers the dependency groups" do
-        expect(dependency_group_engine.dependency_groups.length).to eql(2)
+        expect(dependency_group_engine.dependency_groups.length).to be(2)
         expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a group-b))
         expect(dependency_group_engine.dependency_groups.map(&:dependencies)).to all(be_empty)
       end

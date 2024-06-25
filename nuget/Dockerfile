@@ -11,12 +11,13 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install .NET SDK
-ARG DOTNET_SDK_VERSION=8.0.202
+ARG DOTNET_SDK_VERSION=8.0.300
 ARG DOTNET_SDK_INSTALL_URL=https://dot.net/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_NOLOGO=true
 ENV DOTNET_ROOT="${DOTNET_INSTALL_DIR}"
 ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=true
 ENV NUGET_SCRATCH=/opt/nuget/helpers/tmp
 
 RUN cd /tmp \
@@ -24,7 +25,8 @@ RUN cd /tmp \
   && chmod +x dotnet-install.sh \
   && mkdir -p "${DOTNET_INSTALL_DIR}" \
   && ./dotnet-install.sh --version "${DOTNET_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
-  && rm dotnet-install.sh
+  && rm dotnet-install.sh \
+  && chown -R dependabot:dependabot "${DOTNET_INSTALL_DIR}/sdk"
 
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -12,13 +12,16 @@ module Dependabot
   module Python
     class FileUpdater
       class RequirementReplacer
+        PACKAGE_NOT_FOUND_ERROR = "PackageNotFoundError"
+
         def initialize(content:, dependency_name:, old_requirement:,
-                       new_requirement:, new_hash_version: nil)
+                       new_requirement:, new_hash_version: nil, index_urls: nil)
           @content          = content
           @dependency_name  = normalise(dependency_name)
           @old_requirement  = old_requirement
           @new_requirement  = new_requirement
           @new_hash_version = new_hash_version
+          @index_urls = index_urls
         end
 
         def updated_content
@@ -26,7 +29,7 @@ module Dependabot
             content.gsub(original_declaration_replacement_regex) do |mtch|
               # If the "declaration" is setting an option (e.g., no-binary)
               # ignore it, since it isn't actually a declaration
-              next mtch if Regexp.last_match.pre_match.match?(/--.*\z/)
+              next mtch if Regexp.last_match&.pre_match&.match?(/--.*\z/)
 
               updated_dependency_declaration_string
             end
@@ -38,8 +41,11 @@ module Dependabot
 
         private
 
-        attr_reader :content, :dependency_name, :old_requirement,
-                    :new_requirement, :new_hash_version
+        attr_reader :content
+        attr_reader :dependency_name
+        attr_reader :old_requirement
+        attr_reader :new_requirement
+        attr_reader :new_hash_version
 
         def update_hashes?
           !new_hash_version.nil?
@@ -134,11 +140,28 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-            function: "get_dependency_hash",
-            args: [name, version, algorithm]
-          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          index_urls = @index_urls || [nil]
+
+          index_urls.map do |index_url|
+            args = [name, version, algorithm]
+            args << index_url unless index_url.nil?
+
+            begin
+              result = SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_dependency_hash",
+                args: args
+              )
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise unless e.message.include?("PackageNotFoundError")
+
+              next
+            end
+
+            return result.map { |h| "--hash=#{algorithm}:#{h['hash']}" } if result.is_a?(Array)
+          end
+
+          raise Dependabot::DependencyFileNotResolvable, "Unable to find hashes for package #{name}"
         end
 
         def original_dependency_declaration_string(old_req)

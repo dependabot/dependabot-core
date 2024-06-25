@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -38,7 +38,10 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
-        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
@@ -110,12 +113,13 @@ module Dependabot
           raise "No version in lockfile!"
         end
 
+        # rubocop:disable Metrics/AbcSize
         def handle_poetry_errors(error)
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
             match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = if (url = match.named_captures.fetch("url"))
-                     File.basename(URI.parse(url).path)
+                     File.basename(T.must(URI.parse(url).path))
                    else
                      message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
                             .named_captures.fetch("name")
@@ -143,6 +147,7 @@ module Dependabot
           # change then we want to hear about it
           raise
         end
+        # rubocop:enable Metrics/AbcSize
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.

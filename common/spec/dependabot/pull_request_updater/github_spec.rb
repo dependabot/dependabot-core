@@ -95,7 +95,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "doesn't push a commit to GitHub" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, "#{watched_repo_url}/git/trees")
+          .not_to have_requested(:post, "#{watched_repo_url}/git/trees")
       end
 
       it "returns nil" do
@@ -327,7 +327,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           )
       end
 
-      context "multiple of which are from Dependabot" do
+      context "when multiple are from Dependabot" do
         before do
           stub_request(:get, pull_request_url)
             .to_return(status: 200,
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         end
       end
 
-      context "the original PR head commit cannot be found" do
+      context "when the original PR head commit cannot be found" do
         let(:old_commit) { "oldcommitsha" }
 
         it "generates a reasonable fallback commit message" do
@@ -412,7 +412,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           .with(body: { base: "develop" })
       end
 
-      context "but this PR wasn't targeting the default branch" do
+      context "when the PR wasn't targeting the default branch" do
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -424,11 +424,11 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         it "does not update the base branch" do
           updater.update
 
-          expect(WebMock).to_not have_requested(:patch, pull_request_url)
+          expect(WebMock).not_to have_requested(:patch, pull_request_url)
         end
       end
 
-      context "but the PR has been closed" do
+      context "when the PR has been closed" do
         before do
           stub_request(:patch, pull_request_url)
             .to_return(
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             )
         end
 
-        specify { expect { updater.update }.to_not raise_error }
+        specify { expect { updater.update }.not_to raise_error }
       end
     end
 
@@ -487,6 +487,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             signature_key: signature_key
           )
         end
+
         let(:signature_key) { fixture("keys", "pgp.key") }
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
@@ -504,6 +505,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             "- [Commits](https://github.com/gocardless/business/compare/" \
             "v3.0.0...v1.5.0)"
         end
+
         before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
@@ -678,6 +680,19 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "raises a helpful error" do
         expect { updater.update }
           .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when pushing to a branch that does not allow force pushes" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(status: 422, body: fixture("github", "force_push_restricted_branch.json"), headers: json_header)
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update } .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
   end

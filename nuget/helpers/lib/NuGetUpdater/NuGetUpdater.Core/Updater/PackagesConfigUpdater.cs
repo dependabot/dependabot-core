@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 using Microsoft.Language.Xml;
 
@@ -23,7 +20,7 @@ internal static class PackagesConfigUpdater
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        bool isTransitive,
+        string packagesConfigPath,
         Logger logger
     )
     {
@@ -33,7 +30,7 @@ internal static class PackagesConfigUpdater
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
-        var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion);
+        var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion, packagesConfigPath);
         if (packagesSubDirectory is null)
         {
             logger.Log($"    Project [{projectPath}] does not reference this dependency.");
@@ -43,8 +40,6 @@ internal static class PackagesConfigUpdater
         logger.Log($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
 
         var projectDirectory = Path.GetDirectoryName(projectPath);
-        var packagesConfigPath = PathHelper.JoinPath(projectDirectory, NuGetHelper.PackagesConfigFileName);
-
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
         Directory.CreateDirectory(packagesDirectory);
 
@@ -83,7 +78,7 @@ internal static class PackagesConfigUpdater
 
         using (new WebApplicationTargetsConditionPatcher(projectPath))
         {
-            RunNuget(updateArgs, restoreArgs, packagesDirectory, logger);
+            RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
         }
 
         projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
@@ -96,7 +91,7 @@ internal static class PackagesConfigUpdater
         await projectBuildFile.SaveAsync();
     }
 
-    private static void RunNuget(List<string> updateArgs, List<string> restoreArgs, string packagesDirectory, Logger logger)
+    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, Logger logger)
     {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
@@ -110,7 +105,7 @@ internal static class PackagesConfigUpdater
         try
         {
 
-            Environment.CurrentDirectory = packagesDirectory;
+            Environment.CurrentDirectory = projectDirectory;
             var retryingAfterRestore = false;
 
         doRestore:
@@ -122,13 +117,21 @@ internal static class PackagesConfigUpdater
             logger.Log($"    Output:\n{fullOutput}");
             if (result != 0)
             {
-                // If the `packages.config` file contains a delisted package, the initial `update` operation will fail
-                // with the message listed below.  The solution is to run `nuget.exe restore ...` and retry.
+                // The initial `update` command can fail for several reasons:
+                // 1. One possibility is that the `packages.config` file contains a delisted package.  If that's the
+                //    case, `update` will fail with the message "Existing packages must be restored before performing
+                //    an install or update."
+                // 2. Another possibility is that the `update` command fails because the package contains no assemblies
+                //    and doesn't appear in the cache.  The message in this case will be "Could not install package
+                //    '<name> <version>'...the package does not contain any assembly references or content files that
+                //    are compatible with that framework.".
+                // The solution in all cases is to run `restore` then try the update again.
                 if (!retryingAfterRestore &&
-                    fullOutput.Contains("Existing packages must be restored before performing an install or update."))
+                    (fullOutput.Contains("Existing packages must be restored before performing an install or update.") ||
+                    fullOutput.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")))
                 {
-                    logger.Log($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
                     retryingAfterRestore = true;
+                    logger.Log($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
                     outputBuilder.Clear();
                     var exitCodeAgain = Program.Main(restoreArgs.ToArray());
                     var restoreOutput = outputBuilder.ToString();
@@ -157,7 +160,7 @@ internal static class PackagesConfigUpdater
         }
     }
 
-    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion)
+    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string packagesConfigPath)
     {
         // the packages directory can be found from the hint path of the matching dependency, e.g., when given "Newtonsoft.Json", "7.0.1", and a project like this:
         // <Project>
@@ -174,11 +177,7 @@ internal static class PackagesConfigUpdater
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
         string? partialPathMatch = null;
-        var hintPathNodes = projectBuildFile.Contents.Descendants()
-            .Where(e =>
-                e.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
-                e.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) &&
-                e.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase)?.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase) == true);
+        var hintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName));
         foreach (var hintPathNode in hintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
@@ -207,7 +206,45 @@ internal static class PackagesConfigUpdater
             }
         }
 
+        if (partialPathMatch is null)
+        {
+            // if we got this far, we couldn't find the packages directory for the specified dependency and there are 2 possibilities:
+            // 1. the dependency doesn't actually exist in this project
+            // 2. the dependency exists, but doesn't have any assemblies, e.g., jQuery
+
+            // first let's check the packages.config file to see if we actually need it.
+            XDocument packagesDocument = XDocument.Load(packagesConfigPath);
+            var hasPackage = packagesDocument.XPathSelectElements("/packages/package")
+                .Where(e => e.Attribute("id")?.Value.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) == true).Any();
+            if (hasPackage)
+            {
+                // the dependency exists in the packages.config file, so it must be the second case
+                // the vast majority of projects found in the wild use this, and since we have nothing to look for, we'll just have to hope
+                partialPathMatch = "../packages";
+            }
+        }
+
         return partialPathMatch;
+    }
+
+    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    {
+        if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
+            element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
+        {
+            // the include attribute will look like one of the following:
+            //   <Reference Include="Some.Dependency, Version=1.0.0.0, Culture=neutral, PublicKeyToken=abcd">
+            // or
+            //   <Reference Include="Some.Dependency">
+            string includeAttributeValue = element.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase);
+            if (includeAttributeValue.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ||
+                includeAttributeValue.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string GetUpToIndexWithoutTrailingDirectorySeparator(string path, int index)

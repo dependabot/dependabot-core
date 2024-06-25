@@ -41,9 +41,13 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :repo_contents_path,
-                    :credentials, :ignored_versions, :security_advisories,
-                    :options
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
+        attr_reader :options
 
         def fetch_latest_version_details
           return dependency_source.latest_git_version_details if dependency_source.git?

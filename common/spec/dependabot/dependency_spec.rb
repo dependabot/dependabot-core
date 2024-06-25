@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Dependency do
         }]
       end
 
-      specify { expect { dependency }.to_not raise_error }
+      specify { expect { dependency }.not_to raise_error }
     end
   end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Dependency do
       let(:dependency1) { described_class.new(**args) }
       let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
 
-      specify { expect(dependency1).to_not eq(dependency2) }
+      specify { expect(dependency1).not_to eq(dependency2) }
     end
   end
 
@@ -119,12 +119,12 @@ RSpec.describe Dependabot::Dependency do
     let(:groups) { [] }
     let(:package_manager) { "dummy" }
 
-    context "for a requirement that isn't top-level" do
+    context "when dealing with a requirement that isn't top-level" do
       let(:dependency_args) do
         { name: "dep", requirements: [], package_manager: package_manager }
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with subdependency metadata" do
         let(:dependency_args) do
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Dependency do
           }
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
     end
   end
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [{ file: "a.rb", groups: [],
                                requirement: "1", source: nil }]
         }
-        is_expected.to eq(expected)
+        expect(to_h).to eq(expected)
       end
     end
 
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Dependency do
           "package_manager" => "dummy",
           "requirements" => []
         }
-        is_expected.to eq(expected)
+        expect(to_h).to eq(expected)
       end
     end
 
@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [],
           "subdependency_metadata" => [{ npm_bundled: true }]
         }
-        is_expected.to eq(expected)
+        expect(to_h).to eq(expected)
       end
     end
 
@@ -236,7 +236,28 @@ RSpec.describe Dependabot::Dependency do
           "requirements" => [],
           "removed" => true
         }
-        is_expected.to eq(expected)
+        expect(to_h).to eq(expected)
+      end
+    end
+
+    context "when a directory is specified" do
+      let(:dependency_args) do
+        {
+          name: "dep",
+          requirements: [],
+          package_manager: "dummy",
+          directory: "/home"
+        }
+      end
+
+      it do
+        expected = {
+          "name" => "dep",
+          "package_manager" => "dummy",
+          "requirements" => [],
+          "directory" => "/home"
+        }
+        expect(to_h).to eq(expected)
       end
     end
   end
@@ -268,7 +289,7 @@ RSpec.describe Dependabot::Dependency do
         }
       end
 
-      it { is_expected.to eq(nil) }
+      it { is_expected.to be_nil }
     end
   end
 

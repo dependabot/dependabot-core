@@ -56,8 +56,9 @@ module Dependabot
 
         private
 
-        attr_reader :requirements, :update_strategy,
-                    :latest_resolvable_version
+        attr_reader :requirements
+        attr_reader :update_strategy
+        attr_reader :latest_resolvable_version
 
         def check_update_strategy
           return if ALLOWED_UPDATE_STRATEGIES.include?(update_strategy)

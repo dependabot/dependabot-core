@@ -7,8 +7,9 @@ require "dependabot/swift/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Swift::MetadataFinder do
-  it_behaves_like "a dependency metadata finder"
-
+  let(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -18,9 +19,7 @@ RSpec.describe Dependabot::Swift::MetadataFinder do
     }]
   end
 
-  let(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     context "with a direct dependency" do
@@ -43,7 +42,7 @@ RSpec.describe Dependabot::Swift::MetadataFinder do
         )
       end
 
-      it "works" do
+      it "returns the correct source URL" do
         expect(finder.source_url).to eq "https://github.com/reactivecocoa/reactiveswift"
       end
     end
@@ -68,7 +67,7 @@ RSpec.describe Dependabot::Swift::MetadataFinder do
         )
       end
 
-      it "works" do
+      it "returns the correct source URL" do
         expect(finder.source_url).to eq "https://github.com/reactivecocoa/reactiveswift"
       end
     end

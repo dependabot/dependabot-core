@@ -396,6 +396,7 @@ module Dependabot
         return true if message.include?("Could not resolve to a node")
         return true if message.include?("not a collaborator")
         return true if message.include?("Could not add requested reviewers")
+        return true if message.include?("Review cannot be requested from pull request author")
 
         false
       end
@@ -441,6 +442,9 @@ module Dependabot
       rescue Octokit::NotFound
         # This can happen if a passed assignee login is now an org account
         nil
+      rescue Octokit::UnprocessableEntity => e
+        # This can happen if an invalid assignee was passed
+        raise unless e.message.include?("Could not add assignees")
       end
 
       sig { params(pull_request: T.untyped).void }

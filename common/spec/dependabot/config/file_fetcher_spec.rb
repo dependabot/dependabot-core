@@ -35,7 +35,9 @@ RSpec.describe Dependabot::Config::FileFetcher do
 
   describe "#config_file" do
     subject(:config_file) { file_fetcher_instance.config_file }
+
     let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
       stub_request(:get, url + ".github/dependabot.yml?ref=sha")

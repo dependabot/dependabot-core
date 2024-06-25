@@ -4,11 +4,29 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/version_finder"
 require "dependabot/nuget/update_checker/tfm_comparer"
+require_relative "../nuget_search_stubs"
 
 RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
+  RSpec.configure do |config|
+    config.include(NuGetSearchStubs)
+  end
+
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: "/"
+    )
+  end
+
   let(:finder) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
@@ -16,7 +34,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      repo_contents_path: "test/repo"
+      repo_contents_path: repo_contents_path
     )
   end
 
@@ -119,7 +137,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         is_expected.to eq(expected_version_instance)
       end
 
-      context "for a previous version" do
+      context "when dealing with a previous version" do
         let(:dependency_version) { "2.1.0-preview1-26216-03" }
         let(:expected_version) { "2.1.0" }
 
@@ -135,6 +153,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_requirements) do
         [{ file: "my.csproj", requirement: "*-*", groups: ["dependencies"], source: nil }]
       end
+
       its([:version]) do
         is_expected.to eq(version_class.new("2.2.0-preview2-26406-04"))
       end
@@ -142,24 +161,28 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
     context "when the user is using an unfound property" do
       let(:dependency_version) { "$PackageVersion_LibGit2SharpNativeBinaries" }
+
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version_details }.not_to raise_error
       end
     end
 
     context "when the user is on the latest version" do
       let(:dependency_version) { "2.1.0" }
+
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
     end
@@ -170,10 +193,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:expected_version) { nil }
       let(:expected_compatible) { false }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
     end
@@ -181,22 +205,25 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     context "when the dependency is a git dependency" do
       let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version_details }.not_to raise_error
         end
       end
     end
 
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.1.1"] }
+
       its([:version]) { is_expected.to eq(version_class.new("1.1.1")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -204,41 +231,54 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { ["[2.a,3.0.0)"] }
       let(:expected_version) { "1.1.2" }
+
       its([:version]) { is_expected.to eq(expected_version_instance) }
     end
 
     context "when a version range is specified using Ruby syntax" do
-      let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
+      let(:ignored_versions) { [">= 2.a"] }
       let(:expected_version) { "1.1.2" }
+
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
     end
 
     context "when the user has ignored all versions" do
       let(:ignored_versions) { ["[0,)"] }
+
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version_details).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
 
     context "when an open version range is specified using Ruby syntax" do
       let(:ignored_versions) { ["> 0"] }
+
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version_details).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version_details }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
+    end
+
+    context "when the user is ignoring all versions but a very specific one" do
+      let(:ignored_versions) { ["< 1.1.1, > 1.1.1"] }
+      let(:expected_version) { "1.1.1" }
+
+      its([:version]) { is_expected.to eq(expected_version_instance) }
     end
 
     context "with a custom repo in a nuget.config file" do
@@ -256,6 +296,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         "https://www.myget.org/F/exceptionless/api/v3/" \
           "registration1/microsoft.extensions.dependencymodel/index.json"
       end
+
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
         stub_request(:get, nuget_search_url).to_return(status: 404)
@@ -276,7 +317,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       # skipped
       # its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "that uses the v2 API" do
+      context "when the repo uses the v2 API" do
         let(:config_file) do
           Dependabot::DependencyFile.new(
             name: "NuGet.Config",
@@ -342,7 +383,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:expected_version) { "7.3.0" }
 
       it "returns the expected version" do
-        expect(subject[:version]).to eq(expected_version_instance)
+        expect(latest_version_details[:version]).to eq(expected_version_instance)
       end
     end
 
@@ -394,8 +435,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
 
-      context "that does not return PackageBaseAddress" do
+      context "when the URL does not return PackageBaseAddress" do
         let(:custom_repo_url) { "http://www.myget.org/artifactory/api/nuget/v3/dependabot-nuget-local" }
+
         before do
           stub_request(:get, custom_repo_url)
             .with(basic_auth: %w(admin password))
@@ -438,10 +480,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_name) { "NuGet.Protocol" }
       let(:dependency_version) { "6.3.0" }
 
-      # skipped
-      # it "returns the expected version" do
-      #   expect(subject[:version]).to eq(version_class.new("6.5.0"))
-      # end
+      it "returns the expected version" do
+        skip "This test was commented out and does not work at the moment"
+        expect(latest_version_details[:version]).to eq(version_class.new("6.5.0"))
+      end
     end
 
     context "when the package can't be meaninfully sorted by just version" do
@@ -493,7 +535,136 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
 
       it "returns the expected version" do
-        expect(subject[:version]).to eq(version_class.new("3.14.0"))
+        expect(latest_version_details[:version]).to eq(version_class.new("3.14.0"))
+      end
+    end
+
+    context "when `packageSourceMapping`s are specified" do
+      let(:csproj_body) do
+        <<~XML
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <TargetFramework>net8.0</TargetFramework>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="Some.Package" Version="1.0.0" />
+            </ItemGroup>
+          </Project>
+        XML
+      end
+      let(:config_file) do
+        Dependabot::DependencyFile.new(
+          name: "NuGet.Config",
+          content:
+            <<~XML
+              <configuration>
+                <packageSources>
+                  <clear />
+                  <add key="source1" value="https://nuget.example.com/source1/index.json" />
+                  <add key="source2" value="https://nuget.example.com/source2/index.json" />
+                </packageSources>
+                <packageSourceMapping>
+                  <packageSource key="source1">
+                    <!-- this pattern is more specific and will be preferred -->
+                    <package pattern="Some.*" />
+                  </packageSource>
+                  <packageSource key="source2">
+                    <!-- this pattern is less specific and will not be preferred -->
+                    <package pattern="*" />
+                  </packageSource>
+                </packageSourceMapping>
+              </configuration>
+            XML
+        )
+      end
+      let(:dependency_files) { [csproj, config_file] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Some.Package",
+          version: "1.0.0",
+          requirements: [{ file: "my.csproj", requirement: "1.0.0", groups: ["dependencies"], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+      let(:expected_version) { version_class.new("1.1.0") }
+
+      def create_nupkg(nuspec_name, nuspec_content)
+        content = Zip::OutputStream.write_buffer do |zio|
+          zio.put_next_entry("#{nuspec_name}.nuspec")
+          zio.write(nuspec_content)
+        end
+        content.rewind
+        content.sysread
+      end
+
+      before do
+        allow(finder).to receive(:str_version_compatible?).and_call_original
+
+        # stub source 1
+        stub_index_json("https://nuget.example.com/source1/index.json")
+        stub_request(:get, "https://nuget.example.com/source1/RegistrationsBaseUrl/some.package/index.json")
+          .to_return(
+            status: 200,
+            body: {
+              count: 1,
+              items: [
+                {
+                  count: 2,
+                  items: [
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.0.0" # this is what's currently installed
+                      }
+                    },
+                    {
+                      catalogEntry: {
+                        id: "Some.Package",
+                        version: "1.1.0" # this is what we'd like to upgrade to
+                      }
+                    }
+                  ]
+                }
+              ]
+            }.to_json
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.0.0/some.package.1.0.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        stub_request(:get, "https://nuget.example.com/source1/PackageBaseAddress/some.package/1.1.0/some.package.1.1.0.nupkg")
+          .to_return(
+            status: 200,
+            body: create_nupkg(
+              "Some.Package",
+              <<~XML
+                <package>
+                  <metadata>
+                  <dependencies>
+                    <group targetFramework="net8.0" />
+                  </dependencies>
+                  </metadata>
+                </package>
+              XML
+            )
+          )
+        # none of the `source2` URLs should be called
+      end
+
+      it "returns the expected version honoring the package source mapping" do
+        expect(latest_version_details[:version]).to eq(version_class.new("1.1.0"))
       end
     end
   end
@@ -524,8 +695,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     its([:version]) { is_expected.to eq(version_class.new("2.0.0")) }
 
     context "when the user is ignoring the lowest version" do
-      let(:ignored_versions) { [">= 2.a, <= 2.0.0"] }
+      let(:ignored_versions) { ["<= 2.0.0"] }
       let(:expected_version) { "2.0.3" }
+
       its([:version]) { is_expected.to eq(version_class.new("2.0.3")) }
     end
   end

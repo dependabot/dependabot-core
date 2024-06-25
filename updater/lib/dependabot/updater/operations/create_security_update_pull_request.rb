@@ -54,11 +54,11 @@ module Dependabot
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+        attr_reader :job
+        attr_reader :service
+        attr_reader :dependency_snapshot
+        attr_reader :error_handler
+        attr_reader :created_pull_requests
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
@@ -77,6 +77,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
+          dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
           checker = update_checker_for(dependency)
 
           log_checking_for_update(dependency)
@@ -87,7 +88,7 @@ module Dependabot
             # The current dependency isn't vulnerable if the version is correct and
             # can be matched against the advisories affected versions
             if checker.version_class.correct?(checker.dependency.version)
-              return record_security_update_not_needed_error(checker)
+              return record_security_update_not_needed_error(checker.dependency)
             end
 
             return record_dependency_file_not_supported_error(checker)
@@ -161,6 +162,20 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+
+        def vulnerable_version(dependency)
+          return dependency if dependency.metadata[:all_versions].count == 1
+
+          vulnerable_dependency = dependency.metadata[:all_versions].find do |dep|
+            checker = update_checker_for(dep)
+            checker.version_class.correct?(dep.version) && checker.vulnerable?
+          end
+
+          # this will lead to a security update not found error
+          return dependency unless vulnerable_dependency
+
+          vulnerable_dependency
+        end
 
         def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(

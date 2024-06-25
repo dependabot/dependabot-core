@@ -1,17 +1,13 @@
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities
 {
-    public class SdkPackageUpdaterHelperTests
+    public class SdkPackageUpdaterHelperTests : TestBase
     {
         [Fact]
         public async Task DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()
         {
-            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
                 ("src/SomeProject.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <Import Project="..\props\Versions.props" />
@@ -52,7 +48,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [InlineData("src/", "")] // project in subdirectory, global.json at root
         public async Task BuildFileEnumerationWorksEvenWithNonSupportedSdkInGlobalJson(string projectSubpath, string globalJsonSubpath)
         {
-            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
                 ($"{projectSubpath}SomeProject.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                     </Project>
@@ -82,7 +78,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [Fact]
         public async Task BuildFileEnumerationWithNonStandardMSBuildSdkAndNonSupportedSdkVersionInGlobalJson()
         {
-            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
                 ("global.json", """
                     {
                       "sdk": {
@@ -123,7 +119,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [Fact]
         public async Task BuildFileEnumerationWithUnsuccessfulImport()
         {
-            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
                 ("Directory.Build.props", """
                     <Project>
                       <Import Project="file-that-does-not-exist.targets" />
@@ -146,7 +142,7 @@ namespace NuGetUpdater.Core.Test.Utilities
         [Fact]
         public async Task BuildFileEnumerationWithGlobalJsonWithComments()
         {
-            using var temporaryDirectory = TemporaryDirectory.CreateWithContents(
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
                 ("global.json", """
                     {
                       // this is a comment
@@ -171,8 +167,8 @@ namespace NuGetUpdater.Core.Test.Utilities
 
         private static async Task<string[]> LoadBuildFilesFromTemp(TemporaryDirectory temporaryDirectory, string relativeProjectPath)
         {
-            var buildFiles = await MSBuildHelper.LoadBuildFiles(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
-            var buildFilePaths = buildFiles.Select(f => f.RepoRelativePath.NormalizePathToUnix()).ToArray();
+            var (buildFiles, _tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(temporaryDirectory.DirectoryPath, $"{temporaryDirectory.DirectoryPath}/{relativeProjectPath}");
+            var buildFilePaths = buildFiles.Select(f => f.RelativePath.NormalizePathToUnix()).ToArray();
             return buildFilePaths;
         }
     }

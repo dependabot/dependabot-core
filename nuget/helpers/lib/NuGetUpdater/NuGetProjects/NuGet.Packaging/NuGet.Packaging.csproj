@@ -19,6 +19,11 @@
 
   <ItemGroup>
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.cs" />
+    <!--
+    The `PackageFolderReader.GetFiles()` method is case-sensitive which doesn't work for some scenarios so this
+    directory contains a copy of that file with that method with a case-insensitive patch.
+    -->
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\PackageFolderReader.cs" />
   </ItemGroup>
 
   <ItemGroup>
