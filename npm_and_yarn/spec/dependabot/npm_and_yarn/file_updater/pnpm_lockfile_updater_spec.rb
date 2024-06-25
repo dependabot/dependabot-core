@@ -221,7 +221,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::MissingDependencyInRegistry)
+          .to raise_error(Dependabot::DependencyNotFound)
       end
     end
   end

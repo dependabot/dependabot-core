@@ -191,9 +191,9 @@ module Dependabot
         "error-type": "private_source_authentication_failure",
         "error-detail": { source: error.source }
       }
-    when Dependabot::MissingDependencyInRegistry
+    when Dependabot::DependencyNotFound
       {
-        "error-type": "missing_dependency_in_registry",
+        "error-type": "dependency_not_found",
         "error-detail": { source: error.source }
       }
     when Dependabot::PrivateSourceTimedOut
@@ -516,7 +516,7 @@ module Dependabot
     end
   end
 
-  class MissingDependencyInRegistry < DependabotError
+  class DependencyNotFound < DependabotError
     extend T::Sig
 
     sig { returns(String) }
@@ -525,7 +525,7 @@ module Dependabot
     sig { params(source: T.nilable(String)).void }
     def initialize(source)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "The following dependency can not be found in registry: #{@source}"
+      msg = "The following dependency could not be found : #{@source}"
       super(msg)
     end
   end
