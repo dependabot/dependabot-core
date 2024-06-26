@@ -258,13 +258,16 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
 
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+      previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
       begin
         ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        ENV["GIT_TERMINAL_PROMPT"] = "false"
         configure_git_to_use_https_with_credentials(credentials, safe_directories)
         yield
       ensure
         ENV["GIT_CONFIG_GLOBAL"] = previous_config
+        ENV["GIT_TERMINAL_PROMPT"] = previous_terminal_prompt
       end
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
