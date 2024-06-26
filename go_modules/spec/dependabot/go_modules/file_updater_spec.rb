@@ -133,26 +133,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "without a clone of the repository" do
-      before do
-        # We don't have git configured in prod, so simulate the same setup here
-        @previous_git_author_name = ENV.fetch("GIT_AUTHOR_NAME", nil)
-        @previous_git_author_email = ENV.fetch("GIT_AUTHOR_EMAIL", nil)
-        @previous_git_committer_name = ENV.fetch("GIT_COMMITTER_NAME", nil)
-        @previous_git_committer_email = ENV.fetch("GIT_COMMITTER_EMAIL", nil)
-
-        ENV["GIT_AUTHOR_NAME"] = nil
-        ENV["GIT_AUTHOR_EMAIL"] = nil
-        ENV["GIT_COMMITTER_NAME"] = nil
-        ENV["GIT_COMMITTER_EMAIL"] = nil
-      end
-
-      after do
-        ENV["GIT_AUTHOR_NAME"] = @previous_git_author_name
-        ENV["GIT_AUTHOR_EMAIL"] = @previous_git_author_email
-        ENV["GIT_COMMITTER_NAME"] = @previous_git_committer_name
-        ENV["GIT_COMMITTER_EMAIL"] = @previous_git_committer_email
-      end
-
+      let(:previous_git_author_name) { ENV.fetch("GIT_AUTHOR_NAME", nil) }
       let(:updater) do
         described_class.new(
           dependency_files: files,
@@ -165,6 +146,25 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           }],
           repo_contents_path: nil
         )
+      end
+      let(:previous_git_author_email) { ENV.fetch("GIT_AUTHOR_EMAIL", nil) }
+      let(:previous_git_committer_name) { ENV.fetch("GIT_COMMITTER_NAME", nil) }
+      let(:previous_git_committer_email) { ENV.fetch("GIT_COMMITTER_EMAIL", nil) }
+
+      before do
+        # We don't have git configured in prod, so simulate the same setup here
+
+        ENV["GIT_AUTHOR_NAME"] = nil
+        ENV["GIT_AUTHOR_EMAIL"] = nil
+        ENV["GIT_COMMITTER_NAME"] = nil
+        ENV["GIT_COMMITTER_EMAIL"] = nil
+      end
+
+      after do
+        ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+        ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+        ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+        ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
       end
 
       it "includes an updated go.mod" do
