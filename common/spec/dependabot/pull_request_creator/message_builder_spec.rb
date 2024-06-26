@@ -1566,10 +1566,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "<details>\n" \
               "<summary>Vulnerabilities fixed</summary>\n" \
               "<blockquote>\n" \
-              "<p><strong>Serious vulnerability</strong>\n" \
-              "A vulnerability that allows arbitrary code\n" \
+              "<p><strong>Serious vulnerability</strong><br />\n" \
+              "A vulnerability that allows arbitrary code<br />\n" \
               "execution.</p>\n" \
-              "<p>Patched versions: &gt; 1.5.0\n" \
+              "<p>Patched versions: &gt; 1.5.0<br />\n" \
               "Unaffected versions: none</p>\n" \
               "</blockquote>\n" \
               "</details>\n"
