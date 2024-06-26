@@ -88,27 +88,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:requirements) { [] }
       let(:previous_requirements) { [] }
 
-      before do
-        # We don't have git configured in prod, so simulate the same setup here
-
-        ENV["GIT_AUTHOR_NAME"] = nil
-        ENV["GIT_AUTHOR_EMAIL"] = nil
-        ENV["GIT_COMMITTER_NAME"] = nil
-        ENV["GIT_COMMITTER_EMAIL"] = nil
-      end
-
-      after do
-        ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
-        ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
-        ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
-        ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
-      end
-
       it "includes an updated go.mod" do
         expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
+        ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+        ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+        ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+        ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
         expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
     end
@@ -139,6 +127,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:files) { [go_mod] }
 
       it "doesn't include a go.sum" do
+        ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+        ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+        ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+        ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
         expect(updated_files.find { |f| f.name == "go.sum" }).to be_nil
       end
     end
@@ -153,7 +145,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "without a clone of the repository" do
-     let(:updater) do
+      let(:updater) do
         described_class.new(
           dependency_files: files,
           dependencies: [dependency],
@@ -350,6 +342,10 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         it "vendors in the right directory" do
+          ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+          ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+          ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+          ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
           expect(updater.updated_dependency_files.map(&:name)).to match_array(
             %w(
               go.mod
