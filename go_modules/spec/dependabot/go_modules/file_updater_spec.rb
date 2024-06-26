@@ -112,9 +112,22 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       before do
+        # We don't have git configured in prod, so simulate the same setup here
+
+        ENV["GIT_AUTHOR_NAME"] = nil
+        ENV["GIT_AUTHOR_EMAIL"] = nil
+        ENV["GIT_COMMITTER_NAME"] = nil
+        ENV["GIT_COMMITTER_EMAIL"] = nil
         exit_status = double(success?: false)
         allow(Open3).to receive(:capture3).and_call_original
         allow(Open3).to receive(:capture3).with(anything, "go get").and_return(["", stderr, exit_status])
+      end
+
+      after do
+        ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+        ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+        ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+        ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
       end
 
       it "raises a helpful error" do
