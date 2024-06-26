@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -15,6 +15,7 @@ require "dependabot/errors"
 module Dependabot
   module Maven
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
@@ -35,6 +36,7 @@ module Dependabot
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
@@ -44,6 +46,7 @@ module Dependabot
 
       private
 
+      sig { params(pom: Dependabot::DependencyFile).returns(DependencySet) }
       def pomfile_dependencies(pom)
         dependency_set = DependencySet.new
 
@@ -70,6 +73,7 @@ module Dependabot
         dependency_set
       end
 
+      sig { params(extension: Dependabot::DependencyFile).returns(DependencySet) }
       def extensionfile_dependencies(extension)
         dependency_set = DependencySet.new
 
@@ -89,6 +93,10 @@ module Dependabot
         dependency_set
       end
 
+      sig do
+        params(pom: Dependabot::DependencyFile,
+               dependency_node: Nokogiri::XML::Element).returns(T.nilable(Dependabot::Dependency))
+      end
       def dependency_from_dependency_node(pom, dependency_node)
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
@@ -96,6 +104,10 @@ module Dependabot
         build_dependency(pom, dependency_node, name)
       end
 
+      sig do
+        params(pom: Dependabot::DependencyFile,
+               dependency_node: Nokogiri::XML::Element).returns(T.nilable(Dependabot::Dependency))
+      end
       def dependency_from_plugin_node(pom, dependency_node)
         return unless (name = plugin_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
@@ -103,6 +115,10 @@ module Dependabot
         build_dependency(pom, dependency_node, name)
       end
 
+      sig do
+        params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element,
+               name: String).returns(T.nilable(Dependabot::Dependency))
+      end
       def build_dependency(pom, dependency_node, name)
         property_details =
           {
@@ -127,6 +143,9 @@ module Dependabot
         )
       end
 
+      sig do
+        params(dependency_node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String))
+      end
       def dependency_name(dependency_node, pom)
         return unless dependency_node.at_xpath("./groupId")
         return unless dependency_node.at_xpath("./artifactId")
@@ -143,6 +162,9 @@ module Dependabot
         ].join(":")
       end
 
+      sig do
+        params(dependency_node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String))
+      end
       def dependency_classifier(dependency_node, pom)
         return unless dependency_node.at_xpath("./classifier")
 
@@ -152,6 +174,9 @@ module Dependabot
         )
       end
 
+      sig do
+        params(dependency_node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String))
+      end
       def plugin_name(dependency_node, pom)
         return unless plugin_group_id(pom, dependency_node)
         return unless dependency_node.at_xpath("./artifactId")
@@ -165,6 +190,7 @@ module Dependabot
         ].join(":")
       end
 
+      sig { params(pom: Dependabot::DependencyFile, node: Nokogiri::XML::Element).returns(T.nilable(String)) }
       def plugin_group_id(pom, node)
         return "org.apache.maven.plugins" unless node.at_xpath("./groupId")
 
@@ -174,6 +200,9 @@ module Dependabot
         )
       end
 
+      sig do
+        params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(T.nilable(String))
+      end
       def dependency_version(pom, dependency_node)
         requirement = dependency_requirement(pom, dependency_node)
         return nil unless requirement
@@ -185,6 +214,9 @@ module Dependabot
         requirement.gsub(/[\(\)\[\]]/, "").strip
       end
 
+      sig do
+        params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(T.nilable(String))
+      end
       def dependency_requirement(pom, dependency_node)
         return unless dependency_node.at_xpath("./version")
 
@@ -194,10 +226,12 @@ module Dependabot
         version_content.empty? ? nil : version_content
       end
 
+      sig { params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(T::Array[String]) }
       def dependency_groups(pom, dependency_node)
         dependency_scope(pom, dependency_node) == "test" ? ["test"] : []
       end
 
+      sig { params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(String) }
       def dependency_scope(pom, dependency_node)
         return "compile" unless dependency_node.at_xpath("./scope")
 
@@ -207,6 +241,7 @@ module Dependabot
         scope_content.empty? ? "compile" : scope_content
       end
 
+      sig { params(pom: Dependabot::DependencyFile, dependency_node: Nokogiri::XML::Element).returns(String) }
       def packaging_type(pom, dependency_node)
         return "pom" if dependency_node.node_name == "parent"
         return "jar" unless dependency_node.at_xpath("./type")
@@ -217,6 +252,7 @@ module Dependabot
         evaluated_value(packaging_type_content, pom)
       end
 
+      sig { params(dependency_node: Nokogiri::XML::Element).returns(T.nilable(String)) }
       def version_property_name(dependency_node)
         return unless dependency_node.at_xpath("./version")
 
@@ -228,17 +264,21 @@ module Dependabot
           .named_captures.fetch("property")
       end
 
+      sig { params(value: String, pom: Dependabot::DependencyFile).returns(String) }
       def evaluated_value(value, pom)
         return value unless value.match?(PROPERTY_REGEX)
 
-        property_name = value.match(PROPERTY_REGEX)
-                             .named_captures.fetch("property")
-        property_value = value_for_property(property_name, pom)
+        property_name = T.must(value.match(PROPERTY_REGEX))
+                         .named_captures.fetch("property")
+        property_value = value_for_property(T.must(property_name), pom)
 
         new_value = value.gsub(value.match(PROPERTY_REGEX).to_s, property_value)
         evaluated_value(new_value, pom)
       end
 
+      sig do
+        params(dependency_node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String))
+      end
       def property_source(dependency_node, pom)
         property_name = version_property_name(dependency_node)
         return unless property_name
@@ -254,6 +294,7 @@ module Dependabot
         raise DependencyFileNotEvaluatable, msg
       end
 
+      sig { params(property_name: String, pom: Dependabot::DependencyFile).returns(String) }
       def value_for_property(property_name, pom)
         value =
           property_value_finder
@@ -299,6 +340,7 @@ module Dependabot
           end
       end
 
+      sig { override.void }
       def check_required_files
         raise "No pom.xml!" unless get_original_file("pom.xml")
       end
