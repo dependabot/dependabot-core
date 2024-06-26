@@ -270,7 +270,7 @@ module Dependabot
       # values from parent POMs)
       def property_value_finder
         @property_value_finder ||=
-          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials)
+          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials.map(&:to_s))
       end
 
       def pomfiles
