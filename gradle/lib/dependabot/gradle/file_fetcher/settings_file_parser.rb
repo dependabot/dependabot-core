@@ -29,29 +29,31 @@ module Dependabot
         sig { returns(T::Array[T.nilable(String)]) }
         def subproject_paths
           subprojects = T.let([], T::Array[String])
+          process_include_functions(subprojects)
+          subprojects.uniq.map { |name| process_subproject_name(name) }
+        end
 
+        private
+
+        sig { params(subprojects: T::Array[String]).void }
+        def process_include_functions(subprojects)
           comment_free_content&.scan(function_regex("include")) do
             args = T.must(Regexp.last_match).named_captures.fetch("args")
             args = T.must(args).split(",")
             args = args.filter_map { |p| p.gsub(/["']/, "").strip }
-            subprojects += args
+            subprojects.concat(args)
           end
-
-          subprojects = subprojects.uniq
-
-          subproject_dirs = subprojects.map do |proj|
-            if comment_free_content&.match?(project_dir_regex(proj))
-              comment_free_content&.match(project_dir_regex(proj))
-                                  &.named_captures&.fetch("path")&.sub(%r{^/}, "")
-            else
-              proj.tr(":", "/").sub(%r{^/}, "")
-            end
-          end
-
-          subproject_dirs.uniq
         end
 
-        private
+        sig { params(proj: String).returns(T.nilable(String)) }
+        def process_subproject_name(proj)
+          if comment_free_content&.match?(project_dir_regex(proj))
+            comment_free_content&.match(project_dir_regex(proj))
+                                &.named_captures&.fetch("path")&.sub(%r{^/}, "")
+          else
+            proj.tr(":", "/").sub(%r{^/}, "")
+          end
+        end
 
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :settings_file
