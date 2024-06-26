@@ -89,7 +89,7 @@ module Dependabot
         subproject_paths.filter_map do |path|
           @buildfile_name = T.let(@buildfile_name, T.nilable(String))
           if @buildfile_name
-            buildfile_path = T.let(File.join(root_dir, path, @buildfile_name), String)
+            buildfile_path = File.join(root_dir, path, @buildfile_name)
             fetch_file_from_host(buildfile_path)
           else
             buildfile(File.join(root_dir, path))
