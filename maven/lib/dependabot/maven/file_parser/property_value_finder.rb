@@ -136,12 +136,15 @@ module Dependabot
 
         sig { returns(RepositoriesFinder) }
         def repositories_finder
-          @repositories_finder ||= T.let(Dependabot::Maven::FileParser::RepositoriesFinder.new(
-                                           pom_fetcher: @pom_fetcher,
-                                           dependency_files: dependency_files,
-                                           credentials: @credentials,
-                                           evaluate_properties: false
-                                         ), T.nilable(Dependabot::Maven::FileParser::RepositoriesFinder))
+          @repositories_finder ||= T.let(
+            Dependabot::Maven::FileParser::RepositoriesFinder.new(
+              pom_fetcher: @pom_fetcher,
+              dependency_files: dependency_files,
+              credentials: @credentials,
+              evaluate_properties: false
+            ),
+            T.nilable(Dependabot::Maven::FileParser::RepositoriesFinder)
+          )
         end
       end
     end
