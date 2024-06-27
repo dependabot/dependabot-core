@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
@@ -15,7 +16,7 @@ public class PackageToUpdate
     public string secondVersion { get; set; }
 
     // Bool to determine if a package has to be a specific version
-    public bool isSpecific {get; set; }
+    public bool isSpecific { get; set; }
 }
 
 public class PackageManager
@@ -34,31 +35,32 @@ public class PackageManager
         string nuspecURL;
 
         // Remove any brackets and parantheses from the version, so that you can compare for later use
-        if(package.newVersion != null)
+        if (package.newVersion != null)
         {
             if (package.newVersion.StartsWith("[") && package.newVersion.EndsWith("]"))
             {
                 package.newVersion = package.newVersion.Trim('[', ']');
                 package.newVersion = package.newVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
-            }      
+            }
             nuspecURL = $"https://api.nuget.org/v3-flatcontainer/{packageNameLower}/{package.newVersion}/{packageNameLower}.nuspec";
         }
-        else 
+        else
         {
             if (package.currentVersion.StartsWith("[") && package.currentVersion.EndsWith("]"))
             {
                 package.currentVersion = package.currentVersion.Trim('[', ']');
                 package.currentVersion = package.currentVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
-            }    
+            }
             nuspecURL = $"https://api.nuget.org/v3-flatcontainer/{packageNameLower}/{package.currentVersion}/{packageNameLower}.nuspec";
         }
-        
+
         List<PackageToUpdate> dependencyList = new List<PackageToUpdate>();
 
         // Access nuspec url, getting the dependencies of a given package based off framework
-        try {
+        try
+        {
             using (HttpClient client = new HttpClient())
             {
                 string nuspecContent = await client.GetStringAsync(nuspecURL);
@@ -87,7 +89,7 @@ public class PackageManager
                 var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
                                 .Elements(ns + "group")
                                 .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
-                
+
                 bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
 
                 if (!hasDependencies)
@@ -151,19 +153,19 @@ public class PackageManager
                             }
                             specific = true;
                         }
-                        
+
                         PackageToUpdate dependencyPackage = new PackageToUpdate
                         {
                             packageName = dependency.Attribute("id").Value,
                             currentVersion = version,
                         };
-                        
-                        if(specific == true)
+
+                        if (specific == true)
                         {
                             dependencyPackage.isSpecific = true;
                         }
 
-                        if(secondVersion != null)
+                        if (secondVersion != null)
                         {
                             dependencyPackage.secondVersion = secondVersion;
                         }
@@ -173,16 +175,16 @@ public class PackageManager
 
                         // Add each dependency to the list and declare the top package as a specific version
                         dependencyList.Add(dependencyPackage);
-                        
+
                     }
                 }
             }
-        } 
+        }
         catch (Exception e)
         {
             Console.WriteLine($"Nuspec doesn't Exist for " + package.packageName + " with version " + package.currentVersion + ". current version is " + package.currentVersion);
         }
-        
+
         return dependencyList;
     }
 
@@ -198,7 +200,7 @@ public class PackageManager
             // Remove the old child dependency if it exists
             packageDependencies[parent].Remove(child);
         }
-       
+
         packageDependencies[parent].Add(child);
 
         if (!reverseDependencies.ContainsKey(child))
@@ -210,7 +212,7 @@ public class PackageManager
             // Remove the old parent dependency if it exists
             reverseDependencies[child].Remove(parent);
         }
-        
+
         reverseDependencies[child].Add(parent);
     }
 
@@ -231,12 +233,12 @@ public class PackageManager
             foreach (PackageToUpdate dependency in dependencies)
             {
                 PackageToUpdate checkInExisting = packages.FirstOrDefault(p => p.packageName == dependency.packageName);
-                if(checkInExisting != null)
+                if (checkInExisting != null)
                 {
                     checkInExisting.isSpecific = dependency.isSpecific;
                     AddDependency(package, checkInExisting);
                 }
-                else 
+                else
                 {
                     AddDependency(package, dependency);
                 }
@@ -251,29 +253,29 @@ public class PackageManager
         {
             return parents;
         }
-        
+
         return new HashSet<PackageToUpdate>();
     }
-    
+
     // Method to update the version of a desired package based off framwork
-    public async Task<string> UpdateVersion(Task<List<PackageToUpdate>> existingPackages, PackageToUpdate package, string targetFramework)
+    public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, string targetFramework)
     {
-        List<PackageToUpdate> AllExistingPackages = await existingPackages;
+        // List<PackageToUpdate> AllExistingPackages = await existingPackages;
 
         // Check if there is no new version to update or if the current version isnt updated
-        if(package.newVersion == null) 
+        if (package.newVersion == null)
         {
             return "No new version";
         }
 
-        if(package.currentVersion != null)
+        if (package.currentVersion != null)
         {
-            if(package.currentVersion == package.newVersion)
+            if (package.currentVersion == package.newVersion)
             {
                 return "Already updated to new version";
             }
         }
-        else 
+        else
         {
             package.currentVersion = package.newVersion;
         }
@@ -293,15 +295,16 @@ public class PackageManager
                 List<PackageToUpdate> dependencyList = await GetDependenciesAsync(package, targetFramework);
 
                 // If there are dependencies
-                if(dependencyList != null)
+                if (dependencyList != null)
                 {
                     foreach (PackageToUpdate dependency in dependencyList)
                     {
                         // Check if the dependency is in the existing packages. 
-                        foreach (PackageToUpdate existingPackage in AllExistingPackages)
+                        foreach (PackageToUpdate existingPackage in existingPackages)
                         {
                             // If you find the dependency
-                            if(dependency.packageName == existingPackage.packageName){
+                            if (dependency.packageName == existingPackage.packageName)
+                            {
                                 NuGetVersion existingCurrentVersion = new NuGetVersion(existingPackage.currentVersion);
                                 NuGetVersion dependencyCurrentVersion = new NuGetVersion(dependency.currentVersion);
 
@@ -314,14 +317,15 @@ public class PackageManager
                                     packageDupe.currentVersion = dependency.currentVersion;
 
                                     // If the family is compatible with the dependency's version, update with the dependency version
-                                    if(await AreAllParentsCompatibleAsync(existingPackages, packageDupe, targetFramework) == true)
+                                    if (await AreAllParentsCompatibleAsync(existingPackages, packageDupe, targetFramework) == true)
                                     {
                                         existingPackage.currentVersion = dependencyOldVersion;
                                         existingPackage.newVersion = dependency.currentVersion;
                                         await UpdateVersion(existingPackages, existingPackage, targetFramework);
                                     }
                                     // If not, resort to putting version back to normal and remove new version
-                                    else {
+                                    else
+                                    {
                                         existingPackage.currentVersion = dependencyOldVersion;
                                         package.currentVersion = currentVersiontemp;
                                         package.newVersion = package.currentVersion;
@@ -340,7 +344,7 @@ public class PackageManager
                         await UpdateVersion(existingPackages, dependency, targetFramework);
                     }
                 }
-                
+
                 // Get the parent packages of the package and check the compatibility between its family
                 HashSet<PackageToUpdate> parentPackages = GetParentPackages(package);
                 foreach (PackageToUpdate parent in parentPackages)
@@ -373,12 +377,12 @@ public class PackageManager
         {
             return "FAILED to update";
         }
-        
+
         return "Success";
     }
 
     // Method to determine if a parent and child are compatible with their versions
-    public async Task<bool> IsCompatibleAsync(Task<List<PackageToUpdate>> existingPackages, PackageToUpdate parent, PackageToUpdate child, string targetFramework)
+    public async Task<bool> IsCompatibleAsync(List<PackageToUpdate> existingPackages, PackageToUpdate parent, PackageToUpdate child, string targetFramework)
     {
         List<PackageToUpdate> dependencies = await GetDependenciesAsync(parent, targetFramework);
 
@@ -393,7 +397,7 @@ public class PackageManager
                 {
                     return true;
                 }
-                else 
+                else
                 {
                     return false;
                 }
@@ -432,7 +436,7 @@ public class PackageManager
     }
 
     // Method to find a compatible version with the child for the parent to update to
-    public async Task<NuGetVersion> FindCompatibleVersionAsync( Task<List<PackageToUpdate>> existingPackages, PackageToUpdate possibleParent, PackageToUpdate possibleDependency, string targetFramework)
+    public async Task<NuGetVersion> FindCompatibleVersionAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, PackageToUpdate possibleDependency, string targetFramework)
     {
         string packageId = possibleParent.packageName;
         string currentVersionString = possibleParent.currentVersion;
@@ -440,7 +444,9 @@ public class PackageManager
 
         // Get the latest version as a limit
         SourceRepository repo = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
-        FindPackageByIdResource resource = await repo.GetResourceAsync<FindPackageByIdResource>();
+         FindPackageByIdResource resource = await repo.GetResourceAsync<FindPackageByIdResource>();
+        //FindPackageByIdResource resource = repo.GetResource<FindPackageByIdResource>();
+        // FindPackageByIdResource resource = repo.GetResource().GetAwaiter().GetResult();
 
         // Find the latest version of the package
         IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(
@@ -448,14 +454,14 @@ public class PackageManager
         NuGetVersion latestVersion = versions.Where(v => !v.IsPrerelease).Max();
 
         // If there's a version bounds that the parent has 
-        if(possibleParent.secondVersion != null)
+        if (possibleParent.secondVersion != null)
         {
             NuGetVersion secondVersion = NuGetVersion.Parse(possibleParent.secondVersion);
             latestVersion = secondVersion;
         }
 
         // If there is no later version
-        if(currentVersion == latestVersion)
+        if (currentVersion == latestVersion)
         {
             return null;
         }
@@ -482,7 +488,7 @@ public class PackageManager
     }
 
     // Method to determine if all the parents of a given package are compatible with the parent's desired version
-    public async Task<bool> AreAllParentsCompatibleAsync(Task<List<PackageToUpdate>> existingPackages, PackageToUpdate possibleParent, string targetFramework)
+    public async Task<bool> AreAllParentsCompatibleAsync(List<PackageToUpdate> existingPackages, PackageToUpdate possibleParent, string targetFramework)
     {
         // Get the parents packages and loop through them
         HashSet<PackageToUpdate> parentPackages = GetParentPackages(possibleParent);
@@ -516,12 +522,12 @@ public class PackageManager
     }
 
     // Method to update the existing packages with new version of the desired packages to update
-    public async Task UpdateExistingPackagesWithNewVersions(List<PackageToUpdate> existingPackages, List<PackageToUpdate> packagesToUpdate)
+    public void UpdateExistingPackagesWithNewVersions(List<PackageToUpdate> existingPackages, List<PackageToUpdate> packagesToUpdate)
     {
         foreach (PackageToUpdate packageToUpdate in packagesToUpdate)
         {
             PackageToUpdate existingPackage = existingPackages.FirstOrDefault(p => p.packageName == packageToUpdate.packageName);
-            
+
             if (existingPackage != null)
             {
                 existingPackage.newVersion = packageToUpdate.newVersion;

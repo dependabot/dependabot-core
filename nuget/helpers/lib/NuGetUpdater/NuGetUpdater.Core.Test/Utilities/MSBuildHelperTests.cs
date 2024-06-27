@@ -905,7 +905,7 @@ public class MSBuildHelperTests : TestBase
             var update = new[]
             {
                 new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
-                 new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
+                new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
             };
 
             var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
