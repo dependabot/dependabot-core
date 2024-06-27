@@ -492,10 +492,12 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Updating a non-included dependency of an existing package to a new version, but the dependency is not in the existing package
+    // Updating the dependency will require the existing top level package to also update
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario1()
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario1)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency)}_");
         
         try
         {
@@ -532,10 +534,13 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
+
+    // Singular Transitive Dependency with one root package, updating the root
+    // Updating CS - Script Code to 2.0.0 reqires Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and then Microsoft.CodeAnalysis.Common to be 3.6.0
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario2()
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario2)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage)}_");
 
         try
         {
@@ -579,10 +584,14 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Two separate root packages that need both need their separate dependencies updated
+    // One dependency is not specified to be updated, only the root package is
+    // Two separate resolvings. If we update Azure.Core (root) to the next update, System.Text.Json needs to be greater than or equal to 4.7.2. System.Text.Json is not in the existing packages.
+    // System.Collections.Immutable needs to update to 8.0.0 or > and Microsoft.CodeAnalysis.Common NEEDS to be 4.10.0 (specific).
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario3()
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelAndDependency()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario3)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingTopLevelAndDependency)}_");
 
         try
         {
@@ -636,12 +645,15 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    //  Two top level packages that share a dependency
+    //  Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.10.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isnt a dependency of buildalyzer)
+    //  Microsoft.CodeAnalysis.CSharp.Scripting 4.4.0 requires Microsoft.CodeAnalysis.CSharp 4.4.0 and Microsoft.CodeAnalysis.Common to be 4.4.0 (Specific version) in oprder to update Microsoft.CodeAnalysis.Common to Buildalyzer to 7.0.1
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario4()
+    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario4)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSharingDependency)}_");
 
-        try
+       try 
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
             await File.WriteAllTextAsync(projectPath, """
@@ -687,11 +699,11 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-
+    // Single transitive dependency (Microsoft.CodeAnalysis.Common) gets updated, which then updates the top level package
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario5()
+    public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario5)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSingleTransitiveDependency)}_");
 
         try
         {
@@ -740,10 +752,11 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Unsolveable
+    // To update AutoMapper.Collection to 10.0.0, AutoMapper needs to update to 13.0.0 but there is no higher version of AutoMapper.Extensions.Microsoft.DependencyInjection
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario6()
+    public async Task DependencyConflictsCanBeResolvedNewUnsolveable()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario6)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUnsolveable)}_");
         
         try
         {
@@ -787,10 +800,13 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Microsoft.CodeAnalysis.Compilers, Microsoft.CodeAnalysis.CSharp, and Microsoft.CodeAnalysis.VisualBasic are all 4.9.2
+    // Csharp, Visual Basic, and Compilers all require Microsoft.CodeAnalysis.Common to be 4.9.2, but it's not in the existing list
+    // If Microsoft.CodeAnalysis.Common is updated to  4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario7()
+    public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario7)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded)}_");
 
         try
         {
@@ -833,10 +849,13 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
+
+    // Newtonsoft.Json needs to update to 13.0.1, although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
+    // adapatability, though NewtonsoftJson is not in the existing packages, it would be added to the existing list
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario8()
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario8)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency)}_");
 
         try
         {
@@ -874,10 +893,13 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // A combination of the past two scenariors
+    // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
+    // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario9()
+    public async Task DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario9)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages)}_");
 
         try
         {
@@ -928,10 +950,12 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Update a dependency, which updates a transitive dependency and a parent. The dependency is not added to the exisiting list
+    // Additionally, updating a top level package to update the dependency
     [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewScenario10()
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewScenario10)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingEntireFamily)}_");
 
         try
         {

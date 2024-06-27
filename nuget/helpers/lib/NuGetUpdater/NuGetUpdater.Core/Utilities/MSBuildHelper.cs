@@ -357,7 +357,7 @@ internal static partial class MSBuildHelper
 
             // Put package to update here
             List<PackageToUpdate> packagesToUpdate = new List<PackageToUpdate>();
-                        // Find the new version each package should update to
+            // Find the new version each package should update to
             foreach (var package in update)
             {
                 var packageName = package.Name;

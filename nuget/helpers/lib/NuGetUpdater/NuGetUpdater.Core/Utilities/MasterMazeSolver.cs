@@ -320,6 +320,7 @@ public class PackageManager
                                     if (await AreAllParentsCompatibleAsync(existingPackages, packageDupe, targetFramework) == true)
                                     {
                                         existingPackage.currentVersion = dependencyOldVersion;
+                                        string newVersion = dependency.currentVersion;
                                         existingPackage.newVersion = dependency.currentVersion;
                                         await UpdateVersion(existingPackages, existingPackage, targetFramework);
                                     }
