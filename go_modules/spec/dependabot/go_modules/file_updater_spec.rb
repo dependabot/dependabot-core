@@ -251,6 +251,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "updates the go.mod" do
+        restore_git_user_info
         expect(go_mod_body).to include("github.com/pkg/errors v0.8.0")
 
         updater.updated_dependency_files
@@ -263,6 +264,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "includes the vendored files" do
+        restore_git_user_info
         expect(updater.updated_dependency_files.map(&:name)).to match_array(
           %w(
             go.mod
@@ -279,6 +281,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "updates the vendor/modules.txt file to the right version" do
+        restore_git_user_info
         modules_file = updater.updated_dependency_files.find do |file|
           file.name == "vendor/modules.txt"
         end
@@ -291,6 +294,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       it "includes the new source code" do
         # Sample to verify the source code matches:
         # https://github.com/pkg/errors/compare/v0.8.0...v0.9.1
+        restore_git_user_info
         stack_file = updater.updated_dependency_files.find do |file|
           file.name == "vendor/github.com/pkg/errors/stack.go"
         end
