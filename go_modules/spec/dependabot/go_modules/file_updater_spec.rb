@@ -84,10 +84,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     it { expect { updated_files }.not_to output.to_stdout }
 
     it "includes an updated go.mod" do
+      restore_git_user_info
       expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
     end
 
     it "includes an updated go.sum" do
+      restore_git_user_info
       expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
     end
 
@@ -96,6 +98,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:previous_requirements) { [] }
 
       it "includes an updated go.mod" do
+        restore_git_user_info
         expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
