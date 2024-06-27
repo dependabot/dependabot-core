@@ -309,25 +309,35 @@ module Dependabot
 
       # Cached, since this can makes calls to the registry (to get property
       # values from parent POMs)
+      sig { returns(Dependabot::Maven::FileParser::PropertyValueFinder) }
       def property_value_finder
-        @property_value_finder ||=
-          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials.map(&:to_s))
+        @property_value_finder ||= T.let(
+          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials.map(&:to_s)),
+          T.nilable(Dependabot::Maven::FileParser::PropertyValueFinder)
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pomfiles
-        @pomfiles ||=
+        @pomfiles ||= T.let(
           dependency_files.select do |f|
             f.name.end_with?(".xml") && !f.name.end_with?("extensions.xml")
-          end
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def extensionfiles
-        @extensionfiles ||=
-          dependency_files.select { |f| f.name.end_with?("extensions.xml") }
+        @extensionfiles ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("extensions.xml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[String]) }
       def internal_dependency_names
-        @internal_dependency_names ||=
+        @internal_dependency_names ||= T.let(
           dependency_files.filter_map do |pom|
             doc = Nokogiri::XML(pom.content)
             group_id = doc.at_css("project > groupId") ||
@@ -337,7 +347,9 @@ module Dependabot
             next unless group_id && artifact_id
 
             [group_id.content.strip, artifact_id.content.strip].join(":")
-          end
+          end,
+          T.nilable(T::Array[String])
+        )
       end
 
       sig { override.void }
