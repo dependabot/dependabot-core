@@ -8,15 +8,13 @@ use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
-use Composer\Package\Link;
 use Composer\Package\PackageInterface;
-use Composer\Package\Version\VersionParser;
 
 final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials, $latestAllowableVersion] = $args;
+        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
         $httpBasicCredentials = [];
 
@@ -50,22 +48,10 @@ final class UpdateChecker
             $io->loadConfiguration($config);
         }
 
-        $package = $composer->getPackage();
-
-        $versionParser = new VersionParser();
-
-        $constraint = $versionParser->parseConstraints($latestAllowableVersion); // your version constraint
-        $packageLink = new Link($package->getName(), $dependencyName, $constraint);
-
-        $requires = $package->getRequires();
-        $requires[$dependencyName] = $packageLink;
-
-        $package->setRequires($requires);
-
         $install = new Installer(
             $io,
             $config,
-            $package,  // @phpstan-ignore-line
+            $composer->getPackage(),  // @phpstan-ignore-line
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),
