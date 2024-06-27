@@ -131,7 +131,7 @@ module Dependabot
       params(
         command: String,
         function: String,
-        args: T.any(T::Array[String], T::Hash[Symbol, String]),
+        args: T.any(T::Array[T.any(String, T::Array[T::Hash[String, T.untyped]])], T::Hash[Symbol, String]),
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean
