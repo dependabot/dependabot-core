@@ -1,3 +1,4 @@
+using System.Net;
 using System.Xml.Linq;
 
 using NuGet.Common;
@@ -63,120 +64,145 @@ public class PackageManager
         {
             using (HttpClient client = new HttpClient())
             {
-                string nuspecContent = await client.GetStringAsync(nuspecURL);
-                XDocument nuspecXml = XDocument.Parse(nuspecContent);
-                XNamespace ns = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
-
-                var availableTargetFrameworks = nuspecXml.Descendants(ns + "dependencies")
-                                          .Elements(ns + "group")
-                                          .Select(g => (string)g.Attribute("targetFramework"))
-                                          .Distinct()
-                                          .ToList();
-
-                availableTargetFrameworks.Sort((a, b) => -1 * string.Compare(a, b, StringComparison.Ordinal));
-
-                // Find the best match for the user's input framework.
-                string bestMatchFramework = availableTargetFrameworks
-                    .FirstOrDefault(framework => string.Compare(framework, targetFramework, StringComparison.Ordinal) <= 0);
-
-                // If there aren't dependencies compatible with the framework / there aren't dependencies, return null, if not, 
-                if (bestMatchFramework == null)
+                HttpResponseMessage response = null;
+                try
                 {
-                    dependencyList = null;
-                    return dependencyList;
-                }
+                   // string nuspecContent = await client.GetStringAsync(nuspecURL);
+                    response = await client.GetAsync(nuspecURL);
 
-                var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
-                                .Elements(ns + "group")
-                                .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
-
-                bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
-
-                if (!hasDependencies)
-                {
-                    dependencyList = null;
-                    return dependencyList;
-                }
-
-                // Loop through each group and the depdenencies in each (based on framework)
-                foreach (var group in dependencyGroups)
-                {
-                    bool specific = false;
-                    foreach (var dependency in group.Elements(ns + "dependency"))
+                    if (response.StatusCode == HttpStatusCode.InternalServerError)
                     {
-                        string version = dependency.Attribute("version").Value;
-                        string firstVersion = null;
-                        string secondVersion = null;
-
-                        // Conditions to check if the version has bounds specified
-                        if (version.StartsWith("[") && version.EndsWith("]"))
-                        {
-                            version = version.Trim('[', ']');
-                            var versions = version.Split(',');
-                            version = versions.FirstOrDefault().Trim();
-                            if (versions.Length > 1)
-                            {
-                                secondVersion = versions.LastOrDefault()?.Trim();
-                            }
-                            specific = true;
-                        }
-                        else if (version.StartsWith("[") && version.EndsWith(")"))
-                        {
-                            version = version.Trim('[', ')');
-                            var versions = version.Split(',');
-                            version = versions.FirstOrDefault().Trim();
-                            if (versions.Length > 1)
-                            {
-                                secondVersion = versions.LastOrDefault()?.Trim();
-                            }
-                            specific = true;
-                        }
-                        else if (version.StartsWith("(") && version.EndsWith("]"))
-                        {
-                            version = version.Trim('(', ']');
-                            var versions = version.Split(',');
-                            version = versions.FirstOrDefault().Trim();
-                            if (versions.Length > 1)
-                            {
-                                secondVersion = versions.LastOrDefault()?.Trim();
-                            }
-                            specific = true;
-                        }
-                        else if (version.StartsWith("(") && version.EndsWith(")"))
-                        {
-                            version = version.Trim('(', ')');
-                            var versions = version.Split(',');
-                            version = versions.FirstOrDefault().Trim();
-                            if (versions.Length > 1)
-                            {
-                                secondVersion = versions.LastOrDefault()?.Trim();
-                            }
-                            specific = true;
-                        }
-
-                        PackageToUpdate dependencyPackage = new PackageToUpdate
-                        {
-                            packageName = dependency.Attribute("id").Value,
-                            currentVersion = version,
-                        };
-
-                        if (specific == true)
-                        {
-                            dependencyPackage.isSpecific = true;
-                        }
-
-                        if (secondVersion != null)
-                        {
-                            dependencyPackage.secondVersion = secondVersion;
-                        }
-
-                        var parents = GetParentPackages(package);
-                        // package.isSpecific = true;
-
-                        // Add each dependency to the list and declare the top package as a specific version
-                        dependencyList.Add(dependencyPackage);
-
+                        Console.WriteLine("Server error (500) when accessing NuGet API.");
+                        return null;
                     }
+                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        Console.WriteLine("Unauthorized (401) when accessing NuGet API.");
+                        return null;
+                    }
+
+                    response.EnsureSuccessStatusCode(); // Throws an exception if the response status code is not successful
+                    string nuspecContent = await response.Content.ReadAsStringAsync();
+
+                    XDocument nuspecXml = XDocument.Parse(nuspecContent);
+                    XNamespace ns = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
+
+                    var availableTargetFrameworks = nuspecXml.Descendants(ns + "dependencies")
+                                              .Elements(ns + "group")
+                                              .Select(g => (string)g.Attribute("targetFramework"))
+                                              .Distinct()
+                                              .ToList();
+
+                    availableTargetFrameworks.Sort((a, b) => -1 * string.Compare(a, b, StringComparison.Ordinal));
+
+                    // Find the best match for the user's input framework.
+                    string bestMatchFramework = availableTargetFrameworks
+                        .FirstOrDefault(framework => string.Compare(framework, targetFramework, StringComparison.Ordinal) <= 0);
+
+                    // If there aren't dependencies compatible with the framework / there aren't dependencies, return null, if not, 
+                    if (bestMatchFramework == null)
+                    {
+                        dependencyList = null;
+                        return dependencyList;
+                    }
+
+                    var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
+                                    .Elements(ns + "group")
+                                    .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
+
+                    bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
+
+                    if (!hasDependencies)
+                    {
+                        dependencyList = null;
+                        return dependencyList;
+                    }
+
+                    // Loop through each group and the depdenencies in each (based on framework)
+                    foreach (var group in dependencyGroups)
+                    {
+                        bool specific = false;
+                        foreach (var dependency in group.Elements(ns + "dependency"))
+                        {
+                            string version = dependency.Attribute("version").Value;
+                            string firstVersion = null;
+                            string secondVersion = null;
+
+                            // Conditions to check if the version has bounds specified
+                            if (version.StartsWith("[") && version.EndsWith("]"))
+                            {
+                                version = version.Trim('[', ']');
+                                var versions = version.Split(',');
+                                version = versions.FirstOrDefault().Trim();
+                                if (versions.Length > 1)
+                                {
+                                    secondVersion = versions.LastOrDefault()?.Trim();
+                                }
+                                specific = true;
+                            }
+                            else if (version.StartsWith("[") && version.EndsWith(")"))
+                            {
+                                version = version.Trim('[', ')');
+                                var versions = version.Split(',');
+                                version = versions.FirstOrDefault().Trim();
+                                if (versions.Length > 1)
+                                {
+                                    secondVersion = versions.LastOrDefault()?.Trim();
+                                }
+                                specific = true;
+                            }
+                            else if (version.StartsWith("(") && version.EndsWith("]"))
+                            {
+                                version = version.Trim('(', ']');
+                                var versions = version.Split(',');
+                                version = versions.FirstOrDefault().Trim();
+                                if (versions.Length > 1)
+                                {
+                                    secondVersion = versions.LastOrDefault()?.Trim();
+                                }
+                                specific = true;
+                            }
+                            else if (version.StartsWith("(") && version.EndsWith(")"))
+                            {
+                                version = version.Trim('(', ')');
+                                var versions = version.Split(',');
+                                version = versions.FirstOrDefault().Trim();
+                                if (versions.Length > 1)
+                                {
+                                    secondVersion = versions.LastOrDefault()?.Trim();
+                                }
+                                specific = true;
+                            }
+
+                            PackageToUpdate dependencyPackage = new PackageToUpdate
+                            {
+                                packageName = dependency.Attribute("id").Value,
+                                currentVersion = version,
+                            };
+
+                            if (specific == true)
+                            {
+                                dependencyPackage.isSpecific = true;
+                            }
+
+                            if (secondVersion != null)
+                            {
+                                dependencyPackage.secondVersion = secondVersion;
+                            }
+
+                            var parents = GetParentPackages(package);
+                            // package.isSpecific = true;
+
+                            // Add each dependency to the list and declare the top package as a specific version
+                            dependencyList.Add(dependencyPackage);
+
+                        }
+                    }
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine($"HTTP Request error: {e.Message}");
+                    throw;
                 }
             }
         }
