@@ -11,6 +11,11 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
+      sig { params(req: T::Hash[Symbol, String], version: Gem::Version).returns(T::Boolean) }
+      def self.satisfied_by?(req, version)
+        new(req[:requirement]).satisfied_by?(version)
+      end
+
       # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.

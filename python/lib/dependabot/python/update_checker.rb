@@ -81,7 +81,7 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy

@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
     end
 
-    context "when the package can't be meaninfully sorted by just version" do
+    context "when the package can't be meaningfully sorted by just version" do
       before do
         allow(finder).to receive(:str_version_compatible?).and_call_original
         reported_versions = [
