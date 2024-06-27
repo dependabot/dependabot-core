@@ -42,7 +42,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
+          return requirements if update_strategy.lockfile_only?
 
           requirements.map do |req|
             req = req.merge(source: updated_source)
