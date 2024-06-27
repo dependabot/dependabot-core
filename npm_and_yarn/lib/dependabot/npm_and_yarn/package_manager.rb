@@ -40,7 +40,7 @@ module Dependabot
         return unless name == "pnpm"
         return unless Version.new(version) < Version.new("7")
 
-        raise ToolVersionNotSupported.new("PNPM", version, "7.*, 8.*")
+        raise ToolVersionNotSupported.new("PNPM", version, "7.*, 8.*, 9.*")
       end
 
       def install(name, version)
