@@ -146,7 +146,6 @@ module Dependabot
             write_temporary_dependency_files
 
             NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
               function: "parsed_gemfile",
               options: options,
               args: {
@@ -171,7 +170,6 @@ module Dependabot
 
       def parsed_gemspec(file)
         NativeHelpers.run_bundler_subprocess(
-          bundler_version: bundler_version,
           function: "parsed_gemspec",
           options: options,
           args: {
@@ -306,10 +304,6 @@ module Dependabot
         dependency_files
           .select { |f| f.name.end_with?(".rb") }
           .reject { |f| f.name == "gems.rb" }
-      end
-
-      def bundler_version
-        @bundler_version ||= Helpers.bundler_version(lockfile)
       end
     end
   end

@@ -67,7 +67,6 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|
                 NativeHelpers.run_bundler_subprocess(
-                  bundler_version: bundler_version,
                   function: "dependency_source_latest_git_version",
                   options: options,
                   args: {
@@ -112,7 +111,6 @@ module Dependabot
             @private_registry_versions ||=
               in_a_native_bundler_context do |tmp_dir|
                 NativeHelpers.run_bundler_subprocess(
-                  bundler_version: bundler_version,
                   function: "private_registry_versions",
                   options: options,
                   args: {
@@ -133,7 +131,6 @@ module Dependabot
 
             @source_type = in_a_native_bundler_context do |tmp_dir|
               NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
                 function: "dependency_source_type",
                 options: options,
                 args: {
@@ -149,15 +146,6 @@ module Dependabot
           def gemfile
             dependency_files.find { |f| f.name == "Gemfile" } ||
               dependency_files.find { |f| f.name == "gems.rb" }
-          end
-
-          def lockfile
-            dependency_files.find { |f| f.name == "Gemfile.lock" } ||
-              dependency_files.find { |f| f.name == "gems.locked" }
-          end
-
-          def bundler_version
-            @bundler_version ||= Helpers.bundler_version(lockfile)
           end
         end
       end

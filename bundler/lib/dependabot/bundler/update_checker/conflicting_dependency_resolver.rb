@@ -36,7 +36,6 @@ module Dependabot
 
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
               function: "conflicting_dependencies",
               options: options,
               args: {
@@ -48,12 +47,6 @@ module Dependabot
               }
             )
           end
-        end
-
-        private
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

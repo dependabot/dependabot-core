@@ -188,7 +188,6 @@ module Dependabot
         def inaccessible_git_dependencies
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             git_specs = NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
               function: "git_specs",
               options: options,
               args: {
@@ -216,7 +215,6 @@ module Dependabot
 
           @jfrog_source = in_a_native_bundler_context(error_handling: false) do |dir|
             NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
               function: "jfrog_source",
               options: options,
               args: {
@@ -227,9 +225,6 @@ module Dependabot
             )
           end
         end
-
-        sig { abstract.returns(String) }
-        def bundler_version; end
 
         def write_temporary_dependency_files
           dependency_files.each do |file|

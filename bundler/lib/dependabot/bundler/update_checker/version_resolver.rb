@@ -92,7 +92,6 @@ module Dependabot
             # potentially retrying in the case of the Ruby version being locked
             in_a_native_bundler_context(error_handling: false) do |tmp_dir|
               details = NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
                 function: "resolve_version",
                 options: options,
                 args: {
@@ -158,11 +157,7 @@ module Dependabot
         end
 
         def conflict_on_ruby?(error)
-          if bundler_version == "1"
-            error.message.include?(" for gem \"ruby\0\"")
-          else
-            error.message.include?(" depends on Ruby ") && error.message.include?(" current Ruby version is ")
-          end
+          error.message.include?(" depends on Ruby ") && error.message.include?(" current Ruby version is ")
         end
 
         def regenerate_dependency_files_without_ruby_lock
@@ -237,10 +232,6 @@ module Dependabot
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

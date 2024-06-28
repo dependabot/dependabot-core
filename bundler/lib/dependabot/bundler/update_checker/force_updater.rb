@@ -60,7 +60,6 @@ module Dependabot
 
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             updated_deps, specs = NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
               function: "force_update",
               options: options,
               args: {
@@ -155,10 +154,6 @@ module Dependabot
           end
 
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

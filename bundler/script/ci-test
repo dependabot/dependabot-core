@@ -5,15 +5,7 @@ set -e
 bundle install
 bundle exec turbo_tests --verbose
 
-# NOTE: Don't use `if` branches without `else` part, since the code in some of
-# then seems to not abort the script regardless of `set -e`
-
-if [[ "$SUITE_NAME" == "bundler1" ]]; then
-  # shellcheck source=../helpers/v1/build
-  DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v1/build \
-    && BUNDLER_VERSION=1.17.3 ./patched_bundler exec rspec spec\
-    && cd -
-else
+if [[ "$SUITE_NAME" == "bundler2" ]]; then
   # shellcheck source=../helpers/v2/build
   DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v2/build \
     && bundle exec rspec spec \
