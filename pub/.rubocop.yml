@@ -1,4 +1,1 @@
 inherit_from: ../.rubocop.yml
-
-Sorbet/TrueSigil:
-  Enabled: true
