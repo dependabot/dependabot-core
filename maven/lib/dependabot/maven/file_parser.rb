@@ -144,7 +144,8 @@ module Dependabot
       end
 
       sig do
-        params(dependency_node: Nokogiri::XML::Element, pom: Dependabot::DependencyFile).returns(T.nilable(String))
+        params(dependency_node: Nokogiri::XML::Element,
+               pom: Dependabot::DependencyFile).returns(T.nilable(String))
       end
       def dependency_name(dependency_node, pom)
         return unless dependency_node.at_xpath("./groupId")
