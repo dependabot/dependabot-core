@@ -25,7 +25,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
     )
   end
   let(:dependency_files) { bundler_project_dependency_files("gemfile") }
-  let(:bundler_version) { PackageManagerHelper.bundler_version }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
@@ -278,7 +277,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)
           .with({
-            bundler_version: bundler_version,
             function: "dependency_source_type",
             options: anything,
             args: anything
@@ -287,7 +285,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)
           .with({
-            bundler_version: bundler_version,
             function: "private_registry_versions",
             options: anything,
             args: anything
@@ -328,7 +325,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers)
             .to receive(:run_bundler_subprocess)
             .with({
-              bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
@@ -362,7 +358,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers)
             .to receive(:run_bundler_subprocess)
             .with({
-              bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
@@ -396,7 +391,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers)
             .to receive(:run_bundler_subprocess)
             .with({
-              bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
@@ -430,7 +424,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers)
             .to receive(:run_bundler_subprocess)
             .with({
-              bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
@@ -453,7 +446,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers)
             .to receive(:run_bundler_subprocess)
             .with({
-              bundler_version: bundler_version,
               function: "private_registry_versions",
               options: anything,
               args: anything
@@ -594,7 +586,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)
           .with({
-            bundler_version: bundler_version,
             function: "dependency_source_type",
             options: anything,
             args: anything
@@ -603,7 +594,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers)
           .to receive(:run_bundler_subprocess)
           .with({
-            bundler_version: bundler_version,
             function: "private_registry_versions",
             options: anything,
             args: anything

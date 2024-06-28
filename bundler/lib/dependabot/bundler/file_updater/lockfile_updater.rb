@@ -71,7 +71,6 @@ module Dependabot
               write_temporary_dependency_files
 
               NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
                 function: "update_lockfile",
                 options: options,
                 args: {
@@ -290,10 +289,6 @@ module Dependabot
 
         def specification_files
           dependency_files.select { |f| f.name.end_with?(".specification") }
-        end
-
-        def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

@@ -19,7 +19,6 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         native_helper.run_bundler_subprocess(
           function: "noop",
           args: {},
-          bundler_version: "2",
           options: options
         )
       end

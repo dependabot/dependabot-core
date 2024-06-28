@@ -78,7 +78,6 @@ module Dependabot
 
         @vendor_cache_dir =
           NativeHelpers.run_bundler_subprocess(
-            bundler_version: bundler_version,
             function: "vendor_cache_dir",
             options: options,
             args: {
@@ -161,10 +160,6 @@ module Dependabot
       def top_level_gemspecs
         dependency_files
           .select { |file| file.name.end_with?(".gemspec") }
-      end
-
-      def bundler_version
-        @bundler_version ||= Helpers.bundler_version(lockfile)
       end
     end
   end
