@@ -154,45 +154,9 @@ internal static class BindingRedirectManager
             return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
                    || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
         }
-
-        static string GetConfigFileName(XmlDocumentSyntax document)
-        {
-            var guidValue = document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "ProjectGuid"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-            return guidValue switch
-            {
-                "{E24C65DC-7377-472B-9ABA-BC803B73C61A}" or "{349C5851-65DF-11DA-9384-00065B846F21}" => "Web.config",
-                _ => "App.config"
-            };
-        }
-
-        static string GenerateDefaultAppConfig(XmlDocumentSyntax document)
-        {
-            var frameworkVersion = GetFrameworkVersion(document);
-            return $"""
-                <?xml version="1.0" encoding="utf-8" ?>
-                <configuration>
-                    <startup>
-                        <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
-                    </startup>
-                </configuration>
-                """;
-        }
-
-        static string? GetFrameworkVersion(XmlDocumentSyntax document)
-        {
-            return document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "TargetFrameworkVersion"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-        }
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects, Logger logger)
     {
         // Do nothing if there are no binding redirects to add, bail out
         if (!bindingRedirects.Any())
