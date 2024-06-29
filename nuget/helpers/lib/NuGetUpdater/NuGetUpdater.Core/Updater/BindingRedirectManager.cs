@@ -192,7 +192,11 @@ internal static class BindingRedirectManager
                     // Remove all but the first assembly binding elements
                     foreach (var bindingElement in existingBindings.Skip(1))
             {
-                UpdateBindingRedirectElement(existingBinding, bindingRedirect);
+                        RemoveElement(bindingElement);
+                    }
+
+                    UpdateBindingRedirectElement(existingBindings.First(), bindingRedirect);
+                }
             }
             else
             {
