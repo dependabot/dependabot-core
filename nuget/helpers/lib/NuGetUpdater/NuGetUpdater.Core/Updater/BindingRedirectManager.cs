@@ -156,7 +156,7 @@ internal static class BindingRedirectManager
         }
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects, Logger logger)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects)
     {
         // Do nothing if there are no binding redirects to add, bail out
         if (!bindingRedirects.Any())
