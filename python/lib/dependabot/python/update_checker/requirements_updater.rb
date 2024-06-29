@@ -278,14 +278,14 @@ module Dependabot
             requirement_strings.map { |r| requirement_class.new(r) }
 
           updated_requirement_strings = ruby_requirements.flat_map do |r|
-            next r.to_s if r.satisfied_by?(latest_resolvable_version)
+            next r.to_s if r.satisfied_by?(latest_resolvable_version, Requirement::BUMP_VERSIONS_OPS)
 
             case op = r.requirements.first.first
             when "<"
-              "<" + update_greatest_version(r.requirements.first.last, latest_resolvable_version)
-            when "<="
-              "<=" + latest_resolvable_version.to_s
-            when "!=", ">", ">="
+              "#{op}#{update_greatest_version(r.requirements.first.last, latest_resolvable_version)}"
+            when "<=", ">="
+              "#{op}#{latest_resolvable_version}"
+            when "!=", ">"
               raise UnfixableRequirement
             else
               raise "Unexpected op for unsatisfied requirement: #{op}"
