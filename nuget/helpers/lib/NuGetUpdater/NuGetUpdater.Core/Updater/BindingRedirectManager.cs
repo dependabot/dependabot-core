@@ -183,7 +183,7 @@ internal static class BindingRedirectManager
         foreach (var bindingRedirect in bindingRedirects)
         {
             // Look to see if we already have this in the list of bindings already in config.
-            if (currentBindings.TryGetValue((bindingRedirect.Name, bindingRedirect.PublicKeyToken), out var existingBinding))
+            if (currentBindings.TryGetValue((bindingRedirect.Name, bindingRedirect.PublicKeyToken?.ToLower()), out var existingBinding))
             {
                 UpdateBindingRedirectElement(existingBinding, bindingRedirect);
             }
@@ -263,7 +263,7 @@ internal static class BindingRedirectManager
             });
 
             // Return a mapping from binding to element
-            return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken), p => p.Element);
+            return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken?.ToLower()), p => p.Element);
         }
 
         static XElement GetAssemblyBindingElement(XElement runtime)
