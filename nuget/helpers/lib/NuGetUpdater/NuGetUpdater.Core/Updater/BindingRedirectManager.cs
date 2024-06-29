@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -233,7 +234,10 @@ internal static class BindingRedirectManager
             }
         }
 
-        return document.ToString();
+        return String.Concat(
+            document.Declaration?.ToString() ?? String.Empty, // Ensure that the <?xml> declaration node is preserved
+            document.ToString()
+        );
 
         static XDocument GetConfiguration(string configFileContent)
         {
