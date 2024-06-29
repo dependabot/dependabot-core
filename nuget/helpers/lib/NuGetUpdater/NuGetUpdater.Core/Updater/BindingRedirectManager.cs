@@ -183,7 +183,14 @@ internal static class BindingRedirectManager
         foreach (var bindingRedirect in bindingRedirects)
         {
             // Look to see if we already have this in the list of bindings already in config.
-            if (currentBindings.TryGetValue((bindingRedirect.Name, bindingRedirect.PublicKeyToken?.ToLower()), out var existingBinding))
+            var bindingIdentifer = (bindingRedirect.Name, bindingRedirect.PublicKeyToken?.ToLower());
+            if (currentBindings.Contains(bindingIdentifer))
+            {
+                var existingBindings = currentBindings[bindingIdentifer];
+                if (existingBindings.Any())
+                {
+                    // Remove all but the first assembly binding elements
+                    foreach (var bindingElement in existingBindings.Skip(1))
             {
                 UpdateBindingRedirectElement(existingBinding, bindingRedirect);
             }
@@ -250,7 +257,7 @@ internal static class BindingRedirectManager
             }
         }
 
-        static Dictionary<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
+        static ILookup<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
         {
             var dependencyAssemblyElements = runtime.Elements(AssemblyBindingName)
                 .Elements(DependentAssemblyName);
@@ -263,7 +270,7 @@ internal static class BindingRedirectManager
             });
 
             // Return a mapping from binding to element
-            return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken?.ToLower()), p => p.Element);
+            return assemblyElementPairs.ToLookup(p => (p.Binding.Name, p.Binding.PublicKeyToken?.ToLower()), p => p.Element);
         }
 
         static XElement GetAssemblyBindingElement(XElement runtime)
