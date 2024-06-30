@@ -15,8 +15,8 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-      - uses: ruby/setup-ruby@3783f195e29b74ae398d7caca108814bbafde90e # v1.180.1
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: ruby/setup-ruby@1d0e911f615a112e322369596f10ee0b95b010ae # v1.183.0
       - run: |
           [ -d ~/.gem ] || mkdir ~/.gem
           echo "---" > ~/.gem/credentials
