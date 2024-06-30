@@ -16,6 +16,21 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        [
+          %r{^[^/]*\.([a-z]{2})?proj$},
+          /^packages\.config$/i,
+          /^app\.config$/i,
+          /^web\.config$/i,
+          /^global\.json$/i,
+          /^dotnet-tools\.json$/i,
+          /^Directory\.Build\.props$/i,
+          /^Directory\.Build\.targets$/i,
+          /^Packages\.props$/i
+        ]
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = T.must(dependency_files.first).directory
