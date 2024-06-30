@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 # This script executes a full update run for a given repo (optionally for a

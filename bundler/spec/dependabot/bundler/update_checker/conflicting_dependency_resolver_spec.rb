@@ -8,7 +8,7 @@ require "dependabot/dependency_file"
 require "dependabot/bundler/update_checker/conflicting_dependency_resolver"
 
 RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver) do
-  include_context "stub rubygems compact index"
+  include_context "when stubbing rubygems compact index"
 
   let(:resolver) do
     described_class.new(
@@ -48,23 +48,19 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
     end
 
     it "returns the right array of blocking dependencies" do
-      expect(conflicting_dependencies).to match_array(
-        [
-          {
-            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
-            "name" => "dummy-pkg-b",
-            "version" => "1.0.0",
-            "requirement" => "< 2.0.0"
-          }
-        ]
-      )
+      expect(conflicting_dependencies).to contain_exactly({
+        "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+        "name" => "dummy-pkg-b",
+        "version" => "1.0.0",
+        "requirement" => "< 2.0.0"
+      })
     end
 
     context "with no blocking dependencies" do
       let(:target_version) { "1.5.0" }
 
       it "returns an empty array" do
-        expect(conflicting_dependencies).to match_array([])
+        expect(conflicting_dependencies).to be_empty
       end
     end
   end

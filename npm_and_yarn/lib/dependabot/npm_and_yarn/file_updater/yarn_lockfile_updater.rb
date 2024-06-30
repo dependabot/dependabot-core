@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "uri"
@@ -128,6 +128,11 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          # package.json name cannot contain characters like empty string or @.
+          if e.message.include?("Name contains illegal characters")
+            raise Dependabot::DependencyFileNotParseable, e.message
+          end
+
           names = dependencies.map(&:name)
           package_missing = names.any? do |name|
             e.message.include?("find package \"#{name}")
@@ -142,7 +147,8 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 2
 
-          sleep(rand(3.0..10.0)) && retry
+          sleep(rand(3.0..10.0))
+          retry
         end
 
         # rubocop:enable Metrics/PerceivedComplexity

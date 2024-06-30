@@ -8,6 +8,13 @@ require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker/tfm_finder"
 
 RSpec.describe Dependabot::Nuget::TfmFinder do
+  subject(:frameworks) do
+    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                      source: source,
+                                      repo_contents_path: repo_contents_path).parse
+    described_class.frameworks(dependency)
+  end
+
   let(:project_name) { "tfm_finder" }
   let(:dependency_files) { nuget_project_dependency_files(project_name, directory: "/").reverse }
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
@@ -25,13 +32,6 @@ RSpec.describe Dependabot::Nuget::TfmFinder do
       requirements: dependency_requirements,
       package_manager: "nuget"
     )
-  end
-
-  subject(:frameworks) do
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
-    Dependabot::Nuget::TfmFinder.frameworks(dependency)
   end
 
   describe "#frameworks" do

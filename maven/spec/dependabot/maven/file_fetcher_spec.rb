@@ -6,21 +6,6 @@ require "dependabot/maven/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Maven::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -29,39 +14,18 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       "password" => "token"
     }]
   end
-
-  describe ".required_files_in?" do
-    subject { described_class.required_files_in?(filenames) }
-
-    context "with only a pom.xml" do
-      let(:filenames) { %w(pom.xml) }
-      it { is_expected.to eq(true) }
-    end
-
-    context "with pom.xml and any other valid .xml" do
-      let(:filenames) { %w(pom.xml othermodule.xml) }
-      it { is_expected.to eq(true) }
-    end
-
-    context "with only an extensions.xml" do
-      let(:filenames) { %w(extensions.xml) }
-      it { is_expected.to eq(false) }
-    end
-
-    context "with an extensions.xml and a valid pom.xml file" do
-      let(:filenames) { %w(extensions.xml pom.xml) }
-      it { is_expected.to eq(true) }
-    end
-
-    context "with a non .xml file" do
-      let(:filenames) { %w(nonxml.txt) }
-      it { is_expected.to eq(false) }
-    end
-
-    context "with no files passed" do
-      let(:filenames) { %w() }
-      it { is_expected.to eq(false) }
-    end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
   end
 
   before do
@@ -72,6 +36,48 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       .to_return(
         status: 404
       )
+  end
+
+  it_behaves_like "a dependency file fetcher"
+
+  describe ".required_files_in?" do
+    subject { described_class.required_files_in?(filenames) }
+
+    context "with only a pom.xml" do
+      let(:filenames) { %w(pom.xml) }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with pom.xml and any other valid .xml" do
+      let(:filenames) { %w(pom.xml othermodule.xml) }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with only an extensions.xml" do
+      let(:filenames) { %w(extensions.xml) }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with an extensions.xml and a valid pom.xml file" do
+      let(:filenames) { %w(extensions.xml pom.xml) }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a non .xml file" do
+      let(:filenames) { %w(nonxml.txt) }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with no files passed" do
+      let(:filenames) { %w() }
+
+      it { is_expected.to be(false) }
+    end
   end
 
   context "with a basic pom" do
@@ -176,7 +182,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         )
     end
 
-    context "that uses submodules" do
+    context "when the repo uses submodules" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -227,7 +233,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       end
     end
 
-    context "where the repo for a child module is missing" do
+    context "when the repo for a child module is missing" do
       before do
         stub_request(:get, File.join(url, "util/pom.xml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -323,6 +329,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
               status: 404
             )
         end
+
         let(:directory) { "/util/util" }
 
         it "fetches the relevant pom" do
@@ -330,7 +337,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         end
       end
 
-      context "where multiple poms require the same file" do
+      context "when multiple poms require the same file" do
         before do
           stub_request(:get, File.join(url, "util/legacy/pom.xml?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
@@ -555,6 +562,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with a parent which has inherited group id" do
       let(:directory) { "/parent_modules_project/pom_with_parent_groupid/pom_with_parent" }
+
       it "fetches the relevant poms" do
         expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name))
@@ -564,6 +572,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with no parent defined" do
       let(:directory) { "/parent_modules_project/pom_with_no_parent" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -571,6 +580,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom with an implicit path to parent defined" do
       let(:directory) { "/parent_modules_project/pom_with_implicit_parent_path" }
+
       it "fetches only both this pom and its implicit parent" do
         expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name))
@@ -580,6 +590,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different version" do
       let(:directory) { "/parent_modules_project/different_version" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -587,6 +598,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different groupId" do
       let(:directory) { "/parent_modules_project/different_group_id" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end
@@ -594,6 +606,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "when asked to fetch a pom which local parent has different artifactId" do
       let(:directory) { "/parent_modules_project/different_artifact_id" }
+
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
       end

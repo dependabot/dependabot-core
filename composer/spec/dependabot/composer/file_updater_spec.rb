@@ -8,20 +8,23 @@ require "dependabot/composer/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Composer::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{
+      file: "composer.json",
+      requirement: "1.0.1",
+      groups: [],
+      source: nil
+    }]
   end
-
-  let(:credentials) { github_credentials }
-  let(:files) { project_dependency_files(project_name) }
-  let(:project_name) { "exact_version" }
-
+  let(:requirements) do
+    [{
+      file: "composer.json",
+      requirement: "1.22.1",
+      groups: [],
+      source: nil
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "monolog/monolog",
@@ -32,32 +35,27 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       package_manager: "composer"
     )
   end
-  let(:requirements) do
-    [{
-      file: "composer.json",
-      requirement: "1.22.1",
-      groups: [],
-      source: nil
-    }]
+  let(:project_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:credentials) { github_credentials }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
   end
-  let(:previous_requirements) do
-    [{
-      file: "composer.json",
-      requirement: "1.0.1",
-      groups: [],
-      source: nil
-    }]
-  end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { FileUtils.mkdir_p(tmp_path) }
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently or output to stdout" do
-      expect { expect { updated_files }.to_not(output.to_stdout) }
-        .to_not(change { Dir.entries(tmp_path) })
+      expect { expect { updated_files }.not_to(output.to_stdout) }
+        .not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
@@ -74,7 +72,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         )
       end
 
-      context "if no files have changed" do
+      context "when no files have changed" do
         let(:requirements) { previous_requirements }
 
         it "raises a helpful error" do

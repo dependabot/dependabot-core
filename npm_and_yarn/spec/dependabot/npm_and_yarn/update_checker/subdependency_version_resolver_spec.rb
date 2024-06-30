@@ -181,7 +181,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         )
       end
 
-      it { is_expected.to eq(nil) }
+      it { is_expected.to be_nil }
     end
 
     context "with a yarn.lock and a package-lock.json" do

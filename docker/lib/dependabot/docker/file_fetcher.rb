@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -15,11 +15,13 @@ module Dependabot
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
           filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a Dockerfile or Kubernetes YAML files."
       end
@@ -40,54 +42,66 @@ module Dependabot
         elsif incorrectly_encoded_dockerfiles.none?
           raise(
             Dependabot::DependencyFileNotParseable,
-            incorrectly_encoded_yamlfiles.first.path
+            T.must(incorrectly_encoded_yamlfiles.first).path
           )
         else
           raise(
             Dependabot::DependencyFileNotParseable,
-            incorrectly_encoded_dockerfiles.first.path
+            T.must(incorrectly_encoded_dockerfiles.first).path
           )
         end
       end
 
       private
 
+      sig { returns(T::Array[DependencyFile]) }
       def dockerfiles
-        @dockerfiles ||=
-          repo_contents(raise_errors: false)
+        @dockerfiles ||= T.let(fetch_dockerfiles, T.nilable(T::Array[DependencyFile]))
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def fetch_dockerfiles
+        repo_contents(raise_errors: false)
           .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
           .map { |f| fetch_file_from_host(f.name) }
       end
 
+      sig { returns(T::Array[DependencyFile]) }
       def correctly_encoded_dockerfiles
-        dockerfiles.select { |f| f.content.valid_encoding? }
+        dockerfiles.select { |f| f.content&.valid_encoding? }
       end
 
+      sig { returns(T::Array[DependencyFile]) }
       def incorrectly_encoded_dockerfiles
-        dockerfiles.reject { |f| f.content.valid_encoding? }
+        dockerfiles.reject { |f| f.content&.valid_encoding? }
       end
 
+      sig { returns(T::Array[DependencyFile]) }
       def yamlfiles
-        @yamlfiles ||=
+        @yamlfiles ||= T.let(
           repo_contents(raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
-          .map { |f| fetch_file_from_host(f.name) }
+                  .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+                  .map { |f| fetch_file_from_host(f.name) },
+          T.nilable(T::Array[DependencyFile])
+        )
       end
 
+      sig { params(resource: Object).returns(T.nilable(T::Boolean)) }
       def likely_kubernetes_resource?(resource)
         # Heuristic for being a Kubernetes resource. We could make this tighter but this probably works well.
         resource.is_a?(::Hash) && resource.key?("apiVersion") && resource.key?("kind")
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
-        candidate_files = yamlfiles.select { |f| f.content.valid_encoding? }
+        candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
         candidate_files.select do |f|
           if f.type == "file" && Utils.likely_helm_chart?(f)
             true
           else
             # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
             # in a multi-resource file had better be a valid k8s resource
-            content = ::YAML.safe_load(f.content, aliases: true)
+            content = ::YAML.safe_load(T.must(f.content), aliases: true)
             likely_kubernetes_resource?(content)
           end
         rescue ::Psych::Exception
@@ -95,8 +109,9 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def incorrectly_encoded_yamlfiles
-        yamlfiles.reject { |f| f.content.valid_encoding? }
+        yamlfiles.reject { |f| f.content&.valid_encoding? }
       end
     end
   end

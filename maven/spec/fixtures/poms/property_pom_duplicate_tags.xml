@@ -16,6 +16,7 @@
     <dozer.version>6.5.0</dozer.version>
     <dozer.version>${dozer.version}</dozer.version>
     <orika.version>${jmh.version}</orika.version>
+    <lombok.version>${lombok.version</lombok.version>
   </properties>
 
   <dependencies>

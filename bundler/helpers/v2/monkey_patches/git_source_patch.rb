@@ -19,7 +19,7 @@ module Bundler
         def configured_uri_for(uri)
           uri = uri.gsub(%r{git@(.*?):/?}, 'https://\1/')
           if /https?:/.match?(uri)
-            remote = Bundler::URI(uri)
+            remote = ::URI.parse(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s

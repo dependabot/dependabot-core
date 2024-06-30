@@ -9,24 +9,8 @@ require "dependabot/go_modules/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GoModules::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  after do
-    # Reset to the default go toolchain after each test
-    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
-  end
-
-  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
-  let(:files) { [go_mod] }
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(
-      name: "go.mod",
-      content: go_mod_content,
-      directory: directory
-    )
-  end
-  let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
-  let(:go_mod_fixture_name) { "go.mod" }
+  let(:directory) { "/" }
+  let(:repo_contents_path) { nil }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -34,8 +18,24 @@ RSpec.describe Dependabot::GoModules::FileParser do
       directory: directory
     )
   end
-  let(:repo_contents_path) { nil }
-  let(:directory) { "/" }
+  let(:go_mod_fixture_name) { "go.mod" }
+  let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
+  let(:go_mod) do
+    Dependabot::DependencyFile.new(
+      name: "go.mod",
+      content: go_mod_content,
+      directory: directory
+    )
+  end
+  let(:files) { [go_mod] }
+  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
+
+  after do
+    # Reset to the default go toolchain after each test
+    ENV["GOTOOLCHAIN"] = ENV.fetch("GO_LEGACY")
+  end
+
+  it_behaves_like "a dependency file parser"
 
   it "requires a go.mod to be present" do
     expect do
@@ -294,13 +294,13 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     describe "a dependency replaced by a local override" do
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "rsc.io/qr" }
+      end
+
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
         go_mod.sub("=> github.com/rsc/qr v0.2.0", "=> ./foo/bar/baz")
-      end
-
-      subject(:dependency) do
-        dependencies.find { |d| d.name == "rsc.io/qr" }
       end
 
       it "is skipped as unsupported" do
@@ -309,18 +309,18 @@ RSpec.describe Dependabot::GoModules::FileParser do
     end
 
     describe "without any dependencies" do
-      let(:go_mod_content) do
-        fixture("projects", "no_dependencies", "go.mod")
-      end
-
       subject(:dependencies) do
         parser.parse
+      end
+
+      let(:go_mod_content) do
+        fixture("projects", "no_dependencies", "go.mod")
       end
 
       its(:length) { is_expected.to eq(0) }
     end
 
-    context "a monorepo" do
+    context "when using a monorepo" do
       let(:project_name) { "monorepo" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
@@ -332,7 +332,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
           ))
       end
 
-      context "nested file" do
+      context "when there is a nested file" do
         let(:directory) { "/cmd" }
         let(:go_mod_content) { fixture("projects", project_name, "cmd", "go.mod") }
 
@@ -345,7 +345,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
-    context "dependency without hostname" do
+    context "when using a dependency without hostname" do
       let(:project_name) { "unrecognized_import" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }

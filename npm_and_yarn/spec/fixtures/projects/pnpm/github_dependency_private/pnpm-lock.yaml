@@ -1,28 +1,31 @@
-lockfileVersion: '6.0'
+lockfileVersion: '9.0'
 
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  cross-fetch:
-    specifier: ^3.1.5
-    version: 3.1.5
-  electron-context-menu:
-    specifier: github:Zelcord/electron-context-menu
-    version: github.com/Zelcord/electron-context-menu/280c81398c02a063f46e3285a9708d8db1a7ce32
+importers:
+
+  .:
+    dependencies:
+      cross-fetch:
+        specifier: ^3.1.5
+        version: 3.1.5
+      electron-context-menu:
+        specifier: github:Zelcord/electron-context-menu
+        version: https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32
 
 packages:
 
-  /cross-fetch@3.1.5:
+  cross-fetch@3.1.5:
     resolution: {integrity: sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==}
-    dependencies:
-      node-fetch: 2.6.7
-    transitivePeerDependencies:
-      - encoding
-    dev: false
 
-  /node-fetch@2.6.7:
+  electron-context-menu@https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32:
+    resolution: {tarball: https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
+    name: electron-context-menu
+    version: 3.5.0
+
+  node-fetch@2.6.7:
     resolution: {integrity: sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==}
     engines: {node: 4.x || >=6.0.0}
     peerDependencies:
@@ -30,27 +33,35 @@ packages:
     peerDependenciesMeta:
       encoding:
         optional: true
+
+  tr46@0.0.3:
+    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+
+  webidl-conversions@3.0.1:
+    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
+
+  whatwg-url@5.0.0:
+    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
+
+snapshots:
+
+  cross-fetch@3.1.5:
+    dependencies:
+      node-fetch: 2.6.7
+    transitivePeerDependencies:
+      - encoding
+
+  electron-context-menu@https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32: {}
+
+  node-fetch@2.6.7:
     dependencies:
       whatwg-url: 5.0.0
-    dev: false
 
-  /tr46@0.0.3:
-    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
-    dev: false
+  tr46@0.0.3: {}
 
-  /webidl-conversions@3.0.1:
-    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
-    dev: false
+  webidl-conversions@3.0.1: {}
 
-  /whatwg-url@5.0.0:
-    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
+  whatwg-url@5.0.0:
     dependencies:
       tr46: 0.0.3
       webidl-conversions: 3.0.1
-    dev: false
-
-  github.com/Zelcord/electron-context-menu/280c81398c02a063f46e3285a9708d8db1a7ce32:
-    resolution: {tarball: https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
-    name: electron-context-menu
-    version: 3.5.0
-    dev: false

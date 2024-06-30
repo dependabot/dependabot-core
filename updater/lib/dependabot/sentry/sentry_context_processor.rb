@@ -18,7 +18,7 @@ class SentryContext < ::Dependabot::Sentry::Processor
   def process(event, hint)
     if (exception = hint[:exception]) && exception.respond_to?(:sentry_context)
       exception.sentry_context&.each do |key, value|
-        event.send("#{key}=", value)
+        event.send(:"#{key}=", value)
       end
     end
     event

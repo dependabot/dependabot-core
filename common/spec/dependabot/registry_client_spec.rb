@@ -14,8 +14,7 @@ RSpec.describe Dependabot::RegistryClient do
   end
 
   before do
-    allow(Excon).to receive(:get).and_return(Excon::Response.new)
-    allow(Excon).to receive(:head).and_return(Excon::Response.new)
+    allow(Excon).to receive_messages(get: Excon::Response.new, head: Excon::Response.new)
   end
 
   describe "delegation to Excon" do

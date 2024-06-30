@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -20,11 +15,12 @@ public abstract class UpdateWorkerTestBase : TestBase
         string projectContents,
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
+        MockNuGetPackage[]? packages = null,
         string projectFilePath = "test-project.csproj")
     {
         return useSolution
-            ? TestNoChangeforSolution(dependencyName, oldVersion, newVersion, projectFiles: [(projectFilePath, projectContents)], isTransitive, additionalFiles)
-            : TestNoChangeforProject(dependencyName, oldVersion, newVersion, projectContents, isTransitive, additionalFiles, projectFilePath);
+            ? TestNoChangeforSolution(dependencyName, oldVersion, newVersion, projectFiles: [(projectFilePath, projectContents)], isTransitive, additionalFiles, packages)
+            : TestNoChangeforProject(dependencyName, oldVersion, newVersion, projectContents, isTransitive, additionalFiles, packages, projectFilePath);
     }
 
     protected static Task TestUpdate(
@@ -37,11 +33,12 @@ public abstract class UpdateWorkerTestBase : TestBase
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
         TestFile[]? additionalFilesExpected = null,
+        MockNuGetPackage[]? packages = null,
         string projectFilePath = "test-project.csproj")
     {
         return useSolution
-            ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [(projectFilePath, projectContents)], projectFilesExpected: [(projectFilePath, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected)
-            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile: (projectFilePath, projectContents), expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
+            ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [(projectFilePath, projectContents)], projectFilesExpected: [(projectFilePath, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected, packages)
+            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile: (projectFilePath, projectContents), expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, packages);
     }
 
     protected static Task TestUpdate(
@@ -53,11 +50,12 @@ public abstract class UpdateWorkerTestBase : TestBase
         string expectedProjectContents,
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
-        TestFile[]? additionalFilesExpected = null)
+        TestFile[]? additionalFilesExpected = null,
+        MockNuGetPackage[]? packages = null)
     {
         return useSolution
-            ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [projectFile], projectFilesExpected: [(projectFile.Path, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected)
-            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected);
+            ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [projectFile], projectFilesExpected: [(projectFile.Path, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected, packages)
+            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, packages);
     }
 
     protected static Task TestNoChangeforProject(
@@ -67,6 +65,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         string projectContents,
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
+        MockNuGetPackage[]? packages = null,
         string projectFilePath = "test-project.csproj")
         => TestUpdateForProject(
             dependencyName,
@@ -76,7 +75,8 @@ public abstract class UpdateWorkerTestBase : TestBase
             expectedProjectContents: projectContents,
             isTransitive,
             additionalFiles,
-            additionalFilesExpected: additionalFiles);
+            additionalFilesExpected: additionalFiles,
+            packages: packages);
 
     protected static Task TestUpdateForProject(
         string dependencyName,
@@ -87,6 +87,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
         TestFile[]? additionalFilesExpected = null,
+        MockNuGetPackage[]? packages = null,
         string projectFilePath = "test-project.csproj")
         => TestUpdateForProject(
             dependencyName,
@@ -96,7 +97,8 @@ public abstract class UpdateWorkerTestBase : TestBase
             expectedProjectContents,
             isTransitive,
             additionalFiles,
-            additionalFilesExpected);
+            additionalFilesExpected,
+            packages);
 
     protected static async Task TestUpdateForProject(
         string dependencyName,
@@ -106,21 +108,36 @@ public abstract class UpdateWorkerTestBase : TestBase
         string expectedProjectContents,
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
-        TestFile[]? additionalFilesExpected = null)
+        TestFile[]? additionalFilesExpected = null,
+        MockNuGetPackage[]? packages = null)
     {
         additionalFiles ??= [];
         additionalFilesExpected ??= [];
 
+        var placeFilesInSrc = packages is not null;
+
         var projectFilePath = projectFile.Path;
         var testFiles = new[] { projectFile }.Concat(additionalFiles).ToArray();
+        if (placeFilesInSrc)
+        {
+            testFiles = testFiles.Select(f => ($"src/{f.Path}", f.Content)).ToArray();
+        }
 
         var actualResult = await RunUpdate(testFiles, async temporaryDirectory =>
         {
+            await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
+
+            // run update
             var worker = new UpdaterWorker(new Logger(verbose: true));
-            await worker.RunAsync(temporaryDirectory, projectFilePath, dependencyName, oldVersion, newVersion, isTransitive);
+            var projectPath = placeFilesInSrc ? $"src/{projectFilePath}" : projectFilePath;
+            await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 
         var expectedResult = additionalFilesExpected.Prepend((projectFilePath, expectedProjectContents)).ToArray();
+        if (placeFilesInSrc)
+        {
+            expectedResult = expectedResult.Select(er => ($"src/{er.Item1}", er.Item2)).ToArray();
+        }
 
         AssertContainsFiles(expectedResult, actualResult);
     }
@@ -131,7 +148,8 @@ public abstract class UpdateWorkerTestBase : TestBase
         string newVersion,
         TestFile[] projectFiles,
         bool isTransitive = false,
-        TestFile[]? additionalFiles = null)
+        TestFile[]? additionalFiles = null,
+        MockNuGetPackage[]? packages = null)
         => TestUpdateForSolution(
             dependencyName,
             oldVersion,
@@ -140,7 +158,8 @@ public abstract class UpdateWorkerTestBase : TestBase
             projectFilesExpected: projectFiles,
             isTransitive,
             additionalFiles,
-            additionalFilesExpected: additionalFiles);
+            additionalFilesExpected: additionalFiles,
+            packages: packages);
 
     protected static async Task TestUpdateForSolution(
         string dependencyName,
@@ -150,7 +169,8 @@ public abstract class UpdateWorkerTestBase : TestBase
         TestFile[] projectFilesExpected,
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
-        TestFile[]? additionalFilesExpected = null)
+        TestFile[]? additionalFilesExpected = null,
+        MockNuGetPackage[]? packages = null)
     {
         additionalFiles ??= [];
         additionalFilesExpected ??= [];
@@ -191,6 +211,8 @@ public abstract class UpdateWorkerTestBase : TestBase
 
         var actualResult = await RunUpdate(testFiles, async temporaryDirectory =>
         {
+            await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
+
             var slnPath = Path.Combine(temporaryDirectory, slnName);
             var worker = new UpdaterWorker(new Logger(verbose: true));
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
@@ -199,6 +221,42 @@ public abstract class UpdateWorkerTestBase : TestBase
         var expectedResult = projectFilesExpected.Concat(additionalFilesExpected).ToArray();
 
         AssertContainsFiles(expectedResult, actualResult);
+    }
+
+    public static async Task MockNuGetPackagesInDirectory(MockNuGetPackage[]? packages, string temporaryDirectory)
+    {
+        if (packages is not null)
+        {
+            string localFeedPath = Path.Join(temporaryDirectory, "local-feed");
+            Directory.CreateDirectory(localFeedPath);
+            MockNuGetPackage[] allPackages = packages.Concat(MockNuGetPackage.CommonPackages).ToArray();
+
+            // write all packages to disk
+            foreach (MockNuGetPackage package in allPackages)
+            {
+                package.WriteToDirectory(localFeedPath);
+            }
+
+            // override various nuget locations
+            foreach (var envName in new[] { "NUGET_PACKAGES", "NUGET_HTTP_CACHE_PATH", "NUGET_SCRATCH", "NUGET_PLUGINS_CACHE_PATH" })
+            {
+                string dir = Path.Join(temporaryDirectory, envName);
+                Directory.CreateDirectory(dir);
+                Environment.SetEnvironmentVariable(envName, dir);
+            }
+
+            // ensure only the test feed is used
+            await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "NuGet.Config"), $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="local-feed" value="{localFeedPath}" />
+                  </packageSources>
+                </configuration>
+                """
+            );
+        }
     }
 
     protected static async Task<TestFile[]> RunUpdate(TestFile[] files, Func<string, Task> action)

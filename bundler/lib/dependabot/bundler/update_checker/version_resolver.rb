@@ -200,7 +200,8 @@ module Dependabot
           return false unless details[:ruby_version]
 
           versions = Dependabot::RegistryClient.get(
-            url: "https://rubygems.org/api/v1/versions/#{dependency.name}.json"
+            url: "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
+            headers: { "Accept-Encoding" => "gzip" }
           )
 
           # Give the benefit of the doubt if something goes wrong fetching

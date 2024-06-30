@@ -28,6 +28,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
 
     context "with a dependency that specifies a ref" do
       let(:dependency_name) { "business" }
+
       it "replaces the ref" do
         expect(rewrite).to include(%(gem "business", "~> 1.6.0"\ngem))
       end
@@ -41,6 +42,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
       let(:content) do
         %(gem "business", "1.0.0", require: false, git: "git_url")
       end
+
       it { is_expected.to eq(%(gem "business", "1.0.0", require: false)) }
     end
 
@@ -48,6 +50,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
       let(:content) do
         %(gem "business", "1.0.0", git: "git_url", require: false)
       end
+
       it { is_expected.to eq(%(gem "business", "1.0.0", require: false)) }
     end
 
@@ -55,6 +58,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
       let(:content) do
         %(gem "business", "1.0.0", git: "git_url",\nrequire: false)
       end
+
       it { is_expected.to eq(%(gem "business", "1.0.0", require: false)) }
     end
 
@@ -62,16 +66,19 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitSourceRemover do
       let(:content) do
         %(gem "business", "1.0.0", require: false,\ngit: "git_url")
       end
+
       it { is_expected.to eq(%(gem "business", "1.0.0", require: false)) }
     end
 
     context "with a custom tag" do
       let(:content) { %(gem "business", "1.0.0", github: "git_url") }
+
       it { is_expected.to eq(%(gem "business", "1.0.0")) }
     end
 
     context "with a comment" do
       let(:content) { %(gem "business", "1.0.0", git: "git_url" # My gem) }
+
       it { is_expected.to eq(%(gem "business", "1.0.0" # My gem)) }
     end
   end

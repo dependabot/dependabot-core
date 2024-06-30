@@ -12,18 +12,21 @@ module Dependabot
       # - https://github.com/npm/npm-user-validate
       # - https://github.com/npm/validate-npm-package-name
       PACKAGE_NAME_REGEX = %r{
-          \A                                          # beginning of string
-          (?=.{1,214}\z)                              # enforce length (1 - 214)
-          (@(?<scope>                                 # capture 'scope' if present
-            (?=[^\.])                                 # reject leading dot
-            [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
-          )\/)?
-          (?<name>                                    # capture package name
-            (?=[^\.\_])                               # reject leading dot or underscore
-            [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
+        \A                                          # beginning of string
+        (?=.{1,214}\z)                              # enforce length (1 - 214)
+        (@(?<scope>                                 # capture 'scope' if present
+          [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters in scope
+        )\/)?                                       # scope must be followed by slash
+        (?<name>                                    # capture package name
+          (?(<scope>)                               # if scope is present
+            [a-z0-9\-\_\.\!\~\*\'\(\)]+             # scoped names can start with any URL-safe character
+          |                                         # if no scope
+            [a-z0-9\-\!\~\*\'\(\)]                  # non-scoped names cannot start with . or _
+            [a-z0-9\-\_\.\!\~\*\'\(\)]*             # subsequent characters can be any URL-safe character
           )
-          \z                                          # end of string
-      }xi                                             # multi-line/case-insensitive
+        )
+        \z                                          # end of string
+      }xi # multi-line/case-insensitive
 
       TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                          # beginning of string
@@ -31,7 +34,7 @@ module Dependabot
           ((?<scope>.+)__)?                           # capture scope
           (?<name>.+)                                 # capture name
           \z                                          # end of string
-      }xi                                             # multi-line/case-insensitive
+      }xi # multi-line/case-insensitive
 
       class InvalidPackageName < StandardError; end
 

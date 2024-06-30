@@ -48,6 +48,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
   describe "#new_branch_name" do
     subject(:new_branch_name) { namer.new_branch_name }
+
     it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
 
     context "with directory" do
@@ -62,7 +63,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/directory/business-1.5.0") }
 
-      context "that starts with a dot" do
+      context "when the directory name starts with a dot" do
         let(:directory) { ".directory" }
 
         it "sanitizes the dot" do
@@ -173,7 +174,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/multi-fc93691fd4") }
 
-      context "for a java property update" do
+      context "when dealing with a java property update" do
         let(:files) { [pom] }
         let(:pom) do
           Dependabot::DependencyFile.new(name: "pom.xml", content: pom_content)
@@ -228,11 +229,11 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
 
         it do
-          is_expected.to eq("dependabot/maven/springframework.version-23.6-jre")
+          expect(new_branch_name).to eq("dependabot/maven/springframework.version-23.6-jre")
         end
       end
 
-      context "for a dependency set update" do
+      context "when dealing with a dependency set update" do
         let(:dependencies) { [dependency, dep2] }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -421,8 +422,9 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
       it { is_expected.to eq("dependabot/dummy/business-tw-1.5.0") }
 
-      context "that has a trailing dot" do
+      context "when there is a trailing dot" do
         let(:requirement_string) { "^7." }
+
         it { is_expected.to eq("dependabot/dummy/business-tw-7") }
       end
     end
@@ -465,7 +467,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(new_branch_name).to eq("dependabot/dummy/business-cff701b")
       end
 
-      context "due to a ref change" do
+      context "when there is a ref change" do
         let(:new_ref) { "v1.1.0" }
         let(:old_ref) { "v1.0.0" }
 
@@ -473,7 +475,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           expect(new_branch_name).to eq("dependabot/dummy/business-v1.1.0")
         end
 
-        context "for a library" do
+        context "when dealing with a library" do
           let(:new_version) { nil }
           let(:previous_version) { nil }
 
@@ -519,7 +521,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         expect(new_branch_name).to eq("dependabot/docker/ubuntu-1830542")
       end
 
-      context "due to a tag change" do
+      context "when there is a tag change" do
         let(:previous_version) { "17.04" }
 
         it "includes the tag rather than the SHA" do

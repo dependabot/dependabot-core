@@ -7,6 +7,7 @@ require "dependabot/metadata_finders/base"
 RSpec.shared_examples "a dependency metadata finder" do
   describe "the class" do
     subject { described_class }
+
     let(:base_class) { Dependabot::MetadataFinders::Base }
 
     its(:superclass) { is_expected.to eq(base_class) }

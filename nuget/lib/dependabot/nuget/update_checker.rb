@@ -42,7 +42,7 @@ module Dependabot
         lowest_security_fix_version_details&.fetch(:version)
       end
 
-      sig { override.returns(T.nilable(Dependabot::Version)) }
+      sig { override.returns(T.nilable(Dependabot::Nuget::Version)) }
       def lowest_resolvable_security_fix_version
         return nil if version_comes_from_multi_dependency_property?
 
@@ -125,6 +125,7 @@ module Dependabot
         updated_dependencies += DependencyFinder.new(
           dependency: updated_dependency,
           dependency_files: dependency_files,
+          ignored_versions: ignored_versions,
           credentials: credentials,
           repo_contents_path: @repo_contents_path
         ).updated_peer_dependencies

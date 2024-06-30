@@ -9,57 +9,6 @@ require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GoModules::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials,
-      repo_contents_path: repo_contents_path
-    )
-  end
-
-  let(:files) { [go_mod, go_sum] }
-  let(:project_name) { "go_sum" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:credentials) { [] }
-
-  let(:go_mod) do
-    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-  end
-  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
-
-  let(:go_sum) do
-    Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
-  end
-  let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      requirements: requirements,
-      previous_version: dependency_previous_version,
-      previous_requirements: previous_requirements,
-      package_manager: "go_modules"
-    )
-  end
-  let(:dependency_name) { "rsc.io/quote" }
-  let(:dependency_version) { "v1.5.2" }
-  let(:dependency_previous_version) { "v1.5.1" }
-  let(:requirements) do
-    [{
-      file: "go.mod",
-      requirement: dependency_version,
-      groups: [],
-      source: {
-        type: "default",
-        source: "rsc.io/quote"
-      }
-    }]
-  end
   let(:previous_requirements) do
     [{
       file: "go.mod",
@@ -71,18 +20,64 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       }
     }]
   end
+  let(:requirements) do
+    [{
+      file: "go.mod",
+      requirement: dependency_version,
+      groups: [],
+      source: {
+        type: "default",
+        source: "rsc.io/quote"
+      }
+    }]
+  end
+  let(:dependency_previous_version) { "v1.5.1" }
+  let(:dependency_version) { "v1.5.2" }
+  let(:dependency_name) { "rsc.io/quote" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      requirements: requirements,
+      previous_version: dependency_previous_version,
+      previous_requirements: previous_requirements,
+      package_manager: "go_modules"
+    )
+  end
+  let(:go_sum_body) { fixture("projects", project_name, "go.sum") }
+  let(:go_sum) do
+    Dependabot::DependencyFile.new(name: "go.sum", content: go_sum_body)
+  end
+  let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+  let(:go_mod) do
+    Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
+  end
+  let(:credentials) { [] }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:project_name) { "go_sum" }
+  let(:files) { [go_mod, go_sum] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
 
     it "includes an updated go.mod" do
-      expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+      expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
     end
 
     it "includes an updated go.sum" do
-      expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+      expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
     end
 
     context "with an indirect dependency update" do
@@ -90,11 +85,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:previous_requirements) { [] }
 
       it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
-        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
     end
 
@@ -128,12 +123,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
     end
 
-    context "pre 1.21 go.mod that uses a 1.21 dependency" do
+    context "when go.mod specifies a pre-1.21 version but uses a 1.21 dependency" do
       let(:project_name) { "toolchain" }
       let(:files) { [go_mod] }
 
       it "doesn't add a toolchain directive" do
-        expect(updated_files.first.content).to_not include("toolchain")
+        expect(updated_files.first.content).not_to include("toolchain")
       end
     end
 
@@ -173,11 +168,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "includes an updated go.mod" do
-        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
-        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+        expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
 
       it "disables the tidy option" do
@@ -212,16 +207,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         it "includes an updated go.mod" do
-          expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+          expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
         end
 
         it "includes an updated go.sum" do
-          expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+          expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
         end
       end
     end
 
-    context "vendoring" do
+    context "when dealing with vendoring" do
       let(:project_name) { "vendor" }
       let(:dependency_name) { "github.com/pkg/errors" }
       let(:dependency_version) { "v0.9.1" }
@@ -283,7 +278,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         expect(modules_file.content)
-          .to_not include "github.com/pkg/errors v0.8.0"
+          .not_to include "github.com/pkg/errors v0.8.0"
         expect(modules_file.content).to include "github.com/pkg/errors v0.9.1"
       end
 
@@ -299,14 +294,14 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             Format formats the stack of Frames according to the fmt.Formatter interface.
           LINE
         )
-        expect(stack_file.content).to_not include(
+        expect(stack_file.content).not_to include(
           <<~LINE
             segments from the beginning of the file path until the number of path
           LINE
         )
       end
 
-      context "vendor directory not checked in" do
+      context "when a vendor directory is not checked in" do
         let(:project_name) { "go_sum" }
 
         it "excludes the vendored files" do
@@ -316,7 +311,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
 
-      context "nested folder" do
+      context "when there is a nested folder" do
         let(:project_name) { "nested_vendor" }
         let(:directory) { "nested" }
 

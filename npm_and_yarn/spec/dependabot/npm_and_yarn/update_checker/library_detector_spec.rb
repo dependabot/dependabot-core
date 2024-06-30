@@ -13,6 +13,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
       dependency_files: dependency_files
     )
   end
+
   let(:package_json_file) do
     project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
@@ -24,37 +25,41 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
     context "with private set to true" do
       let(:project_name) { "npm8/workspaces" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with no version" do
       let(:project_name) { "npm8/app_no_version" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with {{ }} in the name" do
       let(:project_name) { "npm8/simple" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with space in the name" do
       let(:project_name) { "npm8/package_with_space_in_name" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with a library package.json" do
       let(:project_name) { "npm8/library" }
 
-      context "not listed on npm" do
+      context "when dependency is not listed on npm" do
         before do
           stub_request(:get, "https://registry.npmjs.org/etag")
             .to_return(status: 404)
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
-      context "listed on npm" do
+      context "when dependency is listed on npm" do
         before do
           stub_request(:get, "https://registry.npmjs.org/etag")
             .to_return(status: 200, body: body)
@@ -62,14 +67,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
-          it { is_expected.to eq(true) }
+
+          it { is_expected.to be(true) }
         end
 
         context "with a description that doesn't match" do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
-          it { is_expected.to eq(false) }
+
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -77,16 +84,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     context "with a custom global registry" do
       let(:project_name) { "npm8/library_with_global_registry" }
 
-      context "not listed in registry" do
+      context "when dependency is not listed in registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/etag")
             .to_return(status: 404)
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
-      context "listed on registry" do
+      context "when dependency is listed on registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/etag")
             .to_return(status: 200, body: body)
@@ -94,14 +101,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
-          it { is_expected.to eq(true) }
+
+          it { is_expected.to be(true) }
         end
 
         context "with a description that doesn't match" do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
-          it { is_expected.to eq(false) }
+
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -109,16 +118,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     context "with a custom scoped registry" do
       let(:project_name) { "npm8/library_with_scoped_registry" }
 
-      context "not listed in registry" do
+      context "when dependency is not listed in registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag")
             .to_return(status: 404)
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
-      context "listed on registry" do
+      context "when dependency is listed on registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag")
             .to_return(status: 200, body: body)
@@ -126,14 +135,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
 
         context "with a description that matches" do
           let(:body) { fixture("npm_responses", "etag.json") }
-          it { is_expected.to eq(true) }
+
+          it { is_expected.to be(true) }
         end
 
         context "with a description that doesn't match" do
           let(:body) do
             fixture("npm_responses", "is_number.json")
           end
-          it { is_expected.to eq(false) }
+
+          it { is_expected.to be(false) }
         end
       end
     end

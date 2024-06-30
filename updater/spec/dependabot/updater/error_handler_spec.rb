@@ -122,7 +122,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
 
       it "records error with only update job error api service, logs the backtrace and captures the exception" do
-        expect(mock_service).to_not receive(:record_update_job_unknown_error)
+        expect(mock_service).not_to receive(:record_update_job_unknown_error)
 
         expect(mock_service).to receive(:capture_exception).with(
           error: error,

@@ -90,6 +90,38 @@ module Dependabot
 
       private
 
+      def dependency_services_smallest_update
+        return @smallest_update if @smallest_update
+
+        security_advisories.each do |a|
+          # Sanity check, that we only get the advisories for a single package
+          # at a time. If we got all advisories for all current dependencies,
+          # the helper would be able to handle it, but we would need a better
+          # way to find the repository url.
+          if a.dependency_name != dependency.name
+            raise "Only expected advisories for #{dependency.name} got for #{a.dependency_name}"
+          end
+        end
+        vulnerable_versions = available_versions(dependency).select do |v|
+          security_advisories.any? { |a| a.vulnerable?(v) }
+        end
+        input = {
+          # For "smallest update" we don't cache the report to be shared between
+          # dependencies, but run a specific report for the current dependency.
+          target: dependency.name,
+          disallowed:
+            [
+              {
+                name: dependency.name,
+                url: repository_url(dependency),
+                versions: vulnerable_versions.map { |v| { range: v.to_s } }
+              }
+            ]
+        }
+        report = JSON.parse(run_dependency_services("report", stdin_data: JSON.generate(input)))["dependencies"]
+        @smallest_update = report.find { |d| d["name"] == dependency.name }["smallestUpdate"]
+      end
+
       # Returns unparsed_version if it looks like a git-revision.
       #
       # Otherwise it will be parsed with Dependabot::Pub::Version.new and
@@ -168,7 +200,7 @@ module Dependabot
           # go for RequirementsUpdateStrategy::BumpVersions.
           pubspec = T.must(dependency_files.find { |d| d.name == "pubspec.yaml" })
           begin
-            parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: false)
+            parsed_pubspec = YAML.safe_load(T.must(pubspec.content), aliases: true)
           rescue ScriptError
             return RequirementsUpdateStrategy::BumpVersions
           end

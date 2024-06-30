@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/bundler/native_helpers"
 
 RSpec.describe Dependabot::Bundler::NativeHelpers do
-  subject { described_class }
+  subject(:native_helper) { described_class }
 
   describe ".run_bundler_subprocess" do
     let(:options) { {} }
@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
 
       with_env("DEPENDABOT_NATIVE_HELPERS_PATH", native_helpers_path) do
-        subject.run_bundler_subprocess(
+        native_helper.run_bundler_subprocess(
           function: "noop",
           args: {},
           bundler_version: "2",

@@ -45,26 +45,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   let(:latest_resolvable_version) { latest_version }
   let(:latest_resolvable_version_with_no_unlock) { latest_version }
   let(:latest_resolvable_previous_version) { dependency.version }
+
   before do
     allow(updater_instance)
-      .to receive(:latest_version)
-      .and_return(latest_version)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_version)
-      .and_return(latest_resolvable_version)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_version_with_no_unlock)
-      .and_return(latest_resolvable_version_with_no_unlock)
-
-    allow(updater_instance)
-      .to receive(:latest_resolvable_previous_version)
-      .and_return(latest_resolvable_previous_version)
-
-    allow(updater_instance)
-      .to receive(:updated_requirements)
-      .and_return(updated_requirements)
+      .to receive_messages(latest_version: latest_version, latest_resolvable_version: latest_resolvable_version,
+                           latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
+                           latest_resolvable_previous_version: latest_resolvable_previous_version,
+                           updated_requirements: updated_requirements)
   end
 
   describe "#up_to_date?" do
@@ -75,29 +62,33 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       it { is_expected.to be_falsey }
 
-      context "but cannot resolve to the new version" do
+      context "when unable to resolve to the new version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+
         it { is_expected.to be_falsey }
       end
 
-      context "but is switching to a git source" do
+      context "when switching to a git source" do
         let(:latest_resolvable_version) { "a" * 40 }
+
         it { is_expected.to be_falsey }
       end
     end
 
     context "when the dependency is up-to-date" do
       let(:latest_version) { Gem::Version.new("1.5.0") }
+
       it { is_expected.to be_truthy }
 
       it "doesn't attempt to resolve the dependency" do
-        expect(updater_instance).to_not receive(:latest_resolvable_version)
+        expect(updater_instance).not_to receive(:latest_resolvable_version)
         up_to_date
       end
     end
 
     context "when the dependency couldn't be found" do
       let(:latest_version) { nil }
+
       it { is_expected.to be_falsey }
     end
 
@@ -113,40 +104,46 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       end
       let(:dependency_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
 
-      context "that matches the latest version" do
+      context "when matching the latest version" do
         let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+
         it { is_expected.to be_truthy }
       end
 
-      context "that does not match the latest version" do
+      context "when not matching the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-        it { is_expected.to eq(false) }
 
-        context "but the latest latest_resolvable_version does" do
+        it { is_expected.to be(false) }
+
+        context "when the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
-          it { is_expected.to eq(false) }
+
+          it { is_expected.to be(false) }
         end
       end
 
-      context "but only a substring" do
+      context "when dealing with only a substring" do
         let(:dependency_version) { "5bfb6d1" }
 
-        context "that matches the latest version" do
+        context "when matching the latest version" do
           let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+
           it { is_expected.to be_truthy }
         end
 
-        context "that does not match the latest version" do
+        context "when not matching the latest version" do
           let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-          it { is_expected.to eq(false) }
 
-          context "but the latest latest_resolvable_version does" do
+          it { is_expected.to be(false) }
+
+          context "when the latest resolvable version does" do
             let(:latest_resolvable_version) do
               "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
             end
-            it { is_expected.to eq(false) }
+
+            it { is_expected.to be(false) }
           end
         end
       end
@@ -167,10 +164,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "when the requirement is out of date" do
         let(:updated_requirements) { requirements }
+
         it { is_expected.to be_falsy }
       end
 
-      context "that doesn't yet permit the latest version" do
+      context "when not permitting the latest version" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -179,15 +177,17 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             source: nil
           }]
         end
+
         it { is_expected.to be_falsey }
       end
 
       context "when the latest version is a downgrade" do
         let(:latest_version) { Gem::Version.new("0.5.0") }
+
         it { is_expected.to be_truthy }
       end
 
-      context "that we don't know how to fix" do
+      context "when dealing with an issue we don't know to fix" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -196,6 +196,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             source: nil
           }]
         end
+
         it { is_expected.to be_falsey }
       end
     end
@@ -221,17 +222,19 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             package_manager: "dummy"
           )
         end
+
         it { is_expected.to be_falsey }
       end
 
       context "when the dependency is up-to-date" do
         let(:latest_version) { Gem::Version.new("1.5.0") }
+
         it { is_expected.to be_falsey }
 
         it "doesn't attempt to resolve the dependency" do
-          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).not_to receive(:latest_resolvable_version)
           expect(updater_instance)
-            .to_not receive(:latest_resolvable_version_with_no_unlock)
+            .not_to receive(:latest_resolvable_version_with_no_unlock)
           can_update
         end
       end
@@ -239,7 +242,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       context "when the dependency is outdated" do
         let(:latest_version) { Gem::Version.new("1.6.0") }
 
-        context "and can't resolve to the new version without an unlock" do
+        context "when unable to resolve to the new version without an unlock" do
           let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
           let(:latest_resolvable_version_with_no_unlock) do
             Gem::Version.new("1.5.0")
@@ -248,7 +251,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           it { is_expected.to be_falsey }
         end
 
-        context "and can resolve to the new version without an unlock" do
+        context "when able to resolve to the new version without an unlock" do
           let(:latest_resolvable_version) { Gem::Version.new("1.6.0") }
           let(:latest_resolvable_version_with_no_unlock) do
             Gem::Version.new("1.6.0")
@@ -256,7 +259,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
           it { is_expected.to be_truthy }
 
-          context "but all versions are being ignored" do
+          context "when all versions are being ignored" do
             let(:updater_instance) do
               described_class.new(
                 dependency: dependency,
@@ -284,12 +287,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "when the dependency is up-to-date" do
         let(:latest_version) { Gem::Version.new("1.5.0") }
+
         it { is_expected.to be_falsey }
 
         it "doesn't attempt to resolve the dependency" do
-          expect(updater_instance).to_not receive(:latest_resolvable_version)
+          expect(updater_instance).not_to receive(:latest_resolvable_version)
           expect(updater_instance)
-            .to_not receive(:latest_version_resolvable_with_full_unlock?)
+            .not_to receive(:latest_version_resolvable_with_full_unlock?)
           can_update
         end
       end
@@ -297,24 +301,26 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       context "when the dependency is outdated" do
         let(:latest_version) { Gem::Version.new("1.6.0") }
 
-        context "and cannot resolve to the new version" do
+        context "when unable to resolve to the new version" do
           let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
 
-          context "even with a full unlock" do
+          context "when possible with a full unlock" do
             before do
               allow(updater_instance)
                 .to receive(:latest_version_resolvable_with_full_unlock?)
                 .and_return(false)
             end
+
             it { is_expected.to be_falsey }
           end
 
-          context "but can with a full unlock" do
+          context "when the requirements can be updated with a full unlock" do
             before do
               allow(updater_instance)
                 .to receive(:latest_version_resolvable_with_full_unlock?)
                 .and_return(true)
             end
+
             it { is_expected.to be_truthy }
           end
         end
@@ -326,12 +332,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       it { is_expected.to be_truthy }
 
-      context "but cannot resolve to the new version" do
+      context "when unable to resolve to the new version" do
         let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
+
         it { is_expected.to be_falsey }
       end
 
-      context "but we don't know how to unlock the requirement" do
+      context "when unable to unlock the requirement" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -340,22 +347,25 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             source: nil
           }]
         end
+
         it { is_expected.to be_falsey }
       end
     end
 
     context "when the dependency is up-to-date" do
       let(:latest_version) { Gem::Version.new("1.5.0") }
+
       it { is_expected.to be_falsey }
 
       it "doesn't attempt to resolve the dependency" do
-        expect(updater_instance).to_not receive(:latest_resolvable_version)
+        expect(updater_instance).not_to receive(:latest_resolvable_version)
         can_update
       end
     end
 
     context "when the dependency couldn't be found" do
       let(:latest_version) { nil }
+
       it { is_expected.to be_falsey }
     end
 
@@ -370,20 +380,23 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         )
       end
 
-      context "that matches the latest version" do
+      context "when matching the latest version" do
         let(:latest_version) { "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
+
         it { is_expected.to be_falsey }
       end
 
-      context "that does not match the latest version" do
+      context "when not matching the latest version" do
         let(:latest_version) { "4bfb6d149c410801f194da7ceb3b2bdc5e8b75f3" }
-        it { is_expected.to eq(true) }
 
-        context "but the latest latest_resolvable_version does" do
+        it { is_expected.to be(true) }
+
+        context "when the latest latest_resolvable_version does" do
           let(:latest_resolvable_version) do
             "5bfb6d149c410801f194da7ceb3b2bdc5e8b75f3"
           end
-          it { is_expected.to eq(false) }
+
+          it { is_expected.to be(false) }
         end
       end
     end
@@ -400,12 +413,13 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
-      context "that already permits the latest version" do
+      context "when already permits the latest version" do
         let(:updated_requirements) { requirements }
+
         it { is_expected.to be_falsey }
       end
 
-      context "that doesn't yet permit the latest version" do
+      context "when not permitting the latest version" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -414,10 +428,11 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             source: nil
           }]
         end
+
         it { is_expected.to be_truthy }
       end
 
-      context "that we don't know how to fix" do
+      context "when dealing with an issue we don't know how to fix" do
         let(:updated_requirements) do
           [{
             file: "Gemfile",
@@ -426,6 +441,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
             source: nil
           }]
         end
+
         it { is_expected.to be_falsey }
       end
     end
@@ -435,6 +451,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     subject(:updated_dependencies) do
       updater_instance.updated_dependencies(requirements_to_unlock: :own)
     end
+
     let(:latest_version) { Gem::Version.new("1.9.0") }
     let(:latest_resolvable_version) { Gem::Version.new("1.8.0") }
     let(:latest_resolvable_version_with_no_unlock) { "1.7.0" }
@@ -443,6 +460,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     describe "the dependency" do
       subject { updated_dependencies.first }
+
       its(:version) { is_expected.to eq("1.8.0") }
       its(:previous_version) { is_expected.to eq("1.5.0") }
       its(:package_manager) { is_expected.to eq(dependency.package_manager) }
@@ -462,6 +480,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       describe "the dependency" do
         subject { updated_dependencies.first }
+
         its(:version) { is_expected.to eq("1.8.0") }
         its(:previous_version) { is_expected.to be_nil }
       end
@@ -471,6 +490,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         describe "the dependency" do
           subject { updated_dependencies.first }
+
           its(:version) { is_expected.to eq("1.8.0") }
           its(:previous_version) { is_expected.to eq("1.4.0") }
         end
@@ -486,6 +506,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       describe "the dependency" do
         subject { updated_dependencies.first }
+
         its(:version) { is_expected.to eq("1.7.0") }
         its(:previous_version) { is_expected.to eq("1.5.0") }
         its(:package_manager) { is_expected.to eq(dependency.package_manager) }
@@ -505,6 +526,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
         describe "the dependency" do
           subject { updated_dependencies.first }
+
           it { is_expected.to be_nil }
         end
       end
@@ -550,17 +572,20 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
     context "with a safe version" do
       let(:version) { "1.5.2" }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with a vulnerable version" do
       let(:version) { "1.5.1" }
-      it { is_expected.to eq(true) }
+
+      it { is_expected.to be(true) }
     end
 
     context "with no vulnerabilities" do
       let(:security_advisories) { [] }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
 
     context "with only safe versions" do
@@ -576,12 +601,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
-        it { is_expected.to eq(true) }
+
+        it { is_expected.to be(true) }
       end
 
       context "with a safe version" do
         let(:version) { "1.5.2" }
-        it { is_expected.to eq(false) }
+
+        it { is_expected.to be(false) }
       end
     end
 
@@ -598,12 +625,14 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
       context "with a vulnerable version" do
         let(:version) { "1.5.1" }
-        it { is_expected.to eq(true) }
+
+        it { is_expected.to be(true) }
       end
 
       context "with a safe version" do
         let(:version) { "1.5.2" }
-        it { is_expected.to eq(false) }
+
+        it { is_expected.to be(false) }
       end
     end
 
@@ -616,7 +645,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
           )
         ]
       end
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
     end
   end
 

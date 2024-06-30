@@ -8,34 +8,6 @@ require "dependabot/git_submodules/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GitSubmodules::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: [gitmodules, submodule],
-      dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
-    )
-  end
-  let(:gitmodules) do
-    Dependabot::DependencyFile.new(
-      content: fixture("gitmodules", ".gitmodules"),
-      name: ".gitmodules"
-    )
-  end
-  let(:submodule) do
-    Dependabot::DependencyFile.new(
-      content: "sha1",
-      name: "manifesto",
-      type: "submodule"
-    )
-  end
-
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
@@ -66,6 +38,33 @@ RSpec.describe Dependabot::GitSubmodules::FileUpdater do
       package_manager: "submodules"
     )
   end
+  let(:submodule) do
+    Dependabot::DependencyFile.new(
+      content: "sha1",
+      name: "manifesto",
+      type: "submodule"
+    )
+  end
+  let(:gitmodules) do
+    Dependabot::DependencyFile.new(
+      content: fixture("gitmodules", ".gitmodules"),
+      name: ".gitmodules"
+    )
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: [gitmodules, submodule],
+      dependencies: [dependency],
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

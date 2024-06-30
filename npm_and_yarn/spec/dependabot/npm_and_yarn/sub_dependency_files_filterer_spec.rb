@@ -17,13 +17,6 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
   let(:dependency_files) do
     project_dependency_files(project_name)
   end
-  let(:project_name) { "npm6_and_yarn/nested_sub_dependency_update" }
-  let(:updated_dependencies) { [dependency] }
-
-  def project_dependency_file(file_name)
-    dependency_files.find { |f| f.name == file_name }
-  end
-
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "extend",
@@ -33,10 +26,16 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
       package_manager: "npm_and_yarn"
     )
   end
+  let(:project_name) { "npm6_and_yarn/nested_sub_dependency_update" }
+  let(:updated_dependencies) { [dependency] }
+
+  def project_dependency_file(file_name)
+    dependency_files.find { |f| f.name == file_name }
+  end
 
   describe ".files_requiring_update" do
     it do
-      is_expected.to contain_exactly(
+      expect(files_requiring_update).to contain_exactly(
         project_dependency_file("packages/package1/package-lock.json"),
         project_dependency_file("packages/package3/yarn.lock")
       )
@@ -55,7 +54,7 @@ RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
       end
 
       it do
-        is_expected.to contain_exactly(
+        expect(files_requiring_update).to contain_exactly(
           project_dependency_file("packages/package4/package-lock.json")
         )
       end

@@ -46,7 +46,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = []
+        fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << cargo_toml
         fetched_files << cargo_lock if cargo_lock
         fetched_files << cargo_config if cargo_config
@@ -327,7 +327,10 @@ module Dependabot
       def cargo_config
         return @cargo_config if defined?(@cargo_config)
 
-        @cargo_config = fetch_file_if_present(".cargo/config.toml")
+        @cargo_config = fetch_support_file(".cargo/config.toml")
+
+        @cargo_config ||= fetch_support_file(".cargo/config")
+                          &.tap { |f| f.name = ".cargo/config.toml" }
       end
 
       def rust_toolchain

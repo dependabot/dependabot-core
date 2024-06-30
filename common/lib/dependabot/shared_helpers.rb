@@ -131,7 +131,7 @@ module Dependabot
       params(
         command: String,
         function: String,
-        args: T.any(T::Array[String], T::Hash[Symbol, String]),
+        args: T.any(T::Array[T.any(String, T::Array[T::Hash[String, T.untyped]])], T::Hash[Symbol, String]),
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean
@@ -258,13 +258,16 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
 
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+      previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
       begin
         ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        ENV["GIT_TERMINAL_PROMPT"] = "false"
         configure_git_to_use_https_with_credentials(credentials, safe_directories)
         yield
       ensure
         ENV["GIT_CONFIG_GLOBAL"] = previous_config
+        ENV["GIT_TERMINAL_PROMPT"] = previous_terminal_prompt
       end
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
@@ -405,6 +408,9 @@ module Dependabot
                                stderr_to_stdout: true)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
+
+      puts cmd if ENV["DEBUG_HELPERS"] == "true"
+
       if stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd)
       else

@@ -357,7 +357,7 @@ module Dependabot
       end
 
       def version_tag
-        @version_tag ||= Tag.new(dependency.version)
+        @version_tag ||= Tag.new(T.must(dependency.version))
       end
     end
   end

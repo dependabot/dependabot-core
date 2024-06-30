@@ -1,39 +1,21 @@
-The Prosperity Public License 2.0.0
+MIT License
 
-Contributor: GitHub Inc.
+Copyright GitHub, Inc.
 
-Source Code: https://github.com/dependabot/dependabot-core
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-This license lets you use and share this software for free,
-with a trial-length time limit on commercial use. Specifically:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-If you follow the rules below, you may do everything with this
-software that would otherwise infringe either the contributor's
-copyright in it, any patent claim the contributor can license
-that covers this software as of the contributor's latest
-contribution, or both.
-
-1. You must limit use of this software in any manner primarily
-   intended for or directed toward commercial advantage or
-   private monetary compensation to a trial period of 32
-   consecutive calendar days. This limit does not apply to use in
-   developing feedback, modifications, or extensions that you
-   contribute back to those giving this license.
-
-2. Ensure everyone who gets a copy of this software from you, in
-   source code or any other form, gets the text of this license
-   and the contributor and source code lines above.
-
-3. Do not make any legal claim against anyone for infringing any
-   patent claim they would infringe by using this software alone,
-   accusing this software, with or without changes, alone or as
-   part of a larger application.
-
-You are excused for unknowingly breaking rule 1 if you stop
-doing anything requiring this license within 30 days of
-learning you broke the rule.
-
-**This software comes as is, without any warranty at all. As far
-as the law allows, the contributor will not be liable for any
-damages related to this software or this license, for any kind of
-legal claim.**
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

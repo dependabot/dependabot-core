@@ -100,16 +100,19 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
 
       context "without a `tests_require` key" do
         let(:setup_file_fixture_name) { "no_tests_require.py" }
+
         its(:length) { is_expected.to eq(12) }
       end
 
       context "with a `print` statement" do
         let(:setup_file_fixture_name) { "with_print.py" }
+
         its(:length) { is_expected.to eq(14) }
       end
 
       context "with an import statements that can't be handled" do
         let(:setup_file_fixture_name) { "impossible_imports.py" }
+
         its(:length) { is_expected.to eq(12) }
       end
 
@@ -129,16 +132,19 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
 
       context "with an `open` statement" do
         let(:setup_file_fixture_name) { "with_open.py" }
+
         its(:length) { is_expected.to eq(14) }
       end
 
       context "with the setup.py from requests" do
         let(:setup_file_fixture_name) { "requests_setup.py" }
+
         its(:length) { is_expected.to eq(13) }
       end
 
       context "with an import of a config file" do
         let(:setup_file_fixture_name) { "imports_version.py" }
+
         its(:length) { is_expected.to eq(14) }
 
         context "with a inserted version" do
@@ -146,7 +152,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
 
           it "excludes the dependency importing a version" do
             expect(dependencies.count).to eq(14)
-            expect(dependencies.map(&:name)).to_not include("acme")
+            expect(dependencies.map(&:name)).not_to include("acme")
           end
         end
       end
@@ -245,6 +251,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
 
       context "without a `tests_require` key" do
         let(:setup_cfg_file_fixture_name) { "no_tests_require.cfg" }
+
         its(:length) { is_expected.to eq(12) }
       end
 
@@ -263,8 +270,9 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       end
 
       context "with comments in the setup.cfg file" do
-        let(:setup_cfg_file_fixture_name) { "with_comments.cfg" }
         subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
+
+        let(:setup_cfg_file_fixture_name) { "with_comments.cfg" }
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)

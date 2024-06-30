@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
   describe "#updated_manifest_content" do
     subject(:updated_manifest_content) { updater.updated_manifest_content }
 
-    context "if no files have changed" do
+    context "when no files have changed" do
       it { is_expected.to eq(manifest.content) }
     end
 
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
 
       it { is_expected.to include(%(time = "0.1.38")) }
       it { is_expected.to include(%(regex = "0.1.41")) }
-      it { is_expected.to_not include(%("time" = "0.1.12")) }
+      it { is_expected.not_to include(%("time" = "0.1.12")) }
 
       context "with similarly named dependencies" do
         let(:manifest_fixture_name) { "similar_names" }
@@ -71,11 +71,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
 
         it { is_expected.to include(%(time = "0.1.38")) }
         it { is_expected.to include(%(regex = "0.1.41")) }
-        it { is_expected.to_not include(%("time" = "0.1.12")) }
+        it { is_expected.not_to include(%("time" = "0.1.12")) }
       end
 
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
+
         it { is_expected.to include(%(time = "<= 0.1.38")) }
       end
 
@@ -245,7 +246,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
           }]
         end
 
-        context "that is a build dependency" do
+        context "when dealing with a build dependency" do
           let(:manifest_fixture_name) { "feature_build_dependency" }
           let(:requirements) do
             [{

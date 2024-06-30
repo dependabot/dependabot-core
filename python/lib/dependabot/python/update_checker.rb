@@ -81,7 +81,7 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != RequirementsUpdateStrategy::LockfileOnly
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
@@ -261,6 +261,8 @@ module Dependabot
 
       def library?
         return false unless updating_pyproject?
+
+        return false if library_details["name"].nil?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description

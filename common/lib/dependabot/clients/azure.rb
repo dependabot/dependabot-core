@@ -176,7 +176,7 @@ module Dependabot
           base_commit: String,
           commit_message: String,
           files: T::Array[Dependabot::DependencyFile],
-          author_details: T.nilable(T::Hash[String, String])
+          author_details: T.nilable(T::Hash[Symbol, String])
         )
           .returns(T.untyped)
       end

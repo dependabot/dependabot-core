@@ -6,7 +6,7 @@ require "bundler/compact_index_client/updater"
 
 TMP_DIR_PATH = File.expand_path("../tmp", __dir__)
 
-RSpec.shared_context "in a temporary bundler directory" do
+RSpec.shared_context "when in a temporary bundler directory" do
   let(:project_name) { "gemfile" }
 
   let(:tmp_path) do
@@ -34,7 +34,7 @@ RSpec.shared_context "without caching rubygems" do
   end
 end
 
-RSpec.shared_context "stub rubygems compact index" do
+RSpec.shared_context "when stubbing rubygems compact index" do
   include_context "without caching rubygems"
 
   before do

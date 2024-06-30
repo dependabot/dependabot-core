@@ -1,7 +1,3 @@
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -13,94 +9,111 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task UpdateSingleDependencyInDirsProj()
         {
-            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForDirsProj("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/test-project.csproj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/test-project.csproj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("src/test-project.csproj",
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/test-project.csproj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/test-project.csproj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("src/test-project.csproj",
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task Update_MissingFileDoesNotThrow()
         {
-            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForDirsProj("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 projectContents: """
-                <Project Sdk="Microsoft.Build.Traversal">
-                  <ItemGroup>
-                    <ProjectReference Include="private\dirs.proj" />
-                  </ItemGroup>
-                </Project>
-                """,
+                    <Project Sdk="Microsoft.Build.Traversal">
+                      <ItemGroup>
+                        <ProjectReference Include="private\dirs.proj" />
+                      </ItemGroup>
+                    </Project>
+                    """,
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.Build.Traversal">
-                  <ItemGroup>
-                    <ProjectReference Include="private\dirs.proj" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: []);
+                    <Project Sdk="Microsoft.Build.Traversal">
+                      <ItemGroup>
+                        <ProjectReference Include="private\dirs.proj" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: []
+            );
         }
 
         [Fact]
         public async Task UpdateSingleDependencyInNestedDirsProj()
         {
-            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForDirsProj("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/dirs.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/dirs.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("src/dirs.proj",
@@ -117,25 +130,25 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/dirs.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/dirs.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("src/dirs.proj",
@@ -152,31 +165,37 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateSingleDependencyInNestedDirsProjUsingWildcard()
         {
-            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForDirsProj("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/*.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/*.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("src/dirs.proj",
@@ -193,25 +212,25 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="src/*.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="src/*.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("src/dirs.proj",
@@ -228,31 +247,37 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateSingleDependencyInNestedDirsProjUsingRecursiveWildcard()
         {
-            await TestUpdateForDirsProj("Newtonsoft.Json", "9.0.1", "13.0.1",
+            await TestUpdateForDirsProj("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="**/*.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="**/*.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFiles:
                 [
                     ("src/dirs.proj",
@@ -269,25 +294,25 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                            <PackageReference Include="Some.Package" Version="9.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
                 ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.Build.NoTargets">
+                    <Project Sdk="Microsoft.Build.NoTargets">
 
-                  <ItemGroup>
-                    <ProjectReference Include="**/*.proj" />
-                  </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="**/*.proj" />
+                      </ItemGroup>
 
-                </Project>
-                """,
+                    </Project>
+                    """,
                 additionalFilesExpected:
                 [
                     ("src/dirs.proj",
@@ -304,15 +329,16 @@ public partial class UpdateWorkerTests
                         """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFramework>netstandard2.0</TargetFramework>
+                            <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Some.Package" Version="13.0.1" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]);
+                ]
+            );
         }
 
         static async Task TestUpdateForDirsProj(
@@ -323,7 +349,8 @@ public partial class UpdateWorkerTests
             string expectedProjectContents,
             bool isTransitive = false,
             (string Path, string Content)[]? additionalFiles = null,
-            (string Path, string Content)[]? additionalFilesExpected = null)
+            (string Path, string Content)[]? additionalFilesExpected = null,
+            MockNuGetPackage[]? packages = null)
         {
             additionalFiles ??= [];
             additionalFilesExpected ??= [];
@@ -334,6 +361,8 @@ public partial class UpdateWorkerTests
 
             var actualResult = await RunUpdate(testFiles, async (temporaryDirectory) =>
             {
+                await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
+
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
                 var worker = new UpdaterWorker(new Logger(verbose: true));
                 await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);

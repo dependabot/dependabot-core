@@ -111,4 +111,22 @@ internal static class PathHelper
             CopyDirectory(subDir.FullName, newDestinationDir);
         }
     }
+
+    public static bool IsSubdirectoryOf(string parentDirectory, string childDirectory)
+    {
+        var parentDirInfo = new DirectoryInfo(parentDirectory);
+        var childDirInfo = new DirectoryInfo(childDirectory);
+
+        while (childDirInfo.Parent is not null)
+        {
+            if (childDirInfo.Parent.FullName == parentDirInfo.FullName)
+            {
+                return true;
+            }
+
+            childDirInfo = childDirInfo.Parent;
+        }
+
+        return false;
+    }
 }

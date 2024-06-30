@@ -8,12 +8,12 @@ require "dependabot/errors"
 require "dependabot/sentry/sentry_context_processor"
 
 RSpec.describe SentryContext do
+  subject { event }
+
   let(:sentry_context) { { foo: "bar" } }
   let(:exception) { double(::Dependabot::DependabotError, sentry_context: sentry_context) }
   let(:hint) { { exception: exception } }
   let(:event) { instance_double(::Sentry::ErrorEvent) }
-
-  subject { event }
 
   before do
     allow(event).to receive(:send)
@@ -21,14 +21,14 @@ RSpec.describe SentryContext do
   end
 
   it "adds context to the event" do
-    is_expected.to have_received(:send).with("foo=", "bar")
+    expect(event).to have_received(:send).with(:foo=, "bar")
   end
 
   context "without an exception" do
     let(:exception) { nil }
 
     it "does not add context" do
-      is_expected.not_to have_received(:send)
+      expect(event).not_to have_received(:send)
     end
   end
 
@@ -36,7 +36,7 @@ RSpec.describe SentryContext do
     let(:sentry_context) { nil }
 
     it "does not add context" do
-      is_expected.not_to have_received(:send)
+      expect(event).not_to have_received(:send)
     end
   end
 end

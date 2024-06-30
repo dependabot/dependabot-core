@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/hex/update_checker"
@@ -14,6 +16,8 @@ module Dependabot
       # This class takes a set of dependency files and sanitizes them for use
       # in UpdateCheckers::Elixir::Hex.
       class FilePreparer
+        extend T::Sig
+
         def initialize(dependency_files:, dependency:,
                        unlock_requirement: true,
                        replacement_git_pin: nil,
@@ -179,7 +183,7 @@ module Dependabot
         end
 
         def version_regex
-          version_class::VERSION_PATTERN
+          Dependabot::Hex::Version::VERSION_PATTERN
         end
 
         def dependency_appears_in_file?(file_name)

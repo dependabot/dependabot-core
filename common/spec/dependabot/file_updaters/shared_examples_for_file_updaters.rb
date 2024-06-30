@@ -7,6 +7,7 @@ require "dependabot/file_updaters/base"
 RSpec.shared_examples "a dependency file updater" do
   describe "the class" do
     subject { described_class }
+
     let(:base_class) { Dependabot::FileUpdaters::Base }
 
     its(:updated_files_regex) { is_expected.to be_an_instance_of(Array) }

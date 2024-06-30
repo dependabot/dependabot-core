@@ -6,13 +6,13 @@ require "dependabot/nuget/nuget_client"
 
 RSpec.describe Dependabot::Nuget::NugetClient do
   describe "#get_package_versions" do
-    let(:dependency_name) { "Some.Dependency" }
-
     subject(:package_versions) do
-      Dependabot::Nuget::NugetClient.get_package_versions(dependency_name, repository_details)
+      described_class.get_package_versions(dependency_name, repository_details)
     end
 
-    context "package versions from local" do
+    let(:dependency_name) { "Some.Dependency" }
+
+    context "when retrieving the package versions from local" do
       let(:repository_details) do
         nuget_dir = File.join(File.dirname(__FILE__), "..", "..", "fixtures", "nuget_responses", "local_repo")
         base_url = File.expand_path(nuget_dir)
@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Nuget::NugetClient do
       end
     end
 
-    context "package versions _might_ have the `listed` flag" do
+    context "when the package versions _might_ have the `listed` flag" do
       before do
         stub_request(:get, "https://api.nuget.org/v3/registration5-gz-semver2/#{dependency_name.downcase}/index.json")
           .to_return(
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Nuget::NugetClient do
       end
     end
 
-    context "versions can be retrieved from v2 apis" do
+    context "when the versions can be retrieved from v2 apis" do
       before do
         stub_request(:get, "https://www.nuget.org/api/v2/FindPackagesById()?id=%27Some.Dependency%27")
           .to_return(

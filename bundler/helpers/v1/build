@@ -14,6 +14,7 @@ else
     "$helpers_dir/lib" \
     "$helpers_dir/monkey_patches" \
     "$helpers_dir/run.rb" \
+    "$helpers_dir/patched_bundler" \
     "$install_dir"
 fi
 
@@ -24,5 +25,5 @@ export GEM_HOME=$install_dir/.bundle
 gem install bundler -v 1.17.3 --no-document
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  BUNDLER_VERSION=1.17.3 bundle install
+  BUNDLER_VERSION=1.17.3 ./patched_bundler install
 fi

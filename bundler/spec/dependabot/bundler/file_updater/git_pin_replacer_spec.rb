@@ -31,6 +31,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
 
     context "with a dependency that specifies a ref" do
       let(:dependency_name) { "business" }
+
       it "replaces the ref" do
         expect(rewrite).to include(%(ref: "new_ref"\n))
       end
@@ -42,6 +43,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
 
     context "with a dependency that specifies a tag" do
       let(:dependency_name) { "que" }
+
       it "replaces the tag" do
         expect(rewrite).to include(%(tag: "new_ref"))
       end
@@ -53,6 +55,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
 
     context "with a dependency that uses single quotes" do
       let(:content) { %(gem "business", git: "https://x.com", tag: 'v1') }
+
       it "replaces the tag" do
         expect(rewrite).to include(%(tag: 'new_ref'))
       end
@@ -60,6 +63,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GitPinReplacer do
 
     context "with a dependency that uses quote brackets" do
       let(:content) { %(gem "business", git: "https://x.com", tag: %(v1)) }
+
       it "replaces the tag" do
         expect(rewrite).to include(%(tag: %(new_ref)))
       end

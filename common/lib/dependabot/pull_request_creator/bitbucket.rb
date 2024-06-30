@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -134,7 +134,7 @@ module Dependabot
           base_commit,
           commit_message,
           files,
-          author
+          T.must(author)
         )
       end
 

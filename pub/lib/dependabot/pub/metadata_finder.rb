@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "excon"
@@ -14,6 +14,7 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         source = dependency.requirements.first&.dig(:source)
         if source&.dig("type") == "git"
@@ -34,6 +35,7 @@ module Dependabot
         Source.from_url(repo)
       end
 
+      sig { params(repository_url: String).returns(T::Hash[String, T.untyped]) }
       def repository_listing(repository_url)
         response = Dependabot::RegistryClient.get(url: "#{repository_url}/api/packages/#{dependency.name}")
         JSON.parse(response.body)

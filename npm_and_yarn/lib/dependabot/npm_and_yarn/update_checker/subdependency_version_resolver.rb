@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -115,7 +115,8 @@ module Dependabot
           retry_count += 1
           raise if retry_count > 2
 
-          sleep(rand(3.0..10.0)) && retry
+          sleep(rand(3.0..10.0))
+          retry
         end
 
         def run_yarn_berry_updater(path, lockfile_name)

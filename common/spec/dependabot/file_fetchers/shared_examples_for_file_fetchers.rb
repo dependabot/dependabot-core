@@ -8,6 +8,7 @@ require "dependabot/file_fetchers/base"
 RSpec.shared_examples "a dependency file fetcher" do
   describe "the class" do
     subject { described_class }
+
     let(:base_class) { Dependabot::FileFetchers::Base }
 
     its(:superclass) { is_expected.to eq(base_class) }

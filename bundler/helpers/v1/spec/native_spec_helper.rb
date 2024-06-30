@@ -7,6 +7,7 @@ require "tmpdir"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))
+$LOAD_PATH.unshift(File.expand_path("../../spec_helpers", __dir__))
 
 # Bundler monkey patches
 require "definition_ruby_version_patch"
@@ -16,6 +17,8 @@ require "git_source_patch"
 require "resolver_spec_group_sane_eql"
 
 require "functions"
+
+require "gem_net_http_adapter"
 
 RSpec.configure do |config|
   config.color = true

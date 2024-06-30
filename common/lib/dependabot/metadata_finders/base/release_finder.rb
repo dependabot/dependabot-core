@@ -242,7 +242,7 @@ module Dependabot
           when "github" then fetch_github_releases
           # Bitbucket and CodeCommit don't support releases and
           # Azure can't list API for annotated tags
-          when "bitbucket", "azure", "codecommit" then []
+          when "bitbucket", "azure", "codecommit", "example" then []
           when "gitlab" then fetch_gitlab_releases
           else raise "Unexpected repo provider '#{T.must(source).provider}'"
           end

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 $LOAD_PATH.unshift(__dir__ + "/../lib")
@@ -36,6 +36,8 @@ trap("TERM") do
 end
 
 begin
+  RubyVM::YJIT.enable if Dependabot::Environment.job_id.to_i.even?
+
   if flamegraph
     Flamegraph.generate("/tmp/dependabot-flamegraph.html") do
       Dependabot::UpdateFilesCommand.new.run

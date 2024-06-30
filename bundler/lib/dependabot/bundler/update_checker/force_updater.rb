@@ -51,6 +51,13 @@ module Dependabot
         end
 
         def force_update
+          requirement = dependency.requirements.find { |req| req[:file] == gemfile.name }
+          manifest_requirement_not_satisfied = requirement && !Requirement.satisfied_by?(requirement, target_version)
+
+          if manifest_requirement_not_satisfied && requirements_update_strategy.lockfile_only?
+            raise Dependabot::DependencyFileNotResolvable
+          end
+
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
             updated_deps, specs = NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
@@ -67,10 +74,10 @@ module Dependabot
               }
             )
             dependencies_from(updated_deps, specs)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            msg = e.error_class + " with message: " + e.message
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          msg = e.error_class + " with message: " + e.message
-          raise Dependabot::DependencyFileNotResolvable, msg
         end
 
         def original_dependencies

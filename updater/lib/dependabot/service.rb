@@ -8,6 +8,7 @@ require "terminal-table"
 require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
+require "dependabot/experiments"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -48,6 +49,8 @@ module Dependabot
 
     sig { params(dependency_change: Dependabot::DependencyChange, base_commit_sha: String).void }
     def create_pull_request(dependency_change, base_commit_sha)
+      dependency_change.check_dependencies_have_previous_version if Experiments.enabled?("dependency_change_validation")
+
       if Experiments.enabled?("threaded_metadata")
         @threads << Thread.new { client.create_pull_request(dependency_change, base_commit_sha) }
       else

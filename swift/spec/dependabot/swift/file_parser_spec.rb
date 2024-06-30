@@ -8,12 +8,26 @@ require "dependabot/swift/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Swift::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+  let(:dependencies) { parser.parse }
+  let(:package_resolved_file) do
+    Dependabot::DependencyFile.new(
+      name: "Package.resolved",
+      content: fixture("projects", project_name, "Package.resolved")
+    )
   end
-
+  let(:package_manifest_file) do
+    Dependabot::DependencyFile.new(
+      name: "Package.swift",
+      content: fixture("projects", project_name, "Package.swift")
+    )
+  end
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:files) do
+    [
+      package_manifest_file,
+      package_resolved_file
+    ]
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -21,31 +35,11 @@ RSpec.describe Dependabot::Swift::FileParser do
       directory: "/"
     )
   end
-
-  let(:files) do
-    [
-      package_manifest_file,
-      package_resolved_file
-    ]
+  let(:parser) do
+    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-  let(:package_manifest_file) do
-    Dependabot::DependencyFile.new(
-      name: "Package.swift",
-      content: fixture("projects", project_name, "Package.swift")
-    )
-  end
-
-  let(:package_resolved_file) do
-    Dependabot::DependencyFile.new(
-      name: "Package.resolved",
-      content: fixture("projects", project_name, "Package.resolved")
-    )
-  end
-
-  let(:dependencies) { parser.parse }
+  it_behaves_like "a dependency file parser"
 
   shared_examples_for "parse" do
     it "parses dependencies fine" do

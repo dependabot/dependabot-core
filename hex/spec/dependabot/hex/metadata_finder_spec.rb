@@ -7,8 +7,20 @@ require "dependabot/hex/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Hex::MetadataFinder do
-  it_behaves_like "a dependency metadata finder"
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
 
+  let(:dependency_source) { nil }
+  let(:dependency_name) { "phoenix" }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -22,22 +34,12 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
       package_manager: "hex"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "phoenix" }
-  let(:dependency_source) { nil }
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:hex_url) { "https://hex.pm/api/packages/phoenix" }
 
     before do
@@ -92,7 +94,7 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
       it { is_expected.to eq("https://github.com/phoenixframework/phoenix") }
     end
 
-    context "for a git source" do
+    context "when using a git source" do
       let(:hex_response) { nil }
       let(:dependency_source) do
         { type: "git", url: "https://github.com/my_fork/phoenix" }
@@ -100,7 +102,7 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/my_fork/phoenix") }
 
-      context "that doesn't match a supported source" do
+      context "when it doesn't match a supported source" do
         let(:dependency_source) do
           { type: "git", url: "https://example.com/my_fork/phoenix" }
         end

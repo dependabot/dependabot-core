@@ -18,5 +18,7 @@
     "files.trimTrailingWhitespace": true
   },
   "rubocop.autocorrect": true,
-  "sorbet.enabled": true
+  "sorbet.enabled": true,
+  "rubocop.layoutMode": true,
+  "rubocop.lintMode": true
 }

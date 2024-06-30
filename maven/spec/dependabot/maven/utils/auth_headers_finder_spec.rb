@@ -6,6 +6,7 @@ require "dependabot/maven/utils/auth_headers_finder"
 
 RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
   subject(:finder) { described_class.new(credentials) }
+
   let(:credentials) do
     [
       {
@@ -37,6 +38,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
 
   describe "#auth_headers" do
     subject(:found_auth_headers) { finder.auth_headers(maven_repo_url) }
+
     let(:maven_repo_url) do
       "https://custom.repo.org/maven2"
     end
@@ -62,7 +64,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
 
       it { is_expected.to eq({ "Private-Token" => "token" }) }
 
-      context "for a private gitlab instance" do
+      context "when dealing with a private gitlab instance" do
         let(:maven_repo_url) do
           "https://custom-gitlab.com/api/v4/groups/some-group/-/packages/maven"
         end
@@ -70,7 +72,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({ "Private-Token" => "custom-token" }) }
       end
 
-      context "and gitlab credentials" do
+      context "when using gitlab credentials" do
         let(:credentials) do
           [
             {
@@ -96,7 +98,7 @@ RSpec.describe Dependabot::Maven::Utils::AuthHeadersFinder do
         it { is_expected.to eq({ "Authorization" => "Basic #{encoded_token}" }) }
       end
 
-      context "but not a gitlab maven repo" do
+      context "when repo is not a gitlab maven repo" do
         let(:credentials) do
           [
             {

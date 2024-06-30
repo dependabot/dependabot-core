@@ -134,6 +134,7 @@ module Dependabot
           DependencyFinder.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            ignored_versions: ignored_versions,
             credentials: credentials,
             repo_contents_path: repo_contents_path
           ).updated_peer_dependencies.each do |peer_dependency|

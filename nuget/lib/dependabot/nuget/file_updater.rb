@@ -164,13 +164,15 @@ module Dependabot
       sig { params(dependency_file: Dependabot::DependencyFile, updated_content: String).returns(String) }
       def normalize_content(dependency_file, updated_content)
         # Fix up line endings
-        if dependency_file.content&.include?("\r\n") && updated_content.match?(/(?<!\r)\n/)
+        if dependency_file.content&.include?("\r\n")
           # The original content contain windows style newlines.
-          # Ensure the updated content also uses windows style newlines.
-          updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
-          puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
+          if updated_content.match?(/(?<!\r)\n/)
+            # Ensure the updated content also uses windows style newlines.
+            updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
+            puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
+          end
         elsif updated_content.include?("\r\n")
-          # The original content does not contain windows style newlines.
+          # The original content does not contain windows style newlines, but the updated content does.
           # Ensure the updated content uses unix style newlines.
           updated_content = updated_content.gsub("\r\n", "\n")
           puts "Fixing mismatched Unix line endings for [#{dependency_file.name}]."
@@ -202,7 +204,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files
-        dependency_files.select { |df| df.name.match?(/\.([a-z]{2})?proj$/) }
+        dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

@@ -2,7 +2,7 @@
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.6 || ^3.7"
+python = "^3.7"
 geopy = "^1.13"
 Pillow = "^5.1"
 requests = "^2.18"

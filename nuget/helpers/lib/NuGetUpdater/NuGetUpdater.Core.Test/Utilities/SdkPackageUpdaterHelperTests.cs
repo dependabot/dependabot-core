@@ -2,7 +2,7 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Utilities
 {
-    public class SdkPackageUpdaterHelperTests
+    public class SdkPackageUpdaterHelperTests : TestBase
     {
         [Fact]
         public async Task DirectoryBuildFilesAreOnlyPulledInFromParentDirectories()

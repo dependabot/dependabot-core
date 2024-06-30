@@ -134,9 +134,9 @@ public class UpdaterWorker
 
         _logger.Log($"Updating project [{projectPath}]");
 
-        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out _))
+        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath))
         {
-            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, packagesConfigPath, _logger);
         }
 
         // Some repos use a mix of packages.config and PackageReference

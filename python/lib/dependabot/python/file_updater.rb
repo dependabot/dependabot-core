@@ -105,7 +105,8 @@ module Dependabot
         PipCompileFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          index_urls: pip_compile_index_urls
         ).updated_dependency_files
       end
 
@@ -113,8 +114,20 @@ module Dependabot
         RequirementFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          index_urls: pip_compile_index_urls
         ).updated_dependency_files
+      end
+
+      def pip_compile_index_urls
+        if credentials.any?(&:replaces_base?)
+          credentials.select(&:replaces_base?).map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
+        else
+          urls = credentials.map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
+          # If there are no credentials that replace the base, we need to
+          # ensure that the base URL is included in the list of extra-index-urls.
+          [nil, *urls]
+        end
       end
 
       def check_required_files

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "open3"
@@ -413,7 +413,7 @@ module Dependabot
         # If the files we need to update require one another then we need to
         # update them in the right order
         def order_filenames_for_compilation(filenames)
-          ordered_filenames = []
+          ordered_filenames = T.let([], T::Array[String])
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=

@@ -1,15 +1,19 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Docker
     class MetadataFinder < Dependabot::MetadataFinders::Base
+      extend T::Sig
+
       private
 
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         return if dependency.requirements.empty?
 

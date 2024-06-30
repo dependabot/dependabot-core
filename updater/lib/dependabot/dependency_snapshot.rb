@@ -28,6 +28,11 @@ module Dependabot
         file
       end
 
+      if Dependabot::Experiments.enabled?(:globs) && job.source.directories
+        # The job.source.directory may contain globs, so we use the directories from the fetched files
+        job.source.directories = decoded_dependency_files.flat_map(&:directory).uniq
+      end
+
       new(
         job: job,
         base_commit_sha: job_definition.fetch("base_commit_sha"),
@@ -107,12 +112,30 @@ module Dependabot
       @handled_dependencies[@current_directory] = set
     end
 
+    sig { params(dependencies: T::Array[{ name: T.nilable(String), directory: T.nilable(String) }]).void }
+    def add_handled_group_dependencies(dependencies)
+      raise "Current directory not set" if @current_directory == ""
+
+      dependencies.group_by { |d| d[:directory] }.each do |dir, dependency_hash|
+        set = @handled_dependencies[dir] || Set.new
+        set.merge(dependency_hash.map { |d| d[:name] })
+        @handled_dependencies[dir] = set
+      end
+    end
+
     sig { returns(T::Set[String]) }
     def handled_dependencies
       raise "Current directory not set" if @current_directory == ""
 
       T.must(@handled_dependencies[@current_directory])
     end
+
+    # rubocop:disable Performance/Sum
+    sig { returns(T::Set[String]) }
+    def handled_group_dependencies
+      T.must(@handled_dependencies.values.reduce(&:+))
+    end
+    # rubocop:enable Performance/Sum
 
     sig { params(dir: String).void }
     def current_directory=(dir)
@@ -129,6 +152,10 @@ module Dependabot
     def ungrouped_dependencies
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
+
+      if Dependabot::Experiments.enabled?(:dependency_has_directory)
+        return allowed_dependencies.reject { |dep| handled_group_dependencies.include?(dep.name) }
+      end
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
       allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
@@ -151,7 +178,13 @@ module Dependabot
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
       directories.each do |dir|
         @current_directory = dir
-        @dependencies[dir] = parse_files!
+        if Dependabot::Experiments.enabled?(:dependency_has_directory)
+          dependencies = parse_files!
+          dependencies_with_dir = dependencies.each { |dep| dep.directory = dir }
+          @dependencies[dir] = dependencies_with_dir
+        else
+          @dependencies[dir] = parse_files!
+        end
       end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),

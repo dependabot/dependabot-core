@@ -51,6 +51,7 @@ module Dependabot
             when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
             when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
             when "azure" then azure_compare_path(new_tag, previous_tag)
+            when "example" then ""
             else raise "Unexpected source provider '#{T.must(source).provider}'"
             end
 

@@ -1,20 +1,23 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
 require "dependabot/shared_helpers"
+require "sorbet-runtime"
 
 module Dependabot
   module Hex
     class FileUpdater
       class MixfileSanitizer
+        extend T::Sig
+        sig { params(mixfile_content: String).void }
         def initialize(mixfile_content:)
           @mixfile_content = mixfile_content
         end
 
         FILE_READ      = /File.read\(.*?\)/
         FILE_READ_BANG = /File.read!\(.*?\)/
-        PIPE           = Regexp.escape("|>").freeze
+        PIPE           = T.let(Regexp.escape("|>").freeze, String)
         VERSION_FILE   = /"VERSION"/i
 
         NESTED_VERSION_FILE_READ = /String\.trim\(#{FILE_READ}\)/
@@ -22,29 +25,31 @@ module Dependabot
         PIPED_VERSION_FILE_READ = /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ}/
         PIPED_VERSION_FILE_READ_BANG = /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ_BANG}/
 
-        # rubocop:disable Performance/MethodObjectAsBlock
+        sig { returns(String) }
         def sanitized_content
-          mixfile_content
-            .then(&method(:prevent_version_file_loading))
-            .then(&method(:prevent_config_path_loading))
+          @mixfile_content
+            .then { |content| prevent_version_file_loading(content) }
+            .then { |content| prevent_config_path_loading(content) }
         end
-        # rubocop:enable Performance/MethodObjectAsBlock
 
         private
 
+        sig { returns(String) }
         attr_reader :mixfile_content
 
+        sig { params(configuration: String).returns(String) }
+        def prevent_config_path_loading(configuration)
+          configuration
+            .gsub(/^\s*config_path:.*(?:,|$)/, "")
+        end
+
+        sig { params(configuration: String).returns(String) }
         def prevent_version_file_loading(configuration)
           configuration
             .gsub(NESTED_VERSION_FILE_READ_BANG, 'String.trim("0.0.1")')
             .gsub(NESTED_VERSION_FILE_READ, 'String.trim({:ok, "0.0.1"})')
             .gsub(PIPED_VERSION_FILE_READ, '{:ok, "0.0.1"}')
             .gsub(PIPED_VERSION_FILE_READ_BANG, '"0.0.1"')
-        end
-
-        def prevent_config_path_loading(configuration)
-          configuration
-            .gsub(/^\s*config_path:.*(?:,|$)/, "")
         end
       end
     end

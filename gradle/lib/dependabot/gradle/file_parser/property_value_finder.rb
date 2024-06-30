@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/gradle/file_parser"
 
@@ -7,6 +9,8 @@ module Dependabot
   module Gradle
     class FileParser
       class PropertyValueFinder
+        extend T::Sig
+
         # rubocop:disable Layout/LineLength
         SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
@@ -129,8 +133,8 @@ module Dependabot
 
           prepared_content(buildfile).scan(SINGLE_PROPERTY_DECLARATION_REGEX) do
             declaration_string = Regexp.last_match.to_s.strip
-            captures = Regexp.last_match.named_captures
-            name = captures.fetch("name").sub(/^ext\./, "")
+            captures = T.must(Regexp.last_match).named_captures
+            name = T.must(captures.fetch("name")).sub(/^ext\./, "")
 
             unless properties.key?(name)
               properties[name] = {
@@ -149,13 +153,13 @@ module Dependabot
 
           prepared_content(buildfile)
             .scan(KOTLIN_BLOCK_PROPERTY_DECLARATION_REGEX) do
-              captures = Regexp.last_match.named_captures
+              captures = T.must(Regexp.last_match).named_captures
               namespace = captures.fetch("namespace")
 
-              captures.fetch("values")
-                      .scan(KOTLIN_SINGLE_PROPERTY_SET_REGEX) do
+              T.must(captures.fetch("values"))
+               .scan(KOTLIN_SINGLE_PROPERTY_SET_REGEX) do
                 declaration_string = Regexp.last_match.to_s.strip
-                sub_captures = Regexp.last_match.named_captures
+                sub_captures = T.must(Regexp.last_match).named_captures
                 name = sub_captures.fetch("name")
                 full_name = if namespace == "extra"
                               name
@@ -178,12 +182,12 @@ module Dependabot
           properties = {}
 
           prepared_content(buildfile).scan(MULTI_PROPERTY_DECLARATION_REGEX) do
-            captures = Regexp.last_match.named_captures
-            namespace = captures.fetch("namespace").sub(/^ext\./, "")
+            captures = T.must(Regexp.last_match).named_captures
+            namespace = T.must(captures.fetch("namespace")).sub(/^ext\./, "")
 
-            captures.fetch("values").scan(NAMESPACED_DECLARATION_REGEX) do
+            T.must(captures.fetch("values")).scan(NAMESPACED_DECLARATION_REGEX) do
               declaration_string = Regexp.last_match.to_s.strip
-              sub_captures = Regexp.last_match.named_captures
+              sub_captures = T.must(Regexp.last_match).named_captures
               name = sub_captures.fetch("name")
               full_name = [namespace, name].join(".")
 

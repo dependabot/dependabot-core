@@ -13,6 +13,8 @@ module Dependabot
       class LatestVersionFinder
         extend T::Sig
 
+        CRATES_IO_API = "https://crates.io/api/v1/crates"
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -95,14 +97,97 @@ module Dependabot
           crates_listing
             .fetch("versions", [])
             .reject { |v| v["yanked"] }
-            .map { |v| version_class.new(v.fetch("num")) }
+            # Handle both default and sparse registry responses.
+            # Default registry uses "num" for version number.
+            # Sparse registry uses "vers" for version number.
+            .map do |v|
+              version_number = v["num"] || v["vers"]
+              version_class.new(version_number)
+            end
         end
 
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
-          @crates_listing = JSON.parse(response.body)
+          info = fetch_dependency_info
+          index = fetch_index(info)
+
+          hdrs = default_headers
+          hdrs.merge!(auth_headers(info)) if index != CRATES_IO_API
+
+          url = metadata_fetch_url(dependency, index)
+
+          # B4PR
+          puts "Calling #{url} to fetch metadata for #{dependency.name} from #{index}"
+
+          response = fetch_response(url, hdrs)
+          return {} if response.status == 404
+
+          @crates_listing = parse_response(response, index)
+
+          # B4PR
+          puts "Fetched metadata for #{dependency.name} from #{index} successfully"
+          puts response.body
+
+          @crates_listing
+        end
+
+        def fetch_dependency_info
+          dependency.requirements.filter_map { |r| r[:source] }.first
+        end
+
+        def fetch_index(info)
+          (info && info[:index]) || CRATES_IO_API
+        end
+
+        def default_headers
+          { "User-Agent" => "Dependabot (dependabot.com)" }
+        end
+
+        def auth_headers(info)
+          registry_creds = credentials.find do |cred|
+            cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
+          end
+
+          return {} if registry_creds.nil?
+
+          token = registry_creds["token"] || "placeholder_token"
+          { "Authorization" => token }
+        end
+
+        def fetch_response(url, headers)
+          Excon.get(
+            url,
+            idempotent: true,
+            **SharedHelpers.excon_defaults(headers: headers)
+          )
+        end
+
+        def parse_response(response, index)
+          if index.start_with?("sparse+")
+            parsed_response = response.body.lines.map { |line| JSON.parse(line) }
+            { "versions" => parsed_response }
+          else
+            JSON.parse(response.body)
+          end
+        end
+
+        def metadata_fetch_url(dependency, index)
+          return "#{index}/#{dependency.name}" if index == CRATES_IO_API
+
+          # Determine cargo's index file path for the dependency
+          index = index.delete_prefix("sparse+")
+          name_length = dependency.name.length
+          dependency_path = case name_length
+                            when 1, 2
+                              "#{name_length}/#{dependency.name}"
+                            when 3
+                              "#{name_length}/#{dependency.name[0..1]}/#{dependency.name}"
+                            else
+                              "#{dependency.name[0..1]}/#{dependency.name[2..3]}/#{dependency.name}"
+                            end
+
+          "#{index}#{'/' unless index.end_with?('/')}#{dependency_path}"
         end
 
         def wants_prerelease?

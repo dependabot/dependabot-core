@@ -291,7 +291,7 @@ module Dependabot
         semver_version_for(lockfile_details&.fetch("version", ""))
       end
 
-      sig { params(version: String).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
+      sig { params(version: T.nilable(String)).returns(T.nilable(T.any(String, Integer, Gem::Version))) }
       def semver_version_for(version)
         version_class.semver_for(version)
       end

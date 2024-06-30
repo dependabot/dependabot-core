@@ -1,10 +1,11 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "pathname"
 require "parser/current"
 require "dependabot/bundler/file_fetcher"
 require "dependabot/errors"
+require "sorbet-runtime"
 
 module Dependabot
   module Bundler
@@ -12,10 +13,14 @@ module Dependabot
       # Finds the paths of any files included using `require_relative` in the
       # passed file.
       class RequireRelativeFinder
+        extend T::Sig
+
+        sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
           @file = file
         end
 
+        sig { returns(T::Array[String]) }
         def require_relative_paths
           ast = Parser::CurrentRuby.parse(file.content)
           find_require_relative_paths(ast)
@@ -25,8 +30,10 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::DependencyFile) }
         attr_reader :file
 
+        sig { params(node: T.untyped).returns(T::Array[T.untyped]) }
         def find_require_relative_paths(node)
           return [] unless node.is_a?(Parser::AST::Node)
 
@@ -44,12 +51,14 @@ module Dependabot
           end
         end
 
+        sig { returns(T.nilable(String)) }
         def current_dir
-          @current_dir ||= file.name.rpartition("/").first
+          @current_dir ||= T.let(file.name.rpartition("/").first, T.nilable(String))
           @current_dir = nil if @current_dir == ""
           @current_dir
         end
 
+        sig { params(node: Parser::AST::Node).returns(T::Boolean) }
         def declares_require_relative?(node)
           return false unless node.is_a?(Parser::AST::Node)
 

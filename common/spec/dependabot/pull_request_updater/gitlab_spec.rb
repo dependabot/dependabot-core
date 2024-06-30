@@ -121,7 +121,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
       it "doesn't push a commit to Gitlab" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, commit_url)
+          .not_to have_requested(:post, commit_url)
       end
 
       it "returns nil" do
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
       it "doesn't push a commit to Gitlab" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, commit_url)
+          .not_to have_requested(:post, commit_url)
       end
 
       it "returns nil" do

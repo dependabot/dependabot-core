@@ -59,10 +59,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
     client = described_class.new(hostname: hostname)
     response = client.all_provider_versions(identifier: "hashicorp/aws")
-    expect(response).to match_array([
-      Gem::Version.new("3.42.0"),
-      Gem::Version.new("3.41.0")
-    ])
+    expect(response).to contain_exactly(Gem::Version.new("3.42.0"), Gem::Version.new("3.41.0"))
   end
 
   it "raises an error when the registry does not support the provider API" do
@@ -101,9 +98,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
     client = described_class.new(hostname: hostname, credentials: credentials)
 
-    expect(client.all_provider_versions(identifier: "x/y")).to match_array([
-      Gem::Version.new("0.1.0")
-    ])
+    expect(client.all_provider_versions(identifier: "x/y")).to contain_exactly(Gem::Version.new("0.1.0"))
     expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions")
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
@@ -136,10 +131,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       }.to_json)
     client = described_class.new(hostname: hostname)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
-    expect(response).to match_array([
-      Gem::Version.new("0.1.0"),
-      Gem::Version.new("0.2.0")
-    ])
+    expect(response).to contain_exactly(Gem::Version.new("0.1.0"), Gem::Version.new("0.2.0"))
   end
 
   it "raises an error when it cannot find the dependency", :vcr do
@@ -191,7 +183,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
 
     source = client.source(dependency: provider_dependency)
-    expect(source).to eq(nil)
+    expect(source).to be_nil
   end
 
   it "fetches the source for a provider from a custom registry", :vcr do
@@ -218,8 +210,9 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   context "with a custom hostname" do
-    let(:hostname) { "registry.example.org" }
     subject(:client) { described_class.new(hostname: hostname) }
+
+    let(:hostname) { "registry.example.org" }
 
     it "raises helpful error when request is not authenticated", :vcr do
       stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 401)

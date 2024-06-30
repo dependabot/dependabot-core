@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -55,20 +56,21 @@ module Dependabot
         # buildSrc is implicit: included but not declared in settings.gradle
         buildsrc = repo_contents(dir: root_dir, raise_errors: false)
                    .find { |item| item.type == "dir" && item.name == "buildSrc" }
-        builds << clean_join(root_dir, "buildSrc") if buildsrc
+        builds << clean_join([root_dir, "buildSrc"]) if buildsrc
 
         return builds unless settings_file(root_dir)
 
         builds += SettingsFileParser
                   .new(settings_file: settings_file(root_dir))
                   .included_build_paths
-                  .map { |p| clean_join(root_dir, p) }
+                  .map { |p| clean_join([root_dir, p]) }
 
         builds.uniq
       end
 
-      def clean_join(*parts)
-        Pathname.new(File.join(*parts)).cleanpath.to_path
+      sig { params(parts: T::Array[String]).returns(String) }
+      def clean_join(parts)
+        Pathname.new(File.join(parts)).cleanpath.to_path
       end
 
       def subproject_buildfiles(root_dir)
@@ -144,7 +146,7 @@ module Dependabot
 
       def find_first(dir, supported_names)
         paths = supported_names
-                .map { |name| clean_join(dir, name) }
+                .map { |name| clean_join([dir, name]) }
                 .each do |path|
           return cached_files[path] || next
         end

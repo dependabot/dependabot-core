@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "pathname"
 
 require "dependabot/dependency"
 require "dependabot/file_parsers"
@@ -9,6 +10,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
 require "dependabot/errors"
+require "dependabot/cargo/registry_fetcher"
 
 # Relevant Cargo docs can be found at:
 # - https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -162,8 +164,77 @@ module Dependabot
         raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
         return git_source_details(declaration) if declaration["git"]
+        return { type: "path" } if declaration["path"]
 
-        { type: "path" } if declaration["path"]
+        registry_source_details(declaration)
+      end
+
+      def registry_source_details(declaration)
+        registry_name = declaration["registry"]
+        return if registry_name.nil?
+
+        index_url = cargo_config_field("registries.#{registry_name}.index")
+        if index_url.nil?
+          raise "Registry index for #{registry_name} must be defined via " \
+                "cargo config"
+        end
+
+        if index_url.start_with?("sparse+")
+          sparse_registry_source_details(registry_name, index_url)
+        else
+          source = Source.from_url(index_url)
+          registry_fetcher = RegistryFetcher.new(
+            source: T.must(source),
+            credentials: credentials
+          )
+
+          {
+            type: "registry",
+            name: registry_name,
+            index: index_url,
+            dl: registry_fetcher.dl,
+            api: registry_fetcher.api
+          }
+        end
+      end
+
+      def sparse_registry_source_details(registry_name, index_url)
+        token = credentials.find do |cred|
+          cred["type"] == "cargo_registry" && cred["registry"] == registry_name
+        end&.fetch("token", nil)
+        # Fallback to configuration in the environment if available
+        token ||= cargo_config_from_env("registries.#{registry_name}.token")
+
+        headers = {}
+        headers["Authorization"] = "Token #{token}" if token
+
+        url = index_url.delete_prefix("sparse+")
+        url << "/" unless url.end_with?("/")
+        url << "config.json"
+        config_json = JSON.parse(RegistryClient.get(url: url, headers: headers).body)
+
+        {
+          type: "registry",
+          name: registry_name,
+          index: index_url,
+          dl: config_json["dl"],
+          api: config_json["api"]
+        }
+      end
+
+      # Looks up dotted key name in cargo config
+      # e.g. "registries.my_registry.index"
+      def cargo_config_field(key_name)
+        cargo_config_from_env(key_name) || cargo_config_from_file(key_name)
+      end
+
+      def cargo_config_from_env(key_name)
+        env_var = "CARGO_#{key_name.upcase.tr('-.', '_')}"
+        ENV.fetch(env_var, nil)
+      end
+
+      def cargo_config_from_file(key_name)
+        parsed_file(cargo_config).dig(*key_name.split("."))
       end
 
       def version_from_lockfile(name, declaration)
@@ -235,6 +306,10 @@ module Dependabot
 
       def lockfile
         @lockfile ||= get_original_file("Cargo.lock")
+      end
+
+      def cargo_config
+        @cargo_config ||= get_original_file(".cargo/config.toml")
       end
 
       def version_class

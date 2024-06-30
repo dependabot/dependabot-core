@@ -18,4 +18,4 @@ done
 echo Download complete
 
 echo Generating coverage report
-bundle exec spoom coverage report
+bundle exec spoom srb coverage report
