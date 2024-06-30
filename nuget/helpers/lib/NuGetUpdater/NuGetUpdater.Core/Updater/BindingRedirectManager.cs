@@ -182,19 +182,22 @@ internal static class BindingRedirectManager
 
         foreach (var bindingRedirect in bindingRedirects)
         {
-            // Look to see if we already have this in the list of bindings already in config.
-            var bindingIdentifer = (bindingRedirect.Name, bindingRedirect.PublicKeyToken?.ToLower());
-            if (currentBindings.Contains(bindingIdentifer))
+            // If the binding redirect already exists in config, update it. Otherwise, add it.
+            var bindingAssemblyIdentity = new AssemblyIdentity(bindingRedirect.Name, bindingRedirect.PublicKeyToken);
+            if (currentBindings.Contains(bindingAssemblyIdentity))
             {
-                var existingBindings = currentBindings[bindingIdentifer];
+                // Check if there are multiple bindings in config for this assembly and remove all but the first one.
+                // Normally there should only be one binding per assembly identity unless the config is malformed, which we'll fix here like NuGet.exe would.
+                var existingBindings = currentBindings[bindingAssemblyIdentity];
                 if (existingBindings.Any())
                 {
-                    // Remove all but the first assembly binding elements
+                    // Remove all but the first element
                     foreach (var bindingElement in existingBindings.Skip(1))
                     {
                         RemoveElement(bindingElement);
                     }
 
+                    // Update the first one with the new binding
                     UpdateBindingRedirectElement(existingBindings.First(), bindingRedirect);
                 }
             }
@@ -208,8 +211,8 @@ internal static class BindingRedirectManager
             }
         }
 
-        return String.Concat(
-            document.Declaration?.ToString() ?? String.Empty, // Ensure that the <?xml> declaration node is preserved
+        return string.Concat(
+            document.Declaration?.ToString() ?? String.Empty, // Ensure the <?xml> declaration node is preserved, if present
             document.ToString()
         );
 
@@ -261,7 +264,7 @@ internal static class BindingRedirectManager
             }
         }
 
-        static ILookup<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
+        static ILookup<AssemblyIdentity, XElement> GetAssemblyBindings(XElement runtime)
         {
             var dependencyAssemblyElements = runtime.Elements(AssemblyBindingName)
                 .Elements(DependentAssemblyName);
@@ -274,7 +277,12 @@ internal static class BindingRedirectManager
             });
 
             // Return a mapping from binding to element
-            return assemblyElementPairs.ToLookup(p => (p.Binding.Name, p.Binding.PublicKeyToken?.ToLower()), p => p.Element);
+            // It is possible that multiple elements exist for the same assembly identity, so use a lookup (1:*) instead of a dictionary (1:1) 
+            return assemblyElementPairs.ToLookup(
+                p => new AssemblyIdentity(p.Binding.Name, p.Binding.PublicKeyToken), 
+                p => p.Element, 
+                new AssemblyIdentityIgnoreCaseComparer()
+            );
         }
 
         static XElement GetAssemblyBindingElement(XElement runtime)
@@ -291,5 +299,22 @@ internal static class BindingRedirectManager
 
             return assemblyBinding;
         }
+    }
+
+    internal sealed record AssemblyIdentity(string Name, string PublicKeyToken);
+
+    // Case-insensitive comparer. This helps avoid creating duplicate binding redirects when there is a case form mismatch between assembly identities.
+    // Especially important for PublicKeyToken which is typically lowercase (using NuGet.exe), but can also be uppercase when using other tools (e.g. Visual Studio auto-resolve assembly conflicts feature).
+    internal sealed class AssemblyIdentityIgnoreCaseComparer : IEqualityComparer<AssemblyIdentity>
+    {
+        public bool Equals(AssemblyIdentity x, AssemblyIdentity y) =>
+            string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x?.PublicKeyToken, y?.PublicKeyToken, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(AssemblyIdentity obj) => 
+            HashCode.Combine(
+                obj?.Name?.ToLowerInvariant(),
+                obj?.PublicKeyToken?.ToLowerInvariant()
+            );
     }
 }
