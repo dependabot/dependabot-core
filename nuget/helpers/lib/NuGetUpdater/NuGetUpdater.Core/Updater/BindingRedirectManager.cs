@@ -307,14 +307,14 @@ internal static class BindingRedirectManager
     // Especially important for PublicKeyToken which is typically lowercase (using NuGet.exe), but can also be uppercase when using other tools (e.g. Visual Studio auto-resolve assembly conflicts feature).
     internal sealed class AssemblyIdentityIgnoreCaseComparer : IEqualityComparer<AssemblyIdentity>
     {
-        public bool Equals(AssemblyIdentity x, AssemblyIdentity y) =>
+        public bool Equals(AssemblyIdentity? x, AssemblyIdentity? y) =>
             string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(x?.PublicKeyToken, y?.PublicKeyToken, StringComparison.OrdinalIgnoreCase);
 
         public int GetHashCode(AssemblyIdentity obj) => 
             HashCode.Combine(
-                obj?.Name?.ToLowerInvariant(),
-                obj?.PublicKeyToken?.ToLowerInvariant()
+                obj.Name?.ToLowerInvariant(),
+                obj.PublicKeyToken?.ToLowerInvariant()
             );
     }
 }
