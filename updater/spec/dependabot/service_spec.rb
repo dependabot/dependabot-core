@@ -371,6 +371,24 @@ RSpec.describe Dependabot::Service do
         )
     end
 
+    it "extracts information from a job if provided" do
+      job = OpenStruct.new(id: 1234, package_manager: "npm_and_yarn", repo_private?: false, repo_owner: "foo", security_update:true)
+      service.capture_exception(error: error, job: job)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            Dependabot::ErrorAttributes::SECURITY_UPDATE => job.security_updates_only?
+          )
+        )
+    end
+
     it "extracts information from a dependency_group if provided" do
       dependency_group = OpenStruct.new(name: "all-the-things")
       allow(dependency_group).to receive(:is_a?).with(Dependabot::DependencyGroup).and_return(true)
