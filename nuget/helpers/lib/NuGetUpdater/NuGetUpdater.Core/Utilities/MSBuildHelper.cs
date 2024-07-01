@@ -330,7 +330,7 @@ internal static partial class MSBuildHelper
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
-
+            
             // simple cases first
             // if restore failed, nothing we can do
             // if (exitCode != 0)
@@ -345,35 +345,23 @@ internal static partial class MSBuildHelper
             // }
 
             // Add packages to existingPackages
-            List<PackageToUpdate> existingPackages = new List<PackageToUpdate>();
-            foreach (var existingPackage in packages){
-                PackageToUpdate package = new PackageToUpdate
-                {
-                    packageName = existingPackage.Name,
-                    currentVersion = existingPackage.Version,
-                };
-                existingPackages.Add(package);
-            }
-
-            // Put package to update here
-            List<PackageToUpdate> packagesToUpdate = new List<PackageToUpdate>();
-            // Find the new version each package should update to
-            foreach (var package in update)
+            var existingPackages = packages
+            .Select(existingPackage => new PackageToUpdate
             {
-                var packageName = package.Name;
-                var versions = package.Version; 
+                packageName = existingPackage.Name,
+                currentVersion = existingPackage.Version
+            })
+            .ToList();
 
-                if (versions != null)
-                {
-                    packagesToUpdate.Add(new PackageToUpdate
-                    {
-                        packageName = packageName,
-                        newVersion = versions.ToString(),
-                        // secondVersion = secondVersionToUpdateTo.ToString(),
-                    });
-                }
-            }
-            // var existingPackages = packages.Select(p => new PackageToUpdate { PackageName = p.Name, CurrentVersion = p.Version, }).ToList();
+            // Put package to update here, find the new version each package should update to
+            var packagesToUpdate = update
+            .Where(package => package.Version != null)
+            .Select(package => new PackageToUpdate
+            {
+                packageName = package.Name,
+                newVersion = package.Version.ToString()
+            })
+            .ToList();
 
             List<PackageToUpdate> existingDuplicate = new List<PackageToUpdate>(existingPackages);
             int added = 0;
@@ -420,15 +408,9 @@ internal static partial class MSBuildHelper
             }
 
             // Make new list to remove to prevent issues
-            List<PackageToUpdate> packagesToRemove = new List<PackageToUpdate>();
-
-            foreach (PackageToUpdate existingPackageDupe in existingDuplicate)
-            {
-                if (!existingPackages.Contains(existingPackageDupe) && existingPackageDupe.isSpecific == true)
-                {
-                    packagesToRemove.Add(existingPackageDupe);
-                }
-            }
+            var packagesToRemove = existingDuplicate
+            .Where(existingPackageDupe => !existingPackages.Contains(existingPackageDupe) && existingPackageDupe.isSpecific == true)
+            .ToList();
 
             foreach (PackageToUpdate package in packagesToRemove)
             {
@@ -440,43 +422,21 @@ internal static partial class MSBuildHelper
                 existingPackages = existingDuplicate;
             }
 
-            // Convert back to dependency
-            List<Dependency> candidatePackages = new List<Dependency>();
-            foreach(PackageToUpdate package in existingPackages){
-                if(package.newVersion == null)
-                {
-                    var dependency = new Dependency(
-                    package.packageName,
-                    package.currentVersion,
-                    DependencyType.Unknown,
-                    null,
-                    null,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false
-                    );
-                    candidatePackages.Add(dependency);
-                }
-                else
-                {
-                var dependency = new Dependency(
-                    package.packageName,
-                    package.newVersion,
-                    DependencyType.Unknown, 
-                    null,                   
-                    null,                   
-                    false,                  
-                    false,                  
-                    false,                  
-                    false,                  
-                    false                  
-                );
-                    candidatePackages.Add(dependency);
-                }
-               
-            }
+            // Convert back to dependency, use newVersion if available, otherwise use currentVersion
+            var candidatePackages = existingPackages
+            .Select(package => new Dependency(
+                package.packageName,
+                package.newVersion ?? package.currentVersion, 
+                DependencyType.Unknown,
+                null,
+                null,
+                false,
+                false,
+                false,
+                false,
+                false
+            ))
+            .ToList();
 
             // Return as array
             Dependency[] candidatePackagesArray = candidatePackages.ToArray();
