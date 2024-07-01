@@ -107,8 +107,6 @@ public partial class AnalyzeWorker
             Directory.CreateDirectory(nugetContext.TempPackageDirectory);
         }
 
-        var currentVersion = NuGetVersion.Parse(dependencyInfo.Version);
-
         var versionResult = await VersionFinder.GetVersionsAsync(
             dependencyInfo,
             nugetContext,
@@ -120,7 +118,7 @@ public partial class AnalyzeWorker
 
         return await FindFirstCompatibleVersion(
             dependencyInfo.Name,
-            currentVersion,
+            dependencyInfo.Version,
             versionResult,
             orderedVersions,
             projectFrameworks,
@@ -131,7 +129,7 @@ public partial class AnalyzeWorker
 
     internal static async Task<NuGetVersion?> FindFirstCompatibleVersion(
         string packageId,
-        NuGetVersion currentVersion,
+        string versionString,
         VersionResult versionResult,
         IEnumerable<NuGetVersion> orderedVersions,
         ImmutableArray<NuGetFramework> projectFrameworks,
@@ -139,24 +137,27 @@ public partial class AnalyzeWorker
         Logger logger,
         CancellationToken cancellationToken)
     {
-        var source = versionResult.GetPackageSources(currentVersion).First();
-        var isCompatible = await CompatibilityChecker.CheckAsync(
-            source,
-            new(packageId, currentVersion),
-            projectFrameworks,
-            nugetContext,
-            logger,
-            cancellationToken);
-        if (!isCompatible)
+        if (NuGetVersion.TryParse(versionString, out var currentVersion))
         {
-            // If the current package is incompatible, then don't check for compatibility.
-            return orderedVersions.First();
+            var source = versionResult.GetPackageSources(currentVersion).First();
+            var isCompatible = await CompatibilityChecker.CheckAsync(
+                source,
+                new(packageId, currentVersion),
+                projectFrameworks,
+                nugetContext,
+                logger,
+                cancellationToken);
+            if (!isCompatible)
+            {
+                // If the current package is incompatible, then don't check for compatibility.
+                return orderedVersions.First();
+            }
         }
 
         foreach (var version in orderedVersions)
         {
-            source = versionResult.GetPackageSources(version).First();
-            isCompatible = await CompatibilityChecker.CheckAsync(
+            var source = versionResult.GetPackageSources(version).First();
+            var isCompatible = await CompatibilityChecker.CheckAsync(
                 source,
                 new(packageId, version),
                 projectFrameworks,
