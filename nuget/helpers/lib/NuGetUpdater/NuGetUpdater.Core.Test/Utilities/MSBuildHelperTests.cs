@@ -503,18 +503,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="CS-Script.Core" Version="1.3.1" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.4.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+            
             var dependencies = new[]
             {
                 new Dependency("CS-Script.Core", "1.3.1", DependencyType.PackageReference),
@@ -553,16 +542,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
@@ -597,16 +577,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
@@ -642,18 +613,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
@@ -691,19 +651,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
@@ -746,19 +694,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
@@ -804,19 +740,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Buildalyzer" Version="6.0.4" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.10.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("Buildalyzer", "6.0.4", DependencyType.PackageReference),
@@ -858,19 +782,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />  
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
@@ -916,20 +828,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
-                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />  
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
@@ -976,18 +875,7 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-                    <PackageReference Include="AutoMapper" Version="12.0.1" />
-                    <PackageReference Include="AutoMapper.Collection" Version="9.0.0" />
-                  </ItemGroup>
-                </Project>
-                """);
+
             var dependencies = new[]
             {
                 new Dependency("AutoMapper.Extensions.Microsoft.DependencyInjection", "12.0.1", DependencyType.PackageReference),
