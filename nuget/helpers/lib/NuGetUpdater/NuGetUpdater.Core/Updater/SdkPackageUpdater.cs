@@ -315,7 +315,8 @@ internal static class SdkPackageUpdater
         {
             foreach (string tfm in targetFrameworks)
             {
-                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
+                Dependency[] update = [];
+                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
                 if (resolvedDependencies is null)
                 {
                     logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");

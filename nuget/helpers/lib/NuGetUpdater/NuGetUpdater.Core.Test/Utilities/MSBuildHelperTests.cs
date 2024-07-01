@@ -566,7 +566,7 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 3
+    // Scenario 3, Another instance of scenario 2
     // Newtonsoft.Json needs to update to 13.0.1, although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
     // adapatability, though NewtonsoftJson is not in the existing packages, it would be added to the existing list
     [Fact]
@@ -601,7 +601,7 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 4
+    // Scenario 4, updating a package not in the existing list
     // Microsoft.CodeAnalysis.Compilers, Microsoft.CodeAnalysis.CSharp, and Microsoft.CodeAnalysis.VisualBasic are all 4.9.2
     // Csharp, Visual Basic, and Compilers all require Microsoft.CodeAnalysis.Common to be 4.9.2, but it's not in the existing list
     // If Microsoft.CodeAnalysis.Common is updated to  4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
@@ -641,7 +641,7 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 5
+    // Scenario 5, same as scenario 4, but the package is in the existing list
     // Single transitive dependency (Microsoft.CodeAnalysis.Common) gets updated, which then updates the top level package
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
@@ -683,7 +683,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 6
-    // A combination of the past two scenariors
+    // A combination of the past two scenariors, updating 2 packages not in the exisiting list
     // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
     // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
     [Fact]
@@ -729,7 +729,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 7
-    //  Two top level packages that share a dependency
+    //  Two top level packages that share a dependency, updating ONE of the top level packages, which updates the children and the children't other "parents"
     //  Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.10.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isnt a dependency of buildalyzer)
     //  Microsoft.CodeAnalysis.CSharp.Scripting 4.4.0 requires Microsoft.CodeAnalysis.CSharp 4.4.0 and Microsoft.CodeAnalysis.Common to be 4.4.0 (Specific version) in oprder to update Microsoft.CodeAnalysis.Common to Buildalyzer to 7.0.1
     [Fact]
@@ -772,7 +772,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 8
-    // Update a dependency, which updates a transitive dependency and a parent. The dependency is not added to the exisiting list
+    // Update a dependency, which will then updates a transitive dependency of the top level package, and a parent. The dependency is not added to the exisiting list
     // Additionally, updating a top level package to update the dependency
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()

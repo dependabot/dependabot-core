@@ -472,8 +472,6 @@ public class PackageManager
         // Get the latest version as a limit
         SourceRepository repo = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
          FindPackageByIdResource resource = await repo.GetResourceAsync<FindPackageByIdResource>();
-        //FindPackageByIdResource resource = repo.GetResource<FindPackageByIdResource>();
-        // FindPackageByIdResource resource = repo.GetResource().GetAwaiter().GetResult();
 
         // Find the latest version of the package
         IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(
