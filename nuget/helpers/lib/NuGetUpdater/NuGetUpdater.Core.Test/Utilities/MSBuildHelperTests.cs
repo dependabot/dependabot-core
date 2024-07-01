@@ -492,49 +492,7 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Updating a non-included dependency of an existing package to a new version, but the dependency is not in the existing package
-    // Updating the dependency will require the existing top level package to also update
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency)}_");
-        
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("System.Text.Json", "4.7.2", DependencyType.Unknown)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
-            Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
-            Assert.Equal("1.22.0", resolvedDependencies[0].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[1].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
+    // Scenario 1
     // Singular Transitive Dependency with one root package, updating the root
     // Updating CS - Script Code to 2.0.0 reqires Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and then Microsoft.CodeAnalysis.Common to be 3.6.0
     [Fact]
@@ -584,6 +542,368 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Scenario 2
+    // Updating a non-included dependency of an existing package to a new version, but the dependency is not in the existing package
+    // Updating the dependency will require the existing top level package to also update
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency)}_");
+        
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("System.Text.Json", "4.7.2", DependencyType.Unknown)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
+            Assert.Equal("1.21.0", resolvedDependencies[0].Version);
+            Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
+            Assert.Equal("4.7.2", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 3
+    // Newtonsoft.Json needs to update to 13.0.1, although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
+    // adapatability, though NewtonsoftJson is not in the existing packages, it would be added to the existing list
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
+            Assert.Equal("1.0.2", resolvedDependencies[0].Version);
+            Assert.Equal("Newtonsoft.Json", resolvedDependencies[1].Name);
+            Assert.Equal("13.0.1", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 4
+    // Microsoft.CodeAnalysis.Compilers, Microsoft.CodeAnalysis.CSharp, and Microsoft.CodeAnalysis.VisualBasic are all 4.9.2
+    // Csharp, Visual Basic, and Compilers all require Microsoft.CodeAnalysis.Common to be 4.9.2, but it's not in the existing list
+    // If Microsoft.CodeAnalysis.Common is updated to  4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(3, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 5
+    // Single transitive dependency (Microsoft.CodeAnalysis.Common) gets updated, which then updates the top level package
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSingleTransitiveDependency)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[3].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 6
+    // A combination of the past two scenariors
+    // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
+    // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
+                new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(5, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
+            Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[3].Name);
+            Assert.Equal("1.0.2", resolvedDependencies[3].Version);
+            Assert.Equal("Newtonsoft.Json", resolvedDependencies[4].Name);
+            Assert.Equal("13.0.1", resolvedDependencies[4].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 7
+    //  Two top level packages that share a dependency
+    //  Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.10.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isnt a dependency of buildalyzer)
+    //  Microsoft.CodeAnalysis.CSharp.Scripting 4.4.0 requires Microsoft.CodeAnalysis.CSharp 4.4.0 and Microsoft.CodeAnalysis.Common to be 4.4.0 (Specific version) in oprder to update Microsoft.CodeAnalysis.Common to Buildalyzer to 7.0.1
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSharingDependency)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Buildalyzer" Version="6.0.4" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.10.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("Buildalyzer", "6.0.4", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "3.10.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.Common", "3.10.0", DependencyType.PackageReference),
+            };
+            var update = new[]
+            {
+                new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
+            Assert.Equal("7.0.1", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
+            Assert.Equal("4.0.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
+            Assert.Equal("4.0.0", resolvedDependencies[2].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
+            Assert.Equal("4.0.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 8
+    // Update a dependency, which updates a transitive dependency and a parent. The dependency is not added to the exisiting list
+    // Additionally, updating a top level package to update the dependency
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingEntireFamily)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />  
+                  </ItemGroup>
+                </Project>
+                """);
+            var dependencies = new[]
+            {
+                new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
+                new Dependency("System.Text.Json", "4.6.0", DependencyType.Unknown),
+                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
+
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
+                new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
+            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
+            Assert.Equal("System.Text.Json", resolvedDependencies[2].Name);
+            Assert.Equal("4.7.2", resolvedDependencies[2].Version);
+            Assert.Equal("Azure.Core", resolvedDependencies[3].Name);
+            Assert.Equal("1.22.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 9
     // Two separate root packages that need both need their separate dependencies updated
     // One dependency is not specified to be updated, only the root package is
     // Two separate resolvings. If we update Azure.Core (root) to the next update, System.Text.Json needs to be greater than or equal to 4.7.2. System.Text.Json is not in the existing packages.
@@ -645,112 +965,7 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    //  Two top level packages that share a dependency
-    //  Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.10.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isnt a dependency of buildalyzer)
-    //  Microsoft.CodeAnalysis.CSharp.Scripting 4.4.0 requires Microsoft.CodeAnalysis.CSharp 4.4.0 and Microsoft.CodeAnalysis.Common to be 4.4.0 (Specific version) in oprder to update Microsoft.CodeAnalysis.Common to Buildalyzer to 7.0.1
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSharingDependency)}_");
-
-       try 
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Buildalyzer" Version="6.0.4" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.10.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Buildalyzer", "6.0.4", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp", "3.10.0", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.Common", "3.10.0", DependencyType.PackageReference),
-            };
-            var update = new[]
-            {
-                new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(4, resolvedDependencies.Length);
-            Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
-            Assert.Equal("7.0.1", resolvedDependencies[0].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-            Assert.Equal("4.0.0", resolvedDependencies[1].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-            Assert.Equal("4.0.0", resolvedDependencies[2].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
-            Assert.Equal("4.0.0", resolvedDependencies[3].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
-    // Single transitive dependency (Microsoft.CodeAnalysis.Common) gets updated, which then updates the top level package
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSingleTransitiveDependency)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(4, resolvedDependencies.Length);
-            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[1].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[3].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[3].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
+    // Scenario 10
     // Unsolveable
     // To update AutoMapper.Collection to 10.0.0, AutoMapper needs to update to 13.0.0 but there is no higher version of AutoMapper.Extensions.Microsoft.DependencyInjection
     [Fact]
@@ -793,211 +1008,6 @@ public class MSBuildHelperTests : TestBase
             Assert.Equal("12.0.1", resolvedDependencies[1].Version);
             Assert.Equal("AutoMapper.Collection", resolvedDependencies[2].Name);
             Assert.Equal("9.0.0", resolvedDependencies[2].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
-    // Microsoft.CodeAnalysis.Compilers, Microsoft.CodeAnalysis.CSharp, and Microsoft.CodeAnalysis.VisualBasic are all 4.9.2
-    // Csharp, Visual Basic, and Compilers all require Microsoft.CodeAnalysis.Common to be 4.9.2, but it's not in the existing list
-    // If Microsoft.CodeAnalysis.Common is updated to  4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(3, resolvedDependencies.Length);
-            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
-    // Newtonsoft.Json needs to update to 13.0.1, although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
-    // adapatability, though NewtonsoftJson is not in the existing packages, it would be added to the existing list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
-            Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
-            Assert.Equal("1.0.2", resolvedDependencies[0].Version);
-            Assert.Equal("Newtonsoft.Json", resolvedDependencies[1].Name);
-            Assert.Equal("13.0.1", resolvedDependencies[1].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
-    // A combination of the past two scenariors
-    // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
-    // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
-                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Compilers", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.VisualBasic", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Newtonsoft.Json.Bson", "1.0.2", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
-                new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(5, resolvedDependencies.Length);
-            Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[0].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.VisualBasic", resolvedDependencies[2].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-            Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[3].Name);
-            Assert.Equal("1.0.2", resolvedDependencies[3].Version);
-            Assert.Equal("Newtonsoft.Json", resolvedDependencies[4].Name);
-            Assert.Equal("13.0.1", resolvedDependencies[4].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
-    // Update a dependency, which updates a transitive dependency and a parent. The dependency is not added to the exisiting list
-    // Additionally, updating a top level package to update the dependency
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewUpdatingEntireFamily)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />  
-                  </ItemGroup>
-                </Project>
-                """);
-            var dependencies = new[]
-            {
-                new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
-                new Dependency("System.Text.Json", "4.6.0", DependencyType.Unknown),
-                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
-
-            };
-            var update = new[]
-            {
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference),
-                new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(4, resolvedDependencies.Length);
-            Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
-            Assert.Equal("8.0.0", resolvedDependencies[0].Version);
-            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-            Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[2].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[2].Version);
-            Assert.Equal("Azure.Core", resolvedDependencies[3].Name);
-            Assert.Equal("1.22.0", resolvedDependencies[3].Version);
         }
         finally
         {

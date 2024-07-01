@@ -420,7 +420,7 @@ public class PackageManager
                 NuGetVersion dependencyVersion = new NuGetVersion(dependency.currentVersion);
                 NuGetVersion childVersion = new NuGetVersion(child.currentVersion);
 
-                if (dependencyVersion == childVersion)
+                if (dependencyVersion == childVersion || (childVersion > dependencyVersion && dependency.isSpecific != true))
                 {
                     return true;
                 }
