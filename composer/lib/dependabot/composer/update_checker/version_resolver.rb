@@ -148,7 +148,8 @@ module Dependabot
                 Dir.pwd,
                 dependency.name.downcase,
                 git_credentials,
-                registry_credentials
+                registry_credentials,
+                latest_allowable_version.to_s
               ]
             )
           end
