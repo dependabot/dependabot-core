@@ -12,6 +12,17 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         include SecurityUpdateHelpers
 
+        class SecurityUpdateFailure < StandardError
+          def initialize(message:, error_context:)
+            super(message)
+            @error_context = error_context
+          end
+
+          def sentry_context
+            { extra: @error_context }
+          end
+        end
+
         def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
           # If we haven't been given data for the vulnerable dependency,
@@ -70,7 +81,7 @@ module Dependabot
             error_detail: e.message
           )
         rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
+          handle_security_update_failure_error(e, dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -267,6 +278,24 @@ module Dependabot
             }.compact
           end
         end
+
+        # rubocop:disable Naming/MethodParameterName
+        # moves issues
+        def handle_security_update_failure_error(ex, dependency)
+          if ex.message.include? "No files were updated!"
+
+            security_ex = SecurityUpdateFailure.new(message:
+            "Security Update Error, No files were updated!",
+                                                    error_context:
+                                                    ex.instance_variable_get(:@error_context))
+            security_ex.set_backtrace(ex.backtrace)
+            error_handler.handle_dependency_error(error: security_ex, dependency: dependency)
+
+          else
+            error_handler.handle_dependency_error(error: ex, dependency: dependency)
+          end
+        end
+        # rubocop:enable Naming/MethodParameterName
       end
     end
   end
