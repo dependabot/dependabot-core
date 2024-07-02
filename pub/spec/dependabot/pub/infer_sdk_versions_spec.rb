@@ -8,26 +8,26 @@ require "dependabot/pub/helpers"
 require "webrick"
 
 RSpec.describe "Helpers" do
+  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:inferred_result) do
+    Dependabot::Pub::Helpers.run_infer_sdk_versions \
+      File.join("spec", "fixtures", "projects", project), url: "http://localhost:#{server[:Port]}/flutter_releases.json"
+  end
+  let(:server) { WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null }) }
+
   before do
     # Because we do the networking in infer_sdk_versions we have to run an
     # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
     Thread.new do
-      @server.start
+      server.start
     end
-    @server.mount_proc "/flutter_releases.json" do |_req, res|
+    server.mount_proc "/flutter_releases.json" do |_req, res|
       res.body = File.read(File.join(__dir__, "..", "..", "fixtures", "flutter_releases.json"))
     end
   end
 
   after do
-    @server.shutdown
-  end
-
-  let(:inferred_result) do
-    Dependabot::Pub::Helpers.run_infer_sdk_versions \
-      File.join("spec", "fixtures", "projects", project), url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
+    server.shutdown
   end
 
   describe "Will resolve to latest beta if needed" do

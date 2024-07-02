@@ -9,6 +9,10 @@ require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GoModules::FileUpdater do
+  let(:previous_git_author_name) { ENV.fetch("GIT_AUTHOR_NAME", nil) }
+  let(:previous_git_author_email) { ENV.fetch("GIT_AUTHOR_EMAIL", nil) }
+  let(:previous_git_committer_name) { ENV.fetch("GIT_COMMITTER_NAME", nil) }
+  let(:previous_git_committer_email) { ENV.fetch("GIT_COMMITTER_EMAIL", nil) }
   let(:previous_requirements) do
     [{
       file: "go.mod",
@@ -65,6 +69,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     )
   end
 
+  def restore_git_user_info
+    ENV["GIT_AUTHOR_NAME"] = previous_git_author_name
+    ENV["GIT_AUTHOR_EMAIL"] = previous_git_author_email
+    ENV["GIT_COMMITTER_NAME"] = previous_git_committer_name
+    ENV["GIT_COMMITTER_EMAIL"] = previous_git_committer_email
+  end
+
   it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
@@ -73,10 +84,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     it { expect { updated_files }.not_to output.to_stdout }
 
     it "includes an updated go.mod" do
+      restore_git_user_info
       expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
     end
 
     it "includes an updated go.sum" do
+      restore_git_user_info
       expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
     end
 
@@ -85,10 +98,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:previous_requirements) { [] }
 
       it "includes an updated go.mod" do
+        restore_git_user_info
         expect(updated_files.find { |f| f.name == "go.mod" }).not_to be_nil
       end
 
       it "includes an updated go.sum" do
+        restore_git_user_info
         expect(updated_files.find { |f| f.name == "go.sum" }).not_to be_nil
       end
     end
@@ -119,6 +134,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       let(:files) { [go_mod] }
 
       it "doesn't include a go.sum" do
+        restore_git_user_info
         expect(updated_files.find { |f| f.name == "go.sum" }).to be_nil
       end
     end
@@ -133,26 +149,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
     end
 
     context "without a clone of the repository" do
-      before do
-        # We don't have git configured in prod, so simulate the same setup here
-        @previous_git_author_name = ENV.fetch("GIT_AUTHOR_NAME", nil)
-        @previous_git_author_email = ENV.fetch("GIT_AUTHOR_EMAIL", nil)
-        @previous_git_committer_name = ENV.fetch("GIT_COMMITTER_NAME", nil)
-        @previous_git_committer_email = ENV.fetch("GIT_COMMITTER_EMAIL", nil)
-
-        ENV["GIT_AUTHOR_NAME"] = nil
-        ENV["GIT_AUTHOR_EMAIL"] = nil
-        ENV["GIT_COMMITTER_NAME"] = nil
-        ENV["GIT_COMMITTER_EMAIL"] = nil
-      end
-
-      after do
-        ENV["GIT_AUTHOR_NAME"] = @previous_git_author_name
-        ENV["GIT_AUTHOR_EMAIL"] = @previous_git_author_email
-        ENV["GIT_COMMITTER_NAME"] = @previous_git_committer_name
-        ENV["GIT_COMMITTER_EMAIL"] = @previous_git_committer_email
-      end
-
       let(:updater) do
         described_class.new(
           dependency_files: files,
@@ -165,6 +161,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           }],
           repo_contents_path: nil
         )
+      end
+
+      before do
+        # We don't have git configured in prod, so simulate the same setup here
+
+        ENV["GIT_AUTHOR_NAME"] = nil
+        ENV["GIT_AUTHOR_EMAIL"] = nil
+        ENV["GIT_COMMITTER_NAME"] = nil
+        ENV["GIT_COMMITTER_EMAIL"] = nil
+      end
+
+      after do
+        restore_git_user_info
       end
 
       it "includes an updated go.mod" do
@@ -245,6 +254,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "updates the go.mod" do
+        restore_git_user_info
         expect(go_mod_body).to include("github.com/pkg/errors v0.8.0")
 
         updater.updated_dependency_files
@@ -257,6 +267,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "includes the vendored files" do
+        restore_git_user_info
         expect(updater.updated_dependency_files.map(&:name)).to match_array(
           %w(
             go.mod
@@ -273,6 +284,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "updates the vendor/modules.txt file to the right version" do
+        restore_git_user_info
         modules_file = updater.updated_dependency_files.find do |file|
           file.name == "vendor/modules.txt"
         end
@@ -285,6 +297,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       it "includes the new source code" do
         # Sample to verify the source code matches:
         # https://github.com/pkg/errors/compare/v0.8.0...v0.9.1
+        restore_git_user_info
         stack_file = updater.updated_dependency_files.find do |file|
           file.name == "vendor/github.com/pkg/errors/stack.go"
         end
@@ -334,6 +347,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         it "vendors in the right directory" do
+          restore_git_user_info
           expect(updater.updated_dependency_files.map(&:name)).to match_array(
             %w(
               go.mod
