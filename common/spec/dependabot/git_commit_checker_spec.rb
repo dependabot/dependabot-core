@@ -161,9 +161,11 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "when the source code can't be found" do
+        let(:first_instance) { instance_double(DummyPackageManager::MetadataFinder) }
+
         before do
-          allow_any_instance_of(DummyPackageManager::MetadataFinder)
-            .to receive(:look_up_source).and_return(nil)
+          allow(DummyPackageManager::MetadataFinder).to receive(:new).and_return(first_instance)
+          allow(first_instance).to receive(:source_url).and_return(nil)
         end
 
         it { is_expected.to be(false) }
@@ -292,20 +294,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "with source code not hosted on GitHub" do
-        before do
-          allow_any_instance_of(DummyPackageManager::MetadataFinder)
-            .to receive(:look_up_source)
-            .and_return(Dependabot::Source.from_url(source_url))
-          stub_request(:get, service_pack_url)
-            .to_return(
-              status: 200,
-              body: fixture("git", "upload_packs", upload_pack_fixture),
-              headers: {
-                "content-type" => "application/x-git-upload-pack-advertisement"
-              }
-            )
-        end
-
+        let(:second_instance) { instance_double(DummyPackageManager::MetadataFinder) }
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:upload_pack_fixture) { "business" }
         let(:service_pack_url) do
@@ -317,7 +306,26 @@ RSpec.describe Dependabot::GitCommitChecker do
             "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
 
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", upload_pack_fixture),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+          allow(DummyPackageManager::MetadataFinder).to receive(:new).and_return(second_instance)
+          allow(second_instance).to receive_messages(source_url: source_url, look_up_source: source_url)
+        end
+
         context "when not included in a release" do
+          let(:bitbucket_url) do
+            "https://api.bitbucket.org/2.0/repositories/" \
+              "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
+          end
+          let(:returned) { Dependabot::Source.from_url("fred") }
+
           before do
             stub_request(:get, bitbucket_url)
               .to_return(
