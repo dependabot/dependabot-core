@@ -129,7 +129,7 @@ module Dependabot
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
         ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups,
-        ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only?
+        ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only ? "true" : "false"
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
     end
