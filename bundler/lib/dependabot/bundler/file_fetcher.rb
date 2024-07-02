@@ -17,7 +17,7 @@ module Dependabot
       require "dependabot/bundler/file_fetcher/gemspec_finder"
       require "dependabot/bundler/file_fetcher/path_gemspec_finder"
       require "dependabot/bundler/file_fetcher/child_gemfile_finder"
-      require "dependabot/bundler/file_fetcher/require_relative_finder"
+      require "dependabot/bundler/file_fetcher/included_path_finder"
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
@@ -47,7 +47,7 @@ module Dependabot
         fetched_files << ruby_version_file if ruby_version_file
         fetched_files << tool_versions_file if tool_versions_file
         fetched_files += path_gemspecs
-        fetched_files += require_relative_files(fetched_files)
+        fetched_files += find_included_files(fetched_files)
 
         uniq_files(fetched_files)
       end
@@ -145,15 +145,15 @@ module Dependabot
         fetch_path_gemspec_paths.map { |path| Pathname.new(path) }
       end
 
-      def require_relative_files(files)
+      def find_included_files(files)
         ruby_files =
           files.select { |f| f.name.end_with?(".rb", "Gemfile", ".gemspec") }
 
         paths = ruby_files.flat_map do |file|
-          RequireRelativeFinder.new(file: file).require_relative_paths
+          IncludedPathFinder.new(file: file).find_included_paths
         end
 
-        @require_relative_files ||=
+        @find_included_files ||=
           paths.map { |path| fetch_file_from_host(path) }
                .tap { |req_files| req_files.each { |f| f.support_file = true } }
       end
