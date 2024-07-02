@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/analysis/analysis_json_reader"
-require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/native_discovery/native_discovery_json_reader"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/requirement"
@@ -55,6 +55,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
 
+  before do
+    Dependabot::Experiments.register(:nuget_native_analysis, true)
+  end
+
   it_behaves_like "an update checker"
 
   def run_analyze_test(&_block)
@@ -82,8 +86,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     # ...and invoke the actual test
     yield checker
   ensure
-    Dependabot::Nuget::DiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+  end
+
+  def registration_index_url(name)
+    "https://api.nuget.org/v3/registration5-gz-semver2/#{name.downcase}/index.json"
   end
 
   def intercept_native_tools(discovery_content_hash:, dependency_name:, analysis_content_hash:)

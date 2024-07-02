@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
     # ...and invoke the actual test
     yield parser
   ensure
-    Dependabot::Nuget::DiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
   end
 

@@ -484,19 +484,19 @@ public partial class DiscoveryWorkerTests
                         </Project>
                         """)
                 ],
-                expectedResult: new ()
+                expectedResult: new()
                 {
                     Path = "",
                     Projects = [
-                        new ()
+                        new()
                         {
                             FilePath = "myproj.csproj",
                             ExpectedDependencyCount = 2,
                             Dependencies = [
-                                new ("Some.Package", "1.*", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Some.Package", "1.*", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
                             Properties = [
-                                new ("TargetFramework", "net8.0", "myproj.csproj"),
+                                new("TargetFramework", "net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],

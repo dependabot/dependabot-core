@@ -13,21 +13,19 @@ module Dependabot
 
       sig { params(json: T::Hash[String, T.untyped]).returns(WorkspaceDiscovery) }
       def self.from_json(json)
-        path = T.let(json.fetch("Path"), String)
-        path = "/" + path unless path.start_with?("/")
+        file_path = T.let(json.fetch("FilePath"), String)
         projects = T.let(json.fetch("Projects"), T::Array[T::Hash[String, T.untyped]]).filter_map do |project|
-          ProjectDiscovery.from_json(project, path)
+          ProjectDiscovery.from_json(project)
         end
         directory_packages_props = DirectoryPackagesPropsDiscovery
                                    .from_json(T.let(json.fetch("DirectoryPackagesProps"),
-                                                    T.nilable(T::Hash[String, T.untyped])), path)
+                                                    T.nilable(T::Hash[String, T.untyped])))
         global_json = DependencyFileDiscovery
-                      .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])), path)
+                      .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])))
         dotnet_tools_json = DependencyFileDiscovery
-                            .from_json(T.let(json.fetch("DotNetToolsJson"),
-                                             T.nilable(T::Hash[String, T.untyped])), path)
+                            .from_json(T.let(json.fetch("DotNetToolsJson"), T.nilable(T::Hash[String, T.untyped])))
 
-        WorkspaceDiscovery.new(path: path,
+        WorkspaceDiscovery.new(file_path: file_path,
                                projects: projects,
                                directory_packages_props: directory_packages_props,
                                global_json: global_json,
@@ -35,14 +33,14 @@ module Dependabot
       end
 
       sig do
-        params(path: String,
+        params(file_path: String,
                projects: T::Array[ProjectDiscovery],
                directory_packages_props: T.nilable(DirectoryPackagesPropsDiscovery),
                global_json: T.nilable(DependencyFileDiscovery),
                dotnet_tools_json: T.nilable(DependencyFileDiscovery)).void
       end
-      def initialize(path:, projects:, directory_packages_props:, global_json:, dotnet_tools_json:)
-        @path = path
+      def initialize(file_path:, projects:, directory_packages_props:, global_json:, dotnet_tools_json:)
+        @file_path = file_path
         @projects = projects
         @directory_packages_props = directory_packages_props
         @global_json = global_json
@@ -50,7 +48,7 @@ module Dependabot
       end
 
       sig { returns(String) }
-      attr_reader :path
+      attr_reader :file_path
 
       sig { returns(T::Array[ProjectDiscovery]) }
       attr_reader :projects

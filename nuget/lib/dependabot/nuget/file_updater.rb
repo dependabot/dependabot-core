@@ -4,9 +4,9 @@
 require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/nuget/discovery/dependency_details"
-require "dependabot/nuget/discovery/discovery_json_reader"
-require "dependabot/nuget/discovery/workspace_discovery"
+require "dependabot/nuget/native_discovery/native_dependency_details"
+require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/native_discovery/native_workspace_discovery"
 require "dependabot/nuget/native_helpers"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -126,9 +126,9 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { returns(T.nilable(WorkspaceDiscovery)) }
+      sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
       def workspace
-        discovery_json_reader = DiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
+        discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
         discovery_json_reader.workspace_discovery
       end
 
@@ -137,7 +137,7 @@ module Dependabot
         workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[NativeDependencyDetails]) }
       def project_dependencies(project_file)
         workspace&.projects&.find do |p|
           full_project_file_path = File.join(project_file.directory, project_file.name)
@@ -145,12 +145,12 @@ module Dependabot
         end&.dependencies || []
       end
 
-      sig { returns(T::Array[DependencyDetails]) }
+      sig { returns(T::Array[NativeDependencyDetails]) }
       def global_json_dependencies
         workspace&.global_json&.dependencies || []
       end
 
-      sig { returns(T::Array[DependencyDetails]) }
+      sig { returns(T::Array[NativeDependencyDetails]) }
       def dotnet_tools_json_dependencies
         workspace&.dotnet_tools_json&.dependencies || []
       end

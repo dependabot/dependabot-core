@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/nuget/update_checker/requirements_updater"
+require "dependabot/nuget/native_update_checker/native_requirements_updater"
 
-RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
+RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -24,17 +24,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
   let(:csproj_req_string) { "23.3-jre" }
   let(:latest_version) { "23.6-jre" }
   let(:info_url) { "https://nuget.example.com/some.package" }
-  # let(:source_details) do
-  #   {
-  #     source_url: nil,
-  #     repo_url: "https://api.nuget.org/v3/index.json",
-  #     nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
-  #                 "microsoft.extensions.dependencymodel/1.2.3/" \
-  #                 "microsoft.extensions.dependencymodel.nuspec"
-  #   }
-  # end
   let(:dependency_details) do
-    Dependabot::Nuget::DependencyDetails.from_json(JSON.parse({
+    Dependabot::Nuget::NativeDependencyDetails.from_json(JSON.parse({
       Name: "unused",
       Version: latest_version,
       Type: "PackageReference",
@@ -48,8 +39,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
       InfoUrl: info_url
     }.to_json))
   end
-
-  # let(:version_class) { Dependabot::Nuget::Version }
 
   describe "#updated_requirements.version" do
     subject { updater.updated_requirements.first }

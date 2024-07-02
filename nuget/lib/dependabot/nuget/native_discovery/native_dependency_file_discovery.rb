@@ -1,30 +1,33 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/nuget/discovery/dependency_details"
+require "dependabot/nuget/native_discovery/native_dependency_details"
 require "sorbet-runtime"
 
 module Dependabot
   module Nuget
-    class DependencyFileDiscovery
+    class NativeDependencyFileDiscovery
       extend T::Sig
 
-      sig { params(json: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(DependencyFileDiscovery)) }
-      def self.from_json(json)
+      sig do
+        params(json: T.nilable(T::Hash[String, T.untyped]),
+               directory: String).returns(T.nilable(NativeDependencyFileDiscovery))
+      end
+      def self.from_json(json, directory)
         return nil if json.nil?
 
-        file_path = T.let(json.fetch("FilePath"), String)
+        file_path = File.join(directory, T.let(json.fetch("FilePath"), String))
         dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).map do |dep|
-          DependencyDetails.from_json(dep)
+          NativeDependencyDetails.from_json(dep)
         end
 
-        DependencyFileDiscovery.new(file_path: file_path,
-                                    dependencies: dependencies)
+        NativeDependencyFileDiscovery.new(file_path: file_path,
+                                          dependencies: dependencies)
       end
 
       sig do
         params(file_path: String,
-               dependencies: T::Array[DependencyDetails]).void
+               dependencies: T::Array[NativeDependencyDetails]).void
       end
       def initialize(file_path:, dependencies:)
         @file_path = file_path
@@ -34,7 +37,7 @@ module Dependabot
       sig { returns(String) }
       attr_reader :file_path
 
-      sig { returns(T::Array[DependencyDetails]) }
+      sig { returns(T::Array[NativeDependencyDetails]) }
       attr_reader :dependencies
 
       sig { overridable.returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -82,7 +85,7 @@ module Dependabot
         Dependabot.logger
       end
 
-      sig { params(file_name: String, dependency_details: DependencyDetails).returns(Dependabot::Dependency) }
+      sig { params(file_name: String, dependency_details: NativeDependencyDetails).returns(Dependabot::Dependency) }
       def build_dependency(file_name, dependency_details)
         requirement = build_requirement(file_name, dependency_details)
         requirements = requirement.nil? ? [] : [requirement]
@@ -99,7 +102,7 @@ module Dependabot
       end
 
       sig do
-        params(file_name: String, dependency_details: DependencyDetails)
+        params(file_name: String, dependency_details: NativeDependencyDetails)
           .returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def build_requirement(file_name, dependency_details)

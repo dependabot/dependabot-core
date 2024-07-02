@@ -4,7 +4,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/native_discovery/native_discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
 
@@ -27,27 +27,29 @@ module Dependabot
       def parse
         return [] unless repo_contents_path
 
-        key = DiscoveryJsonReader.create_cache_key(dependency_files)
+        key = NativeDiscoveryJsonReader.create_cache_key(dependency_files)
         workspace_path = source&.directory || "/"
         self.class.file_dependency_cache[key] ||= begin
           # run discovery for the repo
-          discovery_json_path = DiscoveryJsonReader.create_discovery_file_path_from_dependency_files(dependency_files)
+          discovery_json_path = NativeDiscoveryJsonReader.create_discovery_file_path_from_dependency_files(
+            dependency_files
+          )
           NativeHelpers.run_nuget_discover_tool(repo_root: T.must(repo_contents_path),
                                                 workspace_path: workspace_path,
                                                 output_path: discovery_json_path,
                                                 credentials: credentials)
 
-          discovery_json = DiscoveryJsonReader.discovery_json_from_path(discovery_json_path)
+          discovery_json = NativeDiscoveryJsonReader.discovery_json_from_path(discovery_json_path)
           return [] unless discovery_json
 
           Dependabot.logger.info("Discovery JSON content: #{discovery_json.content}")
-          discovery_json_reader = DiscoveryJsonReader.new(
+          discovery_json_reader = NativeDiscoveryJsonReader.new(
             discovery_json: discovery_json
           )
 
           # cache discovery results
-          DiscoveryJsonReader.set_discovery_from_dependency_files(dependency_files: dependency_files,
-                                                                  discovery: discovery_json_reader)
+          NativeDiscoveryJsonReader.set_discovery_from_dependency_files(dependency_files: dependency_files,
+                                                                        discovery: discovery_json_reader)
           discovery_json_reader.dependency_set.dependencies
         end
 

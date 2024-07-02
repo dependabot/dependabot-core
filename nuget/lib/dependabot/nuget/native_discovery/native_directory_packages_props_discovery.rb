@@ -1,35 +1,36 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/nuget/discovery/dependency_details"
+require "dependabot/nuget/native_discovery/native_dependency_details"
 require "sorbet-runtime"
 
 module Dependabot
   module Nuget
-    class DirectoryPackagesPropsDiscovery < DependencyFileDiscovery
+    class NativeDirectoryPackagesPropsDiscovery < NativeDependencyFileDiscovery
       extend T::Sig
 
       sig do
-        params(json: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(DirectoryPackagesPropsDiscovery))
+        override.params(json: T.nilable(T::Hash[String, T.untyped]),
+                        directory: String).returns(T.nilable(NativeDirectoryPackagesPropsDiscovery))
       end
-      def self.from_json(json)
+      def self.from_json(json, directory)
         return nil if json.nil?
 
-        file_path = T.let(json.fetch("FilePath"), String)
+        file_path = File.join(directory, T.let(json.fetch("FilePath"), String))
         is_transitive_pinning_enabled = T.let(json.fetch("IsTransitivePinningEnabled"), T::Boolean)
         dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).map do |dep|
-          DependencyDetails.from_json(dep)
+          NativeDependencyDetails.from_json(dep)
         end
 
-        DirectoryPackagesPropsDiscovery.new(file_path: file_path,
-                                            is_transitive_pinning_enabled: is_transitive_pinning_enabled,
-                                            dependencies: dependencies)
+        NativeDirectoryPackagesPropsDiscovery.new(file_path: file_path,
+                                                  is_transitive_pinning_enabled: is_transitive_pinning_enabled,
+                                                  dependencies: dependencies)
       end
 
       sig do
         params(file_path: String,
                is_transitive_pinning_enabled: T::Boolean,
-               dependencies: T::Array[DependencyDetails]).void
+               dependencies: T::Array[NativeDependencyDetails]).void
       end
       def initialize(file_path:, is_transitive_pinning_enabled:, dependencies:)
         super(file_path: file_path, dependencies: dependencies)
