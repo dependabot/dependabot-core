@@ -11,7 +11,7 @@ module Dependabot
       extend T::Sig
 
       sig do
-        params(path: T.untyped)
+        params(path: String)
           .returns(
             T.nilable(String)
           )
