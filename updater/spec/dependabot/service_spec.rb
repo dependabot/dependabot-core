@@ -373,7 +373,7 @@ RSpec.describe Dependabot::Service do
 
     it "extracts information from a security job if provided" do
       job = OpenStruct.new(id: 1234, package_manager: "npm_and_yarn", repo_private?: false, repo_owner: "foo",
-                           security_updates_only: "true")
+                           security_updates_only?: true)
       service.capture_exception(error: error, job: job)
 
       expect(mock_client)
@@ -385,7 +385,7 @@ RSpec.describe Dependabot::Service do
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::JOB_ID => job.id,
             Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
-            Dependabot::ErrorAttributes::SECURITY_UPDATE => "true"
+            Dependabot::ErrorAttributes::SECURITY_UPDATE => true
           )
         )
     end
