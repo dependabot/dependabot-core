@@ -32,6 +32,8 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
+        PIP_COMPILE_COMMAND = "pyenv exec pip-compile"
+        # PIP_COMPILE_COMMAND = "pyenv exec uv pip compile"
 
         attr_reader :dependency
         attr_reader :dependency_files
@@ -95,8 +97,8 @@ module Dependabot
           options_fingerprint = pip_compile_options_fingerprint(options)
 
           run_pip_compile_command(
-            "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-            fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+            "#{PIP_COMPILE_COMMAND} -v #{options} -P #{dependency.name} #{filename}",
+            fingerprint: "#{PIP_COMPILE_COMMAND} -v #{options_fingerprint} -P <dependency_name> <filename>"
           )
 
           return true if dependency.top_level?
@@ -110,8 +112,8 @@ module Dependabot
           # update_not_possible.
           write_original_manifest_files
           run_pip_compile_command(
-            "pyenv exec pip-compile #{options} #{filename}",
-            fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+            "#{PIP_COMPILE_COMMAND} #{options} #{filename}",
+            fingerprint: "#{PIP_COMPILE_COMMAND} #{options_fingerprint} <filename>"
           )
 
           true
@@ -205,8 +207,8 @@ module Dependabot
                 options_fingerprint = pip_compile_options_fingerprint(options)
 
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{options} #{filename}",
-                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+                  "#{PIP_COMPILE_COMMAND} #{options} #{filename}",
+                  fingerprint: "#{PIP_COMPILE_COMMAND} #{options_fingerprint} <filename>"
                 )
               end
 
