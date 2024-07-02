@@ -1,10 +1,15 @@
+using System.Diagnostics;
+using System.IO.Compression;
 using System.Net;
+using System.Text;
 using System.Xml.Linq;
 
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+
+using NuGetUpdater.Core;
 
 // Data type to store information of a given package
 public class PackageToUpdate
@@ -28,12 +33,79 @@ public class PackageManager
     // What packages depend on a given package
     private Dictionary<PackageToUpdate, HashSet<PackageToUpdate>> reverseDependencies = new Dictionary<PackageToUpdate, HashSet<PackageToUpdate>>();
 
+    // Path of the repository
+    private string repoRoot;
+
+    // Path to the project within the repository
+    private string projectPath;
+
+    public PackageManager(string repoRoot, string projectPath)
+    {
+        this.repoRoot = repoRoot;
+        this.projectPath = projectPath;
+    }
+
+    // Function that converts from string to string[]
+     private string[] ParseCommandLineArgs(string commandString)
+    {
+        List<string> argsList = new List<string>();
+        StringBuilder argsBuilder = new StringBuilder();
+        bool quotes = false;
+
+        foreach (char c in commandString)
+        {
+            if (c == '\"')
+            {
+                quotes = !quotes;
+            }
+            else if (c == ' ' && !quotes)
+            {
+                if (argsBuilder.Length > 0)
+                {
+                    argsList.Add(argsBuilder.ToString());
+                    argsBuilder.Clear();
+                }
+            }
+            else
+            {
+                argsBuilder.Append(c);
+            }
+        }
+
+        if (argsBuilder.Length > 0)
+        {
+            argsList.Add(argsBuilder.ToString());
+        }
+
+        return argsList.ToArray();
+    }
+
     // Function to get the dependencies of a package
     public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework)
     {
         // Lower the characters in the package name to put in the nuspec url
         string packageNameLower = package.packageName.ToLower();
-        string nuspecURL;
+        string nuspecContent = null;
+
+        // Create temporary directory for OutputDirectory
+        string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempDirectory);
+
+        // Get the path to the NuGet.Config file
+        string configFile = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
+
+        // Generate config file if none is present
+        if (configFile == null)
+        {
+            configFile = Path.Combine(tempDirectory, "NuGet.Config");
+            string configContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
+                                <configuration>
+                                    <packageSources>
+                                        <add key=""nuget.org"" value=""https://api.nuget.org/v3/index.json"" protocolVersion=""3"" />
+                                    </packageSources>
+                                </configuration>";
+            File.WriteAllText(configFile, configContent);
+        }
 
         // Remove any brackets and parantheses from the version, so that you can compare for later use
         if (package.newVersion != null)
@@ -44,8 +116,49 @@ public class PackageManager
                 package.newVersion = package.newVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
             }
-            nuspecURL = $"https://api.nuget.org/v3-flatcontainer/{packageNameLower}/{package.newVersion}/{packageNameLower}.nuspec";
+            // Construct the command to run and run it
+            string nugetCommand = $"install {package.packageName} -Version {package.newVersion} -NonInteractive -OutputDirectory \"{tempDirectory}\" -ConfigFile \"{configFile}\" -PackageSaveMode nuspec";
+
+            string[] args = ParseCommandLineArgs(nugetCommand);
+
+            try
+            {
+                int exitCode = NuGet.CommandLine.Program.Main(args);
+                if (exitCode != 0)
+                {
+                    throw new Exception($"NuGet CLI command failed with exit code {exitCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                throw;
+            }
+
+            string nameAndVersion = $"{package.packageName}.{package.newVersion}";
+            string nuspecDirectory = Path.Combine(tempDirectory, nameAndVersion);
+            string nuspec = Path.Combine(nuspecDirectory, $"{package.packageName}.nuspec");
+
+            try
+            {
+                if (File.Exists(nuspec))
+                {
+                    using (var reader = new StreamReader(File.OpenRead(nuspec)))
+                    {
+                        nuspecContent = reader.ReadToEnd();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"The .nuspec file does not exist at {nuspec}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while extracting the .nuspec file: {ex.Message}");
+            }
         }
+
         else
         {
             if (package.currentVersion.StartsWith("[") && package.currentVersion.EndsWith("]"))
@@ -54,161 +167,180 @@ public class PackageManager
                 package.currentVersion = package.currentVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
             }
-            nuspecURL = $"https://api.nuget.org/v3-flatcontainer/{packageNameLower}/{package.currentVersion}/{packageNameLower}.nuspec";
+
+            // Construct the command to run and run it
+            string nugetCommand = $"install {package.packageName} -Version {package.currentVersion} -NonInteractive -OutputDirectory \"{tempDirectory}\" -ConfigFile \"{configFile}\" -PackageSaveMode nuspec";
+
+            string[] args = ParseCommandLineArgs(nugetCommand);
+
+            try
+            {
+                int exitCode = NuGet.CommandLine.Program.Main(args);
+                if (exitCode != 0)
+                {
+                    throw new Exception($"NuGet CLI command failed with exit code {exitCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                throw;
+            }
+
+            string nameAndVersion = $"{package.packageName}.{package.currentVersion}";
+            string nuspecDirectory = Path.Combine(tempDirectory, nameAndVersion);
+            string nuspec = Path.Combine(nuspecDirectory, $"{package.packageName}.nuspec");
+            
+            try
+            {
+                if (File.Exists(nuspec))
+                {
+                    using (var reader = new StreamReader(File.OpenRead(nuspec)))
+                    {
+                        nuspecContent = reader.ReadToEnd();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"The .nuspec file does not exist at {nuspec}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while extracting the .nuspec file: {ex.Message}");
+            }
         }
 
         List<PackageToUpdate> dependencyList = new List<PackageToUpdate>();
 
-        // Access nuspec url, getting the dependencies of a given package based off framework
         try
         {
-            using (HttpClient client = new HttpClient())
+            XDocument nuspecXml = XDocument.Parse(nuspecContent);
+            XNamespace ns = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
+
+            var availableTargetFrameworks = nuspecXml.Descendants(ns + "dependencies")
+                                        .Elements(ns + "group")
+                                        .Select(g => (string)g.Attribute("targetFramework"))
+                                        .Distinct()
+                                        .ToList();
+
+            availableTargetFrameworks.Sort((a, b) => -1 * string.Compare(a, b, StringComparison.Ordinal));
+
+            // Find the best match for the user's input framework.
+            string bestMatchFramework = availableTargetFrameworks
+                .FirstOrDefault(framework => string.Compare(framework, targetFramework, StringComparison.Ordinal) <= 0);
+
+            // If there aren't dependencies compatible with the framework / there aren't dependencies, return null, if not, 
+            if (bestMatchFramework == null)
             {
-                HttpResponseMessage response = null;
-                try
+                dependencyList = null;
+                return dependencyList;
+            }
+
+            var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
+                            .Elements(ns + "group")
+                            .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
+
+            bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
+
+            if (!hasDependencies)
+            {
+                dependencyList = null;
+                return dependencyList;
+            }
+
+            // Loop through each group and the depdenencies in each (based on framework)
+            foreach (var group in dependencyGroups)
+            {
+                bool specific = false;
+                foreach (var dependency in group.Elements(ns + "dependency"))
                 {
-                   // string nuspecContent = await client.GetStringAsync(nuspecURL);
-                    response = await client.GetAsync(nuspecURL);
+                    string version = dependency.Attribute("version").Value;
+                    string firstVersion = null;
+                    string secondVersion = null;
 
-                    if (response.StatusCode == HttpStatusCode.InternalServerError)
+                    // Conditions to check if the version has bounds specified
+                    if (version.StartsWith("[") && version.EndsWith("]"))
                     {
-                        Console.WriteLine("Server error (500) when accessing NuGet API.");
-                        return null;
-                    }
-                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        Console.WriteLine("Unauthorized (401) when accessing NuGet API.");
-                        return null;
-                    }
-
-                    response.EnsureSuccessStatusCode(); // Throws an exception if the response status code is not successful
-                    string nuspecContent = await response.Content.ReadAsStringAsync();
-
-                    XDocument nuspecXml = XDocument.Parse(nuspecContent);
-                    XNamespace ns = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
-
-                    var availableTargetFrameworks = nuspecXml.Descendants(ns + "dependencies")
-                                              .Elements(ns + "group")
-                                              .Select(g => (string)g.Attribute("targetFramework"))
-                                              .Distinct()
-                                              .ToList();
-
-                    availableTargetFrameworks.Sort((a, b) => -1 * string.Compare(a, b, StringComparison.Ordinal));
-
-                    // Find the best match for the user's input framework.
-                    string bestMatchFramework = availableTargetFrameworks
-                        .FirstOrDefault(framework => string.Compare(framework, targetFramework, StringComparison.Ordinal) <= 0);
-
-                    // If there aren't dependencies compatible with the framework / there aren't dependencies, return null, if not, 
-                    if (bestMatchFramework == null)
-                    {
-                        dependencyList = null;
-                        return dependencyList;
-                    }
-
-                    var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
-                                    .Elements(ns + "group")
-                                    .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
-
-                    bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
-
-                    if (!hasDependencies)
-                    {
-                        dependencyList = null;
-                        return dependencyList;
-                    }
-
-                    // Loop through each group and the depdenencies in each (based on framework)
-                    foreach (var group in dependencyGroups)
-                    {
-                        bool specific = false;
-                        foreach (var dependency in group.Elements(ns + "dependency"))
+                        version = version.Trim('[', ']');
+                        var versions = version.Split(',');
+                        version = versions.FirstOrDefault().Trim();
+                        if (versions.Length > 1)
                         {
-                            string version = dependency.Attribute("version").Value;
-                            string firstVersion = null;
-                            string secondVersion = null;
-
-                            // Conditions to check if the version has bounds specified
-                            if (version.StartsWith("[") && version.EndsWith("]"))
-                            {
-                                version = version.Trim('[', ']');
-                                var versions = version.Split(',');
-                                version = versions.FirstOrDefault().Trim();
-                                if (versions.Length > 1)
-                                {
-                                    secondVersion = versions.LastOrDefault()?.Trim();
-                                }
-                                specific = true;
-                            }
-                            else if (version.StartsWith("[") && version.EndsWith(")"))
-                            {
-                                version = version.Trim('[', ')');
-                                var versions = version.Split(',');
-                                version = versions.FirstOrDefault().Trim();
-                                if (versions.Length > 1)
-                                {
-                                    secondVersion = versions.LastOrDefault()?.Trim();
-                                }
-                                specific = true;
-                            }
-                            else if (version.StartsWith("(") && version.EndsWith("]"))
-                            {
-                                version = version.Trim('(', ']');
-                                var versions = version.Split(',');
-                                version = versions.FirstOrDefault().Trim();
-                                if (versions.Length > 1)
-                                {
-                                    secondVersion = versions.LastOrDefault()?.Trim();
-                                }
-                                specific = true;
-                            }
-                            else if (version.StartsWith("(") && version.EndsWith(")"))
-                            {
-                                version = version.Trim('(', ')');
-                                var versions = version.Split(',');
-                                version = versions.FirstOrDefault().Trim();
-                                if (versions.Length > 1)
-                                {
-                                    secondVersion = versions.LastOrDefault()?.Trim();
-                                }
-                                specific = true;
-                            }
-
-                            PackageToUpdate dependencyPackage = new PackageToUpdate
-                            {
-                                packageName = dependency.Attribute("id").Value,
-                                currentVersion = version,
-                            };
-
-                            if (specific == true)
-                            {
-                                dependencyPackage.isSpecific = true;
-                            }
-
-                            if (secondVersion != null)
-                            {
-                                dependencyPackage.secondVersion = secondVersion;
-                            }
-
-                            var parents = GetParentPackages(package);
-                            // package.isSpecific = true;
-
-                            // Add each dependency to the list and declare the top package as a specific version
-                            dependencyList.Add(dependencyPackage);
-
+                            secondVersion = versions.LastOrDefault()?.Trim();
                         }
+                        specific = true;
                     }
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine($"HTTP Request error: {e.Message}");
-                    throw;
+                    else if (version.StartsWith("[") && version.EndsWith(")"))
+                    {
+                        version = version.Trim('[', ')');
+                        var versions = version.Split(',');
+                        version = versions.FirstOrDefault().Trim();
+                        if (versions.Length > 1)
+                        {
+                            secondVersion = versions.LastOrDefault()?.Trim();
+                        }
+                        specific = true;
+                    }
+                    else if (version.StartsWith("(") && version.EndsWith("]"))
+                    {
+                        version = version.Trim('(', ']');
+                        var versions = version.Split(',');
+                        version = versions.FirstOrDefault().Trim();
+                        if (versions.Length > 1)
+                        {
+                            secondVersion = versions.LastOrDefault()?.Trim();
+                        }
+                        specific = true;
+                    }
+                    else if (version.StartsWith("(") && version.EndsWith(")"))
+                    {
+                        version = version.Trim('(', ')');
+                        var versions = version.Split(',');
+                        version = versions.FirstOrDefault().Trim();
+                        if (versions.Length > 1)
+                        {
+                            secondVersion = versions.LastOrDefault()?.Trim();
+                        }
+                        specific = true;
+                    }
+
+                    PackageToUpdate dependencyPackage = new PackageToUpdate
+                    {
+                        packageName = dependency.Attribute("id").Value,
+                        currentVersion = version,
+                    };
+
+                    if (specific == true)
+                    {
+                        dependencyPackage.isSpecific = true;
+                    }
+
+                    if (secondVersion != null)
+                    {
+                        dependencyPackage.secondVersion = secondVersion;
+                    }
+
+                    //var parents = GetParentPackages(package);
+
+                    dependencyList.Add(dependencyPackage);
                 }
             }
         }
-        catch (Exception e)
+        catch (FileNotFoundException)
         {
-            Console.WriteLine($"Nuspec doesn't Exist for " + package.packageName + " with version " + package.currentVersion + ". current version is " + package.currentVersion);
+            Console.WriteLine($"The file was not found.");
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.WriteLine($"Unauthorized access to the file.");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while reading the file: {ex.Message}");
+            return null;
         }
 
         return dependencyList;
