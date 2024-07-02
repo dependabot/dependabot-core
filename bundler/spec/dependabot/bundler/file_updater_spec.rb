@@ -334,11 +334,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(file.content).to include("statesman (1.3.1)")
           end
 
-          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
-            expect(file.content).to include("business (1.18.0)")
-          end
-
-          it "does not touch the yanked gem", :bundler_v2_only do
+          it "does not touch the yanked gem" do
             expect(file.content).to include("business (1.4.1)")
           end
         end
@@ -1469,11 +1465,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         }]
       end
 
-      it "raises an error", :bundler_v1_only do
-        expect { updated_gemfile }.to raise_error(/Bundler could not find compatible versions for gem "bundler"/)
-      end
-
-      it "returns the latest version", :bundler_v2_only do
+      it "returns the previous version" do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end

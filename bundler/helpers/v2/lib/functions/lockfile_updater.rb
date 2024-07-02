@@ -179,10 +179,16 @@ module Functions
     end
 
     def build_definition(dependencies_to_unlock)
+      options = { gems: dependencies_to_unlock }
+
+      if lockfile_parser.bundler_version && lockfile_parser.bundler_version < Gem::Version.new("2")
+        options[:bundler] = lockfile_parser.bundler_version
+      end
+
       defn = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
-        gems: dependencies_to_unlock
+        **options
       )
 
       # Bundler unlocks the sub-dependencies of gems it is passed even
@@ -224,7 +230,11 @@ module Functions
     end
 
     def lockfile_specs
-      @lockfile_specs ||= Bundler::LockfileParser.new(lockfile).specs
+      @lockfile_specs ||= lockfile_parser.specs
+    end
+
+    def lockfile_parser
+      @lockfile_parser ||= Bundler::LockfileParser.new(lockfile)
     end
 
     def lockfile
