@@ -246,12 +246,13 @@ public abstract class UpdateWorkerTestBase : TestBase
             }
 
             // ensure only the test feed is used
+            string relativeLocalFeedPath = Path.GetRelativePath(temporaryDirectory, localFeedPath);
             await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "NuGet.Config"), $"""
                 <?xml version="1.0" encoding="utf-8"?>
                 <configuration>
                   <packageSources>
                     <clear />
-                    <add key="local-feed" value="{localFeedPath}" />
+                    <add key="local-feed" value="{relativeLocalFeedPath}" />
                   </packageSources>
                 </configuration>
                 """

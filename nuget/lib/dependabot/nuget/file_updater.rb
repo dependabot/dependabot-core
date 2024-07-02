@@ -31,7 +31,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        base_dir = T.must(dependency_files.first).directory
+        base_dir = "/"
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
@@ -111,7 +111,7 @@ module Dependabot
         # Ideally we should find a way to not run this code in prod
         # (or a better way to track calls made to NativeHelpers)
         @update_tooling_calls ||= T.let({}, T.nilable(T::Hash[String, Integer]))
-        key = proj_path + dependency.name
+        key = "#{proj_path.delete_prefix(T.must(repo_contents_path))}+#{dependency.name}"
         @update_tooling_calls[key] =
           if @update_tooling_calls[key]
             T.must(@update_tooling_calls[key]) + 1
@@ -128,16 +128,8 @@ module Dependabot
 
       sig { returns(T.nilable(WorkspaceDiscovery)) }
       def workspace
-        @workspace ||= T.let(begin
-          discovery_json = DiscoveryJsonReader.discovery_json
-          if discovery_json
-            workspace = DiscoveryJsonReader.new(
-              discovery_json: discovery_json
-            ).workspace_discovery
-          end
-
-          workspace
-        end, T.nilable(WorkspaceDiscovery))
+        discovery_json_reader = DiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
+        discovery_json_reader.workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -147,7 +139,10 @@ module Dependabot
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
       def project_dependencies(project_file)
-        workspace&.projects&.find { |p| p.file_path == project_file.name }&.dependencies || []
+        workspace&.projects&.find do |p|
+          full_project_file_path = File.join(project_file.directory, project_file.name)
+          p.file_path == full_project_file_path
+        end&.dependencies || []
       end
 
       sig { returns(T::Array[DependencyDetails]) }

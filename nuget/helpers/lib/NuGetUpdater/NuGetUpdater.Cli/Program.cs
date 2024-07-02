@@ -15,6 +15,7 @@ internal sealed class Program
         {
             FrameworkCheckCommand.GetCommand(setExitCode),
             DiscoverCommand.GetCommand(setExitCode),
+            AnalyzeCommand.GetCommand(setExitCode),
             UpdateCommand.GetCommand(setExitCode),
         };
         command.TreatUnmatchedTokensAsErrors = true;

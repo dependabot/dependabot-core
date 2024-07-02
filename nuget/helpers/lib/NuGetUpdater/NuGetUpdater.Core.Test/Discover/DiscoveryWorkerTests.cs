@@ -33,7 +33,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 Projects = [
                     new()
                     {
@@ -92,7 +92,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 Projects = [
                     new()
                     {
@@ -151,7 +151,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()
@@ -276,7 +276,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "",
+                Path = "",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()

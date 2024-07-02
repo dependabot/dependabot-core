@@ -54,7 +54,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "dependabot",
+                    Path = "dependabot",
                     Projects =
                     [
                         new()

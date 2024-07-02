@@ -69,12 +69,13 @@ module Dependabot
         begin
           yield
         rescue StandardError => e
-          Dependabot.logger.error(
+          log_message =
             <<~LOG_MESSAGE
               Block argument of NuGetConfigCredentialHelpers::patch_nuget_config_for_action causes an exception #{e}:
               #{e.message}
             LOG_MESSAGE
-          )
+          Dependabot.logger.error(log_message)
+          puts log_message
         ensure
           restore_user_nuget_config
         end

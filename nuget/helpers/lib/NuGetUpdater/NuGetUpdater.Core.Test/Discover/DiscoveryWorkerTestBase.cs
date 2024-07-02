@@ -7,7 +7,6 @@ using NuGetUpdater.Core.Test.Update;
 using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
-using Xunit.Sdk;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
@@ -35,7 +34,7 @@ public class DiscoveryWorkerTestBase
     protected static void ValidateWorkspaceResult(ExpectedWorkspaceDiscoveryResult expectedResult, WorkspaceDiscoveryResult actualResult)
     {
         Assert.NotNull(actualResult);
-        Assert.Equal(expectedResult.FilePath.NormalizePathToUnix(), actualResult.FilePath.NormalizePathToUnix());
+        Assert.Equal(expectedResult.Path.NormalizePathToUnix(), actualResult.Path.NormalizePathToUnix());
         ValidateDirectoryPackagesProps(expectedResult.DirectoryPackagesProps, actualResult.DirectoryPackagesProps);
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);

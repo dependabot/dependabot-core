@@ -9,11 +9,14 @@ module Dependabot
     class DependencyFileDiscovery
       extend T::Sig
 
-      sig { params(json: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(DependencyFileDiscovery)) }
-      def self.from_json(json)
+      sig do
+        params(json: T.nilable(T::Hash[String, T.untyped]),
+               directory: String).returns(T.nilable(DependencyFileDiscovery))
+      end
+      def self.from_json(json, directory)
         return nil if json.nil?
 
-        file_path = T.let(json.fetch("FilePath"), String)
+        file_path = File.join(directory, T.let(json.fetch("FilePath"), String))
         dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).map do |dep|
           DependencyDetails.from_json(dep)
         end
