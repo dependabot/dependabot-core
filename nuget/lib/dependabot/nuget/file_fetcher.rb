@@ -50,6 +50,7 @@ module Dependabot
         @fetched_files = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
         @nuget_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @packages_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @assembly_binding_redirect_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -60,6 +61,7 @@ module Dependabot
         fetched_files += imported_property_files
 
         fetched_files += packages_config_files
+        fetched_files += assembly_binding_redirect_config_files
         fetched_files += nuget_config_files
         fetched_files << global_json if global_json
         fetched_files << dotnet_tools_json if dotnet_tools_json
@@ -123,6 +125,23 @@ module Dependabot
           candidate_paths.filter_map do |dir|
             file = repo_contents(dir: dir)
                    .find { |f| f.name.casecmp("packages.config").zero? }
+            fetch_file_from_host(File.join(dir, file.name)) if file
+          end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def assembly_binding_redirect_config_files
+        return @assembly_binding_redirect_config_files if @assembly_binding_redirect_config_files
+
+        candidate_paths =
+          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+        # Assembly binding redirects can appear in any app/web.config file
+        # https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions#specify-assembly-binding-in-configuration-files
+        @assembly_binding_redirect_config_files =
+          candidate_paths.filter_map do |dir|
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.match?(/^(app|web)\.config$/i) }
             fetch_file_from_host(File.join(dir, file.name)) if file
           end
       end
