@@ -27,3 +27,11 @@ ENV GOTOOLCHAIN="go1.20.10"
 # This pre-installs go 1.20 so that each job doesn't have to do it.
 RUN go version
 ENV GO_LEGACY=$GOTOOLCHAIN
+
+# Install git-lfs because some Go modules are hosted in repositories with LFS committed files.
+# By enabling git-lfs we provide the Go toolchain with the tools to correctly calculate
+# module hashes in go.sum file.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    git-lfs \
+  && rm -rf /var/lib/apt/lists/*
