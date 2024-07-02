@@ -467,6 +467,46 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task PropertyWithWildcardVersionIsRetained()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.*" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new ()
+                {
+                    Path = "",
+                    Projects = [
+                        new ()
+                        {
+                            FilePath = "myproj.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new ("Some.Package", "1.*", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new ("TargetFramework", "net8.0", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Fact]
         public async Task DiscoverReportsTransitivePackageVersionsWithFourPartsForMultipleTargetFrameworks()
         {
             await TestDiscoveryAsync(

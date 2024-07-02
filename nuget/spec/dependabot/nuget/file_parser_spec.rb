@@ -1057,5 +1057,116 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
     end
+
+    context "when non-concrete version numbers are reported" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Package.A",
+                Version: nil, # not reported without version
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.B",
+                Version: "", # not reported with empty version
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.C",
+                Version: "[1.0,2.0)", # not reported with range
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.D",
+                Version: "1.*", # not reported with wildcard
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net8.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net8.0"],
+              ReferencedProjectPaths: []
+            }],
+            DirectoryPackagesProps: nil,
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "returns the correct dependency set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+        end
+      end
+    end
   end
 end

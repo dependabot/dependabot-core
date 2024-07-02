@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/nuget/discovery/dependency_details"
@@ -23,8 +23,18 @@ module Dependabot
         end
         target_frameworks = T.let(json.fetch("TargetFrameworks"), T::Array[String])
         referenced_project_paths = T.let(json.fetch("ReferencedProjectPaths"), T::Array[String])
-        dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).map do |dep|
-          DependencyDetails.from_json(dep)
+        dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).filter_map do |dep|
+          details = DependencyDetails.from_json(dep)
+          next unless details.version # can't do anything without a version
+
+          version = T.must(details.version)
+          next unless version.length > 0 # can't do anything with an empty version
+
+          next if version.include? "," # can't do anything with a range
+
+          next if version.include? "*" # can't do anything with a wildcard
+
+          details
         end
 
         ProjectDiscovery.new(file_path: file_path,
