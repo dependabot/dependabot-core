@@ -153,12 +153,7 @@ module Dependabot
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
 
-      if Dependabot::Experiments.enabled?(:dependency_has_directory)
-        return allowed_dependencies.reject { |dep| handled_group_dependencies.include?(dep.name) }
-      end
-
-      # Otherwise return dependencies that haven't been handled during the group update portion.
-      allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
+      allowed_dependencies.reject { |dep| handled_group_dependencies.include?(dep.name) }
     end
 
     private
@@ -178,13 +173,9 @@ module Dependabot
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
       directories.each do |dir|
         @current_directory = dir
-        if Dependabot::Experiments.enabled?(:dependency_has_directory)
-          dependencies = parse_files!
-          dependencies_with_dir = dependencies.each { |dep| dep.directory = dir }
-          @dependencies[dir] = dependencies_with_dir
-        else
-          @dependencies[dir] = parse_files!
-        end
+        dependencies = parse_files!
+        dependencies_with_dir = dependencies.each { |dep| dep.directory = dir }
+        @dependencies[dir] = dependencies_with_dir
       end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),

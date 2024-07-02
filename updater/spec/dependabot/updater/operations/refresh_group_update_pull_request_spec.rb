@@ -68,15 +68,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       original_bundler_files
     end
 
-    before do
-      stub_rubygems_calls
-      Dependabot::Experiments.register("dependency_has_directory", true)
-    end
-
-    after do
-      Dependabot::Experiments.reset!
-    end
-
     it "updates the existing pull request without errors" do
       expect(mock_service).to receive(:update_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")

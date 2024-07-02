@@ -120,5 +120,3 @@ job:
         - dependency-name: dependency-c
           version: 3.2.5
           directory: "/bar"
-  experiments:
-    dependency_has_directory: true

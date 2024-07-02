@@ -77,5 +77,3 @@ job:
         update-types:
           - minor
           - patch
-  experiments:
-    dependency_has_directory: true
