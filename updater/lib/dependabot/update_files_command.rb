@@ -51,6 +51,10 @@ module Dependabot
         # successfully processed unless it actually raises.
         service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
       end
+    ensure
+      Dependabot::ExceptionCapturer.handle_captured_exceptions do |exception|
+        service.capture_exception(error: exception, job: job)
+      end
     end
 
     private
