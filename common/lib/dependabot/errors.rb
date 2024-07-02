@@ -17,6 +17,7 @@ module Dependabot
     DEPENDENCY_GROUPS = "job-dependency-groups"
     JOB_ID            = "job-id"
     PACKAGE_MANAGER   = "package-manager"
+    SECURITY_UPDATE   = "security-update"
   end
 
   # rubocop:disable Metrics/MethodLength
