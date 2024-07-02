@@ -309,6 +309,59 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
+      context "with multiple sub module buildfiles" do
+        let(:dependency_files) { [buildfile, subproject_buildfile] }
+        let(:subproject_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "submodule/build.gradle",
+            content: fixture("buildfiles", buildfile_fixture_name)
+          )
+        end
+
+        context "when trying to update buildfiles" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "co.aikar:acf-paper",
+              version: "0.5.0-SNAPSHOT",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "0.6.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }, {
+                file: "app/build.gradle",
+                requirement: "0.6.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "0.5.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }, {
+                file: "app/build.gradle",
+                requirement: "0.5.0-SNAPSHOT",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          describe "updates the submodule/build.gradle file" do
+            it "raises a DependencyFileNotResolvable error" do
+              expect { updated_files.find { |f| f.name == "submodule/build.gradle" } }
+                .to raise_error(Dependabot::DependencyFileNotResolvable)
+            end
+          end
+        end
+      end
+
       context "with a dependency name defined by a property" do
         let(:buildfile_fixture_name) { "name_property.gradle" }
 
