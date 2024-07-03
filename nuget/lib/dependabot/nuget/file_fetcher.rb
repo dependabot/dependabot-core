@@ -34,12 +34,13 @@ module Dependabot
       end
 
       sig do
-        params(
-          source: Dependabot::Source,
-          credentials: T::Array[Credential],
-          repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String]
-        ).void
+        override
+          .params(
+            source: Dependabot::Source,
+            credentials: T::Array[Credential],
+            repo_contents_path: T.nilable(String),
+            options: T::Hash[String, String]
+          ).void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
