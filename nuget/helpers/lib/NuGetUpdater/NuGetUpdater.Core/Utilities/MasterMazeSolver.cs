@@ -320,9 +320,7 @@ public class PackageManager
                     {
                         dependencyPackage.secondVersion = secondVersion;
                     }
-
-                    //var parents = GetParentPackages(package);
-
+                    
                     dependencyList.Add(dependencyPackage);
                 }
             }
