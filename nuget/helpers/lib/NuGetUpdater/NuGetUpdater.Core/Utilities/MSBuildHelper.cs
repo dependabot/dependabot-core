@@ -330,19 +330,6 @@ internal static partial class MSBuildHelper
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
-            
-            // simple cases first
-            // if restore failed, nothing we can do
-            //  if (exitCode != 0)
-            // {
-            //    return null;
-            // }
-
-            // if no problems found, just return the current set
-            // if (!stdOut.Contains("NU1608"))
-            // {
-            //     return packages;
-            // }
 
             // Add packages to existingPackages
             var existingPackages = packages
