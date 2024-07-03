@@ -25,6 +25,22 @@ module Dependabot
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
         T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
 
+      sig do
+        override
+          .params(
+            source: Dependabot::Source,
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String),
+            options: T::Hash[String, String]
+          )
+          .void
+      end
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+        super
+
+        @buildfile_name = T.let(nil, T.nilable(String))
+      end
+
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.any? do |filename|
@@ -87,16 +103,15 @@ module Dependabot
           .subproject_paths
 
         subproject_paths.filter_map do |path|
-          @buildfile_name = T.let(@buildfile_name, T.nilable(String))
           if @buildfile_name
             buildfile_path = File.join(root_dir, path, @buildfile_name)
             fetch_file_from_host(buildfile_path)
           else
             buildfile(File.join(root_dir, path))
           end
-      rescue Dependabot::DependencyFileNotFound
-        # Gradle itself doesn't worry about missing subprojects, so we don't
-        nil
+        rescue Dependabot::DependencyFileNotFound
+          # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
         end
       end
 
