@@ -65,7 +65,7 @@ module Dependabot
         return builds unless settings_file(root_dir)
 
         builds += SettingsFileParser
-                  .new(settings_file: settings_file(root_dir))
+                  .new(settings_file: T.must(settings_file(root_dir)))
                   .included_build_paths
                   .map { |p| clean_join([root_dir, p]) }
 
@@ -83,7 +83,7 @@ module Dependabot
 
         subproject_paths =
           SettingsFileParser
-          .new(settings_file: settings_file(root_dir))
+          .new(settings_file: T.must(settings_file(root_dir)))
           .subproject_paths
 
         subproject_paths.filter_map do |path|
