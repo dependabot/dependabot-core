@@ -19,6 +19,8 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig do
           params(
             property_name: String,
@@ -32,8 +34,8 @@ module Dependabot
             property_name: property_name,
             callsite_pom: callsite_pom
           )
-          node = declaration_details.fetch(:node)
-          filename = declaration_details.fetch(:file)
+          node = declaration_details&.fetch(:node)
+          filename = declaration_details&.fetch(:file)
 
           pom_to_update = dependency_files.find { |f| f.name == filename }
           property_re = %r{<#{Regexp.quote(node.name)}>
@@ -59,6 +61,8 @@ module Dependabot
 
           updated_pomfiles
         end
+        # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         private
 
