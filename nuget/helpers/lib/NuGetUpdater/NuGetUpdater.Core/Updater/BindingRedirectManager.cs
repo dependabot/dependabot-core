@@ -279,8 +279,8 @@ internal static class BindingRedirectManager
             // Return a mapping from binding to element
             // It is possible that multiple elements exist for the same assembly identity, so use a lookup (1:*) instead of a dictionary (1:1) 
             return assemblyElementPairs.ToLookup(
-                p => new AssemblyIdentity(p.Binding.Name, p.Binding.PublicKeyToken), 
-                p => p.Element, 
+                p => new AssemblyIdentity(p.Binding.Name, p.Binding.PublicKeyToken),
+                p => p.Element,
                 new AssemblyIdentityIgnoreCaseComparer()
             );
         }
@@ -311,7 +311,7 @@ internal static class BindingRedirectManager
             string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(x?.PublicKeyToken, y?.PublicKeyToken, StringComparison.OrdinalIgnoreCase);
 
-        public int GetHashCode(AssemblyIdentity obj) => 
+        public int GetHashCode(AssemblyIdentity obj) =>
             HashCode.Combine(
                 obj.Name?.ToLowerInvariant(),
                 obj.PublicKeyToken?.ToLowerInvariant()
