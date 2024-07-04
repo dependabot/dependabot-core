@@ -483,11 +483,13 @@ internal static partial class MSBuildHelper
                     // if the source is relative to the original location, copy it to the temp directory
                     if (PathHelper.IsSubdirectoryOf(nugetConfigDir!, localSource.Source))
                     {
-                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSource.Source);
+                        // normalize the directory separators and copy the contents
+                        string localSourcePath = localSource.Source.Replace("\\", "/");
+                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSourcePath);
                         string destPath = Path.Join(tempDir.FullName, sourceRelativePath);
-                        if (Directory.Exists(localSource.Source))
+                        if (Directory.Exists(localSourcePath))
                         {
-                            PathHelper.CopyDirectory(localSource.Source, destPath);
+                            PathHelper.CopyDirectory(localSourcePath, destPath);
                         }
                     }
                 }
