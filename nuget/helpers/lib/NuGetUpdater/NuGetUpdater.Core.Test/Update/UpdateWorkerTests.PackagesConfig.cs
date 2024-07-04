@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -996,6 +998,307 @@ public partial class UpdateWorkerTests
                 additionalFilesExpected:
                 [
                     ("web.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-13.0.0.0" newVersion="13.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateBindingRedirect_DuplicateRedirectsForTheSameAssemblyAreRemoved()
+        {
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+                              </dependentAssembly>
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=13.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package" version="13.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-13.0.0.0" newVersion="13.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateBindingRedirect_ExistingRedirectForAssemblyPublicKeyTokenDiffersByCase()
+        {
+            // Generated using "sn -k keypair.snk && sn -p keypair.snk public.snk" then converting public.snk to base64
+            // https://learn.microsoft.com/en-us/dotnet/standard/assembly/create-public-private-key-pair
+            var assemblyStrongNamePublicKey = Convert.FromBase64String(
+              "ACQAAASAAACUAAAABgIAAAAkAABSU0ExAAQAAAEAAQAJJW4hmKpxa9pU0JPDvJ9KqjvfQuMUovGtFjkZ9b0i1KQ/7kqEOjW3Va0eGpU7Kz0qHp14iYQ3SsMzBZU3mZ2Ezeqg+dCVuDk7o2lp++4m1FstHsebtXBetyOzWkneo+3iKSzOQ7bOXj2s5M9umqRPk+yj0ZBILf+HvfAd07iIuQ=="
+            ).ToImmutableArray();
+
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0", assemblyPublicKey: assemblyStrongNamePublicKey),
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0", assemblyPublicKey: assemblyStrongNamePublicKey),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=7.0.0.0, Culture=neutral, PublicKeyToken=13523fc3be375af1">
+                          <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="13523FC3BE375AF1" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=13.0.0.0, Culture=neutral, PublicKeyToken=13523fc3be375af1">
+                          <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package" version="13.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="13523FC3BE375AF1" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-13.0.0.0" newVersion="13.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateBindingRedirect_ConfigXmlDeclarationNodeIsPreserved()
+        {
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("app.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+                              </dependentAssembly>
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-7.0.0.0" newVersion="7.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=13.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package" version="13.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("app.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
                         <configuration>
                           <runtime>
                             <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">

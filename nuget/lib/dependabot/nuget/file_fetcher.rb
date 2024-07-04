@@ -136,7 +136,7 @@ module Dependabot
         candidate_paths =
           [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
 
-        # Assembly binding redirects can appear in any app/web.config file
+        # Assembly binding redirects can appear in any app/web.config file for a .NET Framework project
         # https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions#specify-assembly-binding-in-configuration-files
         @assembly_binding_redirect_config_files =
           candidate_paths.filter_map do |dir|

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
@@ -89,7 +90,7 @@ namespace NuGetUpdater.Core.Test
         /// Creates a mock NuGet package with a single assembly in the appropriate `lib/` directory.  The assembly will
         /// contain the appropriate `AssemblyVersion` attribute and nothing else.
         /// </summary>
-        public static MockNuGetPackage CreatePackageWithAssembly(string id, string version, string targetFramework, string assemblyVersion, (string? TargetFramework, (string Id, string Version)[] Packages)[]? dependencyGroups = null)
+        public static MockNuGetPackage CreatePackageWithAssembly(string id, string version, string targetFramework, string assemblyVersion, ImmutableArray<byte>? assemblyPublicKey = null, (string? TargetFramework, (string Id, string Version)[] Packages)[]? dependencyGroups = null)
         {
             return new(
                 id,
@@ -98,7 +99,7 @@ namespace NuGetUpdater.Core.Test
                 DependencyGroups: dependencyGroups,
                 Files:
                 [
-                    ($"lib/{targetFramework}/{id}.dll", CreateAssembly(id, assemblyVersion))
+                    ($"lib/{targetFramework}/{id}.dll", CreateAssembly(id, assemblyVersion, assemblyPublicKey))
                 ]
             );
         }
@@ -265,9 +266,13 @@ namespace NuGetUpdater.Core.Test
             return _stream;
         }
 
-        private static byte[] CreateAssembly(string assemblyName, string assemblyVersion)
+        private static byte[] CreateAssembly(string assemblyName, string assemblyVersion, ImmutableArray<byte>? assemblyPublicKey = null)
         {
             CSharpCompilationOptions compilationOptions = new(OutputKind.DynamicallyLinkedLibrary);
+            if (assemblyPublicKey is not null)
+            {
+                compilationOptions = compilationOptions.WithCryptoPublicKey(assemblyPublicKey.Value);
+            }
             CSharpCompilation compilation = CSharpCompilation.Create(assemblyName, options: compilationOptions)
                 .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
                 .AddSyntaxTrees(CSharpSyntaxTree.ParseText($"[assembly: System.Reflection.AssemblyVersionAttribute(\"{assemblyVersion}\")]"));
