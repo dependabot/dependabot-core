@@ -30,7 +30,7 @@ module Dependabot
         end
 
         sig do
-          params(property_name: String, callsite_pom: DependencyFile).returns(T.nilable(T::Hash[String, T.untyped]))
+          params(property_name: String, callsite_pom: DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
         end
         def property_details(property_name:, callsite_pom:)
           pom = callsite_pom
@@ -82,8 +82,12 @@ module Dependabot
         attr_reader :dependency_files
 
         sig do
-          params(expression: String, property_name: String,
-                 callsite_pom: DependencyFile).returns(T.nilable(T::Hash[String, String]))
+          params(
+            expression: String,
+            property_name: String,
+            callsite_pom: DependencyFile
+          )
+            .returns(T.nilable(T::Hash[Symbol, String]))
         end
         def extract_value_from_expression(expression:, property_name:, callsite_pom:)
           # and the expression is pointing to self then raise the error
