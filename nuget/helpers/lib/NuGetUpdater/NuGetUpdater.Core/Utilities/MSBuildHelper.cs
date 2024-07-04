@@ -231,11 +231,7 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            // We don't know the version for range requirements or wildcard
-            // requirements, so return "" for these.
-            yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
@@ -544,6 +540,7 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
