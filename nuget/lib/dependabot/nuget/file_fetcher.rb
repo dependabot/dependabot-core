@@ -42,7 +42,7 @@ module Dependabot
         ).void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
-        super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
+        super
 
         @sln_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @sln_project_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
@@ -53,6 +53,7 @@ module Dependabot
         @assembly_binding_redirect_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
@@ -80,6 +81,7 @@ module Dependabot
 
         fetched_files
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 
