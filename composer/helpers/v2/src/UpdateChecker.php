@@ -24,7 +24,6 @@ final class UpdateChecker
             $httpBasicCredentials[$credentials['host']] = [
                 'username' => $credentials['username'],
                 'password' => $credentials['password'],
-
             ];
         }
 
