@@ -10,7 +10,7 @@ use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
 use Composer\Package\Link;
 use Composer\Package\PackageInterface;
-use Composer\Semver\Constraint\Constraint;
+use Composer\Package\Version\VersionParser;
 
 final class UpdateChecker
 {
@@ -51,8 +51,8 @@ final class UpdateChecker
         }
 
         $package = $composer->getPackage();
-
-        $constraint = new Constraint('==', $latestAllowableVersion);
+        $versionParser = new VersionParser();
+        $constraint = $versionParser->parseConstraints($latestAllowableVersion);
         $link = new Link($package->getName(), $dependencyName, $constraint);
         $package->setRequires([$dependencyName => $link]);
 
