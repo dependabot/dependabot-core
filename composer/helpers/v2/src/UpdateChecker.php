@@ -8,13 +8,16 @@ use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
+use Composer\Package\Link;
 use Composer\Package\PackageInterface;
+use Composer\Semver\Constraint\Constraint;
+use Composer\Semver\VersionParser;
 
 final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
+        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials, $latestAllowableVersion] = $args;
 
         $httpBasicCredentials = [];
 
@@ -48,10 +51,31 @@ final class UpdateChecker
             $io->loadConfiguration($config);
         }
 
+        $package = $composer->getPackage();
+        $versionParser = new VersionParser();
+        $version = $package->getPrettyVersion();
+
+        try {
+            // Try to normalize the version string
+            $normalizedVersion = $versionParser->normalize($version);
+
+            // If the normalized version string is the same as the original version string,
+            // then the original version string represents an exact version
+            if ($normalizedVersion === $version) {
+                // The version string represents an exact version
+                // constraint added to check possible update for any version greater than or equal to the current version
+                $constraint = new Constraint('>=', $normalizedVersion);
+                $link = new Link($package->getName(), $dependencyName, $constraint, 'requires', $constraint->getPrettyString());
+                $package->setRequires([$dependencyName => $link]);
+            }
+        } catch (\UnexpectedValueException $e) {
+            // The version string does not represent an exact version
+        }
+
         $install = new Installer(
             $io,
             $config,
-            $composer->getPackage(),  // @phpstan-ignore-line
+            $package,  // @phpstan-ignore-line
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),
@@ -75,7 +99,7 @@ final class UpdateChecker
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
         if ($composer->getLocker()->isLocked()) {
-            $install->setUpdateAllowList([$dependencyName]);
+            $install->setUpdateAllowList([$dependencyName => $latestAllowableVersion]);
         }
 
         $install->run();
