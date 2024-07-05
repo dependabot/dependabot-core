@@ -16,7 +16,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: kamil/update_smoke_tests_according_to_10154_PR_changes
 jobs:
   discover:
     runs-on: ubuntu-latest

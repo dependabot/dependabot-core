@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
 
               context "when requirement version has more digits than the new version" do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:setup_py_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
             end
           end
         end
@@ -399,7 +399,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:setup_cfg_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
             end
           end
         end
@@ -569,7 +569,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                  its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+                  its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
                 end
               end
             end
@@ -739,7 +739,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when needing an update" do
                 let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+                its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
               end
             end
           end

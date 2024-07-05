@@ -126,7 +126,7 @@ module Dependabot
               req.fetch(:requirement)
             else
               # But if it's not, update it
-              update_requirements_range(requirement_strings)
+              update_requirements_range(requirement_strings, Requirement::BUMP_VERSIONS_OPS)
             end
 
           req.merge(requirement: new_requirement)
@@ -273,12 +273,12 @@ module Dependabot
             .join(".")
         end
 
-        def update_requirements_range(requirement_strings)
+        def update_requirements_range(requirement_strings, ops = Requirement::OPS)
           ruby_requirements =
             requirement_strings.map { |r| requirement_class.new(r) }
 
           updated_requirement_strings = ruby_requirements.flat_map do |r|
-            next r.to_s if r.satisfied_by?(latest_resolvable_version, Requirement::BUMP_VERSIONS_OPS)
+            next r.to_s if r.satisfied_by?(latest_resolvable_version, ops)
 
             case op = r.requirements.first.first
             when "<"
