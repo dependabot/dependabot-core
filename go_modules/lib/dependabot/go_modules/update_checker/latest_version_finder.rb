@@ -72,7 +72,7 @@ module Dependabot
           @latest_version ||= T.let(fetch_latest_version, T.nilable(Dependabot::Version))
         end
 
-        sig { returns(Dependabot::Version) }
+        sig { returns(T.nilable(Dependabot::Version)) }
         def lowest_security_fix_version
           @lowest_security_fix_version ||= T.let(fetch_lowest_security_fix_version, T.nilable(Dependabot::Version))
         end
@@ -105,7 +105,7 @@ module Dependabot
           candidate_versions.max
         end
 
-        sig { returns(Dependabot::Version) }
+        sig { returns(T.nilable(Dependabot::Version)) }
         def fetch_lowest_security_fix_version
           relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
@@ -114,7 +114,7 @@ module Dependabot
           relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
 
-          T.must(relevant_versions.min)
+          relevant_versions.min
         end
 
         sig { returns(T::Array[Dependabot::Version]) }
