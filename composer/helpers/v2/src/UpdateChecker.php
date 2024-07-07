@@ -52,17 +52,18 @@ final class UpdateChecker
 
         $package = $composer->getPackage();
         $versionParser = new VersionParser();
-        $version = $package->getVersion(); // Returns the version of this package
-
-        try {
-            // If the version can be parsed without throwing an exception, it's an absolute version
-            $versionParser->normalize($version);
-            $constraintString = '>=' . $version; // if absolute look for an update.
-        } catch (\UnexpectedValueException $e) {
-            // If an exception is thrown, it's not an absolute version
-            $constraintString = $version;
+        $dependabotConstraint = '==' . $latestAllowableVersion;
+        $composerConstraint = '';
+        if (isset($package->getRequires()[$dependencyName])) {
+            // Main Composer Constraint
+            $composerConstraint = $package->getRequires()[$dependencyName]->getPrettyConstraint();
+        } elseif (isset($package->getDevRequires()[$dependencyName])) {
+            // Dev Composer Constraint
+            $composerConstraint = $package->getDevRequires()[$dependencyName]->getPrettyConstraint();
         }
-        $constraint = $versionParser->parseConstraints('==' . $latestAllowableVersion . ' ' . $constraintString);
+        $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
+
+        $constraint = $versionParser->parseConstraints($constraintString);
         $link = new Link($package->getName(), $dependencyName, $constraint);
         $package->setRequires([$dependencyName => $link]);
 
