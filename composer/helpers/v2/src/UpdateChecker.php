@@ -53,15 +53,17 @@ final class UpdateChecker
         $package = $composer->getPackage();
         $versionParser = new VersionParser();
         $dependabotConstraint = '==' . $latestAllowableVersion;
-        $composerConstraint = '';
+        $constraintString = $dependabotConstraint;
+        // combine new dependabot constraints with the existing composer constraints (if exists)
         if (isset($package->getRequires()[$dependencyName])) {
             // Main Composer Constraint
             $composerConstraint = $package->getRequires()[$dependencyName]->getPrettyConstraint();
+            $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
         } elseif (isset($package->getDevRequires()[$dependencyName])) {
             // Dev Composer Constraint
             $composerConstraint = $package->getDevRequires()[$dependencyName]->getPrettyConstraint();
+            $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
         }
-        $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
 
         $constraint = $versionParser->parseConstraints($constraintString);
         $link = new Link($package->getName(), $dependencyName, $constraint);
