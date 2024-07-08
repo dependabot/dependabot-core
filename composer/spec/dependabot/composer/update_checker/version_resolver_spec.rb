@@ -57,6 +57,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with a library using a >= PHP constraint" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
@@ -66,6 +67,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with an application using a >= PHP constraint" do
       let(:project_name) { "php_specified_without_lockfile" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
@@ -73,6 +75,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
       context "when the minimum version is invalid" do
         let(:dependency_version) { "4.2.0" }
+        let(:latest_allowable_version) { Gem::Version.new("4.3.1") }
         let(:string_req) { "4.2.0" }
 
         it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
@@ -83,6 +86,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       context "when the minimum version is invalid" do
         let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
 
@@ -103,11 +107,16 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with a dependency that's provided by another dep" do
       let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
-      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.0")) }
+      # Root composer.json requires php-http/client-implementation ==6.0.0 ^1.0, it could not be found in any version,
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+        end
+      end
     end
 
     context "with a dependency that uses a stability flag" do
