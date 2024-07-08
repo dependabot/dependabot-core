@@ -45,7 +45,7 @@ public class PackageManager
         this.projectPath = projectPath;
     }
 
-    // Function that converts from string to string[]
+    // Method that converts from string to string[]
      private string[] ParseCommandLineArgs(string commandString)
     {
         List<string> argsList = new List<string>();
@@ -80,7 +80,7 @@ public class PackageManager
         return argsList.ToArray();
     }
 
-    // Function to get the dependencies of a package
+    // Method to get the dependencies of a package
     public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework)
     {
         // Lower the characters in the package name to put in the nuspec url
@@ -116,9 +116,9 @@ public class PackageManager
                 package.newVersion = package.newVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
             }
+
             // Construct the command to run and run it
             string nugetCommand = $"install {package.packageName} -Version {package.newVersion} -NonInteractive -OutputDirectory \"{tempDirectory}\" -ConfigFile \"{configFile}\" -PackageSaveMode nuspec";
-
             string[] args = ParseCommandLineArgs(nugetCommand);
 
             try
@@ -416,8 +416,6 @@ public class PackageManager
     // Method to update the version of a desired package based off framwork
     public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, string targetFramework)
     {
-        // List<PackageToUpdate> AllExistingPackages = await existingPackages;
-
         // Check if there is no new version to update or if the current version isnt updated
         if (package.newVersion == null)
         {
@@ -504,6 +502,7 @@ public class PackageManager
 
                 // Get the parent packages of the package and check the compatibility between its family
                 HashSet<PackageToUpdate> parentPackages = GetParentPackages(package);
+
                 foreach (PackageToUpdate parent in parentPackages)
                 {
                     bool familyCompatible = await AreAllParentsCompatibleAsync(existingPackages, parent, targetFramework);
