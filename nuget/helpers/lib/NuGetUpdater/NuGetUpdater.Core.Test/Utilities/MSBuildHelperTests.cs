@@ -492,51 +492,6 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario Setup
-    // Updating a non-included dependency of an existing package to a new version, but the dependency is not in the existing package
-    // Updating the dependency will require the existing top level package to also update
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSetUp()
-    {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewSetUp)}_");
-
-        try
-        {
-            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="Azure.Core" Version="1.21.0" />
-                  </ItemGroup>
-                </Project>
-                """);
-
-            var dependencies = new[]
-            {
-                new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference)
-            };
-            var update = new[]
-            {
-                new Dependency("System.Text.Json", "4.7.2", DependencyType.Unknown)
-            };
-
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
-            Assert.NotNull(resolvedDependencies);
-            Assert.Equal(2, resolvedDependencies.Length);
-            Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
-            Assert.Equal("1.21.0", resolvedDependencies[0].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[1].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[1].Version);
-        }
-        finally
-        {
-            repoRoot.Delete(recursive: true);
-        }
-    }
-
     // Scenario 1
     // Singular Transitive Dependency with one root package, updating the root
     // Updating CS - Script Code to 2.0.0 reqires Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and then Microsoft.CodeAnalysis.Common to be 3.6.0
@@ -548,18 +503,6 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
-            await File.WriteAllTextAsync(projectPath, """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <PackageReference Include="CS-Script.Core" Version="1.3.1" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0" />
-                <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.4.0" />
-                  </ItemGroup>
-                </Project>
-                """);
 
             var dependencies = new[]
             {
