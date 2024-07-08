@@ -1,9 +1,10 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/errors"
 require "dependabot/updater/errors"
 require "octokit"
+require "sorbet-runtime"
 
 # This class is responsible for determining how to present a Dependabot::Error
 # to the Service and Logger.
@@ -22,17 +23,20 @@ require "octokit"
 module Dependabot
   class Updater
     class ErrorHandler
+      extend T::Sig
+
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
-      RUN_HALTING_ERRORS = {
+      RUN_HALTING_ERRORS = T.let({
         Dependabot::OutOfDisk => "out_of_disk",
         Dependabot::OutOfMemory => "out_of_memory",
         Dependabot::AllVersionsIgnored => "all_versions_ignored",
         Dependabot::UnexpectedExternalCode => "unexpected_external_code",
         Errno::ENOSPC => "out_of_disk",
         Octokit::Unauthorized => "octokit_unauthorized"
-      }.freeze
+      }.freeze, T::Hash[T.class_of(Exception), String])
 
+      sig { params(service: Service, job: Job).void }
       def initialize(service:, job:)
         @service = service
         @job = job
@@ -40,6 +44,13 @@ module Dependabot
 
       # This method handles errors where there is a dependency in the current
       # context. This should be used by preference where possible.
+      sig do
+        params(
+          error: StandardError,
+          dependency: T.nilable(Dependency),
+          dependency_group: T.nilable(DependencyGroup)
+        ).void
+      end
       def handle_dependency_error(error:, dependency:, dependency_group: nil)
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
@@ -66,20 +77,42 @@ module Dependabot
       end
 
       # Provides logging for errors that occur when processing a dependency
+      sig do
+        params(
+          dependency: T.nilable(Dependabot::Dependency),
+          error: StandardError,
+          error_type: String,
+          error_detail: T.nilable(String)
+        )
+        .void
+      end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
+        if dependency.nil?
+          depName = "no_dependency"
+        else
+          depName = dependency.name
+        end
+
         if error_type == "unknown_error"
-          Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
+          Dependabot.logger.error "Error processing #{depName} (#{error.class.name})"
           Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
+
+          error.backtrace&.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
-            "Handled error whilst updating #{dependency.name}: #{error_type} #{error_detail}"
+            "Handled error whilst updating #{depName}: #{error_type} #{error_detail}"
           )
         end
       end
 
       # This method handles errors where there is no dependency in the current
       # context.
+      sig do
+        params(
+          error: StandardError,
+          dependency_group: T.nilable(DependencyGroup)
+        ).void
+      end
       def handle_job_error(error:, dependency_group: nil)
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
@@ -104,11 +137,12 @@ module Dependabot
       end
 
       # Provides logging for errors that occur outside of a dependency context
+      sig { params(error: StandardError, error_type: String, error_detail: T.untyped).void}
       def log_job_error(error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing job (#{error.class.name})"
           Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          error.backtrace&.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
             "Handled error whilst processing job: #{error_type} #{error_detail}"
@@ -118,7 +152,9 @@ module Dependabot
 
       private
 
+      sig { returns(Service) }
       attr_reader :service
+      sig { returns(Job) }
       attr_reader :job
 
       # This method accepts an error class and returns an appropriate `error_details` hash
@@ -127,6 +163,14 @@ module Dependabot
       # For some specific errors, it also passes additional information to the
       # exception service to aid in debugging, the optional arguments provide
       # context to pass through in these cases.
+      sig do
+        params(
+          error: StandardError,
+          dependency: T.nilable(Dependency),
+          dependency_group: T.nilable(DependencyGroup)
+        )
+        .returns(T::Hash[Symbol, T.untyped])
+      end
       def error_details_for(error, dependency: nil, dependency_group: nil)
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
@@ -153,12 +197,14 @@ module Dependabot
         { "error-type": "unknown_error" }
       end
 
+      sig { params(error: StandardError).void }
       def log_unknown_error_with_backtrace(error)
         error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
-          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
-          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+          ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ?
+            T.unsafe(error).sentry_context[:fingerprint] : nil,
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
