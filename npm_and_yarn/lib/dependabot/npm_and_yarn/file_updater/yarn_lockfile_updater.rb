@@ -228,38 +228,20 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/MethodLength
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
           # Invalid package: When package.json doesn't include a name or version
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
-          sub_dep_local_path_err = "refers to a non-existing file"
-          if error_message.match?(INVALID_PACKAGE) ||
-             error_message.include?(sub_dep_local_path_err)
-            raise_resolvability_error(error_message, yarn_lock)
-          end
+          raise_resolvability_error_if_necessary(error, yarn_lock)
 
-          if error_message.include?("Couldn't find package")
-            package_name = error_message.match(/package "(?<package_req>.*?)"/)
-                                        .named_captures["package_req"]
-                                        .split(/(?<=\w)\@/).first
-            sanitized_name = sanitize_package_name(package_name)
-            sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
-          end
-
-          if error_message.match?(%r{/[^/]+: Not found})
-            package_name = error_message
-                           .match(%r{/(?<package_name>[^/]+): Not found})
-                           .named_captures["package_name"]
-            sanitized_name = sanitize_package_name(package_name)
-            sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
-          end
+          # Missing package: When a package is missing from the registry
+          # Tarball error: When a tarball is missing from the registry
+          # Unreachable git: When a git dependency is unreachable
+          # Timeout fetching package: When a package is taking too long to fetch
+          raise_missing_package_error_if_necessary(error, yarn_lock)
 
           # TODO: Move this logic to the version resolver and check if a new
           # version and all of its subdependencies are resolvable
@@ -316,10 +298,8 @@ module Dependabot
 
           raise error
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/MethodLength
 
+        # rubocop:enable Metrics/PerceivedComplexity
         def resolvable_before_update?(yarn_lock)
           @resolvable_before_update ||= {}
           return @resolvable_before_update[yarn_lock.name] if @resolvable_before_update.key?(yarn_lock.name)
@@ -451,6 +431,42 @@ module Dependabot
               source: nil,
               credentials: credentials
             ).parse
+        end
+
+        def raise_resolvability_error_if_necessary(error_message, yarn_lock)
+          sub_dep_local_path_err = "refers to a non-existing file"
+          if error_message.match?(INVALID_PACKAGE) ||
+             error_message.include?(sub_dep_local_path_err)
+            raise_resolvability_error(error_message, yarn_lock)
+          end
+        end
+
+        def raise_missing_package_error_if_necessary(error, yarn_lock)
+          error_message = error.message
+
+          if error_message.include?("Couldn't find package")
+            package_name = error_message.match(/package "(?<package_req>.*?)"/)
+                                        .named_captures["package_req"]
+                                        .split(/(?<=\w)\@/).first
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
+
+          elsif error_message.match?(%r{/[^/]+: Not found})
+            package_name = error_message
+                           .match(%r{/(?<package_name>[^/]+): Not found})
+                           .named_captures["package_name"]
+            sanitized_name = sanitize_package_name(package_name)
+            sanitized_error = error_message.gsub(package_name, sanitized_name)
+            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
+
+          elsif error_message.include?("Tarball is not in network and can not be located in cache")
+            debugger
+            tarball_path = error_message.match(/"(.*?)"/).captures.first
+            sanitized_path = sanitize_package_name(tarball_path)
+            sanitized_error = error_message.gsub(tarball_path, sanitized_path)
+            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
+          end
         end
 
         def handle_missing_package(package_name, error_message, yarn_lock)
