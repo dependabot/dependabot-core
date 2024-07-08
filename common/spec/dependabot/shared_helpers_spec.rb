@@ -569,13 +569,12 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".handle_json_parse_error" do
     subject(:handle_json_parse_error) do
-      described_class.handle_json_parse_error(stdout, stderr, error_context, error_class)
+      described_class.handle_json_parse_error(stdout, stderr, error_context)
     end
 
     let(:stdout) { "" }
     let(:stderr) { "" }
     let(:error_context) { { command: "test_command", function: "test_function", args: [] } }
-    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
     context "when stdout is not empty" do
       let(:stdout) { "Some stdout message" }
