@@ -363,7 +363,7 @@ module Dependabot
       end
 
       # TODO: Should this return Dependabot::Version?
-      sig { returns(T.nilable(Gem::Version)) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       def current_version
         @current_version ||=
           T.let(
