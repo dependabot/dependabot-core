@@ -35,10 +35,10 @@ function docker_build() {
   set_tag
 
   if [ -z "$DEPENDABOT_USER_UID" ]; then
-    export DEPENDABOT_USER_UID=1000
+    export DEPENDABOT_USER_UID=1001
   fi
   if [ -z "$DEPENDABOT_USER_GID" ]; then
-    export DEPENDABOT_USER_GID=1000
+    export DEPENDABOT_USER_GID=1001
   fi
 
   # Only check Docker Content Trust for the updater-core image
