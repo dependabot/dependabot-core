@@ -193,12 +193,28 @@ module Dependabot
           trace: response["trace"]
         )
       rescue JSON::ParserError
-        raise HelperSubprocessFailed.new(
-          message: stdout || "No output from command",
-          error_class: "JSON::ParserError",
-          error_context: error_context
-        )
+        raise handle_json_parse_error(stdout, stderr, error_context)
       end
+    end
+
+    sig do
+      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped])
+        .returns(Dependabot::SharedHelpers::HelperSubprocessFailed)
+    end
+    def self.handle_json_parse_error(stdout, stderr, error_context)
+      # Handle case when stdout is empty but stderr is not
+      message = if !stdout.strip.empty?
+                  stdout
+                elsif !stderr.strip.empty?
+                  stderr
+                else
+                  "No output from command"
+                end
+      HelperSubprocessFailed.new(
+        message: message,
+        error_class: "JSON::ParserError",
+        error_context: error_context
+      )
     end
 
     # rubocop:enable Metrics/MethodLength
