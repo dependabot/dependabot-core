@@ -202,7 +202,8 @@ module Dependabot
         .returns(Dependabot::SharedHelpers::HelperSubprocessFailed)
     end
     def self.handle_json_parse_error(stdout, stderr, error_context)
-      # Handle case when stdout is empty but stderr is not
+      # If the JSON is invalid, the helper has likely failed
+      # We should raise a more helpful error message
       message = if !stdout.strip.empty?
                   stdout
                 elsif !stderr.strip.empty?
