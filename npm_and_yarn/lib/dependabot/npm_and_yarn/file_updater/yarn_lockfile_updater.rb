@@ -461,7 +461,6 @@ module Dependabot
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
 
           elsif error_message.include?("Tarball is not in network and can not be located in cache")
-            debugger
             tarball_path = error_message.match(/"(.*?)"/).captures.first
             sanitized_path = sanitize_package_name(tarball_path)
             sanitized_error = error_message.gsub(tarball_path, sanitized_path)
