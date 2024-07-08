@@ -566,4 +566,40 @@ RSpec.describe Dependabot::SharedHelpers do
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
     end
   end
+
+  describe ".handle_json_parse_error" do
+    subject(:handle_json_parse_error) do
+      described_class.handle_json_parse_error(stdout, stderr, error_context, error_class)
+    end
+
+    let(:stdout) { "" }
+    let(:stderr) { "" }
+    let(:error_context) { { command: "test_command", function: "test_function", args: [] } }
+    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
+
+    context "when stdout is not empty" do
+      let(:stdout) { "Some stdout message" }
+
+      it "raises HelperSubprocessFailed with stdout message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "Some stdout message")
+      end
+    end
+
+    context "when stdout is empty but stderr is not empty" do
+      let(:stderr) { "Some stderr message" }
+
+      it "raises HelperSubprocessFailed with stderr message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "Some stderr message")
+      end
+    end
+
+    context "when both stdout and stderr are empty" do
+      it "raises HelperSubprocessFailed with default message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "No output from command")
+      end
+    end
+  end
 end
