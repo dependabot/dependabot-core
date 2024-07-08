@@ -38,7 +38,8 @@ RUN apt-get update \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
-ARG USER_UID=1000
+# UID 1000 already used by ubuntu
+ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
