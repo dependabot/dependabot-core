@@ -606,9 +606,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#lowest_resolvable_security_fix_version" do
     subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
 
-    before { allow(checker).to receive(:lowest_security_fix_version).and_return("delegate") }
+    before do
+      allow(checker)
+        .to receive(:lowest_security_fix_version)
+        .and_return(Dependabot::GithubActions::Version.new("2.0.0"))
+    end
 
-    it { is_expected.to eq("delegate") }
+    it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
 
   describe "#updated_requirements" do
