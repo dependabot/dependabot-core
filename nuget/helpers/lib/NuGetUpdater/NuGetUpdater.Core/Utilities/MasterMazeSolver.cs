@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 using NuGet.Common;
@@ -416,6 +417,7 @@ public class PackageManager
     // Method to update the version of a desired package based off framwork
     public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, string targetFramework)
     {
+        Boolean inExisting = true;
         // Check if there is no new version to update or if the current version isnt updated
         if (package.newVersion == null)
         {
@@ -432,6 +434,7 @@ public class PackageManager
         else
         {
             package.currentVersion = package.newVersion;
+            inExisting = false ;
         }
 
         try
@@ -521,9 +524,56 @@ public class PackageManager
                         parent.newVersion = compatibleVersion.ToString();
                         await UpdateVersion(existingPackages, parent, targetFramework);
                     }
+
+                    // If it's compatible and the package you updated wasn't in the existing package, check if the parent's dependencies version is the same as the current
+                    else if (isCompatible == true && inExisting == false && parent.isSpecific != true)
+                    {
+                        List<PackageToUpdate> dependencyListParent = await GetDependenciesAsync(parent, targetFramework);
+                        PackageToUpdate parentDependency = dependencyListParent.FirstOrDefault(p => p.packageName == package.packageName);
+                        if (parentDependency.currentVersion != package.currentVersion)
+                        {
+                            //update parent to next version that has this version
+                            // if it doesnt have it, then you can add the package in the existing list
+                            // Get the latest version as a limit
+                            SourceRepository repo = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+                            FindPackageByIdResource resource = await repo.GetResourceAsync<FindPackageByIdResource>();
+
+                            // Find the latest version of the package
+                            IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(
+                                parent.packageName, new SourceCacheContext(), NullLogger.Instance, CancellationToken.None);
+                            NuGetVersion latestVersion = versions.Where(v => !v.IsPrerelease).Max();
+
+                            string currentVersionString = parent.currentVersion;
+                            NuGetVersion currentVersionParent = NuGetVersion.Parse(currentVersionString);
+
+                            // Loop from the current version to the latest version, use next patch as a limit (unless theres a limit) so it doesn't look for versions that don't exist
+                            for (NuGetVersion version = currentVersionParent; version <= latestVersion; version = NextPatch(version, versions))
+                            {
+                                NuGetVersion nextPatch = NextPatch(version, versions);
+                                if(nextPatch == version)
+                                {
+                                    return "Success";
+                                }
+                                string parentVersion = version.ToString();
+                                PackageToUpdate parentTemp = parent;
+                                parentTemp.currentVersion = parentVersion;
+
+                                List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parentTemp, targetFramework);
+                                PackageToUpdate parentDependencyTemp = dependencyListParentTemp.FirstOrDefault(p => p.packageName == package.packageName);
+                                if ((parentDependencyTemp.currentVersion == package.currentVersion) && (parent.isSpecific != true))
+                                {
+                                    parent.newVersion = parentVersion;
+                                    await UpdateVersion(existingPackages, parent, targetFramework);
+                                    package.isSpecific = true;
+                                    return "Success";
+                                }
+                            }
+                            parent.currentVersion = currentVersionString;
+                        }
+                    }
                 }
             }
-
+                    
             else
             {
                 Console.WriteLine("Current version >= latest version");
@@ -632,6 +682,10 @@ public class PackageManager
                 if (await AreAllParentsCompatibleAsync(existingPackages, possibleParent, targetFramework))
                 {
                     // If compatible, return the new version
+                    if (Regex.IsMatch(possibleParent.newVersion, @"[a-zA-Z]"))
+                    {
+                        possibleParent.isSpecific = true;
+                    }
                     return version;
                 }
             }
