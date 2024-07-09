@@ -52,7 +52,7 @@ final class UpdateChecker
 
         $package = $composer->getPackage();
         // If there is a dependabot constraint.
-        if (isset($latestAllowableVersion)) {
+        if (!empty(trim($latestAllowableVersion))) {
             $versionParser = new VersionParser();
             // constraint from dependabot
             $dependabotConstraint = '==' . $latestAllowableVersion;
