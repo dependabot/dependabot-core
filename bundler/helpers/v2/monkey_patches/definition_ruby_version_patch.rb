@@ -26,7 +26,7 @@ module BundlerDefinitionRubyVersionPatch
         Gem::Specification.new("Ruby\0", requested_version)
     end
 
-    %w(2.5.3 2.6.10 2.7.8 3.0.7 3.1.5 3.2.4).each do |version|
+    %w(2.5.3 2.6.10 2.7.8 3.0.7 3.1.6 3.2.4).each do |version|
       sources.metadata_source.specs << Gem::Specification.new("Ruby\0", version)
     end
 
