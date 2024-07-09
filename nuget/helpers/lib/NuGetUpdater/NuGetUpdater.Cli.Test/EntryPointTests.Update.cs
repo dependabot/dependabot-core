@@ -283,8 +283,7 @@ public partial class EntryPointTests
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="Azure.Core" Version="1.21.0" />
-                            <PackageReference Include="System.Text.Json" Version="4.7.2" />
+                            <PackageReference Include="Azure.Core" Version="1.22.0" />
                           </ItemGroup>
                         </Project>
                         """)
