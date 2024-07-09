@@ -138,7 +138,8 @@ RSpec.describe Dependabot::SharedHelpers do
         function: function,
         args: args,
         env: env,
-        stderr_to_stdout: stderr_to_stdout
+        stderr_to_stdout: stderr_to_stdout,
+        error_class: error_class
       )
     end
 
@@ -146,6 +147,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:args) { ["foo"] }
     let(:env) { nil }
     let(:stderr_to_stdout) { false }
+    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
     context "when the subprocess is successful" do
       it "returns the result" do
@@ -220,9 +222,9 @@ RSpec.describe Dependabot::SharedHelpers do
 
     context "when a custom error class is passed" do
       let(:error_class) { EcoSystemHelperSubprocessFailed }
+      let(:function) { "hard_error" }
 
       it "raises the custom error class" do
-        let(:function) { "hard_error" }
         expect { run_subprocess }
           .to raise_error(EcoSystemHelperSubprocessFailed)
       end
@@ -588,6 +590,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stdout) { "" }
     let(:stderr) { "" }
     let(:error_context) { { command: "test_command", function: "test_function", args: [] } }
+    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
     context "when stdout is not empty" do
       let(:stdout) { "Some stdout message" }
