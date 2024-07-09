@@ -489,11 +489,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
         # v1 url doesn't always return 404 for missing packages
         stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
+        # setting the latest allowable version to 2.4.1
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("2.4.1"))
       end
-
-      # setting the latest allowable version to 2.4.1
 
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
@@ -544,8 +543,19 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "when there is no lockfile" do
         let(:project_name) { "version_conflict_without_lockfile" }
 
-        it "when no lockfile then version cannot be resolved" do
-          expect(latest_resolvable_version).to be_nil
+        # setting the latest allowable version to 2.1.7
+        before do
+          allow(checker).to receive(:latest_version_from_registry)
+            .and_return(Gem::Version.new("2.1.7"))
+        end
+
+        # Root composer.json requires monolog/monolog ==2.1.7 1.22.0
+        it "raises a resolvability error" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message)
+              .to include("Your requirements could not be resolved to an installable set of packages.")
+          end
         end
       end
     end

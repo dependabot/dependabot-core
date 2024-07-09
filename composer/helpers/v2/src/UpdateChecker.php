@@ -52,22 +52,29 @@ final class UpdateChecker
 
         $package = $composer->getPackage();
         $versionParser = new VersionParser();
+        // constraint from dependabot
         $dependabotConstraint = '==' . $latestAllowableVersion;
-        $constraintString = $dependabotConstraint;
         // combine new dependabot constraints with the existing composer constraints (if exists)
         if (isset($package->getRequires()[$dependencyName])) {
-            // Main Composer Constraint
+            // Root Composer Constraint
             $composerConstraint = $package->getRequires()[$dependencyName]->getPrettyConstraint();
-            $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
+            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
+            $constraint = $versionParser->parseConstraints($combinedConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setRequires([$dependencyName => $link]);
         } elseif (isset($package->getDevRequires()[$dependencyName])) {
             // Dev Composer Constraint
             $composerConstraint = $package->getDevRequires()[$dependencyName]->getPrettyConstraint();
-            $constraintString = $dependabotConstraint . ' ' . $composerConstraint;
+            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
+            $constraint = $versionParser->parseConstraints($combinedConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setDevRequires([$dependencyName => $link]);
+        } else {
+            // No Composer Constraint
+            $constraint = $versionParser->parseConstraints($dependabotConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setRequires([$dependencyName => $link]);
         }
-
-        $constraint = $versionParser->parseConstraints($constraintString);
-        $link = new Link($package->getName(), $dependencyName, $constraint);
-        $package->setRequires([$dependencyName => $link]);
 
         $install = new Installer(
             $io,
