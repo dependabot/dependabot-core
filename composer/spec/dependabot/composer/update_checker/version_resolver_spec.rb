@@ -64,6 +64,16 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
+    context "with a library using a >= PHP constraint and latest allowable version not set" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { nil }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+    end
+
     context "with an application using a >= PHP constraint" do
       let(:project_name) { "php_specified_without_lockfile" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
