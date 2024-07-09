@@ -68,7 +68,7 @@ module Dependabot
             )
             updated_files.fetch(lockfile_name)
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
+        rescue YarnHelperSubprocessFailed => e
           handle_yarn_lock_updater_error(e, yarn_lock)
         end
 
@@ -127,7 +127,7 @@ module Dependabot
               end
             end
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
+        rescue YarnHelperSubprocessFailed => e
           # package.json name cannot contain characters like empty string or @.
           if e.message.include?("Name contains illegal characters")
             raise Dependabot::DependencyFileNotParseable, e.message
@@ -314,7 +314,7 @@ module Dependabot
               end
 
               true
-            rescue SharedHelpers::HelperSubprocessFailed
+            rescue YarnHelperSubprocessFailed
               false
             end
         end
