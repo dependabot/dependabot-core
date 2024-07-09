@@ -214,6 +214,16 @@ RSpec.describe Dependabot::SharedHelpers do
           end)
       end
     end
+
+    context "when a custom error class is passed" do
+      let(:error_class) { EcoSystemHelperSubprocessFailed }
+
+      it "raises the custom error class" do
+        let(:function) { "hard_error" }
+        expect { run_subprocess }
+          .to raise_error(EcoSystemHelperSubprocessFailed)
+      end
+    end
   end
 
   describe ".run_shell_command" do
@@ -575,7 +585,6 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:stdout) { "" }
     let(:stderr) { "" }
     let(:error_context) { { command: "test_command", function: "test_function", args: [] } }
-    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
     context "when stdout is not empty" do
       let(:stdout) { "Some stdout message" }
@@ -599,6 +608,16 @@ RSpec.describe Dependabot::SharedHelpers do
       it "raises HelperSubprocessFailed with default message" do
         expect { raise handle_json_parse_error }
           .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "No output from command")
+      end
+    end
+
+    context "when a custom error class is passed" do
+      let(:stdout) { "Some stdout message" }
+      let(:error_class) { EcoSystemHelperSubprocessFailed }
+
+      it "raises the custom error class with stdout message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(EcoSystemHelperSubprocessFailed, "Some stdout message")
       end
     end
   end
