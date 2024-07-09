@@ -267,13 +267,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:dependency_name) { "github.com/dependabot-fixtures/future-go" }
       let(:dependency_version) { "0.0.0-1" }
 
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }
-          .to raise_error(error_class) do |error|
-          expect(error.message).to include("github.com/dependabot-fixtures/future-go")
-          expect(error.message).to include("requires go >= 99.21.3")
-        end
+      it "returns the correct release number" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
 
