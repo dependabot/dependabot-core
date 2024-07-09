@@ -193,6 +193,364 @@ public partial class EntryPointTests
         }
 
         [Fact]
+        public async Task ResolveDependencyConflicts_Scenario1()
+        {
+            await Run(path =>
+                [
+                    "update",
+                    "--repo-root",
+                    path,
+                    "--solution-or-project",
+                    Path.Combine(path, "path/to/my.csproj"),
+                    "--dependency",
+                    "CS-Script.Core",
+                    "--new-version",
+                    "2.0.0",
+                    "--previous-version",
+                    "1.3.1",
+                    "--verbose"
+                ],
+                initialFiles:
+                [
+                    ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="CS-Script.Core" Version="1.3.1" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.4.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedFiles:
+                [
+                    ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="CS-Script.Core" Version="2.0.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.6.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.6.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario2()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "System.Text.Json",
+                "--new-version",
+                "4.7.2",
+                "--previous-version",
+                "4.6.0",
+                "--verbose",
+                "--transitive"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Azure.Core" Version="1.21.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Azure.Core" Version="1.21.0" />
+                            <PackageReference Include="System.Text.Json" Version="4.7.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario3()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "Newtonsoft.Json",
+                "--new-version",
+                "13.0.1",
+                "--previous-version",
+                "12.0.1",
+                "--verbose",
+                "--transitive"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                            <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario4()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "Microsoft.CodeAnalysis.Common",
+                "--new-version",
+                "4.10.0",
+                "--previous-version",
+                "4.9.2",
+                "--verbose",
+                "--transitive"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario5()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "Microsoft.CodeAnalysis.Common",
+                "--new-version",
+                "4.10.0",
+                "--previous-version",
+                "4.9.2",
+                "--verbose"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario7()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "Buildalyzer",
+                "--new-version",
+                "7.0.1",
+                "--previous-version",
+                "6.0.4",
+                "--verbose"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Buildalyzer" Version="6.0.4" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Buildalyzer" Version="7.0.1" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.0.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
+        public async Task ResolveDependencyConflicts_Scenario10()
+        {
+            await Run(path =>
+            [
+                "update",
+                "--repo-root",
+                path,
+                "--solution-or-project",
+                Path.Combine(path, "path/to/my.csproj"),
+                "--dependency",
+                "AutoMapper.Collection",
+                "--new-version",
+                "10.0.0",
+                "--previous-version",
+                "9.0.0",
+                "--verbose"
+            ],
+        initialFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+                            <PackageReference Include="AutoMapper" Version="12.0.1" />
+                            <PackageReference Include="AutoMapper.Collection" Version="9.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+        expectedFiles:
+            [
+            ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+                            <PackageReference Include="AutoMapper" Version="12.0.1" />
+                            <PackageReference Include="AutoMapper.Collection" Version="9.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+                );
+        }
+
+        [Fact]
         public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
         {
             await Run(path =>
@@ -407,7 +765,11 @@ public partial class EntryPointTests
 
                 try
                 {
-                    await MockNuGetPackagesInDirectory(packages, path);
+                    if (packages != null)
+                    {
+                        await MockNuGetPackagesInDirectory(packages, path);
+                    }
+
                     var args = getArgs(path);
                     var result = await Program.Main(args);
                     if (result != 0)

@@ -24,14 +24,15 @@ internal static class SdkPackageUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
-        if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
-        {
-            return;
-        }
+        // TODO: Restore the code. It was commented out because it was being problematic and not reporting that some dependencies needed updating.
+        //if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
+        //{
+        //    return;
+        //}
 
         if (isTransitive)
         {
-            await UpdateTransitiveDependencyAsnyc(projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
+            await UpdateTransitiveDependencyAsnyc(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, buildFiles, logger);
         }
         else
         {
@@ -121,7 +122,14 @@ internal static class SdkPackageUpdater
         return true;
     }
 
-    private static async Task UpdateTransitiveDependencyAsnyc(string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    private static async Task UpdateTransitiveDependencyAsnyc(
+        string repoRootPath,
+        string projectPath,
+        string[] tfms,
+        string dependencyName,
+        string newDependencyVersion,
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        Logger logger)
     {
         var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
             .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
@@ -131,7 +139,41 @@ internal static class SdkPackageUpdater
         }
         else
         {
-            await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
+            Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+            foreach (ProjectBuildFile projectFile in buildFiles)
+            {
+                foreach (string tfm in tfms)
+                {
+                    Dependency[] update = { new(dependencyName, newDependencyVersion, DependencyType.Unknown) };
+                    Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
+                    if (resolvedDependencies is null)
+                    {
+                        logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
+                        continue;
+                    }
+
+                    var addedDependencies = resolvedDependencies.Where(d => !updatedTopLevelDependencies.Any(td => d.Name.Equals(td.Name, StringComparison.OrdinalIgnoreCase)));
+                    foreach (var dep in addedDependencies.Where(d => d.Version is not null))
+                    {
+                        await AddTransitiveDependencyAsync(projectPath, dep.Name, dep.Version!, logger);
+                    }
+
+                    // ensure the originally requested dependency was resolved to the correct version
+                    // it is okay if the dependency is not present, as it may be a transitive
+                    var specificResolvedDependency = resolvedDependencies.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                    if (specificResolvedDependency is not null && !newDependencyVersion.Equals(specificResolvedDependency.Version, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.Log($"    Inconsistent resolution for {dependencyName}; attempted upgrade to {newDependencyVersion} but resolved {specificResolvedDependency.Version}.");
+                        continue;
+                    }
+
+                    // update all other dependencies
+                    foreach (Dependency resolvedDependency in resolvedDependencies.Where(d => d.Version is not null))
+                    {
+                        TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                    }
+                }
+            }
         }
     }
 
@@ -297,25 +339,13 @@ internal static class SdkPackageUpdater
         IDictionary<string, string> peerDependencies,
         Logger logger)
     {
-        var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
-        if (result == UpdateResult.NotFound)
-        {
-            logger.Log($"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
-            return;
-        }
-
-        foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
-        {
-            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
-        }
-
         // now make all dependency requirements coherent
         Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
         foreach (ProjectBuildFile projectFile in buildFiles)
         {
             foreach (string tfm in targetFrameworks)
             {
-                Dependency[] update = [];
+                Dependency[] update = { new(dependencyName, newDependencyVersion, DependencyType.Unknown) };
                 Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
                 if (resolvedDependencies is null)
                 {
@@ -337,10 +367,8 @@ internal static class SdkPackageUpdater
                     continue;
                 }
 
-                // update all other dependencies
-                foreach (Dependency resolvedDependency in resolvedDependencies
-                                                          .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
-                                                          .Where(d => d.Version is not null))
+                // update all dependencies
+                foreach (Dependency resolvedDependency in resolvedDependencies.Where(d => d.Version is not null))
                 {
                     TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
                 }
