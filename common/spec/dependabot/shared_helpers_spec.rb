@@ -9,6 +9,9 @@ require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
 require "dependabot/workspace"
 
+# Custom error class for testing
+class EcoSystemHelperSubprocessFailed < Dependabot::SharedHelpers::HelperSubprocessFailed; end
+
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
   let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
