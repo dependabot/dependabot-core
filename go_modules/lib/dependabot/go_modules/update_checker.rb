@@ -36,7 +36,7 @@ module Dependabot
         lowest_security_fix_version
       end
 
-      sig { override.returns(Dependabot::Version) }
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
         latest_version_finder.lowest_security_fix_version
       end

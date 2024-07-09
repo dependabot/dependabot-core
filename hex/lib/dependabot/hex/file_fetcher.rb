@@ -42,7 +42,6 @@ module Dependabot
       sig { returns(T.nilable(DependencyFile)) }
       def mixfile
         @mixfile ||= T.let(fetch_file_from_host("mix.exs"), T.nilable(Dependabot::DependencyFile))
-        fetch_file_from_host("mix.exs")
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
