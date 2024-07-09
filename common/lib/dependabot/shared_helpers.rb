@@ -134,13 +134,15 @@ module Dependabot
         args: T.any(T::Array[T.any(String, T::Array[T::Hash[String, T.untyped]])], T::Hash[Symbol, String]),
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
-        allow_unsafe_shell_command: T::Boolean
+        allow_unsafe_shell_command: T::Boolean,
+        error_class: T.class_of(HelperSubprocessFailed)
       )
         .returns(T.nilable(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]])))
     end
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
-                                   allow_unsafe_shell_command: false)
+                                   allow_unsafe_shell_command: false,
+                                   error_class: HelperSubprocessFailed)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -180,28 +182,29 @@ module Dependabot
         process_termsig: process.termsig
       }
 
-      check_out_of_memory_error(stderr, error_context)
+      check_out_of_memory_error(stderr, error_context, error_class)
 
       begin
         response = JSON.parse(stdout)
         return response["result"] if process.success?
 
-        raise HelperSubprocessFailed.new(
+        raise error_class.new(
           message: response["error"],
           error_class: response["error_class"],
           error_context: error_context,
           trace: response["trace"]
         )
       rescue JSON::ParserError
-        raise handle_json_parse_error(stdout, stderr, error_context)
+        raise handle_json_parse_error(stdout, stderr, error_context, error_class)
       end
     end
 
     sig do
-      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped])
-        .returns(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped],
+             error_class: T.class_of(HelperSubprocessFailed))
+        .returns(HelperSubprocessFailed)
     end
-    def self.handle_json_parse_error(stdout, stderr, error_context)
+    def self.handle_json_parse_error(stdout, stderr, error_context, error_class)
       # If the JSON is invalid, the helper has likely failed
       # We should raise a more helpful error message
       message = if !stdout.strip.empty?
@@ -211,7 +214,7 @@ module Dependabot
                 else
                   "No output from command"
                 end
-      HelperSubprocessFailed.new(
+      error_class.new(
         message: message,
         error_class: "JSON::ParserError",
         error_context: error_context
@@ -219,11 +222,14 @@ module Dependabot
     end
 
     # rubocop:enable Metrics/MethodLength
-    sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
-    def self.check_out_of_memory_error(stderr, error_context)
+    sig do
+      params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String],
+             error_class: T.class_of(HelperSubprocessFailed)).void
+    end
+    def self.check_out_of_memory_error(stderr, error_context, error_class)
       return unless stderr&.include?("JavaScript heap out of memory")
 
-      raise HelperSubprocessFailed.new(
+      raise error_class.new(
         message: "JavaScript heap out of memory",
         error_class: "Dependabot::OutOfMemoryError",
         error_context: error_context
