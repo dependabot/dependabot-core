@@ -12,7 +12,7 @@ module Dependabot
         class RubyVersionNotFound < StandardError; end
 
         RUBY_VERSIONS = %w(
-          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.4 3.2.2 3.3.3
+          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.2 3.3.3
         ).freeze
 
         attr_reader :gemspec
