@@ -40,7 +40,6 @@ module Dependabot
         # PROXY WORK
         sig { returns(String) }
         def npmrc_content
-          # debugger
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
