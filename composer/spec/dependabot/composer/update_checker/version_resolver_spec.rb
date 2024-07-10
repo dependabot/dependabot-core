@@ -55,7 +55,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     # version constraint: >= 2.0.4, == 3.3.2 (debugging logs)
-    context "when version constraint are set as requirement" do
+    context "when version constraint is set as requirement" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
     # combined constraint: >= 2.0.4, == 3.0.0 (debugging logs)
     # But latest allowable version is 3.0.0
-    context "when version constraint are set as requirement, but pushing to latest_allowable_version 3.0.0 now" do
+    context "when version constraint is set as requirement, but pushing to the latest_allowable_version 3.0.0 now" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:latest_allowable_version) { Gem::Version.new("3.0.0") }
