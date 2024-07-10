@@ -1,18 +1,18 @@
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Net;
+using System.Collections.Immutable;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 using NuGet.Common;
+using NuGet.Configuration;
+using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-
-using NuGetUpdater.Core;
+using NuGet.Frameworks;
 
 // Data type to store information of a given package
+
+namespace NuGetUpdater.Core;
 public class PackageToUpdate
 {
     public string packageName { get; set; }
@@ -81,34 +81,114 @@ public class PackageManager
         return argsList.ToArray();
     }
 
+    private async Task<Uri> FindPackageInfoUrlAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken){
+        var metadata = await FindPackageMetadataAsync(packageIdentity, cancellationToken);
+        var url =  metadata.ProjectUrl ?? metadata.LicenseUrl;
+        return url;
+    }
+
+    private async Task<IPackageSearchMetadata?> FindPackageMetadataAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken)
+    {
+        string? currentDirectory = null;
+        string CurrentDirectory = currentDirectory ?? Environment.CurrentDirectory;
+        SourceCacheContext SourceCacheContext = new SourceCacheContext();
+        PackageDownloadContext PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
+         ILogger Logger = NullLogger.Instance;
+
+        IMachineWideSettings MachineWideSettings = new NuGet.CommandLine.CommandLineMachineWideSettings();
+        ISettings Settings = NuGet.Configuration.Settings.LoadDefaultSettings(
+            CurrentDirectory,
+            configFileName: null,
+            MachineWideSettings);
+
+        var globalPackagesFolder = SettingsUtility.GetGlobalPackagesFolder(Settings);
+        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(Settings);
+        var packageSources = sourceMapping.GetConfiguredPackageSources(packageIdentity.Id).ToHashSet();
+        var sourceProvider = new PackageSourceProvider(Settings);
+       
+       ImmutableArray<PackageSource> PackageSources = sourceProvider.LoadPackageSources()
+            .Where(p => p.IsEnabled)
+            .ToImmutableArray();
+        
+        var sources = packageSources.Count == 0
+            ? PackageSources
+            : PackageSources
+                .Where(p => packageSources.Contains(p.Name))
+                .ToImmutableArray();
+
+        var message = new StringBuilder();
+        message.AppendLine($"finding info url for {packageIdentity}, using package sources: {string.Join(", ", sources.Select(s => s.Name))}");
+
+        foreach (var source in sources)
+        {
+            message.AppendLine($"  checking {source.Name}");
+            var sourceRepository = Repository.Factory.GetCoreV3(source);
+            var feed = await sourceRepository.GetResourceAsync<MetadataResource>(cancellationToken);
+            if (feed is null)
+            {
+                message.AppendLine($"    feed for {source.Name} was null");
+                continue;
+            }
+
+            var existsInFeed = await feed.Exists(
+                packageIdentity,
+                includeUnlisted: false,
+                SourceCacheContext,
+                NullLogger.Instance,
+                cancellationToken);
+            if (!existsInFeed)
+            {
+                message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
+                continue;
+            }
+
+            // var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
+            // using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, PackageDownloadContext, globalPackagesFolder, Logger, cancellationToken);
+            // if (downloadResult.Status == DownloadResourceResultStatus.Available)
+            // {
+            //     var repositoryMetadata = downloadResult.PackageReader.NuspecReader.GetRepositoryMetadata();
+            //     message.AppendLine($"    repometadata: type=[{repositoryMetadata.Type}], url=[{repositoryMetadata.Url}], branch=[{repositoryMetadata.Branch}], commit=[{repositoryMetadata.Commit}]");
+            //     if (!string.IsNullOrEmpty(repositoryMetadata.Url))
+            //     {
+            //         return repositoryMetadata.Url;
+            //     }
+            // }
+            // else
+            // {
+            //     message.AppendLine($"    download result status: {downloadResult.Status}");
+            // }
+
+            var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
+            var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
+            return metadata;
+        }
+
+        return null;
+    }
+
+    public class FrameworkMatcher
+    {
+        public static NuGetFramework FindBestMatchFramework(IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet, string targetFrameworkString)
+        {
+            // Parse the given target framework string into a NuGetFramework object.
+            var targetFramework = NuGetFramework.ParseFolder(targetFrameworkString);
+            var frameworkReducer = new FrameworkReducer();
+
+            // Collect all target frameworks from the dependency set.
+            var availableFrameworks = dependencySet.Select(dg => dg.TargetFramework).ToList();
+
+            // Find the best match framework for the given target framework.
+            return frameworkReducer.GetNearest(targetFramework, availableFrameworks);
+        }
+    }
+
+
     // Method to get the dependencies of a package
     public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework)
     {
-        // Lower the characters in the package name to put in the nuspec url
-        string packageNameLower = package.packageName.ToLower();
-        string nuspecContent = null;
+        PackageIdentity packageIdentity = new PackageIdentity(package.packageName, new NuGetVersion(package.newVersion ?? package.currentVersion));
+        bool specific = false;
 
-        // Create temporary directory for OutputDirectory
-        string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Directory.CreateDirectory(tempDirectory);
-
-        // Get the path to the NuGet.Config file
-        string configFile = PathHelper.GetFileInDirectoryOrParent(projectPath, repoRoot, "NuGet.Config", caseSensitive: false);
-
-        // Generate config file if none is present
-        if (configFile == null)
-        {
-            configFile = Path.Combine(tempDirectory, "NuGet.Config");
-            string configContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
-                                <configuration>
-                                    <packageSources>
-                                        <add key=""nuget.org"" value=""https://api.nuget.org/v3/index.json"" protocolVersion=""3"" />
-                                    </packageSources>
-                                </configuration>";
-            File.WriteAllText(configFile, configContent);
-        }
-
-        // Remove any brackets and parantheses from the version, so that you can compare for later use
         if (package.newVersion != null)
         {
             if (package.newVersion.StartsWith("[") && package.newVersion.EndsWith("]"))
@@ -116,47 +196,6 @@ public class PackageManager
                 package.newVersion = package.newVersion.Trim('[', ']');
                 package.newVersion = package.newVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
-            }
-
-            // Construct the command to run and run it
-            string nugetCommand = $"install {package.packageName} -Version {package.newVersion} -NonInteractive -OutputDirectory \"{tempDirectory}\" -ConfigFile \"{configFile}\" -PackageSaveMode nuspec";
-            string[] args = ParseCommandLineArgs(nugetCommand);
-
-            try
-            {
-                int exitCode = NuGet.CommandLine.Program.Main(args);
-                if (exitCode != 0)
-                {
-                    throw new Exception($"NuGet CLI command failed with exit code {exitCode}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception: {ex.Message}");
-                throw;
-            }
-
-            string nameAndVersion = $"{package.packageName}.{package.newVersion}";
-            string nuspecDirectory = Path.Combine(tempDirectory, nameAndVersion);
-            string nuspec = Path.Combine(nuspecDirectory, $"{package.packageName}.nuspec");
-
-            try
-            {
-                if (File.Exists(nuspec))
-                {
-                    using (var reader = new StreamReader(File.OpenRead(nuspec)))
-                    {
-                        nuspecContent = reader.ReadToEnd();
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"The .nuspec file does not exist at {nuspec}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while extracting the .nuspec file: {ex.Message}");
             }
         }
 
@@ -168,95 +207,31 @@ public class PackageManager
                 package.currentVersion = package.currentVersion.Split(',').FirstOrDefault().Trim();
                 package.isSpecific = true;
             }
-
-            // Construct the command to run and run it
-            string nugetCommand = $"install {package.packageName} -Version {package.currentVersion} -NonInteractive -OutputDirectory \"{tempDirectory}\" -ConfigFile \"{configFile}\" -PackageSaveMode nuspec";
-
-            string[] args = ParseCommandLineArgs(nugetCommand);
-
-            try
-            {
-                int exitCode = NuGet.CommandLine.Program.Main(args);
-                if (exitCode != 0)
-                {
-                    throw new Exception($"NuGet CLI command failed with exit code {exitCode}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception: {ex.Message}");
-                throw;
-            }
-
-            string nameAndVersion = $"{package.packageName}.{package.currentVersion}";
-            string nuspecDirectory = Path.Combine(tempDirectory, nameAndVersion);
-            string nuspec = Path.Combine(nuspecDirectory, $"{package.packageName}.nuspec");
-            
-            try
-            {
-                if (File.Exists(nuspec))
-                {
-                    using (var reader = new StreamReader(File.OpenRead(nuspec)))
-                    {
-                        nuspecContent = reader.ReadToEnd();
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"The .nuspec file does not exist at {nuspec}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while extracting the .nuspec file: {ex.Message}");
-            }
         }
 
         List<PackageToUpdate> dependencyList = new List<PackageToUpdate>();
 
         try
         {
-            XDocument nuspecXml = XDocument.Parse(nuspecContent);
-            XNamespace ns = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
+            // Fetch package metadata URL
+            var metadataUrl = await FindPackageMetadataAsync(packageIdentity, CancellationToken.None);
 
-            var availableTargetFrameworks = nuspecXml.Descendants(ns + "dependencies")
-                                        .Elements(ns + "group")
-                                        .Select(g => (string)g.Attribute("targetFramework"))
-                                        .Distinct()
-                                        .ToList();
+            // Lower the characters in the package name to put in the nuspec url
+            string packageNameLower = package.packageName.ToLower();
+            string nuspecContent = null;
+            IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet = metadataUrl.DependencySets;
 
-            availableTargetFrameworks.Sort((a, b) => -1 * string.Compare(a, b, StringComparison.Ordinal));
+            var bestMatchFramework = FrameworkMatcher.FindBestMatchFramework(dependencySet, targetFramework);
 
-            // Find the best match for the user's input framework.
-            string bestMatchFramework = availableTargetFrameworks
-                .FirstOrDefault(framework => string.Compare(framework, targetFramework, StringComparison.Ordinal) <= 0);
-
-            // If there aren't dependencies compatible with the framework / there aren't dependencies, return null, if not, 
-            if (bestMatchFramework == null)
+            if (bestMatchFramework != null)
             {
-                dependencyList = null;
-                return dependencyList;
-            }
+                // Process the best match framework
+                var bestMatchGroup = dependencySet.First(dg => dg.TargetFramework == bestMatchFramework);
 
-            var dependencyGroups = nuspecXml.Descendants(ns + "dependencies")
-                            .Elements(ns + "group")
-                            .Where(g => (string)g.Attribute("targetFramework") == bestMatchFramework);
-
-            bool hasDependencies = dependencyGroups.Any(group => group.Elements(ns + "dependency").Any());
-
-            if (!hasDependencies)
-            {
-                dependencyList = null;
-                return dependencyList;
-            }
-
-            // Loop through each group and the depdenencies in each (based on framework)
-            foreach (var group in dependencyGroups)
-            {
-                bool specific = false;
-                foreach (var dependency in group.Elements(ns + "dependency"))
+                foreach (var packageDependency in bestMatchGroup.Packages)
                 {
-                    string version = dependency.Attribute("version").Value;
+                    Console.WriteLine($"Package Id: {packageDependency.Id}, Version Range: {packageDependency.VersionRange}");
+                    string version = packageDependency.VersionRange.OriginalString;
                     string firstVersion = null;
                     string secondVersion = null;
 
@@ -281,7 +256,7 @@ public class PackageManager
                         {
                             secondVersion = versions.LastOrDefault()?.Trim();
                         }
-                        specific = true;
+                        //specific = true;
                     }
                     else if (version.StartsWith("(") && version.EndsWith("]"))
                     {
@@ -292,7 +267,7 @@ public class PackageManager
                         {
                             secondVersion = versions.LastOrDefault()?.Trim();
                         }
-                        specific = true;
+                        //specific = true;
                     }
                     else if (version.StartsWith("(") && version.EndsWith(")"))
                     {
@@ -303,13 +278,14 @@ public class PackageManager
                         {
                             secondVersion = versions.LastOrDefault()?.Trim();
                         }
-                        specific = true;
+                       // specific = true;
                     }
 
                     PackageToUpdate dependencyPackage = new PackageToUpdate
                     {
-                        packageName = dependency.Attribute("id").Value,
+                        packageName = packageDependency.Id,
                         currentVersion = version,
+                        
                     };
 
                     if (specific == true)
@@ -321,9 +297,13 @@ public class PackageManager
                     {
                         dependencyPackage.secondVersion = secondVersion;
                     }
-                    
+
                     dependencyList.Add(dependencyPackage);
                 }
+            }
+            else
+            {
+                Console.WriteLine("No compatible framework found.");
             }
         }
         catch (FileNotFoundException)
@@ -417,7 +397,7 @@ public class PackageManager
     // Method to update the version of a desired package based off framwork
     public async Task<string> UpdateVersion(List<PackageToUpdate> existingPackages, PackageToUpdate package, string targetFramework)
     {
-        Boolean inExisting = true;
+        bool inExisting = true;
         // Check if there is no new version to update or if the current version isnt updated
         if (package.newVersion == null)
         {
@@ -534,7 +514,11 @@ public class PackageManager
                         {
                             //update parent to next version that has this version
                             // if it doesnt have it, then you can add the package in the existing list
-                            // Get the latest version as a limit
+                            // Get the latest version as a limit\
+                            //VersionResult result = null;
+                           // result = ;
+
+
                             SourceRepository repo = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
                             FindPackageByIdResource resource = await repo.GetResourceAsync<FindPackageByIdResource>();
 
