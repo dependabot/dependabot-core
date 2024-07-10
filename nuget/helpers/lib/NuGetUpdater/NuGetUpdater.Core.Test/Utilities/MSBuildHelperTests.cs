@@ -383,7 +383,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     [Fact]
-    public async Task AllPackageDependenciesCanBeFoundWithNuGetConfig()
+    public async Task LocalPackageSourcesAreHonored()
     {
         var nugetPackagesDirectory = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
         var nugetHttpCacheDirectory = Environment.GetEnvironmentVariable("NUGET_HTTP_CACHE_PATH");
@@ -399,20 +399,21 @@ public class MSBuildHelperTests : TestBase
             Environment.SetEnvironmentVariable("NUGET_HTTP_CACHE_PATH", tempNuGetHttpCacheDirectory);
 
             // create two local package sources with different packages available in each
-            string localSource1 = Path.Combine(temp.DirectoryPath, "localSource1");
+            string localSource1 = Path.Combine(temp.DirectoryPath, "local", "source1");
             Directory.CreateDirectory(localSource1);
-            string localSource2 = Path.Combine(temp.DirectoryPath, "localSource2");
+            string localSource2 = Path.Combine(temp.DirectoryPath, "local", "source2");
             Directory.CreateDirectory(localSource2);
 
-            // `Package.A` will only live in `localSource1` and will have a dependency on `Package.B` which is only
-            // available in `localSource2`
+            // `Package.A` will only live in `local\source1` and uses Windows-style directory separators and will have
+            // a dependency on `Package.B` which is only available in `local/source2` and uses Unix-style directory
+            // separators.
             MockNuGetPackage.CreateSimplePackage("Package.A", "1.0.0", "net8.0", [(null, [("Package.B", "2.0.0")])]).WriteToDirectory(localSource1);
             MockNuGetPackage.CreateSimplePackage("Package.B", "2.0.0", "net8.0").WriteToDirectory(localSource2);
             await File.WriteAllTextAsync(Path.Join(temp.DirectoryPath, "NuGet.Config"), """
                 <configuration>
                   <packageSources>
-                    <add key="localSource1" value="./localSource1" />
-                    <add key="localSource2" value="./localSource2" />
+                    <add key="localSource1" value="local\source1" />
+                    <add key="localSource2" value="local/source2" />
                   </packageSources>
                 </configuration>
                 """);

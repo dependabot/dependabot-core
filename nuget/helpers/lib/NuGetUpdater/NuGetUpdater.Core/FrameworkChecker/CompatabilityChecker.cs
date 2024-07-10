@@ -1,5 +1,3 @@
-using System.Linq;
-
 using NuGet.Frameworks;
 
 namespace NuGetUpdater.Core.FrameworkChecker;

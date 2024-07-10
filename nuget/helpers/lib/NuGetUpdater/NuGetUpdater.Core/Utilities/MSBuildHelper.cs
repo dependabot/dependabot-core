@@ -232,11 +232,7 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            // We don't know the version for range requirements or wildcard
-            // requirements, so return "" for these.
-            yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
@@ -610,11 +606,13 @@ internal static partial class MSBuildHelper
                     // if the source is relative to the original location, copy it to the temp directory
                     if (PathHelper.IsSubdirectoryOf(nugetConfigDir!, localSource.Source))
                     {
-                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSource.Source);
+                        // normalize the directory separators and copy the contents
+                        string localSourcePath = localSource.Source.Replace("\\", "/");
+                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSourcePath);
                         string destPath = Path.Join(tempDir.FullName, sourceRelativePath);
-                        if (Directory.Exists(localSource.Source))
+                        if (Directory.Exists(localSourcePath))
                         {
-                            PathHelper.CopyDirectory(localSource.Source, destPath);
+                            PathHelper.CopyDirectory(localSourcePath, destPath);
                         }
                     }
                 }
@@ -669,6 +667,7 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>

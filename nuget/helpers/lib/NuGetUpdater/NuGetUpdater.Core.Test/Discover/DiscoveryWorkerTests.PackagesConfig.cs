@@ -34,7 +34,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {

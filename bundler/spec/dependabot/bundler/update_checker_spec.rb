@@ -420,9 +420,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
     context "with a latest version" do
       before do
-        allow(checker)
-          .to receive(:latest_version)
-          .and_return(target_version)
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new(target_version))
       end
 
       context "when the force updater raises" do
@@ -463,7 +461,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
     context "with a latest version" do
       before do
-        allow(checker).to receive(:latest_version).and_return(target_version)
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new(target_version))
       end
 
       context "when the force updater succeeds" do

@@ -51,16 +51,30 @@ final class UpdateChecker
         }
 
         $package = $composer->getPackage();
-
         $versionParser = new VersionParser();
-
-        $constraint = $versionParser->parseConstraints($latestAllowableVersion); // your version constraint
-        $packageLink = new Link($package->getName(), $dependencyName, $constraint);
-
-        $requires = $package->getRequires();
-        $requires[$dependencyName] = $packageLink;
-
-        $package->setRequires($requires);
+        // constraint from dependabot
+        $dependabotConstraint = '==' . $latestAllowableVersion;
+        // combine new dependabot constraints with the existing composer constraints (if exists)
+        if (isset($package->getRequires()[$dependencyName])) {
+            // Root Composer Constraint
+            $composerConstraint = $package->getRequires()[$dependencyName]->getPrettyConstraint();
+            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
+            $constraint = $versionParser->parseConstraints($combinedConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setRequires([$dependencyName => $link]);
+        } elseif (isset($package->getDevRequires()[$dependencyName])) {
+            // Dev Composer Constraint
+            $composerConstraint = $package->getDevRequires()[$dependencyName]->getPrettyConstraint();
+            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
+            $constraint = $versionParser->parseConstraints($combinedConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setDevRequires([$dependencyName => $link]);
+        } else {
+            // No Composer Constraint
+            $constraint = $versionParser->parseConstraints($dependabotConstraint);
+            $link = new Link($package->getName(), $dependencyName, $constraint);
+            $package->setRequires([$dependencyName => $link]);
+        }
 
         $install = new Installer(
             $io,

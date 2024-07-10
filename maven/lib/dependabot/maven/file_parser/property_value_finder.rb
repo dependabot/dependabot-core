@@ -1,8 +1,8 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "nokogiri"
-
+require "sorbet-runtime"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser"
 require "dependabot/registry_client"
@@ -14,17 +14,24 @@ module Dependabot
   module Maven
     class FileParser
       class PropertyValueFinder
+        extend T::Sig
+
         require_relative "repositories_finder"
         require_relative "pom_fetcher"
 
         DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
+        sig { params(dependency_files: T::Array[DependencyFile], credentials: T::Array[String]).void }
         def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
           @credentials = credentials
-          @pom_fetcher = PomFetcher.new(dependency_files: dependency_files)
+          @pom_fetcher = T.let(PomFetcher.new(dependency_files: dependency_files),
+                               Dependabot::Maven::FileParser::PomFetcher)
         end
 
+        sig do
+          params(property_name: String, callsite_pom: DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        end
         def property_details(property_name:, callsite_pom:)
           pom = callsite_pom
           doc = Nokogiri::XML(pom.content)
@@ -71,8 +78,17 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
 
+        sig do
+          params(
+            expression: String,
+            property_name: String,
+            callsite_pom: DependencyFile
+          )
+            .returns(T.nilable(T::Hash[Symbol, String]))
+        end
         def extract_value_from_expression(expression:, property_name:, callsite_pom:)
           # and the expression is pointing to self then raise the error
           if expression.eql?("${#{property_name}}")
@@ -83,14 +99,16 @@ module Dependabot
           end
 
           # and the expression is pointing to another tag, then get the value of that tag
-          property_details(property_name: expression.slice(2..-2), callsite_pom: callsite_pom)
+          property_details(property_name: T.must(expression.slice(2..-2)), callsite_pom: callsite_pom)
         end
 
+        sig { params(property_name: String).returns(String) }
         def sanitize_property_name(property_name)
           property_name.sub(/^pom\./, "").sub(/^project\./, "")
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(pom: DependencyFile).returns(T.nilable(DependencyFile)) }
         def parent_pom(pom)
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
@@ -111,6 +129,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
+        sig { params(pom: DependencyFile).returns(T::Array[String]) }
         def parent_repository_urls(pom)
           repositories_finder.repository_urls(
             pom: pom,
@@ -119,14 +138,17 @@ module Dependabot
           )
         end
 
+        sig { returns(RepositoriesFinder) }
         def repositories_finder
-          @repositories_finder ||=
-            RepositoriesFinder.new(
+          @repositories_finder ||= T.let(
+            Dependabot::Maven::FileParser::RepositoriesFinder.new(
               pom_fetcher: @pom_fetcher,
               dependency_files: dependency_files,
               credentials: @credentials,
               evaluate_properties: false
-            )
+            ),
+            T.nilable(Dependabot::Maven::FileParser::RepositoriesFinder)
+          )
         end
       end
     end

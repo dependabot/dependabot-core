@@ -231,6 +231,8 @@ Performance/UnfreezeString:
   Enabled: true
 Performance/UriDefaultParser:
   Enabled: true
+RSpec/IndexedLet:
+  Enabled: false
 Style/AccessorGrouping:
   EnforcedStyle: 'separated'
 Style/ArgumentsForwarding:
@@ -339,6 +341,7 @@ Style/SpecialGlobalVars:
 Style/SelectByRegexp:
   Enabled: false
 Sorbet/TrueSigil:
+  Enabled: true
   Exclude:
     - "**/spec/**/*"
 Sorbet/StrictSigil:

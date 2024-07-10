@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Python::Requirement do
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
       end
 
-      context "when dealing with one digits" do
+      context "when dealing with one digit" do
         let(:requirement_string) { "~1" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::Python::Requirement do
       it { is_expected.to eq([Gem::Requirement.new("1.2.1")]) }
     end
 
-    context "with a illformed parentheses" do
+    context "with illformed parentheses" do
       let(:requirement_string) { "(== 1.2).1" }
 
       it "raises a helpful error" do
@@ -316,6 +316,52 @@ RSpec.describe Dependabot::Python::Requirement do
             it { is_expected.to be(false) }
           end
         end
+      end
+    end
+  end
+
+  describe "#satisfied_by? with BUMP_VERSIONS_OPS" do
+    subject(:requirement_satisfied_by) { requirement.satisfied_by?(version, described_class::BUMP_VERSIONS_OPS) }
+
+    let(:requirement_string) { ">=1.0.0" }
+
+    context "with a Python::Version" do
+      let(:version) { version_class.new(version_string) }
+
+      context "when dealing with the exact version" do
+        let(:version_string) { "1.0.0" }
+
+        it { is_expected.to be(true) }
+      end
+
+      context "when dealing with a different version" do
+        let(:version_string) { "2.0.0" }
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when dealing with the latest resolvable version" do
+        let(:version_string) { "1.0.0" }
+
+        it { is_expected.to be(true) }
+
+        context "when the requirement includes a local version" do
+          let(:requirement_string) { ">=1.0.0+gc.1" }
+
+          it { is_expected.to be(false) }
+        end
+
+        context "when the version includes a local version" do
+          let(:version_string) { "1.0.0+gc.1" }
+
+          it { is_expected.to be(false) }
+        end
+      end
+
+      context "when dealing with an out-of-range version" do
+        let(:version_string) { "0.9.0" }
+
+        it { is_expected.to be(false) }
       end
     end
   end

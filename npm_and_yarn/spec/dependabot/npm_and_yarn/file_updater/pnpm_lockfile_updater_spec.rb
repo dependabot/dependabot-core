@@ -160,7 +160,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://codeload.github.com/Zelcord/electron-context-menu"
+                "https://github.com/Zelcord/electron-context-menu"
+              ]
+            )
+        end
+      end
+    end
+
+    context "with a private git dep we don't have access to in PNPM v8" do
+      let(:dependency_name) { "cross-fetch" }
+      let(:version) { "4.0.0" }
+      let(:previous_version) { "3.1.5" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^4.0.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.1.5",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/github_dependency_private_v8" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+          expect(error.dependency_urls)
+            .to eq(
+              [
+                "https://github.com/Zelcord/electron-context-menu"
               ]
             )
         end
@@ -193,6 +229,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry with no configuration" do
+      let(:dependency_name) { "next" }
+      let(:version) { "14.2.4" }
+      let(:previous_version) { "13.2.4" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^14.2.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^13.2.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/private_registry_no_config" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound)
       end
     end
   end

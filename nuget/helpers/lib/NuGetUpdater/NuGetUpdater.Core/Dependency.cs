@@ -14,7 +14,8 @@ public sealed record Dependency(
     bool IsDirect = false,
     bool IsTransitive = false,
     bool IsOverride = false,
-    bool IsUpdate = false) : IEquatable<Dependency>
+    bool IsUpdate = false,
+    string? InfoUrl = null) : IEquatable<Dependency>
 {
     public bool Equals(Dependency? other)
     {
@@ -37,7 +38,8 @@ public sealed record Dependency(
                IsDirect == other.IsDirect &&
                IsTransitive == other.IsTransitive &&
                IsOverride == other.IsOverride &&
-               IsUpdate == other.IsUpdate;
+               IsUpdate == other.IsUpdate &&
+               InfoUrl == other.InfoUrl;
     }
 
     public override int GetHashCode()
@@ -53,6 +55,7 @@ public sealed record Dependency(
         hash.Add(IsTransitive);
         hash.Add(IsOverride);
         hash.Add(IsUpdate);
+        hash.Add(InfoUrl);
         return hash.ToHashCode();
     }
 }

@@ -18,11 +18,13 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   let(:can_update) { checker.can_update?(requirements_to_unlock: requirements_to_unlock) }
   let(:directory) { nil }
   let(:project) { "can_update" }
+  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:server) { WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null }) }
   let(:dependency_files) do
     files = project_dependency_files(project)
     files.each do |file|
       # Simulate that the lockfile was from localhost:
-      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{server[:Port]}")
       if defined?(git_dir)
         file.content.gsub!("$GIT_DIR", git_dir)
         file.content.gsub!("$REF", dependency_version)
@@ -58,8 +60,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       }],
       ignored_versions: ignored_versions,
       options: {
-        pub_hosted_url: "http://localhost:#{@server[:Port]}",
-        flutter_releases_url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
+        pub_hosted_url: "http://localhost:#{server[:Port]}",
+        flutter_releases_url: "http://localhost:#{server[:Port]}/flutter_releases.json"
       },
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
@@ -72,33 +74,25 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
   after do
     sample_files.each do |f|
       package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
+      server.unmount "/api/packages/#{package}"
     end
+    server.shutdown
   end
 
   before do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    Thread.new do
+      server.start
+    end
     sample_files.each do |f|
       package = File.basename(f, ".json")
-      @server.mount_proc "/api/packages/#{package}" do |_req, res|
+      server.mount_proc "/api/packages/#{package}" do |_req, res|
         res.body = File.read(File.join("..", "..", "..", f))
       end
     end
-    @server.mount_proc "/flutter_releases.json" do |_req, res|
+    server.mount_proc "/flutter_releases.json" do |_req, res|
       res.body = File.read(File.join(__dir__, "..", "..", "fixtures", "flutter_releases.json"))
-    end
-  end
-
-  after(:all) do
-    @server.shutdown
-  end
-
-  before(:all) do
-    # Because we do the networking in dependency_services we have to run an
-    # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
-    Thread.new do
-      @server.start
     end
   end
 
@@ -527,7 +521,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       WebMock.allow_net_connect!
       # To find the vulnerable versions we do a package listing before invoking the helper.
       # Stub this out here:
-      stub_request(:get, "http://localhost:#{@server[:Port]}/api/packages/#{dependency.name}").to_return(
+      stub_request(:get, "http://localhost:#{server[:Port]}/api/packages/#{dependency.name}").to_return(
         status: 200,
         body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
         headers: {}
@@ -601,7 +595,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       WebMock.allow_net_connect!
       # To find the vulnerable versions we do a package listing before invoking the helper.
       # Stub this out here:
-      stub_request(:get, "http://localhost:#{@server[:Port]}/api/packages/#{dependency.name}").to_return(
+      stub_request(:get, "http://localhost:#{server[:Port]}/api/packages/#{dependency.name}").to_return(
         status: 200,
         body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
         headers: {}

@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace NuGetUpdater.Core.Utilities;
 
 public static class HashSetExtensions
