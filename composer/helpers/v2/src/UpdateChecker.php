@@ -8,9 +8,7 @@ use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
-use Composer\Package\Link;
 use Composer\Package\PackageInterface;
-use Composer\Package\Version\VersionParser;
 
 final class UpdateChecker
 {
@@ -50,36 +48,10 @@ final class UpdateChecker
             $io->loadConfiguration($config);
         }
 
-        $package = $composer->getPackage();
-        $versionParser = new VersionParser();
-        // constraint from dependabot
-        $dependabotConstraint = '==' . $latestAllowableVersion;
-        // combine new dependabot constraints with the existing composer constraints (if exists)
-        if (isset($package->getRequires()[$dependencyName])) {
-            // Root Composer Constraint
-            $composerConstraint = $package->getRequires()[$dependencyName]->getPrettyConstraint();
-            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
-            $constraint = $versionParser->parseConstraints($combinedConstraint);
-            $link = new Link($package->getName(), $dependencyName, $constraint);
-            $package->setRequires([$dependencyName => $link]);
-        } elseif (isset($package->getDevRequires()[$dependencyName])) {
-            // Dev Composer Constraint
-            $composerConstraint = $package->getDevRequires()[$dependencyName]->getPrettyConstraint();
-            $combinedConstraint = $dependabotConstraint . ' ' . $composerConstraint;
-            $constraint = $versionParser->parseConstraints($combinedConstraint);
-            $link = new Link($package->getName(), $dependencyName, $constraint);
-            $package->setDevRequires([$dependencyName => $link]);
-        } else {
-            // No Composer Constraint
-            $constraint = $versionParser->parseConstraints($dependabotConstraint);
-            $link = new Link($package->getName(), $dependencyName, $constraint);
-            $package->setRequires([$dependencyName => $link]);
-        }
-
         $install = new Installer(
             $io,
             $config,
-            $package,  // @phpstan-ignore-line
+            $composer->getPackage(),  // @phpstan-ignore-line
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),

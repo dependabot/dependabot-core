@@ -591,26 +591,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "when there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
-        # Root composer.json requires longman/telegram-bot ==1.22.0 *
-        it "raises a resolvability error" do
-          expect { latest_resolvable_version }
-            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message)
-              .to include("Your requirements could not be resolved to an installable set of packages.")
-          end
-        end
+        # no valid resolvable version available
+        it { is_expected.to be_nil }
 
         context "when the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
-          # Root composer.json requires longman/telegram-bot ==1.22.0 *
-          it "raises a resolvability error" do
-            expect { latest_resolvable_version }
-              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message)
-                .to include("Your requirements could not be resolved to an installable set of packages.")
-            end
-          end
+          # no valid resolvable version available
+          it { is_expected.to be_nil }
         end
       end
     end

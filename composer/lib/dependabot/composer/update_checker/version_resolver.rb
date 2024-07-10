@@ -239,9 +239,9 @@ module Dependabot
 
           # If the original requirement is just a stability flag we append that
           # flag to the requirement
-          return "<=#{latest_allowable_version}#{lower_bound.strip}" if lower_bound.strip.start_with?("@")
+          return "==#{latest_allowable_version}#{lower_bound.strip}" if lower_bound.strip.start_with?("@")
 
-          lower_bound + ", <= #{latest_allowable_version}"
+          lower_bound + ", == #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize

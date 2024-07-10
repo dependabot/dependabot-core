@@ -110,13 +110,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
-      # Root composer.json requires php-http/client-implementation ==6.0.0 ^1.0, it could not be found in any version,
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { resolver.latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-        end
-      end
+      it { is_expected.to be_nil }
     end
 
     context "with a dependency that uses a stability flag" do
