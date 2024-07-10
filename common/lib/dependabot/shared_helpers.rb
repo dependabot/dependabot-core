@@ -32,6 +32,9 @@ module Dependabot
     )
     SIGKILL = 9
 
+    SOCKET_HANG_UP =
+      /request to .*. failed, reason: socket hang up/
+
     sig do
       type_parameters(:T)
         .params(
@@ -187,6 +190,8 @@ module Dependabot
       begin
         response = JSON.parse(stdout)
         return response["result"] if process.success?
+
+        raise Dependabot::PrivateSourceTimedOut, response["error"] if response["error"].match?(SOCKET_HANG_UP)
 
         raise error_class.new(
           message: response["error"],
