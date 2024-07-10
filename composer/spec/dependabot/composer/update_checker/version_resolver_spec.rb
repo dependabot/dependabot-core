@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     # combined constraint: >= 1.0.1, == 1.1.0 (debugging logs)
-    context "when version constraint are set as dev-requirement" do
+    context "when version constraint is set as dev-requirement" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "monolog/monolog" }
       let(:latest_allowable_version) { Gem::Version.new("1.1.0") }
