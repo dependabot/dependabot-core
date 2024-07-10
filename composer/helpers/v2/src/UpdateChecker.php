@@ -14,7 +14,7 @@ final class UpdateChecker
 {
     public static function getLatestResolvableVersion(array $args): ?string
     {
-        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials, $latestAllowableVersion] = $args;
+        [$workingDirectory, $dependencyName, $gitCredentials, $registryCredentials] = $args;
 
         $httpBasicCredentials = [];
 
