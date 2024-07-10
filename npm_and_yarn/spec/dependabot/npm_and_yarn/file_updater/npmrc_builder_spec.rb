@@ -724,6 +724,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               end
             end
           end
+
+          context "when dealing with an npmrc file with timeout" do
+            let(:dependency_files) { project_dependency_files("npm6/npmrc_env_timeout") }
+
+            it "populates the already existing npmrc" do
+              expect(npmrc_content)
+                .to eq("legacy-peer-deps=true\n" \
+                       "loglevel=verbose\n\n" \
+                       "fetch-retries=3\n" \
+                       "fetch-retry-maxtimeout=4\n" \
+                       "fetch-retry-mintimeout=3\n" \
+                       "fetch-timeout=400000\n\n" \
+                       "always-auth = true\n" \
+                       "strict-ssl = true\n" \
+                       "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                       "registry = https://npm.fury.io/dependabot\n" \
+                       "//npm.fury.io/dependabot/:_authToken=my_token\n" \
+                       "always-auth = true\n")
+            end
+
+            context "with basic auth credentials" do
+              let(:credentials) do
+                [Dependabot::Credential.new({
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }), Dependabot::Credential.new({
+                  "type" => "npm_registry",
+                  "registry" => "npm.fury.io/dependabot",
+                  "token" => "secret:token"
+                })]
+              end
+
+              it "populates the already existing npmrc" do
+                expect(npmrc_content)
+                  .to eq("legacy-peer-deps=true\n" \
+                         "loglevel=verbose\n\n" \
+                         "fetch-retries=3\n" \
+                         "fetch-retry-maxtimeout=4\n" \
+                         "fetch-retry-mintimeout=3\n" \
+                         "fetch-timeout=400000\n\n" \
+                         "always-auth = true\n" \
+                         "strict-ssl = true\n" \
+                         "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                         "registry = https://npm.fury.io/dependabot\n" \
+                         "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu\n" \
+                         "always-auth = true\n")
+              end
+            end
+          end
         end
       end
 

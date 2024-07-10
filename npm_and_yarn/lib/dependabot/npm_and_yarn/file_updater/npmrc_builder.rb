@@ -40,7 +40,7 @@ module Dependabot
         # PROXY WORK
         sig { returns(String) }
         def npmrc_content
-          #debugger
+          # debugger
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
@@ -215,10 +215,10 @@ module Dependabot
 
         sig { returns(String) }
         def complete_npmrc_from_credentials
-          # renames attribute timeout to fetch-timeout as per officially supported option
-          # https://docs.npmjs.com/cli/v9/using-npm/config#fetch-timeout
+          # removes attribute timeout to allow for job update,
+          # having a timeout=xxxxx value is causing some jobs to fail
           initial_content = T.must(T.must(npmrc_file).content)
-          .gsub(/^.*\$\{.*\}.*/, "").strip.gsub("\ntimeout", "\nfetch-timeout").strip + "\n"
+                             .gsub(/^.*\$\{.*\}.*/, "").strip.gsub(/^timeout.*/, "").strip + "\n"
 
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
