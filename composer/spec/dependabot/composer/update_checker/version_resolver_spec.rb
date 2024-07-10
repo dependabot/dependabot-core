@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    # when both dependabot and composer constraints set as Root.
+    # when both dependabot and composer constraints are set as Root.
     # combined constraint: ==3.3.2 >= 2.0.4, <= 3.3.2 (debugging logs)
     context "with a library using a >= PHP constraint" do
       let(:project_name) { "php_specified_in_library" }
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
-    # when both dependabot and composer constraints set as Root.
+    # when both dependabot and composer constraints are set as Root.
     # combined constraint: ==3.0.0 >= 2.0.4, <= 3.0.0 (debugging logs)
     # But latest allowable version is 3.0.0
     context "when both are set as Root, but not pushing to the latest." do
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.0.0")) }
     end
 
-    # when both dependabot and composer constraints set as Dev.
+    # when both dependabot and composer constraints are set as Dev.
     # combined constraint: ==1.1.0 >= 1.0.1, <= 1.1.0 (debugging logs)
     context "when both are set as Dev" do
       let(:project_name) { "php_specified_in_library" }
@@ -104,8 +104,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     # when composer constraint is not set.
-    # combined constraint: ==3.0.0 (debugging logs) not to the latest
-    context "when composer constraint is not set, and dependabot constraint set to latest" do
+    # combined constraint: ==3.0.0 (debugging logs) not set to the latest in the registry.
+    context "when composer constraint is not set" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:latest_allowable_version) { Gem::Version.new("3.0.0") }
@@ -115,9 +115,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.0.0")) }
     end
 
-    # when both dependabot and composer constraint is not set.
+    # when both dependabot and composer constraints are not set.
     # combined constraint: >= 0
-    context "when both composer and dependabot constraint were not set" do
+    context "when both composer and dependabot constraints are not set" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:latest_allowable_version) { nil }
