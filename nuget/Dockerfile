@@ -7,7 +7,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 # Install .NET SDK dependencies
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-  libicu-dev=70.1-2 \
+  libicu-dev=74.2-1ubuntu3 \
   && rm -rf /var/lib/apt/lists/*
 
 # Install .NET SDK
