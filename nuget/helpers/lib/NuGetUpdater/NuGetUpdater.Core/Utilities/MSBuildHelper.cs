@@ -370,7 +370,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, projectPath);
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework);
                 }
             }
 
@@ -386,7 +386,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, projectPath);
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework);
                 }
             }
 

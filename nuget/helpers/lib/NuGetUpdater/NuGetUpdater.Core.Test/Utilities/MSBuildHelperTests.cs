@@ -494,8 +494,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 1
-    // Singular Transitive Dependency with one root package, updating the root
-    // Updating CS - Script Code to 2.0.0 reqires Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and then Microsoft.CodeAnalysis.Common to be 3.6.0
+    // Updating root CS - Script Code to 2.0.0 requires its child Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and its grand child Microsoft.CodeAnalysis.Common to be 3.6.0
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
@@ -504,6 +503,18 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="CS-Script.Core" Version="1.3.1" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.4.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="3.4.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -533,8 +544,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 2
-    // Updating a non-included dependency of an existing package to a new version, but the dependency is not in the existing package
-    // Updating the dependency will require the existing top level package to also update
+    // Updating the dependency (System.Text.Json) of the root package (Azure.Core) will require the Azure.Core to also update, but since the dependency is not in the existing list, we do not include it
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
     {
@@ -543,6 +553,16 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -565,9 +585,9 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 3, Another instance of scenario 2
-    // Newtonsoft.Json needs to update to 13.0.1, although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
-    // adapatability, though NewtonsoftJson is not in the existing packages, it would be added to the existing list
+    // Scenario 3
+    // Newtonsoft.Json needs to update to 13.0.1. Although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulernabilities and
+    // because there is no later version of Newtonsoft.Json.Bson 1.0.2, Newtonsoft.Json would be added to the existing list to prevent resolution
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingAndKeepingDependency()
     {
@@ -576,6 +596,16 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -600,10 +630,10 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 4, updating a package not in the existing list
-    // Microsoft.CodeAnalysis.Compilers, Microsoft.CodeAnalysis.CSharp, and Microsoft.CodeAnalysis.VisualBasic are all 4.9.2
-    // Csharp, Visual Basic, and Compilers all require Microsoft.CodeAnalysis.Common to be 4.9.2, but it's not in the existing list
-    // If Microsoft.CodeAnalysis.Common is updated to  4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
+    // Scenario 4
+    // Root package (Microsoft.CodeAnalysis.Compilers) and its children (Microsoft.CodeAnalysis.CSharp), (Microsoft.CodeAnalysis.VisualBasic) are all 4.9.2
+    // These packages all require the grandchild (Microsoft.CodeAnalysis.Common) to be 4.9.2, but it's not in the existing list
+    // If Microsoft.CodeAnalysis.Common is updated to 4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded()
     {
@@ -612,6 +642,18 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -640,8 +682,8 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 5, same as scenario 4, but the package is in the existing list
-    // Single transitive dependency (Microsoft.CodeAnalysis.Common) gets updated, which then updates the top level package
+    // Scenario 5
+    // The same as scenario 4, but the grandchild (Microsoft.CodeAnalysis.Common) is in the existing list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
     {
@@ -650,6 +692,19 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -682,7 +737,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 6
-    // A combination of the past two scenariors, updating 2 packages not in the exisiting list
+    // A combination of Scenario 3 and Scenario 4, to measure efficiency of updating separate families
     // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
     // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
     [Fact]
@@ -693,6 +748,19 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -728,9 +796,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 7
-    //  Two top level packages that share a dependency, updating ONE of the top level packages, which updates the children and the children't other "parents"
-    //  Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.10.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isnt a dependency of buildalyzer)
-    //  Microsoft.CodeAnalysis.CSharp.Scripting 4.4.0 requires Microsoft.CodeAnalysis.CSharp 4.4.0 and Microsoft.CodeAnalysis.Common to be 4.4.0 (Specific version) in oprder to update Microsoft.CodeAnalysis.Common to Buildalyzer to 7.0.1
+    // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp). Updating ONE of the top level packages, which updates the children and the children's other "parents"
+    // Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
+    // Microsoft.CodeAnalysis.CSharp.Scripting 4.0.0 requires Microsoft.CodeAnalysis.CSharp 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (Specific version)
+    // Updating Buildalyzer to 7.0.1 will update its grandchild (Microsoft.CodeAnalysis.Common) and then its grandchild's "family"
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
     {
@@ -739,6 +808,19 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Buildalyzer" Version="6.0.4" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Csharp.Scripting" Version="3.10.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -771,8 +853,9 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 8
-    // Update a dependency, which will then updates a transitive dependency of the top level package, and a parent. The dependency is not added to the exisiting list
-    // Additionally, updating a top level package to update the dependency
+    // Updating two families at once to test efficiency
+    // First family: Direct dependency (Microsoft.CodeAnalysis.Common) needs to be updated, which will then need to update in the existing list its child (System.Collections.Immutable) and parent(Microsoft.CodeAnalysis.Csharp.Scripting)
+    // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its child (System.Text.Json)
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
     {
@@ -781,6 +864,19 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -815,10 +911,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 9
-    // Two separate root packages that need both need their separate dependencies updated
-    // One dependency is not specified to be updated, only the root package is
-    // Two separate resolvings. If we update Azure.Core (root) to the next update, System.Text.Json needs to be greater than or equal to 4.7.2. System.Text.Json is not in the existing packages.
-    // System.Collections.Immutable needs to update to 8.0.0 or > and Microsoft.CodeAnalysis.Common NEEDS to be 4.10.0 (specific).
+    // Similar to Scenario 8, except Microsoft.CodeAnalysis.Common is in the existing list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelAndDependency()
     {
@@ -827,6 +920,20 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
+                    <PackageReference Include="Azure.Core" Version="1.21.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
@@ -863,9 +970,8 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
-    // Scenario 10
-    // Unsolveable
-    // To update AutoMapper.Collection to 10.0.0, AutoMapper needs to update to 13.0.0 but there is no higher version of AutoMapper.Extensions.Microsoft.DependencyInjection
+    // Scenario 10, Unsolveable
+    // To update root package (AutoMapper.Collection) to 10.0.0, its child (AutoMapper) needs to update to 13.0.0. However, there is no higher version of AutoMapper's other parent (AutoMapper.Extensions.Microsoft.DependencyInjection) that is compatible with the new version
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUnsolveable()
     {
@@ -874,6 +980,18 @@ public class MSBuildHelperTests : TestBase
         try
         {
             var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+                    <PackageReference Include="AutoMapper" Version="12.0.1" />
+                    <PackageReference Include="AutoMapper.Collection" Version="9.0.0" />
+                  </ItemGroup>
+                </Project>
+                """);
 
             var dependencies = new[]
             {
