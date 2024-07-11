@@ -16,7 +16,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: revert-212-kamil/update_smoke_test_for_updated_pip_increase_strategy
 jobs:
   discover:
     runs-on: ubuntu-latest
