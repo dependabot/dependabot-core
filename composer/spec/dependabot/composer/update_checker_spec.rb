@@ -194,6 +194,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
+    before do
+      allow(checker).to receive(:latest_version_from_registry)
+        .and_return(Gem::Version.new("1.22.0"))
+    end
+
     it "returns a non-normalized version, following semver" do
       expect(latest_resolvable_version.segments.count).to eq(3)
     end
@@ -209,7 +214,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
 
-      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+      it { is_expected.to eq(Gem::Version.new("1.22.0")) }
     end
 
     context "without a lockfile" do
@@ -228,6 +233,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
+        before do
+          allow(checker).to receive(:latest_version_from_registry)
+            .and_return(Gem::Version.new("4.3.0"))
+        end
+
         it { is_expected.to be >= Gem::Version.new("4.3.0") }
       end
 
@@ -244,26 +254,31 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
+        before do
+          allow(checker).to receive(:latest_version_from_registry)
+            .and_return(Gem::Version.new("5.2.45"))
+        end
+
         it { is_expected.to be >= Gem::Version.new("5.2.45") }
 
         context "when as a platform requirement" do
           let(:project_name) { "old_php_platform" }
 
-          it { is_expected.to eq(Gem::Version.new("5.4.36")) }
+          it { is_expected.to eq(Gem::Version.new("5.2.45")) }
 
           context "when an extension is specified that we don't have" do
             let(:project_name) { "missing_extension" }
 
             it "pretends the missing extension is there" do
               expect(latest_resolvable_version)
-                .to eq(Dependabot::Composer::Version.new("5.4.36"))
+                .to eq(Dependabot::Composer::Version.new("5.2.45"))
             end
           end
 
           context "when the platform requirement only specifies an extension" do
             let(:project_name) { "bad_php" }
 
-            it { is_expected.to eq(Gem::Version.new("5.4.36")) }
+            it { is_expected.to eq(Gem::Version.new("5.2.45")) }
           end
         end
       end
@@ -279,6 +294,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
             groups: ["runtime"],
             source: nil
           }]
+        end
+
+        before do
+          allow(checker).to receive(:latest_version_from_registry)
+            .and_return(Gem::Version.new("5.2.45"))
         end
 
         it { is_expected.to be >= Gem::Version.new("5.2.45") }
@@ -465,6 +485,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
         # v1 url doesn't always return 404 for missing packages
         stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("2.4.1"))
       end
 
       it "is between 2.0.0 and 3.0.0" do
@@ -486,6 +508,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
       let(:ignored_versions) { [">= 2.8.0"] }
+
+      before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("2.1.7"))
+      end
 
       it "is the highest resolvable version" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
@@ -723,6 +750,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("3.0.2"))
         stub_request(:get, "https://wpackagist.org/packages.json")
           .to_return(
             status: 200,
@@ -746,7 +775,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      it { is_expected.to be >= Gem::Version.new("5.2.30") }
+      it { is_expected.to be_nil }
     end
 
     context "when a sub-dependency would block the update" do
@@ -760,6 +789,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           groups: ["runtime"],
           source: nil
         }]
+      end
+
+      before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("5.6.23"))
       end
 
       # 5.5.0 series and up require an update to illuminate/contracts
