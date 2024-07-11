@@ -1,0 +1,9 @@
+{
+  "name": "repo1",
+  "version": "1.0.0",
+  "description": "xxx",
+  "dependencies": {
+    "gsap": "npm:@gsap/business@^3.12.4",
+    "next": "^13.2.4"
+  }
+}

@@ -17,6 +17,7 @@ module Dependabot
     DEPENDENCY_GROUPS = "job-dependency-groups"
     JOB_ID            = "job-id"
     PACKAGE_MANAGER   = "package-manager"
+    SECURITY_UPDATE   = "security-update"
   end
 
   # rubocop:disable Metrics/MethodLength
@@ -189,6 +190,11 @@ module Dependabot
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::DependencyNotFound
+      {
+        "error-type": "dependency_not_found",
         "error-detail": { source: error.source }
       }
     when Dependabot::PrivateSourceTimedOut
@@ -508,6 +514,20 @@ module Dependabot
     def initialize(environment_variable)
       @environment_variable = environment_variable
       super("Missing environment variable #{@environment_variable}")
+    end
+  end
+
+  class DependencyNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: T.nilable(String)).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(T.must(source)), String)
+      msg = "The following dependency could not be found : #{@source}"
+      super(msg)
     end
   end
 

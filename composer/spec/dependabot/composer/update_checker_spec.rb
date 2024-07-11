@@ -194,7 +194,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    # setting the latest allowable version to 1.22.0
     before do
       allow(checker).to receive(:latest_version_from_registry)
         .and_return(Gem::Version.new("1.22.0"))
@@ -234,7 +233,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 4.3.0
         before do
           allow(checker).to receive(:latest_version_from_registry)
             .and_return(Gem::Version.new("4.3.0"))
@@ -256,7 +254,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 5.2.45
         before do
           allow(checker).to receive(:latest_version_from_registry)
             .and_return(Gem::Version.new("5.2.45"))
@@ -299,7 +296,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 5.2.45
         before do
           allow(checker).to receive(:latest_version_from_registry)
             .and_return(Gem::Version.new("5.2.45"))
@@ -490,7 +486,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         # v1 url doesn't always return 404 for missing packages
         stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
         allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("2.4.2"))
+          .and_return(Gem::Version.new("2.4.1"))
       end
 
       it "is between 2.0.0 and 3.0.0" do
@@ -513,7 +509,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
       let(:ignored_versions) { [">= 2.8.0"] }
 
-      # set latest allowable version from registry to 2.1.7
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("2.1.7"))
@@ -586,16 +581,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "when there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
-        it "raises a helpful error" do
-          expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
+        it { is_expected.to be_nil }
 
         context "when the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
-          it "raises a helpful error" do
-            expect { latest_resolvable_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
-          end
+          it { is_expected.to be_nil }
         end
       end
     end
@@ -686,12 +677,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      # set latest allowable version from registry to 1.3.0
-      before do
-        allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("1.3.0"))
-      end
-
       # Alternatively, this could raise an error. Either behaviour would be
       # fine - the below is just what we get with Composer at the moment
       # because we disabled downloading the files in
@@ -765,13 +750,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("3.0.2"))
         stub_request(:get, "https://wpackagist.org/packages.json")
           .to_return(
             status: 200,
             body: fixture("wpackagist_response.json")
           )
-        allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("3.0.2"))
       end
 
       it { is_expected.to be >= Gem::Version.new("3.0.2") }
@@ -790,13 +775,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      # set latest allowable version from registry to 5.2.7
-      before do
-        allow(checker).to receive(:latest_version_from_registry)
-          .and_return(Gem::Version.new("5.2.7"))
-      end
-
-      it { is_expected.to be >= Gem::Version.new("5.2.7") }
+      it { is_expected.to be_nil }
     end
 
     context "when a sub-dependency would block the update" do
@@ -812,7 +791,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      # setting the latest allowable version to 5.6.23
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("5.6.23"))

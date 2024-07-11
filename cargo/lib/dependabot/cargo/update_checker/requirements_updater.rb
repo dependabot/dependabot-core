@@ -46,7 +46,7 @@ module Dependabot
         end
 
         def updated_requirements
-          return requirements if update_strategy == RequirementsUpdateStrategy::LockfileOnly
+          return requirements if update_strategy.lockfile_only?
 
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
@@ -142,7 +142,7 @@ module Dependabot
 
             req.sub(VERSION_REGEX) do |old_version|
               if req.start_with?("<=")
-                target_version
+                update_version_string(old_version)
               else
                 update_greatest_version(old_version, target_version)
               end
