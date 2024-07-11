@@ -308,14 +308,14 @@ internal static partial class MSBuildHelper
 
     internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger) 
     {
-        if (Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true")
-        {
+        // if (Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true")
+        // {
             return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
-        }
-        else
-        {
-            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
-        }
+        //}
+        // else
+        // {
+        //     return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
+        // }
     }
 
     internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
@@ -370,7 +370,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework);
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, projectPath);
                 }
             }
 
@@ -386,7 +386,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework);
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, projectPath);
                 }
             }
 

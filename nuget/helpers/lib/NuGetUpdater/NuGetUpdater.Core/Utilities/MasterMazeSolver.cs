@@ -85,12 +85,14 @@ public class PackageManager
         return argsList.ToArray();
     }
 
+    // Method to find the metadata url of a given package
     private async Task<Uri> FindPackageInfoUrlAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken){
         var metadata = await FindPackageMetadataAsync(packageIdentity, cancellationToken);
         var url =  metadata.ProjectUrl ?? metadata.LicenseUrl;
         return url;
     }
 
+    // Method alterted from VersionFinder.cs to find the metadata of a given package
     private async Task<IPackageSearchMetadata?> FindPackageMetadataAsync(PackageIdentity packageIdentity, CancellationToken cancellationToken)
     {
         string? currentDirectory = null;
@@ -154,26 +156,24 @@ public class PackageManager
         return null;
     }
 
-    public class FrameworkMatcher
+    // Method to find the best match framework of a given package's target framework availability
+    public static NuGetFramework FindBestMatchFramework(IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet, string targetFrameworkString)
     {
-        public static NuGetFramework FindBestMatchFramework(IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet, string targetFrameworkString)
-        {
-            // Parse the given target framework string into a NuGetFramework object
-            var targetFramework = NuGetFramework.ParseFolder(targetFrameworkString);
-            var frameworkReducer = new FrameworkReducer();
+        // Parse the given target framework string into a NuGetFramework object
+        var targetFramework = NuGetFramework.ParseFolder(targetFrameworkString);
+        var frameworkReducer = new FrameworkReducer();
 
-            // Collect all target frameworks from the dependency set
-            var availableFrameworks = dependencySet.Select(dg => dg.TargetFramework).ToList();
+        // Collect all target frameworks from the dependency set
+        var availableFrameworks = dependencySet.Select(dg => dg.TargetFramework).ToList();
 
-            // Return bestmatch framework
-            return frameworkReducer.GetNearest(targetFramework, availableFrameworks);
-        }
+        // Return bestmatch framework
+        return frameworkReducer.GetNearest(targetFramework, availableFrameworks);
     }
-
 
     // Method to get the dependencies of a package
     public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework)
     {
+        // Create a package identity to use for obtaining the metadata url
         PackageIdentity packageIdentity = new PackageIdentity(package.packageName, new NuGetVersion(package.newVersion ?? package.currentVersion));
         bool specific = false;
 
@@ -183,13 +183,10 @@ public class PackageManager
         {
             // Fetch package metadata URL
             var metadataUrl = await FindPackageMetadataAsync(packageIdentity, CancellationToken.None);
-
-            // Lower the characters in the package name to put in the nuspec url
-            string packageNameLower = package.packageName.ToLower();
             string nuspecContent = null;
             IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet = metadataUrl.DependencySets;
 
-            var bestMatchFramework = FrameworkMatcher.FindBestMatchFramework(dependencySet, targetFramework);
+            var bestMatchFramework = FindBestMatchFramework(dependencySet, targetFramework);
 
             if (bestMatchFramework != null)
             {
@@ -198,7 +195,6 @@ public class PackageManager
 
                 foreach (var packageDependency in bestMatchGroup.Packages)
                 {
-                    Console.WriteLine($"Package Id: {packageDependency.Id}, Version Range: {packageDependency.VersionRange}");
                     string version = packageDependency.VersionRange.OriginalString;
                     string firstVersion = null;
                     string secondVersion = null;
@@ -250,7 +246,6 @@ public class PackageManager
                     {
                         packageName = packageDependency.Id,
                         currentVersion = version,
-                        
                     };
 
                     if (specific == true)
@@ -271,20 +266,21 @@ public class PackageManager
                 Console.WriteLine("No compatible framework found.");
             }
         }
-        catch (FileNotFoundException)
+        catch (HttpRequestException ex)
         {
-            Console.WriteLine($"The file was not found.");
-            return null;
+            Console.WriteLine($"HTTP error occurred: {ex.Message}");
         }
-        catch (UnauthorizedAccessException)
+        catch (ArgumentNullException ex)
         {
-            Console.WriteLine($"Unauthorized access to the file.");
-            return null;
+            Console.WriteLine($"Argument is null error: {ex.ParamName}, {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Invalid operation exception: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred while reading the file: {ex.Message}");
-            return null;
+            Console.WriteLine($"An error occurred: {ex.Message}");
         }
 
         return dependencyList;
@@ -475,12 +471,14 @@ public class PackageManager
                     {
                         List<PackageToUpdate> dependencyListParent = await GetDependenciesAsync(parent, targetFramework);
                         PackageToUpdate parentDependency = dependencyListParent.FirstOrDefault(p => p.packageName == package.packageName);
+
+                        // If the parent's dependency current version is not the same as the current version of the package
                         if (parentDependency.currentVersion != package.currentVersion)
                         {
-                            //string projectFile = null;
-                            //NuGetContext nugetContext = new NuGetContext(projectFile);
-                            NuGetContext nugetContext = new NuGetContext();
+                            // Create a NugetContext instance to get the latest versions of the parent
+                            NuGetContext nugetContext = new NuGetContext(projectPath);
                             Logger logger = null;
+
                             string currentVersionString = parent.currentVersion;
                             NuGetVersion currentVersionParent = NuGetVersion.Parse(currentVersionString);
 
@@ -492,16 +490,21 @@ public class PackageManager
                             for (NuGetVersion version = currentVersionParent; version <= latestVersion; version = NextPatch(version, versions))
                             {
                                 NuGetVersion nextPatch = NextPatch(version, versions);
+
+                                // If the next patch is the same as the currentVersioon, then nothing is needed
                                 if(nextPatch == version)
                                 {
                                     return "Success";
                                 }
+
                                 string parentVersion = version.ToString();
                                 PackageToUpdate parentTemp = parent;
                                 parentTemp.currentVersion = parentVersion;
 
+                                // Check if the parent needs to be updated (since the child isn't in existing and the parent can update to remove the child)
                                 List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parentTemp, targetFramework);
                                 PackageToUpdate parentDependencyTemp = dependencyListParentTemp.FirstOrDefault(p => p.packageName == package.packageName);
+
                                 if ((parentDependencyTemp.currentVersion == package.currentVersion) && (parent.isSpecific != true))
                                 {
                                     parent.newVersion = parentVersion;
@@ -590,7 +593,8 @@ public class PackageManager
         string currentVersionString = possibleParent.currentVersion;
         NuGetVersion currentVersion = NuGetVersion.Parse(currentVersionString);
 
-        NuGetContext nugetContext = new NuGetContext();
+        // Create a NugetContext instance to get the latest versions of the parent
+        NuGetContext nugetContext = new NuGetContext(projectPath);
         Logger logger = null;
 
         var result = await VersionFinder.GetVersionsAsync(possibleParent.packageName, currentVersion, nugetContext, logger, CancellationToken.None);
