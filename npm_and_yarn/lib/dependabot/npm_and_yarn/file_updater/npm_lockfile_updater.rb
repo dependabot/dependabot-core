@@ -66,6 +66,7 @@ module Dependabot
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
+        SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -484,6 +485,11 @@ module Dependabot
             msg = "Dependabot uses Node.js #{`node --version`.strip} and NPM #{`npm --version`.strip}. " \
                   "Due to the engine-strict setting, the update will not succeed."
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (git_source = error_message.match(SOCKET_HANG_UP))
+            msg = git_source.named_captures.fetch("url")
+            raise Dependabot::PrivateSourceTimedOut, T.must(msg)
           end
 
           raise error
