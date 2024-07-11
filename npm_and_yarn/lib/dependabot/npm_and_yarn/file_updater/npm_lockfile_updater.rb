@@ -67,6 +67,8 @@ module Dependabot
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
         SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
+        UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
+        UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -490,6 +492,18 @@ module Dependabot
           if (git_source = error_message.match(SOCKET_HANG_UP))
             msg = git_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceTimedOut, T.must(msg)
+          end
+
+          # Error handled when no authentication info ( _auth = user:pass )
+          # is provided in config file (.npmrc) to access private registry
+          if error_message.match?(UNABLE_TO_AUTH_NPMRC)
+            msg = "check .npmrc config file"
+            raise Dependabot::PrivateSourceAuthenticationFailure, T.must(msg)
+          end
+
+          if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
+            msg = registry_source.named_captures.fetch("url")
+            raise Dependabot::PrivateSourceAuthenticationFailure, T.must(msg)
           end
 
           raise error
