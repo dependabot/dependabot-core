@@ -298,6 +298,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a registry that times out" do
+    registry_source = "https://registry.npm.com"
+    let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
+    # TODO: stub a custom timeout:
+    let(:error) { Dependabot::PrivateSourceTimedOut.new(registry_source) }
+
+    it "raises a helpful error" do
+      expect(error.source).to eq(registry_source)
+      expect(error.message).to eq("The following source timed out: " + registry_source)
+    end
+  end
+
   %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
       let(:files) { project_dependency_files("#{npm_version}/simple") }
