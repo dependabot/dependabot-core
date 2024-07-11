@@ -489,7 +489,7 @@ module Dependabot
 
           if (git_source = error_message.match(SOCKET_HANG_UP))
             msg = git_source.named_captures.fetch("url")
-            raise Dependabot::PrivateSourceTimedOut, msg
+            raise Dependabot::PrivateSourceTimedOut, T.must(msg)
           end
 
           raise error
