@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           end
 
           context "when dealing with the version lower than the lower bound" do
-            let(:requirement_txt_req_string) { "> 1.6.0" }
+            let(:requirement_txt_req_string) { "> 1.4.0" }
 
             its([:requirement]) { is_expected.to eq(:unfixable) }
           end
@@ -538,7 +538,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               end
 
               context "when dealing with the version lower than the lower bound" do
-                let(:pyproject_req_string) { "> 1.6.0" }
+                let(:pyproject_req_string) { "> 1.4.0" }
 
                 its([:requirement]) { is_expected.to eq(:unfixable) }
               end
@@ -708,7 +708,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             end
 
             context "when dealing with the version lower than the lower bound" do
-              let(:pyproject_req_string) { "> 1.6.0" }
+              let(:pyproject_req_string) { "> 1.4.0" }
 
               its([:requirement]) { is_expected.to eq(:unfixable) }
             end
