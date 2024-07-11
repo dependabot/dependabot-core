@@ -82,9 +82,8 @@ module Dependabot
           dependency: T.nilable(Dependabot::Dependency),
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(String)
-        )
-        .void
+          error_detail: T.nilable(T.any(String, T::Hash[T.untyped, T.untyped]))
+        ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
         if dependency.nil?
@@ -137,7 +136,7 @@ module Dependabot
       end
 
       # Provides logging for errors that occur outside of a dependency context
-      sig { params(error: StandardError, error_type: String, error_detail: T.untyped).void}
+      sig { params(error: StandardError, error_type: String, error_detail: T.untyped).void }
       def log_job_error(error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing job (#{error.class.name})"
@@ -168,8 +167,7 @@ module Dependabot
           error: StandardError,
           dependency: T.nilable(Dependency),
           dependency_group: T.nilable(DependencyGroup)
-        )
-        .returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.untyped])
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
         error_details = Dependabot.updater_error_details(error)

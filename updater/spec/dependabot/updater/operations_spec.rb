@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Updater::Operations do
     end
 
     it "raises an argument error with anything other than a Dependabot::Job" do
-      expect { described_class.class_for(job: Object.new) }.to raise_error(ArgumentError)
+      expect { described_class.class_for(job: Object.new) }.to raise_error(TypeError)
     end
   end
 end

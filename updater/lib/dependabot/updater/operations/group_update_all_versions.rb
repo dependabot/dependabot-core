@@ -3,6 +3,9 @@
 
 require "dependabot/updater/operations/create_group_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
+require "dependabot/updater/operations/operation_base"
+
+require "sorbet-runtime"
 
 # This class is responsible for coordinating the creation and upkeep of Pull Requests for
 # a given folder's defined DependencyGroups.
@@ -17,11 +20,11 @@ require "dependabot/updater/operations/update_all_versions"
 module Dependabot
   class Updater
     module Operations
-      class GroupUpdateAllVersions
-        extend T::Sig
+      class GroupUpdateAllVersions < OperationBase
         include GroupUpdateCreation
+        extend T::Sig
 
-        sig { params(job: Dependabot::Job).returns(T::Boolean) }
+        sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
           return false if job.updating_a_pull_request?
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
@@ -40,7 +43,7 @@ module Dependabot
           job.dependency_groups.any?
         end
 
-        sig { returns(Symbol) }
+        sig { override.returns(Symbol) }
         def self.tag_name
           :group_update_all_versions
         end
@@ -54,14 +57,11 @@ module Dependabot
           ).void
         end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
           @dependencies_handled = T.let(Set.new, T::Set[String])
+          super(service: service, job: job, dependency_snapshot: dependency_snapshot, error_handler: error_handler)
         end
 
-        sig { void }
+        sig { override.void }
         def perform
           if dependency_snapshot.groups.any?
             run_grouped_dependency_updates

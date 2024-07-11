@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "base64"
@@ -8,8 +8,13 @@ require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 
+require "sorbet-runtime"
+
 module Dependabot
   class UpdateFilesCommand < BaseCommand
+    extend T::Sig
+
+    sig { override.void }
     def perform_job
       # We expect the FileFetcherCommand to have been executed beforehand to place
       # encoded files and commit information in the environment, so let's retrieve
@@ -27,7 +32,7 @@ module Dependabot
           handle_parser_error(e)
           # If dependency file parsing has failed, there's nothing more we can do,
           # so let's mark the job as processed and stop.
-          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+          return service.mark_job_as_processed(base_commit_sha)
         end
 
         # Update the service's metadata about this project
@@ -55,19 +60,24 @@ module Dependabot
 
     private
 
+    sig { override.returns(Job) }
     def job
-      @job ||= Job.new_update_job(
-        job_id: job_id,
-        job_definition: Environment.job_definition,
-        repo_contents_path: Environment.repo_contents_path
+      @job ||= T.let(
+        Job.new_update_job(
+          job_id: job_id,
+          job_definition: Environment.job_definition,
+          repo_contents_path: Environment.repo_contents_path
+        ), T.nilable(Job)
       )
     end
 
+    sig { override.returns(String) }
     def base_commit_sha
       Environment.job_definition["base_commit_sha"]
     end
 
     # rubocop:disable Metrics/AbcSize, Layout/LineLength
+    sig { params(error: StandardError).void }
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -84,12 +94,12 @@ module Dependabot
           # If it isn't, then log all the details and let the application error
           # tracker know about it
           Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
+          error.backtrace&.each { |line| Dependabot.logger.error line }
           unknown_error_details = {
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
-            ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+            ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,

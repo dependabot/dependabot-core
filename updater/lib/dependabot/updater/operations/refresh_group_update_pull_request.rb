@@ -3,6 +3,7 @@
 
 require "dependabot/updater/group_update_creation"
 require "dependabot/updater/group_update_refreshing"
+require "dependabot/updater/operations/operation_base"
 require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
@@ -23,13 +24,14 @@ require "sorbet-runtime"
 module Dependabot
   class Updater
     module Operations
-      class RefreshGroupUpdatePullRequest
+      class RefreshGroupUpdatePullRequest < OperationBase
         extend T::Sig
         include GroupUpdateCreation
         include GroupUpdateRefreshing
 
-        sig { params(job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+        sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
+        def self.applies_to?(job:)
+          # rubocop:disable Metrics/PerceivedComplexity
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
@@ -51,27 +53,12 @@ module Dependabot
           job.updating_a_pull_request?
         end
 
-        sig { returns(Symbol) }
+        sig { override.returns(Symbol) }
         def self.tag_name
           :update_version_group_pr
         end
 
-        sig do
-          params(
-            service: Dependabot::Service,
-            job: Dependabot::Job,
-            dependency_snapshot: Dependabot::DependencySnapshot,
-            error_handler: Dependabot::Updater::ErrorHandler
-          ).void
-        end
-        def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
-        end
-
-        sig { void }
+        sig { override.void }
         def perform # rubocop:disable Metrics/AbcSize
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects

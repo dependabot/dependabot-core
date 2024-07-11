@@ -34,9 +34,6 @@ module Dependabot
       sig { returns(Dependabot::Job) }
       attr_reader :job
 
-      sig { returns(Dependabot::DependencyGroup) }
-      attr_reader :group
-
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
@@ -123,10 +120,11 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      sig { params(dependency_change: DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
-        msg = "Skipping change to group #{group.name} in directory #{job.source.directory}: "
+        msg = "Skipping change to group in directory #{job.source.directory}: "
         if deps_no_previous_version.any?
           msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
         end

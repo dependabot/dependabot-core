@@ -3,6 +3,8 @@
 
 require "logger"
 
+require "sorbet-runtime"
+
 # Provides Logger::Formatter classes specific to the Updater project to augment
 # the global log helper defined in common/lib/dependabot/logger.rb
 module Dependabot
@@ -10,12 +12,16 @@ module Dependabot
     TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 
     class BasicFormatter < ::Logger::Formatter
+      extend T::Sig
+
       def call(severity, _datetime, _progname, msg)
         "#{Time.now.strftime(TIME_FORMAT)} #{severity} #{msg2str(msg)}\n"
       end
     end
 
     class JobFormatter < ::Logger::Formatter
+      extend T::Sig
+
       CLI_ID = "cli"
       UNKNOWN_ID = "unknown_id"
 

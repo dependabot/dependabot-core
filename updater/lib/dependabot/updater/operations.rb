@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_security_update_pull_request"
@@ -7,6 +7,9 @@ require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/operations/refresh_security_update_pull_request"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
+require "dependabot/updater/operations/operation_base"
+
+require "sorbet-runtime"
 
 # This module is responsible for determining which Operation a Job is requesting
 # the Updater to perform.
@@ -26,31 +29,31 @@ require "dependabot/updater/operations/update_all_versions"
 module Dependabot
   class Updater
     module Operations
+      extend T::Sig
       # We check if each operation ::applies_to? a given job, returning the first
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
-      OPERATIONS = [
+      OPERATIONS = T.let([
         GroupUpdateAllVersions,
         RefreshGroupUpdatePullRequest,
         CreateSecurityUpdatePullRequest,
         RefreshSecurityUpdatePullRequest,
         RefreshVersionUpdatePullRequest,
         UpdateAllVersions
-      ].freeze
+      ].freeze, T::Array[T.class_of(OperationBase)])
 
+      sig { params(job: Job).returns(T.nilable(T.class_of(OperationBase))) }
       def self.class_for(job:)
         # Let's not bother generating the string if debug is disabled
         if Dependabot.logger.debug?
           update_type = job.security_updates_only? ? "security" : "version"
           update_verb = job.updating_a_pull_request? ? "refresh" : "create"
-          update_deps = job.dependencies&.any? ? job.dependencies.count : "all"
+          update_deps = job.dependencies&.any? ? job.dependencies&.count : "all"
 
           Dependabot.logger.debug(
             "Finding operation for a #{update_type} to #{update_verb} a Pull Request for #{update_deps} dependencies"
           )
         end
-
-        raise ArgumentError, "Expected Dependabot::Job, got #{job.class}" unless job.is_a?(Dependabot::Job)
 
         OPERATIONS.find { |op| op.applies_to?(job: job) }
       end

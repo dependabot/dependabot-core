@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 # Dependabot components
@@ -16,33 +16,39 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations"
 require "dependabot/updater/security_update_helpers"
 
+require "sorbet-runtime"
 require "wildcard_matcher"
 
 module Dependabot
   class Updater
+    extend T::Sig
     # To do work, this class needs three arguments:
     # - The Dependabot::Service to send events and outcomes to
     # - The Dependabot::Job that describes the work to be done
     # - The Dependabot::DependencySnapshot which encapsulates the starting state of the project
+    sig { params(service: Service, job: Job, dependency_snapshot: DependencySnapshot).void }
     def initialize(service:, job:, dependency_snapshot:)
       @service = service
       @job = job
       @dependency_snapshot = dependency_snapshot
-      @error_handler = ErrorHandler.new(service: service, job: job)
+      @error_handler = T.let(ErrorHandler.new(service: service, job: job), ErrorHandler)
     end
 
+    sig { void }
     def run
-      return unless job
-      raise Dependabot::NotImplemented unless (operation_class = Operations.class_for(job: job))
+      unless (operation_class = Operations.class_for(job: @job))
+        raise Dependabot::NotImplemented
+      end
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
       service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })
-      operation_class.new(
+      operation = operation_class.new(
         service: service,
         job: job,
         dependency_snapshot: dependency_snapshot,
         error_handler: error_handler
-      ).perform
+      )
+      operation.perform
     rescue *ErrorHandler::RUN_HALTING_ERRORS.keys => e
       # TODO: Drop this into Security-specific operations
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
@@ -50,7 +56,7 @@ module Dependabot
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
         )
         error.set_backtrace(e.backtrace)
-        service.capture_exception(error: error, job: job)
+        @service.capture_exception(error: error, job: job)
         return
       end
 
@@ -63,9 +69,13 @@ module Dependabot
 
     private
 
+    sig { returns(Service) }
     attr_reader :service
+    sig { returns(Job) }
     attr_reader :job
+    sig { returns(DependencySnapshot) }
     attr_reader :dependency_snapshot
+    sig { returns(ErrorHandler) }
     attr_reader :error_handler
   end
 end
