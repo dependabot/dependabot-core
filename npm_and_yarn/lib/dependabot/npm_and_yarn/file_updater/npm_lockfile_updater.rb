@@ -66,7 +66,7 @@ module Dependabot
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
-        SOCKET_HANG_UP = /request to .*. failed, reason: socket hang up/
+        SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -487,8 +487,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if error_message.match?(SOCKET_HANG_UP)
-            msg = error_message
+          if (git_source = error_message.match(SOCKET_HANG_UP))
+            msg = git_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceTimedOut, msg
           end
 
