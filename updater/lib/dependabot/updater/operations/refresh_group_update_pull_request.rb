@@ -111,18 +111,6 @@ module Dependabot
 
         private
 
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
-
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)

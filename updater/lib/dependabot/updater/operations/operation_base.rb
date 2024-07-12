@@ -30,10 +30,13 @@ module Dependabot
 
       sig { returns(Service) }
       attr_reader :service
+
       sig { returns(Job) }
       attr_reader :job
+
       sig { returns(DependencySnapshot) }
       attr_reader :dependency_snapshot
+
       sig { returns(ErrorHandler) }
       attr_reader :error_handler
 

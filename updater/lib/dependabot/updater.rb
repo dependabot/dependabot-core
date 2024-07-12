@@ -36,7 +36,7 @@ module Dependabot
 
     sig { void }
     def run
-      unless (operation_class = Operations.class_for(job: @job))
+      unless (operation_class = Operations.class_for(job: job))
         raise Dependabot::NotImplemented
       end
 
@@ -55,7 +55,7 @@ module Dependabot
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
         )
         error.set_backtrace(e.backtrace)
-        @service.capture_exception(error: error, job: job)
+        service.capture_exception(error: error, job: job)
         return
       end
 

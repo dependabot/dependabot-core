@@ -86,18 +86,6 @@ module Dependabot
 
         private
 
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(Dependabot::DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
-
         # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         sig { returns(T::Array[Dependabot::DependencyGroup]) }
         def run_grouped_dependency_updates

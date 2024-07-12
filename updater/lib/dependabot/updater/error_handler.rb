@@ -57,7 +57,7 @@ module Dependabot
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
-        service.record_update_job_error(
+        @service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
           error_details: error_details[:"error-detail"],
           dependency: dependency
@@ -113,7 +113,7 @@ module Dependabot
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
         error_details = error_details_for(error, dependency_group: dependency_group)
-        service.record_update_job_error(
+        @service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
           error_details: error_details[:"error-detail"]
         )
@@ -146,12 +146,6 @@ module Dependabot
 
       private
 
-      sig { returns(Service) }
-      attr_reader :service
-
-      sig { returns(Job) }
-      attr_reader :job
-
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
       #
@@ -178,11 +172,11 @@ module Dependabot
           msg = "Subprocess #{error.sentry_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, sentry_context: error.sentry_context)
           sanitized_error.set_backtrace(error.backtrace)
-          service.capture_exception(error: sanitized_error, job: job)
+          @service.capture_exception(error: sanitized_error, job: @job)
         else
-          service.capture_exception(
+          @service.capture_exception(
             error: error,
-            job: job,
+            job: @job,
             dependency: dependency,
             dependency_group: dependency_group
           )
@@ -199,17 +193,17 @@ module Dependabot
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
           ErrorAttributes::FINGERPRINT => sentry_context,
-          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
-          ErrorAttributes::JOB_ID => job.id,
-          ErrorAttributes::DEPENDENCIES => job.dependencies,
-          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+          ErrorAttributes::PACKAGE_MANAGER => @job.package_manager,
+          ErrorAttributes::JOB_ID => @job.id,
+          ErrorAttributes::DEPENDENCIES => @job.dependencies,
+          ErrorAttributes::DEPENDENCY_GROUPS => @job.dependency_groups
         }.compact
 
-        service.increment_metric("updater.update_job_unknown_error", tags: {
-          package_manager: job.package_manager,
+        @service.increment_metric("updater.update_job_unknown_error", tags: {
+          package_manager: @job.package_manager,
           class_name: error.class.name
         })
-        service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
+        @service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
       end
     end
   end
