@@ -36,7 +36,7 @@ module Dependabot
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         @workflow_files = T.let([], T::Array[DependencyFile])
-        super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
+        super
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

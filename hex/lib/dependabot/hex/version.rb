@@ -43,7 +43,7 @@ module Dependabot
       end
 
       def <=>(other)
-        version_comparison = super(other)
+        version_comparison = super
         return version_comparison unless version_comparison&.zero?
 
         return build_info.nil? ? 0 : 1 unless other.is_a?(Hex::Version)
