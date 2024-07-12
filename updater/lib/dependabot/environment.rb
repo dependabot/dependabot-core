@@ -77,7 +77,12 @@ module Dependabot
           raise ArgumentError, "Missing environment variable #{variable_name}"
         end
       else
-        T.cast(ENV.fetch(variable_name, default), T.type_parameter(:T))
+        val = ENV.fetch(variable_name, default)
+        case val
+        when String
+          val = val.casecmp("true") if [true, false].include? default
+        end
+        T.cast(val, T.type_parameter(:T))
       end
     end
 
