@@ -77,9 +77,9 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
 
       it "raises a NetworkDisabled error" do
-        expect {
+        expect do
           error_handler.handle_yarn_error(error_message)
-        }.to raise_error(Dependabot::NetworkDisabled)
+        end.to raise_error(Dependabot::NetworkDisabled)
       end
     end
 
@@ -127,9 +127,9 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "YN0002: Missing peer dependency" }
 
       it "raises the corresponding error class" do
-        expect {
+        expect do
           error_handler.handle_yarn_error(error_message)
-        }.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
