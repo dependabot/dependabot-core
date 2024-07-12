@@ -34,6 +34,8 @@ job:
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
+  experiments:
+    dependency_has_directory: true
 
 -- input-2.yml --
 job:
@@ -50,3 +52,5 @@ job:
   existing-pull-requests:
     - - dependency-name: dependency-a
         dependency-version: 1.2.5
+  experiments:
+    dependency_has_directory: true
