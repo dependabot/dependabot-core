@@ -263,15 +263,13 @@ module Dependabot
 
           result = T.let([], T::Array[T::Hash[String, T.untyped]])
           existing_prs = @job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-          if (existing_prs.nil?)
+          if existing_prs.nil?
             created = created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-            unless created.nil?
-              result.append(created)
-            end
+            result.append(created) unless created.nil?
           else
             result.concat(existing_prs)
           end
-          result.count == 0 ? nil : result
+          result.count.zero? ? nil : result
         end
 
         sig { params(checker: T.untyped).returns(Symbol) }

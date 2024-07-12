@@ -15,16 +15,17 @@ require "sorbet-runtime"
 module Dependabot
   class Updater
     module Operations
-      class CreateGroupUpdatePullRequest < OperationBase
+      class CreateGroupUpdatePullRequest < GroupUpdateCreation
         extend T::Sig
-        include GroupUpdateCreation
 
         # We do not invoke this class directly for any jobs, so let's return false in the event this
         # check is called.
+        # rubocop:disable Lint/UnusedMethodArgument
         sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
           false
         end
+        # rubocop:enable Lint/UnusedMethodArgument
 
         sig { override.returns(Symbol) }
         def self.tag_name
@@ -80,12 +81,12 @@ module Dependabot
           return @dependency_change if defined?(@dependency_change)
 
           if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(group, dependency_snapshot, job, error_handler)
+            @dependency_change = compile_all_dependency_changes_for(group)
           else
             dependency_changes = T.must(job.source.directories).filter_map do |directory|
               job.source.directory = directory
               dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(group, dependency_snapshot, job, error_handler)
+              compile_all_dependency_changes_for(group)
             end
 
             # merge the changes together into one

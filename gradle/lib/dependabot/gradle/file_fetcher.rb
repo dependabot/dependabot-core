@@ -31,12 +31,12 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[Symbol, String]
+            options: T::Hash[Symbol, T.untyped]
           )
           .void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
-        super
+        super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
 
         @buildfile_name = T.let(nil, T.nilable(String))
       end

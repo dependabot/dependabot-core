@@ -76,7 +76,7 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength
+    # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
     sig { params(error: StandardError).void }
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
@@ -95,11 +95,12 @@ module Dependabot
           # tracker know about it
           Dependabot.logger.error error.message
           error.backtrace&.each { |line| Dependabot.logger.error line }
+          sentry_context = error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil
           unknown_error_details = {
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
+            ErrorAttributes::FINGERPRINT => sentry_context,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -128,6 +129,6 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength
+    # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
   end
 end

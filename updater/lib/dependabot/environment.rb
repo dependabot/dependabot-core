@@ -1,52 +1,68 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 module Dependabot
   module Environment
+    extend T::Sig
+
+    sig { returns(String) }
     def self.job_id
-      @job_id ||= environment_variable("DEPENDABOT_JOB_ID")
+      @job_id ||= T.let(environment_variable("DEPENDABOT_JOB_ID"), T.nilable(String))
     end
 
+    sig { returns(String) }
     def self.job_token
-      @job_token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
+      @job_token ||= T.let(environment_variable("DEPENDABOT_JOB_TOKEN"), T.nilable(String))
     end
 
+    sig { returns(T::Boolean) }
     def self.debug_enabled?
-      @debug_enabled ||= job_debug_enabled? || environment_debug_enabled?
+      @debug_enabled ||= T.let(job_debug_enabled? || environment_debug_enabled?, T.nilable(T::Boolean))
     end
 
+    sig { returns(Symbol) }
     def self.log_level
       debug_enabled? ? :debug : :info
     end
 
+    sig { returns(String) }
     def self.api_url
-      @api_url ||= environment_variable("DEPENDABOT_API_URL", "http://localhost:3001")
+      @api_url ||= T.let(environment_variable("DEPENDABOT_API_URL", "http://localhost:3001"), T.nilable(String))
     end
 
+    sig { returns(String) }
     def self.job_path
-      @job_path ||= environment_variable("DEPENDABOT_JOB_PATH")
+      @job_path ||= T.let(environment_variable("DEPENDABOT_JOB_PATH"), T.nilable(String))
     end
 
+    sig { returns(String) }
     def self.output_path
-      @output_path ||= environment_variable("DEPENDABOT_OUTPUT_PATH")
+      @output_path ||= T.let(environment_variable("DEPENDABOT_OUTPUT_PATH"), T.nilable(String))
     end
 
+    sig { returns(T.nilable(String)) }
     def self.repo_contents_path
-      @repo_contents_path ||= environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", nil)
+      @repo_contents_path ||= T.let(environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", nil), T.nilable(String))
     end
 
+    sig { returns(T::Boolean) }
     def self.github_actions?
-      @github_actions ||= environment_variable("GITHUB_ACTIONS", false)
+      @github_actions ||= T.let(environment_variable("GITHUB_ACTIONS", false), T.nilable(T::Boolean))
     end
 
+    sig { returns(T::Boolean) }
     def self.deterministic_updates?
-      @deterministic_updates ||= environment_variable("UPDATER_DETERMINISTIC", false)
+      @deterministic_updates ||= T.let(environment_variable("UPDATER_DETERMINISTIC", false), T.nilable(T::Boolean))
     end
 
+    sig { returns(T::Hash[String, T.untyped]) }
     def self.job_definition
-      @job_definition ||= JSON.parse(File.read(job_path))
+      @job_definition ||= T.let(JSON.parse(File.read(job_path)), T.nilable(T::Hash[String, T.untyped]))
     end
 
+    sig { params(variable_name: String, default: T.untyped).returns(T.untyped) }
     private_class_method def self.environment_variable(variable_name, default = :_undefined)
       return ENV.fetch(variable_name, default) unless default == :_undefined
 
@@ -55,10 +71,12 @@ module Dependabot
       end
     end
 
+    sig { returns(T::Boolean) }
     private_class_method def self.job_debug_enabled?
       !!job_definition.dig("job", "debug")
     end
 
+    sig { returns(T::Boolean) }
     private_class_method def self.environment_debug_enabled?
       !!environment_variable("DEPENDABOT_DEBUG", false)
     end

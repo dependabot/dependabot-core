@@ -23,10 +23,10 @@ require "sorbet-runtime"
 module Dependabot
   class Updater
     module Operations
-      class RefreshGroupUpdatePullRequest < OperationBase
+      class RefreshGroupUpdatePullRequest < GroupUpdateCreation
         extend T::Sig
-        include GroupUpdateCreation
 
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
           # If we haven't been given metadata about the dependencies present
@@ -49,14 +49,16 @@ module Dependabot
 
           job.updating_a_pull_request?
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { override.returns(Symbol) }
         def self.tag_name
           :update_version_group_pr
         end
 
+        # rubocop:disable Metrics/AbcSize
         sig { override.void }
-        def perform # rubocop:disable Metrics/AbcSize
+        def perform
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects
           # were out of sync.
@@ -90,10 +92,10 @@ module Dependabot
             # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
             # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
             dependency_snapshot.groups.each do |group|
-              next unless group.name != job_group.name && pr_exists_for_dependency_group?(group, job)
+              next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
 
               dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group, job).filter_map { |d| d["dependency-name"] }
+                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
               )
             end
 
@@ -105,6 +107,7 @@ module Dependabot
             upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
           end
         end
+        # rubocop:enable Metrics/AbcSize
 
         private
 
@@ -120,6 +123,7 @@ module Dependabot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
@@ -127,12 +131,12 @@ module Dependabot
           job_group = T.must(dependency_snapshot.job_group)
 
           if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(job_group, dependency_snapshot, job, error_handler)
+            @dependency_change = compile_all_dependency_changes_for(job_group)
           else
             dependency_changes = T.let(T.must(job.source.directories).filter_map do |directory|
               job.source.directory = directory
               dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(job_group, dependency_snapshot, job, error_handler)
+              compile_all_dependency_changes_for(job_group)
             end, T::Array[Dependabot::DependencyChange])
 
             # merge the changes together into one
@@ -141,6 +145,7 @@ module Dependabot
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
         end
+        # rubocop:enable Metrics/AbcSize
 
         sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
         def upsert_pull_request_with_error_handling(dependency_change, group)

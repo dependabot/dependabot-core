@@ -67,12 +67,12 @@ module Dependabot
 
     sig { params(err: StandardError).void }
     def handle_unknown_error(err)
+      sentry_context = err.respond_to?(:sentry_context) ? T.unsafe(err).sentry_context[:fingerprint] : nil
       error_details = {
         ErrorAttributes::CLASS => err.class.to_s,
         ErrorAttributes::MESSAGE => err.message,
         ErrorAttributes::BACKTRACE => err.backtrace&.join("\n"),
-        ErrorAttributes::FINGERPRINT => err.respond_to?(:sentry_context) ?
-          T.unsafe(err).sentry_context[:fingerprint] : nil,
+        ErrorAttributes::FINGERPRINT => sentry_context,
         ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
         ErrorAttributes::JOB_ID => job.id,
         ErrorAttributes::DEPENDENCIES => job.dependencies,

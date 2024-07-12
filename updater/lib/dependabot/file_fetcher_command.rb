@@ -20,7 +20,7 @@ module Dependabot
     attr_reader :base_commit_sha
 
     sig { void }
-    def initialize()
+    def initialize
       @base_commit_sha = T.let(nil, T.nilable(String))
     end
 
@@ -178,8 +178,8 @@ module Dependabot
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 
-    sig { params(blk: T.proc.returns(FileFetchers::Base)).returns(FileFetchers::Base) }
-    def file_fetcher_with_retries(&blk)
+    sig { params(_blk: T.proc.returns(FileFetchers::Base)).returns(FileFetchers::Base) }
+    def file_fetcher_with_retries(&_blk)
       retries ||= 0
       begin
         yield
@@ -190,8 +190,8 @@ module Dependabot
       end
     end
 
-    sig { params(blk: T.proc.returns(T::Array[DependencyFile])).returns(T::Array[DependencyFile]) }
-    def with_retries(&blk)
+    sig { params(_blk: T.proc.returns(T::Array[DependencyFile])).returns(T::Array[DependencyFile]) }
+    def with_retries(&_blk)
       retries ||= 0
       begin
         yield
@@ -248,13 +248,12 @@ module Dependabot
 
       if error_details.nil?
         log_error(error)
-
+        sentry_context = error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil
         unknown_error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ?
-            T.unsafe(error).sentry_context[:fingerprint] : nil,
+          ErrorAttributes::FINGERPRINT => sentry_context,
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
@@ -279,9 +278,9 @@ module Dependabot
 
     sig { params(error: StandardError).returns(Float) }
     def rate_limit_error_remaining(error)
-      clientError = T.cast(error, Octokit::ClientError)
+      client_error = T.cast(error, Octokit::ClientError)
       # Time at which the current rate limit window resets in UTC epoch secs.
-      expires_at = clientError.response_headers["X-RateLimit-Reset"].to_i
+      expires_at = client_error.response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0.0
     end

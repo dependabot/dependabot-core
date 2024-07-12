@@ -67,6 +67,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/MethodLength
         sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
         def check_and_update_pull_request(dependencies)
           if dependencies.count != T.must(job.dependencies).count
@@ -135,6 +136,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/MethodLength
 
         sig { params(dependency_change: DependencyChange).void }
         def create_pull_request(dependency_change)

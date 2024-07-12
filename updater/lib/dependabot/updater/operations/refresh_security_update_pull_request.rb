@@ -50,6 +50,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         sig { params(dependencies: T::Array[Dependency]).void }
@@ -68,7 +69,7 @@ module Dependabot
           # pull request is rebased.
           if dependencies.none? { |d| @job.allowed_update?(d) }
             lead_dependency = dependencies.first
-            if (lead_dependency.nil?)
+            if lead_dependency.nil?
               Dependabot.logger.info("Dependencies array had no members")
             elsif @job.vulnerable?(lead_dependency)
               Dependabot.logger.info(
@@ -143,6 +144,7 @@ module Dependabot
           raise
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
 

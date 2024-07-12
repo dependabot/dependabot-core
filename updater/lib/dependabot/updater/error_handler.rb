@@ -86,20 +86,15 @@ module Dependabot
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
-        if dependency.nil?
-          depName = "no_dependency"
-        else
-          depName = dependency.name
-        end
-
+        dep_name = dependency.nil? ? "no_dependency" : dependency.name
         if error_type == "unknown_error"
-          Dependabot.logger.error "Error processing #{depName} (#{error.class.name})"
+          Dependabot.logger.error "Error processing #{dep_name} (#{error.class.name})"
           Dependabot.logger.error error.message
 
           error.backtrace&.each { |line| Dependabot.logger.error line }
         else
           Dependabot.logger.info(
-            "Handled error whilst updating #{depName}: #{error_type} #{error_detail}"
+            "Handled error whilst updating #{dep_name}: #{error_type} #{error_detail}"
           )
         end
       end
@@ -197,12 +192,12 @@ module Dependabot
 
       sig { params(error: StandardError).void }
       def log_unknown_error_with_backtrace(error)
+        sentry_context = error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil
         error_details = {
           ErrorAttributes::CLASS => error.class.to_s,
           ErrorAttributes::MESSAGE => error.message,
           ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ?
-            T.unsafe(error).sentry_context[:fingerprint] : nil,
+          ErrorAttributes::FINGERPRINT => sentry_context,
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,

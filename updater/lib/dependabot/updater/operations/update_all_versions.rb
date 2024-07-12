@@ -41,9 +41,9 @@ module Dependabot
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[T::Hash[String, T.any(String, T::Boolean)]])
 
-          if job.source.directory.nil? && T.must(job.source.directories).count == 1
-            job.source.directory = T.must(job.source.directories).first
-          end
+          return unless job.source.directory.nil? && T.must(job.source.directories).count == 1
+
+          job.source.directory = T.must(job.source.directories).first
         end
 
         sig { override.void }
@@ -243,7 +243,7 @@ module Dependabot
             result.concat(existing_prs)
           end
 
-          result.count == 0 ? nil : result
+          result.count.zero? ? nil : result
         end
 
         sig { params(checker: UpdateCheckers::Base).returns(Symbol) }
