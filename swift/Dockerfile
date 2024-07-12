@@ -11,7 +11,7 @@ RUN apt-get update \
     libcurl4 \
     libedit2 \
     libgcc-9-dev \
-    libpython2.7 \
+    libpython3-dev \
     libsqlite3-0 \
     libstdc++-9-dev \
     libxml2 \
