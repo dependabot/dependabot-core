@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -14,11 +14,8 @@ module Dependabot
 
       abstract!
 
-      sig { returns(Dependabot::Service) }
-      attr_reader :service
-
-      sig { params(dependency: Dependabot::Dependency).void }
-      def record_security_update_not_needed_error(dependency)
+      sig { params(dependency: Dependabot::Dependency, service: Service).void }
+      def record_security_update_not_needed_error(dependency, service)
         Dependabot.logger.info(
           "no security update needed as #{dependency.name} " \
           "is no longer vulnerable"
@@ -32,8 +29,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_security_update_ignored(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, service: Service).void }
+      def record_security_update_ignored(checker, service)
         Dependabot.logger.info(
           "Dependabot cannot update to the required version as all versions " \
           "were ignored for #{checker.dependency.name}"
@@ -47,8 +44,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_dependency_file_not_supported_error(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, service: Service).void }
+      def record_dependency_file_not_supported_error(checker, service)
         Dependabot.logger.info(
           "Dependabot can't update vulnerable dependencies for projects " \
           "without a lockfile or pinned version requirement as the currently " \
@@ -63,8 +60,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_security_update_not_possible_error(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, service: Service).void }
+      def record_security_update_not_possible_error(checker, service)
         latest_allowed_version =
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
@@ -90,8 +87,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_security_update_not_found(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, service: Service).void }
+      def record_security_update_not_found(checker, service)
         Dependabot.logger.info(
           "Dependabot can't find a published or compatible non-vulnerable " \
           "version for #{checker.dependency.name}. " \
@@ -108,8 +105,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_pull_request_exists_for_latest_version(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, service: Service).void }
+      def record_pull_request_exists_for_latest_version(checker, service)
         service.record_update_job_error(
           error_type: "pull_request_exists_for_latest_version",
           error_details: {
@@ -120,8 +117,8 @@ module Dependabot
         )
       end
 
-      sig { params(existing_pull_request: T::Array[T::Hash[String, String]]).void }
-      def record_pull_request_exists_for_security_update(existing_pull_request)
+      sig { params(existing_pull_request: T::Array[T::Hash[String, String]], service: Service).void }
+      def record_pull_request_exists_for_security_update(existing_pull_request, service)
         updated_dependencies = existing_pull_request.map do |dep|
           {
             "dependency-name": dep.fetch("dependency-name"),
@@ -138,8 +135,8 @@ module Dependabot
         )
       end
 
-      sig { void }
-      def record_security_update_dependency_not_found
+      sig { params(service: Service).void }
+      def record_security_update_dependency_not_found(service)
         service.record_update_job_error(
           error_type: "security_update_dependency_not_found",
           error_details: {}

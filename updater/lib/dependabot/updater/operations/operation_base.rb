@@ -28,14 +28,14 @@ module Dependabot
         @error_handler = error_handler
       end
 
-      sig { returns(T::Array[String]) }
-      def job_dependencies
-        if @job.dependencies.nil?
-          throw ArgumentError, "Dependencies on the job are required"
-        else
-          T.must(@job.dependencies)
-        end
-      end
+      sig { returns(Service) }
+      attr_reader :service
+      sig { returns(Job) }
+      attr_reader :job
+      sig { returns(DependencySnapshot) }
+      attr_reader :dependency_snapshot
+      sig { returns(ErrorHandler) }
+      attr_reader :error_handler
 
       abstract!
       sig { abstract.params(job: Job).returns(T::Boolean) }

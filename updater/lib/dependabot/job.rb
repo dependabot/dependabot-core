@@ -60,7 +60,7 @@ module Dependabot
     sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
 
-    sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
+    sig { returns(T::Array[T::Array[T::Hash[String, T.untyped]]]) }
     attr_reader :existing_pull_requests
 
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }

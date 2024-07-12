@@ -18,7 +18,6 @@ module Dependabot
     module Operations
       class RefreshSecurityUpdatePullRequest < OperationBase
         extend T::Sig
-        include SecurityUpdateHelpers
 
         sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -55,7 +54,7 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(dependencies: T::Array[Dependency]).void }
         def check_and_update_pull_request(dependencies)
-          if dependencies.count != job_dependencies.count
+          if dependencies.count != T.must(job.dependencies).count
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
@@ -88,7 +87,7 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          lead_dep_name = job_dependencies.first&.downcase
+          lead_dep_name = T.must(job.dependencies&.first).downcase
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
@@ -124,7 +123,7 @@ module Dependabot
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          job_deps_downcase = job_dependencies.map(&:downcase)
+          job_deps_downcase = T.must(job.dependencies).map(&:downcase)
           if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_deps_downcase
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
@@ -236,9 +235,10 @@ module Dependabot
         sig { params(reason: T.any(String, Symbol)).void }
         def close_pull_request(reason:)
           reason_string = reason.to_s.tr("_", " ")
+          deps = T.must(job.dependencies)
           Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job_dependencies.join(', ')} - #{reason_string}")
-          service.close_pull_request(job_dependencies, reason)
+                                 "#{deps.join(', ')} - #{reason_string}")
+          service.close_pull_request(deps, reason)
         end
       end
     end

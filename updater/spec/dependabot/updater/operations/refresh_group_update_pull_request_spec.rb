@@ -253,13 +253,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     it "returns nil if dependency is nil" do
       dependency = nil
       original_dependency = dependency_snapshot.dependencies.first
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency, dependency_snapshot)).to be_nil
     end
 
     it "returns nil if original_dependency is nil" do
       dependency = dependency_snapshot.dependencies.first
       original_dependency = nil
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency, dependency_snapshot)).to be_nil
     end
   end
 
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
       end
     end
 
@@ -306,7 +306,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
       end
     end
 
@@ -315,7 +315,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
       end
     end
 
@@ -329,7 +329,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(true)
         end
       end
 
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
 
@@ -349,7 +349,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
     end
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
 
@@ -374,7 +374,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(true)
         end
       end
 
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
     end
@@ -399,7 +399,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
 
@@ -409,7 +409,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(false)
         end
       end
 
@@ -419,7 +419,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker, job)).to be(true)
         end
       end
     end

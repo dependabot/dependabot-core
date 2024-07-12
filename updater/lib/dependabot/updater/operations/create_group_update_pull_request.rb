@@ -80,12 +80,12 @@ module Dependabot
           return @dependency_change if defined?(@dependency_change)
 
           if job.source.directories.nil?
-            @dependency_change = compile_all_dependency_changes_for(group)
+            @dependency_change = compile_all_dependency_changes_for(group, dependency_snapshot, job, error_handler)
           else
             dependency_changes = T.must(job.source.directories).filter_map do |directory|
               job.source.directory = directory
               dependency_snapshot.current_directory = directory
-              compile_all_dependency_changes_for(group)
+              compile_all_dependency_changes_for(group, dependency_snapshot, job, error_handler)
             end
 
             # merge the changes together into one

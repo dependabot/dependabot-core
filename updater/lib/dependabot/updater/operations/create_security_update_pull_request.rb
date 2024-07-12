@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/operation_base"
@@ -58,7 +58,7 @@ module Dependabot
           target_dependencies = @dependency_snapshot.job_dependencies
 
           if target_dependencies.empty?
-            record_security_update_dependency_not_found
+            record_security_update_dependency_not_found(service)
           else
             target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
           end
@@ -99,32 +99,34 @@ module Dependabot
             # The current dependency isn't vulnerable if the version is correct and
             # can be matched against the advisories affected versions
             if checker.version_class.correct?(checker.dependency.version)
-              return record_security_update_not_needed_error(checker.dependency)
+              return record_security_update_not_needed_error(checker.dependency, service)
             end
 
-            return record_dependency_file_not_supported_error(checker)
+            return record_dependency_file_not_supported_error(checker, service)
           end
 
-          return record_security_update_ignored(checker) unless @job.allowed_update?(dependency)
+          return record_security_update_ignored(checker, service) unless @job.allowed_update?(dependency)
 
           # The current version is still vulnerable and  Dependabot can't find a
           # published or compatible non-vulnerable version, this can happen if the
           # fixed version hasn't been published yet or the published version isn't
           # compatible with the current environment (e.g. python version) or
           # version (uses a different version suffix for gradle/maven)
-          return record_security_update_not_found(checker) if checker.up_to_date?
+          return record_security_update_not_found(checker, service) if checker.up_to_date?
 
           if pr_exists_for_latest_version?(checker)
             Dependabot.logger.info(
               "Pull request already exists for #{checker.dependency.name} " \
               "with latest version #{checker.latest_version}"
             )
-            return record_pull_request_exists_for_latest_version(checker)
+            return record_pull_request_exists_for_latest_version(checker, service)
           end
 
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
-          return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
+          if requirements_to_unlock == :update_not_possible
+            return record_security_update_not_possible_error(checker, service)
+          end
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
@@ -135,14 +137,16 @@ module Dependabot
           # version. This happens for npm/yarn sub-dependencies where Dependabot has no
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
-          return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| @job.security_fix?(d) }
+          if updated_deps.none? { |d| @job.security_fix?(d) }
+            return record_security_update_not_possible_error(checker, service)
+          end
 
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
             # so should be invisible to users (as the first job completed with a pull
             # request)
-            record_pull_request_exists_for_security_update(existing_pr)
+            record_pull_request_exists_for_security_update(existing_pr, service)
 
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)
@@ -212,7 +216,7 @@ module Dependabot
           @job.log_ignore_conditions_for(dependency)
         end
 
-        sig { params(dependency: T.untyped).void }
+        sig { params(dependency: Dependency).void }
         def log_up_to_date(dependency)
           Dependabot.logger.info(
             "No update needed for #{dependency.name} #{dependency.version}"
@@ -242,6 +246,10 @@ module Dependabot
               .any? { |pr| pr&.fetch("dependency-version", nil) == latest_version }
         end
 
+        sig do
+          params(updated_dependencies: T::Array[Dependency])
+            .returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        end
         def existing_pull_request(updated_dependencies)
           new_pr_set = Set.new(
             updated_dependencies.map do |dep|
@@ -253,8 +261,17 @@ module Dependabot
             end
           )
 
-          @job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          result = T.let([], T::Array[T::Hash[String, T.untyped]])
+          existing_prs = @job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          if (existing_prs.nil?)
+            created = created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+            unless created.nil?
+              result.append(created)
+            end
+          else
+            result.concat(existing_prs)
+          end
+          result.count == 0 ? nil : result
         end
 
         sig { params(checker: T.untyped).returns(Symbol) }
