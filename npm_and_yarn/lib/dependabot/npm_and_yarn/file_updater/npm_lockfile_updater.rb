@@ -503,7 +503,7 @@ module Dependabot
 
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
             msg = registry_source.named_captures.fetch("url")
-            raise Dependabot::PrivateSourceAuthenticationFailure, T.must(msg)
+            raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
           raise error

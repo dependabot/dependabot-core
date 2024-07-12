@@ -617,6 +617,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a private registry that is inaccessible due to auth" do
+    let(:files) { project_dependency_files("npm/simple_with_registry_with_auth") }
+    let(:npmrc_content) do
+      { registry: "https://pkgs.dev.azure.com/example/npm/registry/" }
+    end
+    let(:error) { Dependabot::PrivateSourceAuthenticationFailure.new(npmrc_content[:registry]) }
+
+    it "raises a helpful error" do
+      expect(error.source).to eq(npmrc_content[:registry])
+      expect(error.to_s).to include(npmrc_content[:registry])
+    end
+  end
+
   context "when updating a git source dependency that is not pinned to a hash" do
     subject(:parsed_lock_file) { JSON.parse(updated_npm_lock_content) }
 
