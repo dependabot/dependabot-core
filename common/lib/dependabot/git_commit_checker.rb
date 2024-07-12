@@ -144,14 +144,14 @@ module Dependabot
       max_local_tag(allowed_version_tags)
     end
 
-    sig { returns(T::Array[T.nilable(T::Hash[Symbol, T.untyped])]) }
+    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
     def local_tags_for_allowed_versions_matching_existing_precision
-      select_matching_existing_precision(allowed_version_tags).map { |t| to_local_tag(t) }
+      select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }
     end
 
-    sig { returns(T::Array[T.nilable(T::Hash[Symbol, T.untyped])]) }
+    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
     def local_tags_for_allowed_versions
-      allowed_version_tags.map { |t| to_local_tag(t) }
+      allowed_version_tags.filter_map { |t| to_local_tag(t) }
     end
 
     sig { returns(T::Array[Dependabot::GitRef]) }
