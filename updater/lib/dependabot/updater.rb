@@ -42,13 +42,12 @@ module Dependabot
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
       service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })
-      operation = operation_class.new(
+      operation_class.new(
         service: service,
         job: job,
         dependency_snapshot: dependency_snapshot,
         error_handler: error_handler
-      )
-      operation.perform
+      ).perform
     rescue *ErrorHandler::RUN_HALTING_ERRORS.keys => e
       # TODO: Drop this into Security-specific operations
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
@@ -71,10 +70,13 @@ module Dependabot
 
     sig { returns(Service) }
     attr_reader :service
+
     sig { returns(Job) }
     attr_reader :job
+
     sig { returns(DependencySnapshot) }
     attr_reader :dependency_snapshot
+
     sig { returns(ErrorHandler) }
     attr_reader :error_handler
   end

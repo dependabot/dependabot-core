@@ -148,6 +148,7 @@ module Dependabot
 
       sig { returns(Service) }
       attr_reader :service
+
       sig { returns(Job) }
       attr_reader :job
 

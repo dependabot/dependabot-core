@@ -123,7 +123,6 @@ module Dependabot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
@@ -145,7 +144,6 @@ module Dependabot
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
         end
-        # rubocop:enable Metrics/AbcSize
 
         sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
         def upsert_pull_request_with_error_handling(dependency_change, group)

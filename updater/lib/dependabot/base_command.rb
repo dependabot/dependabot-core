@@ -15,24 +15,21 @@ module Dependabot
 
   class BaseCommand
     extend T::Sig
+    extend T::Helpers
+
+    abstract!
 
     # Implement in subclass
-    sig { overridable.void }
-    def perform_job
-      raise NotImplementedError
-    end
+    sig { abstract.void }
+    def perform_job; end
 
     # Implement in subclass
-    sig { overridable.returns(Job) }
-    def job
-      raise NotImplementedError
-    end
+    sig { abstract.returns(Job) }
+    def job; end
 
     # Implement in subclass
-    sig { overridable.returns(String) }
-    def base_commit_sha
-      raise NotImplementedError
-    end
+    sig { abstract.returns(String) }
+    def base_commit_sha; end
 
     # TODO: Avoid rescuing StandardError at this point in the code
     #

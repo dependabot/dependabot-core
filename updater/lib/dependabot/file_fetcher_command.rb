@@ -48,7 +48,8 @@ module Dependabot
         rescue StandardError => e
           @base_commit_sha ||= "unknown"
           if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
-            remaining = rate_limit_error_remaining(e)
+            client_error = T.cast(e, Octokit::ClientError)
+            remaining = rate_limit_error_remaining(client_error)
             Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
                                     "#{remaining}s")
           else
@@ -120,7 +121,7 @@ module Dependabot
       end
 
       @dependency_files_for_multi_directories ||= T.let(T.must(job.source.directories).flat_map do |dir|
-        ff = file_fetcher_with_retries { file_fetcher_for_directory(dir) }
+        ff = with_retries { file_fetcher_for_directory(dir) }
         files = ff.files
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
@@ -141,7 +142,7 @@ module Dependabot
       end.uniq
 
       directories.flat_map do |dir|
-        ff = file_fetcher_with_retries { file_fetcher_for_directory(dir) }
+        ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
           files = ff.files
@@ -178,19 +179,7 @@ module Dependabot
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 
-    sig { params(_blk: T.proc.returns(FileFetchers::Base)).returns(FileFetchers::Base) }
-    def file_fetcher_with_retries(&_blk)
-      retries ||= 0
-      begin
-        yield
-      rescue Octokit::BadGateway
-        retries += 1
-        retry if retries <= 2
-        raise
-      end
-    end
-
-    sig { params(_blk: T.proc.returns(T::Array[DependencyFile])).returns(T::Array[DependencyFile]) }
+    sig { params(_blk: T.proc.returns(T.untyped)).returns(T.untyped) }
     def with_retries(&_blk)
       retries ||= 0
       begin
@@ -276,11 +265,10 @@ module Dependabot
       service.capture_exception(error: error, job: job)
     end
 
-    sig { params(error: StandardError).returns(Float) }
+    sig { params(error: Octokit::ClientError).returns(Float) }
     def rate_limit_error_remaining(error)
-      client_error = T.cast(error, Octokit::ClientError)
       # Time at which the current rate limit window resets in UTC epoch secs.
-      expires_at = client_error.response_headers["X-RateLimit-Reset"].to_i
+      expires_at = error.response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0.0
     end
