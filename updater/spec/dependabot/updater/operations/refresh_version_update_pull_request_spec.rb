@@ -5,7 +5,6 @@ require "spec_helper"
 require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
 
-
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
