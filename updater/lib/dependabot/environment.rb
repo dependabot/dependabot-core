@@ -77,13 +77,10 @@ module Dependabot
           raise ArgumentError, "Missing environment variable #{variable_name}"
         end
       else
-        val = ENV.fetch(variable_name, default)
+        val = ENV.fetch(variable_name, T.cast(default, T.type_parameter(:T)))
         case val
         when String
-          val = val.casecmp("true") if [true, false].include? default
-        # Integers are to be converted to bools
-        when Integer
-          val = val === 1
+          val = val.casecmp("true") === 0 if [true, false].include? default
         end
         T.cast(val, T.type_parameter(:T))
       end
