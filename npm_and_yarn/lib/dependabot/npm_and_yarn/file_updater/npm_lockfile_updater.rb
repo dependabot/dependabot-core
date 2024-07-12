@@ -498,7 +498,7 @@ module Dependabot
           # is provided in config file (.npmrc) to access private registry
           if error_message.match?(UNABLE_TO_AUTH_NPMRC)
             msg = "check .npmrc config file"
-            raise Dependabot::PrivateSourceAuthenticationFailure, T.must(msg)
+            raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
