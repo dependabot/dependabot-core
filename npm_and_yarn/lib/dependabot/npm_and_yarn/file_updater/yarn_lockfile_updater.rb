@@ -3,6 +3,7 @@
 
 require "uri"
 
+require "dependabot/npm_and_yarn"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
@@ -25,6 +26,10 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @error_handler = YarnErrorHandler.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files
+          )
         end
 
         def updated_yarn_lock_content(yarn_lock)
@@ -43,10 +48,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :repo_contents_path
         attr_reader :credentials
-
-        UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/
-        TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
-        INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/
+        attr_reader :error_handler
 
         def top_level_dependencies
           dependencies.select(&:top_level?)
@@ -129,19 +131,18 @@ module Dependabot
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           # package.json name cannot contain characters like empty string or @.
-          if e.message.include?("Name contains illegal characters")
-            raise Dependabot::DependencyFileNotParseable, e.message
-          end
+          raise Dependabot::DependencyFileNotParseable, e.message if e.message.include?(INVALID_NAME_IN_PACKAGE_JSON)
 
           names = dependencies.map(&:name)
           package_missing = names.any? do |name|
             e.message.include?("find package \"#{name}")
           end
 
-          raise unless e.message.include?("The registry may be down") ||
-                       e.message.include?("ETIMEDOUT") ||
-                       e.message.include?("ENOBUFS") ||
-                       package_missing
+          package_missing = e.message.match(PACKAGE_MISSING_REGEX) || package_missing
+
+          error_handler.handle_error(e) unless package_missing
+
+          raise unless package_missing
 
           retry_count ||= 0
           retry_count += 1
@@ -233,15 +234,17 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
+
           # Invalid package: When package.json doesn't include a name or version
           # Local path error: When installing a git dependency which
           # is using local file paths for sub-dependencies (e.g. unbuilt yarn
           # workspace project)
-          sub_dep_local_path_err = "refers to a non-existing file"
-          if error_message.match?(INVALID_PACKAGE) ||
-             error_message.include?(sub_dep_local_path_err)
-            raise_resolvability_error(error_message, yarn_lock)
+          if error_message.match?(INVALID_PACKAGE_REGEX) ||
+             error_message.include?(SUB_DEP_LOCAL_PATH_TEXT)
+            error_handler.raise_resolvability_error(error_message, yarn_lock)
           end
+
+          error_handler.handle_error(error)
 
           if error_message.include?("Couldn't find package")
             package_name = error_message.match(/package "(?<package_req>.*?)"/)
@@ -290,24 +293,28 @@ module Dependabot
             raise Dependabot::InconsistentRegistryResponse, error_message
           end
 
-          if error_message.include?("Workspaces can only be enabled in priva")
+          if error_message.include?(ONLY_PRIVATE_WORKSPACE_TEXT)
             raise Dependabot::DependencyFileNotEvaluatable, error_message
           end
 
-          if error_message.match?(UNREACHABLE_GIT)
-            dependency_url = error_message.match(UNREACHABLE_GIT)
+          if error_message.match?(UNREACHABLE_GIT_CHECK_REGEX)
+            dependency_url = error_message.match(UNREACHABLE_GIT_CHECK_REGEX)
                                           .named_captures.fetch("url")
 
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          handle_timeout(error_message, yarn_lock) if error_message.match?(TIMEOUT_FETCHING_PACKAGE)
+          handle_timeout(error_message, yarn_lock) if error_message.match?(
+            TIMEOUT_FETCHING_PACKAGE_REGEX
+          )
 
           if error_message.start_with?("Couldn't find any versions") ||
              error_message.include?(": Not found") ||
              error_message.include?("Couldn't find match for")
 
-            raise_resolvability_error(error_message, yarn_lock) unless resolvable_before_update?(yarn_lock)
+            unless resolvable_before_update?(yarn_lock)
+              error_handler.raise_resolvability_error(error_message, yarn_lock)
+            end
 
             # Dependabot has probably messed something up with the update and we
             # want to hear about it
@@ -457,7 +464,7 @@ module Dependabot
           missing_dep = lockfile_dependencies(yarn_lock)
                         .find { |dep| dep.name == package_name }
 
-          raise_resolvability_error(error_message, yarn_lock) unless missing_dep
+          error_handler.raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
@@ -472,19 +479,11 @@ module Dependabot
           raise PrivateSourceAuthenticationFailure, reg
         end
 
-        def raise_resolvability_error(error_message, yarn_lock)
-          dependency_names = dependencies.map(&:name).join(", ")
-          msg = "Error whilst updating #{dependency_names} in " \
-                "#{yarn_lock.path}:\n#{error_message}"
-          raise Dependabot::DependencyFileNotResolvable, msg
-        end
-
         def handle_timeout(error_message, yarn_lock)
-          url = error_message.match(TIMEOUT_FETCHING_PACKAGE)
-                             .named_captures["url"]
-          raise if URI(url).host == "registry.npmjs.org"
+          url = error_message.match(TIMEOUT_FETCHING_PACKAGE_REGEX)
+                             .named_ # rubocop:enable Metrics/ClassLength#RI(url).host == NPM_REGISTERY
 
-          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE)
+          package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE_REGEX)
                                       .named_captures["package"]
           sanitized_name = sanitize_package_name(package_name)
 
@@ -492,7 +491,10 @@ module Dependabot
                 .find { |d| d.name == sanitized_name }
           return unless dep
 
-          raise PrivateSourceTimedOut, url.gsub(%r{https?://}, "")
+          raise PrivateSourceTimedOut, url.gsub(
+            HTTP_CHECK_REGEX,
+            ""
+          )
         end
 
         def npmrc_content
@@ -575,6 +577,137 @@ module Dependabot
         def yarnrc_yml_content
           yarnrc_yml_file.content
         end
+      end
+    end
+
+    class YarnErrorHandler
+      extend T::Sig
+
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      # Extracts "Usage Error:" messages from error messages
+      sig { params(error_message: String).returns(T.nilable(String)) }
+      def find_usage_error(error_message)
+        start_index = error_message.rindex(YARN_USAGE_ERROR_TEXT)
+        return nil unless start_index
+
+        error_details = error_message[start_index..-1]
+        error_details&.strip
+      end
+
+      # Main error handling method
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_error(error)
+        # Check if defined yarn error codes contained in the error message
+        # and raise the corresponding error class
+        handle_yarn_error(error.message)
+
+        # Extract the usage error message from the raw error message
+        usage_error_message = find_usage_error(error.message) || ""
+
+        # Check if the error message contains any group patterns and raise
+        # the corresponding error class
+        handle_group_patterns(error.message, usage_error_message)
+      end
+
+      # Handles errors with specific to yarn error codes
+      sig { params(error_message: String).void }
+      def handle_yarn_error(error_message)
+        regex = YARN_CODE_REGEX
+        matches = error_message.scan(regex)
+        return if matches.empty?
+
+        # Go through each match backwards in the error message and raise the corresponding error class
+        matches.reverse_each do |match|
+          code = match[0]
+          next unless code
+
+          yarn_error = YARN_ERROR_CODES[code]
+          next unless yarn_error.is_a?(Hash)
+
+          defined_error_class = yarn_error[:error_class]
+          next unless defined_error_class && defined_error_class < Dependabot::DependabotError
+
+          modified_error_message = "[#{code}]: #{error_message}"
+          raise defined_error_class, modified_error_message
+        end
+      end
+
+      # Handles errors based on group patterns
+      sig do
+        params(
+          error_message: String,
+          usage_error_message: String
+        ).void
+      end
+      def handle_group_patterns(error_message, usage_error_message) # rubocop:disable Metrics/PerceivedComplexity
+        VALIDATION_GROUP_PATTERNS.each do |group|
+          patterns = group[:patterns]
+          matchfn = group[:matchfn]
+          error_class = group[:error_class]
+          in_usage = group[:in_usage] || false
+
+          next unless (patterns || matchfn) && error_class
+
+          if in_usage && pattern_in_message(patterns, usage_error_message)
+            raise error_class, usage_error_message
+          elsif !in_usage && pattern_in_message(patterns, error_message)
+            raise error_class, error_message
+          end
+
+          raise error_class, usage_error_message if matchfn&.call(usage_error_message, error_message)
+        end
+      end
+
+      # Raises a resolvability error for a dependency file
+      sig do
+        params(
+          error_message: String,
+          yarn_lock: Dependabot::DependencyFile
+        ).void
+      end
+      def raise_resolvability_error(error_message, yarn_lock)
+        dependency_names = dependencies.map(&:name).join(", ")
+        msg = "Error whilst updating #{dependency_names} in #{yarn_lock.path}:\n#{error_message}"
+        raise Dependabot::DependencyFileNotResolvable, msg
+      end
+
+      # Checks if a pattern is in a message
+      sig do
+        params(
+          patterns: T::Array[T.any(String, Regexp)],
+          message: String
+        ).returns(T::Boolean)
+      end
+      def pattern_in_message(patterns, message)
+        patterns.any? do |pattern|
+          if pattern.is_a?(String)
+            return message.include?(pattern)
+          elsif pattern.is_a?(Regexp)
+            message = message.gsub(/\e\[[\d;]*[A-Za-z]/, "")
+            return message.match?(pattern)
+          end
+        end
+        false
       end
     end
   end
