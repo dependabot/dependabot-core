@@ -6,6 +6,7 @@ require "sorbet-runtime"
 module Dependabot
   module Environment
     extend T::Sig
+    extend T::Generic
 
     sig { returns(String) }
     def self.job_id
@@ -49,12 +50,14 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def self.github_actions?
-      @github_actions ||= T.let(environment_variable("GITHUB_ACTIONS", false), T.nilable(T::Boolean))
+      b = T.cast(environment_variable("GITHUB_ACTIONS", false), T::Boolean)
+      @github_actions ||= T.let(b, T.nilable(T::Boolean))
     end
 
     sig { returns(T::Boolean) }
     def self.deterministic_updates?
-      @deterministic_updates ||= T.let(environment_variable("UPDATER_DETERMINISTIC", false), T.nilable(T::Boolean))
+      b = T.cast(environment_variable("UPDATER_DETERMINISTIC", false), T::Boolean)
+      @deterministic_updates ||= T.let(b, T.nilable(T::Boolean))
     end
 
     sig { returns(T::Hash[String, T.untyped]) }
@@ -62,12 +65,19 @@ module Dependabot
       @job_definition ||= T.let(JSON.parse(File.read(job_path)), T.nilable(T::Hash[String, T.untyped]))
     end
 
-    sig { params(variable_name: String, default: T.untyped).returns(T.untyped) }
+    sig do
+      type_parameters(:T)
+        .params(variable_name: String, default: T.any(Symbol, T.type_parameter(:T)))
+        .returns(T.any(String, T.type_parameter(:T)))
+    end
     private_class_method def self.environment_variable(variable_name, default = :_undefined)
-      return ENV.fetch(variable_name, default) unless default == :_undefined
-
-      ENV.fetch(variable_name) do
-        raise ArgumentError, "Missing environment variable #{variable_name}"
+      case default
+      when :_undefined
+        ENV.fetch(variable_name) do
+          raise ArgumentError, "Missing environment variable #{variable_name}"
+        end
+      else
+        T.cast(ENV.fetch(variable_name, default), T.type_parameter(:T))
       end
     end
 

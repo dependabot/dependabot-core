@@ -179,7 +179,7 @@ module Dependabot
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 
-    sig { params(_blk: T.proc.returns(T.untyped)).returns(T.untyped) }
+    sig { type_parameters(:T).params(_blk: T.proc.returns(T.type_parameter(:T))).returns(T.type_parameter((:T))) }
     def with_retries(&_blk)
       retries ||= 0
       begin
