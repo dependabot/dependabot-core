@@ -456,11 +456,10 @@ public class PackageManager
                                 }
 
                                 string parentVersion = version.ToString();
-                                PackageToUpdate parentTemp = parent;
-                                parentTemp.currentVersion = parentVersion;
+                                parent.currentVersion = parentVersion;
 
                                 // Check if the parent needs to be updated (since the child isn't in existing and the parent can update to remove the child)
-                                List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parentTemp, targetFramework);
+                                List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parent, targetFramework);
                                 PackageToUpdate parentDependencyTemp = dependencyListParentTemp.FirstOrDefault(p => p.packageName == package.packageName);
 
                                 if ((parentDependencyTemp.currentVersion == package.currentVersion) && (parent.isSpecific != true))
