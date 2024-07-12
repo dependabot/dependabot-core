@@ -319,7 +319,15 @@ internal static class SdkPackageUpdater
         {
             foreach (string tfm in targetFrameworks)
             {
-                Dependency[] update = [];
+                // Find the index of the dependency we are updating and revert it to the previous version
+                int dependencyIndex = Array.FindIndex(updatedTopLevelDependencies, d => d.Name == dependencyName);
+                if (dependencyIndex != -1)
+                {
+                    var originalDependency = updatedTopLevelDependencies[dependencyIndex];
+                    updatedTopLevelDependencies[dependencyIndex] = originalDependency with { Version = previousDependencyVersion };
+                }
+
+                Dependency[] update = [new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference)];
                 Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
                 if (resolvedDependencies is null)
                 {

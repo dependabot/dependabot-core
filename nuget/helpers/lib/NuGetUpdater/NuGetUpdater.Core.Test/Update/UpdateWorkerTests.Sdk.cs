@@ -89,6 +89,42 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task CallingResolveDependencyConflicts()
+        {
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Microsoft.CodeAnalysis.Common", "4.9.2", "4.10.0",
+                // initial
+                projectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                        </ItemGroup>
+                    </Project>
+                    """,
+                // expected
+                expectedProjectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0" />
+                        </ItemGroup>
+                    </Project>
+                    """
+              );
+        }
+
+        [Fact]
         public async Task UpdateVersions_InProjectFile_ForDuplicatePackageReferenceInclude()
         {
             // update Some.Package from 9.0.1 to 13.0.1

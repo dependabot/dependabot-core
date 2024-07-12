@@ -479,7 +479,11 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Some.Package", "1.2.0", DependencyType.PackageReference),
                 new Dependency("Some.Other.Package", "1.0.0", DependencyType.PackageReference),
             };
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, null, new Logger(true));
+            var update = new[]
+            {
+                new Dependency("Some.Other.Package", "1.2.0", DependencyType.PackageReference),
+            };
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Some.Package", resolvedDependencies[0].Name);
@@ -544,7 +548,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 2
-    // Updating the dependency (System.Text.Json) of the root package (Azure.Core) will require the Azure.Core to also update, but since the dependency is not in the existing list, we do not include it
+    // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the Azure.Core to also update, but since the dependency is not in the existing list, we do not include it
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
     {
@@ -570,7 +574,7 @@ public class MSBuildHelperTests : TestBase
             };
             var update = new[]
             {
-                new Dependency("System.Text.Json", "4.7.2", DependencyType.Unknown)
+                new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.1.1", DependencyType.Unknown)
             };
 
             var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
@@ -855,7 +859,7 @@ public class MSBuildHelperTests : TestBase
     // Scenario 8
     // Updating two families at once to test efficiency
     // First family: Direct dependency (Microsoft.CodeAnalysis.Common) needs to be updated, which will then need to update in the existing list its child (System.Collections.Immutable) and parent(Microsoft.CodeAnalysis.Csharp.Scripting)
-    // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its child (System.Text.Json)
+    // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its child (Microsoft.Bcl.AsyncInterfaces)
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
     {
@@ -872,7 +876,7 @@ public class MSBuildHelperTests : TestBase
                   <ItemGroup>
                     <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
                     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
+                    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                     <PackageReference Include="Azure.Core" Version="1.21.0" />
                   </ItemGroup>
                 </Project>
@@ -882,7 +886,7 @@ public class MSBuildHelperTests : TestBase
             {
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
                 new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
-                new Dependency("System.Text.Json", "4.6.0", DependencyType.Unknown),
+                new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
                 new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
             };
@@ -899,8 +903,8 @@ public class MSBuildHelperTests : TestBase
             Assert.Equal("8.0.0", resolvedDependencies[0].Version);
             Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
             Assert.Equal("4.10.0", resolvedDependencies[1].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[2].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[2].Version);
+            Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[2].Name);
+            Assert.Equal("1.1.1", resolvedDependencies[2].Version);
             Assert.Equal("Azure.Core", resolvedDependencies[3].Name);
             Assert.Equal("1.22.0", resolvedDependencies[3].Version);
         }
@@ -929,7 +933,7 @@ public class MSBuildHelperTests : TestBase
                     <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
                     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
                     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
-                    <PackageReference Include="System.Text.Json" Version="4.6.0" />
+                    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                     <PackageReference Include="Azure.Core" Version="1.21.0" />
                   </ItemGroup>
                 </Project>
@@ -940,7 +944,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
                 new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
                 new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
-                new Dependency("System.Text.Json", "4.6.0", DependencyType.Unknown),
+                new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
                 new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
             };
@@ -959,8 +963,8 @@ public class MSBuildHelperTests : TestBase
             Assert.Equal("4.10.0", resolvedDependencies[1].Version);
             Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
             Assert.Equal("4.10.0", resolvedDependencies[2].Version);
-            Assert.Equal("System.Text.Json", resolvedDependencies[3].Name);
-            Assert.Equal("4.7.2", resolvedDependencies[3].Version);
+            Assert.Equal("Microsoft.Bcl.AsyncInterfaces", resolvedDependencies[3].Name);
+            Assert.Equal("1.1.1", resolvedDependencies[3].Version);
             Assert.Equal("Azure.Core", resolvedDependencies[4].Name);
             Assert.Equal("1.22.0", resolvedDependencies[4].Version);
         }
