@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,23 +19,11 @@ module Dependabot
   class Updater
     extend T::Sig
 
-    module GroupUpdateCreation
+    class GroupUpdateCreation < OperationBase
       extend T::Sig
       extend T::Helpers
 
       abstract!
-
-      sig { returns(Dependabot::DependencySnapshot) }
-      attr_reader :dependency_snapshot
-
-      sig { returns(Dependabot::Updater::ErrorHandler) }
-      attr_reader :error_handler
-
-      sig { returns(Dependabot::Job) }
-      attr_reader :job
-
-      sig { returns(Dependabot::DependencyGroup) }
-      attr_reader :group
 
       # Returns a Dependabot::DependencyChange object that encapsulates the
       # outcome of attempting to update every dependency iteratively which
@@ -119,14 +107,15 @@ module Dependabot
       ensure
         cleanup_workspace
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { params(dependency_change: DependencyChange).void }
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
-        msg = "Skipping change to group #{group.name} in directory #{job.source.directory}: "
+        msg = "Skipping change to group in directory #{job.source.directory}: "
         if deps_no_previous_version.any?
           msg += "Previous version was not provided for: '#{deps_no_previous_version.join(', ')}' "
         end
@@ -156,10 +145,14 @@ module Dependabot
           updated_dependencies: T::Array[Dependabot::Dependency],
           dependency_files: T::Array[Dependabot::DependencyFile],
           dependency_group: Dependabot::DependencyGroup
-        )
-          .returns(T.any(Dependabot::DependencyChange, FalseClass))
+        ).returns(T.any(Dependabot::DependencyChange, FalseClass))
       end
-      def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
+      def create_change_for(
+        lead_dependency,
+        updated_dependencies,
+        dependency_files,
+        dependency_group
+      )
         Dependabot::DependencyChangeBuilder.create_from(
           job: job,
           dependency_files: dependency_files,
@@ -189,7 +182,7 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/MethodLength
       sig do
         params(
           dependency: Dependabot::Dependency,
@@ -198,7 +191,7 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::Dependency])
       end
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group)
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -235,9 +228,7 @@ module Dependabot
           return []
         end
 
-        checker.updated_dependencies(
-          requirements_to_unlock: requirements_to_unlock
-        )
+        checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock)
       rescue Dependabot::InconsistentRegistryResponse => e
         if Dependabot::Experiments.enabled?(:dependency_has_directory)
           dependency_snapshot.add_handled_group_dependencies([{ name: dependency.name,
@@ -264,7 +255,7 @@ module Dependabot
         error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
-      # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/MethodLength
 
       sig { params(dependency: Dependabot::Dependency).void }
       def log_up_to_date(dependency)
@@ -310,7 +301,12 @@ module Dependabot
         job.log_ignore_conditions_for(dependency)
       end
 
-      sig { params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base
+        ).returns(T::Boolean)
+      end
       def all_versions_ignored?(dependency, checker)
         if job.security_updates_only?
           Dependabot.logger.info("Lowest security fix version is #{checker.lowest_security_fix_version}")
@@ -452,10 +448,7 @@ module Dependabot
       end
 
       sig do
-        params(
-          dependency: T.nilable(Dependabot::Dependency),
-          original_dependency: T.nilable(Dependabot::Dependency)
-        )
+        params(dependency: T.nilable(Dependabot::Dependency), original_dependency: T.nilable(Dependabot::Dependency))
           .returns(T.nilable(Dependabot::Dependency))
       end
       def deduce_updated_dependency(dependency, original_dependency)

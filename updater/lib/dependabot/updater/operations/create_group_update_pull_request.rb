@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
+require "dependabot/updater/operations/operation_base"
 require "sorbet-runtime"
 
 # This class implements our strategy for creating a single Pull Request which
@@ -14,18 +15,19 @@ require "sorbet-runtime"
 module Dependabot
   class Updater
     module Operations
-      class CreateGroupUpdatePullRequest
+      class CreateGroupUpdatePullRequest < GroupUpdateCreation
         extend T::Sig
-        include GroupUpdateCreation
 
         # We do not invoke this class directly for any jobs, so let's return false in the event this
         # check is called.
-        sig { params(_job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(_job:)
+        # rubocop:disable Lint/UnusedMethodArgument
+        sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
+        def self.applies_to?(job:)
           false
         end
+        # rubocop:enable Lint/UnusedMethodArgument
 
-        sig { returns(Symbol) }
+        sig { override.returns(Symbol) }
         def self.tag_name
           :create_version_group_pr
         end
@@ -42,14 +44,11 @@ module Dependabot
           ).void
         end
         def initialize(service:, job:, dependency_snapshot:, error_handler:, group:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
           @group = group
+          super(service: service, job: job, dependency_snapshot: dependency_snapshot, error_handler: error_handler)
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyChange)) }
+        sig { override.returns(T.nilable(Dependabot::DependencyChange)) }
         def perform
           if group.dependencies.empty?
             warn_group_is_empty(group)
@@ -73,18 +72,6 @@ module Dependabot
         end
 
         private
-
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(Dependabot::DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
 
         sig { returns(Dependabot::DependencyGroup) }
         attr_reader :group

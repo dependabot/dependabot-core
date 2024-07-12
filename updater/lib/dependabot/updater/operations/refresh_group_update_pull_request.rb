@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
-require "dependabot/updater/group_update_refreshing"
+require "dependabot/updater/operations/operation_base"
 require "sorbet-runtime"
 
 # This class implements our strategy for refreshing a single Pull Request which
@@ -23,13 +23,12 @@ require "sorbet-runtime"
 module Dependabot
   class Updater
     module Operations
-      class RefreshGroupUpdatePullRequest
+      class RefreshGroupUpdatePullRequest < GroupUpdateCreation
         extend T::Sig
-        include GroupUpdateCreation
-        include GroupUpdateRefreshing
 
-        sig { params(job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig { override.params(job: Dependabot::Job).returns(T::Boolean) }
+        def self.applies_to?(job:)
           # If we haven't been given metadata about the dependencies present
           # in the pull request and the Dependency Group that originally created
           # it, this strategy cannot act.
@@ -50,29 +49,16 @@ module Dependabot
 
           job.updating_a_pull_request?
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { returns(Symbol) }
+        sig { override.returns(Symbol) }
         def self.tag_name
           :update_version_group_pr
         end
 
-        sig do
-          params(
-            service: Dependabot::Service,
-            job: Dependabot::Job,
-            dependency_snapshot: Dependabot::DependencySnapshot,
-            error_handler: Dependabot::Updater::ErrorHandler
-          ).void
-        end
-        def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          @service = service
-          @job = job
-          @dependency_snapshot = dependency_snapshot
-          @error_handler = error_handler
-        end
-
-        sig { void }
-        def perform # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/AbcSize
+        sig { override.void }
+        def perform
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects
           # were out of sync.
@@ -121,20 +107,9 @@ module Dependabot
             upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
           end
         end
+        # rubocop:enable Metrics/AbcSize
 
         private
-
-        sig { returns(Dependabot::Job) }
-        attr_reader :job
-
-        sig { returns(Dependabot::Service) }
-        attr_reader :service
-
-        sig { returns(DependencySnapshot) }
-        attr_reader :dependency_snapshot
-
-        sig { returns(Dependabot::Updater::ErrorHandler) }
-        attr_reader :error_handler
 
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
@@ -156,6 +131,53 @@ module Dependabot
             dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
             @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
           end
+        end
+
+        sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
+        def upsert_pull_request_with_error_handling(dependency_change, group)
+          if dependency_change.updated_dependencies.any?
+            upsert_pull_request(dependency_change, group)
+          else
+            Dependabot.logger.info("No updated dependencies, closing existing Pull Request")
+            close_pull_request(reason: :update_no_longer_possible, group: group)
+          end
+        rescue StandardError => e
+          error_handler.handle_job_error(error: e, dependency_group: dependency_snapshot.job_group)
+        end
+
+        # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
+        # - Replace existing PR if the dependencies involved have changed
+        # - Update the existing PR if the dependencies and the target versions remain the same
+        # - Supersede the existing PR if the dependencies are the same but the target versions have changed
+        sig { params(dependency_change: Dependabot::DependencyChange, group: Dependabot::DependencyGroup).void }
+        def upsert_pull_request(dependency_change, group)
+          if dependency_change.should_replace_existing_pr?
+            Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
+            close_pull_request(reason: :dependencies_changed, group: group)
+            Dependabot.logger.info("Creating a new pull request for '#{group.name}'")
+            service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+          elsif dependency_change.matches_existing_pr?
+            Dependabot.logger.info("Updating pull request for '#{group.name}'")
+            service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+          else
+            # If the changes do not match an existing PR, then we should open a new pull request and leave it to
+            # the backend to close the existing pull request with a comment that it has been superseded.
+            Dependabot.logger.info("Target versions have changed, existing Pull Request should be superseded")
+            Dependabot.logger.info("Creating a new pull request for '#{group.name}'")
+            service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+          end
+        end
+
+        sig { params(reason: Symbol, group: Dependabot::DependencyGroup).void }
+        def close_pull_request(reason:, group:)
+          reason_string = reason.to_s.tr("_", " ")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for the " \
+            "#{group.name} group " \
+            "(#{job.dependencies&.join(', ')}) - #{reason_string}"
+          )
+
+          service.close_pull_request(T.must(job.dependencies), reason)
         end
       end
     end
