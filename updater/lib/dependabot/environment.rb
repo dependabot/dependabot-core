@@ -80,7 +80,7 @@ module Dependabot
         val = ENV.fetch(variable_name, T.cast(default, T.type_parameter(:T)))
         case val
         when String
-          val = val.casecmp("true") === 0 if [true, false].include? default
+          val = T.must(val.casecmp("true")).zero? if [true, false].include? default
         end
         T.cast(val, T.type_parameter(:T))
       end
