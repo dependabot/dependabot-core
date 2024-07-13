@@ -32,7 +32,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
     end
 
     context "when the error message contains a recognized pattern" do
-      let(:error_message) { "Here is a recognized error pattern: authentication token not provided " }
+      let(:error_message) { "Here is a recognized error pattern: authentication token not provided" }
 
       it "raises the corresponding error class" do
         expect { error_handler.handle_error(error) }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
@@ -47,7 +47,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when not recognized yarn error code, patterns" do
+    context "when the error message contains unrecognized yarn error codes and patterns" do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step\n" \
           "➤ YN0000: ┌ Fetch step\n" \
@@ -62,7 +62,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error message contains a recognized yarn error code in multiple yarn error codes" do
+    context "when the error message contains a recognized yarn error code among multiple yarn error codes" do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step\n" \
           "➤ YN0002: │ dummy-package@npm:1.2.3 doesn't provide dummy (p1a2b3)\n" \
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error contains multiple not recognized yarn error codes" do
+    context "when the error contains multiple unrecognized yarn error codes" do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step\n" \
           "➤ YN0000: ┌ Fetch step\n" \
