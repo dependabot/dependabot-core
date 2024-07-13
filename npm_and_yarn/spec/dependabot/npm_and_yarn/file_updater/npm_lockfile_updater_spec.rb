@@ -671,4 +671,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         .to eq("github:dependabot-fixtures/npm6-dependency")
     end
   end
+
+  context "with a private registry that is inaccessible due to missing or invalid auth" do
+    subject(:updated_npm_lock) { updater.updated_lockfile_reponse(exception) }
+
+    let(:files) { project_dependency_files("npm/simple_with_registry_with_auth") }
+    let(:exception) { Exception.new(response) }
+
+    context "with a private registry that is missing .npmrc auth info" do
+      let(:response) { "Unable to authenticate, need: Basic, Bearer" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to missing Basic auth info" do
+      let(:response) { "Unable to authenticate, need: Basic realm=\"https://example.pkgs.visualstudio.com/\"" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to changed auth info" do
+      let(:response) do
+        "Unable to authenticate, need: Bearer authorization_uri=https://login.windows.net/....," \
+          "Basic  realm=\"https://exs.app.pkg1.visualstudio.com/\", TFS-Federated"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to missing auth info" do
+      let(:response) { "Unable to authenticate, need: BASIC realm=\"Repository Manager\"" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+  end
 end

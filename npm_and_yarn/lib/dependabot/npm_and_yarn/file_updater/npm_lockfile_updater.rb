@@ -45,6 +45,11 @@ module Dependabot
           updated_file
         end
 
+        sig { params(response: Exception).returns(T.noreturn) }
+        def updated_lockfile_reponse(response)
+          handle_npm_updater_error(response)
+        end
+
         private
 
         sig { returns(Dependabot::DependencyFile) }
