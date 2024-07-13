@@ -1024,6 +1024,266 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    // Scenario 11
+    // Two dependencies (Microsoft.Extensions.Caching.Memory), ("Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewTwoDependenciesOneParent()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewTwoDependenciesOneParent)}_");
+        
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.11" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.11" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.EntityFrameworkCore", "7.0.11", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.11", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.Extensions.Caching.Memory", "8.0.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(2, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[0].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[1].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[1].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+
+    // Scenario 12
+    // 4 dependency chain to be updated. Since the package to be updated is in the existing list, do not update its parents since we want to change as little as possible
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourExisting()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewFamilyOfFourExisting)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
+                    <PackageReference Include= "Microsoft.EntityFrameworkCore" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.0 />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.EntityFrameworkCore.Design", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "7.0.0", DependencyType.PackageReference)
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
+            Assert.Equal("7.0.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
+            Assert.Equal("7.0.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
+            Assert.Equal("7.0.0", resolvedDependencies[2].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Analyzers", resolvedDependencies[3].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 13
+    // 4 dependency chain to be updated
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourNotInExisting()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewFamilyOfFourNotInExisting)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
+                    <PackageReference Include= "Microsoft.EntityFrameworkCore" Version="7.0.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.EntityFrameworkCore.Design", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore.Relational", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.EntityFrameworkCore", "7.0.0", DependencyType.PackageReference),
+            };
+            var update = new[]
+            {
+                new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(3, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore.Relational", resolvedDependencies[1].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[2].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[2].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
+    // Scenario 14
+    // Similar to Scenario 8, except Microsoft.CodeAnalysis.Common is in the existing list
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecific()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewFamilyOfFourSpecific)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var dependencies = new[]
+            {
+                new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
+            };
+            var update = new[]
+            {
+                new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[1].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[2].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+    // Scenario 15 ASK ABOUT THIS
+    // Similar to Scenario 8, except Microsoft.CodeAnalysis.Common is in the existing list
+    // Ask about this: System.Collections.Immutable is not in the existing list but you want to update it. Although Microsofft.CodeAnalysis.common can adapt to this verion (7.0.0 >=) we add it as a reference because we want to avoid updating it
+    // because common is a specific version which means we'd have to update it. 
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting()
+    {
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting)}_");
+
+        try
+        {
+            var projectPath = Path.Join(repoRoot.FullName, "project.csproj");
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
+                  </ItemGroup>
+                </Project>
+                """);
+
+            var dependencies = new[]
+            {
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp", "4.8.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
+
+            };
+            var update = new[]
+            {
+                new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
+            };
+
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            Assert.NotNull(resolvedDependencies);
+            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[0].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[1].Version);
+            Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
+            Assert.Equal("4.8.0", resolvedDependencies[2].Version);
+            Assert.Equal("System.Collections.Immutable", resolvedDependencies[3].Name);
+            Assert.Equal("8.0.0", resolvedDependencies[3].Version);
+        }
+        finally
+        {
+            repoRoot.Delete(recursive: true);
+        }
+    }
+
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {

@@ -465,6 +465,7 @@ public class PackageManager
                                 if ((parentDependencyTemp.currentVersion == package.currentVersion) && (parent.isSpecific != true))
                                 {
                                     parent.newVersion = parentVersion;
+                                    parent.currentVersion = null;
                                     await UpdateVersion(existingPackages, parent, targetFramework);
                                     package.isSpecific = true;
                                     return "Success";
