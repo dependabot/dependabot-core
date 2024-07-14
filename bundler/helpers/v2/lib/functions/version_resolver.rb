@@ -84,8 +84,7 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  ::Bundler::LockfileParser.new(lockfile)
-                                           .specs.map { |x| x.name.to_s }.uniq
+      all_deps =  lockfile_parser.specs.map { |x| x.name.to_s }.uniq
       top_level = build_definition([]).dependencies
                                       .map { |x| x.name.to_s }
 
@@ -96,11 +95,19 @@ module Functions
       # NOTE: we lock shared dependencies to avoid any top-level
       # dependencies getting unlocked (which would happen if they were
       # also subdependencies of the dependency being unlocked)
+      options = {
+        gems: dependencies_to_unlock,
+        conservative: true
+      }
+
+      if lockfile && lockfile_parser.bundler_version && lockfile_parser.bundler_version < Gem::Version.new("2")
+        options[:bundler] = lockfile_parser.bundler_version
+      end
+
       ::Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
-        gems: dependencies_to_unlock,
-        conservative: true
+        **options
       )
     end
 
@@ -136,6 +143,10 @@ module Functions
       return nil unless gemfile_name
 
       @ruby_version ||= build_definition([]).ruby_version&.gem_version
+    end
+
+    def lockfile_parser
+      @lockfile_parser ||= ::Bundler::LockfileParser.new(lockfile)
     end
   end
 end

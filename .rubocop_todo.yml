@@ -9,7 +9,6 @@
 # Offense count: 39
 RSpec/AnyInstance:
   Exclude:
-    - 'bundler/helpers/v1/spec/shared_contexts.rb'
     - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
     - 'common/spec/dependabot/clients/codecommit_spec.rb'
     - 'common/spec/dependabot/file_fetchers/base_spec.rb'

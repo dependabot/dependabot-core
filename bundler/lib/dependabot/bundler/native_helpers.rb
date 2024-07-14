@@ -49,14 +49,13 @@ module Dependabot
         params(
           function: String,
           args: T::Hash[Symbol, String],
-          bundler_version: String,
           options: T::Hash[Symbol, T.untyped]
         )
           .returns(T.untyped)
       end
-      def self.run_bundler_subprocess(function:, args:, bundler_version:, options: {})
+      def self.run_bundler_subprocess(function:, args:, options: {})
         # Run helper suprocess with all bundler-related ENV variables removed
-        helpers_path = versioned_helper_path(bundler_version)
+        helpers_path = File.join(native_helpers_root, "v2")
         ::Bundler.with_original_env do
           command = BundleCommand
                     .new(options[:timeout_per_operation_seconds])
@@ -78,11 +77,6 @@ module Dependabot
 
           raise
         end
-      end
-
-      sig { params(bundler_major_version: String).returns(String) }
-      def self.versioned_helper_path(bundler_major_version)
-        File.join(native_helpers_root, "v#{bundler_major_version}")
       end
 
       sig { returns(String) }
