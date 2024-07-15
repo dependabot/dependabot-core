@@ -801,7 +801,7 @@ module Dependabot
         sig do
           params(
             current_name: T.any(String, NilClass),
-            original_name: T.any(String, NilClass),
+            original_name: String,
             updated_lockfile_content: String
           )
             .returns(String)
