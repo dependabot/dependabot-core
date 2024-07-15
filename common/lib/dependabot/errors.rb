@@ -226,17 +226,9 @@ module Dependabot
     when
       DependencyConflict,
       RequiredVersionIsNotSatisfied,
-      AutoMergeParseFailure,
-      AutoMergeImmutable,
       IncompatibleOS,
       IncompatibleCPU,
-      NetworkDisabled,
-      NetworkUnsafeHTTP,
-      NMExternalSoftLink,
-      NMPreserveSymlinksRequired,
-      PrologInstantiationError,
-      GhostArchitecture,
-      StateFileNotFound
+      NetworkUnsafeHTTP
 
       error.get_detail
 
@@ -674,20 +666,6 @@ module Dependabot
     end
   end
 
-  class AutoMergeParseFailure < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("auto_merge_parse_failure", message)
-    end
-  end
-
-  class AutoMergeImmutable < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("auto_merge_immutable", message)
-    end
-  end
-
   class IncompatibleOS < TypedDependabotError
     sig { params(message: T.any(T.nilable(String), MatchData)).void }
     def initialize(message = nil)
@@ -702,52 +680,10 @@ module Dependabot
     end
   end
 
-  class NetworkDisabled < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("network_disabled", message)
-    end
-  end
-
   class NetworkUnsafeHTTP < TypedDependabotError
     sig { params(message: T.any(T.nilable(String), MatchData)).void }
     def initialize(message = nil)
       super("network_unsafe_http", message)
-    end
-  end
-
-  class NMExternalSoftLink < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("nm_external_soft_link", message)
-    end
-  end
-
-  class NMPreserveSymlinksRequired < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("nm_preserve_symlinks_required", message)
-    end
-  end
-
-  class PrologInstantiationError < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("prolog_instantiation_error", message)
-    end
-  end
-
-  class GhostArchitecture < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("ghost_architecture", message)
-    end
-  end
-
-  class StateFileNotFound < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("state_file_not_found", message)
     end
   end
 end

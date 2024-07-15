@@ -644,11 +644,17 @@ module Dependabot
           yarn_error = YARN_ERROR_CODES[code]
           next unless yarn_error.is_a?(Hash)
 
-          defined_error_class = yarn_error[:error_class]
-          next unless defined_error_class && defined_error_class < Dependabot::DependabotError
+          message = yarn_error[:message]
+          new_error = yarn_error[:new_error]
+          next unless new_error
 
-          modified_error_message = "[#{code}]: #{error_message}"
-          raise defined_error_class, modified_error_message
+          modified_error_message = if message
+                                     "[#{code}]: #{message}, detail: #{error_message}"
+                                   else
+                                     "[#{code}]: #{error_message}"
+                                   end
+
+          raise new_error.call(modified_error_message)
         end
       end
 
@@ -663,18 +669,18 @@ module Dependabot
         VALIDATION_GROUP_PATTERNS.each do |group|
           patterns = group[:patterns]
           matchfn = group[:matchfn]
-          error_class = group[:error_class]
+          new_error = group[:new_error]
           in_usage = group[:in_usage] || false
 
-          next unless (patterns || matchfn) && error_class
+          next unless (patterns || matchfn) && new_error
 
           if in_usage && pattern_in_message(patterns, usage_error_message)
-            raise error_class, usage_error_message
+            raise new_error.call(usage_error_message)
           elsif !in_usage && pattern_in_message(patterns, error_message)
-            raise error_class, error_message
+            raise new_error.call(error_message)
           end
 
-          raise error_class, usage_error_message if matchfn&.call(usage_error_message, error_message)
+          raise new_error.call(usage_error_message) if matchfn&.call(usage_error_message, error_message)
         end
       end
 
