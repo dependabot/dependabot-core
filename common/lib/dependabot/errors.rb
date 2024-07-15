@@ -224,7 +224,7 @@ module Dependabot
         }
       }
     when
-      Dependabot::DependencyConflict,
+      DependencyConflict,
       RequiredVersionIsNotSatisfied,
       AutoMergeParseFailure,
       AutoMergeImmutable,
