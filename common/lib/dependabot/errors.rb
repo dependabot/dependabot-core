@@ -230,7 +230,7 @@ module Dependabot
       IncompatibleCPU,
       NetworkUnsafeHTTP
 
-      error.get_detail
+      error.detail
 
     when Dependabot::NotImplemented
       {
@@ -316,15 +316,14 @@ module Dependabot
       super(message || error_type)
     end
 
-    sig { params(detail: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
-    def get_detail(detail = nil)
-      hash = {
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    def detail(hash = nil)
+      {
         "error-type": error_type,
-        "error-detail": detail || {
+        "error-detail": hash || {
           message: message
         }
       }
-      hash
     end
   end
 
