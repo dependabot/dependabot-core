@@ -76,10 +76,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           "➤ YN0000: Failed with errors in 1s 234ms"
       end
 
-      it "raises a NetworkDisabled error" do
+      it "raises a MisconfiguredTooling error" do
         expect do
           error_handler.handle_yarn_error(error_message)
-        end.to raise_error(Dependabot::NetworkDisabled)
+        end.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
 
