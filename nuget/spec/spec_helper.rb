@@ -1,6 +1,9 @@
 # typed: true
 # frozen_string_literal: true
 
+# require "dependabot/experiments"
+# Dependabot::Experiments.register(:nuget_native_analysis, true)
+
 ENV["DEPENDABOT_NUGET_TEST_RUN"] = "true"
 ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
 

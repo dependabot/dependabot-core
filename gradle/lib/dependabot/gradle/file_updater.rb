@@ -56,7 +56,6 @@ module Dependabot
 
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
-
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(dependency.previous_requirements)
@@ -68,6 +67,13 @@ module Dependabot
           next if new_req[:requirement] == old_req[:requirement]
 
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+
+          # Exception raised to handle issue that arises when buildfiles function (see this file)
+          # removes the build file that contains the dependency itself. So no build file exists to
+          # update dependency, This behaviour is evident for extremely small number of users
+          # that have added separate repos as sub-modules in parent projects
+
+          raise DependencyFileNotResolvable, "No build file found to update the dependency" if buildfile.nil?
 
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)

@@ -148,46 +148,8 @@ RSpec.describe Dependabot::GoModules::Version do
       expect(described_class.new("v1.0.1-0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.1")
     end
 
-    # Tested against the following Go program:
-    # package main
-    #
-    # import (
-    # 	"golang.org/x/mod/semver"
-    # 	"log"
-    # 	"reflect"
-    # )
-    #
-    # func main() {
-    # 	expected := []string{
-    # 		"v1.0.0",
-    # 		"v1.0.1-1",
-    # 		"v1.0.1-2",
-    # 		"v1.0.1",
-    # 		"v1.1.0-rc.6",
-    # 		"v1.1.0-rc5",
-    # 		"v1.1.0-rc6",
-    # 		"v1.1.0",
-    # 	}
-    # 	actual := make([]string, len(expected))
-    # 	copy(actual, expected)
-    # 	semver.Sort(actual)
-    # 	if !reflect.DeepEqual(actual, expected) {
-    # 		log.Fatalf("got %v", actual)
-    # 	}
-    # }
-    sorted_versions = [
-      "v1.0.0",
-      "v1.0.1-1",
-      "v1.0.1-2",
-      "v1.0.1",
-      "v1.1.0-rc.6",
-      "v1.1.0-rc0",
-      "v1.1.0-rc5",
-      "v1.1.0-rc6",
-      "v1.1.0",
-      "v1.34.2-20220907172603-9a877cf260e1.1",
-      "v1.34.2-20220907172603-9a877cf260e1.2"
-    ]
+    # See also the companion Go program that verifies the version order matches.
+    sorted_versions = JSON.parse(fixture("ordered_versions.json"))
     sorted_versions.combination(2).each do |lhs, rhs|
       it "'#{lhs}' < '#{rhs}'" do
         expect(described_class.new(lhs)).to be < rhs

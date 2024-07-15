@@ -36,7 +36,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     DotNetToolsJson = new()
                     {
                         FilePath = ".config/dotnet-tools.json",
@@ -80,7 +80,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     DotNetToolsJson = new()
                     {
                         FilePath = ".config/dotnet-tools.json",

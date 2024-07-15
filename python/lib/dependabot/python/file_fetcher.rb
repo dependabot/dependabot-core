@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -139,7 +139,7 @@ module Dependabot
 
         # Check the top-level for a .python-version file, too
         reverse_path = Pathname.new(directory[0]).relative_path_from(directory)
-        @python_version_file ||=
+        @python_version_file =
           fetch_support_file(File.join(reverse_path, ".python-version"))
           &.tap { |f| f.name = ".python-version" }
       end

@@ -16,10 +16,19 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/dependency_finder"
 
+      require_relative "native_update_checker/native_update_checker"
+
       PROPERTY_REGEX = /\$\((?<property>.*?)\)/
+
+      sig { returns(T::Boolean) }
+      def self.native_analysis_enabled?
+        Dependabot::Experiments.enabled?(:nuget_native_analysis)
+      end
 
       sig { override.returns(T.nilable(String)) }
       def latest_version
+        return native_update_checker.latest_version if UpdateChecker.native_analysis_enabled?
+
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
         return dependency.version if !dependency.top_level? && !vulnerable?
 
@@ -32,6 +41,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
+        return native_update_checker.latest_resolvable_version if UpdateChecker.native_analysis_enabled?
+
         # We always want a full unlock since any package update could update peer dependencies as well.
         # To force a full unlock instead of an own unlock, we return nil.
         nil
@@ -39,6 +50,8 @@ module Dependabot
 
       sig { override.returns(Dependabot::Nuget::Version) }
       def lowest_security_fix_version
+        return native_update_checker.lowest_security_fix_version if UpdateChecker.native_analysis_enabled?
+
         lowest_security_fix_version_details&.fetch(:version)
       end
 
@@ -51,12 +64,16 @@ module Dependabot
 
       sig { override.returns(NilClass) }
       def latest_resolvable_version_with_no_unlock
+        return native_update_checker.latest_resolvable_version_with_no_unlock if UpdateChecker.native_analysis_enabled?
+
         # Irrelevant, since Nuget has a single dependency file
         nil
       end
 
       sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        return native_update_checker.updated_requirements if UpdateChecker.native_analysis_enabled?
+
         RequirementsUpdater.new(
           requirements: dependency.requirements,
           latest_version: preferred_resolvable_version_details&.fetch(:version, nil)&.to_s,
@@ -66,6 +83,8 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def up_to_date?
+        return native_update_checker.up_to_date? if UpdateChecker.native_analysis_enabled?
+
         # No need to update transitive dependencies unless they have a vulnerability.
         return true if !dependency.top_level? && !vulnerable?
 
@@ -89,6 +108,26 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Nuget::NativeUpdateChecker) }
+      def native_update_checker
+        @native_update_checker ||=
+          T.let(
+            Dependabot::Nuget::NativeUpdateChecker.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials,
+              repo_contents_path: repo_contents_path,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              security_advisories: security_advisories,
+              requirements_update_strategy: requirements_update_strategy,
+              dependency_group: dependency_group,
+              options: options
+            ),
+            T.nilable(Dependabot::Nuget::NativeUpdateChecker)
+          )
+      end
+
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def preferred_resolvable_version_details
         # If this dependency is vulnerable, prefer trying to update to the
@@ -101,6 +140,10 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
+        if UpdateChecker.native_analysis_enabled?
+          return native_update_checker.public_latest_version_resolvable_with_full_unlock?
+        end
+
         # We always want a full unlock since any package update could update peer dependencies as well.
         return true unless version_comes_from_multi_dependency_property?
 
@@ -109,6 +152,10 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
+        if UpdateChecker.native_analysis_enabled?
+          return native_update_checker.public_updated_dependencies_after_full_unlock
+        end
+
         return property_updater.updated_dependencies if version_comes_from_multi_dependency_property?
 
         puts "Finding updated dependencies for #{dependency.name}."

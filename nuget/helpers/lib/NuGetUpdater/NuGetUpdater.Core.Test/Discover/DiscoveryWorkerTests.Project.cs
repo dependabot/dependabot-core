@@ -37,7 +37,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -108,7 +108,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     ExpectedProjectCount = 2,
                     Projects = [
                         new()
@@ -189,7 +189,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -299,7 +299,7 @@ public partial class DiscoveryWorkerTests
                     ],
                     expectedResult: new()
                     {
-                        FilePath = "",
+                        Path = "",
                         ExpectedProjectCount = 5,
                         Projects = [
                             new()
@@ -365,7 +365,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -382,6 +382,59 @@ public partial class DiscoveryWorkerTests
                             ReferencedProjectPaths = [],
                         }
                     ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task TargetFrameworkCanBeResolvedFromImplicitlyImportedFile()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>$(SomeTfm)</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <SomeTfm>net8.0</SomeTfm>
+                          </PropertyGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "Directory.Build.props",
+                            Dependencies = [],
+                        },
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new("SomeTfm", "net8.0", "Directory.Build.props"),
+                                new("TargetFramework", "$(SomeTfm)", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
                 }
             );
         }
@@ -407,8 +460,48 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = []
+                }
+            );
+        }
+
+        [Fact]
+        public async Task PropertyWithWildcardVersionIsRetained()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.*" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Some.Package", "1.*", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", "myproj.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                        }
+                    ]
                 }
             );
         }
@@ -438,7 +531,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
@@ -493,7 +586,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "test",
+                    Path = "test",
                     Projects = [
                         new()
                         {
@@ -569,7 +662,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "solutions",
+                    Path = "solutions",
                     Projects = [
                         new()
                         {

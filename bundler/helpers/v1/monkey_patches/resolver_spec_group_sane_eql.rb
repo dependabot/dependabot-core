@@ -11,7 +11,7 @@ module BundlerResolverSpecGroupSaneEql
   def eql?(other)
     return false unless other.is_a?(self.class)
 
-    super(other)
+    super
   end
 end
 

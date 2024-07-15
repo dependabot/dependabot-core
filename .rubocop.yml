@@ -341,6 +341,7 @@ Style/SpecialGlobalVars:
 Style/SelectByRegexp:
   Enabled: false
 Sorbet/TrueSigil:
+  Enabled: true
   Exclude:
     - "**/spec/**/*"
 Sorbet/StrictSigil:
