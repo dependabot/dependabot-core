@@ -309,6 +309,8 @@ module Dependabot
 
           latest_version = latest_version_finder(original_package).latest_version_from_registry
 
+          return false if latest_version.nil?
+
           original_package_version < latest_version
         end
 
