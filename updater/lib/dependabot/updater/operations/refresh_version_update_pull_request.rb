@@ -41,7 +41,7 @@ module Dependabot
           ).void
         end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
-          super(service: service, job: job, dependency_snapshot: dependency_snapshot, error_handler: error_handler)
+          super
 
           T.must(job.dependencies)
           return unless job.source.directory.nil? && T.must(job.source.directories).count == 1

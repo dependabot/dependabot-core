@@ -57,7 +57,7 @@ module Dependabot
         end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @dependencies_handled = T.let(Set.new, T::Set[String])
-          super(service: service, job: job, dependency_snapshot: dependency_snapshot, error_handler: error_handler)
+          super
         end
 
         sig { override.void }

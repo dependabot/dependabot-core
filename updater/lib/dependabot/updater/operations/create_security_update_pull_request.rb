@@ -42,7 +42,7 @@ module Dependabot
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[T::Hash[String, T.untyped]])
 
-          super(service: service, job: job, dependency_snapshot: dependency_snapshot, error_handler: error_handler)
+          super
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
