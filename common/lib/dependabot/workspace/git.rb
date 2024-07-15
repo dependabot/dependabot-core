@@ -19,7 +19,7 @@ module Dependabot
 
       sig { params(path: T.any(Pathname, String)).void }
       def initialize(path)
-        super(path)
+        super
         @initial_head_sha = T.let(head_sha, String)
         configure_git
       end

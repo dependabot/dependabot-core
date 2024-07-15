@@ -26,7 +26,7 @@ module Dependabot
         version = version.gsub(/^v/, "") if version.is_a?(String)
         version = version.to_s.split("+").first if version.to_s.include?("+")
 
-        super(version)
+        super
       end
 
       sig { override.params(version: VersionParameter).void }
@@ -52,7 +52,7 @@ module Dependabot
 
       sig { params(other: Object).returns(T.nilable(Integer)) }
       def <=>(other)
-        result = super(other)
+        result = super
         return if result.nil?
         return result unless result.zero?
 
