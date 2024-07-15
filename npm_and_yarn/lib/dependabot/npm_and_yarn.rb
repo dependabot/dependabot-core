@@ -32,63 +32,63 @@ module Dependabot
     YARN_ERROR_CODES = T.let({
       "YN0001" => {
         message: "Exception error",
-        new_error: ->(error) { Dependabot::DependabotError.new(error.message) }
+        new_error: ->(_error, message) { Dependabot::DependabotError.new(message) }
       },
       "YN0002" => {
         message: "Missing peer dependency",
-        new_error: ->(message) { Dependabot::DependencyFileNotResolvable.new(message) }
+        new_error: ->(_error, message) { Dependabot::DependencyFileNotResolvable.new(message) }
       },
       "YN0016" => {
         message: "Remote not found",
-        new_error: ->(message) { Dependabot::GitDependenciesNotReachable.new(message) }
+        new_error: ->(_error, message) { Dependabot::GitDependenciesNotReachable.new(message) }
       },
       "YN0020" => {
         message: "Missing lockfile entry",
-        new_error: ->(message) { Dependabot::DependencyFileNotFound.new(message) }
+        new_error: ->(_error, message) { Dependabot::DependencyFileNotFound.new(message) }
       },
       "YN0046" => {
         message: "Automerge failed to parse",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0047" => {
         message: "Automerge immutable",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0062" => {
         message: "Incompatible OS",
-        new_error: ->(message) { Dependabot::IncompatibleOS.new(message) }
+        new_error: ->(_error, message) { Dependabot::IncompatibleOS.new(message) }
       },
       "YN0063" => {
         message: "Incompatible CPU",
-        new_error: ->(message) { Dependabot::IncompatibleCPU.new(message) }
+        new_error: ->(_error, message) { Dependabot::IncompatibleCPU.new(message) }
       },
       "YN0071" => {
         message: "NM can't install external soft link",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0072" => {
         message: "NM preserve symlinks required",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0075" => {
         message: "Prolog instantiation error",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0077" => {
         message: "Ghost architecture",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0080" => {
         message: "Network disabled",
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
       },
       "YN0081" => {
         message: "Network unsafe HTTP",
-        new_error: ->(message) { Dependabot::NetworkUnsafeHTTP.new(message) }
+        new_error: ->(_error, message) { Dependabot::NetworkUnsafeHTTP.new(message) }
       }
     }.freeze, T::Hash[String, {
       message: T.any(String, NilClass),
-      new_error: T.proc.params(message: String).returns(Dependabot::DependabotError)
+      new_error: T.proc.params(error: Dependabot::DependabotError, message: String).returns(Dependabot::DependabotError)
     }])
 
     # Used to check if package manager registry is public npm registry
@@ -142,37 +142,38 @@ module Dependabot
     VALIDATION_GROUP_PATTERNS = T.let([
       {
         patterns: [NODE_MODULES_STATE_FILE_NOT_FOUND],
-        new_error: ->(message) { Dependabot::MisconfiguredTooling.new("Yarn", message) },
+        new_error: ->(_error, message) { Dependabot::MisconfiguredTooling.new("Yarn", message) },
         in_usage: true,
         matchfn: nil
       },
       {
         patterns: [TARBALL_IS_NOT_IN_NETWORK],
-        new_error: ->(message) { Dependabot::DependencyFileNotResolvable.new(message) },
+        new_error: ->(_error, message) { Dependabot::DependencyFileNotResolvable.new(message) },
         in_usage: false,
         matchfn: nil
       },
       {
         patterns: [NODE_VERSION_NOT_SATISFY_REGEX],
-        new_error: ->(message) { Dependabot::RequiredVersionIsNotSatisfied.new(message) },
+        new_error: ->(_error, message) { Dependabot::RequiredVersionIsNotSatisfied.new(message) },
         in_usage: false,
         matchfn: nil
       },
       {
         patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED],
-        new_error: ->(message) { Dependabot::PrivateSourceAuthenticationFailure.new(message) },
+        new_error: ->(_error, message) { Dependabot::PrivateSourceAuthenticationFailure.new(message) },
         in_usage: false,
         matchfn: nil
       },
       {
         patterns: [DEPENDENCY_CONFLICT],
-        new_error: ->(message) { Dependabot::DependencyConflict.new(message) },
+        new_error: ->(_error, message) { Dependabot::DependencyConflict.new(message) },
         in_usage: false,
         matchfn: nil
       }
     ].freeze, T::Array[{
       patterns: T::Array[T.any(String, Regexp)],
-      new_error: T.proc.params(message: String).returns(Dependabot::DependabotError),
+      new_error: T.proc.params(error: Dependabot::DependabotError,
+                               message: String).returns(Dependabot::DependabotError),
       in_usage: T.nilable(T::Boolean),
       matchfn: T.nilable(T.proc.params(usage: String, message: String).returns(T::Boolean))
     }])

@@ -619,19 +619,20 @@ module Dependabot
       def handle_error(error)
         # Check if defined yarn error codes contained in the error message
         # and raise the corresponding error class
-        handle_yarn_error(error.message)
+        handle_yarn_error(error)
 
         # Extract the usage error message from the raw error message
         usage_error_message = find_usage_error(error.message) || ""
 
         # Check if the error message contains any group patterns and raise
         # the corresponding error class
-        handle_group_patterns(error.message, usage_error_message)
+        handle_group_patterns(error, usage_error_message)
       end
 
       # Handles errors with specific to yarn error codes
-      sig { params(error_message: String).void }
-      def handle_yarn_error(error_message)
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_yarn_error(error)
+        error_message = error.message
         regex = YARN_CODE_REGEX
         matches = error_message.scan(regex)
         return if matches.empty?
@@ -654,18 +655,19 @@ module Dependabot
                                      "[#{code}]: #{error_message}"
                                    end
 
-          raise new_error.call(modified_error_message)
+          raise new_error.call(error, modified_error_message)
         end
       end
 
       # Handles errors based on group patterns
       sig do
         params(
-          error_message: String,
+          error: SharedHelpers::HelperSubprocessFailed,
           usage_error_message: String
         ).void
       end
-      def handle_group_patterns(error_message, usage_error_message) # rubocop:disable Metrics/PerceivedComplexity
+      def handle_group_patterns(error, usage_error_message) # rubocop:disable Metrics/PerceivedComplexity
+        error_message = error.message
         VALIDATION_GROUP_PATTERNS.each do |group|
           patterns = group[:patterns]
           matchfn = group[:matchfn]
@@ -677,7 +679,7 @@ module Dependabot
           if in_usage && pattern_in_message(patterns, usage_error_message)
             raise new_error.call(usage_error_message)
           elsif !in_usage && pattern_in_message(patterns, error_message)
-            raise new_error.call(error_message)
+            raise new_error.call(error, error.message)
           end
 
           raise new_error.call(usage_error_message) if matchfn&.call(usage_error_message, error_message)
