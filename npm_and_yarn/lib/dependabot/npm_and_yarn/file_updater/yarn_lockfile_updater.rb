@@ -650,7 +650,7 @@ module Dependabot
           next unless new_error
 
           modified_error_message = if message
-                                     "[#{code}]: #{message}, detail: #{error_message}"
+                                     "[#{code}]: #{message}, Detail: #{error_message}"
                                    else
                                      "[#{code}]: #{error_message}"
                                    end
@@ -676,13 +676,14 @@ module Dependabot
 
           next unless (patterns || matchfn) && new_error
 
+          message = usage_error_message.empty? ? error_message : usage_error_message
           if in_usage && pattern_in_message(patterns, usage_error_message)
-            raise new_error.call(usage_error_message)
+            raise new_error.call(error, message)
           elsif !in_usage && pattern_in_message(patterns, error_message)
             raise new_error.call(error, error.message)
           end
 
-          raise new_error.call(usage_error_message) if matchfn&.call(usage_error_message, error_message)
+          raise new_error.call(error, message) if matchfn&.call(usage_error_message, error_message)
         end
       end
 

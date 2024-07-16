@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a MisconfiguredTooling error" do
         expect do
-          error_handler.handle_yarn_error(error_message)
+          error_handler.handle_yarn_error(error)
         end.to raise_error(Dependabot::MisconfiguredTooling)
       end
     end
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class" do
         expect do
-          error_handler.handle_yarn_error(error_message)
+          error_handler.handle_yarn_error(error)
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
@@ -137,7 +137,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This message does not contain any known Yarn error codes." }
 
       it "does not raise any errors" do
-        expect { error_handler.handle_yarn_error(error_message) }.not_to raise_error
+        expect { error_handler.handle_yarn_error(error) }.not_to raise_error
       end
     end
   end
