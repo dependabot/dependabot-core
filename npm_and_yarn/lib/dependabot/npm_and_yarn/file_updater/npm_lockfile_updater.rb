@@ -74,6 +74,10 @@ module Dependabot
         SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
         UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
         UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
+        MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
+        INVALID_AUTH_TOKEN =
+          /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
+        GIT_PACKAGE = /npm.pkg.github.com/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -509,6 +513,19 @@ module Dependabot
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          # if (registry_source = error_message.match(MISSING_AUTH_TOKEN)) &&
+          #    registry_source.named_captures.fetch("url").match(GIT_PACKAGE)
+          #   msg = registry_source.named_captures.fetch("url")
+          #   raise Dependabot::GitAuthToken, msg
+          # end
+
+          if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
+            error_message.match(MISSING_AUTH_TOKEN)) &&
+             registry_source.named_captures.fetch("url").match(GIT_PACKAGE)
+            msg = registry_source.named_captures.fetch("url")
+            raise Dependabot::GitAuthToken, msg
           end
 
           raise error
