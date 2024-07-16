@@ -33,7 +33,8 @@ RSpec.describe Dependabot::DependencyChange do
         ],
         previous_requirements: [
           { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
-        ]
+        ],
+        directory: "/"
       )
     ]
   end
@@ -269,14 +270,6 @@ RSpec.describe Dependabot::DependencyChange do
   end
 
   describe "#matches_existing_pr?" do
-    before do
-      Dependabot::Experiments.register("dependency_has_directory", true)
-    end
-
-    after do
-      Dependabot::Experiments.reset!
-    end
-
     context "when no existing pull requests are found" do
       let(:job) do
         instance_double(Dependabot::Job,
@@ -306,7 +299,9 @@ RSpec.describe Dependabot::DependencyChange do
         [
           updated_dependencies.map do |dep|
             { "dependency-name" => dep.name,
-              "dependency-version" => dep.version }
+              "dependency-version" => dep.version,
+              "directory" => dep.directory
+            }
           end
         ]
       end
@@ -321,6 +316,21 @@ RSpec.describe Dependabot::DependencyChange do
       it "returns true" do
         expect(dependency_change.matches_existing_pr?).to be true
       end
+
+      context "and there's no directory in an existing PR that otherwise matches" do
+        let(:existing_pull_requests) do
+          [
+            updated_dependencies.map do |dep|
+              { "dependency-name" => dep.name,
+                "dependency-version" => dep.version }
+            end
+          ]
+        end
+
+        it "returns true" do
+          expect(dependency_change.matches_existing_pr?).to be true
+        end
+      end
     end
 
     context "when updating a grouped pull request with the same dependencies" do
@@ -332,13 +342,12 @@ RSpec.describe Dependabot::DependencyChange do
       let(:existing_group_pull_requests) do
         [
           { "dependency-group-name" => "foo",
-            "dependencies" => [
-              updated_dependencies.map do |dep|
+            "dependencies" => updated_dependencies.map do |dep|
                 { "dependency-name" => dep.name.to_s,
                   "dependency-version" => dep.version.to_s,
                   "directory" => dep.directory.to_s }
               end
-            ] }
+            }
         ]
       end
 
@@ -354,6 +363,24 @@ RSpec.describe Dependabot::DependencyChange do
       it "returns true" do
         expect(dependency_change.matches_existing_pr?).to be false
       end
+
+      context "and there's no directory in a PR that otherwise matches" do
+        let(:existing_group_pull_requests) do
+          [
+            { "dependency-group-name" => "foo",
+              "dependencies" => updated_dependencies.map do |dep|
+                  { "dependency-name" => dep.name.to_s,
+                    "dependency-version" => dep.version.to_s,
+                  }
+                end
+              }
+          ]
+        end
+
+        it "returns true" do
+          expect(dependency_change.matches_existing_pr?).to be true
+        end
+      end
     end
 
     context "when updating a grouped pull request with the same dependencies, but in different directory" do
@@ -365,13 +392,12 @@ RSpec.describe Dependabot::DependencyChange do
       let(:existing_group_pull_requests) do
         [
           { "dependency-group-name" => "foo",
-            "dependencies" => [
-              updated_dependencies.map do |dep|
+            "dependencies" => updated_dependencies.map do |dep|
                 { "dependency-name" => dep.name.to_s,
                   "dependency-version" => dep.version.to_s,
                   "directory" => "/foo" }
               end
-            ] }
+            }
         ]
       end
 
