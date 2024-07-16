@@ -498,7 +498,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 1
-    // Updating root CS - Script Code to 2.0.0 requires its child Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and its grand child Microsoft.CodeAnalysis.Common to be 3.6.0
+    // Updating root CS - Script Code to 2.0.0 requires its dependency Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and its transitive dependency Microsoft.CodeAnalysis.Common to be 3.6.0
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
@@ -548,7 +548,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 2
-    // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the Azure.Core to also update, but since the dependency is not in the existing list, we do not include it
+    // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the root package to also update, but since the dependency is not in the existing list, we do not include it
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
     {
@@ -635,8 +635,8 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 4
-    // Root package (Microsoft.CodeAnalysis.Compilers) and its children (Microsoft.CodeAnalysis.CSharp), (Microsoft.CodeAnalysis.VisualBasic) are all 4.9.2
-    // These packages all require the grandchild (Microsoft.CodeAnalysis.Common) to be 4.9.2, but it's not in the existing list
+    // Root package (Microsoft.CodeAnalysis.Compilers) and its dependencies (Microsoft.CodeAnalysis.CSharp), (Microsoft.CodeAnalysis.VisualBasic) are all 4.9.2
+    // These packages all require the transitive dependency of the root package (Microsoft.CodeAnalysis.Common) to be 4.9.2, but it's not in the existing list
     // If Microsoft.CodeAnalysis.Common is updated to 4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the exisiting list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotIncluded()
@@ -687,7 +687,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 5
-    // The same as scenario 4, but the grandchild (Microsoft.CodeAnalysis.Common) is in the existing list
+    // The same as scenario 4, but the transitive dependency (Microsoft.CodeAnalysis.Common) is in the existing list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependency()
     {
@@ -800,10 +800,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 7
-    // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp). Updating ONE of the top level packages, which updates the children and the children's other "parents"
+    // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp). Updating ONE of the top level packages, which updates the dependencies and their other "parents"
     // Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
     // Microsoft.CodeAnalysis.CSharp.Scripting 4.0.0 requires Microsoft.CodeAnalysis.CSharp 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (Specific version)
-    // Updating Buildalyzer to 7.0.1 will update its grandchild (Microsoft.CodeAnalysis.Common) and then its grandchild's "family"
+    // Updating Buildalyzer to 7.0.1 will update its transitive dependency (Microsoft.CodeAnalysis.Common) and then its transitive dependency's "family"
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
     {
@@ -858,8 +858,8 @@ public class MSBuildHelperTests : TestBase
 
     // Scenario 8
     // Updating two families at once to test efficiency
-    // First family: Direct dependency (Microsoft.CodeAnalysis.Common) needs to be updated, which will then need to update in the existing list its child (System.Collections.Immutable) and parent(Microsoft.CodeAnalysis.Csharp.Scripting)
-    // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its child (Microsoft.Bcl.AsyncInterfaces)
+    // First family: Direct dependency (Microsoft.CodeAnalysis.Common) needs to be updated, which will then need to update in the existing list its dependency (System.Collections.Immutable) and "parent" (Microsoft.CodeAnalysis.Csharp.Scripting)
+    // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its dependency (Microsoft.Bcl.AsyncInterfaces)
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
     {
@@ -975,7 +975,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 10, Unsolveable
-    // To update root package (AutoMapper.Collection) to 10.0.0, its child (AutoMapper) needs to update to 13.0.0. However, there is no higher version of AutoMapper's other parent (AutoMapper.Extensions.Microsoft.DependencyInjection) that is compatible with the new version
+    // To update root package (AutoMapper.Collection) to 10.0.0, its dependency (AutoMapper) needs to update to 13.0.0. However, there is no higher version of AutoMapper's other "parent" (AutoMapper.Extensions.Microsoft.DependencyInjection) that is compatible with the new version
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUnsolveable()
     {
@@ -1025,7 +1025,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 11
-    // Two dependencies (Microsoft.Extensions.Caching.Memory), ("Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
+    // Two dependencies (Microsoft.Extensions.Caching.Memory), (Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewTwoDependenciesOneParent()
     {
@@ -1126,7 +1126,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 13
-    // 4 dependency chain to be updated
+    // 4 dependency chain to be updated, dependency to be updated is not in the existing list, so its family will all be updated
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourNotInExisting()
     {
@@ -1176,7 +1176,7 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Scenario 14
-    // Similar to Scenario 8, except Microsoft.CodeAnalysis.Common is in the existing list
+    // Updating a transtitive dependency (System.Collections.Immutable) to 8.0.0, which will update its "parent" (Microsoft.CodeAnalysis.CSharp) and its "grandparent" (Microsoft.CodeAnalysis.CSharp.Workspaces) to update
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecific()
     {
@@ -1229,7 +1229,9 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
-    // Do not add system.collections.immutable as a reference
+    
+    // Scenario 15
+    // Similar to scenario 14, with the "grandchild" (System.Collections.Immutable) not in the existing list
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting()
     {

@@ -141,7 +141,6 @@ public class PackageManager
         {
             // Fetch package metadata URL
             var metadataUrl = await FindPackageMetadataAsync(packageIdentity, CancellationToken.None);
-            string nuspecContent = null;
             IEnumerable<NuGet.Packaging.PackageDependencyGroup> dependencySet = metadataUrl.DependencySets;
 
             var bestMatchFramework = FindBestMatchFramework(dependencySet, targetFramework);
@@ -369,11 +368,10 @@ public class PackageManager
                                 {
                                     // Create temporary copy of the current version and of the existing package
                                     string dependencyOldVersion = existingPackage.currentVersion;
-                                    PackageToUpdate packageDupe = existingPackage;
-                                    packageDupe.currentVersion = dependency.currentVersion;
+                                    existingPackage.currentVersion = dependency.currentVersion;
 
                                     // If the family is compatible with the dependency's version, update with the dependency version
-                                    if (await AreAllParentsCompatibleAsync(existingPackages, packageDupe, targetFramework) == true)
+                                    if (await AreAllParentsCompatibleAsync(existingPackages, existingPackage, targetFramework) == true)
                                     {
                                         existingPackage.currentVersion = dependencyOldVersion;
                                         string newVersion = dependency.currentVersion;
@@ -519,16 +517,16 @@ public class PackageManager
     // Method to update a version to the next available version for a package
     public NuGetVersion NextPatch(NuGetVersion version, IEnumerable<NuGetVersion> allVersions)
     {
-        var greaterVersions = allVersions.Where(v => v > version);
+        var versions = allVersions.Where(v => v > version);
 
-        if (!greaterVersions.Any())
+        if (!versions.Any())
         {
-            // If there are no greater versions, return the current version as there's no next patch available
+            // If there are no greater versions, return current version
             return version;
         }
 
-        // Find the smallest version in the greater versions
-        return greaterVersions.Min();
+        // Find smallest version in the versions
+        return versions.Min();
     }
 
     // Method to find a compatible version with the child for the parent to update to
