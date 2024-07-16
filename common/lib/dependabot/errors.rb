@@ -224,8 +224,6 @@ module Dependabot
         }
       }
     when
-      DependencyConflict,
-      RequiredVersionIsNotSatisfied,
       IncompatibleCPU,
       NetworkUnsafeHTTP
       error.detail
@@ -489,13 +487,6 @@ module Dependabot
 
   class DependencyFileNotResolvable < DependabotError; end
 
-  class DependencyConflict < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("dependency_conflict", message)
-    end
-  end
-
   #######################
   # Source level errors #
   #######################
@@ -655,13 +646,6 @@ module Dependabot
 
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end
-
-  class RequiredVersionIsNotSatisfied < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("required_version_not_satisfied", message)
-    end
-  end
 
   class IncompatibleCPU < TypedDependabotError
     sig { params(message: T.any(T.nilable(String), MatchData)).void }

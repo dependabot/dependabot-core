@@ -84,6 +84,27 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         end.to raise_error(Dependabot::MisconfiguredTooling, /YN0080: .*The remote server failed/)
       end
     end
+
+    context "when the error message contains a node version not satisfy regex and versions are extracted" do
+      let(:error_message) do
+        "➤ YN0000: ┌ Project validation\n" \
+          "::group::Project validation\n" \
+          "➤ YN0000: │ The current Node version v20.15.1 does not satisfy the required version 14.21.3.\n" \
+          "::endgroup::\n" \
+          "➤ YN0000: └ Completed\n" \
+          "➤ YN0000: Failed with errors in 0s 6ms"
+      end
+
+      it "raises a ToolVersionNotSupported error with the correct versions" do
+        expect do
+          error_handler.handle_error(error)
+        end.to raise_error(Dependabot::ToolVersionNotSupported) do |e| # rubocop:disable Style/MultilineBlockChain
+          expect(e.tool_name).to eq("Yarn")
+          expect(e.detected_version).to eq("v20.15.1")
+          expect(e.supported_versions).to eq("14.21.3")
+        end
+      end
+    end
   end
 
   describe "#find_usage_error" do
