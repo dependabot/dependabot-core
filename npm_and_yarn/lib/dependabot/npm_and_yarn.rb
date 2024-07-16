@@ -56,7 +56,7 @@ module Dependabot
       },
       "YN0062" => {
         message: "Incompatible OS",
-        new_error: ->(_error, message) { Dependabot::IncompatibleOS.new(message) }
+        new_error: ->(_error, message) { Dependabot::DependabotError.new(message) }
       },
       "YN0063" => {
         message: "Incompatible CPU",

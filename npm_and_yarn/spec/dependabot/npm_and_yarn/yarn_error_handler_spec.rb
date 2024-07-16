@@ -26,16 +26,18 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
     context "when the error message contains a yarn error code that is mapped" do
       let(:error_message) { "YN0002: Missing peer dependency" }
 
-      it "raises the corresponding error class" do
-        expect { error_handler.handle_error(error) }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_error(error) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
       end
     end
 
     context "when the error message contains a recognized pattern" do
       let(:error_message) { "Here is a recognized error pattern: authentication token not provided" }
 
-      it "raises the corresponding error class" do
-        expect { error_handler.handle_error(error) }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_error(error) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
 
@@ -47,7 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error message contains unrecognized yarn error codes and patterns" do
+    context "when the error message contains multiple unrecognized yarn error codes" do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step\n" \
           "➤ YN0000: ┌ Fetch step\n" \
@@ -62,7 +64,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error message contains a recognized yarn error code among multiple yarn error codes" do
+    context "when the error message contains multiple yarn error codes with the last one recognized" do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step\n" \
           "➤ YN0002: │ dummy-package@npm:1.2.3 doesn't provide dummy (p1a2b3)\n" \
@@ -76,28 +78,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           "➤ YN0000: Failed with errors in 1s 234ms"
       end
 
-      it "raises a MisconfiguredTooling error" do
+      it "raises a MisconfiguredTooling error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error)
-        end.to raise_error(Dependabot::MisconfiguredTooling)
-      end
-    end
-
-    context "when the error contains multiple unrecognized yarn error codes" do
-      let(:error_message) do
-        "➤ YN0000: ┌ Resolution step\n" \
-          "➤ YN0000: ┌ Fetch step\n" \
-          "➤ YN0013: │ some-dummy-package@npm:1.0.0 can't be found\n" \
-          "➤ YN0035: │ some-dummy-package@npm:1.0.0: The remote server failed\n" \
-          "➤ YN0035: │   Response Code: 404 (Not Found)\n" \
-          "➤ YN0035: │   Request Method: GET\n" \
-          "➤ YN0035: │   Request URL: https://dummy.artifactory...\n" \
-          "➤ YN0000: └ Completed\n" \
-          "➤ YN0000: Failed with errors in 1s 234ms"
-      end
-
-      it "does not raise an error" do
-        expect { error_handler.handle_error(error) }.not_to raise_error
+        end.to raise_error(Dependabot::MisconfiguredTooling, /YN0080: .*The remote server failed/)
       end
     end
   end
@@ -126,10 +110,24 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
     context "when the error message contains yarn error codes" do
       let(:error_message) { "YN0002: Missing peer dependency" }
 
-      it "raises the corresponding error class" do
+      it "raises the corresponding error class with the correct message" do
         expect do
           error_handler.handle_yarn_error(error)
-        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
+      end
+    end
+
+    context "when the error message contains multiple yarn error codes" do
+      let(:error_message) do
+        "YN0001: Exception error\n" \
+          "YN0002: Missing peer dependency\n" \
+          "YN0016: Remote not found\n"
+      end
+
+      it "raises the last corresponding error class found with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error)
+        end.to raise_error(Dependabot::GitDependenciesNotReachable, /YN0016: Remote not found/)
       end
     end
 
@@ -138,6 +136,35 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "does not raise any errors" do
         expect { error_handler.handle_yarn_error(error) }.not_to raise_error
+      end
+    end
+  end
+
+  describe "#handle_group_patterns" do
+    let(:error_message) { "Here is a recognized error pattern: authentication token not provided" }
+    let(:usage_error_message) { "Usage Error: This is a specific usage error.\nERROR" }
+
+    context "when the error message contains a recognized pattern in the usage error message" do
+      let(:error_message_with_usage_error) { "#{error_message}\n#{usage_error_message}" }
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
+      end
+    end
+
+    context "when the error message contains a recognized pattern in the error message" do
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, "") }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
+      end
+    end
+
+    context "when the error message does not contain recognized patterns" do
+      let(:error_message) { "This is an unrecognized pattern that should not raise an error." }
+
+      it "does not raise any errors" do
+        expect { error_handler.handle_group_patterns(error, "") }.not_to raise_error
       end
     end
   end

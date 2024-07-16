@@ -226,10 +226,8 @@ module Dependabot
     when
       DependencyConflict,
       RequiredVersionIsNotSatisfied,
-      IncompatibleOS,
       IncompatibleCPU,
       NetworkUnsafeHTTP
-
       error.detail
 
     when Dependabot::NotImplemented
@@ -662,13 +660,6 @@ module Dependabot
     sig { params(message: T.any(T.nilable(String), MatchData)).void }
     def initialize(message = nil)
       super("required_version_not_satisfied", message)
-    end
-  end
-
-  class IncompatibleOS < TypedDependabotError
-    sig { params(message: T.any(T.nilable(String), MatchData)).void }
-    def initialize(message = nil)
-      super("incompatible_os", message)
     end
   end
 
