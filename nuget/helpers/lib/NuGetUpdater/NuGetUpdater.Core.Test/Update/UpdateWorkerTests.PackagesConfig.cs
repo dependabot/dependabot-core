@@ -1,3 +1,5 @@
+using NuGetUpdater.Core.Updater;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -1420,6 +1422,87 @@ public partial class UpdateWorkerTests
                 """);
         }
 
+        [Fact]
+        public async Task ReportsPrivateSourceAuthenticationFailure()
+        {
+            static (int, string) TestHttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+                return uri.PathAndQuery switch
+                {
+                    _ => (401, "{}"), // everything is unauthorized
+                };
+            }
+            using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                expectedResult: new()
+                {
+                    ErrorType = ErrorType.AuthenticationFailure,
+                    ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                }
+            );
+        }
+
         protected static Task TestUpdateForProject(
             string dependencyName,
             string oldVersion,
@@ -1430,7 +1513,8 @@ public partial class UpdateWorkerTests
             string expectedPackagesConfigContents,
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null,
-            MockNuGetPackage[]? packages = null)
+            MockNuGetPackage[]? packages = null,
+            UpdateOperationResult? expectedResult = null)
         {
             var realizedAdditionalFiles = new List<(string Path, string Content)>
             {
@@ -1458,7 +1542,8 @@ public partial class UpdateWorkerTests
                 expectedProjectContents,
                 additionalFiles: realizedAdditionalFiles.ToArray(),
                 additionalFilesExpected: realizedAdditionalFilesExpected.ToArray(),
-                packages: packages);
+                packages: packages,
+                expectedResult: expectedResult);
         }
     }
 }

@@ -312,6 +312,7 @@ internal static partial class MSBuildHelper
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdOut);
 
             // simple cases first
             // if restore failed, nothing we can do
@@ -506,6 +507,7 @@ internal static partial class MSBuildHelper
                 <TargetFramework>{targetFramework}</TargetFramework>
                 <GenerateDependencyFile>true</GenerateDependencyFile>
                 <RunAnalyzers>false</RunAnalyzers>
+                <NuGetInteractive>false</NuGetInteractive>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
@@ -565,6 +567,7 @@ internal static partial class MSBuildHelper
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdout);
 
             if (exitCode == 0)
             {
@@ -599,6 +602,20 @@ internal static partial class MSBuildHelper
             catch
             {
             }
+        }
+    }
+
+    internal static void ThrowOnUnauthenticatedFeed(string stdout)
+    {
+        var unauthorizedMessageSnippets = new string[]
+        {
+            "The plugin credential provider could not acquire credentials",
+            "401 (Unauthorized)",
+            "error NU1301: Unable to load the service index for source",
+        };
+        if (unauthorizedMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
         }
     }
 

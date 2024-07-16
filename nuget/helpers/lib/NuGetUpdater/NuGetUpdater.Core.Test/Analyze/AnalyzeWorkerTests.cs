@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 using NuGet;
 
@@ -638,6 +639,113 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 [
                     new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+    {
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+        await AnalyzeWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, "Some.Dependency", new()
+        {
+            ErrorType = ErrorType.AuthenticationFailure,
+            ErrorDetails = "<some package feed>",
+            UpdatedVersion = "",
+            UpdatedDependencies = [],
+        }, new Logger(false));
+        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
+
+        // raw result file should look like this:
+        // {
+        //   ...
+        //   "ErrorType": "AuthenticationFailure",
+        //   "ErrorDetails": "<some package feed>",
+        //   ...
+        // }
+        var jsonDocument = JsonDocument.Parse(discoveryContents);
+        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
+        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+
+        Assert.Equal("AuthenticationFailure", errorType.GetString());
+        Assert.Equal("<some package feed>", errorDetails.GetString());
+    }
+
+    [Fact]
+    public async Task ReportsPrivateSourceAuthenticationFailure()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (401, "{}"),
+            };
+        }
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference),
+                        ],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.2.3",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                UpdatedVersion = string.Empty,
+                CanUpdate = false,
+                UpdatedDependencies = [],
             }
         );
     }

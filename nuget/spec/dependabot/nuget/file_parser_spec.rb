@@ -1168,5 +1168,45 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
     end
+
+    context "when there is a private source authentication failure" do
+      let(:csproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.csproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: false,
+            Projects: [],
+            DirectoryPackagesProps: nil,
+            GlobalJson: nil,
+            DotNetToolsJson: nil,
+            ErrorType: "AuthenticationFailure",
+            ErrorDetails: "the-error-details"
+          }
+        )
+      end
+
+      it "raises the correct error" do
+        run_parser_test do |parser|
+          expect { parser.parse }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end
+      end
+    end
   end
 end

@@ -47,6 +47,13 @@ internal record NuGetContext : IDisposable
 
     private readonly Dictionary<PackageIdentity, string?> _packageInfoUrlCache = new();
 
+    public static string[] GetPackageSourceUrls(string currentDirectory)
+    {
+        using var context = new NuGetContext(currentDirectory);
+        var sourceUrls = context.PackageSources.Select(s => s.Source).ToArray();
+        return sourceUrls;
+    }
+
     public async Task<string?> GetPackageInfoUrlAsync(string packageId, string packageVersion, CancellationToken cancellationToken)
     {
         var packageIdentity = new PackageIdentity(packageId, NuGetVersion.Parse(packageVersion));

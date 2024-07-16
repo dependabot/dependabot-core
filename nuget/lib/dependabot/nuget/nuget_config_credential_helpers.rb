@@ -68,6 +68,9 @@ module Dependabot
         add_credentials_to_nuget_config(credentials)
         begin
           yield
+        rescue DependabotError
+          # forward these
+          raise
         rescue StandardError => e
           log_message =
             <<~LOG_MESSAGE
