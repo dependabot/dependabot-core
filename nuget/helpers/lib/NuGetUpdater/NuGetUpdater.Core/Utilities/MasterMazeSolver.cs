@@ -365,7 +365,7 @@ public class PackageManager
                                 NuGetVersion dependencyCurrentVersion = new NuGetVersion(dependency.currentVersion);
 
                                 // Check if the existing version is less than the dependency's existing version
-                                if (existingCurrentVersion <= dependencyCurrentVersion)
+                                if (existingCurrentVersion < dependencyCurrentVersion)
                                 {
                                     // Create temporary copy of the current version and of the existing package
                                     string dependencyOldVersion = existingPackage.currentVersion;
@@ -425,7 +425,7 @@ public class PackageManager
                     }
 
                     // If it's compatible and the package you updated wasn't in the existing package, check if the parent's dependencies version is the same as the current
-                    else if (isCompatible == true && inExisting == false && parent.isSpecific != true)
+                    else if (isCompatible == true && inExisting == false)
                     {
                         List<PackageToUpdate> dependencyListParent = await GetDependenciesAsync(parent, targetFramework);
                         PackageToUpdate parentDependency = dependencyListParent.FirstOrDefault(p => p.packageName == package.packageName);
@@ -462,7 +462,7 @@ public class PackageManager
                                 List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parent, targetFramework);
                                 PackageToUpdate parentDependencyTemp = dependencyListParentTemp.FirstOrDefault(p => p.packageName == package.packageName);
 
-                                if ((parentDependencyTemp.currentVersion == package.currentVersion) && (parent.isSpecific != true))
+                                if ((parentDependencyTemp.currentVersion == package.currentVersion))
                                 {
                                     parent.newVersion = parentVersion;
                                     parent.currentVersion = null;
@@ -519,29 +519,16 @@ public class PackageManager
     // Method to update a version to the next available version for a package
     public NuGetVersion NextPatch(NuGetVersion version, IEnumerable<NuGetVersion> allVersions)
     {
-        NuGetVersion nextPatchVersion = new NuGetVersion(version.Major, version.Minor, version.Patch + 1);
+        var greaterVersions = allVersions.Where(v => v > version);
 
-        if (allVersions.Contains(nextPatchVersion))
+        if (!greaterVersions.Any())
         {
-            return nextPatchVersion;
+            // If there are no greater versions, return the current version as there's no next patch available
+            return version;
         }
 
-        NuGetVersion nextMinorVersion = new NuGetVersion(version.Major, version.Minor + 1, 0);
-
-        if (allVersions.Any(v => v.Major == nextMinorVersion.Major && v.Minor == nextMinorVersion.Minor))
-        {
-            return nextMinorVersion;
-        }
-
-        NuGetVersion nextMajorVersion = new NuGetVersion(version.Major + 1, 0, 0);
-
-        if (allVersions.Any(v => v.Major == nextMajorVersion.Major))
-        {
-            return nextMajorVersion;
-        }
-
-        // If no next version found, return the current version (or handle it accordingly)
-        return version;
+        // Find the smallest version in the greater versions
+        return greaterVersions.Min();
     }
 
     // Method to find a compatible version with the child for the parent to update to
@@ -550,6 +537,9 @@ public class PackageManager
         string packageId = possibleParent.packageName;
         string currentVersionString = possibleParent.currentVersion;
         NuGetVersion currentVersion = NuGetVersion.Parse(currentVersionString);
+        string currentVersionStringDependency = possibleDependency.currentVersion;
+        NuGetVersion currentVersionDependency = NuGetVersion.Parse(currentVersionStringDependency);
+
 
         // Create a NugetContext instance to get the latest versions of the parent
         NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(projectPath));
@@ -572,10 +562,30 @@ public class PackageManager
             return null;
         }
 
+        //If there's no versions (unsolveable)
+        else if (versions.Length == 0)
+        {
+            return null;
+        }
+
+        // If the current version of the parent is less than the current version of the dependency
+        else if (currentVersion < currentVersionDependency)
+        {
+            return currentVersionDependency;
+        }
+
         // Loop from the current version to the latest version, use next patch as a limit (unless theres a limit) so it doesn't look for versions that don't exist
         for (NuGetVersion version = currentVersion; version <= latestVersion; version = NextPatch(version, versions))
         {
             possibleParent.newVersion = version.ToString();
+
+            NuGetVersion nextPatch = NextPatch(version, versions);
+
+            // If the next patch is the same as the currentVersion, then nothing is needed
+            if (nextPatch == version)
+            {
+                return nextPatch;
+            }
 
             // Check if there's compatibility with parent and depdendency
             if (await IsCompatibleAsync(existingPackages, possibleParent, possibleDependency, targetFramework))

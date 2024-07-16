@@ -875,7 +875,7 @@ public class MSBuildHelperTests : TestBase
                   </PropertyGroup>
                   <ItemGroup>
                     <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
                     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                     <PackageReference Include="Azure.Core" Version="1.21.0" />
                   </ItemGroup>
@@ -885,7 +885,7 @@ public class MSBuildHelperTests : TestBase
             var dependencies = new[]
             {
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", DependencyType.PackageReference),
                 new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
                 new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
@@ -931,8 +931,8 @@ public class MSBuildHelperTests : TestBase
                   </PropertyGroup>
                   <ItemGroup>
                     <PackageReference Include="System.Collections.Immutable" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
+                    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
                     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
                     <PackageReference Include="Azure.Core" Version="1.21.0" />
                   </ItemGroup>
@@ -942,8 +942,8 @@ public class MSBuildHelperTests : TestBase
             var dependencies = new[]
             {
                 new Dependency("System.Collections.Immutable", "7.0.0", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.9.2", DependencyType.PackageReference),
-                new Dependency("Microsoft.CodeAnalysis.Common", "4.9.2", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.CSharp.Scripting", "4.8.0", DependencyType.PackageReference),
+                new Dependency("Microsoft.CodeAnalysis.Common", "4.8.0", DependencyType.PackageReference),
                 new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.0.0", DependencyType.Unknown),
                 new Dependency("Azure.Core", "1.21.0", DependencyType.PackageReference),
 
@@ -1090,7 +1090,7 @@ public class MSBuildHelperTests : TestBase
                     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.0" />
                     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
                     <PackageReference Include= "Microsoft.EntityFrameworkCore" Version="7.0.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.0 />
+                    <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="7.0.0" />
                   </ItemGroup>
                 </Project>
                 """);
@@ -1229,10 +1229,7 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
-    // Scenario 15 ASK ABOUT THIS
-    // Similar to Scenario 8, except Microsoft.CodeAnalysis.Common is in the existing list
-    // Ask about this: System.Collections.Immutable is not in the existing list but you want to update it. Although Microsofft.CodeAnalysis.common can adapt to this verion (7.0.0 >=) we add it as a reference because we want to avoid updating it
-    // because common is a specific version which means we'd have to update it. 
+    // Do not add system.collections.immutable as a reference
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting()
     {
@@ -1268,15 +1265,13 @@ public class MSBuildHelperTests : TestBase
 
             var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
             Assert.NotNull(resolvedDependencies);
-            Assert.Equal(4, resolvedDependencies.Length);
+            Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);
-            Assert.Equal("4.8.0", resolvedDependencies[0].Version);
+            Assert.Equal("4.9.2", resolvedDependencies[0].Version);
             Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[1].Name);
-            Assert.Equal("4.8.0", resolvedDependencies[1].Version);
+            Assert.Equal("4.9.2", resolvedDependencies[1].Version);
             Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[2].Name);
-            Assert.Equal("4.8.0", resolvedDependencies[2].Version);
-            Assert.Equal("System.Collections.Immutable", resolvedDependencies[3].Name);
-            Assert.Equal("8.0.0", resolvedDependencies[3].Version);
+            Assert.Equal("4.9.2", resolvedDependencies[2].Version);
         }
         finally
         {
