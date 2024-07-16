@@ -40,6 +40,8 @@ public class DiscoveryWorkerTestBase
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
+        Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
+        Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
 
         return;
 

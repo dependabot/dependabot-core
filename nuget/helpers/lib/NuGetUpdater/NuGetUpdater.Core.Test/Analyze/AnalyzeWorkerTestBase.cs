@@ -52,6 +52,8 @@ public class AnalyzeWorkerTestBase
         Assert.Equal(expectedResult.VersionComesFromMultiDependencyProperty, actualResult.VersionComesFromMultiDependencyProperty);
         ValidateDependencies(expectedResult.UpdatedDependencies, actualResult.UpdatedDependencies);
         Assert.Equal(expectedResult.ExpectedUpdatedDependenciesCount ?? expectedResult.UpdatedDependencies.Length, actualResult.UpdatedDependencies.Length);
+        Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
+        Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
 
         return;
 

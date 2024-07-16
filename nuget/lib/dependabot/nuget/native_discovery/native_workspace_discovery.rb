@@ -4,6 +4,7 @@
 require "dependabot/nuget/native_discovery/native_dependency_file_discovery"
 require "dependabot/nuget/native_discovery/native_directory_packages_props_discovery"
 require "dependabot/nuget/native_discovery/native_project_discovery"
+require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
 
 module Dependabot
@@ -13,6 +14,8 @@ module Dependabot
 
       sig { params(json: T::Hash[String, T.untyped]).returns(NativeWorkspaceDiscovery) }
       def self.from_json(json)
+        Dependabot::Nuget::NativeHelpers.ensure_no_errors(json)
+
         path = T.let(json.fetch("Path"), String)
         path = "/" + path unless path.start_with?("/")
         projects = T.let(json.fetch("Projects"), T::Array[T::Hash[String, T.untyped]]).filter_map do |project|

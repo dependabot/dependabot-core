@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace NuGetUpdater.Core.Test
 {
@@ -56,6 +57,16 @@ namespace NuGetUpdater.Core.Test
                 server.Start();
                 return server;
             }
+        }
+
+        public static TestHttpServer CreateTestStringServer(Func<string, (int, string)> requestHandler)
+        {
+            Func<string, (int, byte[])> bytesRequestHandler = url =>
+            {
+                var (statusCode, response) = requestHandler(url);
+                return (statusCode, Encoding.UTF8.GetBytes(response));
+            };
+            return CreateTestServer(bytesRequestHandler);
         }
 
         private static int FindFreePort()
