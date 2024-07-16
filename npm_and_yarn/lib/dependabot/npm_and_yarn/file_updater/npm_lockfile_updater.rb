@@ -826,7 +826,7 @@ module Dependabot
 
         sig do
           params(
-            current_name: String,
+            current_name: T.nilable(String),
             original_name: String,
             updated_lockfile_content: String
           )
