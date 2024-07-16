@@ -209,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    context "when the package current-name is missing or defined" do
+    context "when the package current-name is not defined in package.json" do
       let(:files) { project_dependency_files("npm8/current_name_is_missing") }
 
       it "restores the packages name attribute" do
