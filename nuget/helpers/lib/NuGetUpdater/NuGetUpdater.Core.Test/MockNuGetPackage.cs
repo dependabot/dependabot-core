@@ -245,7 +245,7 @@ namespace NuGetUpdater.Core.Test
             );
         }
 
-        private Stream GetZipStream()
+        public Stream GetZipStream()
         {
             if (_stream is null)
             {

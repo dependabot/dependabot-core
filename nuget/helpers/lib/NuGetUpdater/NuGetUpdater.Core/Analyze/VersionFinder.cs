@@ -66,15 +66,24 @@ internal static class VersionFinder
                 continue;
             }
 
-            var existsInFeed = await feed.Exists(
-                packageId,
-                includePrerelease,
-                includeUnlisted: false,
-                nugetContext.SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-            if (!existsInFeed)
+            try
             {
+                // misbehaving v2 apis can throw here
+                var existsInFeed = await feed.Exists(
+                    packageId,
+                    includePrerelease,
+                    includeUnlisted: false,
+                    nugetContext.SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (!existsInFeed)
+                {
+                    continue;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
 
@@ -162,15 +171,23 @@ internal static class VersionFinder
                 continue;
             }
 
-            var existsInFeed = await feed.Exists(
-                new PackageIdentity(packageId, version),
-                includeUnlisted: false,
-                nugetContext.SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-            if (existsInFeed)
+            try
             {
-                return true;
+                // misbehaving v2 apis can throw here
+                var existsInFeed = await feed.Exists(
+                    new PackageIdentity(packageId, version),
+                    includeUnlisted: false,
+                    nugetContext.SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (existsInFeed)
+                {
+                    return true;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
             }
         }
 

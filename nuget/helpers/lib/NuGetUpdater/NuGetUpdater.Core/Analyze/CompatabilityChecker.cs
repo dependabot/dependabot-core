@@ -141,15 +141,23 @@ internal static class CompatibilityChecker
                 throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
             }
 
-            var exists = await feed.DoesPackageExistAsync(
-                package.Id,
-                package.Version,
-                context.SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-
-            if (!exists)
+            try
             {
+                // misbehaving v2 apis can throw here
+                var exists = await feed.DoesPackageExistAsync(
+                    package.Id,
+                    package.Version,
+                    context.SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (!exists)
+                {
+                    continue;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
 

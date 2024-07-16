@@ -86,15 +86,24 @@ internal record NuGetContext : IDisposable
                 continue;
             }
 
-            var existsInFeed = await feed.Exists(
-                packageIdentity,
-                includeUnlisted: false,
-                SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-            if (!existsInFeed)
+            try
             {
-                message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
+                // misbehaving v2 apis can throw here
+                var existsInFeed = await feed.Exists(
+                    packageIdentity,
+                    includeUnlisted: false,
+                    SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (!existsInFeed)
+                {
+                    message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
+                    continue;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
 

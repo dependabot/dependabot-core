@@ -18,7 +18,8 @@ public class AnalyzeWorkerTestBase
         WorkspaceDiscoveryResult discovery,
         DependencyInfo dependencyInfo,
         ExpectedAnalysisResult expectedResult,
-        MockNuGetPackage[]? packages = null)
+        MockNuGetPackage[]? packages = null,
+        TestFile[]? extraFiles = null)
     {
         var relativeDependencyPath = $"./dependabot/dependency/{dependencyInfo.Name}.json";
 
@@ -27,7 +28,8 @@ public class AnalyzeWorkerTestBase
             (relativeDependencyPath, JsonSerializer.Serialize(dependencyInfo, AnalyzeWorker.SerializerOptions)),
         ];
 
-        var actualResult = await RunAnalyzerAsync(dependencyInfo.Name, files, async directoryPath =>
+        var allFiles = files.Concat(extraFiles ?? []).ToArray();
+        var actualResult = await RunAnalyzerAsync(dependencyInfo.Name, allFiles, async directoryPath =>
         {
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
 
