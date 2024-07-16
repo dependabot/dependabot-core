@@ -58,7 +58,7 @@ module Dependabot
         epoch_comparison = epoch_comparison(other)
         return epoch_comparison unless epoch_comparison.zero?
 
-        version_comparison = super(other)
+        version_comparison = super
         return version_comparison unless version_comparison&.zero?
 
         post_version_comparison = post_version_comparison(other)

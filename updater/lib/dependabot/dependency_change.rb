@@ -165,24 +165,32 @@ module Dependabot
       if grouped_update?
         # We only want PRs for the same group that have the same versions
         job.existing_group_pull_requests.any? do |pr|
+          directories_in_use = pr["dependencies"].all? { |dep| dep["directory"] }
+
           pr["dependency-group-name"] == dependency_group&.name &&
-            Set.new(pr["dependencies"]) == updated_dependencies_set
+            Set.new(pr["dependencies"]) == updated_dependencies_set(should_consider_directory: directories_in_use)
         end
       else
-        job.existing_pull_requests.any? { |pr| Set.new(pr) == updated_dependencies_set }
+        job.existing_pull_requests.any? do |pr|
+          directories_in_use = pr.all? { |dep| dep["directory"] }
+
+          Set.new(pr) == updated_dependencies_set(should_consider_directory: directories_in_use)
+        end
       end
     end
 
     private
 
-    sig { returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
-    def updated_dependencies_set
+    # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
+    # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.
+    sig { params(should_consider_directory: T::Boolean).returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
+    def updated_dependencies_set(should_consider_directory:)
       Set.new(
         updated_dependencies.map do |dep|
           {
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
-            "directory" => should_consider_directory? ? dep.directory : nil,
+            "directory" => should_consider_directory ? dep.directory : nil,
             "dependency-removed" => dep.removed? ? true : nil
           }.compact
         end
@@ -201,11 +209,6 @@ module Dependabot
       return "" if updated_dependency_files.empty?
 
       T.must(updated_dependency_files.first).directory
-    end
-
-    sig { returns(T::Boolean) }
-    def should_consider_directory?
-      grouped_update? && Dependabot::Experiments.enabled?("dependency_has_directory")
     end
   end
 end
