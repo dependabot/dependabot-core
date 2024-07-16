@@ -9,6 +9,10 @@ RSpec.describe Dependabot::GithubActions::Version do
   semver_without_v = "1.2.3"
 
   describe "#correct?" do
+    it "rejects nil" do
+      expect(described_class.correct?(nil)).to be(false)
+    end
+
     it "accepts semver" do
       expect(described_class.correct?(semver_version)).to be(true)
     end
