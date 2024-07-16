@@ -223,6 +223,11 @@ module Dependabot
           "go-mod": error.go_mod
         }
       }
+    when
+      IncompatibleCPU,
+      NetworkUnsafeHTTP
+      error.detail
+
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
@@ -291,6 +296,30 @@ module Dependabot
       string.scan(regex).flatten.compact.reduce(string) do |original_msg, match|
         original_msg.gsub(match, replacement)
       end
+    end
+  end
+
+  class TypedDependabotError < Dependabot::DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :error_type
+
+    sig { params(error_type: String, message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(error_type, message = nil)
+      @error_type = T.let(error_type, String)
+
+      super(message || error_type)
+    end
+
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    def detail(hash = nil)
+      {
+        "error-type": error_type,
+        "error-detail": hash || {
+          message: message
+        }
+      }
     end
   end
 
@@ -617,4 +646,18 @@ module Dependabot
 
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end
+
+  class IncompatibleCPU < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("incompatible_cpu", message)
+    end
+  end
+
+  class NetworkUnsafeHTTP < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("network_unsafe_http", message)
+    end
+  end
 end
