@@ -235,7 +235,7 @@ module Dependabot
           message: error.message
         }
       }
-    when Dependabot::GitAuthToken
+    when Dependabot::InvalidGitAuthToken
       {
         "error-type": "git_token_auth_error",
         "error-detail": { message: error.message }
@@ -334,7 +334,7 @@ module Dependabot
 
   class NotImplemented < DependabotError; end
 
-  class GitAuthToken < DependabotError; end
+  class InvalidGitAuthToken < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -567,7 +567,7 @@ module Dependabot
     end
   end
 
-  class GitAuthToken < DependabotError
+  class InvalidGitAuthToken < DependabotError
     extend T::Sig
 
     sig { returns(String) }

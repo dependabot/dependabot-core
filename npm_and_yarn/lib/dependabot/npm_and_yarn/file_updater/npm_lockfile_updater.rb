@@ -77,7 +77,7 @@ module Dependabot
         MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
         INVALID_AUTH_TOKEN =
           /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
-        GIT_PACKAGE = "https://npm.pkg.github.com"
+        NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -517,9 +517,9 @@ module Dependabot
 
           if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
             error_message.match(MISSING_AUTH_TOKEN)) &&
-             T.must(registry_source.named_captures.fetch("url")).include?(GIT_PACKAGE)
+             T.must(registry_source.named_captures.fetch("url")).include?(NPM_PACKAGE_REGISTRY)
             msg = registry_source.named_captures.fetch("url")
-            raise Dependabot::GitAuthToken, T.must(msg)
+            raise Dependabot::InvalidGitAuthToken, T.must(msg)
           end
 
           raise error
