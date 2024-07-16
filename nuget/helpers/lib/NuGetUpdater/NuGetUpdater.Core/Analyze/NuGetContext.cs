@@ -88,7 +88,7 @@ internal record NuGetContext : IDisposable
 
             try
             {
-                // misbehaving v2 apis can throw here
+                // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
                     packageIdentity,
                     includeUnlisted: false,

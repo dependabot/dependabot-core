@@ -68,7 +68,7 @@ internal static class VersionFinder
 
             try
             {
-                // misbehaving v2 apis can throw here
+                // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
                     packageId,
                     includePrerelease,
@@ -173,7 +173,7 @@ internal static class VersionFinder
 
             try
             {
-                // misbehaving v2 apis can throw here
+                // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
                     new PackageIdentity(packageId, version),
                     includeUnlisted: false,

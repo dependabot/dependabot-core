@@ -143,7 +143,7 @@ internal static class CompatibilityChecker
 
             try
             {
-                // misbehaving v2 apis can throw here
+                // a non-compliant v2 API returning 404 can cause this to throw
                 var exists = await feed.DoesPackageExistAsync(
                     package.Id,
                     package.Version,
