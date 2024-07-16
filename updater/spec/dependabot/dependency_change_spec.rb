@@ -300,8 +300,7 @@ RSpec.describe Dependabot::DependencyChange do
           updated_dependencies.map do |dep|
             { "dependency-name" => dep.name,
               "dependency-version" => dep.version,
-              "directory" => dep.directory
-            }
+              "directory" => dep.directory }
           end
         ]
       end
@@ -317,7 +316,7 @@ RSpec.describe Dependabot::DependencyChange do
         expect(dependency_change.matches_existing_pr?).to be true
       end
 
-      context "and there's no directory in an existing PR that otherwise matches" do
+      context "when there's no directory in an existing PR that otherwise matches" do
         let(:existing_pull_requests) do
           [
             updated_dependencies.map do |dep|
@@ -343,11 +342,10 @@ RSpec.describe Dependabot::DependencyChange do
         [
           { "dependency-group-name" => "foo",
             "dependencies" => updated_dependencies.map do |dep|
-                { "dependency-name" => dep.name.to_s,
-                  "dependency-version" => dep.version.to_s,
-                  "directory" => dep.directory.to_s }
-              end
-            }
+                                { "dependency-name" => dep.name.to_s,
+                                  "dependency-version" => dep.version.to_s,
+                                  "directory" => dep.directory.to_s }
+                              end }
         ]
       end
 
@@ -361,19 +359,17 @@ RSpec.describe Dependabot::DependencyChange do
       end
 
       it "returns true" do
-        expect(dependency_change.matches_existing_pr?).to be false
+        expect(dependency_change.matches_existing_pr?).to be true
       end
 
-      context "and there's no directory in a PR that otherwise matches" do
+      context "when there's no directory in a PR that otherwise matches" do
         let(:existing_group_pull_requests) do
           [
             { "dependency-group-name" => "foo",
               "dependencies" => updated_dependencies.map do |dep|
-                  { "dependency-name" => dep.name.to_s,
-                    "dependency-version" => dep.version.to_s,
-                  }
-                end
-              }
+                                  { "dependency-name" => dep.name.to_s,
+                                    "dependency-version" => dep.version.to_s }
+                                end }
           ]
         end
 
@@ -393,11 +389,10 @@ RSpec.describe Dependabot::DependencyChange do
         [
           { "dependency-group-name" => "foo",
             "dependencies" => updated_dependencies.map do |dep|
-                { "dependency-name" => dep.name.to_s,
-                  "dependency-version" => dep.version.to_s,
-                  "directory" => "/foo" }
-              end
-            }
+                                { "dependency-name" => dep.name.to_s,
+                                  "dependency-version" => dep.version.to_s,
+                                  "directory" => "/foo" }
+                              end }
         ]
       end
 

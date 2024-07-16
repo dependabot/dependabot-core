@@ -165,12 +165,16 @@ module Dependabot
       if grouped_update?
         # We only want PRs for the same group that have the same versions
         job.existing_group_pull_requests.any? do |pr|
+          directories_in_use = pr["dependencies"].all? { |dep| dep["directory"] }
+
           pr["dependency-group-name"] == dependency_group&.name &&
-            Set.new(pr["dependencies"]) == updated_dependencies_set(should_consider_directory: !!pr["directory"])
+            Set.new(pr["dependencies"]) == updated_dependencies_set(should_consider_directory: directories_in_use)
         end
       else
         job.existing_pull_requests.any? do |pr|
-          Set.new(pr) == updated_dependencies_set(should_consider_directory: !!pr.first&.key?("directory"))
+          directories_in_use = pr.all? { |dep| dep["directory"] }
+
+          Set.new(pr) == updated_dependencies_set(should_consider_directory: directories_in_use)
         end
       end
     end
