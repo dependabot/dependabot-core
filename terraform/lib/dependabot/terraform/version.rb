@@ -19,6 +19,9 @@ module Dependabot
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
+        version = version.gsub(/^v/, "") if version.is_a?(String)
+        version = version.to_s.split("+").first if version.to_s.include?("+")
+
         super
       end
 
@@ -30,6 +33,15 @@ module Dependabot
       sig { override.returns(String) }
       def to_s
         @version_string
+      end
+
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
+      def self.correct?(version)
+        version = version.gsub(/^v/, "") if version.is_a?(String)
+        version = version.to_s.split("+").first if version.to_s.include?("+")
+        return false if version.to_s.empty?
+
+        super
       end
     end
   end
