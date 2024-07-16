@@ -214,7 +214,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
       it "restores the packages name attribute" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
-        puts JSON.pretty_generate(parsed_lockfile)
         expected_updated_npm_lock_content = fixture(
           "updated_projects",
           "npm8",
