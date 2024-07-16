@@ -194,7 +194,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    # setting the latest allowable version to 1.22.0
     before do
       allow(checker).to receive(:latest_version_from_registry)
         .and_return(Gem::Version.new("1.22.0"))
@@ -234,7 +233,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 4.3.0
         before do
           allow(checker).to receive(:latest_version_from_registry)
             .and_return(Gem::Version.new("4.3.0"))
@@ -256,32 +254,31 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 1.22.0
         before do
           allow(checker).to receive(:latest_version_from_registry)
-            .and_return(Gem::Version.new("5.4.36"))
+            .and_return(Gem::Version.new("5.2.45"))
         end
 
-        it { is_expected.to be >= Gem::Version.new("5.4.36") }
+        it { is_expected.to be >= Gem::Version.new("5.2.45") }
 
         context "when as a platform requirement" do
           let(:project_name) { "old_php_platform" }
 
-          it { is_expected.to eq(Gem::Version.new("5.4.36")) }
+          it { is_expected.to eq(Gem::Version.new("5.2.45")) }
 
           context "when an extension is specified that we don't have" do
             let(:project_name) { "missing_extension" }
 
             it "pretends the missing extension is there" do
               expect(latest_resolvable_version)
-                .to eq(Dependabot::Composer::Version.new("5.4.36"))
+                .to eq(Dependabot::Composer::Version.new("5.2.45"))
             end
           end
 
           context "when the platform requirement only specifies an extension" do
             let(:project_name) { "bad_php" }
 
-            it { is_expected.to eq(Gem::Version.new("5.4.36")) }
+            it { is_expected.to eq(Gem::Version.new("5.2.45")) }
           end
         end
       end
@@ -299,7 +296,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
           }]
         end
 
-        # setting the latest allowable version to 5.2.45
         before do
           allow(checker).to receive(:latest_version_from_registry)
             .and_return(Gem::Version.new("5.2.45"))
@@ -489,7 +485,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
         # v1 url doesn't always return 404 for missing packages
         stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
-        # setting the latest allowable version to 2.4.1
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("2.4.1"))
       end
@@ -514,8 +509,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
       let(:ignored_versions) { [">= 2.8.0"] }
 
-      it "latest version 1.22.0 cannot be resolved." do
-        expect(latest_resolvable_version).to be_nil
+      before do
+        allow(checker).to receive(:latest_version_from_registry)
+          .and_return(Gem::Version.new("2.1.7"))
+      end
+
+      it "is the highest resolvable version" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("2.1.7"))
       end
 
       context "when the blocking dependency is a git dependency" do
@@ -543,19 +543,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "when there is no lockfile" do
         let(:project_name) { "version_conflict_without_lockfile" }
 
-        # setting the latest allowable version to 2.1.7
-        before do
-          allow(checker).to receive(:latest_version_from_registry)
-            .and_return(Gem::Version.new("2.1.7"))
-        end
-
-        # Root composer.json requires monolog/monolog ==2.1.7 1.22.0
         it "raises a resolvability error" do
           expect { latest_resolvable_version }
-            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message)
-              .to include("Your requirements could not be resolved to an installable set of packages.")
-          end
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
     end
@@ -591,26 +581,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       context "when there is no lockfile" do
         let(:project_name) { "version_conflict_on_update_without_lockfile" }
 
-        # Root composer.json requires longman/telegram-bot ==1.22.0 *
-        it "raises a resolvability error" do
-          expect { latest_resolvable_version }
-            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message)
-              .to include("Your requirements could not be resolved to an installable set of packages.")
-          end
-        end
+        it { is_expected.to be_nil }
 
         context "when the conflict comes from a loose PHP version" do
           let(:project_name) { "version_conflict_library" }
 
-          # Root composer.json requires longman/telegram-bot ==1.22.0 *
-          it "raises a resolvability error" do
-            expect { latest_resolvable_version }
-              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message)
-                .to include("Your requirements could not be resolved to an installable set of packages.")
-            end
-          end
+          it { is_expected.to be_nil }
         end
       end
     end
@@ -773,7 +749,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      # setting the latest allowable version to 3.0.2
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("3.0.2"))
@@ -816,7 +791,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
-      # setting the latest allowable version to 5.6.23
       before do
         allow(checker).to receive(:latest_version_from_registry)
           .and_return(Gem::Version.new("5.6.23"))

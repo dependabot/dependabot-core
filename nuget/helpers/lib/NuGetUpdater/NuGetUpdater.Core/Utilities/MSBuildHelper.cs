@@ -308,14 +308,14 @@ internal static partial class MSBuildHelper
 
     internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger) 
     {
-        if (Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true")
-        {
+        // if (Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true")
+        // {
             return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
-        }
-        else
-        {
-            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
-        }
+        //}
+        // else
+        // {
+        //     return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
+        // }
     }
 
     internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)

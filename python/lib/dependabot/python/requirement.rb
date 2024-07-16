@@ -20,11 +20,6 @@ module Dependabot
         "===" => ->(v, r) { v.to_s == r.to_s }
       )
 
-      # Override the lower bound logic for bump versions strategy.
-      BUMP_VERSIONS_OPS = OPS.merge(
-        ">=" => ->(v, r) { v.to_s == r.to_s }
-      )
-
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
@@ -83,10 +78,10 @@ module Dependabot
         super(requirements)
       end
 
-      def satisfied_by?(version, ops = OPS)
+      def satisfied_by?(version)
         version = Python::Version.new(version.to_s)
 
-        requirements.all? { |op, rv| (ops[op] || ops["="]).call(version, rv) }
+        requirements.all? { |op, rv| (OPS[op] || OPS["="]).call(version, rv) }
       end
 
       def exact?

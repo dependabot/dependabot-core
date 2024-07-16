@@ -54,7 +54,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with a library using a >= PHP constraint" do
+    # version constraint: >= 2.0.4, == 3.3.2 (debugging logs)
+    context "when version constraint is set as requirement" do
       let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
@@ -64,21 +65,76 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
     end
 
-    context "with an application using a >= PHP constraint" do
-      let(:project_name) { "php_specified_without_lockfile" }
+    # combined constraint: >= 2.0.4, == 3.0.0 (debugging logs)
+    # But latest allowable version is 3.0.0
+    context "when version constraint is set as requirement, but pushing to the latest_allowable_version 3.0.0 now" do
+      let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
-      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
+      let(:latest_allowable_version) { Gem::Version.new("3.0.0") }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.0.0")) }
+    end
+
+    # combined constraint: >= 1.0.1, == 1.1.0 (debugging logs)
+    context "when version constraint is set as dev-requirement" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.1.0") }
+      let(:dependency_version) { "1.0.1" }
+      let(:string_req) { "1.0.1" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.1.0")) }
+    end
+
+    # combined constraint: >= 2.0.4 (debugging logs)
+    context "when latest_allowable_version is not set" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { nil }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
 
       it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+    end
 
-      context "when the minimum version is invalid" do
+    # combined constraint: ==3.0.0 (debugging logs) not set to the latest in the registry.
+    context "when version constraint is not set (in existing composer.json)" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { Gem::Version.new("3.0.0") }
+      let(:dependency_version) { nil }
+      let(:string_req) { nil }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.0.0")) }
+    end
+
+    # combined constraint: >= 0
+    context "when both version constraint and latest_allowable_version are not set" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:latest_allowable_version) { nil }
+      let(:dependency_version) { nil }
+      let(:string_req) { nil }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+    end
+
+    context "with an application using a >= PHP constraint" do
+      let(:project_name) { "php_specified_without_lockfile" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
+      let(:latest_allowable_version) { Gem::Version.new("3.3.2") }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+
+      context "when the minimum version is invalid, 3.3.2 is less than 4.2.0" do
         let(:dependency_version) { "4.2.0" }
-        let(:latest_allowable_version) { Gem::Version.new("4.3.1") }
         let(:string_req) { "4.2.0" }
 
-        it { is_expected.to be >= Dependabot::Composer::Version.new("4.3.1") }
+        it { is_expected.to be_nil }
       end
     end
 
@@ -86,9 +142,9 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       context "when the minimum version is invalid" do
         let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
-        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
+        let(:latest_allowable_version) { Gem::Version.new("3.2.2") }
 
         it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
       end
@@ -107,16 +163,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     context "with a dependency that's provided by another dep" do
       let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
       let(:dependency_version) { nil }
 
-      # Root composer.json requires php-http/client-implementation ==6.0.0 ^1.0, it could not be found in any version,
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { resolver.latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-        end
-      end
+      it { is_expected.to be_nil }
     end
 
     context "with a dependency that uses a stability flag" do
