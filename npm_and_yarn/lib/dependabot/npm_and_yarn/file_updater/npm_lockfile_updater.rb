@@ -517,9 +517,9 @@ module Dependabot
 
           if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
             error_message.match(MISSING_AUTH_TOKEN)) &&
-             registry_source.named_captures.fetch("url").include?(GIT_PACKAGE)
+             T.must(registry_source.named_captures.fetch("url")).include?(GIT_PACKAGE)
             msg = registry_source.named_captures.fetch("url")
-            raise Dependabot::GitAuthToken, msg
+            raise Dependabot::GitAuthToken, T.must(msg)
           end
 
           raise error
