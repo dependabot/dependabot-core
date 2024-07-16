@@ -151,6 +151,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "when there is a dep hosted in github registry and no auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_no_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
+
+    context "when there is a dep hosted in github registry and invalid auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_invalid_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
   end
 
   describe "npm 8 specific" do
