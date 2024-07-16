@@ -576,7 +576,7 @@ module Dependabot
     sig { params(source: String).void }
     def initialize(source)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "Missing or invalid authenticaton token while accessing github package : #{@source}"
+      msg = "Missing or invalid authentication token while accessing github package : #{@source}"
       super(msg)
     end
   end
