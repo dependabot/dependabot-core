@@ -164,7 +164,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           .to raise_error(Dependabot::GitAuthToken) do |error|
           expect(error.message)
             .to eq(
-              "Missing or invalid authenticaton token while accessing github package : " \
+              "Missing or invalid authentication token while accessing github package : " \
               "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
             )
         end
@@ -183,7 +183,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           .to raise_error(Dependabot::GitAuthToken) do |error|
           expect(error.message)
             .to eq(
-              "Missing or invalid authenticaton token while accessing github package : " \
+              "Missing or invalid authentication token while accessing github package : " \
               "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
             )
         end
