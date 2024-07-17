@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/logger"
+require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/helpers"
@@ -713,7 +714,7 @@ module Dependabot
           json = JSON.parse(content)
 
           NpmAndYarn::FileParser.each_dependency(json) do |nm, requirement, type|
-            next unless requirement == "latest"
+            next unless Version::VERSION_TAGS.include?(requirement)
 
             json[type][nm] = "*"
           end
