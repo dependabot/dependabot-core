@@ -54,6 +54,11 @@ internal static class CompatibilityChecker
 
         var compatibilityService = new FrameworkCompatibilityService();
         var compatibleFrameworks = compatibilityService.GetCompatibleFrameworks(packageFrameworks);
+        var packageSupportsAny = compatibleFrameworks.Any(f => f.IsAny);
+        if (packageSupportsAny)
+        {
+            return true;
+        }
 
         var incompatibleFrameworks = projectFrameworks.Where(f => !compatibleFrameworks.Contains(f)).ToArray();
         if (incompatibleFrameworks.Length > 0)
