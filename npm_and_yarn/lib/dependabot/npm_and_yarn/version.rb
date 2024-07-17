@@ -19,6 +19,23 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :build_info
 
+      # These are possible npm versioning tags that can be used in place of a version.
+      # See https://docs.npmjs.com/cli/v10/commands/npm-dist-tag#purpose for more details.
+      VERSION_TAGS = T.let(%w(
+        latest
+        stable
+        beta
+        dev
+        canary
+        next
+        rc
+        alpha
+        experimental
+        nightly
+        release
+        legacy
+      ).freeze.map(&:freeze), T::Array[String])
+
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
