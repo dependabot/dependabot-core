@@ -31,7 +31,7 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
-        return false if version.to_s.empty?
+        return false if version.to_s.strip.empty?
 
         version = Version.remove_leading_v(version)
         super

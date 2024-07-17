@@ -40,7 +40,7 @@ module Dependabot
         version = Version.remove_leading_v(version)
         version = Version.remove_backport(version)
 
-        return false if version.to_s.empty?
+        return false if version.to_s.strip.empty?
 
         super
       end
