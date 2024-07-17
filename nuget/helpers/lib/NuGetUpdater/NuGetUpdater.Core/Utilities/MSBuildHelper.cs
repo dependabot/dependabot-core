@@ -185,8 +185,9 @@ internal static partial class MSBuildHelper
                 var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? string.Empty;
-                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                foreach (var rawAttributeValue in new[] { packageItem.Include, packageItem.Update })
                 {
+                    var attributeValue = rawAttributeValue?.Trim();
                     if (!string.IsNullOrWhiteSpace(attributeValue))
                     {
                         if (packageInfo.TryGetValue(attributeValue, out var existingInfo))
