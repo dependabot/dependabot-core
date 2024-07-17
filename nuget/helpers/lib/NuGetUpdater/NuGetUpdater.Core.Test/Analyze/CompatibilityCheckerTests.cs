@@ -142,4 +142,27 @@ public class CompatibilityCheckerTests
 
         Assert.False(result);
     }
+
+    [Theory]
+    [InlineData("netstandard2.0")]
+    [InlineData("net472")]
+    [InlineData("net6.0")]
+    [InlineData("net7.0")]
+    [InlineData("net8.0")]
+    public void EverythingIsCompatibleWithAnyVersion0Framework(string projectFramework)
+    {
+        var package = new PackageIdentity("Dependency", NuGetVersion.Parse("1.0.0"));
+        ImmutableArray<NuGetFramework> projectFrameworks = [NuGetFramework.Parse(projectFramework)];
+        var isDevDependency = false;
+        ImmutableArray<NuGetFramework> packageFrameworks = [NuGetFramework.Parse("Any,Version=v0.0")];
+
+        var result = CompatibilityChecker.PerformCheck(
+            package,
+            projectFrameworks,
+            isDevDependency,
+            packageFrameworks,
+            new Logger(verbose: false));
+
+        Assert.True(result);
+    }
 }
