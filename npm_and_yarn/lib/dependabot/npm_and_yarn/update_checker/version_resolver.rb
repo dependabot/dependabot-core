@@ -309,6 +309,8 @@ module Dependabot
 
           latest_version = latest_version_finder(original_package).latest_version_from_registry
 
+          # If the latest version is within the scope of the current requirements,
+          # latest_version will be nil. In such cases, there is no update available.
           return false if latest_version.nil?
 
           original_package_version < latest_version
