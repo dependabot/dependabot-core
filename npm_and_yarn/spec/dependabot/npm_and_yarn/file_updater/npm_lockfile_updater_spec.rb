@@ -151,6 +151,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "when there is a dep hosted in github registry and no auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_no_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
+
+    context "when there is a dep hosted in github registry and invalid auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_invalid_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
   end
 
   describe "npm 8 specific" do
@@ -168,6 +206,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           .to eq("1.1.0")
         expect(parsed_lockfile.fetch("dependencies")["bus-replacement-service"]["version"])
           .to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
+      end
+    end
+
+    context "when the package current-name is not defined in package.json" do
+      let(:files) { project_dependency_files("npm8/current_name_is_missing") }
+
+      it "restores the packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "current_name_is_missing",
+          "package-lock.json"
+        )
+        expected_parsed_lockfile = JSON.parse(expected_updated_npm_lock_content)
+
+        expect(parsed_lockfile).to eq(expected_parsed_lockfile), "Differences found"
       end
     end
 
