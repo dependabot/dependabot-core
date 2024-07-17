@@ -796,16 +796,17 @@ module Dependabot
           # NOTE: This is a workaround for npm adding a `name` attribute to the
           # packages section in the lockfile because we install using
           # `--package-lock-only`
-          if !original_name
-            updated_lockfile_content = remove_lockfile_packages_name_attribute(
-              current_name, updated_lockfile_content
-            )
-          elsif original_name && original_name != current_name
-            updated_lockfile_content = replace_lockfile_packages_name_attribute(
-              current_name, original_name, updated_lockfile_content
-            )
+          if current_name
+            if !original_name
+              updated_lockfile_content = remove_lockfile_packages_name_attribute(
+                current_name, updated_lockfile_content
+              )
+            elsif original_name != current_name
+              updated_lockfile_content = replace_lockfile_packages_name_attribute(
+                current_name, original_name, updated_lockfile_content
+              )
+            end
           end
-
           updated_lockfile_content
         end
 

@@ -209,6 +209,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "when the package current-name is not defined in package.json" do
+      let(:files) { project_dependency_files("npm8/current_name_is_missing") }
+
+      it "restores the packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "current_name_is_missing",
+          "package-lock.json"
+        )
+        expected_parsed_lockfile = JSON.parse(expected_updated_npm_lock_content)
+
+        expect(parsed_lockfile).to eq(expected_parsed_lockfile), "Differences found"
+      end
+    end
+
     context "when the packages name needs sanitizing" do
       let(:files) { project_dependency_files("npm8/simple") }
 
