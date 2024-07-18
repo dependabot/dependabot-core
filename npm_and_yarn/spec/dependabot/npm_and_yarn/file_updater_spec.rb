@@ -3297,7 +3297,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "keeps the preference for the npm registry" do
           expect { updated_yarn_lock }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
             expect(error.message).to include("Failed to replace env in config: ${NPM_TOKEN}")
           end
         end
@@ -3361,7 +3361,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "keeps the preference for the npm registry" do
           expect { updated_yarn_lock }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
             expect(error.message).to include("Failed to replace env in config: ${PACKAGECLOUD_TOKEN}")
           end
         end
@@ -3379,7 +3379,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "keeps the preference for the npm registry" do
           expect { updated_yarn_lock }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
             expect(error.message).to include("Failed to replace env in config: ${FONTAWESOME_NPM_AUTH_TOKEN}")
           end
         end

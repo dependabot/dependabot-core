@@ -213,7 +213,8 @@ module Dependabot
       {
         "error-type": "missing_environment_variable",
         "error-detail": {
-          "environment-variable": error.environment_variable
+          "environment-variable": error.environment_variable,
+          "error-message": error.message
         }
       }
     when Dependabot::GoModulePathMismatch
@@ -240,11 +241,6 @@ module Dependabot
     when Dependabot::InvalidGitAuthToken
       {
         "error-type": "git_token_auth_error",
-        "error-detail": { message: error.message }
-      }
-    when Dependabot::FailedToReplaceEnvInConfig
-      {
-        "error-type": "failed_to_replace_env",
         "error-detail": { message: error.message }
       }
     when *Octokit::RATE_LIMITED_ERRORS
@@ -344,8 +340,6 @@ module Dependabot
   class NotImplemented < DependabotError; end
 
   class InvalidGitAuthToken < DependabotError; end
-
-  class FailedToReplaceEnvInConfig < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -557,10 +551,15 @@ module Dependabot
     sig { returns(String) }
     attr_reader :environment_variable
 
-    sig { params(environment_variable: String).void }
-    def initialize(environment_variable)
+    sig { returns(String) }
+    attr_reader :message
+
+    sig { params(environment_variable: String, message: T.nilable(String)).void }
+    def initialize(environment_variable, message = "")
       @environment_variable = environment_variable
-      super("Missing environment variable #{@environment_variable}")
+      @message = message
+
+      super("Missing environment variable #{@environment_variable}. #{@message}")
     end
   end
 
@@ -588,20 +587,6 @@ module Dependabot
     def initialize(source)
       @source = T.let(sanitize_source(source), String)
       msg = "Missing or invalid authentication token while accessing github package : #{@source}"
-      super(msg)
-    end
-  end
-
-  class FailedToReplaceEnvInConfig < DependabotError
-    extend T::Sig
-
-    sig { returns(String) }
-    attr_reader :source
-
-    sig { params(source: String).void }
-    def initialize(source)
-      @source = T.let(sanitize_source(source), String)
-      msg = @source.to_s
       super(msg)
     end
   end
