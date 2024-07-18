@@ -74,6 +74,8 @@ module Dependabot
     # Used to identify if error message is related to yarn workspaces
     DEPENDENCY_FILE_NOT_RESOLVABLE = "conflicts with direct dependency"
 
+    ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: /
+
     class Utils
       extend T::Sig
 
@@ -189,6 +191,12 @@ module Dependabot
       {
         patterns: [DEPENDENCY_FILE_NOT_RESOLVABLE],
         new_error: ->(_error, message) { DependencyFileNotResolvable.new(message) },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [ENV_VAR_NOT_RESOLVABLE],
+        new_error: ->(_error, message) { FailedToReplaceEnvInConfig.new(message) },
         in_usage: false,
         matchfn: nil
       }

@@ -3281,6 +3281,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when the npm registry access token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "${NPM_TOKEN}"
+          })]
+        end
+
+        let(:source) do
+          { type: "registry", url: "https://registry.npmjs.org" }
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error.message).to include("Failed to replace env in config: ${NPM_TOKEN}")
+          end
+        end
+      end
+
       context "when there's a duplicate indirect dependency" do
         let(:files) { project_dependency_files("yarn/duplicate_indirect_dependency") }
 
@@ -3324,6 +3346,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the version" do
           expect(updated_yarn_lock.content)
             .to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.4"))
+        end
+      end
+
+      context "when the private registry access #1 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://packagecloud.io/",
+            "token" => "${PACKAGECLOUD_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error.message).to include("Failed to replace env in config: ${PACKAGECLOUD_TOKEN}")
+          end
+        end
+      end
+
+      context "when the private registry access #2 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://npm.fontawesome.com/",
+            "token" => "${FONTAWESOME_NPM_AUTH_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::FailedToReplaceEnvInConfig)
+            expect(error.message).to include("Failed to replace env in config: ${FONTAWESOME_NPM_AUTH_TOKEN}")
+          end
         end
       end
 

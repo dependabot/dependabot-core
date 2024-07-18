@@ -242,6 +242,11 @@ module Dependabot
         "error-type": "git_token_auth_error",
         "error-detail": { message: error.message }
       }
+    when Dependabot::FailedToReplaceEnvInConfig
+      {
+        "error-type": "failed_to_replace_env",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
@@ -339,6 +344,8 @@ module Dependabot
   class NotImplemented < DependabotError; end
 
   class InvalidGitAuthToken < DependabotError; end
+
+  class FailedToReplaceEnvInConfig < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -581,6 +588,20 @@ module Dependabot
     def initialize(source)
       @source = T.let(sanitize_source(source), String)
       msg = "Missing or invalid authentication token while accessing github package : #{@source}"
+      super(msg)
+    end
+  end
+
+  class FailedToReplaceEnvInConfig < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = @source.to_s
       super(msg)
     end
   end
