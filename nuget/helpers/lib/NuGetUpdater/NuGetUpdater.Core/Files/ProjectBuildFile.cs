@@ -93,11 +93,11 @@ internal sealed class ProjectBuildFile : XmlBuildFile
     {
         var isUpdate = false;
 
-        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase);
+        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)?.Trim();
         if (name is null)
         {
             isUpdate = true;
-            name = element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+            name = element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase)?.Trim();
         }
 
         if (name is null || name.StartsWith("@("))

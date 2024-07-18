@@ -60,6 +60,54 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task TestDependencyWithTrailingSpacesInAttribute()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: new[]
+            {
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include=" Some.Package    " Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
+                            new("TargetFramework", "net8.0", "src/project.csproj"),
+                        ]
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
     public async Task TestPackageConfig()
     {
         await TestDiscoveryAsync(
