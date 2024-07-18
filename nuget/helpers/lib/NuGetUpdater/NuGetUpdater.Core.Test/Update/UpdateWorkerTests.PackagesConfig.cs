@@ -1,5 +1,6 @@
-using NuGetUpdater.Core.Updater;
 using System.Collections.Immutable;
+
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
