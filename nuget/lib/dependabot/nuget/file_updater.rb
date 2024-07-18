@@ -21,6 +21,8 @@ module Dependabot
         [
           %r{^[^/]*\.([a-z]{2})?proj$},
           /^packages\.config$/i,
+          /^app\.config$/i,
+          /^web\.config$/i,
           /^global\.json$/i,
           /^dotnet-tools\.json$/i,
           /^Directory\.Build\.props$/i,
