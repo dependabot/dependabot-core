@@ -17,6 +17,7 @@ module Dependabot
     DEPENDENCY_GROUPS = "job-dependency-groups"
     JOB_ID            = "job-id"
     PACKAGE_MANAGER   = "package-manager"
+    SECURITY_UPDATE   = "security-update"
   end
 
   # rubocop:disable Metrics/MethodLength
@@ -158,6 +159,8 @@ module Dependabot
     end
   end
 
+  # rubocop:disable Lint/RedundantCopDisableDirective
+  # rubocop:disable Metrics/CyclomaticComplexity
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
@@ -191,6 +194,11 @@ module Dependabot
         "error-type": "private_source_authentication_failure",
         "error-detail": { source: error.source }
       }
+    when Dependabot::DependencyNotFound
+      {
+        "error-type": "dependency_not_found",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceTimedOut
       {
         "error-type": "private_source_timed_out",
@@ -217,12 +225,22 @@ module Dependabot
           "go-mod": error.go_mod
         }
       }
+    when
+      IncompatibleCPU,
+      NetworkUnsafeHTTP
+      error.detail
+
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
         "error-detail": {
           message: error.message
         }
+      }
+    when Dependabot::InvalidGitAuthToken
+      {
+        "error-type": "git_token_auth_error",
+        "error-detail": { message: error.message }
       }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
@@ -236,6 +254,8 @@ module Dependabot
     end
   end
   # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/CyclomaticComplexity
+  # rubocop:enable Lint/RedundantCopDisableDirective
 
   class DependabotError < StandardError
     extend T::Sig
@@ -288,11 +308,37 @@ module Dependabot
     end
   end
 
+  class TypedDependabotError < Dependabot::DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :error_type
+
+    sig { params(error_type: String, message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(error_type, message = nil)
+      @error_type = T.let(error_type, String)
+
+      super(message || error_type)
+    end
+
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    def detail(hash = nil)
+      {
+        "error-type": error_type,
+        "error-detail": hash || {
+          message: message
+        }
+      }
+    end
+  end
+
   class OutOfDisk < DependabotError; end
 
   class OutOfMemory < DependabotError; end
 
   class NotImplemented < DependabotError; end
+
+  class InvalidGitAuthToken < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -511,6 +557,34 @@ module Dependabot
     end
   end
 
+  class DependencyNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: T.nilable(String)).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(T.must(source)), String)
+      msg = "The following dependency could not be found : #{@source}"
+      super(msg)
+    end
+  end
+
+  class InvalidGitAuthToken < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = "Missing or invalid authentication token while accessing github package : #{@source}"
+      super(msg)
+    end
+  end
+
   # Useful for JS file updaters, where the registry API sometimes returns
   # different results to the actual update process
   class InconsistentRegistryResponse < DependabotError; end
@@ -597,4 +671,18 @@ module Dependabot
 
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end
+
+  class IncompatibleCPU < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("incompatible_cpu", message)
+    end
+  end
+
+  class NetworkUnsafeHTTP < TypedDependabotError
+    sig { params(message: T.any(T.nilable(String), MatchData)).void }
+    def initialize(message = nil)
+      super("network_unsafe_http", message)
+    end
+  end
 end

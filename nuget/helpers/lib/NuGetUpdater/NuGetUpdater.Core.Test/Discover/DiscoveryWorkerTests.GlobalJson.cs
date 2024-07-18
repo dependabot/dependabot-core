@@ -26,7 +26,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     GlobalJson = new()
                     {
                         FilePath = "global.json",
@@ -60,7 +60,7 @@ public partial class DiscoveryWorkerTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     GlobalJson = new()
                     {
                         FilePath = "global.json",

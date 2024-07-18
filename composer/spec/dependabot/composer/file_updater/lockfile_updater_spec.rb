@@ -432,8 +432,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "with a private registry" do
       let(:project_name) { "private_registry" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "dependabot/dummy-pkg-a",
@@ -454,6 +452,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           package_manager: "composer"
         )
       end
+
+      before { `composer clear-cache --quiet` }
 
       context "with good credentials" do
         let(:gemfury_deploy_token) { ENV.fetch("GEMFURY_DEPLOY_TOKEN", nil) }
@@ -480,8 +480,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "with a laravel nova" do
       let(:project_name) { "laravel_nova" }
-      before { `composer clear-cache --quiet` }
-
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "laravel/nova",
@@ -502,6 +500,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           package_manager: "composer"
         )
       end
+
+      before { `composer clear-cache --quiet` }
 
       context "with bad credentials" do
         let(:credentials) do

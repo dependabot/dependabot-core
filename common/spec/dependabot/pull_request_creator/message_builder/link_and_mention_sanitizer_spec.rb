@@ -85,7 +85,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         let(:text) { fixture("changelogs", "sentry.md") }
 
         it do
-          is_expected.to include(
+          expect(sanitize_links_and_mentions).to include(
             "<a href=\"https://github.com/halkeye\"><code>@\u200Bhalkeye</code></a>"
           )
         end
@@ -95,14 +95,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         let(:text) { "``` @model ||= 123```" }
 
         it do
-          is_expected.to eq("<p><code> @model ||= 123</code></p>\n")
+          expect(sanitize_links_and_mentions).to eq("<p><code> @model ||= 123</code></p>\n")
         end
 
         context "when the text contains `~`" do
           let(:text) { "~~~\n @model ||= 123\n~~~" }
 
           it do
-            is_expected.to eq("<pre><code> @model ||= 123\n</code></pre>\n")
+            expect(sanitize_links_and_mentions).to eq("<pre><code> @model ||= 123\n</code></pre>\n")
           end
         end
 
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command</code>\nThanks to " \
+              "<p><code>@command</code><br />\nThanks to " \
               "<a href=\"https://github.com/feelepxyz\"><code>@\u200Bfeelepxyz</code></a>" \
               "<code>@other</code> <a href=\"https://github.com/escape\">" \
               "<code>@\u200Bescape</code></a></p>\n"
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
 
           it "sanitizes the mention" do
             expect(sanitize_links_and_mentions).to eq(
-              "<p><code>@command </code>\n<code> @test</code> " \
+              "<p><code>@command </code><br />\n<code> @test</code> " \
               "<a href=\"https://github.com/feelepxyz\"><code>@\u200Bfeelepxyz</code></a></p>\n"
             )
           end
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Contact support@dependabot.com for details" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p>Contact <a href=\"mailto:support@dependabot.com\">" \
           "support@dependabot.com</a> for details</p>\n"
         )
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Check out https://github.com/my/repo/issues/5" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p>Check out <a href=\"https://github-redirect.com/my/repo/" \
           "issues/5\">my/repo#5</a></p>\n"
         )
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Check out https://www.github.com/my/repo/issues/5" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p>Check out <a href=\"https://github-redirect.com/my/repo/" \
           "issues/5\">my/repo#5</a></p>\n"
         )
@@ -284,7 +284,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p><a href=\"https://github-redirect.com/rust-num/num-traits/" \
           "pull/144\">rust-num/num-traits#144</a></p>\n"
         )
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p><code>dsp-testing/dependabot-ts-definitely-typed#25</code></p>\n"
         )
       end
@@ -309,7 +309,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p>{Issue 111}[https://github-redirect.com/dependabot/" \
           "dependabot-core/issues/111]</p>\n"
         )
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p><a href=\"https://github.com/rust-num/num-traits/settings\">" \
           "https://github.com/rust-num/num-traits/settings</a></p>\n"
         )
@@ -336,7 +336,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p><a href=\"https://github-redirect.com/rust-num/num-traits/" \
           "pull/144\">Updated the <code>libm</code> dependency to 0.2</a></p>\n"
         )
@@ -349,9 +349,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
-          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/" \
-          "pull/144\">\n#144\n</a></p>\n"
+        expect(sanitize_links_and_mentions).to eq(
+          "<p><a href=\"https://github-redirect.com/rust-num/num-traits/pull/144\"" \
+          "><br />\n#144<br />\n</a></p>\n"
+        )
+      end
+    end
+
+    context "when a line has softbreaks" do
+      let(:text) { "Soft \n break" }
+
+      it "converts to hardbreaks" do
+        expect(sanitize_links_and_mentions).to eq(
+          "<p>Soft<br />\nbreak</p>\n"
         )
       end
     end
@@ -361,7 +371,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:html) { fixture("changelogs", "jsdom.html") }
 
       it "doesn't freeze when parsing the changelog" do
-        is_expected.to eq(html)
+        expect(sanitize_links_and_mentions).to eq(html)
       end
     end
 
@@ -369,7 +379,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "This contains \"<option>\" and \"<select>\" tags" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions).to eq(
           "<p>This contains &quot;<!-- raw HTML omitted -->&quot; " \
           "and &quot;<!-- raw HTML omitted -->&quot; tags</p>\n"
         )
@@ -415,7 +425,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Contact support@dependabot.com for details" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "Contact <support@dependabot.com> for details\n"
         )
       end
@@ -425,7 +435,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Check out https://github.com/my/repo/issues/5" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "Check out [my/repo\\#5](https://github-redirect.com/my/repo/issues/5)\n"
         )
       end
@@ -435,7 +445,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       let(:text) { "Check out https://www.github.com/my/repo/issues/5" }
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "Check out [my/repo\\#5](https://github-redirect.com/my/repo/issues/5)\n"
         )
       end
@@ -447,7 +457,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "[rust-num/num-traits\\#144](https://github-redirect.com/rust-num/num-traits/pull/144)\n"
         )
       end
@@ -459,7 +469,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "`dsp-testing/dependabot-ts-definitely-typed#25`\n"
         )
       end
@@ -471,7 +481,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "{Issue 111}\\[https://github-redirect.com/dependabot/" \
           "dependabot-core/issues/111\\]\n"
         )
@@ -484,7 +494,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
 
       it do
-        is_expected.to eq(
+        expect(sanitize_links_and_mentions_to_markdown).to eq(
           "<https://github.com/rust-num/num-traits/settings>\n"
         )
       end

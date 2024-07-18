@@ -72,12 +72,18 @@ namespace NuGetUpdater.Core.Test
         /// Creates a mock NuGet package with a single assembly in the appropriate `lib/` directory.  The assembly will
         /// be empty.
         /// </summary>
-        public static MockNuGetPackage CreateSimplePackage(string id, string version, string targetFramework, (string? TargetFramework, (string Id, string Version)[] Packages)[]? dependencyGroups = null)
+        public static MockNuGetPackage CreateSimplePackage(
+            string id,
+            string version,
+            string targetFramework,
+            (string? TargetFramework, (string Id, string Version)[] Packages)[]? dependencyGroups = null,
+            XElement[]? additionalMetadata = null
+        )
         {
             return new(
                 id,
                 version,
-                AdditionalMetadata: null,
+                AdditionalMetadata: additionalMetadata,
                 DependencyGroups: dependencyGroups,
                 Files:
                 [
@@ -240,7 +246,7 @@ namespace NuGetUpdater.Core.Test
             );
         }
 
-        private Stream GetZipStream()
+        public Stream GetZipStream()
         {
             if (_stream is null)
             {

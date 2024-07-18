@@ -214,8 +214,11 @@ module Dependabot
 
         sig { returns(String) }
         def complete_npmrc_from_credentials
+          # removes attribute timeout to allow for job update,
+          # having a timeout=xxxxx value is causing some jobs to fail
           initial_content = T.must(T.must(npmrc_file).content)
-                             .gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
+                             .gsub(/^.*\$\{.*\}.*/, "").strip.gsub(/^timeout.*/, "").strip + "\n"
+
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 

@@ -1,5 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
+
+require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
@@ -8,6 +10,8 @@ require "dependabot/gradle/file_parser"
 module Dependabot
   module Gradle
     class FileUpdater < Dependabot::FileUpdaters::Base
+      extend T::Sig
+
       require_relative "file_updater/dependency_set_updater"
       require_relative "file_updater/property_value_updater"
 
@@ -52,7 +56,6 @@ module Dependabot
 
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
-
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(dependency.previous_requirements)
@@ -64,6 +67,13 @@ module Dependabot
           next if new_req[:requirement] == old_req[:requirement]
 
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
+
+          # Exception raised to handle issue that arises when buildfiles function (see this file)
+          # removes the build file that contains the dependency itself. So no build file exists to
+          # update dependency, This behaviour is evident for extremely small number of users
+          # that have added separate repos as sub-modules in parent projects
+
+          raise DependencyFileNotResolvable, "No build file found to update the dependency" if buildfile.nil?
 
           if new_req.dig(:metadata, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
@@ -159,7 +169,7 @@ module Dependabot
         result = string.dup
 
         string.scan(Gradle::FileParser::PROPERTY_REGEX) do
-          prop_name = Regexp.last_match.named_captures.fetch("property_name")
+          prop_name = T.must(Regexp.last_match).named_captures.fetch("property_name")
           property_value = property_value_finder.property_value(
             property_name: prop_name,
             callsite_buildfile: buildfile

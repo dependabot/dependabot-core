@@ -9,6 +9,20 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
   describe ".authed_url" do
     subject(:authed_url) { described_class.authed_url(credential: credential) }
 
+    context "without index-url" do
+      let(:credential) do
+        Dependabot::Credential.new({
+          "type" => "python_index",
+          "replaces-base" => true
+        })
+      end
+
+      it "returns empty string" do
+        expect(authed_url)
+          .to eq("")
+      end
+    end
+
     context "without a token" do
       let(:credential) do
         Dependabot::Credential.new({

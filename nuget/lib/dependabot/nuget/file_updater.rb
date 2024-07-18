@@ -4,9 +4,9 @@
 require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/nuget/discovery/dependency_details"
-require "dependabot/nuget/discovery/discovery_json_reader"
-require "dependabot/nuget/discovery/workspace_discovery"
+require "dependabot/nuget/native_discovery/native_dependency_details"
+require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/native_discovery/native_workspace_discovery"
 require "dependabot/nuget/native_helpers"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -33,7 +33,7 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        base_dir = T.must(dependency_files.first).directory
+        base_dir = "/"
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
@@ -113,7 +113,7 @@ module Dependabot
         # Ideally we should find a way to not run this code in prod
         # (or a better way to track calls made to NativeHelpers)
         @update_tooling_calls ||= T.let({}, T.nilable(T::Hash[String, Integer]))
-        key = proj_path + dependency.name
+        key = "#{proj_path.delete_prefix(T.must(repo_contents_path))}+#{dependency.name}"
         @update_tooling_calls[key] =
           if @update_tooling_calls[key]
             T.must(@update_tooling_calls[key]) + 1
@@ -128,18 +128,10 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { returns(T.nilable(WorkspaceDiscovery)) }
+      sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
       def workspace
-        @workspace ||= T.let(begin
-          discovery_json = DiscoveryJsonReader.discovery_json
-          if discovery_json
-            workspace = DiscoveryJsonReader.new(
-              discovery_json: discovery_json
-            ).workspace_discovery
-          end
-
-          workspace
-        end, T.nilable(WorkspaceDiscovery))
+        discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
+        discovery_json_reader.workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -147,17 +139,20 @@ module Dependabot
         workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[NativeDependencyDetails]) }
       def project_dependencies(project_file)
-        workspace&.projects&.find { |p| p.file_path == project_file.name }&.dependencies || []
+        workspace&.projects&.find do |p|
+          full_project_file_path = File.join(project_file.directory, project_file.name)
+          p.file_path == full_project_file_path
+        end&.dependencies || []
       end
 
-      sig { returns(T::Array[DependencyDetails]) }
+      sig { returns(T::Array[NativeDependencyDetails]) }
       def global_json_dependencies
         workspace&.global_json&.dependencies || []
       end
 
-      sig { returns(T::Array[DependencyDetails]) }
+      sig { returns(T::Array[NativeDependencyDetails]) }
       def dotnet_tools_json_dependencies
         workspace&.dotnet_tools_json&.dependencies || []
       end
@@ -166,13 +161,15 @@ module Dependabot
       sig { params(dependency_file: Dependabot::DependencyFile, updated_content: String).returns(String) }
       def normalize_content(dependency_file, updated_content)
         # Fix up line endings
-        if dependency_file.content&.include?("\r\n") && updated_content.match?(/(?<!\r)\n/)
+        if dependency_file.content&.include?("\r\n")
           # The original content contain windows style newlines.
-          # Ensure the updated content also uses windows style newlines.
-          updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
-          puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
+          if updated_content.match?(/(?<!\r)\n/)
+            # Ensure the updated content also uses windows style newlines.
+            updated_content = updated_content.gsub(/(?<!\r)\n/, "\r\n")
+            puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
+          end
         elsif updated_content.include?("\r\n")
-          # The original content does not contain windows style newlines.
+          # The original content does not contain windows style newlines, but the updated content does.
           # Ensure the updated content uses unix style newlines.
           updated_content = updated_content.gsub("\r\n", "\n")
           puts "Fixing mismatched Unix line endings for [#{dependency_file.name}]."

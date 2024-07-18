@@ -24,6 +24,12 @@ RSpec.describe Dependabot::Docker::Requirement do
 
       it { is_expected.to eq(Gem::Requirement.new("> 20.8.1.alpine3.18", "< 20.9")) }
     end
+
+    context "with a collection of strings" do
+      let(:requirement_string) { [">= 1.0.0", "< 2.0.0"] }
+
+      it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
+    end
   end
 
   describe "#satisfied_by?" do

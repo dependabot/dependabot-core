@@ -1,6 +1,4 @@
-using System;
 using System.CommandLine;
-using System.IO;
 
 using NuGetUpdater.Core;
 
@@ -15,6 +13,7 @@ internal static class UpdateCommand
     internal static readonly Option<string> PreviousVersionOption = new("--previous-version") { IsRequired = true };
     internal static readonly Option<bool> IsTransitiveOption = new("--transitive", getDefaultValue: () => false);
     internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
+    internal static readonly Option<string?> ResultOutputPathOption = new("--result-output-path", getDefaultValue: () => null);
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -26,17 +25,18 @@ internal static class UpdateCommand
             NewVersionOption,
             PreviousVersionOption,
             IsTransitiveOption,
-            VerboseOption
+            VerboseOption,
+            ResultOutputPathOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, verbose) =>
+        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, verbose, resultOutputPath) =>
         {
             var worker = new UpdaterWorker(new Logger(verbose));
-            await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive);
+            await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive, resultOutputPath);
             setExitCode(0);
-        }, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, VerboseOption);
+        }, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, VerboseOption, ResultOutputPathOption);
 
         return command;
     }

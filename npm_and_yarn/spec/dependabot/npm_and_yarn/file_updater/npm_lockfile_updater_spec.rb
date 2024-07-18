@@ -151,6 +151,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "when there is a dep hosted in github registry and no auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_no_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
+
+    context "when there is a dep hosted in github registry and invalid auth token is provided" do
+      let(:files) { project_dependency_files("npm/simple_with_github_with_invalid_auth_token") }
+
+      let(:dependency_name) { "@Codertocat/hello-world-npm" }
+      let(:version) { "1.1.0" }
+      let(:requirements) { [] }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }
+          .to raise_error(Dependabot::InvalidGitAuthToken) do |error|
+          expect(error.message)
+            .to eq(
+              "Missing or invalid authentication token while accessing github package : " \
+              "https://npm.pkg.github.com/@Codertocat%2fhello-world-npm"
+            )
+        end
+      end
+    end
   end
 
   describe "npm 8 specific" do
@@ -168,6 +206,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           .to eq("1.1.0")
         expect(parsed_lockfile.fetch("dependencies")["bus-replacement-service"]["version"])
           .to include("19c4dba3bfce7574e28f1df2138d47ab4cc665b3")
+      end
+    end
+
+    context "when the package current-name is not defined in package.json" do
+      let(:files) { project_dependency_files("npm8/current_name_is_missing") }
+
+      it "restores the packages name attribute" do
+        parsed_lockfile = JSON.parse(updated_npm_lock_content)
+        expected_updated_npm_lock_content = fixture(
+          "updated_projects",
+          "npm8",
+          "current_name_is_missing",
+          "package-lock.json"
+        )
+        expected_parsed_lockfile = JSON.parse(expected_updated_npm_lock_content)
+
+        expect(parsed_lockfile).to eq(expected_parsed_lockfile), "Differences found"
       end
     end
 
@@ -295,6 +350,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     it "updates" do
       expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"])
         .to eq("1.3.44")
+    end
+  end
+
+  context "with a registry that times out" do
+    registry_source = "https://registry.npm.com"
+    let(:files) { project_dependency_files("npm/simple_with_registry_that_times_out") }
+    let(:error) { Dependabot::PrivateSourceTimedOut.new(registry_source) }
+
+    it "raises a helpful error" do
+      expect(error.source).to eq(registry_source)
+      expect(error.message).to eq("The following source timed out: " + registry_source)
     end
   end
 
@@ -606,6 +672,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a private registry that is inaccessible due to auth" do
+    let(:files) { project_dependency_files("npm/simple_with_registry_with_auth") }
+    let(:npmrc_content) do
+      { registry: "https://pkgs.dev.azure.com/example/npm/registry/" }
+    end
+    let(:error) { Dependabot::PrivateSourceAuthenticationFailure.new(npmrc_content[:registry]) }
+
+    it "raises a helpful error" do
+      expect(error.source).to eq(npmrc_content[:registry])
+      expect(error.to_s).to include(npmrc_content[:registry])
+    end
+  end
+
   context "when updating a git source dependency that is not pinned to a hash" do
     subject(:parsed_lock_file) { JSON.parse(updated_npm_lock_content) }
 
@@ -645,6 +724,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         .to match(%r{github:dependabot-fixtures/npm6-dependency#[0-9a-z]{40}})
       expect(parsed_lock_file["dependencies"]["npm6-dependency"]["from"])
         .to eq("github:dependabot-fixtures/npm6-dependency")
+    end
+  end
+
+  context "with a private registry that is inaccessible due to missing or invalid auth" do
+    subject(:updated_npm_lock) { updater.updated_lockfile_reponse(exception) }
+
+    let(:files) { project_dependency_files("npm/simple_with_registry_with_auth") }
+    let(:exception) { Exception.new(response) }
+
+    context "with a private registry that is missing .npmrc auth info" do
+      let(:response) { "Unable to authenticate, need: Basic, Bearer" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to missing Basic auth info" do
+      let(:response) { "Unable to authenticate, need: Basic realm=\"https://example.pkgs.visualstudio.com/\"" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to changed auth info" do
+      let(:response) do
+        "Unable to authenticate, need: Bearer authorization_uri=https://login.windows.net/....," \
+          "Basic  realm=\"https://exs.app.pkg1.visualstudio.com/\", TFS-Federated"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "with a private registry that is inaccessible due to missing auth info" do
+      let(:response) { "Unable to authenticate, need: BASIC realm=\"Repository Manager\"" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
     end
   end
 end

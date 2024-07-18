@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/pull_request_creator/message_builder"
 
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
@@ -59,6 +60,7 @@ module Dependabot
       @dependency_group = dependency_group
 
       @pr_message = T.let(nil, T.nilable(Dependabot::PullRequestCreator::Message))
+      ensure_dependencies_have_directories
     end
 
     sig { returns(Dependabot::PullRequestCreator::Message) }
@@ -163,27 +165,50 @@ module Dependabot
       if grouped_update?
         # We only want PRs for the same group that have the same versions
         job.existing_group_pull_requests.any? do |pr|
+          directories_in_use = pr["dependencies"].all? { |dep| dep["directory"] }
+
           pr["dependency-group-name"] == dependency_group&.name &&
-            Set.new(pr["dependencies"]) == updated_dependencies_set
+            Set.new(pr["dependencies"]) == updated_dependencies_set(should_consider_directory: directories_in_use)
         end
       else
-        job.existing_pull_requests.any? { |pr| Set.new(pr) == updated_dependencies_set }
+        job.existing_pull_requests.any? do |pr|
+          directories_in_use = pr.all? { |dep| dep["directory"] }
+
+          Set.new(pr) == updated_dependencies_set(should_consider_directory: directories_in_use)
+        end
       end
     end
 
     private
 
-    sig { returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
-    def updated_dependencies_set
+    # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
+    # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.
+    sig { params(should_consider_directory: T::Boolean).returns(T::Set[T::Hash[String, T.any(String, T::Boolean)]]) }
+    def updated_dependencies_set(should_consider_directory:)
       Set.new(
         updated_dependencies.map do |dep|
           {
             "dependency-name" => dep.name,
             "dependency-version" => dep.version,
+            "directory" => should_consider_directory ? dep.directory : nil,
             "dependency-removed" => dep.removed? ? true : nil
           }.compact
         end
       )
+    end
+
+    sig { returns(T::Array[Dependabot::Dependency]) }
+    def ensure_dependencies_have_directories
+      updated_dependencies.each do |dep|
+        dep.directory = directory
+      end
+    end
+
+    sig { returns(String) }
+    def directory
+      return "" if updated_dependency_files.empty?
+
+      T.must(updated_dependency_files.first).directory
     end
   end
 end

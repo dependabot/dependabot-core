@@ -16,13 +16,14 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  SMOKE_TEST_BRANCH: main
 jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -44,7 +45,7 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
@@ -64,7 +65,7 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.discover.outputs.suites) }}
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -84,7 +85,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       - name: Cache Smoke Test

@@ -64,8 +64,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     )
   end
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, service_pack_url)
       .to_return(
@@ -76,6 +74,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }
       )
   end
+
+  it_behaves_like "an update checker"
 
   shared_context "with multiple git sources" do
     let(:upload_pack_fixture) { "checkout" }
@@ -571,7 +571,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "when a supported newer version is available" do
       it "updates to the least new supported version" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("1.0.0"))
       end
     end
 
@@ -579,7 +579,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:ignored_versions) { ["= 1.0.0"] }
 
       it "doesn't return ignored versions" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("2.0.0"))
       end
     end
 
@@ -598,7 +598,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it "still proposes an upgrade" do
-        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+        expect(lowest_security_fix_version).to eq(Dependabot::GithubActions::Version.new("2.0.0"))
       end
     end
   end
@@ -606,9 +606,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#lowest_resolvable_security_fix_version" do
     subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
 
-    before { allow(checker).to receive(:lowest_security_fix_version).and_return("delegate") }
+    before do
+      allow(checker)
+        .to receive(:lowest_security_fix_version)
+        .and_return(Dependabot::GithubActions::Version.new("2.0.0"))
+    end
 
-    it { is_expected.to eq("delegate") }
+    it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
 
   describe "#updated_requirements" do

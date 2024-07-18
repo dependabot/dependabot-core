@@ -4,9 +4,9 @@ using NuGetUpdater.Core.Discover;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
-public record ExpectedWorkspaceDiscoveryResult : IDiscoveryResult
+public record ExpectedWorkspaceDiscoveryResult : NativeResult
 {
-    public required string FilePath { get; init; }
+    public required string Path { get; init; }
     public bool IsSuccess { get; init; } = true;
     public ImmutableArray<ExpectedSdkProjectDiscoveryResult> Projects { get; init; }
     public int? ExpectedProjectCount { get; init; }

@@ -78,8 +78,10 @@ internal static class SdkPackageUpdater
                 tfm,
                 topLevelDependencies,
                 logger);
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
+            foreach (var dependency in dependencies)
             {
+                var packageName = dependency.Name;
+                var packageVersion = dependency.Version;
                 if (packageVersion is null)
                 {
                     continue;
@@ -226,6 +228,7 @@ internal static class SdkPackageUpdater
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
         var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
+        MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
         if (exitCode != 0)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
@@ -263,8 +266,10 @@ internal static class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
+            foreach (var dependency in dependencies)
             {
+                var packageName = dependency.Name;
+                var packageVersion = dependency.Version;
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)
                 {

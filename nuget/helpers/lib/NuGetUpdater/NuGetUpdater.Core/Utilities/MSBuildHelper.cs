@@ -231,11 +231,7 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            // We don't know the version for range requirements or wildcard
-            // requirements, so return "" for these.
-            yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
@@ -316,6 +312,7 @@ internal static partial class MSBuildHelper
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdOut);
 
             // simple cases first
             // if restore failed, nothing we can do
@@ -483,11 +480,13 @@ internal static partial class MSBuildHelper
                     // if the source is relative to the original location, copy it to the temp directory
                     if (PathHelper.IsSubdirectoryOf(nugetConfigDir!, localSource.Source))
                     {
-                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSource.Source);
+                        // normalize the directory separators and copy the contents
+                        string localSourcePath = localSource.Source.Replace("\\", "/");
+                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSourcePath);
                         string destPath = Path.Join(tempDir.FullName, sourceRelativePath);
-                        if (Directory.Exists(localSource.Source))
+                        if (Directory.Exists(localSourcePath))
                         {
-                            PathHelper.CopyDirectory(localSource.Source, destPath);
+                            PathHelper.CopyDirectory(localSourcePath, destPath);
                         }
                     }
                 }
@@ -508,6 +507,7 @@ internal static partial class MSBuildHelper
                 <TargetFramework>{targetFramework}</TargetFramework>
                 <GenerateDependencyFile>true</GenerateDependencyFile>
                 <RunAnalyzers>false</RunAnalyzers>
+                <NuGetInteractive>false</NuGetInteractive>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
@@ -542,6 +542,7 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
@@ -566,6 +567,7 @@ internal static partial class MSBuildHelper
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdout);
 
             if (exitCode == 0)
             {
@@ -600,6 +602,20 @@ internal static partial class MSBuildHelper
             catch
             {
             }
+        }
+    }
+
+    internal static void ThrowOnUnauthenticatedFeed(string stdout)
+    {
+        var unauthorizedMessageSnippets = new string[]
+        {
+            "The plugin credential provider could not acquire credentials",
+            "401 (Unauthorized)",
+            "error NU1301: Unable to load the service index for source",
+        };
+        if (unauthorizedMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
         }
     }
 

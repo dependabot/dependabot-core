@@ -16,6 +16,22 @@ RSpec.describe namespace::MultiDependencyUpdater do
       ignored_versions: ignored_versions
     )
   end
+  ########################
+  # Dependency set setup #
+  ########################
+
+  let(:jcenter_metadata_url_protoc) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protoc/maven-metadata.xml"
+  end
+  let(:jcenter_metadata_url_protobuf_java) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java/maven-metadata.xml"
+  end
+  let(:jcenter_metadata_url_protobuf_java_util) do
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
+  end
 
   let(:version_class) { Dependabot::Gradle::Version }
   let(:credentials) { [] }
@@ -81,26 +97,6 @@ RSpec.describe namespace::MultiDependencyUpdater do
         status: 200,
         body: fixture("maven_central_metadata", "with_release.xml")
       )
-  end
-
-  ########################
-  # Dependency set setup #
-  ########################
-
-  let(:jcenter_metadata_url_protoc) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protoc/maven-metadata.xml"
-  end
-  let(:jcenter_metadata_url_protobuf_java) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protobuf-java/maven-metadata.xml"
-  end
-  let(:jcenter_metadata_url_protobuf_java_util) do
-    "https://jcenter.bintray.com/" \
-      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
-  end
-
-  before do
     stub_request(:get, jcenter_metadata_url_protoc)
       .to_return(
         status: 200,

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -102,9 +103,9 @@ internal static class PackagesConfigUpdater
         Console.SetError(writer);
 
         var currentDir = Environment.CurrentDirectory;
+        var existingSpawnedProcesses = GetLikelyNuGetSpawnedProcesses();
         try
         {
-
             Environment.CurrentDirectory = projectDirectory;
             var retryingAfterRestore = false;
 
@@ -144,6 +145,7 @@ internal static class PackagesConfigUpdater
                     goto doRestore;
                 }
 
+                MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
                 throw new Exception(fullOutput);
             }
         }
@@ -157,7 +159,22 @@ internal static class PackagesConfigUpdater
             Environment.CurrentDirectory = currentDir;
             Console.SetOut(originalOut);
             Console.SetError(originalError);
+
+            // NuGet.exe can spawn processes that hold on to the temporary directory, so we need to kill them
+            var currentSpawnedProcesses = GetLikelyNuGetSpawnedProcesses();
+            var deltaSpawnedProcesses = currentSpawnedProcesses.Except(existingSpawnedProcesses).ToArray();
+            foreach (var credProvider in deltaSpawnedProcesses)
+            {
+                logger.Log($"Ending spawned credential provider process");
+                credProvider.Kill();
+            }
         }
+    }
+
+    private static Process[] GetLikelyNuGetSpawnedProcesses()
+    {
+        var processes = Process.GetProcesses().Where(p => p.ProcessName.StartsWith("CredentialProvider", StringComparison.OrdinalIgnoreCase) == true).ToArray();
+        return processes;
     }
 
     internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string packagesConfigPath)

@@ -76,11 +76,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
 
-  it_behaves_like "an update checker"
-
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
+
+  it_behaves_like "an update checker"
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -162,10 +162,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_fix_version) { checker.lowest_security_fix_version }
 
     it "finds the lowest available non-vulnerable version" do
-      is_expected.to eq(Gem::Version.new("2.0.1"))
+      expect(lowest_fix_version).to eq(Gem::Version.new("2.0.1"))
     end
 
     context "with a security vulnerability" do
@@ -761,19 +761,17 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to match_array(
-          [{
-            file: "constraints.txt",
-            requirement: "==2.6.0",
-            groups: [],
-            source: nil
-          }, {
-            file: "requirements.txt",
-            requirement: "==2.6.0",
-            groups: [],
-            source: nil
-          }]
-        )
+        expect(checker.updated_requirements).to contain_exactly({
+          file: "constraints.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        }, {
+          file: "requirements.txt",
+          requirement: "==2.6.0",
+          groups: [],
+          source: nil
+        })
       end
     end
   end

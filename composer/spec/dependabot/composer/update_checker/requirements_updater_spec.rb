@@ -278,19 +278,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "composer.json",
-                requirement: "1.5.0",
-                groups: [],
-                source: nil
-              }, {
-                file: "another/composer.json",
-                requirement: "1.*.*",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "composer.json",
+              requirement: "1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/composer.json",
+              requirement: "1.*.*",
+              groups: [],
+              source: nil
+            })
           end
         end
       end
@@ -539,19 +537,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "composer.json",
-                requirement: "1.5.0",
-                groups: [],
-                source: nil
-              }, {
-                file: "another/composer.json",
-                requirement: "1.*.*",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "composer.json",
+              requirement: "1.5.0",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/composer.json",
+              requirement: "1.*.*",
+              groups: [],
+              source: nil
+            })
           end
         end
       end
@@ -795,19 +791,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates the requirement that needs to be updated" do
-            expect(updater.updated_requirements).to match_array(
-              [{
-                file: "composer.json",
-                requirement: "^1.2.3",
-                groups: [],
-                source: nil
-              }, {
-                file: "another/composer.json",
-                requirement: "0.*.* || 1.*.*",
-                groups: [],
-                source: nil
-              }]
-            )
+            expect(updater.updated_requirements).to contain_exactly({
+              file: "composer.json",
+              requirement: "^1.2.3",
+              groups: [],
+              source: nil
+            }, {
+              file: "another/composer.json",
+              requirement: "0.*.* || 1.*.*",
+              groups: [],
+              source: nil
+            })
           end
         end
       end

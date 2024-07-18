@@ -11,11 +11,13 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Pub::FileUpdater do
   let(:project) { "can_update" }
+  let(:dev_null) { WEBrick::Log.new("/dev/null", 7) }
+  let(:server) { WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null }) }
   let(:dependency_files) do
     files = project_dependency_files(project)
     files.each do |file|
       # Simulate that the lockfile was from localhost:
-      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+      file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{server[:Port]}")
     end
     files
   end
@@ -31,44 +33,36 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         "password" => "token"
       }],
       options: {
-        pub_hosted_url: "http://localhost:#{@server[:Port]}"
+        pub_hosted_url: "http://localhost:#{server[:Port]}"
       }
     )
   end
   let(:sample) { "simple" }
   let(:sample_files) { Dir.glob(File.join("spec", "fixtures", "pub_dev_responses", sample, "*")) }
 
-  it_behaves_like "a dependency file updater"
-
-  before(:all) do
-    # Because we do the networking in dependency_services we have to run an
-    # actual web server.
-    dev_null = WEBrick::Log.new("/dev/null", 7)
-    @server = WEBrick::HTTPServer.new({ Port: 0, AccessLog: [], Logger: dev_null })
-    Thread.new do
-      @server.start
+  after do
+    sample_files.each do |f|
+      package = File.basename(f, ".json")
+      server.unmount "/api/packages/#{package}"
     end
-  end
-
-  after(:all) do
-    @server.shutdown
+    server.shutdown
   end
 
   before do
+    # Because we do the networking in dependency_services we have to run an
+    # actual web server.
+    Thread.new do
+      server.start
+    end
     sample_files.each do |f|
       package = File.basename(f, ".json")
-      @server.mount_proc "/api/packages/#{package}" do |_req, res|
+      server.mount_proc "/api/packages/#{package}" do |_req, res|
         res.body = File.read(File.join("..", "..", "..", f))
       end
     end
   end
 
-  after do
-    sample_files.each do |f|
-      package = File.basename(f, ".json")
-      @server.unmount "/api/packages/#{package}"
-    end
-  end
+  it_behaves_like "a dependency file updater"
 
   def manifest(files)
     files.find { |f| f.name == "pubspec.yaml" }.content

@@ -9,6 +9,9 @@ require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
 require "dependabot/workspace"
 
+# Custom error class for testing
+class EcoSystemHelperSubprocessFailed < Dependabot::SharedHelpers::HelperSubprocessFailed; end
+
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
   let(:tmp) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
@@ -135,7 +138,8 @@ RSpec.describe Dependabot::SharedHelpers do
         function: function,
         args: args,
         env: env,
-        stderr_to_stdout: stderr_to_stdout
+        stderr_to_stdout: stderr_to_stdout,
+        error_class: error_class
       )
     end
 
@@ -143,6 +147,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:args) { ["foo"] }
     let(:env) { nil }
     let(:stderr_to_stdout) { false }
+    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
 
     context "when the subprocess is successful" do
       it "returns the result" do
@@ -212,6 +217,16 @@ RSpec.describe Dependabot::SharedHelpers do
               .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
             expect(error.error_context[:process_termsig]).to eq(9)
           end)
+      end
+    end
+
+    context "when a custom error class is passed" do
+      let(:error_class) { EcoSystemHelperSubprocessFailed }
+      let(:function) { "hard_error" }
+
+      it "raises the custom error class" do
+        expect { run_subprocess }
+          .to raise_error(EcoSystemHelperSubprocessFailed)
       end
     end
   end
@@ -301,7 +316,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:command) { "yes | foo=1 &  'na=1'  name  > file" }
 
     it do
-      is_expected.to eq("yes \\| foo\\=1 \\& \\'na\\=1\\' name \\> file")
+      expect(escape_command).to eq("yes \\| foo\\=1 \\& \\'na\\=1\\' name \\> file")
     end
 
     context "when empty" do
@@ -407,14 +422,13 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
+    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
+    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
+    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     def with_git_configured(&block)
       Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
     end
-
-    let(:git_config_path) { File.expand_path(".gitconfig", tmp) }
-    let(:configured_git_config) { with_git_configured { `cat #{git_config_path}` } }
-    let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
     context "when the global .gitconfig has a safe directory" do
       before do
@@ -565,6 +579,52 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
+    end
+  end
+
+  describe ".handle_json_parse_error" do
+    subject(:handle_json_parse_error) do
+      described_class.handle_json_parse_error(stdout, stderr, error_context, error_class)
+    end
+
+    let(:stdout) { "" }
+    let(:stderr) { "" }
+    let(:error_context) { { command: "test_command", function: "test_function", args: [] } }
+    let(:error_class) { Dependabot::SharedHelpers::HelperSubprocessFailed }
+
+    context "when stdout is not empty" do
+      let(:stdout) { "Some stdout message" }
+
+      it "raises HelperSubprocessFailed with stdout message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "Some stdout message")
+      end
+    end
+
+    context "when stdout is empty but stderr is not empty" do
+      let(:stderr) { "Some stderr message" }
+
+      it "raises HelperSubprocessFailed with stderr message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "Some stderr message")
+      end
+    end
+
+    context "when both stdout and stderr are empty" do
+      it "raises HelperSubprocessFailed with default message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, "No output from command")
+      end
+    end
+
+    context "when a custom error class is passed" do
+      let(:stdout) { "Some stdout message" }
+      let(:error_class) { EcoSystemHelperSubprocessFailed }
+
+      it "raises the custom error class with stdout message" do
+        expect { raise handle_json_parse_error }
+          .to raise_error(EcoSystemHelperSubprocessFailed, "Some stdout message")
+      end
     end
   end
 end
