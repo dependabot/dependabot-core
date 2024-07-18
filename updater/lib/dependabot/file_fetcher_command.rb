@@ -100,19 +100,8 @@ module Dependabot
     end
 
     def dependency_files_for_multi_directories
-      if Dependabot::Experiments.enabled?(:globs)
-        return @dependency_files_for_multi_directories ||= dependency_files_for_globs
-      end
+      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
 
-      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
-        ff = with_retries { file_fetcher_for_directory(dir) }
-        files = ff.files
-        post_ecosystem_versions(ff) if should_record_ecosystem_versions?
-        files
-      end
-    end
-
-    def dependency_files_for_globs
       has_glob = T.let(false, T::Boolean)
       directories = Dir.chdir(job.repo_contents_path) do
         job.source.directories.map do |dir|
@@ -124,7 +113,7 @@ module Dependabot
         end.flatten
       end.uniq
 
-      directories.flat_map do |dir|
+      @dependency_files_for_multi_directories = directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
 
         begin
