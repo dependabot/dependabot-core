@@ -554,7 +554,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :message
 
-    sig { params(environment_variable: String, message: T.nilable(String)).void }
+    sig { params(environment_variable: String, message: String).void }
     def initialize(environment_variable, message = "")
       @environment_variable = environment_variable
       @message = message
