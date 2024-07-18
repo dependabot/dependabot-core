@@ -37,12 +37,23 @@ internal record NuGetContext : IDisposable
             .Where(p => p.IsEnabled)
             .ToImmutableArray();
         Logger = logger ?? NullLogger.Instance;
-        TempPackageDirectory = Path.Combine(Path.GetTempPath(), ".dependabot", "packages");
+        TempPackageDirectory = Path.Combine(Path.GetTempPath(), $"dependabot-packages_{Guid.NewGuid():d}");
+        Directory.CreateDirectory(TempPackageDirectory);
     }
 
     public void Dispose()
     {
         SourceCacheContext.Dispose();
+        if (Directory.Exists(TempPackageDirectory))
+        {
+            try
+            {
+                Directory.Delete(TempPackageDirectory, recursive: true);
+            }
+            catch
+            {
+            }
+        }
     }
 
     private readonly Dictionary<PackageIdentity, string?> _packageInfoUrlCache = new();

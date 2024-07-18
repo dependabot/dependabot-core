@@ -390,6 +390,8 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                             </m:properties>
                         </entry>
                         """));
+                case "/api/v2/package/Some.Package/1.0.0":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
                 case "/api/v2/package/Some.Package/1.2.3":
                     return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0").GetZipStream().ReadAllBytes());
                 case "/api/v2/FindPackagesById()?id='Microsoft.WindowsDesktop.App.Ref'&semVerLevel=2.0.0":

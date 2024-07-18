@@ -63,11 +63,6 @@ public partial class AnalyzeWorker
         {
             if (isUpdateNecessary)
             {
-                if (!Directory.Exists(nugetContext.TempPackageDirectory))
-                {
-                    Directory.CreateDirectory(nugetContext.TempPackageDirectory);
-                }
-
                 _logger.Log($"  Determining multi-dependency property.");
                 var multiDependencies = DetermineMultiDependencyDetails(
                     discovery,
