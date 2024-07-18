@@ -134,6 +134,7 @@ module Dependabot
           nil?
         end
 
+        Dependabot.logger.info("Writing dependency info: #{dependency_info}")
         File.write(dependency_file_path, dependency_info)
       end
 
