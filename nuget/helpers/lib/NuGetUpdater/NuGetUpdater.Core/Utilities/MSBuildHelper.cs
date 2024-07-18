@@ -620,6 +620,16 @@ internal static partial class MSBuildHelper
         }
     }
 
+    internal static void ThrowOnMissingFile(string output)
+    {
+        var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
+        var match = missingFilePattern.Match(output);
+        if (match.Success)
+        {
+            throw new MissingFileException(match.Groups["FilePath"].Value);
+        }
+    }
+
     internal static bool TryGetGlobalJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? globalJsonPath)
     {
         globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json", caseSensitive: false);
