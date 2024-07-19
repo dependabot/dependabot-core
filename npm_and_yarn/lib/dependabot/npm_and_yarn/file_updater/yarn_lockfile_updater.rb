@@ -33,9 +33,6 @@ module Dependabot
         end
 
         def updated_yarn_lock_content(yarn_lock)
-          error_handler.params = {
-            yarn_lock: yarn_lock
-          }
           @updated_yarn_lock_content ||= {}
           return @updated_yarn_lock_content[yarn_lock.name] if @updated_yarn_lock_content[yarn_lock.name]
 
@@ -135,7 +132,11 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           package_missing = error_handler.package_missing(e.message)
 
-          error_handler.handle_error(e) unless package_missing
+          unless package_missing
+            error_handler.handle_error(e, {
+              yarn_lock: yarn_lock
+            })
+          end
 
           raise unless package_missing
 
@@ -239,7 +240,9 @@ module Dependabot
             error_handler.raise_resolvability_error(error_message, yarn_lock)
           end
 
-          error_handler.handle_error(error)
+          error_handler.handle_error(error, {
+            yarn_lock: yarn_lock
+          })
 
           if error_message.include?("Couldn't find package")
             package_name = error_message.match(/package "(?<package_req>.*?)"/)
@@ -588,7 +591,6 @@ module Dependabot
       def initialize(dependencies:, dependency_files:)
         @dependencies = dependencies
         @dependency_files = dependency_files
-        @params = {}
       end
 
       private
@@ -598,9 +600,6 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
-
-      sig { returns(T::Hash[Symbol, String]) }
-      attr_reader :params
 
       public
 
@@ -615,23 +614,23 @@ module Dependabot
       end
 
       # Main error handling method
-      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
-      def handle_error(error)
+      sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
+      def handle_error(error, params)
         # Check if defined yarn error codes contained in the error message
         # and raise the corresponding error class
-        handle_yarn_error(error)
+        handle_yarn_error(error, params)
 
         # Extract the usage error message from the raw error message
         usage_error_message = find_usage_error(error.message) || ""
 
         # Check if the error message contains any group patterns and raise
         # the corresponding error class
-        handle_group_patterns(error, usage_error_message)
+        handle_group_patterns(error, usage_error_message, params)
       end
 
       # Handles errors with specific to yarn error codes
-      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
-      def handle_yarn_error(error)
+      sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
+      def handle_yarn_error(error, params)
         error_message = error.message
         matches = error_message.scan(YARN_CODE_REGEX)
         return if matches.empty?
@@ -645,8 +644,8 @@ module Dependabot
           next unless yarn_error.is_a?(Hash)
 
           message = yarn_error[:message]
-          new_error = yarn_error[:new_error]
-          next unless new_error
+          handler = yarn_error[:handler]
+          next unless handler
 
           modified_error_message = if message
                                      "[#{code}]: #{message}, Detail: #{error_message}"
@@ -654,7 +653,7 @@ module Dependabot
                                      "[#{code}]: #{error_message}"
                                    end
 
-          raise  create_new_error(new_error, modified_error_message, error)
+          raise  create_handler(handler, modified_error_message, error, params)
         end
       end
 
@@ -662,40 +661,42 @@ module Dependabot
       sig do
         params(
           error: SharedHelpers::HelperSubprocessFailed,
-          usage_error_message: String
+          usage_error_message: String,
+          params: T::Hash[Symbol, String]
         ).void
       end
-      def handle_group_patterns(error, usage_error_message) # rubocop:disable Metrics/PerceivedComplexity
+      def handle_group_patterns(error, usage_error_message, params) # rubocop:disable Metrics/PerceivedComplexity
         error_message = error.message
         VALIDATION_GROUP_PATTERNS.each do |group|
           patterns = group[:patterns]
           matchfn = group[:matchfn]
-          new_error = group[:new_error]
+          handler = group[:handler]
           in_usage = group[:in_usage] || false
 
-          next unless (patterns || matchfn) && new_error
+          next unless (patterns || matchfn) && handler
 
           message = usage_error_message.empty? ? error_message : usage_error_message
           if in_usage && pattern_in_message(patterns, usage_error_message)
-            raise create_new_error(new_error, message, error)
+            raise create_handler(handler, message, error, params)
           elsif !in_usage && pattern_in_message(patterns, error.message)
-            raise create_new_error(new_error, error.message, error)
+            raise create_handler(handler, error.message, error, params)
           end
 
-          raise create_new_error(new_error, message, error) if matchfn&.call(usage_error_message, error_message)
+          raise create_handler(handler, message, error, params) if matchfn&.call(usage_error_message, error_message)
         end
       end
 
       # Creates a new error based on the provided parameters
       sig do
         params(
-          new_error: NewErrorProc,
+          handler: NewErrorProc,
           message: String,
-          error: SharedHelpers::HelperSubprocessFailed
+          error: SharedHelpers::HelperSubprocessFailed,
+          params: T::Hash[Symbol, String]
         ).returns(Dependabot::DependabotError)
       end
-      def create_new_error(new_error, message, error)
-        new_error.call(message, error, {
+      def create_handler(handler, message, error, params)
+        handler.call(message, error, {
           dependencies: dependencies,
           dependency_files: dependency_files,
           **params

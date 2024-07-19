@@ -13,6 +13,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
   let(:dependencies) { [instance_double(Dependabot::Dependency, name: "test-dependency")] }
   let(:dependency_files) { [instance_double(Dependabot::DependencyFile, path: "path/to/yarn.lock")] }
+  let(:yarn_lock) { dependency_files.first }
   let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
 
   describe "#initialize" do
@@ -27,7 +28,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "YN0002: Missing peer dependency" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_error(error) }
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
       end
     end
@@ -36,7 +37,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "Here is a recognized error pattern: authentication token not provided" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_error(error) }
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
@@ -45,7 +46,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This is an unrecognized pattern that should not raise an error." }
 
       it "does not raise an error" do
-        expect { error_handler.handle_error(error) }.not_to raise_error
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
 
@@ -60,7 +61,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
 
       it "does not raise an error" do
-        expect { error_handler.handle_error(error) }.not_to raise_error
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
 
@@ -80,7 +81,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a MisconfiguredTooling error with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::MisconfiguredTooling, /YN0080: .*The remote server failed/)
       end
     end
@@ -97,7 +98,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a ToolVersionNotSupported error with the correct versions" do
         expect do
-          error_handler.handle_error(error)
+          error_handler.handle_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::ToolVersionNotSupported) do |e| # rubocop:disable Style/MultilineBlockChain
           expect(e.tool_name).to eq("Yarn")
           expect(e.detected_version).to eq("v20.15.1")
@@ -133,7 +134,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
       end
     end
@@ -147,7 +148,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the last corresponding error class found with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::GitDependenciesNotReachable, /YN0016: Remote not found/)
       end
     end
@@ -156,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This message does not contain any known Yarn error codes." }
 
       it "does not raise any errors" do
-        expect { error_handler.handle_yarn_error(error) }.not_to raise_error
+        expect { error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
   end
@@ -169,14 +170,14 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message_with_usage_error) { "#{error_message}\n#{usage_error_message}" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, usage_error_message) }
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
 
     context "when the error message contains a recognized pattern in the error message" do
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, "") }
+        expect { error_handler.handle_group_patterns(error, "", { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
@@ -185,7 +186,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This is an unrecognized pattern that should not raise an error." }
 
       it "does not raise any errors" do
-        expect { error_handler.handle_group_patterns(error, "") }.not_to raise_error
+        expect { error_handler.handle_group_patterns(error, "", { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
   end
