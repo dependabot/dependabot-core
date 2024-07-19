@@ -231,15 +231,6 @@ module Dependabot
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
 
-          # Invalid package: When package.json doesn't include a name or version
-          # Local path error: When installing a git dependency which
-          # is using local file paths for sub-dependencies (e.g. unbuilt yarn
-          # workspace project)
-          if error_message.match?(INVALID_PACKAGE_REGEX) ||
-             error_message.include?(SUB_DEP_LOCAL_PATH_TEXT)
-            error_handler.raise_resolvability_error(error_message, yarn_lock)
-          end
-
           error_handler.handle_error(error, {
             yarn_lock: yarn_lock
           })
