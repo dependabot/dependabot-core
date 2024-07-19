@@ -216,7 +216,6 @@ module Dependabot
       # (GitHub, GitLab, BitBucket) work with or without the suffix.
       # That change has other ramifications, so it'd be better if Azure started supporting ".git"
       # like all the other providers.
-      # debugger
       uri = SharedHelpers.scp_to_standard(uri.strip)
       uri = URI(uri.strip)
       hostname = uri.hostname.to_s
