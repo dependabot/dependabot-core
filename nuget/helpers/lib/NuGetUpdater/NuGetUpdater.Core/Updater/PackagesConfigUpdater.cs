@@ -146,6 +146,7 @@ internal static class PackagesConfigUpdater
                 }
 
                 MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
+                MSBuildHelper.ThrowOnMissingFile(fullOutput);
                 throw new Exception(fullOutput);
             }
         }
