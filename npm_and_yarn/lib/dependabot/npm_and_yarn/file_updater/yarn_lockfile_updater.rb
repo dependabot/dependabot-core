@@ -33,6 +33,9 @@ module Dependabot
         end
 
         def updated_yarn_lock_content(yarn_lock)
+          error_handler.params = {
+            yarn_lock: yarn_lock
+          }
           @updated_yarn_lock_content ||= {}
           return @updated_yarn_lock_content[yarn_lock.name] if @updated_yarn_lock_content[yarn_lock.name]
 
@@ -130,15 +133,7 @@ module Dependabot
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          # package.json name cannot contain characters like empty string or @.
-          raise Dependabot::DependencyFileNotParseable, e.message if e.message.include?(INVALID_NAME_IN_PACKAGE_JSON)
-
-          names = dependencies.map(&:name)
-          package_missing = names.any? do |name|
-            e.message.include?("find package \"#{name}")
-          end
-
-          package_missing = e.message.match(PACKAGE_MISSING_REGEX) || package_missing
+          package_missing = error_handler.package_missing(e.message)
 
           error_handler.handle_error(e) unless package_missing
 
@@ -583,6 +578,7 @@ module Dependabot
     class YarnErrorHandler
       extend T::Sig
 
+      # Initializes the YarnErrorHandler with dependencies and dependency files
       sig do
         params(
           dependencies: T::Array[Dependabot::Dependency],
@@ -592,6 +588,7 @@ module Dependabot
       def initialize(dependencies:, dependency_files:)
         @dependencies = dependencies
         @dependency_files = dependency_files
+        @params = {}
       end
 
       private
@@ -601,6 +598,9 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
+
+      sig { returns(T::Hash[Symbol, String]) }
+      attr_reader :params
 
       public
 
@@ -633,8 +633,7 @@ module Dependabot
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_yarn_error(error)
         error_message = error.message
-        regex = YARN_CODE_REGEX
-        matches = error_message.scan(regex)
+        matches = error_message.scan(YARN_CODE_REGEX)
         return if matches.empty?
 
         # Go through each match backwards in the error message and raise the corresponding error class
@@ -655,7 +654,7 @@ module Dependabot
                                      "[#{code}]: #{error_message}"
                                    end
 
-          raise new_error.call(error, modified_error_message)
+          raise  create_new_error(new_error, modified_error_message, error)
         end
       end
 
@@ -678,13 +677,29 @@ module Dependabot
 
           message = usage_error_message.empty? ? error_message : usage_error_message
           if in_usage && pattern_in_message(patterns, usage_error_message)
-            raise new_error.call(error, message)
-          elsif !in_usage && pattern_in_message(patterns, error_message)
-            raise new_error.call(error, error.message)
+            raise create_new_error(new_error, message, error)
+          elsif !in_usage && pattern_in_message(patterns, error.message)
+            raise create_new_error(new_error, error.message, error)
           end
 
-          raise new_error.call(error, message) if matchfn&.call(usage_error_message, error_message)
+          raise create_new_error(new_error, message, error) if matchfn&.call(usage_error_message, error_message)
         end
+      end
+
+      # Creates a new error based on the provided parameters
+      sig do
+        params(
+          new_error: NewErrorProc,
+          message: String,
+          error: SharedHelpers::HelperSubprocessFailed
+        ).returns(Dependabot::DependabotError)
+      end
+      def create_new_error(new_error, message, error)
+        new_error.call(message, error, {
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          **params
+        })
       end
 
       # Raises a resolvability error for a dependency file
@@ -712,11 +727,17 @@ module Dependabot
           if pattern.is_a?(String)
             return message.include?(pattern)
           elsif pattern.is_a?(Regexp)
-            message = message.gsub(/\e\[[\d;]*[A-Za-z]/, "")
-            return message.match?(pattern)
+            return message.gsub(/\e\[[\d;]*[A-Za-z]/, "").match?(pattern)
           end
         end
-        false
+      end
+
+      # Checks if a package is missing from the error message
+      sig { params(error_message: String).returns(T::Boolean) }
+      def package_missing(error_message)
+        names = dependencies.map(&:name)
+        package_missing = names.any? { |name| error_message.include?("find package \"#{name}") }
+        !!error_message.match(PACKAGE_MISSING_REGEX) || package_missing
       end
     end
   end
