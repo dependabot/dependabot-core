@@ -213,7 +213,8 @@ module Dependabot
       {
         "error-type": "missing_environment_variable",
         "error-detail": {
-          "environment-variable": error.environment_variable
+          "environment-variable": error.environment_variable,
+          "error-message": error.message
         }
       }
     when Dependabot::GoModulePathMismatch
@@ -550,10 +551,15 @@ module Dependabot
     sig { returns(String) }
     attr_reader :environment_variable
 
-    sig { params(environment_variable: String).void }
-    def initialize(environment_variable)
+    sig { returns(String) }
+    attr_reader :message
+
+    sig { params(environment_variable: String, message: String).void }
+    def initialize(environment_variable, message = "")
       @environment_variable = environment_variable
-      super("Missing environment variable #{@environment_variable}")
+      @message = message
+
+      super("Missing environment variable #{@environment_variable}. #{@message}")
     end
   end
 
