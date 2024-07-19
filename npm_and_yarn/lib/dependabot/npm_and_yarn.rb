@@ -26,7 +26,7 @@ Dependabot::Dependency.register_production_check(
   end
 )
 
-## Define type for creating new error
+## A type used for defining a proc that creates a new error object
 NewErrorProc = T.type_alias do
   T.proc
    .params(message: String, _error: Dependabot::DependabotError, _params: T::Hash[Symbol, T.untyped])
