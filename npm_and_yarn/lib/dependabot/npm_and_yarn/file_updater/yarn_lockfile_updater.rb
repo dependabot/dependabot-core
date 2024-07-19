@@ -653,7 +653,7 @@ module Dependabot
                                      "[#{code}]: #{error_message}"
                                    end
 
-          raise  create_handler(handler, modified_error_message, error, params)
+          raise  create_error(handler, modified_error_message, error, params)
         end
       end
 
@@ -677,12 +677,12 @@ module Dependabot
 
           message = usage_error_message.empty? ? error_message : usage_error_message
           if in_usage && pattern_in_message(patterns, usage_error_message)
-            raise create_handler(handler, message, error, params)
+            raise create_error(handler, message, error, params)
           elsif !in_usage && pattern_in_message(patterns, error.message)
-            raise create_handler(handler, error.message, error, params)
+            raise create_error(handler, error.message, error, params)
           end
 
-          raise create_handler(handler, message, error, params) if matchfn&.call(usage_error_message, error_message)
+          raise create_error(handler, message, error, params) if matchfn&.call(usage_error_message, error_message)
         end
       end
 
@@ -695,7 +695,7 @@ module Dependabot
           params: T::Hash[Symbol, String]
         ).returns(Dependabot::DependabotError)
       end
-      def create_handler(handler, message, error, params)
+      def create_error(handler, message, error, params)
         handler.call(message, error, {
           dependencies: dependencies,
           dependency_files: dependency_files,
