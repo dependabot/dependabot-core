@@ -16,7 +16,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: deivid-rodriguez/bundler-security-subdep
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
+          URL=https://api.github.com/repos/deivid-rodriguez/smoke-tests/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
@@ -85,7 +85,7 @@ jobs:
       - name: Download test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
         run: |
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
+          URL=https://api.github.com/repos/deivid-rodriguez/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
       - name: Cache Smoke Test
