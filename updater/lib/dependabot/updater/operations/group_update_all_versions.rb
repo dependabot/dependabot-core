@@ -138,7 +138,7 @@ module Dependabot
             end
           end
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
         def run_grouped_update_for(group)
