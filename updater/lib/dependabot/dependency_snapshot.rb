@@ -121,7 +121,7 @@ module Dependabot
 
     # rubocop:disable Performance/Sum
     sig { returns(T::Set[String]) }
-    def handled_group_dependencies
+    def handled_dependencies_all_directories
       T.must(@handled_dependencies.values.reduce(&:+))
     end
     # rubocop:enable Performance/Sum
@@ -143,11 +143,11 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       if Dependabot::Experiments.enabled?(:dependency_has_directory)
-        return allowed_dependencies.reject { |dep| handled_group_dependencies.include?(dep.name) }
+        return allowed_dependencies.reject { |dep| handled_dependencies_all_directories.include?(dep.name) }
       end
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
+      allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
     end
 
     private
