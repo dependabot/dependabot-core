@@ -73,6 +73,14 @@ public class UpdaterWorker
                 ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(workspacePath)) + ")",
             };
         }
+        catch (MissingFileException ex)
+        {
+            result = new()
+            {
+                ErrorType = ErrorType.MissingFile,
+                ErrorDetails = ex.FilePath,
+            };
+        }
 
         _processedProjectPaths.Clear();
         if (resultOutputPath is { })

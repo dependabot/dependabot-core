@@ -261,6 +261,8 @@ module Dependabot
           # no issue
         when "AuthenticationFailure"
           raise PrivateSourceAuthenticationFailure, error_details
+        when "MissingFile"
+          raise DependencyFileNotFound, error_details
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end
