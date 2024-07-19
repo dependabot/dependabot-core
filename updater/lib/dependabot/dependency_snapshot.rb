@@ -112,17 +112,6 @@ module Dependabot
       @handled_dependencies[@current_directory] = set
     end
 
-    sig { params(dependencies: T::Array[{ name: T.nilable(String), directory: T.nilable(String) }]).void }
-    def add_handled_group_dependencies(dependencies)
-      raise "Current directory not set" if @current_directory == ""
-
-      dependencies.group_by { |d| d[:directory] }.each do |dir, dependency_hash|
-        set = @handled_dependencies[dir] || Set.new
-        set.merge(dependency_hash.map { |d| d[:name] })
-        @handled_dependencies[dir] = set
-      end
-    end
-
     sig { returns(T::Set[String]) }
     def handled_dependencies
       raise "Current directory not set" if @current_directory == ""
@@ -132,7 +121,7 @@ module Dependabot
 
     # rubocop:disable Performance/Sum
     sig { returns(T::Set[String]) }
-    def handled_group_dependencies
+    def handled_dependencies_all_directories
       T.must(@handled_dependencies.values.reduce(&:+))
     end
     # rubocop:enable Performance/Sum
@@ -154,11 +143,11 @@ module Dependabot
       return allowed_dependencies unless groups.any?
 
       if Dependabot::Experiments.enabled?(:dependency_has_directory)
-        return allowed_dependencies.reject { |dep| handled_group_dependencies.include?(dep.name) }
+        return allowed_dependencies.reject { |dep| handled_dependencies_all_directories.include?(dep.name) }
       end
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
-      allowed_dependencies.reject { |dep| T.must(@handled_dependencies[@current_directory]).include?(dep.name) }
+      allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
     end
 
     private
@@ -178,13 +167,7 @@ module Dependabot
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
       directories.each do |dir|
         @current_directory = dir
-        if Dependabot::Experiments.enabled?(:dependency_has_directory)
-          dependencies = parse_files!
-          dependencies_with_dir = dependencies.each { |dep| dep.directory = dir }
-          @dependencies[dir] = dependencies_with_dir
-        else
-          @dependencies[dir] = parse_files!
-        end
+        @dependencies[dir] = parse_files!
       end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
