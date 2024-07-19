@@ -81,6 +81,31 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a missing file" do
+      before do
+        # write out the result file
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command)
+          .and_wrap_original do |_original_method, *_args, &_block|
+            result = {
+              ErrorType: "MissingFile",
+              ErrorDetails: "the-error-details"
+            }
+            File.write(described_class.update_result_file_path, result.to_json)
+          end
+      end
+
+      it "raises the correct error" do
+        expect do
+          described_class.run_nuget_updater_tool(repo_root: repo_root,
+                                                 proj_path: proj_path,
+                                                 dependency: dependency,
+                                                 is_transitive: is_transitive,
+                                                 credentials: [])
+        end.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
   end
 
   describe "#native_csharp_tests" do
