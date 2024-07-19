@@ -92,10 +92,10 @@ module Dependabot
 
       sig { params(error_message: String).returns(String) }
       def self.extract_var(error_message)
-        match_data = error_message.match(ENV_VAR_NOT_RESOLVABLE)
+        match_data = T.must(error_message.match(ENV_VAR_NOT_RESOLVABLE)).named_captures["var"]
         return "" unless match_data
 
-        T.must(match_data[:var])
+        match_data
       end
     end
 
