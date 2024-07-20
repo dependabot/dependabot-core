@@ -43,6 +43,9 @@ module Dependabot
     # Used to check if url is http or https
     HTTP_CHECK_REGEX = %r{https?://}
 
+    # Used to check capture url match in regex capture group
+    URL_CAPTURE = "url"
+
     # When package name contains package.json name cannot contain characters like empty string or @.
     INVALID_NAME_IN_PACKAGE_JSON = "Name contains illegal characters"
 
@@ -64,6 +67,23 @@ module Dependabot
 
     # Used to identify invalid package error when package is not found in registry
     INVALID_PACKAGE_REGEX = /Can't add "(?<package_req>.*)": invalid/
+
+    # Used to identify error if package not found in registry
+    PACKAGE_NOT_FOUND = "Couldn't find package"
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX = /package "(?<package_req>.*?)"/
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req"
+    PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
+
+    PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}
+    PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}
+    PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name"
+
+    # Used to identify error if package not found in registry
+    DEPENDENCY_VERSION_NOT_FOUND = "Couldn't find any versions"
+    DEPENDENCY_NOT_FOUND = ": Not found"
+    DEPENDENCY_MATCH_NOT_FOUND = "Couldn't find match for"
+
+    DEPENDENCY_NO_VERSION_FOUND = "Couldn't find any versions"
 
     # Used to identify error if node_modules state file not resolved
     NODE_MODULES_STATE_FILE_NOT_FOUND = "Couldn't find the node_modules state file"
@@ -230,6 +250,22 @@ module Dependabot
         handler: lambda { |message, _error, _params|
           var = Utils.extract_var(message)
           Dependabot::MissingEnvironmentVariable.new(var, message)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [ONLY_PRIVATE_WORKSPACE_TEXT],
+        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotEvaluatable.new(message) },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [UNREACHABLE_GIT_CHECK_REGEX],
+        handler: lambda { |message, _error, _params|
+          dependency_url = message.match(UNREACHABLE_GIT_CHECK_REGEX)
+          .named_captures.fetch(URL_CAPTURE)
+          Dependabot::GitDependenciesNotReachable.new(dependency_url)
         },
         in_usage: false,
         matchfn: nil

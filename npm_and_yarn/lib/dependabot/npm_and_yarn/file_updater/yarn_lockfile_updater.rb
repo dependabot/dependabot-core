@@ -235,19 +235,19 @@ module Dependabot
             yarn_lock: yarn_lock
           })
 
-          if error_message.include?("Couldn't find package")
-            package_name = error_message.match(/package "(?<package_req>.*?)"/)
-                                        .named_captures["package_req"]
-                                        .split(/(?<=\w)\@/).first
+          if error_message.include?(PACKAGE_NOT_FOUND)
+            package_name = error_message.match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
+                                        .named_captures[PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE]
+                                        .split(PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX).first
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
           end
 
-          if error_message.match?(%r{/[^/]+: Not found})
+          if error_message.match?(PACKAGE_NOT_FOUND2)
             package_name = error_message
-                           .match(%r{/(?<package_name>[^/]+): Not found})
-                           .named_captures["package_name"]
+                           .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
+                           .named_captures[PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE]
             sanitized_name = sanitize_package_name(package_name)
             sanitized_error = error_message.gsub(package_name, sanitized_name)
             handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
@@ -272,7 +272,7 @@ module Dependabot
           # This happens if a new version has been published but npm is having
           # consistency issues and the version isn't fully available on all
           # queries
-          if error_message.start_with?("Couldn't find any versions") &&
+          if error_message.start_with?(DEPENDENCY_NO_VERSION_FOUND) &&
              dependencies_in_error_message?(error_message) &&
              resolvable_before_update?(yarn_lock)
 
@@ -282,24 +282,13 @@ module Dependabot
             raise Dependabot::InconsistentRegistryResponse, error_message
           end
 
-          if error_message.include?(ONLY_PRIVATE_WORKSPACE_TEXT)
-            raise Dependabot::DependencyFileNotEvaluatable, error_message
-          end
-
-          if error_message.match?(UNREACHABLE_GIT_CHECK_REGEX)
-            dependency_url = error_message.match(UNREACHABLE_GIT_CHECK_REGEX)
-                                          .named_captures.fetch("url")
-
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
-
           handle_timeout(error_message, yarn_lock) if error_message.match?(
             TIMEOUT_FETCHING_PACKAGE_REGEX
           )
 
-          if error_message.start_with?("Couldn't find any versions") ||
-             error_message.include?(": Not found") ||
-             error_message.include?("Couldn't find match for")
+          if error_message.start_with?(DEPENDENCY_VERSION_NOT_FOUND) ||
+             error_message.include?(DEPENDENCY_NOT_FOUND) ||
+             error_message.include?(DEPENDENCY_MATCH_NOT_FOUND)
 
             unless resolvable_before_update?(yarn_lock)
               error_handler.raise_resolvability_error(error_message, yarn_lock)
