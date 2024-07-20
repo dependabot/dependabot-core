@@ -198,9 +198,10 @@ module Dependabot
 
     sig { params(uri: String).returns(String) }
     def service_pack_uri(uri)
-      service_pack_uri = uri_with_auth(uri.strip)
+      uri= uri.strip
+      service_pack_uri = uri_with_auth(uri)
       service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
-      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri.strip)
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
       service_pack_uri + "/info/refs?service=git-upload-pack"
     end
 
@@ -216,8 +217,9 @@ module Dependabot
       # (GitHub, GitLab, BitBucket) work with or without the suffix.
       # That change has other ramifications, so it'd be better if Azure started supporting ".git"
       # like all the other providers.
-      uri = SharedHelpers.scp_to_standard(uri.strip)
-      uri = URI(uri.strip)
+      uri = uri.strip
+      uri = SharedHelpers.scp_to_standard(uri)
+      uri = URI(uri)
       hostname = uri.hostname.to_s
       hostname == "dev.azure.com" || hostname.end_with?(".visualstudio.com")
     end
