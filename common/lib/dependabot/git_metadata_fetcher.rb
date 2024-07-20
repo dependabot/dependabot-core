@@ -198,7 +198,7 @@ module Dependabot
 
     sig { params(uri: String).returns(String) }
     def service_pack_uri(uri)
-      uri= uri.strip
+      uri = uri.strip
       service_pack_uri = uri_with_auth(uri)
       service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
