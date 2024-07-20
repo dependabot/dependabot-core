@@ -99,7 +99,7 @@ module Dependabot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
-        # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         sig { returns(T::Array[Dependabot::DependencyGroup]) }
         def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
@@ -114,31 +114,13 @@ module Dependabot
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
 
-              if Dependabot::Experiments.enabled?(:dependency_has_directory)
-
-                # A grouped version update gets its directories from user-defined update configs.
-                # A multi-directory grouped update will iterate each group over every directory.
-                # Therefore, we can skip a grouped dependency if it's been updated in *any* directory
-                # add the dependencies in the group so individual updates don't try to update them
-                dependency_snapshot.add_handled_group_dependencies(
-                  dependencies_in_existing_pr_for_group(group)
-                   .map { |d| { name: d["dependency-name"], directory: d["directory"] } }
-                )
-                # also add dependencies that might be in the group, as a rebase would add them;
-                # this avoids individual PR creation that immediately is superseded by a group PR supersede
-                dependency_snapshot.add_handled_group_dependencies(
-                  group.dependencies.map { |d| { name: d.name, directory: d.directory } }
-                )
-              else
-                # add the dependencies in the group so individual updates don't try to update them
-                dependency_snapshot.add_handled_dependencies(
-                  dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
-                )
-                # also add dependencies that might be in the group, as a rebase would add them;
-                # this avoids individual PR creation that immediately is superseded by a group PR supersede
-                dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
-              end
-
+              # add the dependencies in the group so individual updates don't try to update them
+              dependency_snapshot.add_handled_dependencies(
+                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
+              )
+              # also add dependencies that might be in the group, as a rebase would add them;
+              # this avoids individual PR creation that immediately is superseded by a group PR supersede
+              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
               next
             end
 
@@ -156,7 +138,7 @@ module Dependabot
             end
           end
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/AbcSize
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
         def run_grouped_update_for(group)

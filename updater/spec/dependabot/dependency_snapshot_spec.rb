@@ -140,7 +140,7 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
   end
 
-  describe "::add_handled_group_dependencies" do
+  describe "::handled_dependencies_all_directories" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
         job: job,
@@ -157,11 +157,8 @@ RSpec.describe Dependabot::DependencySnapshot do
 
     it "handles dependencies" do
       snapshot = create_dependency_snapshot
-      snapshot.add_handled_group_dependencies([
-        { name: "a", directory: job.source.directory },
-        { name: "b", directory: job.source.directory }
-      ])
-      expect(snapshot.handled_group_dependencies).to eq(Set.new(%w(a b)))
+      snapshot.add_handled_dependencies(%w(a b))
+      expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
     end
 
     context "when there are multiple directories" do
@@ -185,14 +182,13 @@ RSpec.describe Dependabot::DependencySnapshot do
       it "is agnostic of the current directory" do
         snapshot = create_dependency_snapshot
         snapshot.current_directory = "/foo"
-        snapshot.add_handled_group_dependencies([
-          { name: "a", directory: "/foo" },
-          { name: "b", directory: "/bar" }
-        ])
-
-        expect(snapshot.handled_group_dependencies).to eq(Set.new(%w(a b)))
+        snapshot.add_handled_dependencies("a")
         snapshot.current_directory = "/bar"
-        expect(snapshot.handled_group_dependencies).to eq(Set.new(%w(a b)))
+        snapshot.add_handled_dependencies("b")
+
+        expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
+        snapshot.current_directory = "/bar"
+        expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
       end
     end
   end
@@ -251,9 +247,8 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         expect(snapshot.ungrouped_dependencies.length).to be(2)
 
-        snapshot.add_handled_group_dependencies([
-          { name: group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name, directory: job.source.directory }
-        ])
+        snapshot.current_directory = directory
+        snapshot.add_handled_dependencies("dummy-pkg-a")
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!
