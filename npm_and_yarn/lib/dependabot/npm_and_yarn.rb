@@ -27,7 +27,7 @@ Dependabot::Dependency.register_production_check(
 )
 
 ## A type used for defining a proc that creates a new error object
-HandleError = T.type_alias do
+ErrorHandler = T.type_alias do
   T.proc
    .params(message: String, error: Dependabot::DependabotError, params: T::Hash[Symbol, T.untyped])
    .returns(Dependabot::DependabotError)
@@ -198,7 +198,7 @@ module Dependabot
       }
     }.freeze, T::Hash[String, {
       message: T.any(String, NilClass),
-      handler: HandleError
+      handler: ErrorHandler
     }])
 
     # Group of patterns to validate error message and raise specific error
@@ -289,7 +289,7 @@ module Dependabot
       }
     ].freeze, T::Array[{
       patterns: T::Array[T.any(String, Regexp)],
-      handler: HandleError,
+      handler: ErrorHandler,
       in_usage: T.nilable(T::Boolean),
       matchfn: T.nilable(T.proc.params(usage: String, message: String).returns(T::Boolean))
     }])
