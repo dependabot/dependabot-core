@@ -280,8 +280,8 @@ module Dependabot
       {
         patterns: [UNREACHABLE_GIT_CHECK_REGEX],
         handler: lambda { |message, _error, _params|
-          dependency_url = message.match(UNREACHABLE_GIT_CHECK_REGEX)
-          .named_captures.fetch(URL_CAPTURE)
+          dependency_url = message.match(UNREACHABLE_GIT_CHECK_REGEX).named_captures.fetch(URL_CAPTURE)
+
           Dependabot::GitDependenciesNotReachable.new(dependency_url)
         },
         in_usage: false,
