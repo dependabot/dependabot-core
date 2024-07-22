@@ -714,16 +714,21 @@ module Dependabot
         sanitized_name = T.let(nil, T.nilable(String))
 
         if p1
-          package_name = error_message
-                         .match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
-                         &.named_captures&.[](PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE)
-                         &.split(PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX)&.first
+          package_name =
+            error_message
+            .match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
+            &.named_captures
+            &.[](PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE)
+            &.split(PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX)
+            &.first
         end
 
         if p2
-          package_name = error_message
-                         .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
-                         &.named_captures&.[](PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE)
+          package_name =
+            error_message
+            .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
+            &.named_captures
+            &.[](PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE)
         end
 
         raise_resolvability_error(error_message, yarn_lock) unless package_name
