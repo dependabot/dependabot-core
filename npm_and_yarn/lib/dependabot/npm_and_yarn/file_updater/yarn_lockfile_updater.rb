@@ -231,15 +231,6 @@ module Dependabot
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
 
-          # Invalid package: When package.json doesn't include a name or version
-          # Local path error: When installing a git dependency which
-          # is using local file paths for sub-dependencies (e.g. unbuilt yarn
-          # workspace project)
-          if error_message.match?(INVALID_PACKAGE_REGEX) ||
-             error_message.include?(SUB_DEP_LOCAL_PATH_TEXT)
-            error_handler.raise_resolvability_error(error_message, yarn_lock)
-          end
-
           error_handler.handle_error(error, {
             yarn_lock: yarn_lock
           })
@@ -605,6 +596,9 @@ module Dependabot
       # Main error handling method
       sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
       def handle_error(error, params)
+        # Check if sub dependency is using local path and raise a resolvability error
+        handle_sub_dependency_local_path_error(error.message, params[:yarn_lock])
+
         # Extract the usage error message from the raw error message
         usage_error_message = find_usage_error(error.message) || ""
 
@@ -690,6 +684,17 @@ module Dependabot
           dependency_files: dependency_files,
           **params
         })
+      end
+
+      def handle_sub_dependency_local_path_error(error_message, yarn_lock)
+        # Invalid package: When package.json doesn't include a name or version
+        # Local path error: When installing a git dependency which
+        # is using local file paths for sub-dependencies (e.g. unbuilt yarn
+        # workspace project)
+        if error_message.match?(INVALID_PACKAGE_REGEX) ||
+           error_message.include?(SUB_DEP_LOCAL_PATH_TEXT)
+          raise_resolvability_error(error_message, yarn_lock)
+        end
       end
 
       # Raises a resolvability error for a dependency file
