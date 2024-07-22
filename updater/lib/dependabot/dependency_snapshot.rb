@@ -55,11 +55,15 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
+      raise "Current directory is not set" if @current_directory == ""
+
       @dependency_files.select { |f| f.directory == @current_directory }
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def dependencies
+      raise "Current directory is not set" if @current_directory == ""
+
       T.must(@dependencies[@current_directory])
     end
 
@@ -214,6 +218,8 @@ module Dependabot
 
     sig { returns(Dependabot::FileParsers::Base) }
     def dependency_file_parser
+      raise "Current directory not set" if @current_directory == ""
+
       job.source.directory = @current_directory
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
