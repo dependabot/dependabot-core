@@ -198,16 +198,6 @@ module Dependabot
         matchfn: nil
       },
       {
-        patterns: [INVALID_PACKAGE_REGEX, SUB_DEP_LOCAL_PATH_TEXT],
-        handler: lambda { |message, _error, params|
-                   dependency_names = params[:dependencies].map(&:name).join(", ")
-                   msg = "Error whilst updating #{dependency_names} in #{params[:yarn_lock].path}:\n#{message}"
-                   raise Dependabot::DependencyFileNotResolvable, msg
-                 },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
         patterns: [NODE_MODULES_STATE_FILE_NOT_FOUND],
         handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) },
         in_usage: true,

@@ -596,11 +596,13 @@ module Dependabot
       # Main error handling method
       sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
       def handle_error(error, params)
+        error_message = error.message
+        yarn_lock = params[:yarn_lock]
         # Check if sub dependency is using local path and raise a resolvability error
-        handle_sub_dependency_local_path_error(error.message, params[:yarn_lock])
+        handle_sub_dependency_local_path_error(error_message, yarn_lock)
 
         # Extract the usage error message from the raw error message
-        usage_error_message = find_usage_error(error.message) || ""
+        usage_error_message = find_usage_error(error_message) || ""
 
         # Check if the error message contains any group patterns and raise
         # the corresponding error class
