@@ -705,15 +705,15 @@ module Dependabot
       end
       def handle_package_not_found(error_message, yarn_lock) # rubocop:disable Metrics/PerceivedComplexity
         # There are 2 different package not found error messages
-        p1 = error_message.include?(PACKAGE_NOT_FOUND)
-        p2 = error_message.match?(PACKAGE_NOT_FOUND2)
+        package_not_found = error_message.include?(PACKAGE_NOT_FOUND)
+        package_not_found2 = error_message.match?(PACKAGE_NOT_FOUND2)
 
         # If non of the patterns are found, return an empty hash
-        return {} unless p1 || p2
+        return {} unless package_not_found || package_not_found2
 
         sanitized_name = T.let(nil, T.nilable(String))
 
-        if p1
+        if package_not_found
           package_name =
             error_message
             .match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
@@ -723,7 +723,7 @@ module Dependabot
             &.first
         end
 
-        if p2
+        if package_not_found2
           package_name =
             error_message
             .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
