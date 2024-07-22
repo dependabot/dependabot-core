@@ -142,59 +142,87 @@ module Dependabot
     YARN_ERROR_CODES = T.let({
       "YN0001" => {
         message: "Exception error",
-        handler: ->(message, _error, _params) { Dependabot::DependabotError.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependabotError.new(message)
+        }
       },
       "YN0002" => {
         message: "Missing peer dependency",
-        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotResolvable.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
+        }
       },
       "YN0016" => {
         message: "Remote not found",
-        handler: ->(message, _error, _params) { Dependabot::GitDependenciesNotReachable.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::GitDependenciesNotReachable.new(message)
+        }
       },
       "YN0020" => {
         message: "Missing lockfile entry",
-        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotFound.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotFound.new(message)
+        }
       },
       "YN0046" => {
         message: "Automerge failed to parse",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0047" => {
         message: "Automerge immutable",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0062" => {
         message: "Incompatible OS",
-        handler: ->(message, _error, _params) { Dependabot::DependabotError.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependabotError.new(message)
+        }
       },
       "YN0063" => {
         message: "Incompatible CPU",
-        handler: ->(message, _error, _params) { Dependabot::IncompatibleCPU.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::IncompatibleCPU.new(message)
+        }
       },
       "YN0071" => {
         message: "NM can't install external soft link",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0072" => {
         message: "NM preserve symlinks required",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0075" => {
         message: "Prolog instantiation error",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0077" => {
         message: "Ghost architecture",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0080" => {
         message: "Network disabled",
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        }
       },
       "YN0081" => {
         message: "Network unsafe HTTP",
-        handler: ->(message, _error, _params) { Dependabot::NetworkUnsafeHTTP.new(message) }
+        handler: lambda { |message, _error, _params|
+          Dependabot::NetworkUnsafeHTTP.new(message)
+        }
       }
     }.freeze, T::Hash[String, {
       message: T.any(String, NilClass),
@@ -205,7 +233,9 @@ module Dependabot
     VALIDATION_GROUP_PATTERNS = T.let([
       {
         patterns: [INVALID_NAME_IN_PACKAGE_JSON],
-        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotParseable.new(message) },
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotParseable.new(message)
+        },
         in_usage: false,
         matchfn: nil
       },
@@ -226,13 +256,17 @@ module Dependabot
       },
       {
         patterns: [NODE_MODULES_STATE_FILE_NOT_FOUND],
-        handler: ->(message, _error, _params) { Dependabot::MisconfiguredTooling.new("Yarn", message) },
+        handler: lambda { |message, _error, _params|
+          Dependabot::MisconfiguredTooling.new("Yarn", message)
+        },
         in_usage: true,
         matchfn: nil
       },
       {
         patterns: [TARBALL_IS_NOT_IN_NETWORK],
-        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotResolvable.new(message) },
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
+        },
         in_usage: false,
         matchfn: nil
       },
@@ -252,13 +286,17 @@ module Dependabot
       },
       {
         patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED],
-        handler: ->(message, _error, _params) { Dependabot::PrivateSourceAuthenticationFailure.new(message) },
+        handler: lambda { |message, _error, _params|
+          Dependabot::PrivateSourceAuthenticationFailure.new(message)
+        },
         in_usage: false,
         matchfn: nil
       },
       {
         patterns: [DEPENDENCY_FILE_NOT_RESOLVABLE],
-        handler: ->(message, _error, _params) { DependencyFileNotResolvable.new(message) },
+        handler: lambda { |message, _error, _params|
+          DependencyFileNotResolvable.new(message)
+        },
         in_usage: false,
         matchfn: nil
       },
@@ -266,6 +304,7 @@ module Dependabot
         patterns: [ENV_VAR_NOT_RESOLVABLE],
         handler: lambda { |message, _error, _params|
           var = Utils.extract_var(message)
+
           Dependabot::MissingEnvironmentVariable.new(var, message)
         },
         in_usage: false,
@@ -273,7 +312,9 @@ module Dependabot
       },
       {
         patterns: [ONLY_PRIVATE_WORKSPACE_TEXT],
-        handler: ->(message, _error, _params) { Dependabot::DependencyFileNotEvaluatable.new(message) },
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotEvaluatable.new(message)
+        },
         in_usage: false,
         matchfn: nil
       },
