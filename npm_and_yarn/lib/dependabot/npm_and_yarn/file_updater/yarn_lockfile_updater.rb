@@ -225,9 +225,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/MethodLength
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
 
@@ -235,22 +232,12 @@ module Dependabot
             yarn_lock: yarn_lock
           })
 
-          if error_message.include?(PACKAGE_NOT_FOUND)
-            package_name = error_message.match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
-                                        .named_captures[PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE]
-                                        .split(PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX).first
-            sanitized_name = sanitize_package_name(package_name)
-            sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
-          end
+          package_not_found = error_handler.handle_package_not_found(error_message, yarn_lock)
 
-          if error_message.match?(PACKAGE_NOT_FOUND2)
-            package_name = error_message
-                           .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
-                           .named_captures[PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE]
-            sanitized_name = sanitize_package_name(package_name)
-            sanitized_error = error_message.gsub(package_name, sanitized_name)
-            handle_missing_package(sanitized_name, sanitized_error, yarn_lock)
+          if package_not_found.any?
+            sanitized_name = package_not_found[:sanitized_name]
+            sanitized_message = package_not_found[:sanitized_message]
+            handle_missing_package(sanitized_name, sanitized_message, yarn_lock)
           end
 
           # TODO: Move this logic to the version resolver and check if a new
@@ -301,9 +288,6 @@ module Dependabot
 
           raise error
         end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/MethodLength
 
         def resolvable_before_update?(yarn_lock)
           @resolvable_before_update ||= {}
@@ -684,17 +668,6 @@ module Dependabot
         })
       end
 
-      def handle_sub_dependency_local_path_error(error_message, yarn_lock)
-        # Invalid package: When package.json doesn't include a name or version
-        # Local path error: When installing a git dependency which
-        # is using local file paths for sub-dependencies (e.g. unbuilt yarn
-        # workspace project)
-        if error_message.match?(INVALID_PACKAGE_REGEX) ||
-           error_message.include?(SUB_DEP_LOCAL_PATH_TEXT)
-          raise_resolvability_error(error_message, yarn_lock)
-        end
-      end
-
       # Raises a resolvability error for a dependency file
       sig do
         params(
@@ -726,12 +699,52 @@ module Dependabot
         false
       end
 
+      sig do
+        params(error_message: String, yarn_lock: Dependabot::DependencyFile)
+          .returns(T::Hash[T.any(Symbol, String), T.any(String, NilClass)])
+      end
+      def handle_package_not_found(error_message, yarn_lock) # rubocop:disable Metrics/PerceivedComplexity
+        # There are 2 different package not found error messages
+        p1 = error_message.include?(PACKAGE_NOT_FOUND)
+        p2 = error_message.match?(PACKAGE_NOT_FOUND2)
+
+        # If non of the patterns are found, return an empty hash
+        return {} unless p1 || p2
+
+        sanitized_name = T.let(nil, T.nilable(String))
+
+        if p1
+          package_name = error_message
+                         .match(PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX)
+                         &.named_captures&.[](PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE)
+                         &.split(PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX)&.first
+        end
+
+        if p2
+          package_name = error_message
+                         .match(PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX)
+                         &.named_captures&.[](PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE)
+        end
+
+        raise_resolvability_error(error_message, yarn_lock) unless package_name
+        sanitized_name = sanitize_package_name(package_name) if package_name
+        error_message = error_message.gsub(package_name, sanitized_name) if package_name && sanitized_name
+        { sanitized_name: sanitized_name, sanitized_message: error_message }
+      end
+
       # Checks if a package is missing from the error message
       sig { params(error_message: String).returns(T::Boolean) }
       def package_missing(error_message)
         names = dependencies.map(&:name)
         package_missing = names.any? { |name| error_message.include?("find package \"#{name}") }
         !!error_message.match(PACKAGE_MISSING_REGEX) || package_missing
+      end
+
+      sig { params(package_name: T.nilable(String)).returns(T.nilable(String)) }
+      def sanitize_package_name(package_name)
+        return package_name.gsub("%2f", "/").gsub("%2F", "/") if package_name
+
+        nil
       end
     end
   end
