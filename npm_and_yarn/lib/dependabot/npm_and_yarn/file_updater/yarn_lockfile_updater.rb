@@ -654,7 +654,7 @@ module Dependabot
       # Creates a new error based on the provided parameters
       sig do
         params(
-          handler: NewErrorProc,
+          handler: ErrorHandler,
           message: String,
           error: SharedHelpers::HelperSubprocessFailed,
           params: T::Hash[Symbol, String]
