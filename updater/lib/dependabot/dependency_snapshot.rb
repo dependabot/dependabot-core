@@ -186,6 +186,8 @@ module Dependabot
       end
 
       job.source.directory = @original_directory
+      # reset to ensure we don't accidentally use it later without setting it
+      @current_directory = ""
       return unless job.source.directory
 
       @current_directory = T.must(job.source.directory)
