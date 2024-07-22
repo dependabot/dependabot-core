@@ -66,7 +66,7 @@ module Dependabot
     SUB_DEP_LOCAL_PATH_TEXT = "refers to a non-existing file"
 
     # Used to identify invalid package error when package is not found in registry
-    INVALID_PACKAGE_REGEX = /Can't add ".*?": invalid/
+    INVALID_PACKAGE_REGEX = /Can't add "[\w\-.]+": invalid/
 
     # Used to identify error if package not found in registry
     PACKAGE_NOT_FOUND = "Couldn't find package"

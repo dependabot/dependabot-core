@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
@@ -11,10 +12,34 @@ require "dependabot/errors"
 RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
   subject(:error_handler) { described_class.new(dependencies: dependencies, dependency_files: dependency_files) }
 
-  let(:dependencies) { [instance_double(Dependabot::Dependency, name: "test-dependency")] }
-  let(:dependency_files) { [instance_double(Dependabot::DependencyFile, path: "path/to/yarn.lock")] }
-  let(:yarn_lock) { dependency_files.first }
+  let(:dependencies) { [dependency] }
   let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
+
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: version,
+      requirements: [],
+      previous_requirements: [],
+      package_manager: "npm_and_yarn"
+    )
+  end
+  let(:dependency_files) { project_dependency_files("yarn/git_dependency_local_file") }
+
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com"
+    })]
+  end
+
+  let(:dependency_name) { "@segment/analytics.js-integration-facebook-pixel" }
+  let(:version) { "github:segmentio/analytics.js-integrations#2.4.1" }
+  let(:yarn_lock) do
+    dependency_files.find { |f| f.name == "yarn.lock" }
+  end
+
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe "#initialize" do
     it "initializes with dependencies and dependency files" do
@@ -104,6 +129,30 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           expect(e.detected_version).to eq("v20.15.1")
           expect(e.supported_versions).to eq("14.21.3")
         end
+      end
+    end
+
+    context "when the error message contains SUB_DEP_LOCAL_PATH_TEXT" do
+      let(:error_message) { "Some error occurred: refers to a non-existing file" }
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            %r{@segment\/analytics\.js-integration-facebook-pixel}
+          )
+      end
+    end
+
+    context "when the error message matches INVALID_PACKAGE_REGEX" do
+      let(:error_message) { "Can't add \"invalid-package\": invalid" }
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            %r{@segment\/analytics\.js-integration-facebook-pixel}
+          )
       end
     end
   end
