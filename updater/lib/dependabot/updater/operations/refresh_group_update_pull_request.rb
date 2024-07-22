@@ -108,9 +108,7 @@ module Dependabot
             dependency_snapshot.groups.each do |group|
               next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
 
-              dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
-              )
+              dependency_snapshot.mark_group_handled(group)
             end
 
             if dependency_change.nil?

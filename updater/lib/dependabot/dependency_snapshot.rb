@@ -103,6 +103,19 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
+    sig { params(group: Dependabot::DependencyGroup).void }
+    def mark_group_handled(group)
+      directories.each do |directory|
+        @current_directory = directory
+
+        # add the existing dependencies in the group so individual updates don't try to update them
+        add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+        # also add dependencies that might be in the group, as a rebase would add them;
+        # this avoids individual PR creation that immediately is superseded by a group PR supersede
+        add_handled_dependencies(group.dependencies.map(&:name))
+      end
+    end
+
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
       raise "Current directory not set" if @current_directory == ""
@@ -137,16 +150,6 @@ module Dependabot
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
-    end
-
-    # Helper simplifies some of the logic, no need to check for one or the other!
-    sig { returns(T::Array[String]) }
-    def directories
-      if @original_directory
-        [@original_directory]
-      else
-        T.must(job.source.directories)
-      end
     end
 
     private
@@ -189,6 +192,16 @@ module Dependabot
       @handled_dependencies[@current_directory] = Set.new
     end
 
+    # Helper simplifies some of the logic, no need to check for one or the other!
+    sig { returns(T::Array[String]) }
+    def directories
+      if @original_directory
+        [@original_directory]
+      else
+        T.must(job.source.directories)
+      end
+    end
+
     sig { returns(Dependabot::Job) }
     attr_reader :job
 
@@ -208,6 +221,13 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
+    end
+
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
+    def dependencies_in_existing_pr_for_group(group)
+      job.existing_group_pull_requests.find do |pr|
+        pr["dependency-group-name"] == group.name
+      end&.fetch("dependencies", []) || []
     end
   end
 end
