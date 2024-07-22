@@ -596,16 +596,16 @@ module Dependabot
       # Main error handling method
       sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
       def handle_error(error, params)
-        # Check if defined yarn error codes contained in the error message
-        # and raise the corresponding error class
-        handle_yarn_error(error, params)
-
         # Extract the usage error message from the raw error message
         usage_error_message = find_usage_error(error.message) || ""
 
         # Check if the error message contains any group patterns and raise
         # the corresponding error class
         handle_group_patterns(error, usage_error_message, params)
+
+        # Check if defined yarn error codes contained in the error message
+        # and raise the corresponding error class
+        handle_yarn_error(error, params)
       end
 
       # Handles errors with specific to yarn error codes
