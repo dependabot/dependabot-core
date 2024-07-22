@@ -124,6 +124,18 @@ module Dependabot
 
         match_data
       end
+
+      sig do
+        params(
+          error_message: String,
+          dependencies: T::Array[Dependabot::Dependency],
+          yarn_lock: Dependabot::DependencyFile
+        ).returns(String)
+      end
+      def self.sanitize_resolvability_message(error_message, dependencies, yarn_lock)
+        dependency_names = dependencies.map(&:name).join(", ")
+        "Error whilst updating #{dependency_names} in #{yarn_lock.path}:\n#{error_message}"
+      end
     end
 
     YARN_CODE_REGEX = /(YN\d{4})/
@@ -194,6 +206,21 @@ module Dependabot
       {
         patterns: [INVALID_NAME_IN_PACKAGE_JSON],
         handler: ->(message, _error, _params) { Dependabot::DependencyFileNotParseable.new(message) },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        # Check if sub dependency is using local path and raise a resolvability error
+        patterns: [INVALID_PACKAGE_REGEX, SUB_DEP_LOCAL_PATH_TEXT],
+        handler: lambda { |message, _error, params|
+          Dependabot::DependencyFileNotResolvable.new(
+            Utils.sanitize_resolvability_message(
+              message,
+              params[:dependencies],
+              params[:yarn_lock]
+            )
+          )
+        },
         in_usage: false,
         matchfn: nil
       },
