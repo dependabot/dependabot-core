@@ -119,13 +119,6 @@ module Dependabot
       T.must(@handled_dependencies[@current_directory])
     end
 
-    # rubocop:disable Performance/Sum
-    sig { returns(T::Set[String]) }
-    def handled_dependencies_all_directories
-      T.must(@handled_dependencies.values.reduce(&:+))
-    end
-    # rubocop:enable Performance/Sum
-
     sig { params(dir: String).void }
     def current_directory=(dir)
       @current_directory = dir
@@ -142,12 +135,18 @@ module Dependabot
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
 
-      if Dependabot::Experiments.enabled?(:dependency_has_directory)
-        return allowed_dependencies.reject { |dep| handled_dependencies_all_directories.include?(dep.name) }
-      end
-
       # Otherwise return dependencies that haven't been handled during the group update portion.
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
+    end
+
+    # Helper simplifies some of the logic, no need to check for one or the other!
+    sig { returns(T::Array[String]) }
+    def directories
+      if @original_directory
+        [@original_directory]
+      else
+        T.must(job.source.directories)
+      end
     end
 
     private
@@ -188,16 +187,6 @@ module Dependabot
 
       @current_directory = T.must(job.source.directory)
       @handled_dependencies[@current_directory] = Set.new
-    end
-
-    # Helper simplifies some of the logic, no need to check for one or the other!
-    sig { returns(T::Array[String]) }
-    def directories
-      if @original_directory
-        [@original_directory]
-      else
-        T.must(job.source.directories)
-      end
     end
 
     sig { returns(Dependabot::Job) }

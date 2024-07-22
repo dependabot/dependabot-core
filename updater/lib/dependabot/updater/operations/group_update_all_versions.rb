@@ -100,6 +100,7 @@ module Dependabot
         attr_reader :error_handler
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T::Array[Dependabot::DependencyGroup]) }
         def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
@@ -114,13 +115,18 @@ module Dependabot
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
 
-              # add the dependencies in the group so individual updates don't try to update them
-              dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
-              )
-              # also add dependencies that might be in the group, as a rebase would add them;
-              # this avoids individual PR creation that immediately is superseded by a group PR supersede
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              # The dependencies currently don't have a directory set, so we assume all directories are affected.
+              dependency_snapshot.directories.each do |directory|
+                dependency_snapshot.current_directory = directory
+
+                # add the dependencies in the group so individual updates don't try to update them
+                dependency_snapshot.add_handled_dependencies(
+                  dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
+                )
+                # also add dependencies that might be in the group, as a rebase would add them;
+                # this avoids individual PR creation that immediately is superseded by a group PR supersede
+                dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              end
               next
             end
 
@@ -139,6 +145,7 @@ module Dependabot
           end
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
         def run_grouped_update_for(group)

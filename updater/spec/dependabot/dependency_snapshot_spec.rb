@@ -140,59 +140,6 @@ RSpec.describe Dependabot::DependencySnapshot do
     end
   end
 
-  describe "::handled_dependencies_all_directories" do
-    subject(:create_dependency_snapshot) do
-      described_class.create_from_job_definition(
-        job: job,
-        job_definition: job_definition
-      )
-    end
-
-    let(:job_definition) do
-      {
-        "base_commit_sha" => base_commit_sha,
-        "base64_dependency_files" => encode_dependency_files(dependency_files)
-      }
-    end
-
-    it "handles dependencies" do
-      snapshot = create_dependency_snapshot
-      snapshot.add_handled_dependencies(%w(a b))
-      expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
-    end
-
-    context "when there are multiple directories" do
-      let(:directory) { nil }
-      let(:directories) { %w(/foo /bar) }
-      let(:dependency_files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "Gemfile",
-            content: fixture("bundler/original/Gemfile"),
-            directory: "/foo"
-          ),
-          Dependabot::DependencyFile.new(
-            name: "Gemfile",
-            content: fixture("bundler/original/Gemfile"),
-            directory: "/bar"
-          )
-        ]
-      end
-
-      it "is agnostic of the current directory" do
-        snapshot = create_dependency_snapshot
-        snapshot.current_directory = "/foo"
-        snapshot.add_handled_dependencies("a")
-        snapshot.current_directory = "/bar"
-        snapshot.add_handled_dependencies("b")
-
-        expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
-        snapshot.current_directory = "/bar"
-        expect(snapshot.handled_dependencies_all_directories).to eq(Set.new(%w(a b)))
-      end
-    end
-  end
-
   describe "::create_from_job_definition" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
