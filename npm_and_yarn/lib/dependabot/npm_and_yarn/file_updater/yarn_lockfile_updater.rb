@@ -596,7 +596,8 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
       def handle_yarn_error(error, params)
-        error_message = error.message
+        ## Clean error message from ANSI escape codes
+        error_message = error.message.gsub(/\e\[\d+(;\d+)*m/, "")
         matches = error_message.scan(YARN_CODE_REGEX)
         return if matches.empty?
 
