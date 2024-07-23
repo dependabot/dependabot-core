@@ -55,15 +55,13 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
-      raise "Current directory is not set" if @current_directory == ""
-
+      assert_current_directory_set!
       @dependency_files.select { |f| f.directory == @current_directory }
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def dependencies
-      raise "Current directory is not set" if @current_directory == ""
-
+      assert_current_directory_set!
       T.must(@dependencies[@current_directory])
     end
 
@@ -122,8 +120,7 @@ module Dependabot
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       set = @handled_dependencies[@current_directory] || Set.new
       set += Array(dependency_names)
       @handled_dependencies[@current_directory] = set
@@ -131,8 +128,7 @@ module Dependabot
 
     sig { returns(T::Set[String]) }
     def handled_dependencies
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       T.must(@handled_dependencies[@current_directory])
     end
 
@@ -218,8 +214,7 @@ module Dependabot
 
     sig { returns(Dependabot::FileParsers::Base) }
     def dependency_file_parser
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       job.source.directory = @current_directory
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
@@ -236,6 +231,11 @@ module Dependabot
       job.existing_group_pull_requests.find do |pr|
         pr["dependency-group-name"] == group.name
       end&.fetch("dependencies", []) || []
+    end
+
+    sig { void }
+    def assert_current_directory_set!
+      raise DependabotError, "Assertion failed: Current directory not set" if @current_directory == ""
     end
   end
 end
