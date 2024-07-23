@@ -234,7 +234,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
             error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
           end.to raise_error(
             Dependabot::DependencyNotFound,
-            %r{The following dependency could not be found : @dummy-scope/dummy-package@npm:\^1.2.3 ->}
+            %r{The following dependency could not be found : @dummy-scope/dummy-package@npm:\^1.2.3}
           )
         end
       end
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
             error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
           end.to raise_error(
             Dependabot::DependencyNotFound,
-            %r{The following dependency could not be found : @dummy-scope/dummy-fixture@npm:\^1.0.0 ->}
+            %r{The following dependency could not be found : @dummy-scope/dummy-fixture@npm:\^1.0.0}
           )
         end
       end

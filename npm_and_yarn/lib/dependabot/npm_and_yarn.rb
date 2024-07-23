@@ -175,7 +175,7 @@ module Dependabot
           YN0035.each do |(_yn0035_key, yn0035_regex)|
             if (match_data = message.match(yn0035_regex)) && (package_req = match_data[:package_req])
               return Dependabot::DependencyNotFound.new(
-                "#{package_req} -> Detail: #{message}"
+                "#{package_req} Detail: #{message}"
               )
             end
           end
