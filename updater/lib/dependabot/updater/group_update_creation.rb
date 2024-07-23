@@ -54,8 +54,7 @@ module Dependabot
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
-          # We check dependency_snapshot.handled_dependencies instead of handled_dependencies_all_directories here
-          # because we still want to update a dependency if it's been updated in another manifest files,
+          # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
           if dependency_snapshot.handled_dependencies.include?(dependency.name)
             Dependabot.logger.info(
@@ -425,13 +424,6 @@ module Dependabot
       sig { params(group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def pr_exists_for_dependency_group?(group)
         job.existing_group_pull_requests.any? { |pr| pr["dependency-group-name"] == group.name }
-      end
-
-      sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
-      def dependencies_in_existing_pr_for_group(group)
-        job.existing_group_pull_requests.find do |pr|
-          pr["dependency-group-name"] == group.name
-        end&.fetch("dependencies", [])
       end
 
       sig do

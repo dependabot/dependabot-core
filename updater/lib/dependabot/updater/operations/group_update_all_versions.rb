@@ -99,7 +99,6 @@ module Dependabot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T::Array[Dependabot::DependencyGroup]) }
         def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
@@ -113,14 +112,7 @@ module Dependabot
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
-
-              # add the dependencies in the group so individual updates don't try to update them
-              dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] }
-              )
-              # also add dependencies that might be in the group, as a rebase would add them;
-              # this avoids individual PR creation that immediately is superseded by a group PR supersede
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              dependency_snapshot.mark_group_handled(group)
               next
             end
 
@@ -128,17 +120,11 @@ module Dependabot
           end
 
           groups_without_pr.each do |group|
-            grouped_update_result = run_grouped_update_for(group)
-            if grouped_update_result
-              # Add the actual updated dependencies to the handled list so they don't get updated individually.
-              dependency_snapshot.add_handled_dependencies(grouped_update_result.updated_dependencies.map(&:name))
-            else
-              # The update failed, add the suspected dependencies to the handled list so they don't update individually.
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
-            end
+            dependency_change = run_grouped_update_for(group)
+            # The update failed, add the suspected dependencies to the handled list so they don't update individually.
+            dependency_snapshot.mark_group_handled(group) if dependency_change.nil?
           end
         end
-        # rubocop:enable Metrics/AbcSize
 
         sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
         def run_grouped_update_for(group)
