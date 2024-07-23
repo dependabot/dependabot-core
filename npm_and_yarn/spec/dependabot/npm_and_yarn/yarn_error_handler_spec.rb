@@ -214,17 +214,19 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       context "when error message matches with YN0035.PACKAGE_NOT_FOUND" do
         let(:error_message) do
           "[94m➤[39m YN0000: · Yarn 4.2.2\n" \
-            "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n" \
-            "::group::Resolution step\n" \
-            "[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
+            "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n::group::Resolution step\n" \
+            "[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package" \
+            "[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
             "[91m➤[39m YN0035: │   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n" \
             "[91m➤[39m YN0035: │   [38;5;111mRequest Method[39m: GET\n" \
-            "[91m➤[39m YN0035: │   [38;5;111mRequest URL[39m: [38;5;170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n" \
-            "::endgroup::\n" \
-            "[91m➤[39m YN0035: [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
+            "[91m➤[39m YN0035: │   [38;5;111mRequest URL[39m: [38;5;" \
+            "170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n::endgroup::\n" \
+            "[91m➤[39m YN0035: [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package" \
+            "[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
             "[91m➤[39m YN0035:   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n" \
             "[91m➤[39m YN0035:   [38;5;111mRequest Method[39m: GET\n" \
-            "[91m➤[39m YN0035:   [38;5;111mRequest URL[39m: [38;5;170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n" \
+            "[91m➤[39m YN0035:   [38;5;111mRequest URL[39m: [38;5;" \
+            "170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n" \
             "[94m➤[39m [90mYN0000[39m: └ Completed in 0s 291ms\n" \
             "[91m➤[39m YN0000: · Failed with errors in 0s 303ms"
         end
@@ -241,21 +243,20 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       context "when error message matches with YN0035.FAILED_TO_RETRIEVE" do
         let(:error_message) do
-          "Dependabot::SharedHelpers::HelperSubprocessFailed: [94m➤[39m [90mYN0000[39m: ┌ Project validation\n" \
-            "::group::Project validation\n" \
-            "[93m➤[39m YN0057: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-connect[39m: Resolutions field will be ignored\n" \
-            "[93m➤[39m YN0057: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-js[39m: Resolutions field will be ignored\n" \
-            "::endgroup::\n" \
-            "[94m➤[39m [90mYN0000[39m: └ Completed\n" \
-            "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n" \
-            "::group::Resolution step\n" \
-            "[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-fixture[39m[38;5;37m@[39m[38;5;37mnpm:^1.0.0[39m: The remote server failed to provide the requested resource\n" \
-            "[91m➤[39m YN0035: │   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n" \
-            "[91m➤[39m YN0035: │   [38;5;111mRequest Method[39m: GET\n" \
-            "[91m➤[39m YN0035: │   [38;5;111mRequest URL[39m: [38;5;170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-fixture\n" \
-            "::endgroup::\n" \
-            "[94m➤[39m [90mYN0000[39m: └ Completed in 0s 566ms\n" \
-            "[91m➤[39m YN0000: Failed with errors in 0s 571ms"
+          "Dependabot::SharedHelpers::HelperSubprocessFailed: [94m➤[39m[90mYN0000" \
+            "[39m: ┌ Project validation\n::group::Project validation\n[93m➤[39m YN0057: │ " \
+            "[38;5;166m@dummy-scope/[39m[38;5;173mdummy-connect[39m: Resolutions field" \
+            " will be ignored\n[93m➤[39m YN0057: │ [38;5;166m@dummy-scope/[39m[38;5;" \
+            "173mdummy-js[39m: Resolutions field will be ignored\n::endgroup::\n[94m➤" \
+            "[39m [90mYN0000[39m: └ Completed\n[94m➤[39m [90mYN0000[39m: ┌ Resolution" \
+            " step\n::group::Resolution step\n[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/" \
+            "[39m[38;5;173mdummy-fixture[39m[38;5;37m@[39m[38;5;37mnpm:^1.0.0[39m: " \
+            "The remote server failed to provide the requested resource\n[91m➤[39m YN0035: " \
+            "│   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n[91m➤" \
+            "[39m YN0035: │   [38;5;111mRequest Method[39m: GET\n[91m➤[39m YN0035: │  " \
+            " [38;5;111mRequest URL[39m: [38;5;170m" \
+            "https://registry.yarnpkg.com/@dummy-scope%2fdummy-fixture\n::endgroup::\n" \
+            "[94m➤[39m [90mYN0000[39m: └ Completed in 0s 566ms\n[91m➤[39m YN0000: Failed with errors in 0s 571ms"
         end
 
         it "raises error with captured `package_req`" do
