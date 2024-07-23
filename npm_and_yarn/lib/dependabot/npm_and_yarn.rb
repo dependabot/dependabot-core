@@ -74,6 +74,11 @@ module Dependabot
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req"
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
 
+    YN0035 = T.let({
+      PACKAGE_NOT_FOUND: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): Package not found},
+      FAILED_TO_RETRIEVE: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): The remote server failed to provide the requested resource} # rubocop:disable Layout/LineLength
+    }.freeze, T::Hash[String, Regexp])
+
     PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name"
@@ -162,6 +167,19 @@ module Dependabot
         message: "Missing lockfile entry",
         handler: lambda { |message, _error, _params|
           Dependabot::DependencyFileNotFound.new(message)
+        }
+      },
+      "YN0035" => {
+        message: "Package not found",
+        handler: lambda { |message, _error, _params|
+          YN0035.each do |(_yn0035_key, yn0035_regex)|
+            if (match_data = message.match(yn0035_regex)) && (package_req = match_data[:package_req])
+              return Dependabot::DependencyNotFound.new(
+                "#{package_req} Detail: #{message}"
+              )
+            end
+          end
+          Dependabot::DependencyNotFound.new(message)
         }
       },
       "YN0046" => {
