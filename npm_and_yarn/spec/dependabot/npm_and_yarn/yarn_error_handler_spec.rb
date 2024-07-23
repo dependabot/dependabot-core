@@ -278,7 +278,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
             "➤ YN0000: · Failed with errors in 0s 683ms"
         end
 
-        it "raises" do
+        it "raises error with the raw message" do
           expect do
             error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
           end.to raise_error(
