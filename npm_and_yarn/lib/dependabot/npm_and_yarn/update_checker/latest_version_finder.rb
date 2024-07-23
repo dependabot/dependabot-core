@@ -374,7 +374,7 @@ module Dependabot
         end
 
         def dependency_url
-          process(registry_finder.dependency_url)
+          registry_finder.dependency_url
         end
 
         def dependency_registry
@@ -426,10 +426,6 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           ).git_dependency?
-        end
-
-        def process(uri)
-          uri.gsub("}/", "/")
         end
       end
     end

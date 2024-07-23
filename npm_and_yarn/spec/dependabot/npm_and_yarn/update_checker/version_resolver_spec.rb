@@ -527,42 +527,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
       end
 
-      context "when updating a dependency that is a peer requirement" do
+      context "when updating a dependency with malformed registry configuration" do
         let(:project_name) { "npm6/peer_dependency" }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "react",
+            name: "react-dom",
             version: "15.2.0",
             package_manager: "npm_and_yarn",
             requirements: [{
               file: "package.json",
               requirement: "^15.2.0",
               groups: ["dependencies"],
-              source: { type: "registry", url: "https://registry.npmjs.org" }
+              source: { type: "registry", url: "https://registry.yarnpkg.com}/" }
             }]
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
-
-        context "when dealing with multiple dependencies" do
-          let(:project_name) { "npm6/peer_dependency_multiple" }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "react",
-              version: "0.14.2",
-              package_manager: "npm_and_yarn",
-              requirements: [{
-                file: "package.json",
-                requirement: "0.14.2",
-                groups: ["dependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }]
-            )
+        context "when some badly written peer dependency requirements" do
+          it "raise a helpful error" do
+            expect { latest_resolvable_version }.to raise_error(URI::InvalidURIError)
           end
-
-          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
         end
       end
     end

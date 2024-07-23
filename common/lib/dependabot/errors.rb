@@ -243,6 +243,11 @@ module Dependabot
         "error-type": "git_token_auth_error",
         "error-detail": { message: error.message }
       }
+    when URI::InvalidURIError
+      {
+        "error-type": "invalid_uri_error",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
