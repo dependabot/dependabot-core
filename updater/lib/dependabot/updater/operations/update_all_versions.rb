@@ -31,7 +31,6 @@ module Dependabot
           return unless job.source.directory.nil? && job.source.directories.count == 1
 
           job.source.directory = job.source.directories.first
-          dependency_snapshot.current_directory = job.source.directory
         end
 
         def perform
