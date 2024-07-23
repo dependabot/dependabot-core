@@ -362,7 +362,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           name: "Gemfile.lock",
           content: fixture("bundler/original/Gemfile.lock"),
           directory: "/bar"
-        ),
+        )
       ]
     end
 
