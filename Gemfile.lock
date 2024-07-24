@@ -240,14 +240,14 @@ GEM
     parallel_tests (4.4.0)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.1.0)
+    parser (3.3.4.0)
       ast (~> 2.4.1)
       racc
     prism (0.29.0)
     psych (5.1.2)
       stringio
     public_suffix (5.0.4)
-    racc (1.7.3)
+    racc (1.8.0)
     rainbow (3.1.1)
     rake (13.1.0)
     rbi (0.1.13)
