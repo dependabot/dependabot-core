@@ -292,6 +292,7 @@ module Dependabot
             groups: groups,
             metadata: dependency_metadata(details_hash, in_dependency_set)
           }],
+          directory: source&.directory,
           package_manager: "gradle"
         )
       end

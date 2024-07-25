@@ -257,6 +257,7 @@ module Dependabot
           name: json["name"],
           version: json["version"],
           package_manager: "pub",
+          directory: source&.directory,
           requirements: []
         }
 

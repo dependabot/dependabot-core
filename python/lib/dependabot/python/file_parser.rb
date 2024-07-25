@@ -99,7 +99,8 @@ module Dependabot
               name: normalised_name(name, dep["extras"]),
               version: version&.include?("*") ? nil : version,
               requirements: requirements,
-              package_manager: "pip"
+              package_manager: "pip",
+              directory: source&.directory,
             )
         end
         dependencies
