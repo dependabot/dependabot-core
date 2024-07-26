@@ -79,6 +79,7 @@ module Dependabot
         INVALID_AUTH_TOKEN =
           /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
+        EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -392,6 +393,8 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(error: Exception).returns(T.noreturn) }
         def handle_npm_updater_error(error)
+          Dependabot.logger.warn("NPM : " + error.message)
+
           error_message = error.message
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
@@ -521,6 +524,11 @@ module Dependabot
              T.must(registry_source.named_captures.fetch("url")).include?(NPM_PACKAGE_REGISTRY)
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::InvalidGitAuthToken, T.must(msg)
+          end
+
+          if (dep = error_message.match(EOVERRIDE))
+            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error

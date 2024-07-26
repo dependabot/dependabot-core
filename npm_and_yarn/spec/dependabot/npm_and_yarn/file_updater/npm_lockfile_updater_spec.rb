@@ -767,5 +767,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a override that conflicts with direct dependency" do
+      let(:response) do
+        "WARN NPM : npm WARN using --force Recommended protections disabled.\n" \
+          "npm ERR! code EOVERRIDE\n" \
+          "npm ERR! Override for @vitejs/plugin-react@^4.3.1 conflicts with direct dependency"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
