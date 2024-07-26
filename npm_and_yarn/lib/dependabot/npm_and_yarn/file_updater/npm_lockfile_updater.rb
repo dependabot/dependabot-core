@@ -533,7 +533,7 @@ module Dependabot
           end
 
           if error_message.match(NESTED_ALIAS)
-            msg = "nested aliases not supported"
+            msg = "Nested aliases are not supported with NPM version <6.9.0"
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
