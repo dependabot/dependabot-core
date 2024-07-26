@@ -80,6 +80,7 @@ module Dependabot
           /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
+        NESTED_ALIAS = /nested aliases not supported/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -528,6 +529,11 @@ module Dependabot
 
           if (dep = error_message.match(EOVERRIDE))
             msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match(NESTED_ALIAS)
+            msg = "nested aliases not supported"
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
