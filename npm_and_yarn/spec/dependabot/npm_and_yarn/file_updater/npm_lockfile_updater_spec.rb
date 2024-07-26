@@ -788,4 +788,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
     end
   end
+
+  context "with a dependency with nested aliases not supported" do
+    let(:files) { project_dependency_files("npm/simple_with_nested_deps") }
+    let(:dependency_name) { "express" }
+    let(:version) { "4.19.2" }
+    let(:previous_version) { "^4.17.1" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^4.17.1",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
 end
