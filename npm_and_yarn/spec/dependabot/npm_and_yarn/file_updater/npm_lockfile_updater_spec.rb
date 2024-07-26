@@ -768,4 +768,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
   end
+
+  context "with a override that conflicts with direct dependency" do
+    let(:files) { project_dependency_files("npm/simple_with_override") }
+    let(:dependency_name) { "eslint" }
+    let(:version) { "9.5.1" }
+    let(:previous_version) { "^9.5.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^9.5.0",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
 end
