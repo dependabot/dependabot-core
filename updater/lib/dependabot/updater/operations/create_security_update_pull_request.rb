@@ -96,13 +96,10 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
-          vulnerable_dependency = dependency
-          if vulnerable_dependency.metadata[:all_versions]
-            vulnerable_dependency = vulnerable_version(vulnerable_dependency)
-          end
-          checker = update_checker_for(vulnerable_dependency)
+          dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
+          checker = update_checker_for(dependency)
 
-          log_checking_for_update(vulnerable_dependency)
+          log_checking_for_update(dependency)
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
