@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/logger"
+require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/helpers"
@@ -74,6 +75,12 @@ module Dependabot
         SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
         UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
         UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
+        MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
+        INVALID_AUTH_TOKEN =
+          /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
+        NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
+        EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
+        NESTED_ALIAS = /nested aliases not supported/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -387,6 +394,8 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(error: Exception).returns(T.noreturn) }
         def handle_npm_updater_error(error)
+          Dependabot.logger.warn("NPM : " + error.message)
+
           error_message = error.message
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
@@ -509,6 +518,23 @@ module Dependabot
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
+            error_message.match(MISSING_AUTH_TOKEN)) &&
+             T.must(registry_source.named_captures.fetch("url")).include?(NPM_PACKAGE_REGISTRY)
+            msg = registry_source.named_captures.fetch("url")
+            raise Dependabot::InvalidGitAuthToken, T.must(msg)
+          end
+
+          if (dep = error_message.match(EOVERRIDE))
+            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match(NESTED_ALIAS)
+            msg = "Nested aliases are not supported in NPM versions earlier than 6.9.0."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error
@@ -702,7 +728,7 @@ module Dependabot
           json = JSON.parse(content)
 
           NpmAndYarn::FileParser.each_dependency(json) do |nm, requirement, type|
-            next unless requirement == "latest"
+            next unless Version::VERSION_TAGS.include?(requirement)
 
             json[type][nm] = "*"
           end
@@ -785,16 +811,17 @@ module Dependabot
           # NOTE: This is a workaround for npm adding a `name` attribute to the
           # packages section in the lockfile because we install using
           # `--package-lock-only`
-          if !original_name
-            updated_lockfile_content = remove_lockfile_packages_name_attribute(
-              current_name, updated_lockfile_content
-            )
-          elsif original_name && original_name != current_name
-            updated_lockfile_content = replace_lockfile_packages_name_attribute(
-              current_name, original_name, updated_lockfile_content
-            )
+          if current_name
+            if !original_name
+              updated_lockfile_content = remove_lockfile_packages_name_attribute(
+                current_name, updated_lockfile_content
+              )
+            elsif original_name != current_name
+              updated_lockfile_content = replace_lockfile_packages_name_attribute(
+                current_name, original_name, updated_lockfile_content
+              )
+            end
           end
-
           updated_lockfile_content
         end
 

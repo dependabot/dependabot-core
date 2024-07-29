@@ -32,6 +32,7 @@ public class RequirementTests
     [InlineData("2.0", "~> 1.0", false)]
     [InlineData("1", "~> 1", true)]
     [InlineData("2", "~> 1", false)]
+    [InlineData("5.3.8", "< 6, > 5.2.4", true)]
     public void IsSatisfiedBy(string versionString, string requirementString, bool expected)
     {
         var version = NuGetVersion.Parse(versionString);

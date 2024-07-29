@@ -26,11 +26,19 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     end
 
     context "with a dist tag" do
-      let(:requirement_string) { "next" }
+      context "when it is supported tag" do
+        let(:requirement_string) { "next" }
 
-      it "raises a bad requirement error" do
-        expect { requirement }
-          .to raise_error(Gem::Requirement::BadRequirementError)
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is not supported tag or unknown versioning" do
+        let(:requirement_string) { "some_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
       end
     end
 

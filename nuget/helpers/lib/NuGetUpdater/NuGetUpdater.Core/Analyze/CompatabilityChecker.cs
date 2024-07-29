@@ -54,6 +54,11 @@ internal static class CompatibilityChecker
 
         var compatibilityService = new FrameworkCompatibilityService();
         var compatibleFrameworks = compatibilityService.GetCompatibleFrameworks(packageFrameworks);
+        var packageSupportsAny = compatibleFrameworks.Any(f => f.IsAny);
+        if (packageSupportsAny)
+        {
+            return true;
+        }
 
         var incompatibleFrameworks = projectFrameworks.Where(f => !compatibleFrameworks.Contains(f)).ToArray();
         if (incompatibleFrameworks.Length > 0)
@@ -141,15 +146,23 @@ internal static class CompatibilityChecker
                 throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
             }
 
-            var exists = await feed.DoesPackageExistAsync(
-                package.Id,
-                package.Version,
-                context.SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-
-            if (!exists)
+            try
             {
+                // a non-compliant v2 API returning 404 can cause this to throw
+                var exists = await feed.DoesPackageExistAsync(
+                    package.Id,
+                    package.Version,
+                    context.SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (!exists)
+                {
+                    continue;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
 

@@ -228,6 +228,7 @@ internal static class SdkPackageUpdater
 
         // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
         var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
+        MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
         if (exitCode != 0)
         {
             logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
@@ -594,7 +595,7 @@ internal static class SdkPackageUpdater
         string packageName)
         => buildFile.PackageItemNodes.Where(e =>
             string.Equals(
-                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+                (e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase))?.Trim(),
                 packageName,
                 StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);

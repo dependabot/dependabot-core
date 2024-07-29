@@ -1,3 +1,8 @@
+using System.Text;
+using System.Text.Json;
+
+using NuGet;
+
 using NuGetUpdater.Core.Analyze;
 
 using Xunit;
@@ -297,6 +302,451 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedVersion = "4.0.1",
                 CanUpdate = false,
                 VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task VersionFinderCanHandle404FromPackageSource_V2()
+    {
+        static (int, byte[]) TestHttpHandler1(string uriString)
+        {
+            // this is a valid nuget package source, but doesn't contain anything
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                "/api/v2/" => (200, Encoding.UTF8.GetBytes($"""
+                    <service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom" xml:base="{baseUrl}/api/v2">
+                        <workspace>
+                            <atom:title type="text">Default</atom:title>
+                            <collection href="Packages">
+                                <atom:title type="text">Packages</atom:title>
+                            </collection>
+                        </workspace>
+                    </service>
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}")), // nothing else is found
+            };
+        }
+        var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
+        (int, byte[]) TestHttpHandler2(string uriString)
+        {
+            // this contains the actual package
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            switch (uri.PathAndQuery)
+            {
+                case "/api/v2/":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom" xml:base="{baseUrl}/api/v2">
+                            <workspace>
+                                <atom:title type="text">Default</atom:title>
+                                <collection href="Packages">
+                                    <atom:title type="text">Packages</atom:title>
+                                </collection>
+                            </workspace>
+                        </service>
+                        """));
+                case "/api/v2/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <feed xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                            xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+                            xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+                            xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+                            <m:count>2</m:count>
+                            <id>http://schemas.datacontract.org/2004/07/</id>
+                            <title />
+                            <updated>{DateTime.UtcNow:O}</updated>
+                            <link rel="self" href="{baseUrl}/api/v2/Packages" />
+                            <entry>
+                                <id>{baseUrl}/api/v2/Packages(Id='Some.Package',Version='1.0.0')</id>
+                                <content type="application/zip" src="{baseUrl}/api/v2/package/Some.Package/1.0.0" />
+                                <m:properties>
+                                    <d:Version>1.0.0</d:Version>
+                                </m:properties>
+                            </entry>
+                            <entry>
+                                <id>{baseUrl}/api/v2/Packages(Id='Some.Package',Version='1.2.3')</id>
+                                <content type="application/zip" src="{baseUrl}/api/v2/package/Some.Package/1.2.3" />
+                                <m:properties>
+                                    <d:Version>1.2.3</d:Version>
+                                </m:properties>
+                            </entry>
+                        </feed>
+                        """));
+                case "/api/v2/Packages(Id='Some.Package',Version='1.2.3')":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <entry xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                            xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+                            xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+                            xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+                            <id>{baseUrl}/api/v2/Packages(Id='Some.Package',Version='1.2.3')</id>
+                            <updated>{DateTime.UtcNow:O}</updated>
+                            <content type="application/zip" src="{baseUrl}/api/v2/package/Some.Package/1.2.3" />
+                            <m:properties>
+                                <d:Version>1.2.3</d:Version>
+                            </m:properties>
+                        </entry>
+                        """));
+                case "/api/v2/package/Some.Package/1.0.0":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/api/v2/package/Some.Package/1.2.3":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0").GetZipStream().ReadAllBytes());
+                case "/api/v2/FindPackagesById()?id='Microsoft.WindowsDesktop.App.Ref'&semVerLevel=2.0.0":
+                    return (200, Encoding.UTF8.GetBytes($"""
+                        <feed xml:base="{baseUrl}/api/v2" xmlns="http://www.w3.org/2005/Atom"
+                            xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices"
+                            xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"
+                            xmlns:georss="http://www.georss.org/georss" xmlns:gml="http://www.opengis.net/gml">
+                            <m:count>1</m:count>
+                            <id>http://schemas.datacontract.org/2004/07/</id>
+                            <title />
+                            <updated>{DateTime.UtcNow:O}</updated>
+                            <link rel="self" href="{baseUrl}/api/v2/Packages" />
+                            <entry>
+                                <id>{baseUrl}/api/v2/Packages(Id='Microsoft.WindowsDesktop.App.Ref',Version='{desktopAppRefPackage.Version}')</id>
+                                <content type="application/zip" src="{baseUrl}/api/v2/package/Microsoft.WindowsDesktop.App.Ref/{desktopAppRefPackage.Version}" />
+                                <m:properties>
+                                    <d:Version>{desktopAppRefPackage.Version}</d:Version>
+                                </m:properties>
+                            </entry>
+                        </feed>
+                        """));
+                default:
+                    if (uri.PathAndQuery == $"/api/v2/package/Microsoft.WindowsDesktop.App.Ref/{desktopAppRefPackage.Version}")
+                    {
+                        return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    // nothing else is found
+                    return (404, Encoding.UTF8.GetBytes("{}"));
+            };
+        }
+        using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
+        using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="package_feed_1" value="{http1.BaseUrl.TrimEnd('/')}/api/v2/" allowInsecureConnections="true" />
+                        <add key="package_feed_2" value="{http2.BaseUrl.TrimEnd('/')}/api/v2/" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ]
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.2.3",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies =
+                [
+                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task VersionFinderCanHandle404FromPackageSource_V3()
+    {
+        static (int, byte[]) TestHttpHandler1(string uriString)
+        {
+            // this is a valid nuget package source, but doesn't contain anything
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                _ => (404, Encoding.UTF8.GetBytes("{}")), // nothing else is found
+            };
+        }
+        var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
+        (int, byte[]) TestHttpHandler2(string uriString)
+        {
+            // this contains the actual package
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            switch (uri.PathAndQuery)
+            {
+                case "/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "version": "3.0.0",
+                            "resources": [
+                                {
+                                    "@id": "{{baseUrl}}/download",
+                                    "@type": "PackageBaseAddress/3.0.0"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/query",
+                                    "@type": "SearchQueryService"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/registrations",
+                                    "@type": "RegistrationsBaseUrl"
+                                }
+                            ]
+                        }
+                        """));
+                case "/registrations/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.2.3",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            }
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.2.3"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """));
+                case "/download/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "versions": [
+                                "1.0.0",
+                                "1.2.3"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.windowsdesktop.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{desktopAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/some.package/1.0.0/some.package.1.0.0.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/download/some.package/1.2.3/some.package.1.2.3.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0").GetZipStream().ReadAllBytes());
+                default:
+                    if (uri.PathAndQuery == $"/download/microsoft.windowsdesktop.app.ref/{desktopAppRefPackage.Version}/microsoft.windowsdesktop.app.ref.{desktopAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    // nothing else is found
+                    return (404, Encoding.UTF8.GetBytes("{}"));
+            };
+        }
+        using var http1 = TestHttpServer.CreateTestServer(TestHttpHandler1);
+        using var http2 = TestHttpServer.CreateTestServer(TestHttpHandler2);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="package_feed_1" value="{http1.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                        <add key="package_feed_2" value="{http2.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ]
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.2.3",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies =
+                [
+                    new("Some.Package", "1.2.3", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+    {
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+        await AnalyzeWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, "Some.Dependency", new()
+        {
+            ErrorType = ErrorType.AuthenticationFailure,
+            ErrorDetails = "<some package feed>",
+            UpdatedVersion = "",
+            UpdatedDependencies = [],
+        }, new Logger(false));
+        var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
+
+        // raw result file should look like this:
+        // {
+        //   ...
+        //   "ErrorType": "AuthenticationFailure",
+        //   "ErrorDetails": "<some package feed>",
+        //   ...
+        // }
+        var jsonDocument = JsonDocument.Parse(discoveryContents);
+        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
+        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+
+        Assert.Equal("AuthenticationFailure", errorType.GetString());
+        Assert.Equal("<some package feed>", errorDetails.GetString());
+    }
+
+    [Fact]
+    public async Task ReportsPrivateSourceAuthenticationFailure()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (401, "{}"),
+            };
+        }
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.2.3", DependencyType.PackageReference),
+                        ],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.2.3",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                UpdatedVersion = string.Empty,
+                CanUpdate = false,
                 UpdatedDependencies = [],
             }
         );

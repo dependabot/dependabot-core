@@ -109,16 +109,14 @@ job:
     - dependency-group-name: all
       dependencies:
         - dependency-name: dependency-a
-          version: 1.2.5
+          dependency-version: 1.2.5
           directory: "/foo"
         - dependency-name: dependency-b
-          version: 2.2.5
+          dependency-version: 2.2.5
           directory: "/foo"
         - dependency-name: dependency-b
-          version: 2.2.5
+          dependency-version: 2.2.5
           directory: "/bar"
         - dependency-name: dependency-c
-          version: 3.2.5
+          dependency-version: 3.2.5
           directory: "/bar"
-  experiments:
-    dependency_has_directory: true

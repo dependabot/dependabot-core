@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace NuGetUpdater.Core.Discover;
 
-public sealed record WorkspaceDiscoveryResult
+public sealed record WorkspaceDiscoveryResult : NativeResult
 {
     public required string Path { get; init; }
     public bool IsSuccess { get; init; } = true;

@@ -303,6 +303,40 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         end
       end
     end
+
+    context "with a private source authentication failure" do
+      let(:dependency_name) { "Nuke.Common" }
+      let(:dependency_requirements) { [] }
+      let(:dependency_version) { "2.0.0" }
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: false,
+            Projects: [],
+            DirectoryPackagesProps: nil,
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          },
+          dependency_name: "Nuke.Common",
+          analysis_content_hash: {
+            UpdatedVersion: "",
+            CanUpdate: false,
+            VersionComesFromMultiDependencyProperty: false,
+            UpdatedDependencies: [],
+            ErrorType: "AuthenticationFailure",
+            ErrorDetails: "the-error-details"
+          }
+        )
+      end
+
+      it "raises the correct error" do
+        run_analyze_test do |checker|
+          expect { checker.up_to_date? }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do

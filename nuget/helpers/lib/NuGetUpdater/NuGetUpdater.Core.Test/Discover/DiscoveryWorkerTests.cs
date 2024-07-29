@@ -1,3 +1,7 @@
+using System.Text.Json;
+
+using NuGetUpdater.Core.Discover;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -48,6 +52,54 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", projectPath),
                             new("TargetFramework", "net8.0", projectPath),
+                        ]
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDependencyWithTrailingSpacesInAttribute()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: new[]
+            {
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include=" Some.Package    " Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
+                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ]
                     }
                 ]
@@ -319,6 +371,102 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
                     ]
                 }
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+    {
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+        var discoveryResultPath = Path.Combine(temporaryDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+        await DiscoveryWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, discoveryResultPath, new()
+        {
+            ErrorType = ErrorType.AuthenticationFailure,
+            ErrorDetails = "<some package feed>",
+            Path = "/",
+            Projects = [],
+        });
+        var discoveryContents = await File.ReadAllTextAsync(discoveryResultPath);
+
+        // raw result file should look like this:
+        // {
+        //   ...
+        //   "ErrorType": "AuthenticationFailure",
+        //   "ErrorDetails": "<some package feed>",
+        //   ...
+        // }
+        var jsonDocument = JsonDocument.Parse(discoveryContents);
+        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
+        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+
+        Assert.Equal("AuthenticationFailure", errorType.GetString());
+        Assert.Equal("<some package feed>", errorDetails.GetString());
+    }
+
+    [Fact]
+    public async Task ReportsPrivateSourceAuthenticationFailure()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (401, "{}"),
+            };
+        }
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        await TestDiscoveryAsync(
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Path = "",
+                Projects = [],
             }
         );
     }

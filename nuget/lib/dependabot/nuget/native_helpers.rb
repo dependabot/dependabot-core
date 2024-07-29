@@ -169,11 +169,12 @@ module Dependabot
         end
       end
 
+      # rubocop:disable Metrics/MethodLength
       sig do
         params(repo_root: String, proj_path: String, dependency: Dependency,
-               is_transitive: T::Boolean).returns([String, String])
+               is_transitive: T::Boolean, result_output_path: String).returns([String, String])
       end
-      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:)
+      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:, result_output_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
@@ -189,6 +190,8 @@ module Dependabot
           "--previous-version",
           dependency.previous_version,
           is_transitive ? "--transitive" : nil,
+          "--result-output-path",
+          result_output_path,
           "--verbose"
         ].compact
 
@@ -208,10 +211,18 @@ module Dependabot
           "--previous-version",
           "<previous-version>",
           is_transitive ? "--transitive" : nil,
+          "--result-output-path",
+          "<result-output-path>",
           "--verbose"
         ].compact.join(" ")
 
         [command, fingerprint]
+      end
+      # rubocop:enable Metrics/MethodLength
+
+      sig { returns(String) }
+      def self.update_result_file_path
+        File.join(Dir.tmpdir, "update-result.json")
       end
 
       sig do
@@ -225,13 +236,35 @@ module Dependabot
       end
       def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
         (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
-                                                                dependency: dependency, is_transitive: is_transitive)
+                                                                dependency: dependency, is_transitive: is_transitive,
+                                                                result_output_path: update_result_file_path)
 
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
           output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
           puts output
+
+          result_contents = File.read(update_result_file_path)
+          Dependabot.logger.info("update result: #{result_contents}")
+          result_json = T.let(JSON.parse(result_contents), T::Hash[String, T.untyped])
+          ensure_no_errors(result_json)
+        end
+      end
+
+      sig { params(json: T::Hash[String, T.untyped]).void }
+      def self.ensure_no_errors(json)
+        error_type = T.let(json.fetch("ErrorType", nil), T.nilable(String))
+        error_details = T.let(json.fetch("ErrorDetails", nil), T.nilable(String))
+        case error_type
+        when "None", nil
+          # no issue
+        when "AuthenticationFailure"
+          raise PrivateSourceAuthenticationFailure, error_details
+        when "MissingFile"
+          raise DependencyFileNotFound, error_details
+        else
+          raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end
       end
     end

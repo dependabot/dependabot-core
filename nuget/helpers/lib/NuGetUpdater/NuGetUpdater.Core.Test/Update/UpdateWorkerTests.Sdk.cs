@@ -1,5 +1,8 @@
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
@@ -2896,6 +2899,91 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """
+            );
+        }
+
+        [Fact]
+        public async Task UpdatePackageWithWhitespaceInTheXMLAttributeValue()
+        {
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include=" Some.Package    " Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include=" Some.Package    " Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task ReportsPrivateSourceAuthenticationFailure()
+        {
+            static (int, string) TestHttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+                return uri.PathAndQuery switch
+                {
+                    _ => (401, "{}"), // everything is unauthorized
+                };
+            }
+            using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedResult: new()
+                {
+                    ErrorType = ErrorType.AuthenticationFailure,
+                    ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                }
             );
         }
     }
