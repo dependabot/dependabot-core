@@ -31,7 +31,7 @@ internal static class SdkPackageUpdater
 
         if (isTransitive)
         {
-            await UpdateTransitiveDependencyAsnyc(projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
+            await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
         }
         else
         {
@@ -123,7 +123,7 @@ internal static class SdkPackageUpdater
         return true;
     }
 
-    private static async Task UpdateTransitiveDependencyAsnyc(string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    private static async Task UpdateTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
     {
         var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
             .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
@@ -133,7 +133,7 @@ internal static class SdkPackageUpdater
         }
         else
         {
-            await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
+            await AddTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, logger);
         }
     }
 
@@ -222,17 +222,21 @@ internal static class SdkPackageUpdater
         directoryPackages.Update(updatedXml);
     }
 
-    private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
+    private static async Task AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
     {
-        logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
-
-        // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
-        MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
-        if (exitCode != 0)
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        await MSBuildHelper.SidelineGlobalJsonAsync(projectDirectory, repoRootPath, async () =>
         {
-            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
-        }
+            logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
+
+            // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: projectDirectory);
+            MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
+            if (exitCode != 0)
+            {
+                logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+            }
+        });
     }
 
     /// <summary>
