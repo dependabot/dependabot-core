@@ -118,7 +118,8 @@ RSpec.describe Dependabot::ApiClient do
                   "source" => nil
                 }
               ],
-            "version" => "1.8.0"
+            "version" => "1.8.0",
+            "directory" => "/"
           }
         ])
         expect(data["updated-dependency-files"]).to eql([
