@@ -50,8 +50,6 @@ job:
       rules:
         patterns:
           - "*"
-  experiments:
-    dependency_has_directory: true
 
 -- input-updating-pr.yml --
 job:
@@ -79,5 +77,3 @@ job:
           dependency-version: 1.2.5
         - dependency-name: dependency-b
           dependency-version: 2.2.5
-  experiments:
-    dependency_has_directory: true

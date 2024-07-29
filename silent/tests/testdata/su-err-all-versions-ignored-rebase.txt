@@ -41,5 +41,3 @@ job:
     - dependency-name: dependency-a
       version-requirement: "> 1.0.0"
       source: input file
-  experiments:
-    dependency_has_directory: true
