@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
@@ -10,8 +10,10 @@ module Dependabot
   class Updater
     module Operations
       class CreateSecurityUpdatePullRequest
+        extend T::Sig
         include SecurityUpdateHelpers
 
+        sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
           # If we haven't been given data for the vulnerable dependency,
@@ -21,17 +23,26 @@ module Dependabot
           job.security_updates_only?
         end
 
+        sig { returns(Symbol) }
         def self.tag_name
           :create_security_pr
         end
 
+        sig do
+          params(
+            service: Dependabot::Service,
+            job: Dependabot::Job,
+            dependency_snapshot: Dependabot::DependencySnapshot,
+            error_handler: Dependabot::Updater::ErrorHandler
+          ).void
+        end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = []
+          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, String]]])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -40,6 +51,7 @@ module Dependabot
         # Changing this contract now without some safety catches introduces
         # risk, so we'll maintain the interface as-is for now, but this is
         # something we should make much more intentional in future.
+        sig { void }
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
 
@@ -54,12 +66,18 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Job) }
         attr_reader :job
+        sig { returns(Dependabot::Service) }
         attr_reader :service
+        sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+        sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+        sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
         attr_reader :created_pull_requests
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
         rescue Dependabot::InconsistentRegistryResponse => e
@@ -76,11 +94,15 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
+        sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
-          dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
-          checker = update_checker_for(dependency)
+          vulnerable_dependency = dependency
+          if vulnerable_dependency.metadata[:all_versions]
+            vulnerable_dependency = vulnerable_version(vulnerable_dependency)
+          end
+          checker = update_checker_for(vulnerable_dependency)
 
-          log_checking_for_update(dependency)
+          log_checking_for_update(vulnerable_dependency)
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
@@ -162,7 +184,7 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
-
+        sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
           return dependency if dependency.metadata[:all_versions].count == 1
 
@@ -177,6 +199,7 @@ module Dependabot
           vulnerable_dependency
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base) }
         def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
@@ -191,6 +214,7 @@ module Dependabot
           )
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_checking_for_update(dependency)
           Dependabot.logger.info(
             "Checking if #{dependency.name} #{dependency.version} needs updating"
@@ -198,12 +222,14 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_up_to_date(dependency)
           Dependabot.logger.info(
             "No update needed for #{dependency.name} #{dependency.version}"
           )
         end
 
+        sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }
         def log_requirements_for_update(requirements_to_unlock, checker)
           Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -214,6 +240,7 @@ module Dependabot
           )
         end
 
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
         def pr_exists_for_latest_version?(checker)
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
@@ -221,10 +248,14 @@ module Dependabot
           job.existing_pull_requests
              .select { |pr| pr.count == 1 }
              .map(&:first)
-             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
-             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+             .select { |pr| pr && pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr && pr.fetch("dependency-version", nil) == latest_version }
         end
 
+        sig do
+          params(updated_dependencies: T::Array[Dependabot::Dependency])
+            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+        end
         def existing_pull_request(updated_dependencies)
           new_pr_set = Set.new(
             updated_dependencies.map do |dep|
@@ -240,6 +271,7 @@ module Dependabot
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
           if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -253,6 +285,7 @@ module Dependabot
           end
         end
 
+        sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
           Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for creation")
@@ -260,12 +293,17 @@ module Dependabot
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
           created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
+            create_pull_request_for_dependency(dep)
           end
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, String]) }
+        def create_pull_request_for_dependency(dependency)
+          {
+            "dependency-name" => dependency.name,
+            "dependency-version" => dependency.version,
+            "dependency-removed" => dependency.removed? ? true : nil
+          }.compact
         end
       end
     end
