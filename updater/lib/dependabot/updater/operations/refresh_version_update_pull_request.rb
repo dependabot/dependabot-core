@@ -205,6 +205,21 @@ module Dependabot
               {
                 "dependency-name" => dep.name,
                 "dependency-version" => dep.version,
+                "dependency-removed" => dep.removed? ? true : nil,
+                "directory" => dep.directory
+              }.compact
+            end
+          )
+
+          existing = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          return existing if existing
+
+          # try the search again without directory
+          new_pr_set = Set.new(
+            updated_dependencies.map do |dep|
+              {
+                "dependency-name" => dep.name,
+                "dependency-version" => dep.version,
                 "dependency-removed" => dep.removed? ? true : nil
               }.compact
             end
