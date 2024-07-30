@@ -406,19 +406,18 @@ module Dependabot
 
           error_message = error.message
 
-          # message groups which are related to peer dependency resolution failure, peer deps can be updated
-          # with --legacy-peer-deps flag, but it is not recommended as the flag will ignore peer
-          # dependencies entirely, but can mess up dependency resolution and introduce breaking changes.
-          # So we let the dependency update fail.
+          # message groups which are related to peer dependency resolution failure. Peer deps can be updated
+          # with --legacy-peer-deps flag, but it is not recommended as the flag can mess up dependency resolution
+          # and introduce breaking changes. So we let the update fail.
           peerdep_group = Regexp.union(PEER_DEPS_PATTERNS)
           if error_message.match(peerdep_group)
             raise Dependabot::DependencyFileNotResolvable,
                   "Error while updating peer dependency."
           end
 
-          raise Dependabot::PrivateSourceAuthenticationFailure, error_message if error_message.match?(ERROR_E401)
-
-          raise Dependabot::PrivateSourceAuthenticationFailure, error_message if error_message.match?(ERROR_E403)
+          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403)
+            raise Dependabot::PrivateSourceAuthenticationFailure, error_message
+          end
 
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
@@ -531,11 +530,6 @@ module Dependabot
             raise Dependabot::PrivateSourceTimedOut, T.must(msg)
           end
 
-          if (git_source = error_message.match(ERROR_EAI_AGAIN))
-            msg = "Network Error. Access to #{git_source.named_captures.fetch('url')} failed."
-            raise Dependabot::GitDependenciesNotReachable, msg
-          end
-
           # Error handled when no authentication info ( _auth = user:pass )
           # is provided in config file (.npmrc) to access private registry
           if error_message.match?(UNABLE_TO_AUTH_NPMRC)
@@ -546,6 +540,11 @@ module Dependabot
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          if (git_source = error_message.match(ERROR_EAI_AGAIN))
+            msg = "Network Error. Access to #{git_source.named_captures.fetch('url')} failed."
+            raise Dependabot::PrivateSourceTimedOut, msg
           end
 
           if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||

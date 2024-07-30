@@ -780,6 +780,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with a registry with access that results in eai access code failure" do
+      let(:response) { "\n. request to https://registry.npmjs.org/next failed, reason: getaddrinfo EAI_AGAIN ." }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "Network Error. Access to https://registry.npmjs.org/next failed"
+            )
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
