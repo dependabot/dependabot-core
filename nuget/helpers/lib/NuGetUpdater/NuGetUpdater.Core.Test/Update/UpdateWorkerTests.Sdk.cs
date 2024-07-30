@@ -533,6 +533,50 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task TransitiveDependencyCanBeAddedWithMismatchingSdk()
+        {
+            await TestUpdateForProject("Some.Transitive.Package", "1.0.0", "1.0.1", isTransitive: true,
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [(null, [("Some.Transitive.Package", "1.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Transitive.Package", "1.0.1", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "99.99.999" // this version doesn't match anything that's installed
+                          }
+                        }
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                        <PackageReference Include="Some.Transitive.Package" Version="1.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
         public async Task UpdateVersionAttribute_InProjectFile_ForAnalyzerPackageReferenceInclude()
         {
             // update Some.Analyzer from 3.3.0 to 3.3.4

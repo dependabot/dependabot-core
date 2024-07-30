@@ -317,6 +317,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/celery/celery") }
     end
+
+    context "when the dependency source is in project_urls" do
+      let(:pypi_response) { fixture("pypi", "pypi_response_project_urls_source.json") }
+
+      it { is_expected.to eq("https://github.com/xxxxx/django-split-settings") }
+    end
   end
 
   describe "#homepage_url" do

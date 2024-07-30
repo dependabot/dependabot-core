@@ -279,7 +279,8 @@ module Dependabot
             name: dep.name,
             "previous-version": dep.previous_version,
             requirements: dep.requirements,
-            "previous-requirements": dep.previous_requirements
+            "previous-requirements": dep.previous_requirements,
+            directory: dep.directory
           }.merge({
             version: dep.version,
             removed: dep.removed? ? true : nil

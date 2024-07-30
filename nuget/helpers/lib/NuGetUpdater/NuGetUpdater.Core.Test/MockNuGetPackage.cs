@@ -131,19 +131,14 @@ namespace NuGetUpdater.Core.Test
             );
         }
 
-        public static MockNuGetPackage CreateDotNetToolPackage(string id, string version, string targetFramework)
+        public static MockNuGetPackage CreateDotNetToolPackage(string id, string version, string targetFramework, XElement[]? additionalMetadata = null)
         {
+            var packageMetadata = new XElement("packageTypes", new XElement("packageType", new XAttribute("name", "DotnetTool")));
+            var allMetadata = new[] { packageMetadata }.Concat(additionalMetadata ?? []).ToArray();
             return new(
                 id,
                 version,
-                AdditionalMetadata:
-                [
-                    new XElement("packageTypes",
-                        new XElement("packageType",
-                            new XAttribute("name", "DotnetTool")
-                        )
-                    )
-                ],
+                AdditionalMetadata: allMetadata,
                 Files:
                 [
                     ($"tools/{targetFramework}/any/DotnetToolSettings.xml", Encoding.UTF8.GetBytes($"""
@@ -158,8 +153,10 @@ namespace NuGetUpdater.Core.Test
             );
         }
 
-        public static MockNuGetPackage CreateMSBuildSdkPackage(string id, string version, string? sdkPropsContent = null, string? sdkTargetsContent = null)
+        public static MockNuGetPackage CreateMSBuildSdkPackage(string id, string version, string? sdkPropsContent = null, string? sdkTargetsContent = null, XElement[]? additionalMetadata = null)
         {
+            var packageMetadata = new XElement("packageTypes", new XElement("packageType", new XAttribute("name", "MSBuildSdk")));
+            var allMetadata = new[] { packageMetadata }.Concat(additionalMetadata ?? []).ToArray();
             sdkPropsContent ??= """
                 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                 </Project>
@@ -171,14 +168,7 @@ namespace NuGetUpdater.Core.Test
             return new(
                 id,
                 version,
-                AdditionalMetadata:
-                [
-                    new XElement("packageTypes",
-                        new XElement("packageType",
-                            new XAttribute("name", "MSBuildSdk")
-                        )
-                    )
-                ],
+                AdditionalMetadata: additionalMetadata,
                 Files:
                 [
                     ("Sdk/Sdk.props", Encoding.UTF8.GetBytes(sdkPropsContent)),

@@ -55,11 +55,13 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files
+      assert_current_directory_set!
       @dependency_files.select { |f| f.directory == @current_directory }
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def dependencies
+      assert_current_directory_set!
       T.must(@dependencies[@current_directory])
     end
 
@@ -103,10 +105,22 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
+    sig { params(group: Dependabot::DependencyGroup).void }
+    def mark_group_handled(group)
+      directories.each do |directory|
+        @current_directory = directory
+
+        # add the existing dependencies in the group so individual updates don't try to update them
+        add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+        # also add dependencies that might be in the group, as a rebase would add them;
+        # this avoids individual PR creation that immediately is superseded by a group PR supersede
+        add_handled_dependencies(group.dependencies.map(&:name))
+      end
+    end
+
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       set = @handled_dependencies[@current_directory] || Set.new
       set += Array(dependency_names)
       @handled_dependencies[@current_directory] = set
@@ -114,17 +128,9 @@ module Dependabot
 
     sig { returns(T::Set[String]) }
     def handled_dependencies
-      raise "Current directory not set" if @current_directory == ""
-
+      assert_current_directory_set!
       T.must(@handled_dependencies[@current_directory])
     end
-
-    # rubocop:disable Performance/Sum
-    sig { returns(T::Set[String]) }
-    def handled_dependencies_all_directories
-      T.must(@handled_dependencies.values.reduce(&:+))
-    end
-    # rubocop:enable Performance/Sum
 
     sig { params(dir: String).void }
     def current_directory=(dir)
@@ -141,10 +147,6 @@ module Dependabot
     def ungrouped_dependencies
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
-
-      if Dependabot::Experiments.enabled?(:dependency_has_directory)
-        return allowed_dependencies.reject { |dep| handled_dependencies_all_directories.include?(dep.name) }
-      end
 
       # Otherwise return dependencies that haven't been handled during the group update portion.
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
@@ -184,6 +186,8 @@ module Dependabot
       end
 
       job.source.directory = @original_directory
+      # reset to ensure we don't accidentally use it later without setting it
+      @current_directory = ""
       return unless job.source.directory
 
       @current_directory = T.must(job.source.directory)
@@ -210,6 +214,7 @@ module Dependabot
 
     sig { returns(Dependabot::FileParsers::Base) }
     def dependency_file_parser
+      assert_current_directory_set!
       job.source.directory = @current_directory
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
@@ -219,6 +224,23 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
+    end
+
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }
+    def dependencies_in_existing_pr_for_group(group)
+      job.existing_group_pull_requests.find do |pr|
+        pr["dependency-group-name"] == group.name
+      end&.fetch("dependencies", []) || []
+    end
+
+    sig { void }
+    def assert_current_directory_set!
+      if @current_directory == "" && directories.count == 1
+        @current_directory = T.must(directories.first)
+        return
+      end
+
+      raise DependabotError, "Assertion failed: Current directory not set" if @current_directory == ""
     end
   end
 end

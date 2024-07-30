@@ -25,7 +25,7 @@ module Dependabot
         release_part, update_part = T.must(T.must(parsed_version)[:version]).split("_", 2)
 
         # The numeric_version is needed here to validate the version string (ex: 20.9.0-alpine3.18)
-        # when the call is made via Depenedabot Api to convert the image version to semver.
+        # when the call is made via Dependabot Api to convert the image version to semver.
         release_part = Tag.new(T.must(release_part).chomp(".").chomp("-").chomp("_")).numeric_version
 
         @release_part = T.let(Dependabot::Version.new(T.must(release_part).tr("-", ".")), Dependabot::Version)

@@ -1,0 +1,32 @@
+{
+  "name": "xyz",
+  "version": "0.36.1",
+  "type": "module",
+  "description": "xxx",
+  "repository": "git+https://github.com/waltfy/PROTO_TEST.git",
+  "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
+  "bugs": "https://github.com/waltfy/PROTO_TEST/issues",
+  "author": "",
+  "contributors": [],
+  "engines": {
+    "node": ">=12"
+  },
+  "main": "generators/app/index.js",
+  "typings": "generators/app/index.d.ts",
+  "files": [
+    "/generators"
+  ],
+  "keywords": [],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && npm run copy:templates"
+  },
+  "dependencies": {
+    "fetch-factory": "0.1.x"
+  },
+  "devDependencies": {
+    "eslint": "^9.5.0"
+  },
+  "overrides": {
+    "eslint": "^9.5.0"
+  }
+}

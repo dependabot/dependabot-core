@@ -79,6 +79,14 @@ module Dependabot
         INVALID_AUTH_TOKEN =
           /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
+        EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
+        NESTED_ALIAS = /nested aliases not supported/
+        PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
+                                    /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
+
+        ERROR_E401 = /code E401/
+        ERROR_E403 = /code E403/
+        ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -392,7 +400,23 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(error: Exception).returns(T.noreturn) }
         def handle_npm_updater_error(error)
+          Dependabot.logger.warn("NPM : " + error.message)
+
           error_message = error.message
+
+          # message groups which are related to peer dependency resolution failure. Peer deps can be updated
+          # with --legacy-peer-deps flag, but it is not recommended as the flag can mess up dependency resolution
+          # and introduce breaking changes. So we let the update fail.
+          peerdep_group = Regexp.union(PEER_DEPS_PATTERNS)
+          if error_message.match(peerdep_group)
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Error while updating peer dependency."
+          end
+
+          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403)
+            raise Dependabot::PrivateSourceAuthenticationFailure, error_message
+          end
+
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
                             .named_captures["package_req"]
@@ -516,11 +540,26 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
+          if (git_source = error_message.match(ERROR_EAI_AGAIN))
+            msg = "Network Error. Access to #{git_source.named_captures.fetch('url')} failed."
+            raise Dependabot::PrivateSourceTimedOut, msg
+          end
+
           if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
             error_message.match(MISSING_AUTH_TOKEN)) &&
              T.must(registry_source.named_captures.fetch("url")).include?(NPM_PACKAGE_REGISTRY)
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::InvalidGitAuthToken, T.must(msg)
+          end
+
+          if (dep = error_message.match(EOVERRIDE))
+            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match(NESTED_ALIAS)
+            msg = "Nested aliases are not supported in NPM versions earlier than 6.9.0."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error

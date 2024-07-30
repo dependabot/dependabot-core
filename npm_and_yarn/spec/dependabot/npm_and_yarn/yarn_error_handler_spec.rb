@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/shared_helpers"
@@ -11,9 +12,34 @@ require "dependabot/errors"
 RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
   subject(:error_handler) { described_class.new(dependencies: dependencies, dependency_files: dependency_files) }
 
-  let(:dependencies) { [instance_double(Dependabot::Dependency, name: "test-dependency")] }
-  let(:dependency_files) { [instance_double(Dependabot::DependencyFile, path: "path/to/yarn.lock")] }
+  let(:dependencies) { [dependency] }
   let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
+
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: version,
+      requirements: [],
+      previous_requirements: [],
+      package_manager: "npm_and_yarn"
+    )
+  end
+  let(:dependency_files) { project_dependency_files("yarn/git_dependency_local_file") }
+
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com"
+    })]
+  end
+
+  let(:dependency_name) { "@segment/analytics.js-integration-facebook-pixel" }
+  let(:version) { "github:segmentio/analytics.js-integrations#2.4.1" }
+  let(:yarn_lock) do
+    dependency_files.find { |f| f.name == "yarn.lock" }
+  end
+
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   describe "#initialize" do
     it "initializes with dependencies and dependency files" do
@@ -27,7 +53,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "YN0002: Missing peer dependency" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_error(error) }
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
       end
     end
@@ -36,7 +62,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "Here is a recognized error pattern: authentication token not provided" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_error(error) }
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
@@ -45,7 +71,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This is an unrecognized pattern that should not raise an error." }
 
       it "does not raise an error" do
-        expect { error_handler.handle_error(error) }.not_to raise_error
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
 
@@ -60,7 +86,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
 
       it "does not raise an error" do
-        expect { error_handler.handle_error(error) }.not_to raise_error
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
 
@@ -80,7 +106,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a MisconfiguredTooling error with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::MisconfiguredTooling, /YN0080: .*The remote server failed/)
       end
     end
@@ -97,12 +123,36 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a ToolVersionNotSupported error with the correct versions" do
         expect do
-          error_handler.handle_error(error)
+          error_handler.handle_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::ToolVersionNotSupported) do |e| # rubocop:disable Style/MultilineBlockChain
           expect(e.tool_name).to eq("Yarn")
           expect(e.detected_version).to eq("v20.15.1")
           expect(e.supported_versions).to eq("14.21.3")
         end
+      end
+    end
+
+    context "when the error message contains SUB_DEP_LOCAL_PATH_TEXT" do
+      let(:error_message) { "Some error occurred: refers to a non-existing file" }
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            %r{@segment\/analytics\.js-integration-facebook-pixel}
+          )
+      end
+    end
+
+    context "when the error message matches INVALID_PACKAGE_REGEX" do
+      let(:error_message) { "Can't add \"invalid-package\": invalid" }
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
+          .to raise_error(
+            Dependabot::DependencyFileNotResolvable,
+            %r{@segment\/analytics\.js-integration-facebook-pixel}
+          )
       end
     end
   end
@@ -133,7 +183,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the corresponding error class with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable, /YN0002: Missing peer dependency/)
       end
     end
@@ -147,7 +197,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises the last corresponding error class found with the correct message" do
         expect do
-          error_handler.handle_yarn_error(error)
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::GitDependenciesNotReachable, /YN0016: Remote not found/)
       end
     end
@@ -156,7 +206,86 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This message does not contain any known Yarn error codes." }
 
       it "does not raise any errors" do
-        expect { error_handler.handle_yarn_error(error) }.not_to raise_error
+        expect { error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock }) }.not_to raise_error
+      end
+    end
+
+    context "when the error message contains YN0035" do
+      context "when error message matches with YN0035.PACKAGE_NOT_FOUND" do
+        let(:error_message) do
+          "[94m➤[39m YN0000: · Yarn 4.2.2\n" \
+            "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n::group::Resolution step\n" \
+            "[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package" \
+            "[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
+            "[91m➤[39m YN0035: │   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n" \
+            "[91m➤[39m YN0035: │   [38;5;111mRequest Method[39m: GET\n" \
+            "[91m➤[39m YN0035: │   [38;5;111mRequest URL[39m: [38;5;" \
+            "170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n::endgroup::\n" \
+            "[91m➤[39m YN0035: [38;5;166m@dummy-scope/[39m[38;5;173mdummy-package" \
+            "[39m[38;5;37m@[39m[38;5;37mnpm:^1.2.3[39m: Package not found\n" \
+            "[91m➤[39m YN0035:   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n" \
+            "[91m➤[39m YN0035:   [38;5;111mRequest Method[39m: GET\n" \
+            "[91m➤[39m YN0035:   [38;5;111mRequest URL[39m: [38;5;" \
+            "170mhttps://registry.yarnpkg.com/@dummy-scope%2fdummy-package[39m\n" \
+            "[94m➤[39m [90mYN0000[39m: └ Completed in 0s 291ms\n" \
+            "[91m➤[39m YN0000: · Failed with errors in 0s 303ms"
+        end
+
+        it "raises error with captured `package_req`" do
+          expect do
+            error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+          end.to raise_error(
+            Dependabot::DependencyNotFound,
+            %r{The following dependency could not be found : @dummy-scope/dummy-package@npm:\^1.2.3}
+          )
+        end
+      end
+
+      context "when error message matches with YN0035.FAILED_TO_RETRIEVE" do
+        let(:error_message) do
+          "Dependabot::SharedHelpers::HelperSubprocessFailed: [94m➤[39m[90mYN0000" \
+            "[39m: ┌ Project validation\n::group::Project validation\n[93m➤[39m YN0057: │ " \
+            "[38;5;166m@dummy-scope/[39m[38;5;173mdummy-connect[39m: Resolutions field" \
+            " will be ignored\n[93m➤[39m YN0057: │ [38;5;166m@dummy-scope/[39m[38;5;" \
+            "173mdummy-js[39m: Resolutions field will be ignored\n::endgroup::\n[94m➤" \
+            "[39m [90mYN0000[39m: └ Completed\n[94m➤[39m [90mYN0000[39m: ┌ Resolution" \
+            " step\n::group::Resolution step\n[91m➤[39m YN0035: │ [38;5;166m@dummy-scope/" \
+            "[39m[38;5;173mdummy-fixture[39m[38;5;37m@[39m[38;5;37mnpm:^1.0.0[39m: " \
+            "The remote server failed to provide the requested resource\n[91m➤[39m YN0035: " \
+            "│   [38;5;111mResponse Code[39m: [38;5;220m404[39m (Not Found)\n[91m➤" \
+            "[39m YN0035: │   [38;5;111mRequest Method[39m: GET\n[91m➤[39m YN0035: │  " \
+            " [38;5;111mRequest URL[39m: [38;5;170m" \
+            "https://registry.yarnpkg.com/@dummy-scope%2fdummy-fixture\n::endgroup::\n" \
+            "[94m➤[39m [90mYN0000[39m: └ Completed in 0s 566ms\n[91m➤[39m YN0000: Failed with errors in 0s 571ms"
+        end
+
+        it "raises error with captured `package_req`" do
+          expect do
+            error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+          end.to raise_error(
+            Dependabot::DependencyNotFound,
+            %r{The following dependency could not be found : @dummy-scope/dummy-fixture@npm:\^1.0.0}
+          )
+        end
+      end
+
+      context "when error message doesn't match any YN0035.* regex patterns" do
+        let(:error_message) do
+          "➤ YN0000: · Yarn 4.3.1 " \
+            "➤ YN0000: ┌ Resolution step" \
+            "➤ YN0035: │ @dummy-scope/dummy-fixture@npm:1.0.0: not found" \
+            "➤ YN0000: └ Completed in 0s 662ms" \
+            "➤ YN0000: · Failed with errors in 0s 683ms"
+        end
+
+        it "raises error with the raw message" do
+          expect do
+            error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+          end.to raise_error(
+            Dependabot::DependencyNotFound,
+            /The following dependency could not be found : \[YN0035\]/
+          )
+        end
       end
     end
   end
@@ -169,14 +298,14 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message_with_usage_error) { "#{error_message}\n#{usage_error_message}" }
 
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, usage_error_message) }
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
 
     context "when the error message contains a recognized pattern in the error message" do
       it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, "") }
+        expect { error_handler.handle_group_patterns(error, "", { yarn_lock: yarn_lock }) }
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /authentication token not provided/)
       end
     end
@@ -185,7 +314,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) { "This is an unrecognized pattern that should not raise an error." }
 
       it "does not raise any errors" do
-        expect { error_handler.handle_group_patterns(error, "") }.not_to raise_error
+        expect { error_handler.handle_group_patterns(error, "", { yarn_lock: yarn_lock }) }.not_to raise_error
       end
     end
   end

@@ -163,6 +163,32 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when updating a dependency with malformed registry configuration" do
+      let(:project_name) { "npm6/peer_dependency" }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react-dom",
+          version: "15.2.0",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^15.2.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com}/" }
+          }]
+        )
+      end
+
+      context "when accessing a malformed registry requirements" do
+        it "raise a helpful error" do
+          expect { latest_resolvable_version }.to raise_error do |error|
+            expect(error.message).to include("bad URI(is not URI?)")
+          end
+        end
+      end
+    end
+
     context "with a npm 8 package-lock.json" do
       context "when updating a dependency without peer dependency issues" do
         let(:project_name) { "npm8/package-lock" }
