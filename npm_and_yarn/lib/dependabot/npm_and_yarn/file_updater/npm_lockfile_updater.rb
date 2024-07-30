@@ -84,8 +84,6 @@ module Dependabot
         PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
                                     /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
 
-        JOB_FAILURE_PATTERNS = T.let([/Invalid comparator:/,
-                                      /notarget No matching version found for/].freeze, T::Array[Regexp])
         ERROR_E401 = /code E401/
         ERROR_E403 = /code E403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
