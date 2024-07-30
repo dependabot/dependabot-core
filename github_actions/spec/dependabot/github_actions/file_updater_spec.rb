@@ -468,6 +468,18 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             expect(updated_workflow_file.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
           end
         end
+
+        context "when version tag for new ref is nil" do
+          let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+          it "doesn't update version comments" do
+            allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+            allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return true
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return("v2.1.0", nil, nil)
+            old_version = dependency.previous_requirements[1].dig(:source, :ref)
+            expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
+          end
+        end
       end
     end
   end
