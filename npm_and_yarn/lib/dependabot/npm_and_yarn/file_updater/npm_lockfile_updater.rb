@@ -81,6 +81,12 @@ module Dependabot
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
         NESTED_ALIAS = /nested aliases not supported/
+        PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
+                                    /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
+
+        ERROR_E401 = /code E401/
+        ERROR_E403 = /code E403/
+        ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -397,6 +403,20 @@ module Dependabot
           Dependabot.logger.warn("NPM : " + error.message)
 
           error_message = error.message
+
+          # message groups which are related to peer dependency resolution failure. Peer deps can be updated
+          # with --legacy-peer-deps flag, but it is not recommended as the flag can mess up dependency resolution
+          # and introduce breaking changes. So we let the update fail.
+          peerdep_group = Regexp.union(PEER_DEPS_PATTERNS)
+          if error_message.match(peerdep_group)
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Error while updating peer dependency."
+          end
+
+          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403)
+            raise Dependabot::PrivateSourceAuthenticationFailure, error_message
+          end
+
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
                             .named_captures["package_req"]
@@ -518,6 +538,11 @@ module Dependabot
           if (registry_source = error_message.match(UNABLE_TO_AUTH_REGISTRY))
             msg = registry_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
+          end
+
+          if (git_source = error_message.match(ERROR_EAI_AGAIN))
+            msg = "Network Error. Access to #{git_source.named_captures.fetch('url')} failed."
+            raise Dependabot::PrivateSourceTimedOut, msg
           end
 
           if (registry_source = error_message.match(INVALID_AUTH_TOKEN) ||
