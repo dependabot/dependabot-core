@@ -14,7 +14,7 @@
     "npm",
     "obp"
   ],
-  "author": "athena",
+  "author": "abc",
   "dependencies": {
     "@aws-sdk/signature-v4-crt": "3.88.0",
     "@nbm/api-toolkit": "^6.0.0",

@@ -14,14 +14,8 @@
     "npm",
     "obp"
   ],
-  "author": "athena",
+  "author": "abc",
   "dependencies": {
-    "@aws-sdk/signature-v4-crt": "3.88.0",
-    "@nbm/api-toolkit": "^6.0.0",
-    "@nbm/event-notifier": "^3.0.0",
-    "aws-lambda-multipart-parser": "0.1.3",
-    "axios": "1.4.0",
-    "class-transformer": "0.5.1",
     "joi": "17.9.2",
     "pg": "8.11.1",
     "pg-promise": "11.5.0",
