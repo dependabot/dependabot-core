@@ -81,6 +81,14 @@ module Dependabot
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
         EOVERRIDE = /EOVERRIDE\n *.* Override for (?<deps>.*) conflicts with direct dependency/
         NESTED_ALIAS = /nested aliases not supported/
+        PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
+                                    /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
+
+        JOB_FAILURE_PATTERNS = T.let([/Invalid comparator:/,
+                                      /notarget No matching version found for/].freeze, T::Array[Regexp])
+        ERROR_E401 = /code E401/
+        ERROR_E403 = /code E403/
+        ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -397,6 +405,21 @@ module Dependabot
           Dependabot.logger.warn("NPM : " + error.message)
 
           error_message = error.message
+
+          # message groups which are related to peer dependency resolution failure, peer deps can be updated
+          # with --legacy-peer-deps flag, but it is not recommended as the flag will ignore peer
+          # dependencies entirely, but can mess up dependency resolution and introduce breaking changes.
+          # So we let the dependency update fail.
+          peerdep_group = Regexp.union(PEER_DEPS_PATTERNS)
+          if error_message.match(peerdep_group)
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Error while updating peer dependency."
+          end
+
+          raise Dependabot::PrivateSourceAuthenticationFailure, error_message if error_message.match?(ERROR_E401)
+
+          raise Dependabot::PrivateSourceAuthenticationFailure, error_message if error_message.match?(ERROR_E403)
+
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
                             .named_captures["package_req"]
@@ -506,6 +529,11 @@ module Dependabot
           if (git_source = error_message.match(SOCKET_HANG_UP))
             msg = git_source.named_captures.fetch("url")
             raise Dependabot::PrivateSourceTimedOut, T.must(msg)
+          end
+
+          if (git_source = error_message.match(ERROR_EAI_AGAIN))
+            msg = "Network Error. Access to #{git_source.named_captures.fetch('url')} failed."
+            raise Dependabot::GitDependenciesNotReachable, msg
           end
 
           # Error handled when no authentication info ( _auth = user:pass )

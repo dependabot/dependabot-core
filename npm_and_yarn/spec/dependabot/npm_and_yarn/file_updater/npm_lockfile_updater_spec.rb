@@ -767,6 +767,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "with a dependency with no access and E401 error" do
+      let(:response) { "code E401\nnpm ERR! Incorrect or missing password.\nnpm ERR!" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "code E401"
+            )
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
@@ -806,6 +819,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     it "raises a helpful error" do
       expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
+
+  context "with a dependency with no access" do
+    let(:files) { project_dependency_files("npm/simple_with_no_access") }
+    let(:dependency_name) { "typescript" }
+    let(:version) { "5.5.4" }
+    let(:previous_version) { "^5.1.5" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^5.1.5",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
+  context "with a peer dependency that is unresolved" do
+    let(:files) { project_dependency_files("npm/simple_with_peer_deps") }
+    let(:dependency_name) { "eslint" }
+    let(:version) { "9.8.0" }
+    let(:previous_version) { "^8.43.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^8.43.0",
+        groups: ["devDependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect(error.message)
+          .to include(
+            "Error while updating peer dependency."
+          )
+      end
     end
   end
 end
