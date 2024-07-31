@@ -212,6 +212,21 @@ module Dependabot
             end
           )
 
+          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
+            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          return existing_pull_request if existing_pull_request
+
+          # Try again without directory in case the data is old
+          new_pr_set = Set.new(
+            updated_dependencies.map do |dep|
+              {
+                "dependency-name" => dep.name,
+                "dependency-version" => dep.version,
+                "dependency-removed" => dep.removed? ? true : nil,
+              }.compact
+            end
+          )
+
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
