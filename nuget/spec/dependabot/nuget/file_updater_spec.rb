@@ -161,22 +161,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           )
         end
       end
-
-      context "when the file has only deleted lines" do
-        before do
-          allow(File).to receive(:read)
-            .and_call_original
-          allow(File).to receive(:read)
-            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
-            .and_return("")
-        end
-
-        it "does not update the project" do
-          run_update_test do |updater|
-            expect(updater.updated_dependency_files.map(&:name)).to be_empty
-          end
-        end
-      end
     end
   end
 
@@ -263,89 +247,150 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     end
   end
 
-  describe "#updated_dependency_files_with_dotnet_tools_json" do
-    let(:project_name) { "file_updater_dotnet_tools_json" }
-    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
-    let(:dependency_name) { "dotnet-ef" }
-    let(:dependency_version) { "1.1.1" }
-    let(:dependency_previous_version) { "1.0.0" }
+  describe "#differs_in_more_than_blank_lines?" do
+    subject(:result) { described_class.differs_in_more_than_blank_lines?(original_content, updated_content) }
 
-    before do
-      intercept_native_tools(
-        discovery_content_hash: {
-          Path: "",
-          IsSuccess: true,
-          Projects: [
-            {
-              FilePath: "Proj1/Proj1.csproj",
-              Dependencies: [{
-                Name: "Microsoft.Extensions.DependencyModel",
-                Version: "1.0.0",
-                Type: "PackageReference",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net461"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [{
-                Name: "TargetFramework",
-                Value: "net461",
-                SourceFilePath: "Proj1/Proj1.csproj"
-              }],
-              TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
-            }
-          ],
-          DirectoryPackagesProps: nil,
-          GlobalJson: nil,
-          DotNetToolsJson: {
-            FilePath: ".config/dotnet-tools.json",
-            Dependencies: [{
-              Name: "dotnet-ef",
-              Version: "1.0.0",
-              Type: "DotNetTool",
-              EvaluationResult: nil,
-              TargetFrameworks: nil,
-              IsDevDependency: false,
-              IsDirect: true,
-              IsTransitive: false,
-              IsOverride: false,
-              IsUpdate: false,
-              InfoUrl: nil
-            }],
-            IsSuccess: true
-          }
-        }
-      )
+    context "when the original content is `nil` and updated is empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "" }
+
+      it { is_expected.to be(false) }
     end
 
-    it "updates the tools file" do
-      run_update_test do |updater|
-        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly(".config/dotnet-tools.json")
-      end
+    context "when the original content is `nil` and updated is non-empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "line1\nline2" }
+
+      it { is_expected.to be(true) }
     end
 
-    context "when the tools file contains trailing white-space lines" do
-      before do
-        allow(File).to receive(:read)
-          .and_call_original
-        allow(File).to receive(:read)
-          .with(".config/dotnet-tools.json")
-          .and_wrap_original do |method, path|
-            method.call(path) + "\n\n"
-          end
+    context "when there is a difference with no blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
       end
 
-      it "does update the tools file" do
-        run_update_test do |updater|
-          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly(".config/dotnet-tools.json")
-        end
+      it { is_expected.to be(true) }
+    end
+
+    context "when there is a difference with blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
       end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a blank line was added" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a blank line was removed, but no other changes" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a blank line was removed and another was changed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a line was added and blank lines are present" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          SOME-NEW-LINE
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the only difference is a trailing newline" do
+      let(:original_content) { "line-1\nline-2\n" }
+      let(:updated_content) { "line-1\nline-2" }
+
+      it { is_expected.to be(false) }
     end
   end
 end
