@@ -26,8 +26,8 @@ module Dependabot
       # @example
       #   record_deprecation_warning_for_eco_system(
       #     eco_system: "bundler",
-      #     deprecated_version: "1.17.3",
-      #     supported_versions: ["2.x", "3.x"]
+      #     deprecated_version: "v1",
+      #     supported_versions: ["v2"]
       #   )
       sig do
         params(
@@ -64,8 +64,8 @@ module Dependabot
       # @example
       #   record_deprecation_error_for_eco_system(
       #     eco_system: "bundler",
-      #     deprecated_version: "1.17.3",
-      #     supported_versions: ["2.x", "3.x"]
+      #     deprecated_version: "v1",
+      #     supported_versions: ["v2"]
       #   )
       sig do
         params(
