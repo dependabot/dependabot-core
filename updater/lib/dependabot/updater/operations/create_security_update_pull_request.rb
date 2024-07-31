@@ -259,7 +259,8 @@ module Dependabot
               {
                 "dependency-name" => dep.name,
                 "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
+                "dependency-removed" => dep.removed? ? true : nil,
+                "directory" => job.source.directory
               }.compact
             end
           )
