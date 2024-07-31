@@ -223,7 +223,7 @@ module Dependabot
         # Compare the line counts of the original and updated content, but ignore lines only containing white-space.
         # This prevents false positives when there are trailing empty lines in the original content, for example.
         original_lines = (original_content&.lines || []).map(&:strip).reject(&:empty?)
-        updated_lines = (updated_content&.lines || []).map(&:strip).reject(&:empty?)
+        updated_lines = updated_content.lines.map(&:strip).reject(&:empty?)
         original_lines.count > updated_lines.count
       end
     end
