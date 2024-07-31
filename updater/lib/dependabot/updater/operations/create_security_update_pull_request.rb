@@ -267,7 +267,10 @@ module Dependabot
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
-        sig { params(dependencies: T::Array[Dependabot::Dependency], include_directory: T::Boolean).returns(Set) }
+        sig do
+          params(dependencies: T::Array[Dependabot::Dependency],
+                 include_directory: T::Boolean).returns(T::Set[T.untyped])
+        end
         def dependency_set(dependencies, include_directory: true)
           dependencies.to_set do |dep|
             hash = {
