@@ -118,6 +118,8 @@ module Dependabot
         return unless comment.end_with? previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
       end
