@@ -262,4 +262,90 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       end
     end
   end
+
+  describe "#updated_dependency_files_with_dotnet_tools_json" do
+    let(:project_name) { "file_updater_dotnet_tools_json" }
+    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+    let(:dependency_name) { "dotnet-ef" }
+    let(:dependency_version) { "1.1.1" }
+    let(:dependency_previous_version) { "1.0.0" }
+
+    before do
+      intercept_native_tools(
+        discovery_content_hash: {
+          Path: "",
+          IsSuccess: true,
+          Projects: [
+            {
+              FilePath: "Proj1/Proj1.csproj",
+              Dependencies: [{
+                Name: "Microsoft.Extensions.DependencyModel",
+                Version: "1.0.0",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net461"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net461",
+                SourceFilePath: "Proj1/Proj1.csproj"
+              }],
+              TargetFrameworks: ["net461"],
+              ReferencedProjectPaths: []
+            }
+          ],
+          DirectoryPackagesProps: nil,
+          GlobalJson: nil,
+          DotNetToolsJson: {
+            FilePath: ".config/dotnet-tools.json",
+            Dependencies: [{
+              Name: "dotnet-ef",
+              Version: "1.0.0",
+              Type: "DotNetTool",
+              EvaluationResult: nil,
+              TargetFrameworks: nil,
+              IsDevDependency: false,
+              IsDirect: true,
+              IsTransitive: false,
+              IsOverride: false,
+              IsUpdate: false,
+              InfoUrl: nil
+            }],
+            IsSuccess: true
+          }
+        }
+      )
+    end
+
+    it "updates the tools file" do
+      run_update_test do |updater|
+        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly(".config/dotnet-tools.json")
+      end
+    end
+
+    context "when the tools file contains trailing white-space lines" do
+      before do
+        allow(File).to receive(:read)
+          .and_call_original
+        allow(File).to receive(:read)
+          .with(".config/dotnet-tools.json")
+          .and_wrap_original do |method, path|
+            method.call(path) + "\n\n"
+          end
+      end
+
+      it "does update the tools file" do
+        run_update_test do |updater|
+          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly(".config/dotnet-tools.json")
+        end
+      end
+    end
+  end
 end
