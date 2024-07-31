@@ -254,34 +254,30 @@ module Dependabot
             .returns(T.nilable(T::Array[T::Hash[String, String]]))
         end
         def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil,
-                "directory" => job.source.directory
-              }.compact
-            end
-          )
+          new_pr_set = dependency_set(updated_dependencies)
 
           existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
                                   created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
           return existing_pull_request if existing_pull_request
 
           # Try again without directory in case the data is old
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
-          )
+          new_pr_set = dependency_set(updated_dependencies, include_directory: false)
 
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+        end
+
+        sig { params(dependencies: T::Array[Dependabot::Dependency], include_directory: T::Boolean).returns(Set) }
+        def dependency_set(dependencies, include_directory: true)
+          dependencies.to_set do |dep|
+            hash = {
+              "dependency-name" => dep.name,
+              "dependency-version" => dep.version,
+              "dependency-removed" => dep.removed? ? true : nil
+            }
+            hash["directory"] = job.source.directory if include_directory
+            hash.compact
+          end
         end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
