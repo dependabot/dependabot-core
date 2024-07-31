@@ -66,8 +66,11 @@ module Dependabot
           msg = e.class.to_s + " with message: " + e.message
           e = Dependabot::DependencyFileNotResolvable.new(msg)
           error_handler.handle_dependency_error(error: e, dependency: dependency)
-        rescue Dependabot::InconsistentRegistryResponse,
-               Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder::RegistryError => e
+        rescue Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder::RegistryError => e
+          msg = e.class.to_s + " with message: " + e.message
+          e = Dependabot::DependencyFileNotResolvable.new(msg)
+          error_handler.handle_dependency_error(error: e, dependency: dependency)
+        rescue Dependabot::InconsistentRegistryResponse
           error_handler.log_dependency_error(
             dependency: dependency,
             error: e,
