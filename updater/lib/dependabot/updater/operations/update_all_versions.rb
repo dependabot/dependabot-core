@@ -4,6 +4,8 @@
 # This class implements our strategy for iterating over all of the dependencies
 # for a specific project folder to find those that are out of date and create
 # a single PR per Dependency.
+require "dependabot/npm_and_yarn/update_checker/latest_version_finder"
+
 module Dependabot
   class Updater
     module Operations
@@ -47,6 +49,8 @@ module Dependabot
         attr_reader :error_handler
         attr_reader :created_pull_requests
 
+        NpmLatestVersionFinder = Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder
+
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
             Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
@@ -62,15 +66,11 @@ module Dependabot
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
-        rescue URI::InvalidURIError => e
+        rescue URI::InvalidURIError, NpmLatestVersionFinder::RegistryError => e
           msg = e.class.to_s + " with message: " + e.message
           e = Dependabot::DependencyFileNotResolvable.new(msg)
           error_handler.handle_dependency_error(error: e, dependency: dependency)
-        rescue Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder::RegistryError => e
-          msg = e.class.to_s + " with message: " + e.message
-          e = Dependabot::DependencyFileNotResolvable.new(msg)
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
-        rescue Dependabot::InconsistentRegistryResponse
+        rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_dependency_error(
             dependency: dependency,
             error: e,
