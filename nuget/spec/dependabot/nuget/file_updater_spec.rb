@@ -344,6 +344,24 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       it { is_expected.to be(false) }
     end
 
+    context "when a line was removed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
     context "when a blank line was removed and another was changed" do
       let(:original_content) do
         <<~TEXT
