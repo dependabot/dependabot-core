@@ -8,12 +8,8 @@ module Dependabot
   class Updater
     module Operations
       class UpdateAllVersions
-        def self.applies_to?(job:)
-          return false if job.security_updates_only?
-          return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
-
-          true
+        def self.applies_to?(_job:)
+          false # only called elsewhere
         end
 
         def self.tag_name

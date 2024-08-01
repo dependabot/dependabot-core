@@ -22,13 +22,11 @@ module Dependabot
         include GroupUpdateCreation
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
-        def self.applies_to?(job:) # rubocop:disable Metrics/PerceivedComplexity
+        def self.applies_to?(job:)
           return false if job.updating_a_pull_request?
           if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
             return false
           end
-
-          return true if job.source.directories && T.must(job.source.directories).count > 1
 
           if job.security_updates_only?
             return true if job.dependencies && T.must(job.dependencies).count > 1
@@ -37,7 +35,7 @@ module Dependabot
             return false
           end
 
-          job.dependency_groups.any?
+          true
         end
 
         sig { returns(Symbol) }
@@ -63,25 +61,7 @@ module Dependabot
 
         sig { void }
         def perform
-          if dependency_snapshot.groups.any?
-            run_grouped_dependency_updates
-          else
-            # We shouldn't have selected this operation if no groups were defined
-            # due to the rules in `::applies_to?`, but if it happens it isn't
-            # enough reasons to fail the job.
-            Dependabot.logger.warn(
-              "No dependency groups defined!"
-            )
-
-            # We should warn our exception tracker in case this represents an
-            # unexpected problem hydrating groups we have swallowed and then
-            # delegate everything to run_ungrouped_dependency_updates.
-            service.capture_exception(
-              error: DependabotError.new("Attempted a grouped update with no groups defined."),
-              job: job
-            )
-          end
-
+          run_grouped_dependency_updates if dependency_snapshot.groups.any?
           run_ungrouped_dependency_updates
         end
 
