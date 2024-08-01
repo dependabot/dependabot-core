@@ -863,6 +863,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the npm registry package lookup returns a 404 error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 404, body: '{"error":"Not found"}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(described_class::RegistryError)
+            expect(err.status).to eq(404)
+          end
+      end
+    end
+
     context "when the dependency has been deprecated" do
       let(:registry_response) do
         fixture("npm_responses", "etag_deprecated.json")
