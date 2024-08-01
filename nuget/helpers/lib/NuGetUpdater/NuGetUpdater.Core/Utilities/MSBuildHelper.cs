@@ -41,14 +41,30 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action)
+    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, bool retainMSBuildSdks = false)
     {
         var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
         var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
         foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
         {
-            Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`.");
+            Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
             File.Move(globalJsonPath, tempGlobalJsonPath);
+            if (retainMSBuildSdks)
+            {
+                // custom SDKs might need to be retained for other operations; rebuild `global.json` with only the relevant key
+                var originalContent = await File.ReadAllTextAsync(tempGlobalJsonPath);
+                var jsonNode = JsonHelper.ParseNode(originalContent);
+                if (jsonNode is JsonObject obj &&
+                    obj.TryGetPropertyValue("msbuild-sdks", out var sdks) &&
+                    sdks is not null)
+                {
+                    var newObj = new JsonObject()
+                    {
+                        ["msbuild-sdks"] = sdks.DeepClone(),
+                    };
+                    await File.WriteAllTextAsync(globalJsonPath, newObj.ToJsonString());
+                }
+            }
         }
 
         try
@@ -60,7 +76,7 @@ internal static partial class MSBuildHelper
             foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
             {
                 Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
-                File.Move(tempGlobalJsonPath, globalJsonpath);
+                File.Move(tempGlobalJsonPath, globalJsonpath, overwrite: retainMSBuildSdks);
             }
         }
     }
