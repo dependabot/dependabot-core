@@ -66,11 +66,11 @@ module Dependabot
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
-        rescue URI::InvalidURIError, NpmLatestVersionFinder::RegistryError => e
+        rescue URI::InvalidURIError => e
           msg = e.class.to_s + " with message: " + e.message
           e = Dependabot::DependencyFileNotResolvable.new(msg)
           error_handler.handle_dependency_error(error: e, dependency: dependency)
-        rescue Dependabot::InconsistentRegistryResponse => e
+        rescue Dependabot::InconsistentRegistryResponse, NpmLatestVersionFinder::RegistryError => e
           error_handler.log_dependency_error(
             dependency: dependency,
             error: e,
