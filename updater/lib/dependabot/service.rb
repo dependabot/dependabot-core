@@ -81,6 +81,15 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
+    sig do
+      params(warn_type: T.any(String, Symbol), warn_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+             dependency: T.nilable(Dependabot::Dependency)).void
+    end
+    def record_update_job_warn(warn_type:, warn_details:, dependency: nil)
+      errors << [warn_type.to_s, dependency]
+      client.record_update_job_warn(warn_type: warn_type, warn_details: warn_details)
+    end
+
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)

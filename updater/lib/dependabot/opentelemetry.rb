@@ -91,6 +91,28 @@ module Dependabot
 
     sig do
       params(
+        job_id: T.any(String, Integer),
+        warn_type: T.any(String, Symbol),
+        warn_details: T.nilable(T::Hash[T.untyped, T.untyped])
+      ).void
+    end
+    def self.record_update_job_warn(job_id:, warn_type:, warn_details:)
+      current_span = ::OpenTelemetry::Trace.current_span
+
+      attributes = {
+        Attributes::JOB_ID => job_id,
+        Attributes::ERROR_TYPE => warn_type
+      }
+
+      warn_details&.each do |key, value|
+        attributes.store("#{Attributes::ERROR_DETAILS}.#{key}", value)
+      end
+
+      current_span.add_event(warn_type, attributes: attributes)
+    end
+
+    sig do
+      params(
         error: StandardError,
         job: T.untyped,
         tags: T::Hash[String, T.untyped]
