@@ -815,6 +815,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a registry package lookup that returns a 404" do
+    let(:files) { project_dependency_files("npm/simple_with_no_access_registry") }
+    let(:dependency_name) { "rtckit" }
+    let(:version) { "3.3.1" }
+    let(:previous_version) { "^3.3.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^3.3.0",
+        groups: ["dependencies"],
+        source: {
+          type: "registry",
+          url: "http://npmrepo.p.gc.onl"
+        }
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
+
   context "with a dependency with nested aliases not supported" do
     let(:files) { project_dependency_files("npm/simple_with_nested_deps") }
     let(:dependency_name) { "express" }
