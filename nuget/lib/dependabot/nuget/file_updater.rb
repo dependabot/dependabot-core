@@ -31,6 +31,20 @@ module Dependabot
         ]
       end
 
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def self.differs_in_more_than_blank_lines?(original_content, updated_content)
+        # Compare the line counts of the original and updated content, but ignore lines only containing white-space.
+        # This prevents false positives when there are trailing empty lines in the original content, for example.
+        original_lines = (original_content&.lines || []).map(&:strip).reject(&:empty?)
+        updated_lines = updated_content.lines.map(&:strip).reject(&:empty?)
+
+        # if the line count differs, then something changed
+        return true unless original_lines.count == updated_lines.count
+
+        # check each line pair, ignoring blanks (filtered above)
+        original_lines.zip(updated_lines).any? { |pair| pair[0] != pair[1] }
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = "/"
@@ -45,7 +59,7 @@ module Dependabot
             normalized_content = normalize_content(f, updated_content)
             next if normalized_content == f.content
 
-            next if only_deleted_lines?(f.content, normalized_content)
+            next unless FileUpdater.differs_in_more_than_blank_lines?(f.content, normalized_content)
 
             puts "The contents of file [#{f.name}] were updated."
 
@@ -216,14 +230,6 @@ module Dependabot
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
-      end
-
-      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
-      def only_deleted_lines?(original_content, updated_content)
-        original_lines = original_content&.lines || []
-        updated_lines = updated_content.lines
-
-        original_lines.count > updated_lines.count
       end
     end
   end
