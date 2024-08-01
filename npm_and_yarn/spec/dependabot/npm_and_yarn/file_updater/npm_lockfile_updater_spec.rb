@@ -817,7 +817,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   context "with a registry package lookup that returns a 404" do
     let(:files) { project_dependency_files("npm/simple_with_no_access_registry") }
-    let(:dependency_name) { "rtckit" }
+    let(:dependency_name) { "@gcorevideo/rtckit" }
     let(:version) { "3.3.1" }
     let(:previous_version) { "^3.3.0" }
     let(:requirements) do
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         groups: ["dependencies"],
         source: {
           type: "registry",
-          url: "http://npmrepo.p.gc.onl"
+          url: "http://npmrepo.nl"
         }
       }]
     end
