@@ -33,7 +33,7 @@ module Dependabot
         params(
           eco_system: String,
           deprecated_version: String,
-          supported_versions: T::Array[String]
+          supported_versions: T.nilable(T::Array[String])
         ).void
       end
       def record_deprecation_warning_for_eco_system(
@@ -41,15 +41,17 @@ module Dependabot
         deprecated_version:,
         supported_versions:
       )
-        Dependabot.logger.warn(
-          "#{eco_system} version #{deprecated_version} is deprecated but the job will succeed. " \
-          "Supported versions are: #{supported_versions.join(', ')}. Future updates are not guaranteed."
-        )
+        message = "#{eco_system} version #{deprecated_version} is deprecated but the job will succeed. " \
+
+        message += "Supported versions are: #{supported_versions.join(', ')}." if supported_versions&.any?
+
+        Dependabot.logger.warn(message)
 
         service.record_update_job_error(
           error_type: "#{eco_system}_deprecation_warning",
           error_details: {
-            message: "#{eco_system} version #{deprecated_version} is deprecated.",
+            message: message,
+            "deprecated-version": deprecated_version,
             "supported-versions": supported_versions
           }
         )
@@ -70,24 +72,26 @@ module Dependabot
       sig do
         params(
           eco_system: String,
-          deprecated_version: String,
-          supported_versions: T::Array[String]
+          not_supported_version: String,
+          supported_versions: T.nilable(T::Array[String])
         ).void
       end
       def record_deprecation_error_for_eco_system(
         eco_system:,
-        deprecated_version:,
+        not_supported_version:,
         supported_versions:
       )
-        Dependabot.logger.error(
-          "#{eco_system} version #{deprecated_version} is no longer supported. " \
-          "Supported versions are: #{supported_versions.join(', ')}. The job will fail."
-        )
+        message = "#{eco_system} version #{not_supported_version} is no longer supported.\n"
+
+        message += "Supported versions are: #{supported_versions.join(', ')}." if supported_versions&.any?
+
+        Dependabot.logger.error(message)
 
         service.record_update_job_error(
           error_type: "#{eco_system}_deprecation_error",
           error_details: {
-            message: "#{eco_system} version #{deprecated_version} is no longer supported.",
+            message: message,
+            "not-supported-version": not_supported_version,
             "supported-versions": supported_versions
           }
         )
