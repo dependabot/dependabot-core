@@ -1,8 +1,5 @@
 name: Specs
 on:  # yamllint disable-line rule:truthy
-  push:
-    branches:
-      - "main"
   pull_request:
   schedule:
     - cron: "0 0 * * *"
