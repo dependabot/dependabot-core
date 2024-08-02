@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot.logger)
           .to receive(:info)
           .with("Found no dependencies to update after filtering " \
-                "allowed updates")
+                "allowed updates in /")
         updater.run
       end
     end
