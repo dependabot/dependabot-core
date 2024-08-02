@@ -33,6 +33,8 @@ public class RequirementTests
     [InlineData("1", "~> 1", true)]
     [InlineData("2", "~> 1", false)]
     [InlineData("5.3.8", "< 6, > 5.2.4", true)]
+    [InlineData("1.0-preview", ">= 1.x", false)] // wildcards
+    [InlineData("1.1-preview", ">= 1.x", true)]
     public void IsSatisfiedBy(string versionString, string requirementString, bool expected)
     {
         var version = NuGetVersion.Parse(versionString);
@@ -41,6 +43,18 @@ public class RequirementTests
         var actual = requirement.IsSatisfiedBy(version);
 
         Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("> 1.*", "> 1.0")] // standard wildcard, single digit
+    [InlineData("> 1.2.*", "> 1.2.0")] // standard wildcard, multiple digit
+    [InlineData("> 1.a", "> 1.0")] // alternate wildcard, single digit
+    [InlineData("> 1.2.a", "> 1.2.0")] // alternate wildcard, multiple digit
+    public void Parse_ConvertsWildcardInVersion(string givenRequirementString, string expectedRequirementString)
+    {
+        var parsedRequirement = Requirement.Parse(givenRequirementString);
+        var actualRequirementString = parsedRequirement.ToString();
+        Assert.Equal(expectedRequirementString, actualRequirementString);
     }
 
     [Theory]
