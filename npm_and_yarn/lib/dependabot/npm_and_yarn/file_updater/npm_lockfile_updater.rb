@@ -72,7 +72,8 @@ module Dependabot
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
-        SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
+        SOCKET_HANG_UP = /(?:request to )?(?<url>.*): socket hang up/
+        ESOCKETTIMEDOUT = /(?<url>.*): ESOCKETTIMEDOUT/
         UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
         UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
         MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
@@ -83,7 +84,8 @@ module Dependabot
         NESTED_ALIAS = /nested aliases not supported/
         PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
                                     /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
-
+        PREMATURE_CLOSE = /premature close/
+        EMPTY_OBJECT_ERROR = /Object for dependency "(?<package>.*)" is empty/
         ERROR_E401 = /code E401/
         ERROR_E403 = /code E403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
@@ -517,15 +519,26 @@ module Dependabot
             raise Dependabot::DependencyFileNotParseable, msg
           end
 
+          if error_message.match?(PREMATURE_CLOSE)
+            msg = "Error parsing your package.json manifest"
+            raise Dependabot::DependencyFileNotParseable, msg
+          end
+
           if error_message.include?("EBADENGINE")
             msg = "Dependabot uses Node.js #{`node --version`.strip} and NPM #{`npm --version`.strip}. " \
                   "Due to the engine-strict setting, the update will not succeed."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if (git_source = error_message.match(SOCKET_HANG_UP))
-            msg = git_source.named_captures.fetch("url")
-            raise Dependabot::PrivateSourceTimedOut, T.must(msg)
+          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT))
+            msg = sanitize_uri(git_source.named_captures.fetch("url"))
+            raise Dependabot::PrivateSourceTimedOut, msg
+          end
+
+          if (package = error_message.match(EMPTY_OBJECT_ERROR))
+            msg = "Error resolving package-lock.json file." \
+                  "Object for dependency \"#{package.named_captures.fetch('package')}\" is empty"
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           # Error handled when no authentication info ( _auth = user:pass )
@@ -1065,6 +1078,11 @@ module Dependabot
             JSON.parse(T.must(lockfile.content)),
             T.nilable(T::Hash[String, T.untyped])
           )
+        end
+
+        sig { params(uri: T.nilable(String)).returns(String) }
+        def sanitize_uri(uri)
+          uri.to_s.gsub("%2f", "/").gsub("%2F", "/").gsub(/\s.+/, "")
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
