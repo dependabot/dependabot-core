@@ -538,6 +538,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix) { checker.lowest_security_fix_version }
+
+    let(:target_version) { "1.0.1" }
+
+    it "finds the lowest available non-vulnerable version" do
+      expect(checker.lowest_security_fix_version)
+        .to eq(Gem::Version.new("1.0.1"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<= 1.2.0"]
+          )
+        ]
+      end
+
+      let(:target_version) { "1.2.1" }
+
+      it "finds the lowest available non-vulnerable version" do
+        expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
@@ -825,56 +854,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       expect(latest_resolvable_previous_version)
         .to eq(Gem::Version.new("1.6.0"))
-    end
-  end
-
-  describe "#lowest_resolvable_security_fix_version" do
-    subject(:lowest_security_fix) { checker.lowest_resolvable_security_fix_version }
-
-    let(:target_version) { "1.0.1" }
-
-    it "finds the lowest available non-vulnerable version" do
-      expect(checker.lowest_resolvable_security_fix_version)
-        .to eq(Gem::Version.new("1.0.1"))
-    end
-
-    context "with a security vulnerability" do
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "npm_and_yarn",
-            vulnerable_versions: ["<= 1.2.0"]
-          )
-        ]
-      end
-
-      let(:target_version) { "1.2.1" }
-
-      it "finds the lowest available non-vulnerable version" do
-        expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
-      end
-    end
-
-    context "when there are conflicting dependencies" do
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: dependency_name,
-            package_manager: "npm_and_yarn",
-            vulnerable_versions: ["<= 1.2.0"]
-          )
-        ]
-      end
-      let(:conflicting_dependencies) { ["some-conflicting-dependency"] }
-
-      before do
-        allow(checker).to receive(:conflicting_dependencies).and_return(conflicting_dependencies)
-      end
-
-      it "returns nil if there are conflicting dependencies" do
-        expect(lowest_security_fix).to be_nil
-      end
     end
   end
 
