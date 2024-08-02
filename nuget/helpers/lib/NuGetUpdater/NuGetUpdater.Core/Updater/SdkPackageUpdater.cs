@@ -236,7 +236,7 @@ internal static class SdkPackageUpdater
             {
                 logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
-        });
+        }, retainMSBuildSdks: true);
     }
 
     /// <summary>

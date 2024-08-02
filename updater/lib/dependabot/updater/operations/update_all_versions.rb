@@ -74,7 +74,7 @@ module Dependabot
             error_detail: e.message
           )
         rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
+          process_dependency_error(e, dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -179,6 +179,15 @@ module Dependabot
             "Checking if #{dependency.name} #{dependency.version} needs updating"
           )
           job.log_ignore_conditions_for(dependency)
+        end
+
+        def process_dependency_error(error, dependency)
+          if error.class.to_s.include?("RegistryError")
+            ex = Dependabot::DependencyFileNotResolvable.new(error.message)
+            error_handler.handle_dependency_error(error: ex, dependency: dependency)
+          else
+            error_handler.handle_dependency_error(error: error, dependency: dependency)
+          end
         end
 
         def all_versions_ignored?(dependency, checker)

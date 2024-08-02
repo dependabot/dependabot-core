@@ -161,22 +161,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           )
         end
       end
-
-      context "when the file has only deleted lines" do
-        before do
-          allow(File).to receive(:read)
-            .and_call_original
-          allow(File).to receive(:read)
-            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
-            .and_return("")
-        end
-
-        it "does not update the project" do
-          run_update_test do |updater|
-            expect(updater.updated_dependency_files.map(&:name)).to be_empty
-          end
-        end
-      end
     end
   end
 
@@ -260,6 +244,171 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           }
         )
       end
+    end
+  end
+
+  describe "#differs_in_more_than_blank_lines?" do
+    subject(:result) { described_class.differs_in_more_than_blank_lines?(original_content, updated_content) }
+
+    context "when the original content is `nil` and updated is empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the original content is `nil` and updated is non-empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "line1\nline2" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when there is a difference with no blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when there is a difference with blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a blank line was added" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a blank line was removed, but no other changes" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a line was removed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a blank line was removed and another was changed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a line was added and blank lines are present" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          SOME-NEW-LINE
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the only difference is a trailing newline" do
+      let(:original_content) { "line-1\nline-2\n" }
+      let(:updated_content) { "line-1\nline-2" }
+
+      it { is_expected.to be(false) }
     end
   end
 end
