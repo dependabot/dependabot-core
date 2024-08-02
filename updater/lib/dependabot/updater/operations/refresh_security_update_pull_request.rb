@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 # This class implements our strategy for 'refreshing' an existing Pull Request
@@ -14,8 +14,10 @@ module Dependabot
   class Updater
     module Operations
       class RefreshSecurityUpdatePullRequest
+        extend T::Sig
         include SecurityUpdateHelpers
 
+        sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
           return false unless job.security_updates_only?
           # If we haven't been given metadata about the dependencies present
@@ -25,10 +27,15 @@ module Dependabot
           job.updating_a_pull_request?
         end
 
+        sig { returns(Symbol) }
         def self.tag_name
           :update_security_pr
         end
 
+        sig do
+          params(service: Service, job: Job, dependency_snapshot: DependencySnapshot, error_handler: ErrorHandler)
+            .void
+        end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
@@ -36,20 +43,25 @@ module Dependabot
           @error_handler = error_handler
         end
 
+        sig { void }
         def perform
-          dependency = dependencies.last
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
+          error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
         end
 
         private
 
+        sig { returns(Dependabot::Job) }
         attr_reader :job
+        sig { returns(Dependabot::Service) }
         attr_reader :service
+        sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+        sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
           dependency_snapshot.job_dependencies
         end
@@ -57,8 +69,18 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/CyclomaticComplexity
+        sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
         def check_and_update_pull_request(dependencies)
-          if dependencies.count != job.dependencies.count
+          # If the job dependencies are empty, then we should close the PR
+          job_dependencies = job.dependencies
+          unless job_dependencies
+            Dependabot.logger.info("No dependencies to update")
+            close_pull_request(reason: :dependencies_removed)
+            return
+          end
+
+          if dependencies.count != job_dependencies.count
             # If the job dependencies mismatch the parsed dependencies, then
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
@@ -72,12 +94,14 @@ module Dependabot
           # pull request is rebased.
           if dependencies.none? { |d| job.allowed_update?(d) }
             lead_dependency = dependencies.first
-            if job.vulnerable?(lead_dependency)
+            if lead_dependency && job.vulnerable?(lead_dependency)
               Dependabot.logger.info(
                 "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
               )
-            else
+            elsif lead_dependency
               Dependabot.logger.info("No longer vulnerable #{lead_dependency.name} #{lead_dependency.version}")
+            else
+              Dependabot.logger.info("No dependencies to update")
             end
             close_pull_request(reason: :up_to_date)
             return
@@ -89,10 +113,13 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          lead_dep_name = job.dependencies.first.downcase
+          lead_dep_name = job_dependencies.first&.downcase
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
+
+          return close_pull_request(reason: :update_no_longer_possible) unless lead_dependency
+
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
@@ -121,7 +148,7 @@ module Dependabot
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          job_dependencies = job.dependencies.map(&:downcase)
+          job_dependencies = job_dependencies.map(&:downcase)
           if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
@@ -135,7 +162,7 @@ module Dependabot
             create_pull_request(dependency_change)
           end
         rescue Dependabot::AllVersionsIgnored
-          Dependabot.logger.info("All updates for #{job.dependencies.first} were ignored")
+          Dependabot.logger.info("All updates for #{job_dependencies&.first} were ignored")
 
           # Report this error to the backend to create an update job error
           raise
@@ -143,7 +170,9 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/CyclomaticComplexity
 
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
           if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -157,6 +186,7 @@ module Dependabot
           end
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base) }
         def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
@@ -171,6 +201,7 @@ module Dependabot
           )
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_checking_for_update(dependency)
           Dependabot.logger.info(
             "Checking if #{dependency.name} #{dependency.version} needs updating"
@@ -178,12 +209,14 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_up_to_date(dependency)
           Dependabot.logger.info(
             "No update needed for #{dependency.name} #{dependency.version}"
           )
         end
 
+        sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }
         def log_requirements_for_update(requirements_to_unlock, checker)
           Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -194,6 +227,10 @@ module Dependabot
           )
         end
 
+        sig do
+          params(updated_dependencies: T::Array[Dependabot::Dependency])
+            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+        end
         def existing_pull_request(updated_dependencies)
           new_pr_set = updated_dependencies.to_set do |dep|
             {
@@ -213,6 +250,7 @@ module Dependabot
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
+        sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
           Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for creation")
@@ -220,6 +258,7 @@ module Dependabot
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
+        sig { params(dependency_change: Dependabot::DependencyChange).void }
         def update_pull_request(dependency_change)
           Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for update")
@@ -227,11 +266,13 @@ module Dependabot
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
+        sig { params(reason: Symbol).void }
         def close_pull_request(reason:)
           reason_string = reason.to_s.tr("_", " ")
           Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job.dependencies.join(', ')} - #{reason_string}")
-          service.close_pull_request(job.dependencies, reason)
+                                 "#{job.dependencies&.join(', ')} - #{reason_string}")
+
+          service.close_pull_request(job.dependencies || "", reason)
         end
       end
     end
