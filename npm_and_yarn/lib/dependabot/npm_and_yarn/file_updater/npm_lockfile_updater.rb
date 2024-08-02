@@ -515,7 +515,7 @@ module Dependabot
 
           # NOTE: This check was introduced in npm8/arborist
           if error_message.include?("must provide string spec")
-            msg = "Error parsing your package.json manifest: the version requirement must be a string"
+            msg = "Error parsing your package.json manifest: the version requirement must be a string."
             raise Dependabot::DependencyFileNotParseable, msg
           end
 
@@ -536,15 +536,15 @@ module Dependabot
           end
 
           if (package = error_message.match(EMPTY_OBJECT_ERROR))
-            msg = "Error resolving package-lock.json file." \
-                  "Object for dependency \"#{package.named_captures.fetch('package')}\" is empty"
+            msg = "Error resolving package-lock.json file. " \
+                  "Object for dependency \"#{package.named_captures.fetch('package')}\" is empty."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           # Error handled when no authentication info ( _auth = user:pass )
           # is provided in config file (.npmrc) to access private registry
           if error_message.match?(UNABLE_TO_AUTH_NPMRC)
-            msg = "check .npmrc config file"
+            msg = "check .npmrc config file."
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
@@ -566,7 +566,7 @@ module Dependabot
           end
 
           if (dep = error_message.match(EOVERRIDE))
-            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
