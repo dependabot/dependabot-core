@@ -1082,7 +1082,7 @@ module Dependabot
 
         sig { params(uri: T.nilable(String)).returns(String) }
         def sanitize_uri(uri)
-          uri.to_s.gsub("%2f", "/").gsub("%2F", "/").gsub(/\s.+/, "")
+          URI.decode_www_form_component(T.must(URI.extract(T.must(uri)).first))
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
