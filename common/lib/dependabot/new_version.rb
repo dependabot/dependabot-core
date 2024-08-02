@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 module Dependabot
-  class NewVersion < Gem::Version
+  class NewVersion < Dependabot::Version
     extend T::Sig
     extend T::Helpers
 
@@ -13,7 +13,7 @@ module Dependabot
       "." => { qualifier: 1, number: 4 },
       "-" => { qualifier: 2, number: 3 },
       "+" => { qualifier: 3, number: 2 }
-    }.freeze, T::Hash[T.untyped, T.untyped])
+    }.freeze, T::Hash[String, T::Hash[Symbol, Integer]])
     NAMED_QUALIFIERS_HIERARCHY = T.let({
       "a" => 1, "alpha"     => 1,
       "b" => 2, "beta"      => 2,
@@ -22,7 +22,7 @@ module Dependabot
       "snapshot" => 5, "dev" => 5,
       "ga" => 6, "" => 6, "final" => 6,
       "sp" => 7
-    }.freeze, T::Hash[T.untyped, T.untyped])
+    }.freeze, T::Hash[String, Integer])
     VERSION_PATTERN =
       "[0-9a-zA-Z]+" \
       '(?>\.[0-9a-zA-Z]*)*' \
@@ -33,12 +33,11 @@ module Dependabot
 
     VersionParameter = T.type_alias { T.nilable(T.any(String, Integer, Gem::Version)) }
 
-    # sig { override.overridable.params(version: VersionParameter).void }
-    # def initialize(version)
-    #   # @original_version = T.let(version.to_s, String)
-
-    #   super
-    # end
+    sig { override.overridable.params(version: VersionParameter, version_string: T.nilable(String)).void }
+    def initialize(version, version_string = nil)
+      @version_string = T.let(version_string || version.to_s, String)
+      super(version)
+    end
 
     sig { override.overridable.params(version: VersionParameter).returns(Dependabot::Version) }
     def self.new(version)
@@ -54,31 +53,34 @@ module Dependabot
       version.to_s.match?(ANCHORED_VERSION_PATTERN)
     end
 
-    sig { overridable.returns(String) }
+    sig { override.overridable.returns(String) }
     def to_semver
-      @original_version
+      @version_string
     end
 
+    sig { override.overridable.returns(String) }
     def inspect
-      "#<#{self.class} #{@original_version}>"
+      "#<#{self.class} #{@version_string}>"
     end
 
+    sig { override.overridable.returns(String) }
     def to_s
-      debugger
-      @original_version
+      @version_string
     end
 
+    sig { override.overridable.returns(T::Boolean) }
     def prerelease?
       tokens.any? do |token|
         next true if token == "eap"
-        next false unless NAMED_QUALIFIERS_HIERARCHY[token]
+        next false unless NAMED_QUALIFIERS_HIERARCHY[T.must(token)]
 
-        NAMED_QUALIFIERS_HIERARCHY[token] < 6
+        T.must(NAMED_QUALIFIERS_HIERARCHY[T.must(token)]) < 6
       end
     end
 
+    sig { params(other: T.any(String, Integer, Gem::Version)).returns(Integer) }
     def <=>(other)
-      version = stringify_version(@original_version)
+      version = stringify_version(@version_string)
       version = fill_tokens(version)
       version = trim_version(version)
 
@@ -88,12 +90,12 @@ module Dependabot
 
       version, other_version = convert_dates(version, other_version)
 
-      prefixed_tokens = split_into_prefixed_tokens(version)
-      other_prefixed_tokens = split_into_prefixed_tokens(other_version)
+      prefixed_tokens = split_into_prefixed_tokens(T.must(version))
+      other_prefixed_tokens = split_into_prefixed_tokens(T.must(other_version))
 
       prefixed_tokens, other_prefixed_tokens =
         pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
-
+      # debugger
       prefixed_tokens.count.times.each do |index|
         comp = compare_prefixed_token(
           prefix: prefixed_tokens[index][0],
@@ -109,16 +111,15 @@ module Dependabot
 
     private
 
+    sig { returns(T::Array[T.nilable(String)]) }
     def tokens
-      @tokens ||=
-        begin
-          version = @original_version.to_s.downcase
-          version = fill_tokens(version)
-          version = trim_version(version)
-          split_into_prefixed_tokens(version).map { |t| t[1..-1] }
-        end
+      version = @version_string.to_s.downcase
+      version = fill_tokens(version)
+      version = trim_version(version)
+      split_into_prefixed_tokens(version).map { |t| t[1..-1] }
     end
 
+    sig { params(version: VersionParameter).returns(String) }
     def stringify_version(version)
       version = version.to_s.downcase
 
@@ -126,6 +127,7 @@ module Dependabot
       version.gsub(/^v(?=\d)/, "")
     end
 
+    sig { params(version: String).returns(String) }
     def fill_tokens(version)
       # Add separators when transitioning from digits to characters
       version = version.gsub(/(\d)([A-Za-z])/, '\1-\2')
@@ -137,6 +139,7 @@ module Dependabot
       version.gsub(/([\.\-])$/, '\10')
     end
 
+    sig { params(version: String).returns(String) }
     def trim_version(version)
       version.split("-").filter_map do |v|
         parts = v.split(".")
@@ -145,6 +148,7 @@ module Dependabot
       end.reject(&:empty?).join("-")
     end
 
+    sig { params(version: String, other_version: String).returns(T::Array[String]) }
     def convert_dates(version, other_version)
       default = [version, other_version]
       return default unless version.match?(/^\d{4}-?\d{2}-?\d{2}$/)
@@ -153,10 +157,12 @@ module Dependabot
       [version.delete("-"), other_version.delete("-")]
     end
 
+    sig { params(version: String).returns(T::Array[String]) }
     def split_into_prefixed_tokens(version)
       ".#{version}".split(/(?=[\-\.\+])/)
     end
 
+    sig { params(prefixed_tokens: T::Array[String], other_prefixed_tokens: T::Array[String]).returns(T::Array[String]) }
     def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
       prefixed_tokens = prefixed_tokens.dup
       other_prefixed_tokens = other_prefixed_tokens.dup
@@ -164,15 +170,16 @@ module Dependabot
       longest = [prefixed_tokens, other_prefixed_tokens].max_by(&:count)
       shortest = [prefixed_tokens, other_prefixed_tokens].min_by(&:count)
 
-      longest.count.times do |index|
-        next unless shortest[index].nil?
+      T.must(longest).count.times do |index|
+        next unless T.must(shortest)[index].nil?
 
-        shortest[index] = longest[index].start_with?(".") ? ".0" : "-"
+        T.must(shortest)[index] = longest[index].start_with?(".") ? ".0" : "-"
       end
 
       [prefixed_tokens, other_prefixed_tokens]
     end
 
+    sig { params(prefix: String, token: String, other_prefix: String, other_token: String).returns(T.untyped) }
     def compare_prefixed_token(prefix:, token:, other_prefix:, other_token:)
       token_type = token.match?(/^\d+$/) ? :number : :qualifier
       other_token_type = other_token.match?(/^\d+$/) ? :number : :qualifier
@@ -187,11 +194,12 @@ module Dependabot
       compare_token(token: token, other_token: other_token)
     end
 
+    sig { params(token: String, other_token: String).returns(T.nilable(Integer)) }
     def compare_token(token:, other_token:)
       if (token_hierarchy = NAMED_QUALIFIERS_HIERARCHY[token])
         return -1 unless NAMED_QUALIFIERS_HIERARCHY[other_token]
 
-        return token_hierarchy <=> NAMED_QUALIFIERS_HIERARCHY[other_token]
+        return token_hierarchy <=> NAMED_QUALIFIERS_HIERARCHY.fetch(other_token)
       end
 
       return 1 if NAMED_QUALIFIERS_HIERARCHY[other_token]
@@ -199,6 +207,7 @@ module Dependabot
       if token.match?(/\A\d+\z/) && other_token.match?(/\A\d+\z/)
         token = token.to_i
         other_token = other_token.to_i
+        return token <=> other_token
       end
 
       token <=> other_token
