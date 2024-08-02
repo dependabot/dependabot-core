@@ -691,7 +691,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "when the dependency is not vulnerable" do
-      before { allow(checker).to receive(:vulnerable?).and_return(false) }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.0.0"],
+            safe_versions: [">=1.0.0 <2.0.0"]
+          )
+        ]
+      end
 
       it "raises an error" do
         expect { lowest_resolvable_security_fix_version }.to raise_error("Dependency not vulnerable!")
@@ -699,10 +708,33 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "when the dependency is vulnerable" do
-      before { allow(checker).to receive(:vulnerable?).and_return(true) }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.2.1"],
+            safe_versions: [">=1.2.1 <2.0.0"]
+          )
+        ]
+      end
 
       context "when the dependency is top-level" do
-        before { allow(dependency).to receive(:top_level?).and_return(true) }
+        let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:target_version) { "2.0.2" }
 
         it "returns the lowest security fix version" do
           allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new(target_version))
@@ -723,7 +755,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           before { allow(checker).to receive(:conflicting_dependencies).and_return([]) }
 
           it "returns the latest resolvable transitive security fix version with no unlock" do
-            allow(checker).to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock).and_return(Gem::Version.new(target_version))
+            allow(checker)
+              .to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock)
+              .and_return(Gem::Version.new(target_version))
             expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
           end
         end
