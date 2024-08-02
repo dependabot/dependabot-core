@@ -1,5 +1,8 @@
 using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json;
+
+using NuGet;
 
 using NuGetUpdater.Core.Updater;
 
@@ -1663,67 +1666,173 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task PackageCanBeUpdatedWhenAnotherInstalledPackageHasBeenDelisted()
         {
-            // updating one package (Newtonsoft.Json) when another installed package (FSharp.Core/5.0.3-beta.21369.4) has been delisted
-            await TestUpdateForProject("Newtonsoft.Json", "7.0.1", "13.0.1",
+            // updating one package (Some.Package) when another installed package (Delisted.Package/5.0.0) has been delisted
+            // this test can't be faked with a local package source and requires an HTTP endpoint; the important part is
+            // the `"listed": false` in the registration index
+            static (int, byte[]) TestHttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+                return uri.PathAndQuery switch
+                {
+                    "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                    "/registrations/delisted.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "5.0.0",
+                                    "upper": "5.0.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "id": "Delisted.Package",
+                                                "listed": false,
+                                                "version": "5.0.0"
+                                            },
+                                            "packageContent": "{{baseUrl}}/download/delisted.package/5.0.0/delisted.package.5.0.0.nupkg",
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """)),
+                    "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "2.0.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "id": "Some.Package",
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            },
+                                            "packageContent": "{{baseUrl}}/download/some.package/1.0.0/some.package.1.0.0.nupkg",
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "id": "Some.Package",
+                                                "listed": true,
+                                                "version": "2.0.0"
+                                            },
+                                            "packageContent": "{{baseUrl}}/download/some.package/2.0.0/some.package.2.0.0.nupkg",
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """)),
+                    "/download/delisted.package/5.0.0/delisted.package.5.0.0.nupkg" =>
+                        (200, MockNuGetPackage.CreateSimplePackage("Delisted.Package", "5.0.0", "net45").GetZipStream().ReadAllBytes()),
+                    "/download/some.package/1.0.0/some.package.1.0.0.nupkg" =>
+                        (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45").GetZipStream().ReadAllBytes()),
+                    "/download/some.package/2.0.0/some.package.2.0.0.nupkg" =>
+                        (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45").GetZipStream().ReadAllBytes()),
+                    _ => (404, Encoding.UTF8.GetBytes("{}")), // everything is missing
+                };
+            }
+            using var cache = new TemporaryDirectory();
+            using var env = new TemporaryEnvironment([
+                ("NUGET_PACKAGES", Path.Join(cache.DirectoryPath, "NUGET_PACKAGES")),
+                ("NUGET_HTTP_CACHE_PATH", Path.Join(cache.DirectoryPath, "NUGET_HTTP_CACHE_PATH")),
+                ("NUGET_SCRATCH", Path.Join(cache.DirectoryPath, "NUGET_SCRATCH")),
+                ("NUGET_PLUGINS_CACHE_PATH", Path.Join(cache.DirectoryPath, "NUGET_PLUGINS_CACHE_PATH")),
+            ]);
+            using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
                 // existing
                 projectContents: """
-                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                  <PropertyGroup>
-                    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <None Include="packages.config" />
-                  </ItemGroup>
-                  <ItemGroup>
-                    <Reference Include="FSharp.Core, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-                      <HintPath>packages\FSharp.Core.5.0.3-beta.21369.4\lib\netstandard2.0\FSharp.Core.dll</HintPath>
-                      <Private>True</Private>
-                    </Reference>
-                    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                      <HintPath>packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                      <Private>True</Private>
-                    </Reference>
-                  </ItemGroup>
-                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                </Project>
-                """,
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Delisted.Package">
+                          <HintPath>packages\Delisted.Package.5.0.0\lib\net45\Delisted.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
                 packagesConfigContents: """
-                <packages>
-                  <package id="FSharp.Core" version="5.0.3-beta.21369.4" targetFramework="net462" />
-                  <package id="Newtonsoft.Json" version="7.0.1" targetFramework="net462" />
-                </packages>
-                """,
+                    <packages>
+                      <package id="Delisted.Package" version="5.0.0" targetFramework="net462" />
+                      <package id="Some.Package" version="1.0.0" targetFramework="net462" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
-                <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-                  <PropertyGroup>
-                    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-                  </PropertyGroup>
-                  <ItemGroup>
-                    <None Include="packages.config" />
-                  </ItemGroup>
-                  <ItemGroup>
-                    <Reference Include="FSharp.Core, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-                      <HintPath>packages\FSharp.Core.5.0.3-beta.21369.4\lib\netstandard2.0\FSharp.Core.dll</HintPath>
-                      <Private>True</Private>
-                    </Reference>
-                    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-                      <Private>True</Private>
-                    </Reference>
-                  </ItemGroup>
-                  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                </Project>
-                """,
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Delisted.Package">
+                          <HintPath>packages\Delisted.Package.5.0.0\lib\net45\Delisted.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Some.Package">
+                          <HintPath>packages\Some.Package.2.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
                 expectedPackagesConfigContents: """
-                <?xml version="1.0" encoding="utf-8"?>
-                <packages>
-                  <package id="FSharp.Core" version="5.0.3-beta.21369.4" targetFramework="net462" />
-                  <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net462" />
-                </packages>
-                """);
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Delisted.Package" version="5.0.0" targetFramework="net462" />
+                      <package id="Some.Package" version="2.0.0" targetFramework="net462" />
+                    </packages>
+                    """
+            );
         }
 
         [Fact]
