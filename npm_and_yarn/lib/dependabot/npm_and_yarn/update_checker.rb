@@ -62,21 +62,12 @@ module Dependabot
 
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
-
-        # NOTE: Currently, we don't resolve transitive/sub-dependencies as
+        # NOTE: we currently don't resolve transitive/sub-dependencies as
         # npm/yarn don't provide any control over updating to a specific
-        # sub-dependency version.
-
-        # Return nil for vulnerable transitive dependencies if there are conflicting dependencies.
-        # This helps catch errors in such cases.
-        return nil if !dependency.top_level? && conflicting_dependencies.any?
-
-        # For transitive dependencies without conflicts, return the latest resolvable transitive
-        # security fix version that does not require unlocking other dependencies.
+        # sub-dependency version
         return latest_resolvable_transitive_security_fix_version_with_no_unlock unless dependency.top_level?
 
-        # For top-level dependencies, return the lowest security fix version.
-        # TODO: Consider checking resolvability here in the future.
+        # TODO: Might want to check resolvability here?
         lowest_security_fix_version
       end
 
