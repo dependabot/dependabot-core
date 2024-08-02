@@ -810,7 +810,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(expected_requirements) }
     end
 
-    context "when a vulnerable dependency hase a major tag reference" do
+    context "when a vulnerable dependency has a major tag reference" do
       let(:dependency_name) { "kartverket/github-workflows" }
       let(:reference) { "v2" }
 
@@ -838,6 +838,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
           it "bumps to the lowest fixed version that keeps precision" do
             expect(updated_requirements.first[:source][:ref]).to eq("v3")
+          end
+        end
+
+        context "when no matching tag with a higher version is available" do
+          let(:upload_pack_fixture) { "github-workflows-no-tags" }
+
+          it "stays on the vulnerable version" do
+            expect(updated_requirements.first[:source][:ref]).to eq(reference)
           end
         end
       end
