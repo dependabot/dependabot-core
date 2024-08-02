@@ -76,7 +76,8 @@ module Dependabot
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       def active_advisories
         security_advisories.select do |advisory|
-          advisory.vulnerable?(version_class.new(git_commit_checker.most_specific_tag_equivalent_to_pinned_ref))
+          version = git_commit_checker.most_specific_tag_equivalent_to_pinned_ref
+          version.nil? ? false : advisory.vulnerable?(version_class.new(version))
         end
       end
 

@@ -675,6 +675,96 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+
+    let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+    let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+    let(:target_version) { "1.2.1" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "1.0.0",
+        requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    context "when the dependency is not vulnerable" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.0.0"],
+            safe_versions: [">=1.0.0 <2.0.0"]
+          )
+        ]
+      end
+
+      it "raises an error" do
+        expect { lowest_resolvable_security_fix_version }.to raise_error("Dependency not vulnerable!")
+      end
+    end
+
+    context "when the dependency is vulnerable" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.2.1"],
+            safe_versions: [">=1.2.1 <2.0.0"]
+          )
+        ]
+      end
+
+      context "when the dependency is top-level" do
+        let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:target_version) { "2.0.2" }
+
+        it "returns the lowest security fix version" do
+          allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new(target_version))
+          expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+        end
+      end
+
+      context "when the dependency is not top-level" do
+        before { allow(dependency).to receive(:top_level?).and_return(false) }
+
+        context "when there are conflicting dependencies" do
+          before { allow(checker).to receive(:conflicting_dependencies).and_return(["conflict"]) }
+
+          it { is_expected.to be_nil }
+        end
+
+        context "when there are no conflicting dependencies" do
+          before { allow(checker).to receive(:conflicting_dependencies).and_return([]) }
+
+          it "returns the latest resolvable transitive security fix version with no unlock" do
+            allow(checker)
+              .to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock)
+              .and_return(Gem::Version.new(target_version))
+            expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+          end
+        end
+      end
+    end
+  end
+
   describe "#latest_resolvable_version_with_no_unlock" do
     subject { checker.latest_resolvable_version_with_no_unlock }
 

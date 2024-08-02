@@ -72,7 +72,8 @@ module Dependabot
           -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
         MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
-        SOCKET_HANG_UP = /request to (?<url>.*) failed, reason: socket hang up/
+        SOCKET_HANG_UP = /(?:request to )?(?<url>.*): socket hang up/
+        ESOCKETTIMEDOUT = /(?<url>.*): ESOCKETTIMEDOUT/
         UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
         UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
         MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
@@ -83,7 +84,8 @@ module Dependabot
         NESTED_ALIAS = /nested aliases not supported/
         PEER_DEPS_PATTERNS = T.let([/Cannot read properties of null/,
                                     /ERESOLVE overriding peer dependency/].freeze, T::Array[Regexp])
-
+        PREMATURE_CLOSE = /premature close/
+        EMPTY_OBJECT_ERROR = /Object for dependency "(?<package>.*)" is empty/
         ERROR_E401 = /code E401/
         ERROR_E403 = /code E403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
@@ -513,7 +515,12 @@ module Dependabot
 
           # NOTE: This check was introduced in npm8/arborist
           if error_message.include?("must provide string spec")
-            msg = "Error parsing your package.json manifest: the version requirement must be a string"
+            msg = "Error parsing your package.json manifest: the version requirement must be a string."
+            raise Dependabot::DependencyFileNotParseable, msg
+          end
+
+          if error_message.match?(PREMATURE_CLOSE)
+            msg = "Error parsing your package.json manifest"
             raise Dependabot::DependencyFileNotParseable, msg
           end
 
@@ -523,15 +530,21 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if (git_source = error_message.match(SOCKET_HANG_UP))
-            msg = git_source.named_captures.fetch("url")
-            raise Dependabot::PrivateSourceTimedOut, T.must(msg)
+          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT))
+            msg = sanitize_uri(git_source.named_captures.fetch("url"))
+            raise Dependabot::PrivateSourceTimedOut, msg
+          end
+
+          if (package = error_message.match(EMPTY_OBJECT_ERROR))
+            msg = "Error resolving package-lock.json file. " \
+                  "Object for dependency \"#{package.named_captures.fetch('package')}\" is empty."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           # Error handled when no authentication info ( _auth = user:pass )
           # is provided in config file (.npmrc) to access private registry
           if error_message.match?(UNABLE_TO_AUTH_NPMRC)
-            msg = "check .npmrc config file"
+            msg = "check .npmrc config file."
             raise Dependabot::PrivateSourceAuthenticationFailure, msg
           end
 
@@ -553,7 +566,7 @@ module Dependabot
           end
 
           if (dep = error_message.match(EOVERRIDE))
-            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency"
+            msg = "Override for #{dep.named_captures.fetch('deps')} conflicts with direct dependency."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
@@ -1065,6 +1078,11 @@ module Dependabot
             JSON.parse(T.must(lockfile.content)),
             T.nilable(T::Hash[String, T.untyped])
           )
+        end
+
+        sig { params(uri: T.nilable(String)).returns(String) }
+        def sanitize_uri(uri)
+          URI.decode_www_form_component(T.must(URI.extract(T.must(uri)).first))
         end
 
         sig { returns(T::Hash[String, T.untyped]) }

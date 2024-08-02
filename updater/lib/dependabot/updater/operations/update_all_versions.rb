@@ -70,7 +70,7 @@ module Dependabot
             error_detail: e.message
           )
         rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: dependency)
+          process_dependency_error(e, dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -177,6 +177,15 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
+        def process_dependency_error(error, dependency)
+          if error.class.to_s.include?("RegistryError")
+            ex = Dependabot::DependencyFileNotResolvable.new(error.message)
+            error_handler.handle_dependency_error(error: ex, dependency: dependency)
+          else
+            error_handler.handle_dependency_error(error: error, dependency: dependency)
+          end
+        end
+
         def all_versions_ignored?(dependency, checker)
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
           false
@@ -197,15 +206,21 @@ module Dependabot
         end
 
         def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
-          )
+          new_pr_set = updated_dependencies.to_set do |dep|
+            {
+              "dependency-name" => dep.name,
+              "dependency-version" => dep.version,
+              "dependency-removed" => dep.removed? ? true : nil,
+              "directory" => job.source.directory
+            }.compact
+          end
+
+          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
+                                  created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          return existing_pull_request if existing_pull_request
+
+          # Try again without directory in case the data is old
+          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
 
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
