@@ -269,10 +269,13 @@ module Dependabot
         sig { params(reason: Symbol).void }
         def close_pull_request(reason:)
           reason_string = reason.to_s.tr("_", " ")
-          Dependabot.logger.info("Telling backend to close pull request for " \
-                                 "#{job.dependencies&.join(', ')} - #{reason_string}")
 
-          service.close_pull_request(job.dependencies || "", reason)
+          job_dependencies = job.dependencies || []
+
+          Dependabot.logger.info("Telling backend to close pull request for " \
+                                 "#{job_dependencies.join(', ')} - #{reason_string}")
+
+          service.close_pull_request(job_dependencies, reason)
         end
       end
     end
