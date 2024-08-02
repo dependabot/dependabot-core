@@ -119,10 +119,14 @@ module Dependabot
 
         sig { void }
         def run_ungrouped_dependency_updates
-          if job.source.directories.nil?
-            if dependency_snapshot.dependencies.any? && dependency_snapshot.ungrouped_dependencies.none?
-              Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
-              return
+          directories.each do |directory|
+            job.source.directory = directory
+            dependency_snapshot.current_directory = directory
+            next unless dependency_snapshot.dependencies.any?
+
+            if dependency_snapshot.ungrouped_dependencies.empty?
+              Dependabot.logger.info("Found no dependencies to update after filtering allowed updates in #{directory}")
+              next
             end
 
             Dependabot::Updater::Operations::UpdateAllVersions.new(
@@ -131,19 +135,15 @@ module Dependabot
               dependency_snapshot: dependency_snapshot,
               error_handler: error_handler
             ).perform
-          else
-            T.must(job.source.directories).each do |directory|
-              job.source.directory = directory
-              dependency_snapshot.current_directory = directory
-              next if dependency_snapshot.ungrouped_dependencies.empty?
+          end
+        end
 
-              Dependabot::Updater::Operations::UpdateAllVersions.new(
-                service: service,
-                job: job,
-                dependency_snapshot: dependency_snapshot,
-                error_handler: error_handler
-              ).perform
-            end
+        sig { returns(T::Array[String]) }
+        def directories
+          if job.source.directories.nil?
+            [T.must(job.source.directory)]
+          else
+            T.must(job.source.directories)
           end
         end
       end
