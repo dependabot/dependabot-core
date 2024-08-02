@@ -255,6 +255,12 @@ public partial class AnalyzeWorker
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
+        if (versions.Length == 0)
+        {
+            // if absolutely nothing was found, then we can't update
+            return null;
+        }
+
         var orderedVersions = findLowestVersion
             ? versions.OrderBy(v => v) // If we are fixing a vulnerability, then we want the lowest version that is safe.
             : versions.OrderByDescending(v => v); // If we are just updating versions, then we want the highest version possible.
