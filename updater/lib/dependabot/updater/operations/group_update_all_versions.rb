@@ -120,7 +120,10 @@ module Dependabot
         sig { void }
         def run_ungrouped_dependency_updates
           if job.source.directories.nil?
-            return if dependency_snapshot.ungrouped_dependencies.empty?
+            if dependency_snapshot.dependencies.any? && dependency_snapshot.ungrouped_dependencies.none?
+              Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
+              return
+            end
 
             Dependabot::Updater::Operations::UpdateAllVersions.new(
               service: service,
