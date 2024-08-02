@@ -793,6 +793,71 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with a registry with access that results in socket hang up error" do
+      let(:response) { "https://registry.npm.xyz.org/qs: socket hang up" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://registry.npm.xyz.org/qs"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in variation of socket hang up error" do
+      let(:response) { "request to https://nexus.xyz.com/repository/npm-js/ejs failed,reason: socket hang up" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://nexus.xyz.com/repository/npm-js/ejs"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in ESOCKETTIMEDOUT error" do
+      let(:response) { "https://npm.pkg.github.com/@group%2ffe-release: ESOCKETTIMEDOUT" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://npm.pkg.github.com/@group/fe-release"
+            )
+        end
+      end
+    end
+
+    context "with a package.json file with invalid entry" do
+      let(:response) { "premature close" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message)
+            .to include(
+              "Error parsing your package.json manifest"
+            )
+        end
+      end
+    end
+
+    context "with a package-lock.json file with empty package object" do
+      let(:response) { "Object for dependency \"anymatch\" is empty.\nSomething went wrong." }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Object for dependency \"anymatch\" is empty"
+            )
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
