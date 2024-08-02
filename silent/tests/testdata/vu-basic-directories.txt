@@ -52,3 +52,4 @@ job:
   existing-pull-requests:
     - - dependency-name: dependency-a
         dependency-version: 1.2.5
+        directory: "/"

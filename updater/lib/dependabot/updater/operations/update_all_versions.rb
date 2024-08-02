@@ -210,15 +210,21 @@ module Dependabot
         end
 
         def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
-          )
+          new_pr_set = updated_dependencies.to_set do |dep|
+            {
+              "dependency-name" => dep.name,
+              "dependency-version" => dep.version,
+              "dependency-removed" => dep.removed? ? true : nil,
+              "directory" => job.source.directory
+            }.compact
+          end
+
+          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
+                                  created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          return existing_pull_request if existing_pull_request
+
+          # Try again without directory in case the data is old
+          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
 
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
