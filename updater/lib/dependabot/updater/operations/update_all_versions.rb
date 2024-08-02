@@ -221,18 +221,6 @@ module Dependabot
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
-        def dependency_set(dependencies, include_directory: true)
-          dependencies.to_set do |dep|
-            hash = {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }
-            hash["directory"] = job.source.directory if include_directory
-            hash.compact
-          end
-        end
-
         def requirements_to_unlock(checker)
           if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
