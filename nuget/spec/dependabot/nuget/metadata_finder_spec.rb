@@ -11,7 +11,11 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  let(:source) { nil }
+  let(:source) do
+    {
+      url: "https://my.nuget.com/v3/index.json"
+    }
+  end
   let(:dependency_version) { "2.1.0" }
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:credentials) do
@@ -232,6 +236,87 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
         it { is_expected.to be_nil }
       end
+    end
+  end
+
+  describe "#auth_header" do
+    subject(:auth_header) { finder.send(:auth_header) }
+
+    context "when credentials token is `nil`" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://api.nuget.org/v3/index.json" }]
+      }
+      it {
+        is_expected.to eq({})
+      }
+    end
+
+    context "when credentials token is `nil`, username is `nil`, and password is non-empty" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "password" => "github_pat_secret" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Basic #{Base64.encode64(':github_pat_secret').delete("\n")}"
+        )
+      }
+    end
+
+    context "when credentials token is `nil`, username and password are non-empty" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "username" => "user",
+           "password" => "password" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Basic #{Base64.encode64('user:password').delete("\n")}"
+        )
+      }
+    end
+
+    context "when credentials token, username, and password are all non-empty" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "token" => "github_pat_secret",
+           "username" => "user", "password" => "password" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Bearer github_pat_secret"
+        )
+      }
+    end
+
+    context "when credentials token is access token" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "token" => "github_pat_secret" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Bearer github_pat_secret"
+        )
+      }
+    end
+
+    context "when credentials token is basic access auth" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "token" => "user:password" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Basic #{Base64.encode64('user:password').delete("\n")}"
+        )
+      }
+    end
+
+    context "when credentials token is basic access auth with no username" do
+      let(:credentials) {
+        [{ "type" => "nuget_feed", "url" => "https://my.nuget.com/v3/index.json", "token" => ":password_only" }]
+      }
+      it {
+        is_expected.to eq(
+          "Authorization" => "Basic #{Base64.encode64(':password_only').delete("\n")}"
+        )
+      }
     end
   end
 end
