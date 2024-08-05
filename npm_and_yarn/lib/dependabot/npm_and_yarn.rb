@@ -55,6 +55,9 @@ module Dependabot
 
     # Used to check if error message contains timeout fetching package
     TIMEOUT_FETCHING_PACKAGE_REGEX = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+    ESOCKETTIMEDOUT = /(?<package>.*?): ESOCKETTIMEDOUT/
+
+    SOCKET_HANG_UP = /(?<url>.*?): socket hang up/
 
     # Used to identify git unreachable error
     UNREACHABLE_GIT_CHECK_REGEX = /ls-remote --tags --heads (?<url>.*)/
@@ -102,11 +105,14 @@ module Dependabot
     # Used to identify if authentication failure error
     AUTHENTICATION_TOKEN_NOT_PROVIDED = "authentication token not provided"
     AUTHENTICATION_IS_NOT_CONFIGURED = "No authentication configured for request"
+    AUTHENTICATION_HEADER_NOT_PROVIDED = "Unauthenticated: request did not include an Authorization header."
 
     # Used to identify if error message is related to yarn workspaces
     DEPENDENCY_FILE_NOT_RESOLVABLE = "conflicts with direct dependency"
 
     ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
+
+    PACKAGE_DISCOVERY_FAIL = /Couldn't find package "(?<pkg>.*)" *.* on the "(?<regis>.*)" registry./
 
     class Utils
       extend T::Sig
@@ -303,7 +309,8 @@ module Dependabot
         matchfn: nil
       },
       {
-        patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED],
+        patterns: [AUTHENTICATION_TOKEN_NOT_PROVIDED, AUTHENTICATION_IS_NOT_CONFIGURED,
+                   AUTHENTICATION_HEADER_NOT_PROVIDED],
         handler: lambda { |message, _error, _params|
           Dependabot::PrivateSourceAuthenticationFailure.new(message)
         },
@@ -343,6 +350,14 @@ module Dependabot
 
           Dependabot::GitDependenciesNotReachable.new(dependency_url)
         },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [PACKAGE_DISCOVERY_FAIL],
+        handler: lambda { |message, _error, _params|
+                   Dependabot::DependencyFileNotResolvable.new(message)
+                 },
         in_usage: false,
         matchfn: nil
       }
