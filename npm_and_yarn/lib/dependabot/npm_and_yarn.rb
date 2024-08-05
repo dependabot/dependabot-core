@@ -255,7 +255,7 @@ module Dependabot
             Dependabot::DependencyNotFound.new(message)
           end
         }
-      },
+      }
     }.freeze, T::Hash[String, {
       message: T.any(String, NilClass),
       handler: ErrorHandler
