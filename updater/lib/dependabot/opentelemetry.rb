@@ -10,6 +10,9 @@ module Dependabot
 
     module Attributes
       JOB_ID = "dependabot.job.id"
+      MESSAGE_MODE = "dependabot.job.message_mode"
+      MESSAGE_TYPE = "dependabot.job.message_type"
+      MESSAGE_DETAILS = "dependabot.job.message_details"
       ERROR_TYPE = "dependabot.job.error_type"
       ERROR_DETAILS = "dependabot.job.error_details"
       METRIC = "dependabot.metric"
@@ -92,23 +95,25 @@ module Dependabot
     sig do
       params(
         job_id: T.any(String, Integer),
-        warn_type: T.any(String, Symbol),
-        warn_details: T.nilable(T::Hash[T.untyped, T.untyped])
+        message_mode: T.any(String, Symbol),
+        message_type: T.any(String, Symbol),
+        message_details: T.nilable(T::Hash[T.untyped, T.untyped])
       ).void
     end
-    def self.record_update_job_warn(job_id:, warn_type:, warn_details:)
+    def self.record_update_job_message(job_id:, message_mode:, message_type:, message_details:)
       current_span = ::OpenTelemetry::Trace.current_span
 
       attributes = {
         Attributes::JOB_ID => job_id,
-        Attributes::ERROR_TYPE => warn_type
+        Attributes::MESSAGE_MODE => message_mode,
+        Attributes::MESSAGE_TYPE => message_type,
       }
 
-      warn_details&.each do |key, value|
-        attributes.store("#{Attributes::ERROR_DETAILS}.#{key}", value)
+      message_details&.each do |key, value|
+        attributes.store("#{Attributes::MESSAGE_DETAILS}.#{key}", value)
       end
 
-      current_span.add_event(warn_type, attributes: attributes)
+      current_span.add_event(message_type, attributes: attributes)
     end
 
     sig do

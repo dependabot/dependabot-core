@@ -82,12 +82,19 @@ module Dependabot
     end
 
     sig do
-      params(warn_type: T.any(String, Symbol), warn_details: T.nilable(T::Hash[T.untyped, T.untyped]),
-             dependency: T.nilable(Dependabot::Dependency)).void
+      params(
+        message_mode: T.any(String, Symbol),
+        message_type: T.any(String, Symbol),
+        message_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+        dependency: T.nilable(Dependabot::Dependency)).void
     end
-    def record_update_job_warn(warn_type:, warn_details:, dependency: nil)
-      errors << [warn_type.to_s, dependency]
-      client.record_update_job_warn(warn_type: warn_type, warn_details: warn_details)
+    def record_update_job_message(message_mode:, message_type:, message_details:, dependency: nil)
+      errors << [message_mode.to_s, message_type.to_s, dependency]
+      client.record_update_job_message(
+        message_mode: message_mode,
+        message_type: message_type,
+        message_details: message_details,
+      )
     end
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }

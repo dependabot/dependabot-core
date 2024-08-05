@@ -126,19 +126,27 @@ module Dependabot
       end
     end
 
-    sig { params(warn_type: T.any(String, Symbol), warn_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
-    def record_update_job_warn(warn_type:, warn_details:)
-      ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_error", kind: :internal) do |_span|
-        ::Dependabot::OpenTelemetry.record_update_job_warn(
+    sig do
+      params(
+        message_mode: T.any(String, Symbol),
+        message_type: T.any(String, Symbol),
+        message_details: T.nilable(T::Hash[T.untyped, T.untyped])
+      ).void
+    end
+    def record_update_job_message(message_mode:, message_type:, message_details:)
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_message", kind: :internal) do |_span|
+        ::Dependabot::OpenTelemetry.record_update_job_message(
           job_id: job_id,
-          warn_type: warn_type,
-          warn_details: warn_details
+          message_mode: message_mode,
+          message_type: message_type,
+          message_details: message_details
         )
         api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
-            "warn-type": warn_type,
-            "warn-details": warn_details
+            "message-mode": message_mode,
+            "message-type": message_type,
+            "message-details": message_details
           }
         }
         response = http_client.post(api_url, json: body)

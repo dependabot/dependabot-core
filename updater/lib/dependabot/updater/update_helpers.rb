@@ -47,9 +47,10 @@ module Dependabot
 
         Dependabot.logger.warn(message)
 
-        service.record_update_job_warn(
-          warn_type: "#{eco_system}_deprecation_warning",
-          warn_details: {
+        service.record_update_job_message(
+          message_mode: :warning,
+          message_type: "#{eco_system}_deprecation_warning",
+          message_details: {
             message: message,
             "deprecated-version": deprecated_version,
             "supported-versions": supported_versions
@@ -87,9 +88,10 @@ module Dependabot
 
         Dependabot.logger.error(message)
 
-        service.record_update_job_error(
-          error_type: "#{eco_system}_deprecation_error",
-          error_details: {
+        service.record_update_job_message(
+          message_mode: :error,
+          message_type: "#{eco_system}_deprecation_error",
+          message_details: {
             message: message,
             "not-supported-version": not_supported_version,
             "supported-versions": supported_versions
