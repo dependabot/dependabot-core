@@ -108,6 +108,10 @@ module Dependabot
 
     ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
 
+    NODE_VERSION_NOT_SATISFY_REGEX = /
+      The\s+current\s+node\s+version\s+(?<current_version>v?\d+\.\d+\.\d+)\s+
+      does\s+not\s+satisfy\s+the\s+required\s+version\s+(?<required_version>[^\s.]+)/ix
+
     class Utils
       extend T::Sig
 
@@ -148,7 +152,14 @@ module Dependabot
       "YN0001" => {
         message: "Exception error",
         handler: lambda { |message, _error, _params|
-          Dependabot::DependabotError.new(message)
+          match_data = message.match(NODE_VERSION_NOT_SATISFY_REGEX)
+          if match_data
+            current_version = match_data[:current_version]
+            required_version = match_data[:required_version]
+            Dependabot::ToolVersionNotSupported.new("Node", current_version, required_version)
+          else
+            Dependabot::DependabotError.new(message)
+          end
         }
       },
       "YN0002" => {

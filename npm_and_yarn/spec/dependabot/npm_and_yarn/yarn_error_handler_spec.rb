@@ -288,6 +288,26 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         end
       end
     end
+
+    context "when the error message contains YN0001 node version not satisfied" do
+      let(:error_message) do
+        "[YN0001]: Exception error, Detail: ➤ YN0000: ┌ Project validation\n" \
+        "::group::Project validation\n" \
+        "➤ YN0001: │ Error: The current node version v20.16.0 does not satisfy the required version =18.\n" \
+        "    at validateProject (/home/dependabot/dependabot-updater/repo/.yarn/plugins/plugin-requirements.check.cjs:15:21)\n" \
+        "    at Za.triggerHook (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:397:3373)\n" \
+        "    at async /home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:445:1506\n" \
+        "    at async Je.startSectionPromise (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:414:3303)\n" \
+        "    at async ze.install (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:445:1425)\n" \
+        "    at async /home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:502:12383\n" \
+        "    at async Je.start (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:414:2373)\n" \
+        "    at async mm.execute (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:502:12283)\n" \
+        "    at async mm.validateAndExecute (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:350:673)\n" \
+        "    at async ys.run (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-3.2.1.cjs:364:2087)\n" \
+        "::endgroup::\n" \
+        "➤ YN0000: └ Completed\n" \
+        "➤ YN0000: Failed with errors in 0s 8ms"
+      end
   end
 
   describe "#handle_group_patterns" do
