@@ -57,6 +57,9 @@ module Dependabot
       end
 
       def lowest_security_fix_version
+        # This will require a full unlock to update multiple top level ancestors.
+        return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
+
         latest_version_finder.lowest_security_fix_version
       end
 
@@ -183,7 +186,7 @@ module Dependabot
       end
 
       def updated_dependencies_after_full_unlock
-        return conflicting_updated_dependencies if !dependency.top_level? && security_advisories.any?
+        return conflicting_updated_dependencies if security_advisories.any?
 
         version_resolver.dependency_updates_from_full_unlock
                         .map { |update_details| build_updated_dependency(update_details) }
