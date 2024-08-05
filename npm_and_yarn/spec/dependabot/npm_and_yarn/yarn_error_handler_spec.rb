@@ -155,6 +155,25 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           )
       end
     end
+
+    context "when the error message contains YN0082" do
+      let(:error_message) do
+        "[94m➤[39m YN0000: · Yarn 4.3.1\n" \
+          "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n::group::Resolution step\n" \
+          "[91m➤[39m YN0082: │ [38;5;173mstring-width-cjs[39m[38;5;37m@[39m[38;5;37mnpm:^4.2.3[39m: " \
+          "No candidates found\n::endgroup::\n" \
+          "[91m➤[39m YN0082: [38;5;173mstring-width-cjs[39m[38;5;37m@[39m[38;5;37mnpm:^4.2.3[39m: " \
+          "No candidates found\n" \
+          "[94m➤[39m [90mYN0000[39m: └ Completed\n" \
+          "[91m➤[39m YN0000: · Failed with errors in 0s 158ms"
+      end
+
+      it "raises a DependencyNotFound error with the correct message" do
+        expect do
+          error_handler.handle_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyNotFound, /string-width-cjs@npm:\^4.2.3/)
+      end
+    end
   end
 
   describe "#find_usage_error" do
@@ -286,6 +305,25 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
             /The following dependency could not be found : \[YN0035\]/
           )
         end
+      end
+    end
+
+    context "when the error message contains YN0082" do
+      let(:error_message) do
+        "[94m➤[39m YN0000: · Yarn 4.3.1\n" \
+          "[94m➤[39m [90mYN0000[39m: ┌ Resolution step\n::group::Resolution step\n" \
+          "[91m➤[39m YN0082: │ [38;5;173mstring-width-cjs[39m[38;5;37m@[39m[38;5;37mnpm:^4.2.3[39m: " \
+          "No candidates found\n::endgroup::\n" \
+          "[91m➤[39m YN0082: [38;5;173mstring-width-cjs[39m[38;5;37m@[39m[38;5;37mnpm:^4.2.3[39m: " \
+          "No candidates found\n" \
+          "[94m➤[39m [90mYN0000[39m: └ Completed\n" \
+          "[91m➤[39m YN0000: · Failed with errors in 0s 158ms"
+      end
+
+      it "raises a DependencyNotFound error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyNotFound, /string-width-cjs@npm:\^4.2.3/)
       end
     end
   end

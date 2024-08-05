@@ -79,6 +79,8 @@ module Dependabot
       FAILED_TO_RETRIEVE: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): The remote server failed to provide the requested resource} # rubocop:disable Layout/LineLength
     }.freeze, T::Hash[String, Regexp])
 
+    YN0082_PACKAGE_NOT_FOUND_REGEX = /YN0082:.*?(\S+@\S+): No candidates found/
+
     PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name"
@@ -241,7 +243,19 @@ module Dependabot
         handler: lambda { |message, _error, _params|
           Dependabot::NetworkUnsafeHTTP.new(message)
         }
-      }
+      },
+      "YN0082" => {
+        message: "No candidates found",
+        handler: lambda { |message, _error, _params|
+          match_data = message.match(YN0082_PACKAGE_NOT_FOUND_REGEX)
+          if match_data
+            package_req = match_data[1]
+            Dependabot::DependencyNotFound.new("#{package_req} Detail: #{message}")
+          else
+            Dependabot::DependencyNotFound.new(message)
+          end
+        }
+      },
     }.freeze, T::Hash[String, {
       message: T.any(String, NilClass),
       handler: ErrorHandler
