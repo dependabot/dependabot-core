@@ -338,6 +338,13 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, dependency_registry
           end
 
+          # handles scenario when private registry returns a server error 5xx
+          if private_dependency_server_error?(npm_response)
+            msg = "Server error #{npm_response.status} returned while accessing registry" \
+                  " #{dependency_registry} with body #{npm_response.body}."
+            raise DependencyFileNotResolvable, msg
+          end
+
           status = npm_response.status
           return if status.to_s.start_with?("2")
 
@@ -371,6 +378,13 @@ module Dependabot
           end
 
           true
+        end
+
+        def private_dependency_server_error?(npm_response)
+          puts(npm_response)
+          return true if [500, 501, 502, 503].include?(npm_response.status)
+
+          false
         end
 
         def dependency_url
