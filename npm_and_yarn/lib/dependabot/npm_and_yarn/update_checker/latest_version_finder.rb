@@ -341,7 +341,7 @@ module Dependabot
           # handles scenario when private registry returns a server error 5xx
           if private_dependency_server_error?(npm_response)
             msg = "Server error #{npm_response.status} returned while accessing registry" \
-                  " #{dependency_registry} with body #{npm_response.body}."
+                  " #{dependency_registry}."
             raise DependencyFileNotResolvable, msg
           end
 
