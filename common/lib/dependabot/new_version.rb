@@ -2,9 +2,10 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/version"
 
 module Dependabot
-  class NewVersion < Dependabot::Version
+  class NewVersion < ::Dependabot::Version
     extend T::Sig
     extend T::Helpers
 
@@ -78,6 +79,7 @@ module Dependabot
       end
     end
 
+    # rubocop:disable  Metrics/AbcSize
     sig { params(other: T.any(String, Integer, Gem::Version)).returns(Integer) }
     def <=>(other)
       version = stringify_version(@version_string)
@@ -95,19 +97,24 @@ module Dependabot
 
       prefixed_tokens, other_prefixed_tokens =
         pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
-      # debugger
-      prefixed_tokens.count.times.each do |index|
+
+      T.must(prefixed_tokens).count.times.each do |index|
+        prefix = T.must(T.must(prefixed_tokens)[index])[0]
+        token = T.must(T.must(prefixed_tokens)[index])[1..-1] || ""
+        other_prefix = T.must(T.must(other_prefixed_tokens)[index])[0]
+        other_token = T.must(T.must(other_prefixed_tokens)[index])[1..-1] || ""
         comp = compare_prefixed_token(
-          prefix: prefixed_tokens[index][0],
-          token: prefixed_tokens[index][1..-1] || "",
-          other_prefix: other_prefixed_tokens[index][0],
-          other_token: other_prefixed_tokens[index][1..-1] || ""
+          prefix: prefix.to_s,
+          token: token,
+          other_prefix: other_prefix.to_s,
+          other_token: other_token
         )
-        return comp unless comp.zero?
+        return T.must(comp) unless T.must(comp).zero?
       end
 
       0
     end
+    # rubocop:enable  Metrics/AbcSize
 
     private
 
@@ -142,9 +149,9 @@ module Dependabot
     sig { params(version: String).returns(String) }
     def trim_version(version)
       version.split("-").filter_map do |v|
-        parts = v.split(".")
-        parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
-        parts&.join(".")
+        parts = T.let(v.split("."), T.nilable(T::Array[String]))
+        parts = T.must(parts)[0..-2] while NULL_VALUES.include?(T.must(parts).last)
+        T.must(parts).join(".")
       end.reject(&:empty?).join("-")
     end
 
@@ -184,7 +191,7 @@ module Dependabot
       [prefixed_tokens, other_prefixed_tokens]
     end
 
-    sig { params(prefix: String, token: String, other_prefix: String, other_token: String).returns(T.untyped) }
+    sig { params(prefix: String, token: String, other_prefix: String, other_token: String).returns(T.nilable(Integer)) }
     def compare_prefixed_token(prefix:, token:, other_prefix:, other_token:)
       token_type = token.match?(/^\d+$/) ? :number : :qualifier
       other_token_type = other_token.match?(/^\d+$/) ? :number : :qualifier
