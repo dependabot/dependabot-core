@@ -473,7 +473,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           allow(version_finder).to receive(:sleep).and_return(true)
         end
 
-        it { is_expected.to be_nil }
+        it "raises an error" do
+          expect { version_finder.latest_version_from_registry }
+            .to raise_error do |err|
+              expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+            end
+        end
       end
 
       context "when the request 200s with a bad body" do
@@ -887,6 +892,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it "picks the latest dist-tags version" do
         expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when the npm registry package lookup returns a 500 error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 500, body: '{"error":"Not found"}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+          end
       end
     end
   end
