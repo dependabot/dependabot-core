@@ -162,7 +162,10 @@ module Dependabot
       ".#{version}".split(/(?=[\-\.\+])/)
     end
 
-    sig { params(prefixed_tokens: T::Array[String], other_prefixed_tokens: T::Array[String]).returns(T::Array[String]) }
+    sig do
+      params(prefixed_tokens: T::Array[String],
+             other_prefixed_tokens: T::Array[String]).returns(T::Array[T::Array[String]])
+    end
     def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
       prefixed_tokens = prefixed_tokens.dup
       other_prefixed_tokens = other_prefixed_tokens.dup
@@ -173,7 +176,9 @@ module Dependabot
       T.must(longest).count.times do |index|
         next unless T.must(shortest)[index].nil?
 
-        T.must(shortest)[index] = longest[index].start_with?(".") ? ".0" : "-"
+        segment = T.must(T.must(longest)[index])
+
+        T.must(shortest)[index] = segment.start_with?(".") ? ".0" : "-"
       end
 
       [prefixed_tokens, other_prefixed_tokens]
