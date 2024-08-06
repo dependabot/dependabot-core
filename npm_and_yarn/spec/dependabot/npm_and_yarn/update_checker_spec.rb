@@ -565,6 +565,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
       end
     end
+
+    context "when the VulnerabilityAudit finds multiple top-level ancestors" do
+      let(:vulnerability_auditor) do
+        instance_double(described_class::VulnerabilityAuditor)
+      end
+
+      before do
+        allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
+        allow(vulnerability_auditor).to receive(:audit).and_return(
+          {
+            "fix_available" => true,
+            "top_level_ancestors" => %w(applause lodash)
+          }
+        )
+      end
+
+      it "returns nil to force a full unlock" do
+        expect(lowest_security_fix).to be_nil
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
