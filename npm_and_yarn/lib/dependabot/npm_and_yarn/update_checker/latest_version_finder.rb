@@ -381,7 +381,8 @@ module Dependabot
         end
 
         def private_dependency_server_error?(npm_response)
-          puts(npm_response)
+          Dependabot.logger.warn("#{dependency_registry} returned code #{npm_response.status} with " \
+                                 "body #{npm_response.body}.")
           return true if [500, 501, 502, 503].include?(npm_response.status)
 
           false
