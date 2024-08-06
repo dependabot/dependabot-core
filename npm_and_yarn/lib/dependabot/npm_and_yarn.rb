@@ -112,8 +112,6 @@ module Dependabot
 
     ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
 
-    PACKAGE_DISCOVERY_FAIL = /Couldn't find package "(?<pkg>.*)" *.* on the "(?<regis>.*)" registry./
-
     class Utils
       extend T::Sig
 
@@ -350,14 +348,6 @@ module Dependabot
 
           Dependabot::GitDependenciesNotReachable.new(dependency_url)
         },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [PACKAGE_DISCOVERY_FAIL],
-        handler: lambda { |message, _error, _params|
-                   Dependabot::DependencyFileNotResolvable.new(message)
-                 },
         in_usage: false,
         matchfn: nil
       }
