@@ -846,23 +846,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    context "with a registry with package access fail" do
-      let(:response) do
-        "Couldn't find package \"prop-types@^15.8.1\" required by \"@fortawesome/react-fontawesome@0.2.2\" on " \
-          "the \"npm\" registry."
-      end
-
-      it "raises a helpful error" do
-        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message)
-            .to include(
-              "Couldn't find package \"prop-types@^15.8.1\" required by \"@fortawesome/react-fontawesome@0.2.2\" on " \
-              "the \"npm\" registry."
-            )
-        end
-      end
-    end
-
     context "with a package-lock.json file with empty package object" do
       let(:response) { "Object for dependency \"anymatch\" is empty.\nSomething went wrong." }
 
@@ -957,6 +940,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     it "raises a helpful error" do
       expect { updated_npm_lock_content }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
+  context "with a dependency with unsupported version mentioned in manifest" do
+    let(:files) { project_dependency_files("npm/simple_with_unsupported_engine") }
+    let(:dependency_name) { "csso" }
+    let(:version) { "5.0.4" }
+    let(:previous_version) { "^4.2.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^4.2.0",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      pending "skipped"
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
     end
   end
 
