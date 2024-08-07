@@ -113,12 +113,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
     context "when the error message contains a node version not satisfy regex and versions are extracted" do
       let(:error_message) do
-        "➤ YN0000: ┌ Project validation\n" \
+        "\e[94m➤\e[39m YN0000: · Yarn 4.0.2\n\e[94m➤\e[39m \e[90mYN0000\e[39m: ┌ Project validation\n" \
           "::group::Project validation\n" \
-          "➤ YN0000: │ The current Node version v20.15.1 does not satisfy the required version 14.21.3.\n" \
-          "::endgroup::\n" \
-          "➤ YN0000: └ Completed\n" \
-          "➤ YN0000: Failed with errors in 0s 6ms"
+          "\e[91m➤\e[39m YN0000: │ \e[31mThe current \e[32mNode\e[39m\e[31m version \e[36m20.13.1\e[39m\e[31m does" \
+          " not satisfy the required version \e[36m20.11.0\e[39m\e[31m.\e[39m\n::endgroup::\n\e[91m➤\e[39m YN0000:" \
+          " \e[31mThe current \e[32mNode\e[39m\e[31m version \e[36m20.13.1\e[39m\e[31m does not satisfy the required " \
+          "version \e[36m20.11.0\e[39m\e[31m.\e[39m\n" \
+          "\e[94m➤\e[39m \e[90mYN0000\e[39m: └ Completed\n\e[91m➤\e[39m YN0000: · Failed with errors in 0s 3ms"
       end
 
       it "raises a ToolVersionNotSupported error with the correct versions" do
@@ -126,8 +127,8 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           error_handler.handle_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::ToolVersionNotSupported) do |e| # rubocop:disable Style/MultilineBlockChain
           expect(e.tool_name).to eq("Yarn")
-          expect(e.detected_version).to eq("v20.15.1")
-          expect(e.supported_versions).to eq("14.21.3")
+          expect(e.detected_version).to eq("20.13.1")
+          expect(e.supported_versions).to eq("20.11.0")
         end
       end
     end
