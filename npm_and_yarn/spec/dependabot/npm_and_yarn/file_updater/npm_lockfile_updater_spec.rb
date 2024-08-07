@@ -943,6 +943,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a dependency with unsupported version mentioned in manifest" do
+    let(:files) { project_dependency_files("npm/simple_with_unsupported_engine") }
+    let(:dependency_name) { "csso" }
+    let(:version) { "5.0.4" }
+    let(:previous_version) { "^4.2.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^4.2.0",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      pending "skipped"
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
+
   context "with a peer dependency that is unresolved" do
     let(:files) { project_dependency_files("npm/simple_with_peer_deps") }
     let(:dependency_name) { "eslint" }
