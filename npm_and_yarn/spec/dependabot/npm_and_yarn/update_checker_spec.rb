@@ -1442,9 +1442,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         Dependabot::Dependency.new(
           name: "lodash",
           version: dependency_version,
-          requirements: [],
+          requirements: [{
+            file: "package.json",
+            requirement: "^3.10.0",
+            groups: ["dependencies"],
+            source: {
+              type: "registry",
+              url: "https://registry.npmjs.org"
+            }
+          }],
           package_manager: "npm_and_yarn"
         )
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/lodash")
+          .and_return(status: 200, body: fixture("npm_responses", "lodash.json"))
+        stub_request(:head, "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz")
+          .and_return(status: 200)
       end
 
       it "correctly selects both top-level and parent of transitive" do
