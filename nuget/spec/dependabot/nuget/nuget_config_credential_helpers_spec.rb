@@ -33,10 +33,24 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
     context "with non-empty credential set" do
       let(:credentials) do
         [
-          { "type" => "nuget_feed", "url" => "https://private.nuget.example.com/index.json",
-            "token" => "secret_token" },
-          { "type" => "nuget_feed", "url" => "https://public.nuget.example.com/index.json" },
-          { "type" => "not_nuget", "some_other_field" => "some other value" }
+          { "type" => "not_nuget", "some_other_field" => "some other value" },
+          { "type" => "nuget_feed", "url" => "https://public1.nuget.example.com/index.json" },
+          { "type" => "nuget_feed", "url" => "https://private2.nuget.example.com/index.json",
+            "username" => "user", "password" => "secret" },
+          { "type" => "nuget_feed", "url" => "https://private3.nuget.example.com/index.json",
+            "password" => "secret" },
+          { "type" => "nuget_feed", "url" => "https://private4.nuget.example.com/index.json",
+            "token" => "PAT:12345" },
+          { "type" => "nuget_feed", "url" => "https://private5.nuget.example.com/index.json",
+            "token" => ":12345" },
+          { "type" => "nuget_feed", "url" => "https://private6.nuget.example.com/index.json",
+            "token" => "12345" },
+          { "type" => "nuget_feed", "url" => "https://private7.nuget.example.com/index.json",
+            "token" => Base64.encode64("PAT:12345").delete("\n") },
+          { "type" => "nuget_feed", "url" => "https://private8.nuget.example.com/index.json",
+            "token" => Base64.encode64(":12345").delete("\n") },
+          { "type" => "nuget_feed", "url" => "https://private9.nuget.example.com/index.json",
+            "token" => Base64.encode64("12345").delete("\n") }
         ]
       end
 
@@ -47,14 +61,49 @@ RSpec.describe Dependabot::Nuget::NuGetConfigCredentialHelpers do
               <?xml version="1.0" encoding="utf-8"?>
               <configuration>
                 <packageSources>
-                  <add key="nuget_source_1" value="https://private.nuget.example.com/index.json" />
-                  <add key="nuget_source_2" value="https://public.nuget.example.com/index.json" />
+                  <add key="nuget_source_1" value="https://public1.nuget.example.com/index.json" />
+                  <add key="nuget_source_2" value="https://private2.nuget.example.com/index.json" />
+                  <add key="nuget_source_3" value="https://private3.nuget.example.com/index.json" />
+                  <add key="nuget_source_4" value="https://private4.nuget.example.com/index.json" />
+                  <add key="nuget_source_5" value="https://private5.nuget.example.com/index.json" />
+                  <add key="nuget_source_6" value="https://private6.nuget.example.com/index.json" />
+                  <add key="nuget_source_7" value="https://private7.nuget.example.com/index.json" />
+                  <add key="nuget_source_8" value="https://private8.nuget.example.com/index.json" />
+                  <add key="nuget_source_9" value="https://private9.nuget.example.com/index.json" />
                 </packageSources>
                 <packageSourceCredentials>
-                  <nuget_source_1>
+                  <nuget_source_2>
                     <add key="Username" value="user" />
-                    <add key="ClearTextPassword" value="secret_token" />
-                  </nuget_source_1>
+                    <add key="ClearTextPassword" value="secret" />
+                  </nuget_source_2>
+                  <nuget_source_3>
+                    <add key="Username" value="unused" />
+                    <add key="ClearTextPassword" value="secret" />
+                  </nuget_source_3>
+                  <nuget_source_4>
+                    <add key="Username" value="PAT" />
+                    <add key="ClearTextPassword" value="12345" />
+                  </nuget_source_4>
+                  <nuget_source_5>
+                    <add key="Username" value="unused" />
+                    <add key="ClearTextPassword" value="12345" />
+                  </nuget_source_5>
+                  <nuget_source_6>
+                    <add key="Username" value="unused" />
+                    <add key="ClearTextPassword" value="12345" />
+                  </nuget_source_6>
+                  <nuget_source_7>
+                    <add key="Username" value="PAT" />
+                    <add key="ClearTextPassword" value="12345" />
+                  </nuget_source_7>
+                  <nuget_source_8>
+                    <add key="Username" value="unused" />
+                    <add key="ClearTextPassword" value="12345" />
+                  </nuget_source_8>
+                  <nuget_source_9>
+                    <add key="Username" value="unused" />
+                    <add key="ClearTextPassword" value="MTIzNDU=" />
+                  </nuget_source_9>
                 </packageSourceCredentials>
               </configuration>
             XML
