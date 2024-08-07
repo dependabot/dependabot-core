@@ -1425,6 +1425,38 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       eq(expected_array).and contain_exactly_including_metadata(*expected_array)
     end
 
+    context "when a top-level dependency and a transitive dependency both need updating" do
+      let(:dependency_files) { project_dependency_files("npm8/top_level_and_transitive") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/top-level-and-transitive" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "lodash",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 4.17.21"]
+          )
+        ]
+      end
+      let(:dependency_version) { "3.10.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "correctly selects both top-level and parent of transitive" do
+        updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
+        expect(updated_dependencies.count).to eq(2)
+        expect(updated_dependencies.first.name).to eq("lodash")
+        expect(updated_dependencies.first.version).to eq("4.17.21")
+        expect(updated_dependencies.last.name).to eq("applause")
+        expect(updated_dependencies.last.version).to eq("2.0.4")
+      end
+    end
+
     context "when dealing with a security update for a locked transitive dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
