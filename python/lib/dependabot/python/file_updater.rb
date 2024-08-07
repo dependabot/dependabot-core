@@ -27,7 +27,8 @@ module Dependabot
           /^setup\.py$/,
           /^setup\.cfg$/,
           /^pyproject\.toml$/,
-          /^pyproject\.lock$/
+          /^pyproject\.lock$/,
+          /^poetry\.lock$/
         ]
       end
 
