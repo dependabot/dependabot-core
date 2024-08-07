@@ -338,7 +338,22 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, dependency_registry
           end
 
+          # handles scenario when private registry returns a server error 5xx
+          if private_dependency_server_error?(npm_response)
+            msg = "Server error #{npm_response.status} returned while accessing registry" \
+                  " #{dependency_registry}."
+            raise DependencyFileNotResolvable, msg
+          end
+
           status = npm_response.status
+
+          # handles issue when status 200 is returned from registry but with an invalid JSON object
+          if status.to_s.start_with?("2") && response_invalid_json?(npm_response)
+            msg = "Invalid JSON object returned from registry #{dependency_registry}."
+            Dependabot.logger.warn("#{msg} Response body (truncated) : #{npm_response.body[0..500]}...")
+            raise DependencyFileNotResolvable, msg
+          end
+
           return if status.to_s.start_with?("2")
 
           # Ignore 404s from the registry for updates where a lockfile doesn't
@@ -370,6 +385,23 @@ module Dependabot
                    web_response.status == 429
           end
 
+          true
+        end
+
+        def private_dependency_server_error?(npm_response)
+          if [500, 501, 502, 503].include?(npm_response.status)
+            Dependabot.logger.warn("#{dependency_registry} returned code #{npm_response.status} with " \
+                                   "body #{npm_response.body}.")
+            return true
+          end
+          false
+        end
+
+        def response_invalid_json?(npm_response)
+          result = JSON.parse(npm_response.body)
+          result.is_a?(Hash) || result.is_a?(Array)
+          false
+        rescue JSON::ParserError, TypeError
           true
         end
 
