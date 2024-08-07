@@ -16,7 +16,7 @@ module Dependabot
         [
           /^\.gitmodules$/,            # Matches the .gitmodules file in the root directory
           %r{^.+/\.git$},              # Matches the .git file inside any submodule directory
-          %r{^\.git/modules/.+},       # Matches any .git/modules directory where submodule data is stored
+          %r{^\.git/modules/.+}        # Matches any .git/modules directory where submodule data is stored
         ]
       end
 
