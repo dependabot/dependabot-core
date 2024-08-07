@@ -565,6 +565,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
       end
     end
+
+    context "when the VulnerabilityAudit finds multiple top-level ancestors" do
+      let(:vulnerability_auditor) do
+        instance_double(described_class::VulnerabilityAuditor)
+      end
+
+      before do
+        allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
+        allow(vulnerability_auditor).to receive(:audit).and_return(
+          {
+            "fix_available" => true,
+            "top_level_ancestors" => %w(applause lodash)
+          }
+        )
+      end
+
+      it "returns nil to force a full unlock" do
+        expect(lowest_security_fix).to be_nil
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -1403,6 +1423,53 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     def eq_including_metadata(expected_array)
       eq(expected_array).and contain_exactly_including_metadata(*expected_array)
+    end
+
+    context "when a top-level dependency and a transitive dependency both need updating" do
+      let(:dependency_files) { project_dependency_files("npm8/top_level_and_transitive") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/top-level-and-transitive" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "lodash",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 4.17.21"]
+          )
+        ]
+      end
+      let(:dependency_version) { "3.10.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: dependency_version,
+          requirements: [{
+            file: "package.json",
+            requirement: "^3.10.0",
+            groups: ["dependencies"],
+            source: {
+              type: "registry",
+              url: "https://registry.npmjs.org"
+            }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/lodash")
+          .and_return(status: 200, body: fixture("npm_responses", "lodash.json"))
+        stub_request(:head, "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz")
+          .and_return(status: 200)
+      end
+
+      it "correctly selects both top-level and parent of transitive" do
+        updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
+        expect(updated_dependencies.count).to eq(2)
+        expect(updated_dependencies.first.name).to eq("lodash")
+        expect(updated_dependencies.first.version).to eq("4.17.21")
+        expect(updated_dependencies.last.name).to eq("applause")
+        expect(updated_dependencies.last.version).to eq("2.0.4")
+      end
     end
 
     context "when dealing with a security update for a locked transitive dependency" do
