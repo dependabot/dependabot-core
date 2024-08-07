@@ -13,7 +13,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        []
+        [
+          /^\.gitmodules$/,            # Matches the .gitmodules file in the root directory
+          %r{^.+/\.git$},              # Matches the .git file inside any submodule directory
+          %r{^\.git/modules/.+},       # Matches any .git/modules directory where submodule data is stored
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
