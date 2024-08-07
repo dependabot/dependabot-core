@@ -253,7 +253,18 @@ module Dependabot
           T.let(
             credentials
             .select { |cred| cred["type"] == "nuget_feed" && cred["url"] }
-            .map { |c| { url: c.fetch("url"), token: c["token"] } },
+            .map do |c|
+              {
+                url: c.fetch("url"),
+                # Private NuGet repository credentials could be any of:
+                #  - `token` only (e.g. access token or basic access auth)
+                #  - `password` only (e.g. GitHub PAT or Azure DevOps PAT, username is not significant)
+                #  - `username` and `password` (e.g. MyGet, Artifactory, https://nuget.telerik.com, etc)
+                # The raw token should always take priority over username/password, if both are provided for some reason
+                # When only username/password is provided, convert them to a basic access auth token
+                token: c["token"] || (c["password"] ? "#{c['username']}:#{c['password']}" : nil)
+              }
+            end,
             T.nilable(T::Array[T::Hash[Symbol, String]])
           )
       end
