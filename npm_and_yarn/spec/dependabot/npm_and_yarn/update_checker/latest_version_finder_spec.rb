@@ -735,6 +735,36 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the npm link returns 200 but invalid JSON object in body" do
+      before do
+        body = fixture("npm_responses", "200_with_invalid_json.json")
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 200, body: body)
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when the npm link returns 200 but valid JSON object in body" do
+      before do
+        body = fixture("npm_responses", "200_with_valid_json.json")
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 200, body: body)
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .not_to raise_error
+      end
+    end
+
     context "when the npm link resolves to a 404" do
       before do
         stub_request(:get, registry_listing_url)

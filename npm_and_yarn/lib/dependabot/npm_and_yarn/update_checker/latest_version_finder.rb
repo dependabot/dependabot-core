@@ -346,6 +346,14 @@ module Dependabot
           end
 
           status = npm_response.status
+
+          # handles issue when status 200 is returned from registry but with an invalid JSON object
+          if status.to_s.start_with?("2") && response_invalid_json?(npm_response)
+            msg = "Invalid JSON object returned from registry #{dependency_registry}."
+            Dependabot.logger.warn("#{msg} Response body (truncated) : #{npm_response.body[0..500]}...")
+            raise DependencyFileNotResolvable, msg
+          end
+
           return if status.to_s.start_with?("2")
 
           # Ignore 404s from the registry for updates where a lockfile doesn't
@@ -387,6 +395,14 @@ module Dependabot
             return true
           end
           false
+        end
+
+        def response_invalid_json?(npm_response)
+          result = JSON.parse(npm_response.body)
+          result.is_a?(Hash) || result.is_a?(Array)
+          false
+        rescue JSON::ParserError, TypeError
+          true
         end
 
         def dependency_url
