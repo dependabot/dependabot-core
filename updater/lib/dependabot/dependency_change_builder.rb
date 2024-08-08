@@ -30,15 +30,17 @@ module Dependabot
         job: Dependabot::Job,
         dependency_files: T::Array[Dependabot::DependencyFile],
         updated_dependencies: T::Array[Dependabot::Dependency],
-        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup)
+        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup),
+        notices: T::Array[T::Hash[T.any(String, Symbol), T.untyped]]
       ).returns(Dependabot::DependencyChange)
     end
-    def self.create_from(job:, dependency_files:, updated_dependencies:, change_source:)
+    def self.create_from(job:, dependency_files:, updated_dependencies:, change_source:, notices: [])
       new(
         job: job,
         dependency_files: dependency_files,
         updated_dependencies: updated_dependencies,
-        change_source: change_source
+        change_source: change_source,
+        notices: notices
       ).run
     end
 
@@ -47,10 +49,11 @@ module Dependabot
         job: Dependabot::Job,
         dependency_files: T::Array[Dependabot::DependencyFile],
         updated_dependencies: T::Array[Dependabot::Dependency],
-        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup)
+        change_source: T.any(Dependabot::Dependency, Dependabot::DependencyGroup),
+        notices: T::Array[T::Hash[T.any(String, Symbol), T.untyped]]
       ).void
     end
-    def initialize(job:, dependency_files:, updated_dependencies:, change_source:)
+    def initialize(job:, dependency_files:, updated_dependencies:, change_source:, notices: [])
       @job = job
 
       dir = Pathname.new(job.source.directory).cleanpath
@@ -61,6 +64,7 @@ module Dependabot
 
       @updated_dependencies = updated_dependencies
       @change_source = change_source
+      @notices = notices
     end
 
     sig { returns(Dependabot::DependencyChange) }
@@ -84,7 +88,8 @@ module Dependabot
         job: job,
         updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
-        dependency_group: source_dependency_group
+        dependency_group: source_dependency_group,
+        notices: notices
       )
     end
 
@@ -101,6 +106,9 @@ module Dependabot
 
     sig { returns(T.any(Dependabot::Dependency, Dependabot::DependencyGroup)) }
     attr_reader :change_source
+
+    sig { returns(T::Array[T::Hash[T.any(String, Symbol), T.untyped]]) }
+    attr_reader :notices
 
     sig { returns(T.nilable(String)) }
     def source_dependency_name

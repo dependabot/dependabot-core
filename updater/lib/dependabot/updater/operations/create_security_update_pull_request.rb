@@ -169,7 +169,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: checker.generate_pr_notices
           )
 
           create_pull_request(dependency_change)
