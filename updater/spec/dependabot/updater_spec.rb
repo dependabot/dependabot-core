@@ -2066,6 +2066,44 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
+      context "when URI::InvalidURIError is raised" do
+        it "doesn't report the error to the service" do
+          checker = stub_update_checker
+          error = URI::InvalidURIError.new("https://registry.yarnpkg.com}/")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service).not_to receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = URI::InvalidURIError.new("https://registry.yarnpkg.com}/")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "dependency_file_not_resolvable",
+              error_details: { message: "https://registry.yarnpkg.com}/" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
       context "when Dependabot::GitDependencyReferenceNotFound is raised" do
         it "doesn't report the error to the service" do
           checker = stub_update_checker

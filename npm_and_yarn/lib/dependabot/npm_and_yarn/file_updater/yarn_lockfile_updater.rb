@@ -225,6 +225,7 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_yarn_lock_updater_error(error, yarn_lock)
           error_message = error.message
 
@@ -273,6 +274,10 @@ module Dependabot
             TIMEOUT_FETCHING_PACKAGE_REGEX
           )
 
+          handle_sockethangup(error_message) if error_message.match?(
+            SOCKET_HANG_UP
+          )
+
           if error_message.start_with?(DEPENDENCY_VERSION_NOT_FOUND) ||
              error_message.include?(DEPENDENCY_NOT_FOUND) ||
              error_message.include?(DEPENDENCY_MATCH_NOT_FOUND)
@@ -289,6 +294,7 @@ module Dependabot
           raise error
         end
 
+        # rubocop:enable Metrics/PerceivedComplexity
         def resolvable_before_update?(yarn_lock)
           @resolvable_before_update ||= {}
           return @resolvable_before_update[yarn_lock.name] if @resolvable_before_update.key?(yarn_lock.name)
@@ -464,6 +470,14 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).npmrc_content
+        end
+
+        def handle_sockethangup(error_message)
+          url = error_message.match(SOCKET_HANG_UP).named_captures.fetch("url")
+          raise PrivateSourceTimedOut, url.gsub(
+            HTTP_CHECK_REGEX,
+            ""
+          )
         end
 
         def updated_package_json_content(file)
