@@ -20,7 +20,8 @@ module Dependabot
           /^Gemfile\.lock$/,
           /^gems\.rb$/,
           /^gems\.locked$/,
-          /^*\.gemspec$/
+          /^*\.gemspec$/,
+          %r{^vendor/.*$}
         ]
       end
 
