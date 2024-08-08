@@ -141,11 +141,13 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def pr_notices
         notices = @notices || []
-        message = notices.filter_map do |notice|
+        unique_messages = notices.filter_map do |notice|
           notice_details = notice[:details] if notice
           markdown = notice_details[:markdown] if notice_details
           markdown unless markdown.nil? || markdown.empty?
-        end.join("\n\n")
+        end.uniq
+
+        message = unique_messages.join("\n\n")
         message.empty? ? nil : message
       end
 

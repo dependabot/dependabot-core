@@ -11,6 +11,11 @@ require "dependabot/utils"
 
 module Dependabot
   module UpdateCheckers
+    # Alias type for notices
+    Notice = T.type_alias do
+      T::Hash[T.any(String, Symbol), T.untyped]
+    end
+
     class Base
       extend T::Sig
       extend T::Helpers
@@ -210,7 +215,7 @@ module Dependabot
         ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
       end
 
-      sig { returns(T::Array[T::Hash[T.any(String, Symbol), T.untyped]]) }
+      sig { returns(T::Array[Notice]) }
       def generate_pr_notices
         # Notices are going to show at the beginning of the PR description
         # in the order they appear within the array.
@@ -228,7 +233,7 @@ module Dependabot
 
       private
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(Notice)) }
       def generate_support_notice
         pm = package_manager
         return unless pm

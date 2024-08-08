@@ -142,7 +142,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: checker.generate_pr_notices
           )
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive

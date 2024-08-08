@@ -3372,6 +3372,39 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         )
       end
     end
+
+    context "with duplicate notices" do
+      let(:notices) do
+        [{
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          details: {
+            message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                     "Please upgrade to one of the following versions: v2, v3.",
+            current_version: "v1",
+            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                      "> Please upgrade to one of the following versions: v2, v3."
+          }
+        }, {
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          details: {
+            message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                     "Please upgrade to one of the following versions: v2, v3.",
+            current_version: "v1",
+            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                      "> Please upgrade to one of the following versions: v2, v3."
+          }
+        }]
+      end
+
+      it "returns a unique message" do
+        expect(pr_message).to start_with(notices[0][:details][:markdown])
+        expect(pr_message.scan(notices[0][:details][:markdown]).count).to eq(1)
+      end
+    end
   end
 
   describe "#commit_message", :vcr do

@@ -335,6 +335,37 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
           create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
         end
+
+        it "creates a pull request with multiple pr notices" do
+          allow(stub_update_checker)
+            .to receive(:generate_pr_notices).and_return([
+              {
+                mode: "WARN",
+                type: "bundler_deprecated_warn",
+                package_manager_name: "bundler",
+                details: {
+                  message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                           "Please upgrade to one of the following versions: v2, v3.",
+                  current_version: "v1",
+                  markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                            "> Please upgrade to one of the following versions: v2, v3."
+                }
+              },
+              {
+                mode: "INFO",
+                type: "new_feature",
+                package_manager_name: "bundler",
+                details: {
+                  message: "A new feature has been added.",
+                  current_version: "v2",
+                  markdown: "> [!INFO]\n> A new feature has been added."
+                }
+              }
+            ])
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
+
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
       end
     end
 

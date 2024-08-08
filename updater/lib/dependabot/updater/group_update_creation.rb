@@ -53,6 +53,10 @@ module Dependabot
         original_dependencies = dependency_snapshot.dependencies
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
+
+        # This array will store any PR notices generated from each checker.
+        generated_pr_notices = T.let([], T::Array[Dependabot::UpdateCheckers::Notice])
+
         group.dependencies.each do |dependency|
           # We still want to update a dependency if it's been updated in another manifest files,
           # but we should skip it if it's been updated in _the same_ manifest file
@@ -82,7 +86,7 @@ module Dependabot
             next
           end
 
-          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
+          updated_dependencies = compile_updates_for(dependency, dependency_files, group, generated_pr_notices)
           next unless updated_dependencies.any?
 
           lead_dependency = updated_dependencies.find do |dep|
@@ -106,7 +110,8 @@ module Dependabot
           job: job,
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
-          dependency_group: group
+          dependency_group: group,
+          notices: generated_pr_notices
         )
 
         if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
@@ -192,11 +197,12 @@ module Dependabot
         params(
           dependency: Dependabot::Dependency,
           dependency_files: T::Array[Dependabot::DependencyFile],
-          group: Dependabot::DependencyGroup
+          group: Dependabot::DependencyGroup,
+          generated_pr_notices: T::Array[Dependabot::UpdateCheckers::Notice]
         )
           .returns(T::Array[Dependabot::Dependency])
       end
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group, generated_pr_notices) # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -228,9 +234,17 @@ module Dependabot
           return []
         end
 
-        checker.updated_dependencies(
+        updated_dependency = checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
+
+        # Since checker successfully done its job, we can store the pr notices
+        if updated_dependency
+          pr_notices = checker.generate_pr_notices
+          generated_pr_notices.concat(pr_notices) if pr_notices.any?
+        end
+
+        updated_dependency
       rescue Dependabot::InconsistentRegistryResponse => e
         dependency_snapshot.add_handled_dependencies(dependency.name)
         error_handler.log_dependency_error(
