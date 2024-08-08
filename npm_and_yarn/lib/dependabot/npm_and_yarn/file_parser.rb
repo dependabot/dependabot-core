@@ -166,7 +166,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No package.json!" unless get_original_file("package.json")
+        raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
