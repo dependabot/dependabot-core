@@ -2828,7 +2828,8 @@ RSpec.describe Dependabot::Updater do
                 }
               ]
             )
-          ]
+          ],
+          generate_pr_notices: []
         }.merge(stubs)
       )
 
