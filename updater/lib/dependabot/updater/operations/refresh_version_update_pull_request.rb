@@ -58,6 +58,7 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/MethodLength
         def check_and_update_pull_request(dependencies)
           if dependencies.count != job.dependencies.count
             # If the job dependencies mismatch the parsed dependencies, then
@@ -122,6 +123,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/MethodLength
 
         def create_pull_request(dependency_change)
           Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
