@@ -53,7 +53,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-sorbet", "~> 1.9.2"
   spec.add_development_dependency "rubocop", "~> 1.65.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.21.0"
-  spec.add_development_dependency "rubocop-rspec", "~> 2.29.1"
+  spec.add_development_dependency "rubocop-rspec", "~> 3.0.3"
   spec.add_development_dependency "rubocop-sorbet", "~> 0.8.1"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "turbo_tests", "~> 2.2.0"
