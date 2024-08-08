@@ -102,13 +102,51 @@ module Dependabot
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_error", kind: :internal) do |_span|
-        ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
-                                                            error_details: error_details)
+        ::Dependabot::OpenTelemetry.record_update_job_error(
+          job_id: job_id,
+          error_type: error_type,
+          error_details: error_details
+        )
         api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
+          }
+        }
+        response = http_client.post(api_url, json: body)
+        raise ApiError, response.body if response.code >= 400
+      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        retry_count ||= 0
+        retry_count += 1
+        raise if retry_count > 3
+
+        sleep(rand(3.0..10.0))
+        retry
+      end
+    end
+
+    sig do
+      params(
+        message_mode: T.any(String, Symbol),
+        message_type: T.any(String, Symbol),
+        message_details: T.nilable(T::Hash[T.untyped, T.untyped])
+      ).void
+    end
+    def record_update_job_message(message_mode:, message_type:, message_details:)
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_message", kind: :internal) do |_span|
+        ::Dependabot::OpenTelemetry.record_update_job_message(
+          job_id: job_id,
+          message_mode: message_mode,
+          message_type: message_type,
+          message_details: message_details
+        )
+        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
+        body = {
+          data: {
+            "message-mode": message_mode,
+            "message-type": message_type,
+            "message-details": message_details
           }
         }
         response = http_client.post(api_url, json: body)
