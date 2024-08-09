@@ -996,7 +996,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(15) }
+      its(:length) { is_expected.to eq(13) }
 
       describe "an install_requires dependencies" do
         subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
