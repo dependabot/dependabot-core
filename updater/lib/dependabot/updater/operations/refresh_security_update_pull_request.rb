@@ -15,7 +15,6 @@ module Dependabot
     module Operations
       class RefreshSecurityUpdatePullRequest
         extend T::Sig
-        include SecurityUpdateHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
