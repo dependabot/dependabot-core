@@ -23,7 +23,7 @@ module Dependabot
           %r{(^|.*/)build\.gradle(\.kts)?$},
           # Matches gradle/libs.versions.toml in root or any subdirectory
           %r{(^|.*/)?gradle/libs\.versions\.toml$}
-        ]      end
+        ] end
 
       def updated_dependency_files
         updated_files = buildfiles.dup
