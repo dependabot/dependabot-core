@@ -89,6 +89,8 @@ module Dependabot
             dep.name.casecmp(dependency.name)&.zero?
           end
 
+          next unless lead_dependency
+
           dependency_change = create_change_for(T.must(lead_dependency), updated_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
