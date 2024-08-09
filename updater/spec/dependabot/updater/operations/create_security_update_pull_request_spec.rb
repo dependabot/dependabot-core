@@ -129,7 +129,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       updated_dependencies: [dependency],
       dependency: dependency,
       requirements_unlocked_or_can_be?: true,
-      can_update?: true
+      can_update?: true,
+      generate_pr_notices: []
     )
   end
 
@@ -151,7 +152,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       updated_dependencies: [transitive_dependency],
       dependency: transitive_dependency,
       requirements_unlocked_or_can_be?: false,
-      can_update?: false
+      can_update?: false,
+      generate_pr_notices: []
     )
   end
 
@@ -299,17 +301,71 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
       end
 
-      it "creates a pull request if one does not already exist" do
-        allow(job)
-          .to receive(:existing_pull_requests).and_return([
-            [{ "dependency-name" => "dummy-pkg-a", "dependency-version" => "4.1.0" }]
-          ])
-        allow(create_security_update_pull_request)
-          .to receive(:check_and_create_pull_request).and_call_original
+      context "when pull request does not already exist" do
+        before do
+          allow(job)
+            .to receive(:existing_pull_requests).and_return([
+              [{ "dependency-name" => "dummy-pkg-a", "dependency-version" => "4.1.0" }]
+            ])
+          allow(create_security_update_pull_request)
+            .to receive(:check_and_create_pull_request).and_call_original
+        end
 
-        expect(create_security_update_pull_request).to receive(:create_pull_request)
+        it "creates a pull request without pr notices" do
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
 
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
+
+        it "creates a pull request with pr notices" do
+          allow(stub_update_checker)
+            .to receive(:generate_pr_notices).and_return([{
+              mode: "WARN",
+              type: "bundler_deprecated_warn",
+              package_manager_name: "bundler",
+              details: {
+                message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                         "Please upgrade to one of the following versions: v2, v3.",
+                current_version: "v1",
+                markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                          "> Please upgrade to one of the following versions: v2, v3."
+              }
+            }])
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
+
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
+
+        it "creates a pull request with multiple pr notices" do
+          allow(stub_update_checker)
+            .to receive(:generate_pr_notices).and_return([
+              {
+                mode: "WARN",
+                type: "bundler_deprecated_warn",
+                package_manager_name: "bundler",
+                details: {
+                  message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                           "Please upgrade to one of the following versions: v2, v3.",
+                  current_version: "v1",
+                  markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                            "> Please upgrade to one of the following versions: v2, v3."
+                }
+              },
+              {
+                mode: "INFO",
+                type: "new_feature",
+                package_manager_name: "bundler",
+                details: {
+                  message: "A new feature has been added.",
+                  current_version: "v2",
+                  markdown: "> [!INFO]\n> A new feature has been added."
+                }
+              }
+            ])
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
+
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
       end
     end
 
