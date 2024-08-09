@@ -249,7 +249,7 @@ module Dependabot
 
         sig do
           params(updated_dependencies: T::Array[Dependabot::Dependency])
-            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+            .returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
         def existing_pull_request(updated_dependencies)
           new_pr_set = updated_dependencies.to_set do |dep|
