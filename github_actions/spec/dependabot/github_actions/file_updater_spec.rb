@@ -80,7 +80,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         matching_files = [
           ".github/workflow/main.yml",
           ".github/workflows/ci-test.yaml",
-          ".github/workflows/workflow.yml",
+          ".github/workflows/workflow.yml"
         ]
 
         matching_files.each do |file_name|

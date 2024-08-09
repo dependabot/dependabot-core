@@ -33,11 +33,11 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          /^package\.json$/,
-          /^package-lock\.json$/,
-          /^npm-shrinkwrap\.json$/,
-          /^yarn\.lock$/,
-          /^pnpm-lock\.yaml$/
+          %r{^(?:.*\/)?package\.json$},
+          %r{^(?:.*\/)?package-lock\.json$},
+          %r{^(?:.*\/)?npm-shrinkwrap\.json$},
+          %r{^(?:.*\/)?yarn\.lock$},
+          %r{^(?:.*\/)?pnpm-lock\.yaml$}
         ]
       end
 
