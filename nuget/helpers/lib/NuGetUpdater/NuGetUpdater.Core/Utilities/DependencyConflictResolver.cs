@@ -92,14 +92,15 @@ public class PackageManager
                 continue;
             }
 
-            try {
+            try
+            {
                 var existsInFeed = await feed.Exists(
                 packageIdentity,
                 includeUnlisted: false,
                 SourceCacheContext,
                 NullLogger.Instance,
                 cancellationToken);
-                
+
                 if (!existsInFeed)
                 {
                     message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
