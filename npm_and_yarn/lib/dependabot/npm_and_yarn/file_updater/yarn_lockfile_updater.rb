@@ -278,7 +278,8 @@ module Dependabot
              error_message.include?(DEPENDENCY_MATCH_NOT_FOUND)
 
             unless resolvable_before_update?(yarn_lock)
-              error_handler.raise_resolvability_error(error_message, yarn_lock)
+              error_handler.raise_resolvability_error(error_message,
+                                                      yarn_lock)
             end
 
             # Dependabot has probably messed something up with the update and we
