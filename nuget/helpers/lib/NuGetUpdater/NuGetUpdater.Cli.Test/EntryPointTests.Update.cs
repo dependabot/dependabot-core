@@ -407,6 +407,7 @@ public partial class EntryPointTests
                 try
                 {
                     await MockNuGetPackagesInDirectory(packages, path);
+
                     var args = getArgs(path);
                     var result = await Program.Main(args);
                     if (result != 0)

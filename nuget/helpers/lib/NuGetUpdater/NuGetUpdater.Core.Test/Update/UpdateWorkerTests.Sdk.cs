@@ -52,10 +52,13 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceInclude()
+        [Theory]
+        [InlineData("true")]
+        [InlineData(null)]
+        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceIncludeTheory(string variableValue)
         {
             // update Some.Package from 9.0.1 to 13.0.1
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
             await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
                 packages:
                 [
@@ -86,6 +89,43 @@ public partial class UpdateWorkerTests
                           <Version>13.0.1</Version>
                         </PackageReference>
                       </ItemGroup>
+                    </Project>
+                    """
+              );
+        }
+
+        [Fact]
+        public async Task CallingResolveDependencyConflictsNew()
+        {
+            // update Microsoft.CodeAnalysis.Common from 4.9.2 to 4.10.0
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", "true")]);
+            await TestUpdateForProject("Microsoft.CodeAnalysis.Common", "4.9.2", "4.10.0",
+                // initial
+                projectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
+                        </ItemGroup>
+                    </Project>
+                    """,
+                // expected
+                expectedProjectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                        <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                        </PropertyGroup>
+                        <ItemGroup>
+                            <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+                            <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.10.0" />
+                        </ItemGroup>
                     </Project>
                     """
               );
@@ -489,9 +529,12 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task AddPackageReference_InProjectFile_ForTransientDependency()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("true")]
+        public async Task AddPackageReference_InProjectFile_ForTransientDependency(string variableValue)
         {
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
             // add transient package Some.Transient.Dependency from 5.0.1 to 5.0.2
             await TestUpdateForProject("Some.Transient.Dependency", "5.0.1", "5.0.2", isTransitive: true,
                 packages:
@@ -2862,9 +2905,13 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task NoChange_IfThereAreIncoherentVersions()
+        [Theory]
+        [InlineData("true")]
+        [InlineData(null)]
+        public async Task NoChange_IfThereAreIncoherentVersions(string variableValue)
         {
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+
             // trying to update `Transitive.Dependency` to 1.1.0 would normally pull `Some.Package` from 1.0.0 to 1.1.0,
             // but the TFM doesn't allow it
             await TestNoChangeforProject("Transitive.Dependency", "1.0.0", "1.1.0",
@@ -2948,9 +2995,13 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task UnresolvablePropertyDoesNotStopOtherUpdates()
+        [Theory]
+        [InlineData("true")]
+        [InlineData(null)]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(string variableValue)
         {
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+
             // the property `$(SomeUnresolvableProperty)` cannot be resolved
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
                 packages:
@@ -2984,9 +3035,13 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage()
+        [Theory]
+        [InlineData("true")]
+        [InlineData(null)]
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage(string variableValue)
         {
+            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+
             // updating Some.Package from 3.3.30 requires that Some.Package.Extensions also be updated
             await TestUpdateForProject("Some.Package", "3.3.30", "3.4.3",
                 packages:
