@@ -19,7 +19,7 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          %r{^[^/]*\.([a-z]{2})?proj$},
+          /^.*\.([a-z]{2})?proj$/,
           /^packages\.config$/i,
           /^app\.config$/i,
           /^web\.config$/i,
