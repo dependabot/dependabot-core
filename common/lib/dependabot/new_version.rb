@@ -34,10 +34,10 @@ module Dependabot
 
     VersionParameter = T.type_alias { T.nilable(T.any(String, Integer, Gem::Version)) }
 
-    sig { override.overridable.params(version: VersionParameter, version_string: T.nilable(String)).void }
-    def initialize(version, version_string = nil)
-      @version_string = T.let(version_string || version.to_s, String)
-      super(version)
+    sig { override.overridable.params(version: VersionParameter).void }
+    def initialize(version)
+      @version_string = T.let(version.to_s, String)
+      super
     end
 
     sig { override.overridable.params(version: VersionParameter).returns(Dependabot::Version) }
