@@ -79,7 +79,8 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       it "returns true for files that should be updated" do
         matching_files = [
           ".github/workflow/main.yml",
-          ".github/workflows/ci-test.yaml"
+          ".github/workflows/ci-test.yaml",
+          ".github/workflows/workflow.yml",
         ]
 
         matching_files.each do |file_name|
