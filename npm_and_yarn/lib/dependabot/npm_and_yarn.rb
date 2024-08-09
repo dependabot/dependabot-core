@@ -365,7 +365,28 @@ module Dependabot
         },
         in_usage: false,
         matchfn: nil
+      },
+      {
+        patterns: [SOCKET_HANG_UP],
+        handler: lambda { |message, _error, _params|
+          url = message.match(SOCKET_HANG_UP).named_captures.fetch(URL_CAPTURE)
+
+          Dependabot::PrivateSourceTimedOut.new(url.gsub(HTTP_CHECK_REGEX, ""))
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [ESOCKETTIMEDOUT],
+        handler: lambda { |message, _error, _params|
+          package_req = message.match(ESOCKETTIMEDOUT).named_captures.fetch("package")
+
+          Dependabot::PrivateSourceTimedOut.new(package_req.gsub(HTTP_CHECK_REGEX, ""))
+        },
+        in_usage: false,
+        matchfn: nil
       }
+
     ].freeze, T::Array[{
       patterns: T::Array[T.any(String, Regexp)],
       handler: ErrorHandler,

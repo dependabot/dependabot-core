@@ -341,6 +341,31 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains ESOCKETTIMEDOUT" do
+      let(:error_message) do
+        "https://registry.us.gympass.cloud/repository/npm-group/@gympass%2fmep-utils: ESOCKETTIMEDOUT"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceTimedOut, "The following source timed out: " \
+                                                             "registry.us.gympass.cloud/repository/" \
+                                                             "npm-group/@gympass%2fmep-utils")
+      end
+    end
+
+    context "when the error message contains socket hang up" do
+      let(:error_message) do
+        "https://registry.npm.taobao.org/vue-template-compiler: socket hang up"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceTimedOut, "The following source timed out: " \
+                                                             "registry.npm.taobao.org/vue-template-compiler")
+      end
+    end
+
     context "when the error message contains a recognized pattern in the error message" do
       it "raises the corresponding error class with the correct message" do
         expect { error_handler.handle_group_patterns(error, "", { yarn_lock: yarn_lock }) }
