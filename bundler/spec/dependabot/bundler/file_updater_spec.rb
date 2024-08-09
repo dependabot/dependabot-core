@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         ]
 
         matching_files.each do |file_name|
-          expect(updated_files_regex.any? { |regex| file_name.match?(regex) }).to be_truthy
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
         end
       end
 
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         ]
 
         non_matching_files.each do |file_name|
-          expect(updated_files_regex.any? { |regex| file_name.match?(regex) }).to be_falsey
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
         end
       end
     end
