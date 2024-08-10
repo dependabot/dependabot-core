@@ -42,7 +42,7 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, String]]])
+          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, T.untyped]]])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -74,7 +74,7 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
-        sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
+        sig { returns(T::Array[T::Array[T::Hash[String, T.untyped]]]) }
         attr_reader :created_pull_requests
 
         sig { params(dependency: Dependabot::Dependency).void }
@@ -169,7 +169,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: checker.generate_pr_notices
           )
 
           create_pull_request(dependency_change)
