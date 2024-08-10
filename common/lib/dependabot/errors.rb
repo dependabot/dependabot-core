@@ -179,15 +179,6 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
-    when Dependabot::ToolVersionNotSupported
-      {
-        "error-type": "tool_version_not_supported",
-        "error-detail": {
-          "tool-name": error.tool_name,
-          "detected-version": error.detected_version,
-          "supported-versions": error.supported_versions
-        }
-      }
     when Dependabot::MisconfiguredTooling
       {
         "error-type": "misconfigured_tooling",
