@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 # This class implements our strategy for iterating over all of the dependencies
@@ -8,27 +8,40 @@ module Dependabot
   class Updater
     module Operations
       class UpdateAllVersions
+        extend T::Sig
+
+        sig { params(_job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(_job:)
           false # only called elsewhere
         end
 
+        sig { returns(Symbol) }
         def self.tag_name
           :update_all_versions
         end
 
+        sig do
+          params(
+            service: Dependabot::Service,
+            job: Dependabot::Job,
+            dependency_snapshot: Dependabot::DependencySnapshot,
+            error_handler: ErrorHandler
+          ).void
+        end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = []
+          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, T.untyped]]])
 
-          return unless job.source.directory.nil? && job.source.directories.count == 1
+          return unless job.source.directory.nil? && job.source.directories&.count == 1
 
-          job.source.directory = job.source.directories.first
+          job.source.directory = job.source.directories&.first
         end
 
+        sig { void }
         def perform
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking all dependencies for version updates...")
@@ -37,12 +50,18 @@ module Dependabot
 
         private
 
+        sig { returns(Dependabot::Job) }
         attr_reader :job
+        sig { returns(Dependabot::Service) }
         attr_reader :service
+        sig { returns(Dependabot::DependencySnapshot) }
         attr_reader :dependency_snapshot
+        sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+        sig { returns(T::Array[T::Array[T::Hash[String, T.untyped]]]) }
         attr_reader :created_pull_requests
 
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
             Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
@@ -56,6 +75,7 @@ module Dependabot
           end
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
         rescue URI::InvalidURIError => e
@@ -75,6 +95,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -132,7 +153,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: checker.generate_pr_notices
           )
 
           if dependency_change.updated_dependency_files.empty?
@@ -145,16 +167,22 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_up_to_date(dependency)
           Dependabot.logger.info(
             "No update needed for #{dependency.name} #{dependency.version}"
           )
         end
 
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def raise_on_ignored?(dependency)
           job.ignore_conditions_for(dependency).any?
         end
 
+        sig do
+          params(dependency: Dependabot::Dependency, raise_on_ignored: T::Boolean)
+            .returns(Dependabot::UpdateCheckers::Base)
+        end
         def update_checker_for(dependency, raise_on_ignored:)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
@@ -169,6 +197,7 @@ module Dependabot
           )
         end
 
+        sig { params(dependency: Dependabot::Dependency).void }
         def log_checking_for_update(dependency)
           Dependabot.logger.info(
             "Checking if #{dependency.name} #{dependency.version} needs updating"
@@ -176,6 +205,7 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
+        sig { params(error: StandardError, dependency: Dependabot::Dependency).returns(T.untyped) }
         def process_dependency_error(error, dependency)
           if error.class.to_s.include?("RegistryError")
             ex = Dependabot::DependencyFileNotResolvable.new(error.message)
@@ -185,6 +215,10 @@ module Dependabot
           end
         end
 
+        sig do
+          params(dependency: Dependabot::Dependency, checker: Dependabot::UpdateCheckers::Base)
+            .returns(T::Boolean)
+        end
         def all_versions_ignored?(dependency, checker)
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
           false
@@ -193,6 +227,7 @@ module Dependabot
           true
         end
 
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
         def pr_exists_for_latest_version?(checker)
           latest_version = checker.latest_version&.to_s
           return false if latest_version.nil?
@@ -200,31 +235,53 @@ module Dependabot
           job.existing_pull_requests
              .select { |pr| pr.count == 1 }
              .map(&:first)
-             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
-             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+             .select { |pr| pr && pr.fetch("dependency-name") == checker.dependency.name }
+             .any? { |pr| pr && pr.fetch("dependency-version", nil) == latest_version }
         end
 
+        sig do
+          params(updated_dependencies: T::Array[Dependabot::Dependency])
+            .returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        end
         def existing_pull_request(updated_dependencies)
-          new_pr_set = updated_dependencies.to_set do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil,
-              "directory" => job.source.directory
-            }.compact
-          end
+          return unless updated_dependencies.any?
 
-          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-                                  created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          new_pr_set_with_dir = create_pr_set(updated_dependencies, include_directory: true)
+          existing_pull_request = find_existing_pull_request(new_pr_set_with_dir)
+
           return existing_pull_request if existing_pull_request
 
           # Try again without directory in case the data is old
-          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          new_pr_set_without_dir = create_pr_set(updated_dependencies, include_directory: false)
+          find_existing_pull_request(new_pr_set_without_dir)
         end
 
+        sig do
+          params(updated_dependencies: T::Array[Dependabot::Dependency], include_directory: T::Boolean)
+            .returns(T::Set[T::Hash[String, T.untyped]])
+        end
+        def create_pr_set(updated_dependencies, include_directory:)
+          updated_dependencies.to_set do |dep|
+            pr_data = {
+              "dependency-name" => dep.name,
+              "dependency-version" => dep.version,
+              "dependency-removed" => dep.removed? ? true : nil
+            }
+            pr_data["directory"] = job.source.directory if include_directory
+            pr_data.compact
+          end.to_set
+        end
+
+        sig do
+          params(pr_set: T::Set[T::Hash[String, T.untyped]])
+            .returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        end
+        def find_existing_pull_request(pr_set)
+          job.existing_pull_requests.find { |pr| Set.new(pr) == pr_set } ||
+            created_pull_requests.find { |pr| Set.new(pr) == pr_set }
+        end
+
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
           if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -238,6 +295,7 @@ module Dependabot
           end
         end
 
+        sig { params(requirements_to_unlock: Symbol, checker: Dependabot::UpdateCheckers::Base).void }
         def log_requirements_for_update(requirements_to_unlock, checker)
           Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -250,17 +308,20 @@ module Dependabot
 
         # If a version update for a peer dependency is possible we should
         # defer to the PR that will be created for it to avoid duplicate PRs.
+        sig { params(dependency_name: String, updated_deps: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
         def peer_dependency_should_update_instead?(dependency_name, updated_deps)
           updated_deps
             .reject { |dep| dep.name == dependency_name }
             .any? do |dep|
               next true if existing_pull_request([dep])
-              next false if dep.previous_requirements.nil?
+
+              dep_previous_requirements = dep.previous_requirements
+              next false if dep_previous_requirements.nil?
 
               original_peer_dep = ::Dependabot::Dependency.new(
                 name: dep.name,
                 version: dep.previous_version,
-                requirements: dep.previous_requirements,
+                requirements: dep_previous_requirements,
                 package_manager: dep.package_manager
               )
               update_checker_for(original_peer_dep, raise_on_ignored: false)
@@ -268,6 +329,7 @@ module Dependabot
             end
         end
 
+        sig { params(dependency_change: Dependabot::DependencyChange).void }
         def create_pull_request(dependency_change)
           Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for creation")
