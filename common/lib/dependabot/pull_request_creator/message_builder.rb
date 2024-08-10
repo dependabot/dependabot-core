@@ -64,6 +64,9 @@ module Dependabot
       sig { returns(T::Array[T::Hash[String, String]]) }
       attr_reader :ignore_conditions
 
+      sig { returns(T.nilable(T::Array[T::Hash[T.any(String, Symbol), T.untyped]])) }
+      attr_reader :notices
+
       TRUNCATED_MSG = "...\n\n_Description has been truncated_"
 
       sig do
@@ -80,7 +83,8 @@ module Dependabot
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           pr_message_max_length: T.nilable(Integer),
           pr_message_encoding: T.nilable(Encoding),
-          ignore_conditions: T::Array[T::Hash[String, String]]
+          ignore_conditions: T::Array[T::Hash[String, String]],
+          notices: T.nilable(T::Array[T::Hash[T.any(String, Symbol), T.untyped]])
         )
           .void
       end
@@ -88,7 +92,8 @@ module Dependabot
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
                      github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
-                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil, ignore_conditions: [])
+                     dependency_group: nil, pr_message_max_length: nil, pr_message_encoding: nil,
+                     ignore_conditions: [], notices: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -102,6 +107,7 @@ module Dependabot
         @pr_message_max_length      = pr_message_max_length
         @pr_message_encoding        = pr_message_encoding
         @ignore_conditions          = ignore_conditions
+        @notices                    = notices
       end
 
       sig { params(pr_message_max_length: Integer).returns(Integer) }
@@ -119,7 +125,8 @@ module Dependabot
 
       sig { returns(String) }
       def pr_message
-        msg = "#{suffixed_pr_message_header}" \
+        msg = "#{pr_notices}" \
+              "#{suffixed_pr_message_header}" \
               "#{commit_message_intro}" \
               "#{metadata_cascades}" \
               "#{ignore_conditions_table}" \
@@ -129,6 +136,19 @@ module Dependabot
       rescue StandardError => e
         suppress_error("PR message", e)
         suffixed_pr_message_header + prefixed_pr_message_footer
+      end
+
+      sig { returns(T.nilable(String)) }
+      def pr_notices
+        notices = @notices || []
+        unique_messages = notices.filter_map do |notice|
+          notice_details = notice[:details] if notice
+          markdown = notice_details[:markdown] if notice_details
+          markdown unless markdown.nil? || markdown.empty?
+        end.uniq
+
+        message = unique_messages.join("\n\n")
+        message.empty? ? nil : message
       end
 
       # Truncate PR message as determined by the pr_message_max_length and pr_message_encoding instance variables
@@ -315,6 +335,8 @@ module Dependabot
       sig { returns(String) }
       def suffixed_pr_message_header
         return "" unless pr_message_header
+
+        return "#{pr_message_header}\n\n" if notices
 
         "#{pr_message_header}\n\n"
       end

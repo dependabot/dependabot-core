@@ -45,15 +45,19 @@ module Dependabot
     sig { returns(T.nilable(Dependabot::DependencyGroup)) }
     attr_reader :dependency_group
 
+    sig { returns(T::Array[T::Hash[T.any(String, Symbol), T.untyped]]) }
+    attr_reader :notices
+
     sig do
       params(
         job: Dependabot::Job,
         updated_dependencies: T::Array[Dependabot::Dependency],
         updated_dependency_files: T::Array[Dependabot::DependencyFile],
-        dependency_group: T.nilable(Dependabot::DependencyGroup)
+        dependency_group: T.nilable(Dependabot::DependencyGroup),
+        notices: T::Array[T::Hash[T.any(String, Symbol), T.untyped]]
       ).void
     end
-    def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
+    def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil, notices: [])
       @job = job
       @updated_dependencies = updated_dependencies
       @updated_dependency_files = updated_dependency_files
@@ -61,6 +65,7 @@ module Dependabot
 
       @pr_message = T.let(nil, T.nilable(Dependabot::PullRequestCreator::Message))
       ensure_dependencies_have_directories
+      @notices = notices
     end
 
     sig { returns(Dependabot::PullRequestCreator::Message) }
@@ -90,7 +95,8 @@ module Dependabot
         dependency_group: dependency_group,
         pr_message_max_length: pr_message_max_length,
         pr_message_encoding: pr_message_encoding,
-        ignore_conditions: job.ignore_conditions
+        ignore_conditions: job.ignore_conditions,
+        notices: notices
       ).message
 
       @pr_message = message
