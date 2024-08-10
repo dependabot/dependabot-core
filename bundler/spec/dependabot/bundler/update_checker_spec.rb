@@ -8,6 +8,8 @@ require "dependabot/bundler/update_checker"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/requirements_update_strategy"
+require "dependabot/package_manager"
+
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker do
@@ -1858,6 +1860,43 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#package_manager" do
+    subject(:package_manager) { checker.package_manager }
+
+    context "when the lockfile specifies Bundler v1" do
+      before do
+        allow(Dependabot::Bundler::Helpers).to receive(:bundler_version).and_return("1")
+      end
+
+      it "returns a PackageManager with the correct version" do
+        expect(package_manager.name).to eq("bundler")
+        expect(package_manager.version).to eq("1")
+      end
+    end
+
+    context "when the lockfile specifies Bundler v2" do
+      before do
+        allow(Dependabot::Bundler::Helpers).to receive(:bundler_version).and_return("2")
+      end
+
+      it "returns a PackageManager with the correct version" do
+        expect(package_manager.name).to eq("bundler")
+        expect(package_manager.version).to eq("2")
+      end
+    end
+
+    context "when the lockfile does not specify a version" do
+      before do
+        allow(Dependabot::Bundler::Helpers).to receive(:bundler_version).and_return("2")
+      end
+
+      it "returns a PackageManager with the default version" do
+        expect(package_manager.name).to eq("bundler")
+        expect(package_manager.version).to eq("2")
+      end
     end
   end
 end

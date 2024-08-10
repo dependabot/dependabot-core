@@ -8,9 +8,27 @@ require "spec_helper"
 require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
 require "dependabot/workspace"
+require "dependabot/package_manager"
 
 # Custom error class for testing
 class EcoSystemHelperSubprocessFailed < Dependabot::SharedHelpers::HelperSubprocessFailed; end
+
+# Stub PackageManagerBase
+class StubPackageManager < Dependabot::PackageManagerBase
+  def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
+    @name = name
+    @version = version
+    @deprecated_versions = deprecated_versions
+    @unsupported_versions = unsupported_versions
+    @supported_versions = supported_versions
+  end
+
+  attr_reader :name
+  attr_reader :version
+  attr_reader :deprecated_versions
+  attr_reader :unsupported_versions
+  attr_reader :supported_versions
+end
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
@@ -624,6 +642,115 @@ RSpec.describe Dependabot::SharedHelpers do
       it "raises the custom error class with stdout message" do
         expect { raise handle_json_parse_error }
           .to raise_error(EcoSystemHelperSubprocessFailed, "Some stdout message")
+      end
+    end
+  end
+
+  describe ".generate_supported_versions_message" do
+    subject(:generate_supported_versions_message) do
+      described_class.generate_supported_versions_message(supported_versions)
+    end
+
+    context "when supported_versions has one version" do
+      let(:supported_versions) { ["2"] }
+
+      it "returns the correct message" do
+        expect(generate_supported_versions_message)
+          .to eq("Please upgrade to version `v2` or above.")
+      end
+    end
+
+    context "when supported_versions has multiple versions" do
+      let(:supported_versions) { %w(2 3 4) }
+
+      it "returns the correct message" do
+        expect(generate_supported_versions_message)
+          .to eq("Please upgrade to one of the following versions: v2, v3, v4.")
+      end
+    end
+
+    context "when supported_versions is nil" do
+      let(:supported_versions) { nil }
+
+      it "returns nil" do
+        expect(generate_supported_versions_message).to be_nil
+      end
+    end
+
+    context "when supported_versions is empty" do
+      let(:supported_versions) { [] }
+
+      it "returns nil" do
+        expect(generate_supported_versions_message).to be_nil
+      end
+    end
+  end
+
+  describe ".generate_support_notice" do
+    subject(:generate_support_notice) do
+      described_class.generate_support_notice(package_manager)
+    end
+
+    let(:package_manager) do
+      StubPackageManager.new(
+        name: "bundler",
+        version: "1",
+        deprecated_versions: deprecated_versions,
+        unsupported_versions: unsupported_versions,
+        supported_versions: supported_versions
+      )
+    end
+    let(:supported_versions) { %w(2 3) }
+    let(:deprecated_versions) { %w(1) }
+    let(:unsupported_versions) { [] }
+
+    context "when the package manager is deprecated" do
+      let(:unsupported_versions) { [] }
+
+      it "returns the correct support notice" do
+        expect(generate_support_notice)
+          .to eq({
+            mode: "WARN",
+            type: "bundler_deprecated_warn",
+            package_manager_name: "bundler",
+            details: {
+              message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                       "Please upgrade to one of the following versions: v2, v3.",
+              current_version: "1",
+              markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
+                        "> Please upgrade to one of the following versions: v2, v3."
+            }
+          })
+      end
+    end
+
+    context "when the package manager is unsupported" do
+      let(:deprecated_versions) { [] }
+      let(:unsupported_versions) { %w(1) }
+
+      it "returns the correct support notice" do
+        expect(generate_support_notice)
+          .to eq({
+            mode: "ERROR",
+            type: "bundler_unsupported_error",
+            package_manager_name: "bundler",
+            details: {
+              message: "Dependabot no longer supports `bundler` `v1`!\n" \
+                       "Please upgrade to one of the following versions: v2, v3.",
+              current_version: "1",
+              markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n\n" \
+                        "> Please upgrade to one of the following versions: v2, v3."
+            }
+          })
+      end
+    end
+
+    context "when the package manager is neither deprecated nor unsupported" do
+      let(:deprecated_versions) { [] }
+      let(:unsupported_versions) { [] }
+
+      it "returns nil" do
+        expect(generate_support_notice).to be_nil
       end
     end
   end

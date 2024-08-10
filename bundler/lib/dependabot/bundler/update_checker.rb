@@ -8,6 +8,8 @@ require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
+require "dependabot/bundler"
+
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -116,7 +118,18 @@ module Dependabot
         )
       end
 
+      sig { returns(PackageManagerBase) }
+      def package_manager
+        bundler_version = Helpers.bundler_version(lockfile)
+        PackageManager.new(bundler_version)
+      end
+
       private
+
+      def lockfile
+        dependency_files.find { |f| f.name == "Gemfile.lock" } ||
+          dependency_files.find { |f| f.name == "gems.locked" }
+      end
 
       def requirements_unlocked?
         dependency.specific_requirements.none?

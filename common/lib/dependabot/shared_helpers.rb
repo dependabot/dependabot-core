@@ -19,7 +19,7 @@ require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot
-  module SharedHelpers
+  module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
 
     GIT_CONFIG_GLOBAL_PATH = T.let(File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH), String)
@@ -43,7 +43,7 @@ module Dependabot
     end
     def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
-        # If a workspace has been defined to allow orcestration of the git repo
+        # If a workspace has been defined to allow orchestration of the git repo
         # by the runtime we should defer to it, otherwise we prepare the folder
         # for direct use and yield.
         if Dependabot::Workspace.active_workspace
@@ -483,6 +483,64 @@ module Dependabot
       escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
       env_keys = env ? env.compact.map { |k, v| "#{k}=#{v}" }.join(" ") + " " : ""
       "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
+    end
+
+    sig do
+      params(
+        supported_versions: T.nilable(T::Array[String])
+      ).returns(T.nilable(String))
+    end
+    def self.generate_supported_versions_message(supported_versions)
+      if supported_versions&.any?
+        return "Please upgrade to version `v#{supported_versions.first}` or above." if supported_versions.count == 1
+
+        return "Please upgrade to one of the following versions: #{supported_versions.map do |supported_version|
+          "v#{supported_version}"
+        end.join(', ')}."
+      end
+      nil
+    end
+
+    sig do
+      params(
+        package_manager: PackageManagerBase
+      ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+    end
+    def self.generate_support_notice(package_manager)
+      if package_manager.deprecated
+        mode = "WARN"
+        supported_versions_message = generate_supported_versions_message(package_manager.supported_versions)
+        notice_type = "#{package_manager.name}_deprecated_#{mode.to_s.downcase}"
+        deprecation_message = "Dependabot will stop supporting `#{package_manager.name}` `v#{package_manager.version}`!"
+        return {
+          mode: mode,
+          type: notice_type,
+          package_manager_name: package_manager.name,
+          details: {
+            message: "#{deprecation_message}\n#{supported_versions_message}",
+            current_version: package_manager.version,
+            markdown: "> [!WARNING]\n> #{deprecation_message}\n\n> #{supported_versions_message}"
+          }
+        }
+      elsif package_manager.unsupported
+        mode = "ERROR"
+        supported_versions_message = generate_supported_versions_message(package_manager.supported_versions)
+        notice_type = "#{package_manager.name}_unsupported_#{mode.to_s.downcase}"
+        unsupported_message = "Dependabot no longer supports `#{package_manager.name}` `v#{package_manager.version}`!"
+
+        return {
+          mode: mode,
+          type: notice_type,
+          package_manager_name: package_manager.name,
+          details: {
+            message: "#{unsupported_message}\n#{supported_versions_message}",
+            current_version: package_manager.version,
+            markdown: "> [!IMPORTANT]\n> #{unsupported_message}\n\n> #{supported_versions_message}"
+          }
+        }
+      end
+
+      nil
     end
     private_class_method :helper_subprocess_bash_command
   end
