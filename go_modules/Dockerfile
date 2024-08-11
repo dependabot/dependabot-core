@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22.5-bookworm as go
+FROM docker.io/library/golang:1.22.6-bookworm as go
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
