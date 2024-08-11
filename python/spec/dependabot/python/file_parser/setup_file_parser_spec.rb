@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       context "with the setup.py from requests" do
         let(:setup_file_fixture_name) { "requests_setup.py" }
 
-        its(:length) { is_expected.to eq(13) }
+        its(:length) { is_expected.to eq(15) }
       end
 
       context "with an import of a config file" do
@@ -175,7 +175,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
     describe "parse" do
       subject(:dependencies) { parser.dependency_set.dependencies }
 
-      its(:length) { is_expected.to eq(13) }
+      its(:length) { is_expected.to eq(15) }
 
       describe "an install_requires dependencies" do
         subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       describe "a tests_require dependencies" do
         subject(:dependency) { dependencies.find { |d| d.name == "responses" } }
 
-        it "has the right details", skip: "Issue: https://github.com/dependabot/dependabot-core/issues/10388" do
+        it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("responses")
           expect(dependency.version).to eq("0.5.1")
