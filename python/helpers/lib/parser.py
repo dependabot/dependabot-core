@@ -4,6 +4,7 @@ import json
 import os.path
 import re
 
+import configparser
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.network.session import PipSession
