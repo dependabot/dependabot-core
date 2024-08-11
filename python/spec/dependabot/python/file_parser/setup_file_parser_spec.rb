@@ -139,7 +139,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
       context "with the setup.py from requests" do
         let(:setup_file_fixture_name) { "requests_setup.py" }
 
-        its(:length) { is_expected.to eq(15) }
+        its(:length) { is_expected.to eq(13) }
       end
 
       context "with an import of a config file" do
