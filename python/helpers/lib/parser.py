@@ -246,7 +246,7 @@ def parse_setup(directory):
                 for key, value in extras_require.items():
                     requires = value.splitlines()
                     requires = [req for req in requires if req.strip()]
-                   parse_requirements(
+                    parse_requirements(
                         requires,
                         f"extras_require:{key}",
                         setup_cfg
