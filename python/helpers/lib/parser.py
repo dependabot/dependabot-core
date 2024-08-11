@@ -235,7 +235,9 @@ def parse_setup(directory):
                 "install_requires",
                 "tests_require",
             ]:
-                requires = config.get('options', req_type, fallback='').splitlines()
+                requires = config.get(
+                    'options',
+                    req_type, fallback='').splitlines()
                 requires = [req for req in requires if req.strip()]
                 parse_requirements(requires, req_type, setup_cfg)
 
@@ -244,7 +246,11 @@ def parse_setup(directory):
                 for key, value in extras_require.items():
                     requires = value.splitlines()
                     requires = [req for req in requires if req.strip()]
-                    parse_requirements(requires, f"extras_require:{key}", setup_cfg)
+                   parse_requirements(
+                        requires,
+                        f"extras_require:{key}",
+                        setup_cfg
+                    )
 
         except Exception as e:
             print(json.dumps({"error": repr(e)}))
