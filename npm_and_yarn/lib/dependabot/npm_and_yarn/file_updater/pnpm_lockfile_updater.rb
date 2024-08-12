@@ -51,6 +51,11 @@ module Dependabot
         ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):  - 500/
         ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):  - 502/
 
+        # ERR_PNPM_UNSUPPORTED_ENGINE
+        ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
+        PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
+        VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -121,6 +126,8 @@ module Dependabot
             raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
 
+          raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
+
           raise
         end
 
@@ -129,6 +136,19 @@ module Dependabot
           msg = "Error whilst updating #{dependency_names} in " \
                 "#{pnpm_lock.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
+        end
+
+        def raise_unsupported_engine_error(error_message, _pnpm_lock)
+          unless error_message.match(PACAKGE_MANAGER) &&
+                 error_message.match(VERSION_REQUIREMENT)
+            return
+          end
+
+          package_manager = error_message.match(PACAKGE_MANAGER).named_captures["pkg_mgr"]
+          supported_version = error_message.match(VERSION_REQUIREMENT).named_captures["supported_ver"]
+          detected_version = error_message.match(VERSION_REQUIREMENT).named_captures["detected_ver"]
+
+          raise Dependabot::ToolVersionNotSupported.new(package_manager, supported_version, detected_version)
         end
 
         def raise_package_access_error(error_message, dependency_url, pnpm_lock)

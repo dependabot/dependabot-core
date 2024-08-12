@@ -1,0 +1,6 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  '@blocknote/core':
+    specifier: ^0.15.3
+    version: 0.15.3

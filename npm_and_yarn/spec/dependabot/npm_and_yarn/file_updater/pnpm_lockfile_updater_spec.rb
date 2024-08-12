@@ -93,6 +93,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a unsupported engine response from registry" do
+      let(:dependency_name) { "@blocknote/core" }
+      let(:version) { "0.15.4" }
+      let(:previous_version) { "0.15.3 " }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "0.15.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unsupported_engine" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
     context "with a dependency that can't be found" do
       let(:project_name) { "pnpm/nonexistent_dependency_yanked_version" }
 
