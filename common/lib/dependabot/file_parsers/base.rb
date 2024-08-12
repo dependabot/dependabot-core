@@ -53,6 +53,11 @@ module Dependabot
       sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
 
+      sig { returns(T.nilable(PackageManagerBase)) }
+      def package_manager
+        nil
+      end
+
       private
 
       sig { abstract.void }
