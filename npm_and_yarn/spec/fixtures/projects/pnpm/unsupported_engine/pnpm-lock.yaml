@@ -4,14 +4,3 @@ dependencies:
   '@blocknote/core':
     specifier: ^0.15.3
     version: 0.15.3
-
-  github.com/dmarcos/three-bmfont-text/eed4878795be9b3e38cf6aec6b903f56acd1f695:
-    resolution: {tarball: https://codeload.github.com/dmarcos/three-bmfont-text/tar.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695}
-    name: three-bmfont-text
-    version: 3.0.0
-    dependencies:
-      array-shuffle: 1.0.1
-      layout-bmfont-text: 1.3.4
-      nice-color-palettes: 3.0.0
-      quad-indices: 2.0.1
-    dev: false
