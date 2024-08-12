@@ -89,6 +89,7 @@ module Dependabot
         ERROR_E401 = /code E401/
         ERROR_E403 = /code E403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
+        PACKAGE_DISCOVERY_FAIL = /Couldn't find package "(?<pkg>.*)" *.* on the "(?<regis>.*)" registry./
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -574,6 +575,8 @@ module Dependabot
             msg = "Nested aliases are not supported in NPM versions earlier than 6.9.0."
             raise Dependabot::DependencyFileNotResolvable, msg
           end
+
+          raise Dependabot::DependencyFileNotResolvable, error_message if error_message.match(PACKAGE_DISCOVERY_FAIL)
 
           raise error
         end
