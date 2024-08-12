@@ -1540,4 +1540,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
     end
   end
+
+  describe "missing package.json manifest file" do
+    let(:child_class) do
+      Class.new(described_class) do
+        def check_required_files
+          %w(manifest).each do |filename|
+            unless get_original_file(filename)
+              raise Dependabot::DependencyFileNotFound.new(nil,
+                                                           "package.json not found.")
+            end
+          end
+        end
+      end
+    end
+    let(:parser_instance) do
+      child_class.new(dependency_files: files, source: source)
+    end
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/"
+      )
+    end
+
+    let(:gemfile) do
+      Dependabot::DependencyFile.new(
+        content: "a",
+        name: "manifest",
+        directory: "/path/to"
+      )
+    end
+    let(:files) { [gemfile] }
+
+    describe ".new" do
+      context "when the required file is present" do
+        let(:files) { [gemfile] }
+
+        it "doesn't raise" do
+          expect { parser_instance }.not_to raise_error
+        end
+      end
+
+      context "when the required file is missing" do
+        let(:files) { [] }
+
+        it "raises" do
+          expect { parser_instance }.to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
+    describe "#get_original_file" do
+      subject { parser_instance.send(:get_original_file, filename) }
+
+      context "when the requested file is present" do
+        let(:filename) { "manifest" }
+
+        it { is_expected.to eq(gemfile) }
+      end
+
+      context "when the requested file is not present" do
+        let(:filename) { "package.json" }
+
+        it { is_expected.to be_nil }
+      end
+    end
+  end
 end

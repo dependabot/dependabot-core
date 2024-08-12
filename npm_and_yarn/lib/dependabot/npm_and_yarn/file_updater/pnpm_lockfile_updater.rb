@@ -45,6 +45,12 @@ module Dependabot
         MISSING_PACKAGE = /ERR_PNPM_FETCH_404[ [^:print:]]+GET (?<dependency_url>.*): (?:Not Found)? - 404/
         UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
 
+        # ERR_PNPM_FETCH ERROR CODES
+        ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):  - 401/
+        ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):  - 403/
+        ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):  - 500/
+        ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):  - 502/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -107,12 +113,12 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, url
           end
 
-          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE].each do |regexp|
+          [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE, ERR_PNPM_FETCH_401,
+           ERR_PNPM_FETCH_403, ERR_PNPM_FETCH_500, ERR_PNPM_FETCH_502].each do |regexp|
             next unless error_message.match?(regexp)
 
             dependency_url = error_message.match(regexp).named_captures["dependency_url"]
-
-            raise_package_access_error(dependency_url, pnpm_lock)
+            raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
 
           raise
@@ -125,7 +131,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 
-        def raise_package_access_error(dependency_url, pnpm_lock)
+        def raise_package_access_error(error_message, dependency_url, pnpm_lock)
           package_name = RegistryParser.new(resolved_url: dependency_url, credentials: credentials).dependency_name
           missing_dep = lockfile_dependencies(pnpm_lock)
                         .find { |dep| dep.name == package_name }
@@ -136,7 +142,7 @@ module Dependabot
             credentials: credentials,
             npmrc_file: npmrc_file
           ).registry
-
+          Dependabot.logger.warn("Error while accessing #{reg}. Response (truncated) - #{error_message[0..500]}...")
           raise PrivateSourceAuthenticationFailure, reg
         end
 
