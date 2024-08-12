@@ -633,7 +633,7 @@ module Dependabot
         ).void
       end
       def handle_group_patterns(error, usage_error_message, params) # rubocop:disable Metrics/PerceivedComplexity
-        error_message = error.message
+        error_message = error.message.gsub(/\e\[\d+(;\d+)*m/, "")
         VALIDATION_GROUP_PATTERNS.each do |group|
           patterns = group[:patterns]
           matchfn = group[:matchfn]
@@ -645,8 +645,8 @@ module Dependabot
           message = usage_error_message.empty? ? error_message : usage_error_message
           if in_usage && pattern_in_message(patterns, usage_error_message)
             raise create_error(handler, message, error, params)
-          elsif !in_usage && pattern_in_message(patterns, error.message)
-            raise create_error(handler, error.message, error, params)
+          elsif !in_usage && pattern_in_message(patterns, error_message)
+            raise create_error(handler, error_message, error, params)
           end
 
           raise create_error(handler, message, error, params) if matchfn&.call(usage_error_message, error_message)

@@ -131,6 +131,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a private repo we don't have access to and returns a 4xx error" do
+      let(:project_name) { "pnpm/private_repo_no_access" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "with a private git dep we don't have access to" do
       let(:dependency_name) { "cross-fetch" }
       let(:version) { "4.0.0" }
@@ -164,6 +173,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               ]
             )
         end
+      end
+    end
+
+    context "when there is a private repo returns a 5xx error" do
+      let(:project_name) { "pnpm/private_repo_with_server_error" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
 

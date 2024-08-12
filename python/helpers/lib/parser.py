@@ -4,6 +4,7 @@ import json
 import os.path
 import re
 
+import configparser
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.network.session import PipSession
@@ -226,23 +227,31 @@ def parse_setup(directory):
 
     if os.path.isfile(setup_cfg_path):
         try:
-            config = setuptools.config.read_configuration(setup_cfg_path)
+            config = configparser.ConfigParser()
+            config.read(setup_cfg_path)
 
             for req_type in [
                 "setup_requires",
                 "install_requires",
                 "tests_require",
             ]:
-                requires = config.get("options", {}).get(req_type, [])
+                requires = config.get(
+                    'options',
+                    req_type, fallback='').splitlines()
+                requires = [req for req in requires if req.strip()]
                 parse_requirements(requires, req_type, setup_cfg)
 
-            extras_require = config.get("options", {}).get(
-                "extras_require", {}
-            )
-            for key, value in extras_require.items():
-                parse_requirements(
-                    value, "extras_require:{}".format(key), setup_cfg
-                )
+            if config.has_section('options.extras_require'):
+                extras_require = config._sections['options.extras_require']
+                for key, value in extras_require.items():
+                    requires = value.splitlines()
+                    requires = [req for req in requires if req.strip()]
+                    parse_requirements(
+                        requires,
+                        f"extras_require:{key}",
+                        setup_cfg
+                    )
+
         except Exception as e:
             print(json.dumps({"error": repr(e)}))
             exit(1)
