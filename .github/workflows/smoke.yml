@@ -29,6 +29,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
+          token: '' # use git commands to avoid excessive rate limit usage
           filters: .github/smoke-filters.yml
 
       - name: Generate suites to run
