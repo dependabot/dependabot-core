@@ -194,6 +194,64 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with a registry resolution that returns err_pnpm_tarball_integrity response" do
+      let(:dependency_name) { "lodash" }
+      let(:version) { "22.2.0" }
+      let(:previous_version) { "^20.10.5" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "22.2.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^20.10.5",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/tarball_integrity" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry resolution that returns err_pnpm_patch_not_applied response" do
+      let(:dependency_name) { "@nx/js" }
+      let(:version) { "19.5.7" }
+      let(:previous_version) { "18.0.2" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "19.5.7",
+          groups: ["patchedDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "18.0.2",
+          groups: ["patchedDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/patch_not_applied" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
 
