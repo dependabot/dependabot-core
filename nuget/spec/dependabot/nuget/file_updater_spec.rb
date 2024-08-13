@@ -148,7 +148,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           "package-lock.json",
           "package.json",
           "Gemfile",
-          "Gemfile.lock"
+          "Gemfile.lock",
+          "NuGet.Config",
+          "nuGet.Config",
+          "Proj1/Proj1/NuGet.Config",
+          "Proj1/Proj1/test/nuGet.Config"
         ]
 
         non_matching_files.each do |file_name|
