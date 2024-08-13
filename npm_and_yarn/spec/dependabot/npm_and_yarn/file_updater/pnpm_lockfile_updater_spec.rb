@@ -93,6 +93,69 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a unsupported engine response from registry" do
+      let(:dependency_name) { "@blocknote/core" }
+      let(:version) { "0.15.4" }
+      let(:previous_version) { "0.15.3 " }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "0.15.4",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unsupported_engine" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "when there is a unsupported engine (npm) response from registry" do
+      let(:dependency_name) { "@npmcli/fs" }
+      let(:version) { "3.1.1" }
+      let(:previous_version) { "3.1.0 " }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.1.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unsupported_engine_npm" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "when there is a unsupported engine response (pnpm) from registry" do
+      let(:dependency_name) { "eslint" }
+      let(:version) { "9.9.0" }
+      let(:previous_version) { "8.32.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "9.9.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unsupported_engine_pnpm" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
     context "with a dependency that can't be found" do
       let(:project_name) { "pnpm/nonexistent_dependency_yanked_version" }
 
