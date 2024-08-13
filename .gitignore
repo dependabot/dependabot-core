@@ -29,3 +29,4 @@ coverage/
 # Ignore spoom coverage report
 spoom_data/
 spoom_report.html
+.vs/

@@ -24,6 +24,7 @@ internal static class SdkPackageUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;
@@ -306,6 +307,7 @@ internal static class SdkPackageUpdater
         IDictionary<string, string> peerDependencies,
         Logger logger)
     {
+
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
@@ -324,7 +326,20 @@ internal static class SdkPackageUpdater
         {
             foreach (string tfm in targetFrameworks)
             {
-                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
+                if (MSBuildHelper.UseNewDependencySolver())
+                {
+                    // Find the index of the dependency we are updating and revert it to the previous version
+                    int dependencyIndex = Array.FindIndex(updatedTopLevelDependencies, d => string.Equals(d.Name, dependencyName, StringComparison.OrdinalIgnoreCase));
+                    if (dependencyIndex != -1)
+                    {
+                        var originalDependency = updatedTopLevelDependencies[dependencyIndex];
+                        updatedTopLevelDependencies[dependencyIndex] = originalDependency with { Version = previousDependencyVersion };
+                    }
+
+                }
+                Dependency[] update = [new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference)];
+                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
+
                 if (resolvedDependencies is null)
                 {
                     logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
@@ -345,7 +360,7 @@ internal static class SdkPackageUpdater
                     continue;
                 }
 
-                // update all other dependencies
+                // update all dependencies
                 foreach (Dependency resolvedDependency in resolvedDependencies
                                                           .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                                                           .Where(d => d.Version is not null))

@@ -242,7 +242,12 @@ module Dependabot
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          env = {}
+          env["UseNewNugetPackageResolver"] = "true" if Dependabot::Experiments.enabled?(:nuget_dependency_solver)
+          output = SharedHelpers.run_shell_command(command,
+                                                   allow_unsafe_shell_command: true,
+                                                   fingerprint: fingerprint,
+                                                   env: env)
           puts output
 
           result_contents = File.read(update_result_file_path)
