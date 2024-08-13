@@ -56,6 +56,10 @@ module Dependabot
         PACAKGE_MANAGER = /Your (?<pkg_mgr>.*) version is incompatible with/
         VERSION_REQUIREMENT = /Expected version: (?<supported_ver>.*)\nGot: (?<detected_ver>.*)\n/
 
+        ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
+
+        ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -99,6 +103,8 @@ module Dependabot
             ).parse
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
           error_message = error.message
 
@@ -126,15 +132,36 @@ module Dependabot
             raise_package_access_error(error_message, dependency_url, pnpm_lock)
           end
 
+          # TO-DO : subclassifcation of ERR_PNPM_TARBALL_INTEGRITY errors
+          if error_message.match?(ERR_PNPM_TARBALL_INTEGRITY)
+            dependency_names = dependencies.map(&:name).join(", ")
+
+            msg = "Error while resolving \"#{dependency_names}\"."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
+
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
           raise
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def raise_resolvability_error(error_message, pnpm_lock)
           dependency_names = dependencies.map(&:name).join(", ")
           msg = "Error whilst updating #{dependency_names} in " \
                 "#{pnpm_lock.path}:\n#{error_message}"
+          raise Dependabot::DependencyFileNotResolvable, msg
+        end
+
+        def raise_patch_dependency_error(error_message)
+          dependency_names = dependencies.map(&:name).join(", ")
+          msg = "Error while updating \"#{dependency_names}\" in " \
+                "update group \"patchedDependencies\"."
+          Dependabot.logger.warn(error_message)
           raise Dependabot::DependencyFileNotResolvable, msg
         end
 

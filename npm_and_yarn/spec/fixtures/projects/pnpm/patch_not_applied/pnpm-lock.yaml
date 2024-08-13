@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+patchedDependencies:
+  '@nx/js@18.0.2':
+    hash: qgrxgerajamcpgpl6xcr3zovpu
+    path: patches/@nx__js@18.0.2.patch
+
+importers:
+
+  .:
+    devDependencies:
+      '@nx/js':
+        specifier: 18.0.2
+        version: 18.0.2(patch_hash=qgrxgerajamcpgpl6xcr3zovpu)(@babel/traverse@7.24.7)(@types/node@20.14.8)(nx@18.0.2)(typescript@5.4.5)
+      nx:
+        specifier: 18.0.2
+        version: 18.0.2
+      
