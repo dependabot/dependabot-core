@@ -136,7 +136,7 @@ module Dependabot
           if error_message.match?(ERR_PNPM_TARBALL_INTEGRITY)
             dependency_names = dependencies.map(&:name).join(", ")
 
-            msg = "Error while resolving \"#{dependency_names}\"."
+            msg = "Error (ERR_PNPM_TARBALL_INTEGRITY) while resolving \"#{dependency_names}\"."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
           end
