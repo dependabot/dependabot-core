@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_file"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
+require "dependabot/bundler/package_manager"
 
 module Dependabot
   module Bundler

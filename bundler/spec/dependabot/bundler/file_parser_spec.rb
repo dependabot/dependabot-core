@@ -849,4 +849,10 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
   end
+
+  describe "#package_manager" do
+    it "returns the correct package manager" do
+      expect(parser.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+    end
+  end
 end
