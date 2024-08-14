@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: feature-DependencySolver
+  SMOKE_TEST_BRANCH: main
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
-          token: '' # use git commands to avoid excessive rate limit usage
+          token: "" # use git commands to avoid excessive rate limit usage
           filters: .github/smoke-filters.yml
 
       - name: Generate suites to run
