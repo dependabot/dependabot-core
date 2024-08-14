@@ -17,9 +17,9 @@ module Dependabot
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
           [
             /^.*Pipfile$/,             # Match Pipfile at any level
             /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level

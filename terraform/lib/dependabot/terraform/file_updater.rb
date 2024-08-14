@@ -20,7 +20,7 @@ module Dependabot
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
       GIT_HTTPS_PREFIX = %r{^git::https://}
 
-      def self.updated_files_regex
+      def self.updated_files_regex(_ = false)
         [/\.tf$/, /\.hcl$/]
       end
 

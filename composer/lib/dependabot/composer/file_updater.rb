@@ -12,7 +12,7 @@ module Dependabot
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
 
-      def self.updated_files_regex
+      def self.updated_files_regex(_ = false)
         [
           /^composer\.json$/,
           /^composer\.lock$/

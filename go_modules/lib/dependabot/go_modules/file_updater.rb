@@ -33,9 +33,9 @@ module Dependabot
         use_repo_contents_stub if repo_contents_path.nil?
       end
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
           [
             /^go\.mod$/,
             /^go\.sum$/,

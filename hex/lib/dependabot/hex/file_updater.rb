@@ -14,9 +14,9 @@ module Dependabot
       require_relative "file_updater/mixfile_updater"
       require_relative "file_updater/lockfile_updater"
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
           [
             /^.*mix\.exs$/,
             /^.*mix\.lock$/

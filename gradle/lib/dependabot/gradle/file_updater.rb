@@ -17,8 +17,8 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
-      def self.updated_files_regex
-        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
           [
             # Matches build.gradle or build.gradle.kts in root directory
             %r{(^|.*/)build\.gradle(\.kts)?$},

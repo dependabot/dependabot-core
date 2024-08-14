@@ -14,8 +14,8 @@ module Dependabot
       require_relative "file_updater/gemspec_updater"
       require_relative "file_updater/lockfile_updater"
 
-      def self.updated_files_regex
-        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
           [
             # Matches Gemfile, Gemfile.lock, gems.rb, gems.locked, .gemspec files, and anything in vendor directory
             %r{^(Gemfile(\.lock)?|gems\.(rb|locked)|.*\.gemspec|vendor/.*)$},

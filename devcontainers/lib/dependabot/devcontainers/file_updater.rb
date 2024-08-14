@@ -12,8 +12,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
+      sig { override.params(_: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(_ = false)
         [
           /^\.?devcontainer\.json$/,
           /^\.?devcontainer-lock\.json$/
