@@ -27,6 +27,54 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
+    let(:allowlist_enabled) { false } # default value
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "main.tf",
+          "variables.tf",
+          "outputs.tf",
+          "config.hcl",
+          "nested/directory/main.tf",
+          "nested/directory/config.hcl",
+          "terraform/main.tf",
+          "submodules/terraform/config.hcl",
+          "hashicorp/consul/aws/main.tf",
+          "hashicorp/consul/aws/config.hcl",
+          "terraform-aws-modules/iam/aws/main.tf",
+          "terraform-aws-modules/iam/aws/config.hcl"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "package-lock.json",
+          "package.json",
+          "Gemfile",
+          "Gemfile.lock"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }
 

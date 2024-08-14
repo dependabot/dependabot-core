@@ -53,6 +53,48 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
+
+    let(:allowlist_enabled) { true }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "build.gradle",
+          "build.gradle.kts",
+          "subproject/build.gradle",
+          "subproject/build.gradle.kts",
+          "gradle/libs.versions.toml",
+          "subproject/gradle/libs.versions.toml"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 

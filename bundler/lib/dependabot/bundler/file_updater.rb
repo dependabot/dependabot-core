@@ -14,14 +14,24 @@ module Dependabot
       require_relative "file_updater/gemspec_updater"
       require_relative "file_updater/lockfile_updater"
 
-      def self.updated_files_regex
-        [
-          /^Gemfile$/,
-          /^Gemfile\.lock$/,
-          /^gems\.rb$/,
-          /^gems\.locked$/,
-          /^*\.gemspec$/
-        ]
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
+          [
+            # Matches Gemfile, Gemfile.lock, gems.rb, gems.locked, .gemspec files, and anything in vendor directory
+            %r{^(Gemfile(\.lock)?|gems\.(rb|locked)|.*\.gemspec|vendor/.*)$},
+            # Matches the same files in any subdirectory
+            %r{^.*\/(Gemfile|Gemfile\.lock|gems\.rb|gems\.locked)$}
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            /^Gemfile$/,
+            /^Gemfile\.lock$/,
+            /^gems\.rb$/,
+            /^gems\.locked$/,
+            /^*\.gemspec$/
+          ]
+        end
       end
 
       # rubocop:disable Metrics/PerceivedComplexity

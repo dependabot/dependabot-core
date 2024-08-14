@@ -16,19 +16,35 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [
-          %r{^[^/]*\.([a-z]{2})?proj$},
-          /^packages\.config$/i,
-          /^app\.config$/i,
-          /^web\.config$/i,
-          /^global\.json$/i,
-          /^dotnet-tools\.json$/i,
-          /^Directory\.Build\.props$/i,
-          /^Directory\.Build\.targets$/i,
-          /^Packages\.props$/i
-        ]
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
+          [
+            /^.*\.([a-z]{2})?proj$/,
+            /^packages\.config$/i,
+            /^app\.config$/i,
+            /^web\.config$/i,
+            /^global\.json$/i,
+            /^dotnet-tools\.json$/i,
+            /^Directory\.Build\.props$/i,
+            /^Directory\.Build\.targets$/i,
+            /^Packages\.props$/i
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            %r{^[^/]*\.([a-z]{2})?proj$},
+            /^.*\.([a-z]{2})?proj$/,
+            /^packages\.config$/i,
+            /^app\.config$/i,
+            /^web\.config$/i,
+            /^global\.json$/i,
+            /^dotnet-tools\.json$/i,
+            /^Directory\.Build\.props$/i,
+            /^Directory\.Build\.targets$/i,
+            /^Packages\.props$/i
+          ]
+        end
       end
 
       sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }

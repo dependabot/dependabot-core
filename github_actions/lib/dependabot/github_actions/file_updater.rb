@@ -12,9 +12,14 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        [%r{\.github/workflows/.+\.ya?ml$}]
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
+          [%r{\.github/workflows?/.+\.ya?ml$}]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [%r{\.github/workflows/.+\.ya?ml$}]
+        end
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

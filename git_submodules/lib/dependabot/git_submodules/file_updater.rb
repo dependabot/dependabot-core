@@ -11,9 +11,18 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.returns(T::Array[Regexp]) }
-      def self.updated_files_regex
-        []
+      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
+      def self.updated_files_regex(allowlist_enabled = false)
+        if allowlist_enabled
+          [
+            /^\.gitmodules$/,            # Matches the .gitmodules file in the root directory
+            %r{^.+/\.git$},              # Matches the .git file inside any submodule directory
+            %r{^\.git/modules/.+}        # Matches any files under .git/modules directory where submodule data is stored
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          []
+        end
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
