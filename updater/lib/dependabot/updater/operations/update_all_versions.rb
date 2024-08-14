@@ -198,14 +198,14 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-            .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
         end
 
         def existing_pull_request(updated_dependencies)
           new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
 
           job.existing_pull_requests.find { |pr| pr == new_pr } ||
-                  created_pull_requests.find { |pr| pr == new_pr }
+            created_pull_requests.find { |pr| pr == new_pr }
         end
 
         def requirements_to_unlock(checker)

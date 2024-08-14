@@ -68,14 +68,14 @@ module Dependabot
     sig { params(updated_dependencies: T::Array[Dependabot::Dependency]).returns(Dependabot::PullRequest) }
     def self.create_from_updated_dependencies(updated_dependencies)
       new(
-        updated_dependencies.map do |dep|
+        updated_dependencies.filter_map do |dep|
           Dependency.new(
             name: dep.name,
             version: dep.version,
             removed: dep.removed?,
             directory: dep.directory
           )
-        end.compact
+        end
       )
     end
 
@@ -87,15 +87,12 @@ module Dependabot
     sig { params(other: PullRequest).returns(T::Boolean) }
     def ==(other)
       if using_directory? && other.using_directory?
-        dependencies.map(&:to_h).to_set == other.dependencies.map(&:to_h).to_set
+        dependencies.map(&:to_h).difference(other.dependencies.map(&:to_h)).none?
       else
-        compare_without_directory?(other)
+        dependencies.map { |dep| dep.to_h.except(:directory) }.difference(
+          other.dependencies.map { |dep| dep.to_h.except(:directory) }
+        ).none?
       end
-    end
-
-    sig { returns(T::Boolean) }
-    def using_directory?
-      dependencies.all? { |dep| !!dep.directory }
     end
 
     sig { params(name: String, version: String).returns(T::Boolean) }
@@ -105,12 +102,9 @@ module Dependabot
 
     private
 
-    sig { params(other: PullRequest).returns(T::Boolean) }
-    def compare_without_directory?(other)
-      return false unless dependencies.size == other.dependencies.size
-
-      dependencies.map { |dep| dep.to_h.except(:directory) }.to_set ==
-        other.dependencies.map { |dep| dep.to_h.except(:directory) }.to_set
+    sig { returns(T::Boolean) }
+    def using_directory?
+      dependencies.all? { |dep| !!dep.directory }
     end
   end
 end

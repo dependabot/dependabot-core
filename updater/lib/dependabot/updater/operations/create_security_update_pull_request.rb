@@ -254,7 +254,7 @@ module Dependabot
           new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
 
           job.existing_pull_requests.find { |pr| pr == new_pr } ||
-                                  created_pull_requests.find { |pr| pr == new_pr }
+            created_pull_requests.find { |pr| pr == new_pr }
         end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
