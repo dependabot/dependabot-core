@@ -219,9 +219,11 @@ module Dependabot
           end
 
           supported_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
-                                           .named_captures["supported_ver"].then { sanitize_message(_1) }
+                                           .named_captures["supported_ver"]
+                                           .then { sanitize_message(_1) }
           detected_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
-                                          .named_captures["detected_ver"].then { sanitize_message(_1) }
+                                          .named_captures["detected_ver"]
+                                          .then { sanitize_message(_1) }
 
           Dependabot.logger.warn(error_message)
           raise Dependabot::ToolVersionNotSupported.new(PLATFORM_PACAKGE_MANAGER, supported_version, detected_version)
