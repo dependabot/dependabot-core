@@ -8,6 +8,8 @@ module Dependabot
   class Updater
     module Operations
       class UpdateAllVersions
+        extend T::Sig
+
         def self.applies_to?(_job:)
           false # only called elsewhere
         end
@@ -41,6 +43,7 @@ module Dependabot
         attr_reader :service
         attr_reader :dependency_snapshot
         attr_reader :error_handler
+        sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
 
         def dependencies
@@ -198,7 +201,8 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
         end
 
         def existing_pull_request(updated_dependencies)
@@ -257,13 +261,7 @@ module Dependabot
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
-          end
+          created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
         end
       end
     end
