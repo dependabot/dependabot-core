@@ -60,6 +60,11 @@ module Dependabot
 
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
 
+        ERR_PNPM_UNSUPPORTED_PLATFORM = /ERR_PNPM_UNSUPPORTED_PLATFORM/
+        PLATFORM_PACAKGE_DEP = /Unsupported platform for (?<dep>.*)\: wanted/
+        PLATFORM_VERSION_REQUIREMENT = /wanted {(?<supported_ver>.*)} \(current: (?<detected_ver>.*)\)/
+        PLATFORM_PACAKGE_MANAGER = "pnpm"
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -145,6 +150,11 @@ module Dependabot
 
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
+          if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
+            raise_unsupported_platform_error(error_message,
+                                             pnpm_lock)
+          end
+
           raise
         end
         # rubocop:enable Metrics/AbcSize
@@ -201,6 +211,21 @@ module Dependabot
           end
         end
 
+        def raise_unsupported_platform_error(error_message, _pnpm_lock)
+          unless error_message.match(PLATFORM_PACAKGE_DEP) &&
+                 error_message.match(PLATFORM_VERSION_REQUIREMENT)
+            return
+          end
+
+          supported_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
+                                           .named_captures["supported_ver"].then { sanitize_message(_1) }
+          detected_version = error_message.match(PLATFORM_VERSION_REQUIREMENT)
+                                          .named_captures["detected_ver"].then { sanitize_message(_1) }
+
+          Dependabot.logger.warn(error_message)
+          raise Dependabot::ToolVersionNotSupported.new(PLATFORM_PACAKGE_MANAGER, supported_version, detected_version)
+        end
+
         def npmrc_content(pnpm_lock)
           NpmrcBuilder.new(
             credentials: credentials,
@@ -228,6 +253,10 @@ module Dependabot
 
         def npmrc_file
           dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def sanitize_message(message)
+          message.gsub(/"|\[|\]|\}|\{/, "")
         end
       end
     end
