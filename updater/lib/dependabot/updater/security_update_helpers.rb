@@ -120,13 +120,13 @@ module Dependabot
         )
       end
 
-      sig { params(existing_pull_request: T::Array[T::Hash[String, String]]).void }
+      sig { params(existing_pull_request: PullRequest).void }
       def record_pull_request_exists_for_security_update(existing_pull_request)
-        updated_dependencies = existing_pull_request.map do |dep|
+        updated_dependencies = existing_pull_request.dependencies.map do |dep|
           {
-            "dependency-name": dep.fetch("dependency-name"),
-            "dependency-version": dep.fetch("dependency-version", nil),
-            "dependency-removed": dep.fetch("dependency-removed", nil)
+            "dependency-name": dep.name,
+            "dependency-version": dep.version,
+            "dependency-removed": dep.removed? ? true : nil,
           }.compact
         end
 

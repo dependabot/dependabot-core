@@ -301,9 +301,15 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
       it "creates a pull request if one does not already exist" do
         allow(job)
-          .to receive(:existing_pull_requests).and_return([
-            [{ "dependency-name" => "dummy-pkg-a", "dependency-version" => "4.1.0" }]
-          ])
+          .to receive(:existing_pull_requests).and_return(
+            [
+              Dependabot::PullRequest.new([
+                Dependabot::PullRequest::Dependency.new(
+                  name: "dummy-pkg-a", version: "4.1.0"
+                )
+              ])
+            ]
+          )
         allow(create_security_update_pull_request)
           .to receive(:check_and_create_pull_request).and_call_original
 

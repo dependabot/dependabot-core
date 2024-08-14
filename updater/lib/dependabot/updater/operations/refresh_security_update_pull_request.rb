@@ -229,25 +229,11 @@ module Dependabot
 
         sig do
           params(updated_dependencies: T::Array[Dependabot::Dependency])
-            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+            .returns(T.nilable(PullRequest))
         end
         def existing_pull_request(updated_dependencies)
-          new_pr_set = updated_dependencies.to_set do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil,
-              "directory" => dep.directory
-            }.compact
-          end
-
-          existing = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-          return existing if existing
-
-          # try the search again without directory
-          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
+          job.existing_pull_requests.find { |pr| pr == new_pr }
         end
 
         sig { params(dependency_change: Dependabot::DependencyChange).void }

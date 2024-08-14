@@ -172,9 +172,7 @@ module Dependabot
         end
       else
         job.existing_pull_requests.any? do |pr|
-          directories_in_use = pr.all? { |dep| dep["directory"] }
-
-          Set.new(pr) == updated_dependencies_set(should_consider_directory: directories_in_use)
+          pr == new_pr
         end
       end
     end
@@ -195,6 +193,13 @@ module Dependabot
           }.compact
         end
       )
+    end
+
+    sig { returns(PullRequest) }
+    def new_pr
+      @new_pr ||= T.let(PullRequest.create_from_updated_dependencies(updated_dependencies),
+                                          T.nilable(Dependabot::PullRequest))
+
     end
 
     sig { returns(T::Array[Dependabot::Dependency]) }
