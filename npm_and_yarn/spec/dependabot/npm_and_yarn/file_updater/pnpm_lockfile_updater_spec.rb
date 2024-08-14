@@ -252,6 +252,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with a registry resolution that returns err_pnpm_unsupported_platform response" do
+      let(:dependency_name) { "@swc/core-linux-arm-gnueabihf" }
+      let(:version) { "1.7.11" }
+      let(:previous_version) { "1.3.56" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "1.7.11",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "1.3.56",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unsupported_platform" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
 
