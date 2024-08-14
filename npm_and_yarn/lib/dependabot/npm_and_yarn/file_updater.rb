@@ -32,13 +32,24 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          %r{^(?:.*\/)?package\.json$},
-          %r{^(?:.*\/)?package-lock\.json$},
-          %r{^(?:.*\/)?npm-shrinkwrap\.json$},
-          %r{^(?:.*\/)?yarn\.lock$},
-          %r{^(?:.*\/)?pnpm-lock\.yaml$}
-        ]
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [
+            %r{^(?:.*\/)?package\.json$},
+            %r{^(?:.*\/)?package-lock\.json$},
+            %r{^(?:.*\/)?npm-shrinkwrap\.json$},
+            %r{^(?:.*\/)?yarn\.lock$},
+            %r{^(?:.*\/)?pnpm-lock\.yaml$}
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            /^package\.json$/,
+            /^package-lock\.json$/,
+            /^npm-shrinkwrap\.json$/,
+            /^yarn\.lock$/,
+            /^pnpm-lock\.yaml$/
+          ]
+        end
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

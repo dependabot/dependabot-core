@@ -14,7 +14,12 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [%r{\.github/workflows?/.+\.ya?ml$}]
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [%r{\.github/workflows?/.+\.ya?ml$}]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [%r{\.github/workflows/.+\.ya?ml$}]
+        end
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

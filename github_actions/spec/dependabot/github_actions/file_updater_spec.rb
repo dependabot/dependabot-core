@@ -71,6 +71,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
   describe "#updated_files_regex" do
     subject(:updated_files_regex) { described_class.updated_files_regex }
 
+    before do
+      Dependabot::Experiments.register(:allowlist_dependency_files, true)
+    end
+
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
     end

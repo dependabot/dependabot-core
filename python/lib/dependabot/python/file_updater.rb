@@ -19,17 +19,31 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          /^.*Pipfile$/,             # Match Pipfile at any level
-          /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
-          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
-          /^.*\.in$/,                # Match any .in files at any level
-          /^.*setup\.py$/,           # Match setup.py at any level
-          /^.*setup\.cfg$/,          # Match setup.cfg at any level
-          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
-          /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
-          /^.*poetry\.lock$/         # Match poetry.lock at any level
-        ]
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [
+            /^.*Pipfile$/,             # Match Pipfile at any level
+            /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
+            /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
+            /^.*\.in$/,                # Match any .in files at any level
+            /^.*setup\.py$/,           # Match setup.py at any level
+            /^.*setup\.cfg$/,          # Match setup.cfg at any level
+            /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
+            /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
+            /^.*poetry\.lock$/         # Match poetry.lock at any level
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            /^Pipfile$/,
+            /^Pipfile\.lock$/,
+            /.*\.txt$/,
+            /.*\.in$/,
+            /^setup\.py$/,
+            /^setup\.cfg$/,
+            /^pyproject\.toml$/,
+            /^pyproject\.lock$/
+          ]
+        end
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

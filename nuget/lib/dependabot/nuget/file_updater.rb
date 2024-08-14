@@ -18,17 +18,33 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          /^.*\.([a-z]{2})?proj$/,
-          /^packages\.config$/i,
-          /^app\.config$/i,
-          /^web\.config$/i,
-          /^global\.json$/i,
-          /^dotnet-tools\.json$/i,
-          /^Directory\.Build\.props$/i,
-          /^Directory\.Build\.targets$/i,
-          /^Packages\.props$/i
-        ]
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [
+            /^.*\.([a-z]{2})?proj$/,
+            /^packages\.config$/i,
+            /^app\.config$/i,
+            /^web\.config$/i,
+            /^global\.json$/i,
+            /^dotnet-tools\.json$/i,
+            /^Directory\.Build\.props$/i,
+            /^Directory\.Build\.targets$/i,
+            /^Packages\.props$/i
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            %r{^[^/]*\.([a-z]{2})?proj$},
+            /^.*\.([a-z]{2})?proj$/,
+            /^packages\.config$/i,
+            /^app\.config$/i,
+            /^web\.config$/i,
+            /^global\.json$/i,
+            /^dotnet-tools\.json$/i,
+            /^Directory\.Build\.props$/i,
+            /^Directory\.Build\.targets$/i,
+            /^Packages\.props$/i
+          ]
+        end
       end
 
       sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }

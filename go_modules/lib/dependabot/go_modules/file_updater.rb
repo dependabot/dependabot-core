@@ -35,11 +35,19 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          /^go\.mod$/,
-          /^go\.sum$/,
-          %r{^vendor/.*}
-        ]
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [
+            /^go\.mod$/,
+            /^go\.sum$/,
+            %r{^vendor/.*}
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [
+            /^go\.mod$/,
+            /^go\.sum$/
+          ]
+        end
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

@@ -18,12 +18,18 @@ module Dependabot
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
       def self.updated_files_regex
-        [
-          # Matches build.gradle or build.gradle.kts in root directory
-          %r{(^|.*/)build\.gradle(\.kts)?$},
-          # Matches gradle/libs.versions.toml in root or any subdirectory
-          %r{(^|.*/)?gradle/libs\.versions\.toml$}
-        ] end
+        if Dependabot::Experiments.enabled?(:allowlist_dependency_files)
+          [
+            # Matches build.gradle or build.gradle.kts in root directory
+            %r{(^|.*/)build\.gradle(\.kts)?$},
+            # Matches gradle/libs.versions.toml in root or any subdirectory
+            %r{(^|.*/)?gradle/libs\.versions\.toml$}
+          ]
+        else
+          # Old regex. After 100% rollout of the allowlist, this will be removed.
+          [/^build\.gradle(\.kts)?$/, %r{/build\.gradle(\.kts)?$}, %r{/gradle/libs\.versions\.toml$}]
+        end
+      end
 
       def updated_dependency_files
         updated_files = buildfiles.dup
