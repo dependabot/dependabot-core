@@ -60,6 +60,7 @@ module Dependabot
 
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
 
+        # ERR_PNPM_UNSUPPORTED_PLATFORM
         ERR_PNPM_UNSUPPORTED_PLATFORM = /ERR_PNPM_UNSUPPORTED_PLATFORM/
         PLATFORM_PACAKGE_DEP = /Unsupported platform for (?<dep>.*)\: wanted/
         PLATFORM_VERSION_REQUIREMENT = /wanted {(?<supported_ver>.*)} \(current: (?<detected_ver>.*)\)/
