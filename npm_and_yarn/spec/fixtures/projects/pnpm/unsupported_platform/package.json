@@ -5,7 +5,7 @@
 	"pnpm": {
 		"supportedArchitectures": {
 		  "os": ["win32", "darwin", "current"],
-		  "1cpu": ["arm"]
+		  "cpu": ["arm"]
 		},
 		"requiredScripts": ["build"]
 	  },
