@@ -115,7 +115,8 @@ RSpec.describe Dependabot::DependencyChange do
           dependency_group: nil,
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
-          ignore_conditions: []
+          ignore_conditions: [],
+          notices: []
         )
 
       expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
@@ -142,7 +143,8 @@ RSpec.describe Dependabot::DependencyChange do
             dependency_group: group,
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
-            ignore_conditions: []
+            ignore_conditions: [],
+            notices: []
           )
 
         expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")

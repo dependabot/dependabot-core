@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -12,6 +13,7 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         extend T::Sig
         include SecurityUpdateHelpers
+        include PullRequestHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -43,6 +45,8 @@ module Dependabot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[PullRequest])
+
+          @pr_notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -54,6 +58,12 @@ module Dependabot
         sig { void }
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+
+          # Add a deprecation notice if the package manager is deprecated
+          add_deprecation_notice(
+            notices: @pr_notices,
+            package_manager: dependency_snapshot.package_manager
+          )
 
           target_dependencies = dependency_snapshot.job_dependencies
 
@@ -169,7 +179,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: @pr_notices
           )
 
           create_pull_request(dependency_change)
