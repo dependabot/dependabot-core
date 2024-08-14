@@ -100,8 +100,6 @@ module Dependabot
       dependencies.any? { |dep| dep.name == name && dep.version == version }
     end
 
-    private
-
     sig { returns(T::Boolean) }
     def using_directory?
       dependencies.all? { |dep| !!dep.directory }
