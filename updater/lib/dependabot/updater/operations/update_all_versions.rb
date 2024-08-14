@@ -8,6 +8,8 @@ module Dependabot
   class Updater
     module Operations
       class UpdateAllVersions
+        extend T::Sig
+
         def self.applies_to?(_job:)
           false # only called elsewhere
         end
@@ -41,6 +43,7 @@ module Dependabot
         attr_reader :service
         attr_reader :dependency_snapshot
         attr_reader :error_handler
+        sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
 
         def dependencies
@@ -108,11 +111,11 @@ module Dependabot
           end
 
           if (existing_pr = existing_pull_request(updated_deps))
-            deps = existing_pr.map do |dep|
-              if dep.fetch("dependency-removed", false)
-                "#{dep.fetch('dependency-name')}@removed"
+            deps = existing_pr.dependencies.map do |dep|
+              if dep.removed?
+                "#{dep.name}@removed"
               else
-                "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+                "#{dep.name}@#{dep.version}"
               end
             end
 
@@ -198,31 +201,15 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .select { |pr| pr.count == 1 }
-             .map(&:first)
-             .select { |pr| pr.fetch("dependency-name") == checker.dependency.name }
-             .any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
         end
 
         def existing_pull_request(updated_dependencies)
-          new_pr_set = updated_dependencies.to_set do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil,
-              "directory" => job.source.directory
-            }.compact
-          end
+          new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
 
-          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-                                  created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-          return existing_pull_request if existing_pull_request
-
-          # Try again without directory in case the data is old
-          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          job.existing_pull_requests.find { |pr| pr == new_pr } ||
+            created_pull_requests.find { |pr| pr == new_pr }
         end
 
         def requirements_to_unlock(checker)
@@ -274,13 +261,7 @@ module Dependabot
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
-          end
+          created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
         end
       end
     end

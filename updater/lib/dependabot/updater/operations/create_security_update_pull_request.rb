@@ -42,7 +42,7 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, String]]])
+          @created_pull_requests = T.let([], T::Array[PullRequest])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -74,7 +74,7 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
-        sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
+        sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
 
         sig { params(dependency: Dependabot::Dependency).void }
@@ -152,11 +152,11 @@ module Dependabot
             # request)
             record_pull_request_exists_for_security_update(existing_pr)
 
-            deps = existing_pr.map do |dep|
-              if dep.fetch("dependency-removed", false)
-                "#{dep.fetch('dependency-name')}@removed"
+            deps = existing_pr.dependencies.map do |dep|
+              if dep.removed?
+                "#{dep.name}@removed"
               else
-                "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+                "#{dep.name}@#{dep.version}"
               end
             end
 
@@ -243,35 +243,19 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .select { |pr| pr.count == 1 }
-             .map(&:first)
-             .select { |pr| pr && pr.fetch("dependency-name") == checker.dependency.name }
-             .any? { |pr| pr && pr.fetch("dependency-version", nil) == latest_version }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
         end
 
         sig do
           params(updated_dependencies: T::Array[Dependabot::Dependency])
-            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+            .returns(T.nilable(PullRequest))
         end
         def existing_pull_request(updated_dependencies)
-          new_pr_set = updated_dependencies.to_set do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil,
-              "directory" => job.source.directory
-            }.compact
-          end
+          new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
 
-          existing_pull_request = job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-                                  created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-          return existing_pull_request if existing_pull_request
-
-          # Try again without directory in the data in case the data is old
-          new_pr_set = new_pr_set.to_set { |dep| dep.except("directory") }
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          job.existing_pull_requests.find { |pr| pr == new_pr } ||
+            created_pull_requests.find { |pr| pr == new_pr }
         end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
@@ -295,18 +279,7 @@ module Dependabot
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            create_pull_request_for_dependency(dep)
-          end
-        end
-
-        sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, String]) }
-        def create_pull_request_for_dependency(dependency)
-          {
-            "dependency-name" => dependency.name,
-            "dependency-version" => dependency.version,
-            "dependency-removed" => dependency.removed? ? true : nil
-          }.compact
+          created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
         end
       end
     end
