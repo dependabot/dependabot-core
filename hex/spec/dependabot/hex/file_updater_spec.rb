@@ -58,6 +58,7 @@ RSpec.describe Dependabot::Hex::FileUpdater do
 
   describe "#updated_files_regex" do
     subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
+
     let(:allowlist_enabled) { true }
 
     it "is not empty" do
