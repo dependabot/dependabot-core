@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
             source: nil
           }],
           package_manager: "pub"
-        ),
+        )
       ]
     end
 
