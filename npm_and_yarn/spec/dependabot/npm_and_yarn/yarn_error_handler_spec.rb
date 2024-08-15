@@ -307,6 +307,20 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
           )
         end
       end
+
+      context "when out of diskspace error" do
+        let(:error_message) do
+          "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' write error. Out of diskspace"
+        end
+        let(:usage_error_message) { "\nERROR" }
+
+        it "raises the corresponding error class with the correct message" do
+          expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+            .to raise_error(Dependabot::OutOfDisk,
+                            "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' " \
+                            "write error. Out of diskspace")
+        end
+      end
     end
 
     context "when the error message contains YN0082" do

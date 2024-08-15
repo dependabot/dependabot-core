@@ -226,6 +226,11 @@ module Dependabot
           "error-message": error.message
         }
       }
+    when Dependabot::OutOfDisk
+      {
+        "error-type": "out_of_disk",
+        "error-detail": {}
+      }
     when Dependabot::GoModulePathMismatch
       {
         "error-type": "go_module_path_mismatch",
