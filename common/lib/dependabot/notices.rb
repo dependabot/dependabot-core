@@ -55,10 +55,10 @@ module Dependabot
       params(
         supported_versions: T.nilable(T::Array[Dependabot::Version]),
         support_later_versions: T::Boolean
-      ).returns(T.nilable(String))
+      ).returns(String)
     end
     def self.generate_supported_versions_message(supported_versions, support_later_versions)
-      return nil unless supported_versions&.any?
+      return "" unless supported_versions&.any?
 
       versions_string = supported_versions.map { |version| "v#{version}" }.join(", ")
 
@@ -102,14 +102,24 @@ module Dependabot
         package_manager.support_later_versions?
       )
       notice_type = "#{package_manager.name}_deprecated_#{mode.downcase}"
-      deprecation_message = "Dependabot will stop supporting `#{package_manager.name}` `v#{package_manager.version}`!"
+      message = "Dependabot will stop supporting `#{package_manager.name}` `v#{package_manager.version}`!"
+      ## Create a warning markdown message
+      markdown = "> [!WARNING]\n"
+      ## Add the deprecation warning to the message
+      markdown += "> #{message}\n\n"
+
+      ## Add the supported versions to the message
+      unless supported_versions_message.empty?
+        message += "\n#{supported_versions_message}\n"
+        markdown += "> #{supported_versions_message}\n\n"
+      end
 
       Notice.new(
         mode: mode,
         type: notice_type,
         package_manager_name: package_manager.name,
-        message: "#{deprecation_message}\n#{supported_versions_message}",
-        markdown: "> [!WARNING]\n> #{deprecation_message}\n\n> #{supported_versions_message}"
+        message: message,
+        markdown: markdown
       )
     end
 
@@ -130,14 +140,24 @@ module Dependabot
         package_manager.support_later_versions?
       )
       notice_type = "#{package_manager.name}_unsupported_#{mode.downcase}"
-      unsupported_message = "Dependabot no longer supports `#{package_manager.name}` `v#{package_manager.version}`!"
+      message = "Dependabot no longer supports `#{package_manager.name}` `v#{package_manager.version}`!"
+      ## Create an error markdown message
+      markdown = "> [IMPORTANT]\n"
+      ## Add the error message to the message
+      markdown += "> #{message}\n\n"
+
+      ## Add the supported versions to the message
+      unless supported_versions_message.empty?
+        message += "\n#{supported_versions_message}\n"
+        markdown += "> #{supported_versions_message}\n\n"
+      end
 
       Notice.new(
         mode: mode,
         type: notice_type,
         package_manager_name: package_manager.name,
-        message: "#{unsupported_message}\n#{supported_versions_message}",
-        markdown: "> [!IMPORTANT]\n> #{unsupported_message}\n\n> #{supported_versions_message}"
+        message: message,
+        markdown: markdown
       )
     end
   end
