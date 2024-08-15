@@ -134,7 +134,6 @@ module Dependabot
               "#{prefixed_pr_message_footer}"
 
         truncate_pr_message(msg)
-        puts "\n#{msg}\n"
       rescue StandardError => e
         suppress_error("PR message", e)
         suffixed_pr_message_header + prefixed_pr_message_footer
