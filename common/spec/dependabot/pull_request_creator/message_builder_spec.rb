@@ -22,7 +22,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service,
       dependency_group: dependency_group,
-      ignore_conditions: ignore_conditions
+      ignore_conditions: ignore_conditions,
+      notices: notices
     )
   end
 
@@ -50,6 +51,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:commit_message_options) { { signoff_details: signoff_details, trailers: trailers } }
   let(:signoff_details) { nil }
   let(:trailers) { nil }
+  let(:notices) { [] }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "redirect.github.com" }
   let(:dependency_group) { nil }
@@ -3313,6 +3315,79 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       it "doesn't include git trailer" do
         expect(pr_message).not_to include("Changelog: dependency")
+      end
+    end
+
+    context "with generated single notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                   "Please upgrade to one of the following versions: v2, v3.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+        )]
+      end
+
+      it do
+        expect(pr_message).to start_with(notices[0].markdown)
+      end
+    end
+
+    context "with generated multiple notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                   "Please upgrade to one of the following versions: v2, v3.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+        ), Dependabot::Notice.new(
+          mode: "ERROR",
+          type: "bundler_unsupported_error",
+          package_manager_name: "bundler",
+          message: "Dependabot no longer supports `bundler` `v1`!\n" \
+                   "Please upgrade to one of the following versions: v2, v3.\n",
+          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+        )]
+      end
+
+      it do
+        expect(pr_message).to start_with(
+          "#{notices[0].markdown}\n\n#{notices[1].markdown}"
+        )
+      end
+    end
+
+    context "with duplicate notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                   "Please upgrade to one of the following versions: v2, v3.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+        ), Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                   "Please upgrade to one of the following versions: v2, v3.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+        )]
+      end
+
+      it "returns a unique message" do
+        expect(pr_message).to start_with(notices[0].markdown)
+        expect(pr_message.scan(notices[0].markdown).count).to eq(1)
       end
     end
   end

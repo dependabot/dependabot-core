@@ -10,6 +10,7 @@ require "dependabot/bundler/file_updater"
 require "dependabot/bundler/metadata_finder"
 require "dependabot/bundler/requirement"
 require "dependabot/bundler/version"
+require "dependabot/bundler/package_manager"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler

@@ -181,5 +181,39 @@ module Dependabot
         end
       end
     end
+
+    module PullRequestHelpers
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      # Add deprecation notices to the list of notices
+      # if the package manager is deprecated.
+      #  notices << deprecation_notices if deprecation_notices
+      sig do
+        params(
+          notices: T::Array[Dependabot::Notice],
+          package_manager: T.nilable(PackageManagerBase)
+        )
+          .void
+      end
+      def add_deprecation_notice(notices:, package_manager:)
+        return unless Dependabot::Experiments.enabled?(
+          :add_deprecation_warn_to_pr_message
+        )
+        return unless package_manager
+
+        return unless package_manager.is_a?(PackageManagerBase)
+
+        deprecation_notice = Notice.generate_pm_deprecation_notice(
+          package_manager
+        )
+
+        return unless deprecation_notice
+
+        notices << deprecation_notice
+      end
+    end
   end
 end

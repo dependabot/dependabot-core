@@ -11,6 +11,7 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/create_security_update_pull_request"
 require "dependabot/dependency_change_builder"
+require "dependabot/notices"
 
 require "dependabot/bundler"
 
@@ -171,6 +172,36 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     end
   end
 
+  let(:concrete_package_manager_class) do
+    Class.new(Dependabot::PackageManagerBase) do
+      def name
+        "bundler"
+      end
+
+      def version
+        Dependabot::Version.new("1.0.0")
+      end
+
+      def deprecated_versions
+        [Dependabot::Version.new("1.0.0")]
+      end
+
+      def unsupported_versions
+        [Dependabot::Version.new("0.9.0")]
+      end
+
+      def supported_versions
+        [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")]
+      end
+
+      def support_later_versions?
+        true
+      end
+    end
+  end
+
+  let(:mock_package_manager_instance) { concrete_package_manager_class.new }
+
   before do
     # Allow for_package_manager to return the stub_update_checker_class
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
@@ -179,9 +210,17 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(instance_double(Dependabot::DependencyChange))
+
     # Mock the create_pull_request method
     allow(create_security_update_pull_request)
       .to receive(:create_pull_request)
+
+    # Mock the package_manager method in dependency_snapshot
+    allow(dependency_snapshot)
+      .to receive(:package_manager)
+      .and_return(mock_package_manager_instance)
+
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
   end
 
   after do
@@ -289,33 +328,58 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
           )
         allow(job)
           .to receive_messages(security_fix?: true, allowed_update?: true)
-      end
-
-      it "checks if a pull request already exists" do
-        allow(create_security_update_pull_request)
-          .to receive(:pr_exists_for_latest_version?).and_return(true)
-        expect(create_security_update_pull_request)
-          .to receive(:record_pull_request_exists_for_latest_version).with(stub_update_checker)
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
-      end
-
-      it "creates a pull request if one does not already exist" do
         allow(job)
           .to receive(:existing_pull_requests).and_return(
             [
               Dependabot::PullRequest.new([
                 Dependabot::PullRequest::Dependency.new(
-                  name: "dummy-pkg-a", version: "4.1.0"
+                  name: "dummy-pkg-a", version: "4.0.1"
                 )
               ])
             ]
           )
-        allow(create_security_update_pull_request)
-          .to receive(:check_and_create_pull_request).and_call_original
+      end
 
-        expect(create_security_update_pull_request).to receive(:create_pull_request)
-
+      it "checks if a pull request already exists" do
+        expect(create_security_update_pull_request)
+          .to receive(:record_pull_request_exists_for_latest_version).with(stub_update_checker)
         create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+      end
+
+      context "when pull request doesn't exists" do
+        before do
+          allow(job)
+            .to receive(:existing_pull_requests).and_return(
+              []
+            )
+        end
+
+        it "creates a pull request without pr notices" do
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
+
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
+
+        it "creates a pull request with pr notices" do
+          allow(Dependabot::Notice)
+            .to receive(:generate_pm_deprecation_notice)
+            .with(mock_package_manager_instance)
+            .and_return(
+              Dependabot::Notice.new(
+                mode: "WARN",
+                type: "bundler_deprecated_warn",
+                package_manager_name: "bundler",
+                message: "Dependabot will stop supporting `bundler` `v1`!\n" \
+                         "Please upgrade to one of the following versions: v2, v3.\n",
+                markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                          "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+              )
+            )
+
+          expect(create_security_update_pull_request).to receive(:create_pull_request)
+
+          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+        end
       end
     end
 

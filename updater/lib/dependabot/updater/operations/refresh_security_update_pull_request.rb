@@ -1,6 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
+
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
 #
@@ -16,6 +19,7 @@ module Dependabot
       class RefreshSecurityUpdatePullRequest
         extend T::Sig
         include SecurityUpdateHelpers
+        include PullRequestHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -41,10 +45,21 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+
+          @pr_notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         sig { void }
         def perform
+          Dependabot.logger.info("Starting update job for #{job.source.repo}")
+          Dependabot.logger.info("Checking and updating security pull requests...")
+
+          # Add a deprecation notice if the package manager is deprecated
+          add_deprecation_notice(
+            notices: @pr_notices,
+            package_manager: dependency_snapshot.package_manager
+          )
+
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
@@ -142,7 +157,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: @pr_notices
           )
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
