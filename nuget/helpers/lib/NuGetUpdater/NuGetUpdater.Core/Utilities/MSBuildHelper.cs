@@ -169,7 +169,7 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    properties[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
+                    properties[property.Name] = new(property.Name, property.Value, PathHelper.NormalizePathToUnix(buildFile.RelativePath));
                 }
             }
         }
