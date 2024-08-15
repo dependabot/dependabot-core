@@ -4,4 +4,3 @@ environment:
 resolution: workspace
 dependencies:
   meta: 1.6.0 # Can be updated
-
