@@ -403,8 +403,6 @@ module Dependabot
     end
   end
 
-  class BadRequirementError < Gem::Requirement::BadRequirementError; end
-
   #####################
   # File level errors #
   #####################
@@ -519,6 +517,8 @@ module Dependabot
   class DependencyFileNotEvaluatable < DependabotError; end
 
   class DependencyFileNotResolvable < DependabotError; end
+
+  class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
   #######################
   # Source level errors #
