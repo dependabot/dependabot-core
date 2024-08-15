@@ -125,15 +125,89 @@ module Dependabot
       sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
       attr_reader :workspace_discovery
 
-      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-      attr_reader :dependency_set
-
       sig { params(discovery_json: DependencyFile).void }
       def initialize(discovery_json:)
         @discovery_json = discovery_json
         @workspace_discovery = T.let(read_workspace_discovery, T.nilable(Dependabot::Nuget::NativeWorkspaceDiscovery))
-        @dependency_set = T.let(read_dependency_set, Dependabot::FileParsers::Base::DependencySet)
       end
+
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig do
+        params(
+          dependency_files: T::Array[Dependabot::DependencyFile],
+          top_level_only: T::Boolean
+        ).returns(Dependabot::FileParsers::Base::DependencySet)
+      end
+      def dependency_set(dependency_files:, top_level_only:)
+        # dependencies must be recalculated so that we:
+        #   1. only return dependencies that are in the file set we reported earlier
+        #      see https://github.com/dependabot/dependabot-core/issues/10303
+        #   2. the reported version is the minimum across all requirements; this ensures that we get the opportunity
+        #      to update everything later
+        dependency_file_set = T.let(Set.new(dependency_files.map do |df|
+          Pathname.new(File.join(df.directory, df.name)).cleanpath.to_path
+        end), T::Set[String])
+
+        rebuilt_dependencies = read_dependency_set.dependencies.filter_map do |dep|
+          # only report requirements in files we know about
+          matching_requirements = dep.requirements.filter do |req|
+            file = T.let(req.fetch(:file), String)
+            dependency_file_set.include?(file)
+          end
+
+          # find the minimum version across all requirements
+          min_version = matching_requirements.filter_map do |req|
+            v = T.let(req.fetch(:requirement), T.nilable(String))
+            next unless v
+
+            Dependabot::Nuget::Version.new(v)
+          end.min
+          next unless min_version
+
+          # only return dependency requirements that are top-level
+          if top_level_only
+            matching_requirements.reject! do |req|
+              metadata = T.let(req.fetch(:metadata), T::Hash[Symbol, T.untyped])
+              T.let(metadata.fetch(:is_transitive), T::Boolean)
+            end
+          end
+
+          # we might need to return a dependency like this
+          dep_without_reqs = Dependabot::Dependency.new(
+            name: dep.name,
+            version: min_version.to_s,
+            package_manager: "nuget",
+            requirements: []
+          )
+
+          dep_with_reqs = matching_requirements.filter_map do |req|
+            version = T.let(req.fetch(:requirement, nil), T.nilable(String))
+            next unless version
+
+            Dependabot::Dependency.new(
+              name: dep.name,
+              version: min_version.to_s,
+              package_manager: "nuget",
+              requirements: [req]
+            )
+          end
+
+          # if only returning top-level dependencies and we had no non-transitive requirements, return an empty
+          # dependency so it can be tracked for security updates
+          matching_requirements.empty? && top_level_only ? [dep_without_reqs] : dep_with_reqs
+        end.flatten
+
+        final_dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+        rebuilt_dependencies.each do |dep|
+          final_dependency_set << dep
+        end
+        final_dependency_set
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/AbcSize
 
       private
 

@@ -106,22 +106,20 @@ module Dependabot
           .returns(T.nilable(T::Hash[Symbol, T.untyped]))
       end
       def build_requirement(file_name, dependency_details)
-        return if dependency_details.is_transitive
-
         version = dependency_details.version
         version = nil if version&.empty?
+        metadata = { is_transitive: dependency_details.is_transitive }
 
         requirement = {
           requirement: version,
           file: file_name,
           groups: [dependency_details.is_dev_dependency ? "devDependencies" : "dependencies"],
-          source: nil
+          source: nil,
+          metadata: metadata
         }
 
         property_name = dependency_details.evaluation&.root_property_name
-        return requirement unless property_name
-
-        requirement[:metadata] = { property_name: property_name }
+        metadata[:property_name] = property_name if property_name
         requirement
       end
     end

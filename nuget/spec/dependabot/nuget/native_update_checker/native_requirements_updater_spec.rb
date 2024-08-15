@@ -8,7 +8,8 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
   let(:updater) do
     described_class.new(
       requirements: requirements,
-      dependency_details: dependency_details
+      dependency_details: dependency_details,
+      vulnerable: vulnerable
     )
   end
 
@@ -18,6 +19,9 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
       file: "my.csproj",
       requirement: csproj_req_string,
       groups: ["dependencies"],
+      metadata: {
+        is_transitive: false
+      },
       source: nil
     }
   end
@@ -39,6 +43,7 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
       InfoUrl: info_url
     }.to_json))
   end
+  let(:vulnerable) { false }
 
   describe "#updated_requirements.version" do
     subject { updater.updated_requirements.first }
@@ -113,6 +118,9 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
             file: "another/my.csproj",
             requirement: other_requirement_string,
             groups: ["dependencies"],
+            metadata: {
+              is_transitive: false
+            },
             source: nil
           }
         end
@@ -124,6 +132,10 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
             file: "my.csproj",
             requirement: "23.6-jre",
             groups: ["dependencies"],
+            metadata: {
+              is_transitive: false,
+              previous_requirement: "23.3-jre"
+            },
             source: {
               type: "nuget_repo",
               source_url: "https://nuget.example.com/some.package"
@@ -132,6 +144,10 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
             file: "another/my.csproj",
             requirement: "[23.6-jre]",
             groups: ["dependencies"],
+            metadata: {
+              is_transitive: false,
+              previous_requirement: "[23.4-jre]"
+            },
             source: {
               type: "nuget_repo",
               source_url: "https://nuget.example.com/some.package"
@@ -147,6 +163,10 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
               file: "my.csproj",
               requirement: "23.6-jre",
               groups: ["dependencies"],
+              metadata: {
+                is_transitive: false,
+                previous_requirement: "23.3-jre"
+              },
               source: {
                 type: "nuget_repo",
                 source_url: "https://nuget.example.com/some.package"
@@ -155,6 +175,10 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
               file: "another/my.csproj",
               requirement: "[23.0,)",
               groups: ["dependencies"],
+              metadata: {
+                is_transitive: false,
+                previous_requirement: "[23.0,)"
+              },
               source: nil
             })
           end
