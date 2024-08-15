@@ -115,6 +115,8 @@ module Dependabot
 
     ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
 
+    OUT_OF_DISKSPACE = / Out of diskspace/
+
     class Utils
       extend T::Sig
 
@@ -382,6 +384,14 @@ module Dependabot
           package_req = message.match(ESOCKETTIMEDOUT).named_captures.fetch("package")
 
           Dependabot::PrivateSourceTimedOut.new(package_req.gsub(HTTP_CHECK_REGEX, ""))
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [OUT_OF_DISKSPACE],
+        handler: lambda { |message, _error, _params|
+          Dependabot::OutOfDisk.new(message)
         },
         in_usage: false,
         matchfn: nil
