@@ -142,7 +142,7 @@ module Dependabot
       notice_type = "#{package_manager.name}_unsupported_#{mode.downcase}"
       message = "Dependabot no longer supports `#{package_manager.name}` `v#{package_manager.version}`!"
       ## Create an error markdown message
-      markdown = "> [IMPORTANT]\n"
+      markdown = "> [!IMPORTANT]\n"
       ## Add the error message to the message
       markdown += "> #{message}\n\n"
 
