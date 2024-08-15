@@ -240,6 +240,11 @@ module Dependabot
           "go-mod": error.go_mod
         }
       }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     when
       IncompatibleCPU,
       NetworkUnsafeHTTP
@@ -397,6 +402,8 @@ module Dependabot
       super(msg)
     end
   end
+
+  class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
   #####################
   # File level errors #
