@@ -468,10 +468,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           { "name" => "meta",
             "package_manager" => "pub",
             "previous_requirements" => [{
-              file:        "pubspec.yaml",
-              groups:      ["direct"],
+              file: "pubspec.yaml",
+              groups: ["direct"],
               requirement: "1.6.0",
-              source:      nil
+              source: nil
             }],
             "previous_version" => "1.6.0",
             "requirements" => [{
