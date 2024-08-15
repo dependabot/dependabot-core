@@ -457,6 +457,31 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
 
+    context "when in a workspace" do
+      let(:dependency_name) { "meta" }
+      let(:project) { "can_update_workspace" }
+      let(:requirements_to_unlock) { :all }
+
+      it "can update" do
+        expect(can_update).to be_truthy
+        expect(updated_dependencies).to eq [
+          { "name" => "meta",
+            "package_manager" => "pub",
+            "previous_requirements" => [{
+              :file=>"pubspec.yaml",
+              :groups=>["direct"],
+              :requirement=>"1.6.0",
+              :source=>nil
+            }],
+            "previous_version" => "1.6.0",
+            "requirements" => [{
+              file: "pubspec.yaml", groups: ["direct"], requirement: "1.7.0", source: nil
+            }],
+            "version" => "1.7.0" }
+        ]
+      end
+    end
+
     context "when unlocking own" do
       let(:requirements_to_unlock) { :own }
 
