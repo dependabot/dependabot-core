@@ -106,12 +106,12 @@ module Dependabot
       ## Create a warning markdown message
       markdown = "> [!WARNING]\n"
       ## Add the deprecation warning to the message
-      markdown += "> #{message}\n\n"
+      markdown += "> #{message}\n>\n"
 
       ## Add the supported versions to the message
       unless supported_versions_message.empty?
         message += "\n#{supported_versions_message}\n"
-        markdown += "> #{supported_versions_message}\n\n"
+        markdown += "> #{supported_versions_message}\n>\n"
       end
 
       Notice.new(
@@ -144,12 +144,12 @@ module Dependabot
       ## Create an error markdown message
       markdown = "> [!IMPORTANT]\n"
       ## Add the error message to the message
-      markdown += "> #{message}\n\n"
+      markdown += "> #{message}\n>\n"
 
       ## Add the supported versions to the message
       unless supported_versions_message.empty?
         message += "\n#{supported_versions_message}\n"
-        markdown += "> #{supported_versions_message}\n\n"
+        markdown += "> #{supported_versions_message}\n>\n"
       end
 
       Notice.new(

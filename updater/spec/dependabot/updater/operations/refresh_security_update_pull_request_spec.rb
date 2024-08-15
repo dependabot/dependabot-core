@@ -208,10 +208,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
             package_manager_name: "bundler",
             details: {
               message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                       "Please upgrade to one of the following versions: v2, v3.",
+                       "Please upgrade to one of the following versions: v2, v3.\n",
               current_version: "v1",
-              markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
-                        "> Please upgrade to one of the following versions: v2, v3."
+              markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                        "> Please upgrade to one of the following versions: v2, v3.\n>\n"
             }
           }])
           expect(refresh_security_update_pull_request).to receive(:create_pull_request)

@@ -126,8 +126,8 @@ RSpec.describe Dependabot::Notice do
             package_manager_name: "bundler",
             message: "Dependabot will stop supporting `bundler` `v1`!\n" \
                      "Please upgrade to one of the following versions: v2, v3.\n",
-            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
-                      "> Please upgrade to one of the following versions: v2, v3.\n\n"
+            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                      "> Please upgrade to one of the following versions: v2, v3.\n>\n"
           })
       end
     end
@@ -144,8 +144,8 @@ RSpec.describe Dependabot::Notice do
             package_manager_name: "bundler",
             message: "Dependabot no longer supports `bundler` `v1`!\n" \
                      "Please upgrade to one of the following versions: v2, v3.\n",
-            markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n\n" \
-                      "> Please upgrade to one of the following versions: v2, v3.\n\n"
+            markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n>\n" \
+                      "> Please upgrade to one of the following versions: v2, v3.\n>\n"
           })
       end
     end
@@ -196,8 +196,8 @@ RSpec.describe Dependabot::Notice do
           package_manager_name: "bundler",
           message: "Dependabot will stop supporting `bundler` `v1`!\n" \
                    "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n\n"
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
         })
     end
   end
@@ -224,8 +224,8 @@ RSpec.describe Dependabot::Notice do
           package_manager_name: "bundler",
           message: "Dependabot no longer supports `bundler` `v1`!\n" \
                    "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n\n"
+          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
         })
     end
   end
