@@ -117,6 +117,14 @@ module Dependabot
 
     OUT_OF_DISKSPACE = / Out of diskspace/
 
+    # yarnrc.yml errors
+    YARNRC_PARSE_ERROR = /Parse error when loading (?<filename>.*?); /
+    YARNRC_ENV_NOT_FOUND = /Usage Error: Environment variable not found /
+    YARNRC_ENV_NOT_FOUND_REGEX = /Usage Error: Environment variable not found \((?<token>.*)\) in (?<filename>.*?) /
+    YARNRC_EAI_AGAIN = /getaddrinfo EAI_AGAIN/
+    YARNRC_ENOENT = /Internal Error: ENOENT/
+    YARNRC_ENOENT_REGEX = /Internal Error: ENOENT: no such file or directory, stat '(?<filename>.*?)'/
+
     class Utils
       extend T::Sig
 
@@ -392,6 +400,54 @@ module Dependabot
         patterns: [OUT_OF_DISKSPACE],
         handler: lambda { |message, _error, _params|
           Dependabot::OutOfDisk.new(message)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARNRC_PARSE_ERROR],
+        handler: lambda { |message, _error, _params|
+          filename = message.match(YARNRC_PARSE_ERROR).named_captures["filename"]
+
+          msg = "Error while loading \"#{filename.split('/').last}\"."
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARNRC_ENV_NOT_FOUND],
+        handler: lambda { |message, _error, _params|
+          error_message = message.gsub(/[[:space:]]+/, " ").strip
+
+          filename = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
+                                    .named_captures["filename"]
+
+          env_var = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
+                                .named_captures["token"]
+
+          msg = "Environment variable \"#{env_var}\" not found in \"#{filename.split('/').last}\"."
+          Dependabot::MissingEnvironmentVariable.new(env_var, msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARNRC_EAI_AGAIN],
+        handler: lambda { |_message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new("Network error while resolving dependency.")
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARNRC_ENOENT],
+        handler: lambda { |message, _error, _params|
+          error_message = message.gsub(/[[:space:]]+/, " ").strip
+          filename = error_message.match(YARNRC_ENOENT_REGEX).named_captures["filename"]
+
+          Dependabot::DependencyFileNotResolvable.new("Internal error while resolving dependency." \
+                                                      "File not found \"#{filename.split('/').last}\"")
         },
         in_usage: false,
         matchfn: nil
