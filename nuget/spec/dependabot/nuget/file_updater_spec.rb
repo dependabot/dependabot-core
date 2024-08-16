@@ -45,20 +45,12 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:dependency_version) { "1.1.1" }
   let(:dependency_previous_version) { "1.0.0" }
   let(:requirements) do
-    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "dirs.proj", requirement: "1.1.1", groups: [], metadata: {}, source: nil }]
   end
   let(:previous_requirements) do
-    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], source: nil }]
+    [{ file: "dirs.proj", requirement: "1.0.0", groups: [], metadata: {}, source: nil }]
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
-
-  before do
-    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
-                       "microsoft.extensions.dependencymodel/1.0.0/" \
-                       "microsoft.extensions.dependencymodel.nuspec")
-      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
-  end
 
   it_behaves_like "a dependency file updater"
 
@@ -171,139 +163,132 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     end
   end
 
-  describe "#updated_dependency_files" do
-    before do
-      intercept_native_tools(
-        discovery_content_hash: {
-          Path: "",
-          IsSuccess: true,
-          Projects: [
-            {
-              FilePath: "Proj1/Proj1/Proj1.csproj",
-              Dependencies: [{
-                Name: "Microsoft.Extensions.DependencyModel",
-                Version: "1.0.0",
-                Type: "PackageReference",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net461"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [{
-                Name: "TargetFramework",
-                Value: "net461",
-                SourceFilePath: "Proj1/Proj1/Proj1.csproj"
-              }],
-              TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
-            }
-          ],
-          DirectoryPackagesProps: nil,
-          GlobalJson: nil,
-          DotNetToolsJson: nil
-        }
-      )
-    end
-
-    context "with a dirs.proj" do
-      it "does not repeatedly update the same project" do
-        run_update_test do |updater|
-          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
-
-          expect(updater.send(:testonly_update_tooling_calls)).to eq(
-            {
-              "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1
-            }
-          )
-        end
+  describe "#expanded_dependency_details" do
+    context "when update operations are created" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "project1/project1.csproj", content: "not-used"),
+          Dependabot::DependencyFile.new(name: "project2/project2.csproj", content: "not-used")
+        ]
       end
-    end
-  end
 
-  describe "#updated_dependency_files_with_wildcard" do
-    let(:project_name) { "file_updater_dirsproj_wildcards" }
-    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
-    let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
-    let(:dependency_version) { "1.1.1" }
-    let(:dependency_previous_version) { "1.0.0" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "Dependency.A",
+            version: "1.0.3",
+            previous_version: "1.0.1",
+            package_manager: "nuget",
+            requirements: [
+              {
+                requirement: "1.0.3",
+                file: "/project1/project1.csproj",
+                groups: ["dependencies"],
+                source: nil,
+                metadata: {
+                  is_transitive: false,
+                  previous_requirement: "1.0.1"
+                }
+              }
+            ],
+            previous_requirements: []
+          ),
+          Dependabot::Dependency.new(
+            name: "Dependency.B",
+            version: "1.9.3",
+            previous_version: "1.9.1",
+            package_manager: "nuget",
+            requirements: [],
+            previous_requirements: []
+          )
+        ]
+      end
 
-    before do
-      intercept_native_tools(
-        discovery_content_hash: {
-          Path: "",
-          IsSuccess: true,
-          Projects: [
-            {
-              FilePath: "Proj1/Proj1/Proj1.csproj",
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "/",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "/project1/project1.csproj",
               Dependencies: [{
-                Name: "Microsoft.Extensions.DependencyModel",
-                Version: "1.0.0",
+                Name: "Dependency.A",
+                Version: "1.0.1",
                 Type: "PackageReference",
                 EvaluationResult: nil,
-                TargetFrameworks: ["net461"],
+                TargetFrameworks: ["net8.0"],
                 IsDevDependency: false,
                 IsDirect: true,
                 IsTransitive: false,
                 IsOverride: false,
                 IsUpdate: false,
                 InfoUrl: nil
+              }, {
+                Name: "Dependency.B",
+                Version: "1.9.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: true,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
               }],
               IsSuccess: true,
-              Properties: [{
-                Name: "TargetFramework",
-                Value: "net461",
-                SourceFilePath: "Proj1/Proj1/Proj1.csproj"
-              }],
-              TargetFrameworks: ["net461"],
+              Properties: [],
+              TargetFrameworks: ["net8.0"],
               ReferencedProjectPaths: []
             }, {
-              FilePath: "Proj2/Proj2.csproj",
+              FilePath: "/project2/project2.csproj",
               Dependencies: [{
-                Name: "Microsoft.Extensions.DependencyModel",
-                Version: "1.0.0",
+                Name: "Dependency.A",
+                Version: "1.0.2",
                 Type: "PackageReference",
                 EvaluationResult: nil,
-                TargetFrameworks: ["net461"],
+                TargetFrameworks: ["net8.0"],
                 IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
+                IsDirect: false,
+                IsTransitive: true,
                 IsOverride: false,
                 IsUpdate: false,
                 InfoUrl: nil
               }],
               IsSuccess: true,
-              Properties: [{
-                Name: "TargetFramework",
-                Value: "net461",
-                SourceFilePath: "Proj2/Proj2.csproj"
-              }],
-              TargetFrameworks: ["net461"],
+              Properties: [],
+              TargetFrameworks: ["net8.0"],
               ReferencedProjectPaths: []
-            }
-          ],
-          DirectoryPackagesProps: nil,
-          GlobalJson: nil,
-          DotNetToolsJson: nil
-        }
-      )
-    end
-
-    it "updates the wildcard project" do
-      run_update_test do |updater|
-        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
-                                                                                "Proj2/Proj2.csproj")
-
-        expect(updater.send(:testonly_update_tooling_calls)).to eq(
-          {
-            "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1,
-            "/Proj2/Proj2.csproj+Microsoft.Extensions.DependencyModel" => 1
+            }],
+            DirectoryPackagesProps: nil,
+            GlobalJson: nil,
+            DotNetToolsJson: nil
           }
         )
+      end
+
+      it "produces the correct update order" do
+        run_update_test do |updater|
+          to_process = updater.send(:expanded_dependency_details) # private method, need to invoke it like this
+          expect(to_process).to eq([
+            # this was a top-level dependency and will be updated
+            {
+              name: "Dependency.A",
+              file: "/project1/project1.csproj",
+              version: "1.0.3",
+              previous_version: "1.0.1",
+              is_transitive: false
+            },
+            # this was a transitive dependency, but explicitly requested to be updated
+            {
+              name: "Dependency.B",
+              file: "/project1/project1.csproj",
+              version: "1.9.3",
+              previous_version: "1.9.1",
+              is_transitive: true
+            }
+          ])
+        end
       end
     end
   end

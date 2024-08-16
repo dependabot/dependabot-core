@@ -16,6 +16,16 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      DependencyDetails = T.type_alias do
+        {
+          file: String,
+          name: String,
+          version: String,
+          previous_version: String,
+          is_transitive: T::Boolean
+        }
+      end
+      
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
@@ -52,9 +62,21 @@ module Dependabot
       def updated_dependency_files
         base_dir = "/"
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-          dependencies.each do |dependency|
-            try_update_projects(dependency) || try_update_json(dependency)
+          expanded_dependency_details.each do |dep_details|
+            file = T.let(dep_details.fetch(:file), String)
+            name = T.let(dep_details.fetch(:name), String)
+            version = T.let(dep_details.fetch(:version), String)
+            previous_version = T.let(dep_details.fetch(:previous_version), String)
+            is_transitive = T.let(dep_details.fetch(:is_transitive), T::Boolean)
+            NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path),
+                                                 proj_path: file,
+                                                 dependency_name: name,
+                                                 version: version,
+                                                 previous_version: previous_version,
+                                                 is_transitive: is_transitive,
+                                                 credentials: credentials)
           end
+
           updated_files = dependency_files.filter_map do |f|
             updated_content = File.read(dependency_file_path(f))
             next if updated_content == f.content
@@ -74,104 +96,69 @@ module Dependabot
 
       private
 
-      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-      def try_update_projects(dependency)
-        update_ran = T.let(false, T::Boolean)
-        checked_files = Set.new
-
-        # run update for each project file
-        project_files.each do |project_file|
-          project_dependencies = project_dependencies(project_file)
-          proj_path = dependency_file_path(project_file)
-
-          next unless project_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
-
-          next unless repo_contents_path
-
-          checked_key = "#{project_file.name}-#{dependency.name}#{dependency.version}"
-          call_nuget_updater_tool(dependency, proj_path) unless checked_files.include?(checked_key)
-
-          checked_files.add(checked_key)
-          # We need to check the downstream references even though we're already evaluated the file
-          downstream_files = referenced_project_paths(project_file)
-          downstream_files.each do |downstream_file|
-            checked_files.add("#{downstream_file}-#{dependency.name}#{dependency.version}")
-          end
-          update_ran = true
-        end
-        update_ran
-      end
-
-      sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
-      def try_update_json(dependency)
-        if dotnet_tools_json_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) } ||
-           global_json_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
-
-          # We just need to feed the updater a project file, grab the first
-          project_file = T.must(project_files.first)
-          proj_path = dependency_file_path(project_file)
-
-          return false unless repo_contents_path
-
-          call_nuget_updater_tool(dependency, proj_path)
-          return true
-        end
-
-        false
-      end
-
-      sig { params(dependency: Dependency, proj_path: String).void }
-      def call_nuget_updater_tool(dependency, proj_path)
-        NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
-                                             dependency: dependency, is_transitive: !dependency.top_level?,
-                                             credentials: credentials)
-
-        # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
-        # Ideally we should find a way to not run this code in prod
-        # (or a better way to track calls made to NativeHelpers)
-        @update_tooling_calls ||= T.let({}, T.nilable(T::Hash[String, Integer]))
-        key = "#{proj_path.delete_prefix(T.must(repo_contents_path))}+#{dependency.name}"
-        @update_tooling_calls[key] =
-          if @update_tooling_calls[key]
-            T.must(@update_tooling_calls[key]) + 1
-          else
-            1
-          end
-      end
-
-      # Don't call this from outside tests, we're only checking that we aren't recursing needlessly
-      sig { returns(T.nilable(T::Hash[String, Integer])) }
-      def testonly_update_tooling_calls
-        @update_tooling_calls
-      end
-
-      sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
-      def workspace
+      # rubocop:disable Metrics/AbcSize
+      sig { returns(T::Array[DependencyDetails]) }
+      def expanded_dependency_details
         discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
-        discovery_json_reader.workspace_discovery
-      end
+        dependency_set = discovery_json_reader.dependency_set(dependency_files: dependency_files, top_level_only: false)
+        all_dependencies = dependency_set.dependencies
+        dependencies.map do |dep|
+          # if vulnerable metadata is set, re-fetch all requirements from discovery
+          is_vulnerable = T.let(dep.metadata.fetch(:is_vulnerable, false), T::Boolean)
+          relevant_dependencies = all_dependencies.filter { |d| d.name.casecmp?(dep.name) }
+          candidate_vulnerable_dependency = T.must(relevant_dependencies.first)
+          relevant_dependency = is_vulnerable ? candidate_vulnerable_dependency : dep
+          relevant_details = relevant_dependency.requirements.filter_map do |req|
+            dependency_details_from_requirement(dep.name, req, is_vulnerable: is_vulnerable)
+          end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
-      def referenced_project_paths(project_file)
-        workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
-      end
+          next relevant_details if relevant_details.any?
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[NativeDependencyDetails]) }
-      def project_dependencies(project_file)
-        workspace&.projects&.find do |p|
-          full_project_file_path = File.join(project_file.directory, project_file.name)
-          p.file_path == full_project_file_path
-        end&.dependencies || []
+          # If we didn't find anything to update, we're in a very specific corner case: we were explicitly asked to
+          # (1) update a certain dependency, (2) it wasn't listed as a security update, but (3) it only exists as a
+          # transitive dependency.  In this case, we need to rebuild the dependency requirements as if this were a
+          # security update so that we can perform the appropriate update.
+          candidate_vulnerable_dependency.requirements.filter_map do |req|
+            rebuilt_req = {
+              file: req[:file], # simple copy
+              requirement: relevant_dependency.version, # the newly available version
+              metadata: {
+                is_transitive: T.let(req[:metadata], T::Hash[Symbol, T.untyped])[:is_transitive], # simple copy
+                previous_requirement: req[:requirement] # the old requirement's "current" version is now the "previous"
+              }
+            }
+            dependency_details_from_requirement(dep.name, rebuilt_req, is_vulnerable: true)
+          end
+        end.flatten
       end
+      # rubocop:enable Metrics/AbcSize
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
-      def global_json_dependencies
-        workspace&.global_json&.dependencies || []
+      sig do
+        params(
+          name: String,
+          requirement: T::Hash[Symbol, T.untyped],
+          is_vulnerable: T::Boolean
+        ).returns(T.nilable(DependencyDetails))
       end
+      def dependency_details_from_requirement(name, requirement, is_vulnerable:)
+        metadata = T.let(requirement.fetch(:metadata), T::Hash[Symbol, T.untyped])
+        current_file = T.let(requirement.fetch(:file), String)
+        return nil unless current_file.match?(/\.(cs|vb|fs)proj$/)
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
-      def dotnet_tools_json_dependencies
-        workspace&.dotnet_tools_json&.dependencies || []
+        is_transitive = T.let(metadata.fetch(:is_transitive), T::Boolean)
+        return nil if !is_vulnerable && is_transitive
+
+        version = T.let(requirement.fetch(:requirement), String)
+        previous_version = T.let(metadata[:previous_requirement], String)
+        return nil if version == previous_version
+
+        {
+          file: T.let(requirement.fetch(:file), String),
+          name: name,
+          version: version,
+          previous_version: previous_version,
+          is_transitive: is_transitive
+        }
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
