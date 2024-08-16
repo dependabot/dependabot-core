@@ -33,7 +33,7 @@ module Dependabot
         use_repo_contents_stub if repo_contents_path.nil?
       end
 
-      sig { overridable.returns(T::Array[Regexp]) }
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^go\.mod$/,

@@ -12,7 +12,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { overridable.returns(T::Array[Regexp]) }
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^\.?devcontainer\.json$/,

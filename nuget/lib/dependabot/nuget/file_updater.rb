@@ -16,7 +16,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { overridable.returns(T::Array[Regexp]) }
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /.*\.([a-z]{2})?proj$/, # Matches files with any extension like .csproj, .vbproj, etc., in any directory
@@ -30,7 +30,7 @@ module Dependabot
           /Directory\.targets$/i,         # Matches Directory.targets in any directory or root directory
           /Packages\.props$/i, # Matches Packages.props in any directory
           /.*\.nuspec$/, # Matches any .nuspec files in any directory
-          %r{^\.config/dotnet-tools\.json$}, # Matches .config/dotnet-tools.json in only root directory
+          %r{^\.config/dotnet-tools\.json$} # Matches .config/dotnet-tools.json in only root directory
         ]
       end
 

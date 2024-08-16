@@ -111,9 +111,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { true }
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty

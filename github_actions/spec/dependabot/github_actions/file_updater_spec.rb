@@ -69,9 +69,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { true }
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -79,18 +77,6 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
     context "when files match the regex patterns" do
       it "returns true for files that should be updated" do
-        matching_files = [
-          ".github/workflow/main.yml",
-          ".github/workflows/ci-test.yaml",
-          ".github/workflows/workflow.yml"
-        ]
-
-        matching_files.each do |file_name|
-          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
-
-      it "returns false for files that should not be updated" do
         matching_files = [
           "action.yml",
           "action.yaml",
@@ -102,6 +88,20 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           ".github/workflows/123-foo.yml",
           "/.github/workflows/workflow.yml",
           "/.github/workflows/123-foo-bar.yml"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
         ]
 
         non_matching_files.each do |file_name|

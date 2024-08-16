@@ -30,7 +30,7 @@ module Dependabot
         end
       end
 
-      sig { overridable.returns(T::Array[Regexp]) }
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           %r{^(?:.*/)?package\.json$},
@@ -39,7 +39,7 @@ module Dependabot
           %r{^(?:.*/)?yarn\.lock$},
           %r{^(?:.*/)?pnpm-lock\.yaml$},
           %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
-          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$}, # Matches .pnp.js or .pnp.cjs files
+          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
       end
 

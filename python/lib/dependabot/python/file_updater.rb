@@ -17,7 +17,7 @@ module Dependabot
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
-      sig { overridable.returns(T::Array[Regexp]) }
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
           /^.*Pipfile$/,             # Match Pipfile at any level
@@ -28,7 +28,7 @@ module Dependabot
           /^.*setup\.cfg$/,          # Match setup.cfg at any level
           /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
           /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
-          /^.*poetry\.lock$/, # Match poetry.lock at any level
+          /^.*poetry\.lock$/ # Match poetry.lock at any level
         ]
       end
 
