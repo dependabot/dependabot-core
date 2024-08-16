@@ -3324,10 +3324,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                   "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+          message: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
         )]
       end
 
@@ -3342,18 +3342,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                   "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+          message: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
         ), Dependabot::Notice.new(
           mode: "ERROR",
           type: "bundler_unsupported_error",
           package_manager_name: "bundler",
-          message: "Dependabot no longer supports `bundler` `v1`!\n" \
-                   "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler` `v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+          message: "Dependabot no longer supports `bundler v1`!\n" \
+                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
         )]
       end
 
@@ -3370,18 +3370,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                   "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+          message: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
         ), Dependabot::Notice.new(
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                   "Please upgrade to one of the following versions: v2, v3.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+          message: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
+                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
         )]
       end
 

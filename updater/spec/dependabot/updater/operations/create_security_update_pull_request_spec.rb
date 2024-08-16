@@ -369,10 +369,10 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
                 mode: "WARN",
                 type: "bundler_deprecated_warn",
                 package_manager_name: "bundler",
-                message: "Dependabot will stop supporting `bundler` `v1`!\n" \
-                         "Please upgrade to one of the following versions: v2, v3.\n",
-                markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler` `v1`!\n>\n" \
-                          "> Please upgrade to one of the following versions: v2, v3.\n>\n"
+                message: "Dependabot will stop supporting `bundler v1`!\n" \
+                         "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+                markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
+                          "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
               )
             )
 

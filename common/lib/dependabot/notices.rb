@@ -60,11 +60,15 @@ module Dependabot
     def self.generate_supported_versions_message(supported_versions, support_later_versions)
       return "" unless supported_versions&.any?
 
-      versions_string = supported_versions.map { |version| "v#{version}" }.join(", ")
+      versions_string = supported_versions.map { |version| "`v#{version}`" }
 
-      later_message = support_later_versions ? " or later" : ""
+      versions_string[-1] = "or #{versions_string[-1]}" if versions_string.count > 1 && !support_later_versions
 
-      return "Please upgrade to version `#{versions_string}`#{later_message}." if supported_versions.count == 1
+      versions_string = versions_string.join(", ")
+
+      later_message = support_later_versions ? ", or later" : ""
+
+      return "Please upgrade to version #{versions_string}#{later_message}." if supported_versions.count == 1
 
       "Please upgrade to one of the following versions: #{versions_string}#{later_message}."
     end
@@ -102,7 +106,7 @@ module Dependabot
         package_manager.support_later_versions?
       )
       notice_type = "#{package_manager.name}_deprecated_#{mode.downcase}"
-      message = "Dependabot will stop supporting `#{package_manager.name}` `v#{package_manager.version}`!"
+      message = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.version}`!"
       ## Create a warning markdown message
       markdown = "> [!WARNING]\n"
       ## Add the deprecation warning to the message
@@ -140,7 +144,7 @@ module Dependabot
         package_manager.support_later_versions?
       )
       notice_type = "#{package_manager.name}_unsupported_#{mode.downcase}"
-      message = "Dependabot no longer supports `#{package_manager.name}` `v#{package_manager.version}`!"
+      message = "Dependabot no longer supports `#{package_manager.name} v#{package_manager.version}`!"
       ## Create an error markdown message
       markdown = "> [!IMPORTANT]\n"
       ## Add the error message to the message
