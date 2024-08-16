@@ -91,12 +91,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       end
 
       it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          "some_random_file.rb",
-          "requirements.txt",
-          "package-lock.json",
-          "package.json"
+        matching_files = [
+          "action.yml",
+          "action.yaml",
+          "foo/bar/action.yml",
+          "foo/bar/action.yaml",
+          ".github/workflows/main.yml",
+          ".github/workflows/ci-test.yaml",
+          ".github/workflows/action.yml",
+          ".github/workflows/123-foo.yml",
+          "/.github/workflows/workflow.yml",
+          "/.github/workflows/123-foo-bar.yml"
         ]
 
         non_matching_files.each do |file_name|

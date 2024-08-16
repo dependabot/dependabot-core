@@ -87,7 +87,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           "subdirectory/pnpm-lock.yaml",
           "apps/dependabot_business/package.json",
           "packages/package1/package.json",
-          "packages/package2/yarn.lock"
+          "packages/package2/yarn.lock",
+          ".yarn/install-state.gz",
+          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
+          ".pnp.js",
+          ".pnp.cjs"
         ]
 
         matching_files.each do |file_name|

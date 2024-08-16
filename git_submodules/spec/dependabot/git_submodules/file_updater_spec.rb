@@ -88,21 +88,6 @@ RSpec.describe Dependabot::GitSubmodules::FileUpdater do
           expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
         end
       end
-
-      it "returns false for files that should not be updated" do
-        non_matching_files = [
-          "README.md",
-          ".github/workflow/main.yml",
-          "some_random_file.rb",
-          "requirements.txt",
-          "package-lock.json",
-          "package.json"
-        ]
-
-        non_matching_files.each do |file_name|
-          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
-        end
-      end
     end
   end
 

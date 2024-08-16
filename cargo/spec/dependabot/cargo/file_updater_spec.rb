@@ -68,7 +68,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       it "returns true for files that should be updated" do
         matching_files = [
           "Cargo.toml",
-          "Cargo.lock"
+          "Cargo.lock",
+          "some_project/Cargo.toml",
+          "some_project/Cargo.lock",
+          "some_project/subdir/Cargo.toml",
+          "some_project/subdir/Cargo.lock"
         ]
 
         matching_files.each do |file_name|

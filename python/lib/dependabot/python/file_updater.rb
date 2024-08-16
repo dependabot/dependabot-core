@@ -17,33 +17,19 @@ module Dependabot
       require_relative "file_updater/poetry_file_updater"
       require_relative "file_updater/requirement_file_updater"
 
-      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
-      def self.updated_files_regex(allowlist_enabled = false)
-        if allowlist_enabled
-          [
-            /^.*Pipfile$/,             # Match Pipfile at any level
-            /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
-            /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
-            /^.*\.in$/,                # Match any .in files at any level
-            /^.*setup\.py$/,           # Match setup.py at any level
-            /^.*setup\.cfg$/,          # Match setup.cfg at any level
-            /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
-            /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
-            /^.*poetry\.lock$/         # Match poetry.lock at any level
-          ]
-        else
-          # Old regex. After 100% rollout of the allowlist, this will be removed.
-          [
-            /^Pipfile$/,
-            /^Pipfile\.lock$/,
-            /.*\.txt$/,
-            /.*\.in$/,
-            /^setup\.py$/,
-            /^setup\.cfg$/,
-            /^pyproject\.toml$/,
-            /^pyproject\.lock$/
-          ]
-        end
+      sig { overridable.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        [
+          /^.*Pipfile$/,             # Match Pipfile at any level
+          /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
+          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
+          /^.*\.in$/,                # Match any .in files at any level
+          /^.*setup\.py$/,           # Match setup.py at any level
+          /^.*setup\.cfg$/,          # Match setup.cfg at any level
+          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
+          /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
+          /^.*poetry\.lock$/, # Match poetry.lock at any level
+        ]
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

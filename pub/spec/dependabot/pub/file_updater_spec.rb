@@ -84,7 +84,9 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       it "returns true for files that should be updated" do
         matching_files = [
           "pubspec.yaml",
-          "pubspec.lock"
+          "pubspec.lock",
+          "packages/foo_bar/pubspec.yaml",
+          "packages/foo_bar/pubspec.lock"
         ]
 
         matching_files.each do |file_name|

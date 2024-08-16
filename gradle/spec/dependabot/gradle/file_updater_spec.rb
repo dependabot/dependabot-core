@@ -67,10 +67,16 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         matching_files = [
           "build.gradle",
           "build.gradle.kts",
+          "settings.gradle",
+          "settings.gradle.kts",
           "subproject/build.gradle",
           "subproject/build.gradle.kts",
+          "subproject/settings.gradle",
+          "subproject/settings.gradle.kts",
           "gradle/libs.versions.toml",
-          "subproject/gradle/libs.versions.toml"
+          "subproject/gradle/libs.versions.toml",
+          "dependencies.gradle",
+          "subproject/dependencies.gradle"
         ]
 
         matching_files.each do |file_name|

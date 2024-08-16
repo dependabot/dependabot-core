@@ -131,9 +131,18 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           "global.json",
           "dotnet-tools.json",
           "Directory.Build.props",
+          "Source/Directory.Build.props",
+          "Directory.targets",
+          "src/Directory.targets",
           "Directory.Build.targets",
+          "Directory.Packages.props",
+          "Source/Directory.Packages.props",
           "Packages.props",
-          "Proj1/Proj1/Proj1.csproj"
+          "Proj1/Proj1/Proj1.csproj",
+          ".config/dotnet-tools.json",
+          ".nuspec",
+          "subdirectory/.nuspec",
+          "Service/Contract/packages.config"
         ]
 
         matching_files.each do |file_name|
