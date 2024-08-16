@@ -50,7 +50,10 @@ module Dependabot
           # cache discovery results
           NativeDiscoveryJsonReader.set_discovery_from_dependency_files(dependency_files: dependency_files,
                                                                         discovery: discovery_json_reader)
-          discovery_json_reader.dependency_set.dependencies
+          # we only return top-level dependencies and requirements here
+          dependency_set = discovery_json_reader.dependency_set(dependency_files: dependency_files,
+                                                                top_level_only: true)
+          dependency_set.dependencies
         end
 
         T.must(self.class.file_dependency_cache[key])

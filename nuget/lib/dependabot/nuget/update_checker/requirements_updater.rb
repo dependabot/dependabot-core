@@ -37,10 +37,11 @@ module Dependabot
         def updated_requirements
           return requirements unless latest_version
 
-          # NOTE: Order is important here. The FileUpdater needs the updated
-          # requirement at index `i` to correspond to the previous requirement
-          # at the same index.
           requirements.map do |req|
+            req[:metadata] ||= {}
+            req[:metadata][:is_transitive] = false
+            req[:metadata][:previous_requirement] = req[:requirement]
+
             next req if req.fetch(:requirement).nil?
             next req if req.fetch(:requirement).include?(",")
 
@@ -56,7 +57,6 @@ module Dependabot
                   latest_version.to_s
                 )
               end
-
             next req if new_req == req.fetch(:requirement)
 
             req.merge(requirement: new_req, source: updated_source)
