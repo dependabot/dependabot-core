@@ -199,13 +199,21 @@ public partial class DiscoveryWorker
                 }
                 else
                 {
-                    // .csproj, .fsproj, .vbproj
-                    // keep this project and check for references
-                    expandedProjects.Add(candidateEntryPoint);
-                    IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
-                    foreach (string referencedProject in referencedProjects)
+                    switch (extension)
                     {
-                        filesToExpand.Push(referencedProject);
+                        case ".csproj":
+                        case ".fsproj":
+                        case ".vbproj":
+                            // keep this project and check for references
+                            expandedProjects.Add(candidateEntryPoint);
+                            IEnumerable<string> referencedProjects = ExpandItemGroupFilesFromProject(candidateEntryPoint, "ProjectReference");
+                            foreach (string referencedProject in referencedProjects)
+                            {
+                                filesToExpand.Push(referencedProject);
+                            }
+                            break;
+                        default:
+                            continue;
                     }
                 }
             }
