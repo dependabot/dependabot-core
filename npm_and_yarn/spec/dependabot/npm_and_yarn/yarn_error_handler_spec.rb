@@ -369,6 +369,81 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains YARNRC_ENV_NOT_FOUND" do
+      let(:error_message) do
+        "Usage Error: Environment variable not found (GITHUB_TOKEN) in [38;5;170m/home/dependabot/dependabot-" \
+        "updater/repo/.yarnrc.yml[39m (in [38;5;170m/home/dependabot/dependabot-updater/repo/.yarnrc.yml[39m)
+
+        Yarn Package Manager - 4.0.2
+
+          $ yarn <command>
+
+        You can also print more details about any of these commands by calling them with
+        the `-h,--help` flag right after the command name."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::MissingEnvironmentVariable, "Environment variable \"GITHUB_TOKEN\" not" \
+                                                                  " found in \".yarnrc.yml\".")
+      end
+    end
+
+    context "when the error message contains YARNRC_PARSE_ERROR" do
+      let(:error_message) do
+        "Usage Error: Parse error when loading /home/dependabot/dependabot-updater/repo/.yarnrc.yml; " \
+        "please check it's proper Yaml (in particular, make sure you list the colons after each key name)
+
+        Yarn Package Manager - 3.5.1
+
+          $ yarn <command>
+
+        You can also print more details about any of these commands by calling them with
+        the `-h,--help` flag right after the command name."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, "Error while loading \".yarnrc.yml\".")
+      end
+    end
+
+    context "when the error message contains EAI_AGAIN" do
+      let(:error_message) do
+        "Request Error: getaddrinfo EAI_AGAIN yarn-plugins.jvdwaal.nl
+        at ClientRequest.<anonymous> (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.4.0.cjs:147:14258)
+        at Object.onceWrapper (node:events:634:26)
+        at ClientRequest.emit (node:events:531:35)
+        at u.emit (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.4.0.cjs:142:14855)
+        at TLSSocket.socketErrorListener (node:_http_client:500:9)
+        at TLSSocket.emit (node:events:519:28)
+        at emitErrorNT (node:internal/streams/destroy:169:8)
+        at emitErrorCloseNT (node:internal/streams/destroy:128:3)
+        at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+        at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, "Network error while resolving dependency.")
+      end
+    end
+
+    context "when the error message contains ENOENT" do
+      let(:error_message) do
+        "Internal Error: ENOENT: no such file or directory, stat '/home/dependabot/dependabot-updater/repo/.yarn/" \
+        "releases/yarn-4.3.1.cjs'
+        Error: ENOENT: no such file or directory, stat '/home/dependabot/dependabot-updater/repo/.yarn/releases/" \
+        "yarn-4.3.1.cjs'"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, "Internal error while resolving dependency." \
+                                                                   "File not found \"yarn-4.3.1.cjs\"")
+      end
+    end
+
     context "when the error message contains socket hang up" do
       let(:error_message) do
         "https://registry.npm.taobao.org/vue-template-compiler: socket hang up"
