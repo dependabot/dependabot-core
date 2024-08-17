@@ -25,7 +25,7 @@ module Dependabot
           is_transitive: T::Boolean
         }
       end
-      
+
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
