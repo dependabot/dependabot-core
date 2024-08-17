@@ -54,9 +54,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { true }
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -67,10 +65,16 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         matching_files = [
           "build.gradle",
           "build.gradle.kts",
+          "settings.gradle",
+          "settings.gradle.kts",
           "subproject/build.gradle",
           "subproject/build.gradle.kts",
+          "subproject/settings.gradle",
+          "subproject/settings.gradle.kts",
           "gradle/libs.versions.toml",
-          "subproject/gradle/libs.versions.toml"
+          "subproject/gradle/libs.versions.toml",
+          "dependencies.gradle",
+          "subproject/dependencies.gradle"
         ]
 
         matching_files.each do |file_name|

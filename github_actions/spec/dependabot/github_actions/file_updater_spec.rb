@@ -69,9 +69,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { true }
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -80,9 +78,16 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
     context "when files match the regex patterns" do
       it "returns true for files that should be updated" do
         matching_files = [
-          ".github/workflow/main.yml",
+          "action.yml",
+          "action.yaml",
+          "foo/bar/action.yml",
+          "foo/bar/action.yaml",
+          ".github/workflows/main.yml",
           ".github/workflows/ci-test.yaml",
-          ".github/workflows/workflow.yml"
+          ".github/workflows/action.yml",
+          ".github/workflows/123-foo.yml",
+          "/.github/workflows/workflow.yml",
+          "/.github/workflows/123-foo-bar.yml"
         ]
 
         matching_files.each do |file_name|

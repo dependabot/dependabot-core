@@ -56,9 +56,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { false } # default value
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -68,7 +66,11 @@ RSpec.describe Dependabot::Cargo::FileUpdater do
       it "returns true for files that should be updated" do
         matching_files = [
           "Cargo.toml",
-          "Cargo.lock"
+          "Cargo.lock",
+          "some_project/Cargo.toml",
+          "some_project/Cargo.lock",
+          "some_project/subdir/Cargo.toml",
+          "some_project/subdir/Cargo.lock"
         ]
 
         matching_files.each do |file_name|

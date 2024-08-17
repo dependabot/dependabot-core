@@ -13,11 +13,11 @@ module Dependabot
 
       include Dependabot::Pub::Helpers
 
-      sig { override.params(_: T::Boolean).returns(T::Array[Regexp]) }
-      def self.updated_files_regex(_ = false)
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
         [
-          /^pubspec\.yaml$/,
-          /^pubspec\.lock$/
+          %r{^(.*/)?pubspec\.yaml$},
+          %r{^(.*/)?pubspec\.lock$}
         ]
       end
 

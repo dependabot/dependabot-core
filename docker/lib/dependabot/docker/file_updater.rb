@@ -17,8 +17,8 @@ module Dependabot
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
 
-      sig { override.params(_: T::Boolean).returns(T::Array[Regexp]) }
-      def self.updated_files_regex(_ = false)
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
         [
           DOCKER_REGEXP,
           YAML_REGEXP
