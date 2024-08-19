@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import process from 'process';
+import process from 'node:process';
 
 function output(obj) {
   process.stdout.write(JSON.stringify(obj));
