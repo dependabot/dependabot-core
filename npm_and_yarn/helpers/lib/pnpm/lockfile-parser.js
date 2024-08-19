@@ -6,8 +6,9 @@
  * Outputs:
  *  - JSON formatted information of dependencies (name, version, dependency-type)
  */
-const { readWantedLockfile } = require("@pnpm/lockfile-file");
-const dependencyPath = require("@pnpm/dependency-path");
+import { readWantedLockfile } from "@pnpm/lockfile-file";
+
+import dependencyPath from "@pnpm/dependency-path";
 
 async function parse(directory) {
   const lockfile = await readWantedLockfile(directory, {

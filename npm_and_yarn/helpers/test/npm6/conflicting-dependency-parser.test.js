@@ -1,10 +1,8 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const {
-  findConflictingDependencies,
-} = require("../../lib/npm/conflicting-dependency-parser");
-const helpers = require("./helpers");
+import path from "node:path";
+import helpers from "./helpers";
+import { findConflictingDependencies } from "../../lib/npm/conflicting-dependency-parser";
+import fs from "node:fs";
+import os from "node:os";
 
 describe("findConflictingDependencies", () => {
   let tempDir;

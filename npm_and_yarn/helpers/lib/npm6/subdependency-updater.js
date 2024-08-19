@@ -1,11 +1,11 @@
-const fs = require("fs");
-const path = require("path");
-const npm = require("npm");
-const installer = require("npm/lib/install");
-const detectIndent = require("detect-indent");
-const removeDependenciesFromLockfile = require("./remove-dependencies-from-lockfile");
+import fs from "fs";
+import path from "path";
+import npm from "npm";
+import installer from "npm/lib/install";
+import detectIndent from "detect-indent";
+import removeDependenciesFromLockfile from "./remove-dependencies-from-lockfile";
+import { muteStderr, runAsync } from "./helpers.js";
 
-const { muteStderr, runAsync } = require("./helpers.js");
 
 async function updateDependencyFile(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>

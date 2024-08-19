@@ -10,9 +10,10 @@
  *  - successful completion, or an error if there are peer dependency warnings
  */
 
-const npm = require("npm");
-const installer = require("npm/lib/install");
-const { muteStderr, runAsync } = require("./helpers.js");
+import npm from "npm";
+import installer from "npm/lib/install";
+import { muteStderr, runAsync } from "./helpers.js";
+
 
 function installArgsWithVersion(depName, desiredVersion, reqs) {
   const source = (reqs.find((req) => req.source) || {}).source;

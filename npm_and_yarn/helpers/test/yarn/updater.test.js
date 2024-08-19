@@ -1,17 +1,23 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const { updateDependencyFiles } = require("../../lib/yarn/updater");
-const helpers = require("./helpers");
+import path, { dirname } from "node:path";
+import os from "node:os";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import updateDependencyFiles from "../../lib/yarn/updater";
+import helpers from "./helpers";
+
 
 describe("updater", () => {
   let tempDir;
+
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
   afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
   function copyDependencies(sourceDir, destDir) {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
     const srcPackageJson = path.join(
       __dirname,
       `fixtures/updater/${sourceDir}/package.json`

@@ -1,9 +1,7 @@
-const {
-    parseLockfile,
-} = require("../../lib/pnpm");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+import { parseLockfile } from "../../lib/pnpm";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 describe("generates an updated pnpm lock for the original file", () => {
 

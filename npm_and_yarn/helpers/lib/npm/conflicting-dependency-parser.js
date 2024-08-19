@@ -9,8 +9,8 @@
  *  - An array of objects with conflicting dependencies
  */
 
-const Arborist = require("@npmcli/arborist");
-const semver = require("semver");
+import Arborist from "@npmcli/arborist";
+import semver from "semver";
 
 async function findConflictingDependencies(directory, depName, targetVersion) {
   const arb = new Arborist({

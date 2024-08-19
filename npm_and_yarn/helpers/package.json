@@ -1,5 +1,6 @@
 {
   "name": "@dependabot/helper",
+  "type": "module",
   "private": true,
   "bin": {
     "helper": "run.js"
@@ -7,6 +8,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "jest",
+    "expTest" : "node --experimental-vm-modules --trace-warnings node_modules/jest/bin/jest.js",
     "postinstall": "patch-package"
   },
   "dependencies": {

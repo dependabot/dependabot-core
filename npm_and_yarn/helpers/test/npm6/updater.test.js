@@ -1,8 +1,9 @@
-const path = require("path");
-const os = require("os");
-const fs = require("fs");
-const { updateDependencyFiles } = require("../../lib/npm6/updater");
-const helpers = require("./helpers");
+import path from "node:path";
+import os from "node:os";
+import fs from "node:fs";
+import { updateDependencyFiles } from "../../lib/npm6/updater";
+
+import helpers from "./helpers";
 
 describe("updater", () => {
   let tempDir;
