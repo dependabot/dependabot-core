@@ -1,7 +1,8 @@
-import { parseLockfile } from "../../lib/pnpm";
+import parserLib from "../../lib/pnpm";
 import fs from "node:fs";
 import os from "node:os";
-import path from "node:path";
+import path, { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 describe("generates an updated pnpm lock for the original file", () => {
 
@@ -12,23 +13,26 @@ describe("generates an updated pnpm lock for the original file", () => {
     afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
     function copyDependencies(sourceDir, destDir) {
-        const srcPnpmYaml = path.join(
-            __dirname,
-            `fixtures/parser/${sourceDir}/pnpm-lock.yaml`
-        );
-        fs.copyFileSync(srcPnpmYaml, `${destDir}/pnpm-lock.yaml`);
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = dirname(__filename);
+
+      const srcPnpmYaml = path.join(
+          __dirname,
+          `fixtures/parser/${sourceDir}/pnpm-lock.yaml`
+      );
+      fs.copyFileSync(srcPnpmYaml, `${destDir}/pnpm-lock.yaml`);
     }
 
     it("that contains duplicate dependencies", async () =>{
         copyDependencies("no_lockfile_change", tempDir);
-        const result = await parseLockfile(tempDir);
+        const result = await parserLib.parseLockfile(tempDir);
 
         expect(result.length).toEqual(398);
     })
 
     it("that contains only dev dependencies but no (prod) dependencies", async () =>{
         copyDependencies("only_dev_dependencies", tempDir);
-        const result = await parseLockfile(tempDir);
+        const result = await parserLib.parseLockfile(tempDir);
 
         expect(result).toEqual([
             {
@@ -44,7 +48,7 @@ describe("generates an updated pnpm lock for the original file", () => {
 
     it("that contains dependencies which locked to versions with peer disambiguation suffix", async () =>{
         copyDependencies("peer_disambiguation", tempDir);
-        const result = await parseLockfile(tempDir);
+        const result = await parserLib.parseLockfile(tempDir);
 
         expect(result.length).toEqual(122);
     })
@@ -52,7 +56,7 @@ describe("generates an updated pnpm lock for the original file", () => {
     // Should have the version in the lock file.
     it("that contains dependencies with an empty version", async () =>{
         copyDependencies("empty_version", tempDir);
-        const result = await parseLockfile(tempDir);
+        const result = await parserLib.parseLockfile(tempDir);
 
         expect(result.length).toEqual(9);
     })

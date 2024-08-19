@@ -21,7 +21,7 @@ import npm from "npm";
 import path from "path";
 import { muteStderr, runAsync } from "./helpers.js";
 
-async function updateDependencyFiles(directory, lockfileName, dependencies) {
+export default async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -195,5 +195,3 @@ function removeInvalidGitUrlsInRequires(value) {
 
   return Object.assign({}, value, { requires });
 }
-
-module.exports = { updateDependencyFiles };

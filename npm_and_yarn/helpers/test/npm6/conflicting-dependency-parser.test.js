@@ -1,6 +1,6 @@
 import path from "node:path";
 import helpers from "./helpers";
-import { findConflictingDependencies } from "../../lib/npm/conflicting-dependency-parser";
+import findConflictingDependencies from "../../lib/npm/conflicting-dependency-parser";
 import fs from "node:fs";
 import os from "node:os";
 

@@ -10,7 +10,7 @@ import { readWantedLockfile } from "@pnpm/lockfile-file";
 
 import dependencyPath from "@pnpm/dependency-path";
 
-async function parse(directory) {
+export default async function parse(directory) {
   const lockfile = await readWantedLockfile(directory, {
     ignoreIncompatible: true
   });
@@ -47,7 +47,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
       return false;
     }
 
-    currentSpecifier = projectSpecifiers[name];
+    const currentSpecifier = projectSpecifiers[name];
 
     if (!currentSpecifier) {
       return true;
@@ -79,5 +79,3 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
     aliased: aliased
   }
 }
-
-module.exports = { parse };

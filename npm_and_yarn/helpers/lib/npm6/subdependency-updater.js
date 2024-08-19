@@ -7,7 +7,7 @@ import removeDependenciesFromLockfile from "./remove-dependencies-from-lockfile"
 import { muteStderr, runAsync } from "./helpers.js";
 
 
-async function updateDependencyFile(directory, lockfileName, dependencies) {
+export default async function updateDependencyFile(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
 
@@ -74,5 +74,3 @@ async function updateDependencyFile(directory, lockfileName, dependencies) {
 
   return { [lockfileName]: updatedLockfile };
 }
-
-module.exports = { updateDependencyFile };

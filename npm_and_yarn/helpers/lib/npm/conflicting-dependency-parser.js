@@ -12,7 +12,7 @@
 import Arborist from "@npmcli/arborist";
 import semver from "semver";
 
-async function findConflictingDependencies(directory, depName, targetVersion) {
+export default async function findConflictingDependencies(directory, depName, targetVersion) {
   const arb = new Arborist({
     path: directory,
     dryRun: true,
@@ -25,7 +25,7 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
           findTopLevelEdges(edge).forEach((topLevel) => {
-            explanation = buildExplanation(node, edge, topLevel);
+            const explanation = buildExplanation(node, edge, topLevel);
 
             parents.push({
               explanation: explanation,
@@ -74,5 +74,3 @@ function findTopLevelEdges(edge, parents = []) {
 
   return parents;
 }
-
-module.exports = { findConflictingDependencies };

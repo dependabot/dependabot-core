@@ -1,4 +1,4 @@
-function runAsync(obj, method, args) {
+export function runAsync(obj, method, args) {
   return new Promise((resolve, reject) => {
     const cb = (err, ...returnValues) => {
       if (err) {
@@ -11,15 +11,10 @@ function runAsync(obj, method, args) {
   });
 }
 
-function muteStderr() {
+export function muteStderr() {
   const original = process.stderr.write;
   process.stderr.write = () => {};
   return () => {
     process.stderr.write = original;
   };
 }
-
-module.exports = {
-  runAsync,
-  muteStderr,
-};

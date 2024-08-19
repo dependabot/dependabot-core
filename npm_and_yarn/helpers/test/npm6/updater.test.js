@@ -1,7 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
-import { updateDependencyFiles } from "../../lib/npm6/updater";
+import updateDependencyFiles from "../../lib/npm6/updater";
 
 import helpers from "./helpers";
 
