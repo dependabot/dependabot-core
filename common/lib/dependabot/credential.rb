@@ -18,6 +18,13 @@ module Dependabot
       @credential = T.let(T.unsafe(credential), T::Hash[String, String])
     end
 
+    sig { params(attributes: T::Hash[Symbol, T.untyped]).returns(T::Array[Credential]) }
+    def self.create_from_job_definition(attributes)
+      attributes.fetch(:credentials, []).map do |credential|
+        Dependabot::Credential.new(credential)
+      end
+    end
+
     sig { returns(T::Boolean) }
     def replaces_base?
       @replaces_base

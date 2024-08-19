@@ -2753,7 +2753,6 @@ RSpec.describe Dependabot::Updater do
       ],
       lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
-      update_subdependencies: false,
       updating_a_pull_request: updating_a_pull_request,
       vendor_dependencies: false,
       experiments: experiments,

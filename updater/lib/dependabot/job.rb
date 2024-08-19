@@ -11,6 +11,7 @@ require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
 require "dependabot/requirements_update_strategy"
 require "dependabot/source"
+require "dependabot/allowed_update"
 require "dependabot/pull_request"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
@@ -44,7 +45,6 @@ module Dependabot
       security_advisories
       security_updates_only
       source
-      update_subdependencies
       updating_a_pull_request
       vendor_dependencies
       dependency_groups
@@ -52,7 +52,7 @@ module Dependabot
       repo_private
     ).freeze, T::Array[Symbol])
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[AllowedUpdate]) }
     attr_reader :allowed_updates
 
     sig { returns(T::Array[Dependabot::Credential]) }
@@ -87,9 +87,6 @@ module Dependabot
 
     sig { returns(Dependabot::Source) }
     attr_reader :source
-
-    sig { returns(T.nilable(String)) }
-    attr_reader :token
 
     sig { returns(T::Boolean) }
     attr_reader :vendor_dependencies
@@ -132,14 +129,13 @@ module Dependabot
     sig { params(attributes: T.untyped).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize
       @id                             = T.let(attributes.fetch(:id), String)
-      @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
+      @allowed_updates                = T.let(AllowedUpdate.create_from_job_definition(attributes),
+                                              T::Array[Dependabot::AllowedUpdate])
       @commit_message_options         = T.let(attributes.fetch(:commit_message_options, {}),
                                               T.nilable(T::Hash[T.untyped, T.untyped]))
-      @credentials                    = T.let(attributes.fetch(:credentials, []).map do |data|
-                                                Dependabot::Credential.new(data)
-                                              end,
+      @credentials                    = T.let(Dependabot::Credential.create_from_job_definition(attributes),
                                               T::Array[Dependabot::Credential])
-      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
+      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[String]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
       #
@@ -162,8 +158,6 @@ module Dependabot
       @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
       @source                         = T.let(build_source(attributes.fetch(:source)), Dependabot::Source)
-      @token                          = T.let(attributes.fetch(:token, nil), T.nilable(String))
-      @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
       @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
       @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
       # TODO: Make this hash required
@@ -212,11 +206,6 @@ module Dependabot
     end
 
     sig { returns(T::Boolean) }
-    def update_subdependencies?
-      @update_subdependencies
-    end
-
-    sig { returns(T::Boolean) }
     def security_updates_only?
       @security_updates_only
     end
@@ -251,18 +240,18 @@ module Dependabot
 
       allowed_updates.any? do |update|
         # Check the update-type (defaulting to all)
-        update_type = update.fetch("update-type", "all")
+        update_type = update.update_type || "all"
         # NOTE: Preview supports specifying a "security" update type whereas
         # native will say "security-updates-only"
         security_update = update_type == "security" || security_updates_only?
         next false if security_update && !vulnerable?(dependency)
 
         # Check the dependency-name (defaulting to matching)
-        condition_name = update.fetch("dependency-name", dependency.name)
+        condition_name = update.dependency_name || dependency.name
         next false unless name_match?(condition_name, dependency.name)
 
         # Check the dependency-type (defaulting to all)
-        dep_type = update.fetch("dependency-type", "all")
+        dep_type = update.dependency_type || "all"
         next false if dep_type == "indirect" &&
                       dependency.requirements.any?
         # In dependabot-api, dependency-type is defaulting to "direct" not "all". Ignoring

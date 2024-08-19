@@ -38,7 +38,6 @@ RSpec.describe Dependabot::Job do
       }],
       lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
-      update_subdependencies: false,
       updating_a_pull_request: false,
       vendor_dependencies: vendor_dependencies,
       experiments: experiments,
