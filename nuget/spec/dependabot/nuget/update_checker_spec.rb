@@ -814,10 +814,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 requirement: "6.3.0",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false,
-                  previous_requirement: "0.1.434"
-                },
                 source: {
                   type: "nuget_repo",
                   source_url: "https://nuget.example.com/nuke.codegeneration"
@@ -827,17 +823,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 requirement: "0.1.434",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false,
-                  previous_requirement: "0.1.434"
-                },
                 source: nil
               }],
-              package_manager: "nuget",
-              metadata: {
-                information_only: true,
-                is_vulnerable: false
-              }
+              package_manager: "nuget"
             ),
             Dependabot::Dependency.new(
               name: "Nuke.Common",
@@ -847,10 +835,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 requirement: "6.3.0",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false,
-                  previous_requirement: "0.1.434"
-                },
                 source: {
                   type: "nuget_repo",
                   source_url: "https://nuget.example.com/nuke.common"
@@ -860,16 +844,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 requirement: "0.1.434",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false,
-                  previous_requirement: "0.1.434"
-                },
                 source: nil
               }],
-              package_manager: "nuget",
-              metadata: {
-                is_vulnerable: false
-              }
+              package_manager: "nuget"
             )
           ])
         end

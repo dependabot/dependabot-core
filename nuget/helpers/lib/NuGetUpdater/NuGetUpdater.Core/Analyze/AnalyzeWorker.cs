@@ -108,7 +108,6 @@ public partial class AnalyzeWorker
                         discovery,
                         dependenciesToUpdate,
                         updatedVersion,
-                        dependencyInfo,
                         nugetContext,
                         _logger,
                         CancellationToken.None);
@@ -360,7 +359,6 @@ public partial class AnalyzeWorker
         WorkspaceDiscoveryResult discovery,
         ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
-        DependencyInfo dependencyInfo,
         NuGetContext nugetContext,
         Logger logger,
         CancellationToken cancellationToken)
@@ -381,23 +379,10 @@ public partial class AnalyzeWorker
             .Select(NuGetFramework.Parse)
             .ToImmutableArray();
 
-        // When updating dependencies, we only need to consider top-level dependencies _UNLESS_ it's specifically vulnerable
-        var relevantDependencies = projectsWithDependency.SelectMany(p => p.Dependencies)
-            .Where(d =>
-            {
-                if (string.Compare(d.Name, dependencyInfo.Name, StringComparison.OrdinalIgnoreCase) == 0 &&
-                    dependencyInfo.IsVulnerable)
-                {
-                    // if this dependency is one we're specifically updating _and_ if it's vulnerable, always update it
-                    return true;
-                }
-                else
-                {
-                    // otherwise only update if it's a top-level dependency
-                    return !d.IsTransitive;
-                }
-            });
-        var projectDependencyNames = relevantDependencies
+        // When updating peer dependencies, we only need to consider top-level dependencies.
+        var projectDependencyNames = projectsWithDependency
+            .SelectMany(p => p.Dependencies)
+            .Where(d => !d.IsTransitive)
             .Select(d => d.Name)
             .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
 
