@@ -24,4 +24,3 @@ packages:
     peerDependenciesMeta:
       typescript:
         optional: true
-
