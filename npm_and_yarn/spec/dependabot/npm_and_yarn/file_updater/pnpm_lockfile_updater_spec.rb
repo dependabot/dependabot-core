@@ -281,6 +281,64 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with a registry resolution that returns missing_workspace_package response" do
+      let(:dependency_name) { "@storybook/react-vite" }
+      let(:version) { "8.2.9" }
+      let(:previous_version) { "8.1.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "8.2.9",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "8.1.1",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/missing_workspace_package" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry resolution that returns err_pnpm_peer_dep_issues response" do
+      let(:dependency_name) { "@typescript-eslint/eslint-plugin" }
+      let(:version) { "7.4.1" }
+      let(:previous_version) { "7.4.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "7.4.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "7.4.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/peer_dep_issues" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
 

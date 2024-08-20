@@ -1,0 +1,4 @@
+packages:
+  - "packages/*"
+  - "packages/ts-for-gir/*"
+  - "examples/*"

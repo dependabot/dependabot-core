@@ -66,6 +66,10 @@ module Dependabot
         PLATFORM_VERSION_REQUIREMENT = /wanted {(?<supported_ver>.*)} \(current: (?<detected_ver>.*)\)/
         PLATFORM_PACAKGE_MANAGER = "pnpm"
 
+        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
+        ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -151,6 +155,22 @@ module Dependabot
 
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
 
+          if error_message.match?(ERR_PNPM_WORKSPACE_PKG_NOT_FOUND)
+            dependency_names = dependencies.map(&:name).join(", ")
+
+            msg = "No package named \"#{dependency_names}\" present in workspace."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
+            msg = "Error (ERR_PNPM_BROKEN_METADATA_JSON) while resolving \"pnpm-lock.yaml\" file."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          raise_peer_deps_issues(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_PEER_DEP_ISSUES)
+
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
             raise_unsupported_platform_error(error_message,
                                              pnpm_lock)
@@ -227,6 +247,13 @@ module Dependabot
 
           Dependabot.logger.warn(error_message)
           raise Dependabot::ToolVersionNotSupported.new(PLATFORM_PACAKGE_MANAGER, supported_version, detected_version)
+        end
+
+        def raise_peer_deps_issues(error_message, _pnpm_lock)
+          dependency_names = dependencies.map(&:name).join(", ")
+          msg = "Unmet peer dependencies error while updating #{dependency_names}."
+          Dependabot.logger.warn("#{msg} #{error_message.partition(ERR_PNPM_PEER_DEP_ISSUES).last}")
+          raise Dependabot::DependencyFileNotResolvable, msg
         end
 
         def npmrc_content(pnpm_lock)

@@ -1,0 +1,13 @@
+{
+  "name": "name",
+  "private": true,
+  "packageManager": "pnpm@9.6.0",
+  "workspaces": [
+    "packages/*",
+    "packages/ts-for-gir/*",
+    "examples/*"
+  ],
+  "devDependencies": {
+    "turbo": "2.0.14"
+  }
+}
