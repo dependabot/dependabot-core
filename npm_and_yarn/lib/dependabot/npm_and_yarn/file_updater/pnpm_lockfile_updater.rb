@@ -115,6 +115,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/MethodLength
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
           error_message = error.message
 
@@ -180,6 +182,8 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/MethodLength
 
         def raise_resolvability_error(error_message, pnpm_lock)
           dependency_names = dependencies.map(&:name).join(", ")
