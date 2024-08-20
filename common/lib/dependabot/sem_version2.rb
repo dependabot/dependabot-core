@@ -6,12 +6,12 @@ require "sorbet-runtime"
 # See https://semver.org/spec/v2.0.0.html for semver 2 details
 #
 module Dependabot
-  class SemVersion
+  class SemVersion2
     extend T::Sig
     extend T::Helpers
     include Comparable
 
-    SEMVER_REGEX = /^
+    SEMVER2_REGEX = /^
       (0|[1-9]\d*)\. # major
       (0|[1-9]\d*)\. # minor
       (0|[1-9]\d*)   # patch
@@ -62,44 +62,40 @@ module Dependabot
       "#<#{self.class} #{self}>"
     end
 
-    sig { params(other: ::Dependabot::SemVersion).returns(T::Boolean) }
+    sig { params(other: ::Dependabot::SemVersion2).returns(T::Boolean) }
     def eql?(other)
       other.is_a?(self.class) && to_s == other.to_s
     end
 
-    sig { params(other: ::Dependabot::SemVersion).returns(Integer) }
+    sig { params(other: ::Dependabot::SemVersion2).returns(Integer) }
     def <=>(other)
-      maj = major.to_i <=> other.major.to_i
-      return maj unless maj.zero?
+      result = major.to_i <=> other.major.to_i
+      return result unless result.zero?
 
-      min = minor.to_i <=> other.minor.to_i
-      return min unless min.zero?
+      result = minor.to_i <=> other.minor.to_i
+      return result unless result.zero?
 
-      pat = patch.to_i <=> other.patch.to_i
-      return pat unless pat.zero?
+      result = patch.to_i <=> other.patch.to_i
+      return result unless result.zero?
 
-      pre = compare_prereleases(prerelease, other.prerelease)
-      return pre unless pre.zero?
-
-      0
+      compare_prereleases(prerelease, other.prerelease)
     end
 
     sig { params(version: T.nilable(String)).returns(T::Boolean) }
     def self.correct?(version)
       return false if version.nil?
 
-      version.match?(SEMVER_REGEX)
+      version.match?(SEMVER2_REGEX)
     end
 
     private
 
     sig { params(version: String).returns(T::Hash[Symbol, T.nilable(String)]) }
     def parse(version)
-      match = version.match(SEMVER_REGEX)
+      match = version.match(SEMVER2_REGEX)
       raise ArgumentError, "Malformed version number string #{version}" unless match
 
       major, minor, patch, prerelease, build = match.captures
-      raise ArgumentError, "Malformed version number string #{version}" if minor.empty? || patch.empty?
 
       { major: major, minor: minor, patch: patch, prerelease: prerelease, build: build }
     end
@@ -114,20 +110,21 @@ module Dependabot
       prerelease2_tokens = prerelease2.split(".")
 
       prerelease1_tokens.zip(prerelease2_tokens) do |t1, t2|
-        return 1 if t2.nil? # t2 can be nil, in which case it loses
+        return 1 if t2.nil? # t1 is more specific e.g. 1.0.0-rc1.1 vs 1.0.0-rc1
 
-        # If they're both ints, convert to such
-        # If one's an int and the other isn't, the string version of the int gets correctly compared
         if t1 =~ /^\d+$/ && t2 =~ /^\d+$/
-          t1 = t1.to_i
-          t2 = t2.to_i
+          # t1 and t2 are both ints so compare them as such
+          a = t1.to_i
+          b = t2.to_i
+          compare = a <=> b
+          return compare unless compare.zero?
         end
 
         comp = t1 <=> t2
-        return comp unless comp.zero?
+        return T.must(comp) unless T.must(comp).zero?
       end
 
-      # If we got this far, either they're equal (same length) or they won
+      # prereleases are equal or prerelease2 is more specific e.g. 1.0.0-rc1 vs 1.0.0-rc1.1
       prerelease1_tokens.length == prerelease2_tokens.length ? 0 : -1
     end
   end

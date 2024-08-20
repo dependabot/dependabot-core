@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/sem_version"
+require "dependabot/sem_version2"
 
-RSpec.describe Dependabot::SemVersion do
+RSpec.describe Dependabot::SemVersion2 do
   subject(:version) { described_class.new(version_string) }
 
   let(:valid_versions) do
@@ -28,12 +28,19 @@ RSpec.describe Dependabot::SemVersion do
   end
 
   describe "#initialize" do
-    context "when the version is invalid" do
-      let(:version_string) { "1" }
-      let(:error_message) { "Malformed version number string #{version_string}" }
+    it "raises an error when the version is invalid" do
+      invalid_versions.each do |version|
+        error_msg = "Malformed version number string #{version}"
+        expect { described_class.new(version) }.to raise_error(ArgumentError, error_msg)
+      end
+    end
+
+    context "with an empty version" do
+      let(:version_string) { "" }
+      let(:error_msg) { "Malformed version number string " }
 
       it "raises an error" do
-        expect { version }.to raise_error(ArgumentError, error_message)
+        expect { version }.to raise_error(ArgumentError, error_msg)
       end
     end
   end
@@ -87,6 +94,26 @@ RSpec.describe Dependabot::SemVersion do
       it "compares numerically" do
         expect(first <=> second).to eq(-1)
         expect(second <=> first).to eq(1)
+      end
+    end
+
+    context "when comparing numerical prereleases" do
+      let(:first) { described_class.new("1.0.0-rc.2") }
+      let(:second) { described_class.new("1.0.0-rc.2.1") }
+
+      it "compares numerically" do
+        expect(first <=> second).to eq(-1)
+        expect(second <=> first).to eq(1)
+      end
+    end
+
+    context "when the versions are equal" do
+      let(:first) { described_class.new("1.0.0-rc.2") }
+      let(:second) { described_class.new("1.0.0-rc.2") }
+
+      it "returns 0" do
+        expect(first <=> second).to eq(0)
+        expect(second <=> first).to eq(0)
       end
     end
 
