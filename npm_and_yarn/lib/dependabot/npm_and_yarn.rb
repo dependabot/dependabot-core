@@ -125,6 +125,19 @@ module Dependabot
     YARNRC_ENOENT = /Internal Error: ENOENT/
     YARNRC_ENOENT_REGEX = /Internal Error: ENOENT: no such file or directory, stat '(?<filename>.*?)'/
 
+    YN0001_FILE_NOT_RESOLVED_CODES = T.let({
+      FIND_PACKAGE_LOCATION: /YN0001: UsageError: Couldn't find the (?<pkg>.*) state file - running an install might help \(findPackageLocation\)/, # rubocop:disable Layout/LineLength
+      NO_CANDIDATE_FOUND: /YN0001: Error: (?<pkg>.*): No candidates found/,
+      NO_SUPPORTED_RESOLVER: /YN0001:*.*Error: (?<pkg>.*) isn't supported by any available resolver/,
+      WORKSPACE_NOT_FOUND: /YN0001: Error: (?<pkg>.*): Workspace not found/,
+      ENOENT: /YN0001:*.*Thrown Error: (?<pkg>.*) ENOENT/,
+      MANIFEST_NOT_FOUND: /YN0001: Error: (?<pkg>.*): Manifest not found/
+    }.freeze, T::Hash[String, Regexp])
+
+    YN0001_AUTH_ERROR_CODES = T.let({
+      AUTH_ERROR: /YN0001:*.*Fatal Error: could not read Username for '(?<url>.*)': terminal prompts disabled/
+    }.freeze, T::Hash[String, Regexp])
+
     class Utils
       extend T::Sig
 
@@ -165,6 +178,18 @@ module Dependabot
       "YN0001" => {
         message: "Exception error",
         handler: lambda { |message, _error, _params|
+          YN0001_FILE_NOT_RESOLVED_CODES.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
+          YN0001_AUTH_ERROR_CODES.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+              url = msg.named_captures.fetch(URL_CAPTURE)
+              return Dependabot::GitDependenciesNotReachable.new(url)
+            end
+          end
           Dependabot::DependabotError.new(message)
         }
       },
