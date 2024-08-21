@@ -188,7 +188,7 @@ module Dependabot
           YN0001_AUTH_ERROR_CODES.each do |(_yn0001_key, yn0001_regex)|
             if (msg = message.match(yn0001_regex))
               url = msg.named_captures.fetch(URL_CAPTURE)
-              return Dependabot::GitDependenciesNotReachable.new(url)
+              return Dependabot::PrivateSourceAuthenticationFailure.new(url)
             end
           end
           Dependabot::DependabotError.new(message)

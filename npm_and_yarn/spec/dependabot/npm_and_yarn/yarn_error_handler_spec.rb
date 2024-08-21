@@ -322,7 +322,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         ➤ YN0001: │ @makerinc/makerbelt@https://github.com/makerinc/" \
         "[FILTERED_REPO]#d4b99ffe39559727e2d4e32648beb1f9bea7564d: Failed listing refs
         ➤ YN0001: │   Repository URL: https://github.com/makerinc/[FILTERED_REPO]
-        ➤ YN0001: │   Fatal Error: could not read Username for 'https://github.com/makerinc/': terminal prompts disabled
+        ➤ YN0001: │   Fatal Error: could not read Username for 'https://npk.src.com/makerinc/': terminal prompts disabled
         ➤ YN0001: │   Exit Code: 128
         ➤ YN0000: └ Completed in 2s 819ms
         ➤ YN0000: Failed with errors in 2s 823ms
@@ -332,8 +332,10 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       it "raises a GitDependenciesNotReachable error with the repo URL" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::GitDependenciesNotReachable,
-                           "The following git URLs could not be retrieved: https://github.com/makerinc/")
+        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                           "The following source could not be reached as it " \
+                           "requires authentication (and any provided details were invalid or lacked " \
+                           "the required permissions): https://npk.src.com/makerinc/")
       end
     end
 
