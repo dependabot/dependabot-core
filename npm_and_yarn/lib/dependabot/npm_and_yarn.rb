@@ -126,7 +126,7 @@ module Dependabot
     YARNRC_ENOENT_REGEX = /Internal Error: ENOENT: no such file or directory, stat '(?<filename>.*?)'/
 
     YN0001_FILE_NOT_RESOLVED_CODES = T.let({
-      FIND_PACKAGE_LOCATION: /YN0001: UsageError: Couldn't find the (?<pkg>.*) state file - running an install might help \(findPackageLocation\)/, # rubocop:disable Layout/LineLength
+      FIND_PACKAGE_LOCATION: /YN0001: UsageError: Couldn't find the (?<pkg>.*) state file/,
       NO_CANDIDATE_FOUND: /YN0001: Error: (?<pkg>.*): No candidates found/,
       NO_SUPPORTED_RESOLVER: /YN0001:*.*Error: (?<pkg>.*) isn't supported by any available resolver/,
       WORKSPACE_NOT_FOUND: /YN0001: Error: (?<pkg>.*): Workspace not found/,

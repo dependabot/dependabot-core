@@ -213,8 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: UsageError: Couldn't find the node_modules state file - " \
-                           "running an install might help (findPackageLocation)")
+                           "YN0001: UsageError: Couldn't find the node_modules state file")
       end
     end
 
