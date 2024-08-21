@@ -176,7 +176,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         ➤ YN0000: Failed with errors in 0s 313ms"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         ➤ YN0000: Failed with errors in 1s 78ms"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         ➤ YN0000: · Failed with errors in 0s 780ms"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -260,7 +260,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         at Bd.getCandidates (/home/dependabot/dependabot-updater/repo/project/.yarn/releases/yarn-4.0.1.cjs:141:1311)"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -283,7 +283,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         ➤ YN0000: Failed with errors in 1s 370ms"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         at async Object.xZe (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.3.1.cjs:140:53711)"
       end
 
-      it "raises a DependencyFileNotResolvable error with the correct versions" do
+      it "raises a DependencyFileNotResolvable error with the correct message" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
@@ -329,7 +329,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         "
       end
 
-      it "raises a GitDependenciesNotReachable error with the correct versions" do
+      it "raises a GitDependenciesNotReachable error with the repo URL" do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::GitDependenciesNotReachable,
