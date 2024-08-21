@@ -318,11 +318,13 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       let(:error_message) do
         "➤ YN0000: ┌ Resolution step
         ➤ YN0013: │ rescript-unicons@https://github.com/makerinc/[FILTERED_REPO]" \
-        "#commit=5df21175b54ddab488905424152f440ae8454506 can't be found in the cache and will be fetched from GitHub
+        "#commit=5df21175b54ddab488905424152f440ae8454506 can't be found in the cache and :" \
+        "will be fetched from GitHub
         ➤ YN0001: │ @makerinc/makerbelt@https://github.com/makerinc/" \
         "[FILTERED_REPO]#d4b99ffe39559727e2d4e32648beb1f9bea7564d: Failed listing refs
         ➤ YN0001: │   Repository URL: https://github.com/makerinc/[FILTERED_REPO]
-        ➤ YN0001: │   Fatal Error: could not read Username for 'https://npk.src.com/makerinc/': terminal prompts disabled
+        ➤ YN0001: │   Fatal Error: could not read Username for 'https://npk.src.com/makerinc/':" \
+        " terminal prompts disabled
         ➤ YN0001: │   Exit Code: 128
         ➤ YN0000: └ Completed in 2s 819ms
         ➤ YN0000: Failed with errors in 2s 823ms
