@@ -194,6 +194,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with an invalid package manager requirement in the package.json" do
+      let(:project_name) { "pnpm/invalid_package_manager" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a registry resolution that returns err_pnpm_tarball_integrity response" do
       let(:dependency_name) { "lodash" }
       let(:version) { "22.2.0" }
@@ -368,6 +377,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               ]
             )
         end
+      end
+    end
+
+    context "with an err_pnpm_meta_fetch_fail response" do
+      let(:project_name) { "pnpm/meta_fetch_fail" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
