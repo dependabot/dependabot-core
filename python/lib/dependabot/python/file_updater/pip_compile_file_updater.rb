@@ -505,7 +505,7 @@ module Dependabot
 
           options << "--no-strip-extras" if requirements_file.content.include?("--no-strip-extras")
 
-          if (requirements_file.content.include?("--no-binary") || requirements_file.content.include?("--only-binary"))
+          if requirements_file.content.include?("--no-binary") || requirements_file.content.include?("--only-binary")
             options << "--emit-build-options"
           end
 
