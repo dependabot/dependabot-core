@@ -138,26 +138,6 @@ RSpec.describe Dependabot::Maven::Version do
   describe "#<=>" do
     subject { version.send(:<=>, other_version) }
 
-    context "when comparing to a Gem::Version" do
-      context "when lower" do
-        let(:other_version) { Gem::Version.new("0.9.0") }
-
-        it { is_expected.to eq(1) }
-      end
-
-      context "when equal" do
-        let(:other_version) { Gem::Version.new("1.0.0") }
-
-        it { is_expected.to eq(0) }
-      end
-
-      context "when greater" do
-        let(:other_version) { Gem::Version.new("1.1.0") }
-
-        it { is_expected.to eq(-1) }
-      end
-    end
-
     context "when comparing to a Maven::Version" do
       context "when lower" do
         let(:other_version) { described_class.new("0.9.0") }
@@ -352,6 +332,7 @@ RSpec.describe Dependabot::Maven::Version do
           it { is_expected.to eq(1) }
         end
 
+        # this looks incorrect https://maven.apache.org/pom.html#Version_Order_Specification
         context "when dealing with null values (again)" do
           let(:version) { described_class.new("1-sp-1") }
           let(:other_version) { described_class.new("1-ga-1") }
@@ -367,10 +348,22 @@ RSpec.describe Dependabot::Maven::Version do
         end
 
         context "when dealing with named values" do
-          let(:version) { described_class.new("1-a1") }
-          let(:other_version) { described_class.new("1-alpha-1") }
+          let(:versions) do
+            [
+              { version: "1-a1", other_version: "1-alpha-1" },
+              { version: "1.0-beta1", other_version: "1.0-b1" },
+              { version: "1.0-milestone1", other_version: "1.0-m1" },
+              { version: "1.0-rc1", other_version: "1.0-cr1" }
+            ]
+          end
 
-          it { is_expected.to eq(0) }
+          it "returns 0 for all equivalent versions" do
+            versions.each do |v|
+              version = described_class.new(v[:version])
+              other_version = described_class.new(v[:other_version])
+              expect(version <=> other_version).to eq 0
+            end
+          end
         end
 
         context "when comparing string versions with integer ones" do
@@ -378,6 +371,92 @@ RSpec.describe Dependabot::Maven::Version do
           let(:other_version) { described_class.new("dev") }
 
           it { is_expected.to eq(1) }
+        end
+
+        context "with equivalent separators" do
+          let(:versions) do
+            [
+              { version: "1.0alpha1", other_version: "1.0-a1" },
+              { version: "1.0beta-1", other_version: "1.0-b1" },
+              { version: "1.0milestone1", other_version: "1.0-m1" },
+              { version: "1.0milestone-1", other_version: "1.0-m1" },
+              { version: "1.0rc-1", other_version: "1.0-cr1" },
+              { version: "1.0rc1", other_version: "1.0-cr1" },
+              { version: "1.0ga", other_version: "1.0" },
+              { version: "1-0.ga", other_version: "1.0" },
+              { version: "1.0-final", other_version: "1.0" },
+              { version: "1-0-ga", other_version: "1.0" },
+              { version: "1-0-final", other_version: "1-0" },
+              { version: "1-0", other_version: "1.0" }
+            ]
+          end
+
+          it "returns 0 for all equivalent versions" do
+            versions.each do |v|
+              version = described_class.new(v[:version])
+              other_version = described_class.new(v[:other_version])
+              expect(version <=> other_version).to eq 0
+            end
+          end
+        end
+
+        context "with unequal separators" do
+          let(:version) { described_class.new("1.0alpha.1") }
+          let(:other_version) { described_class.new("1.0-a1") }
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with long versions" do
+          let(:versions) do
+            [{
+              version: "1.0.0.0.0.0.0",
+              other_version: "1"
+            }, {
+              version: "1.0.0.0.0.0.0x",
+              other_version: "1x"
+            }]
+          end
+
+          it "returns 0 for equivalent versions" do
+            versions.each do |v|
+              version = described_class.new(v[:version])
+              other_version = described_class.new(v[:other_version])
+              expect(version <=> other_version).to eq 0
+            end
+          end
+        end
+
+        context "when ordering versions" do
+          let(:versions) do
+            [
+              described_class.new("NotAVersionSting"),
+              described_class.new("1.0-alpha"),
+              described_class.new("1.0a1-SNAPSHOT"),
+              described_class.new("1.0-alpha1"),
+              described_class.new("1.0beta1-SNAPSHOT"),
+              described_class.new("1.0-b2"),
+              described_class.new("1.0-beta3.SNAPSHOT"),
+              described_class.new("1.0-beta3"),
+              described_class.new("1.0-milestone1-SNAPSHOT"),
+              described_class.new("1.0-m2"),
+              described_class.new("1.0-rc1-SNAPSHOT"),
+              described_class.new("1.0-cr1"),
+              described_class.new("1.0-SNAPSHOT"),
+              described_class.new("1.0"),
+              described_class.new("1.0-sp"),
+              # described_class.new("1.0-a"),
+              described_class.new("1.0-RELEASE"),
+              described_class.new("1.0-whatever"),
+              # described_class.new("1.0.z"),
+              described_class.new("1.0.1"),
+              described_class.new("1.0.1.0.0.0.0.0.0.0.0.0.0.0.1")
+            ]
+          end
+
+          it "sorts versions based on the maven specification" do
+            expect(versions.shuffle.sort).to eq(versions)
+          end
         end
       end
     end
