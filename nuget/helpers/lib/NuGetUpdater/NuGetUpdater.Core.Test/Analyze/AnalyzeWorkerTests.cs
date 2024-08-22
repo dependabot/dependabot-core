@@ -348,57 +348,6 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
-    public async Task AnalyzeVulnerableTransitiveDependencies()
-    {
-        await TestAnalyzeAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "1.0.0", "net8.0"),
-                MockNuGetPackage.CreateSimplePackage("Some.Transitive.Dependency", "1.0.1", "net8.0"),
-            ],
-            discovery: new()
-            {
-                Path = "/",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "project.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        Dependencies = [
-                            new("Some.Transitive.Dependency", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-                        ]
-                    }
-                ]
-            },
-            dependencyInfo: new()
-            {
-                Name = "Some.Transitive.Dependency",
-                Version = "1.0.0",
-                IsVulnerable = true,
-                IgnoredVersions = [],
-                Vulnerabilities = [
-                    new()
-                    {
-                        DependencyName = "Some.Transitive.Dependency",
-                        PackageManager = "nuget",
-                        VulnerableVersions = [Requirement.Parse("<= 1.0.0")],
-                        SafeVersions = [Requirement.Parse("= 1.0.1")],
-                    }
-                ]
-            },
-            expectedResult: new()
-            {
-                UpdatedVersion = "1.0.1",
-                CanUpdate = true,
-                VersionComesFromMultiDependencyProperty = false,
-                UpdatedDependencies = [
-                    new("Some.Transitive.Dependency", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
-                ],
-            }
-        );
-    }
-
-    [Fact]
     public async Task IgnoredVersionsCanHandleWildcardSpecification()
     {
         await TestAnalyzeAsync(

@@ -21,18 +21,15 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            dependency_details: T.nilable(Dependabot::Nuget::NativeDependencyDetails),
-            vulnerable: T::Boolean
+            dependency_details: T.nilable(Dependabot::Nuget::NativeDependencyDetails)
           )
             .void
         end
-        def initialize(requirements:, dependency_details:, vulnerable:)
+        def initialize(requirements:, dependency_details:)
           @requirements = requirements
           @dependency_details = dependency_details
-          @vulnerable = vulnerable
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def updated_requirements
           return requirements unless clean_version
@@ -40,18 +37,13 @@ module Dependabot
           # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
-          requirements.filter_map do |req|
-            next if !@vulnerable && req[:metadata][:is_transitive]
-
-            previous_requirement = req.fetch(:requirement)
-            req[:metadata][:previous_requirement] = previous_requirement
-
-            next req if previous_requirement.nil?
-            next req if previous_requirement.include?(",")
+          requirements.map do |req|
+            next req if req.fetch(:requirement).nil?
+            next req if req.fetch(:requirement).include?(",")
 
             new_req =
-              if previous_requirement.include?("*")
-                update_wildcard_requirement(previous_requirement)
+              if req.fetch(:requirement).include?("*")
+                update_wildcard_requirement(req.fetch(:requirement))
               else
                 # Since range requirements are excluded by the line above we can
                 # replace anything that looks like a version with the new
@@ -62,7 +54,7 @@ module Dependabot
                 )
               end
 
-            next req if new_req == previous_requirement
+            next req if new_req == req.fetch(:requirement)
 
             new_source = req[:source]&.dup
             unless @dependency_details.nil?
@@ -75,7 +67,6 @@ module Dependabot
             req.merge({ requirement: new_req, source: new_source })
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 

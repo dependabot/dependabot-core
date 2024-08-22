@@ -56,8 +56,7 @@ module Dependabot
         dep_details = updated_dependency_details.find { |d| d.name.casecmp?(dependency.name) }
         NativeRequirementsUpdater.new(
           requirements: dependency.requirements,
-          dependency_details: dep_details,
-          vulnerable: vulnerable?
+          dependency_details: dep_details
         ).updated_requirements
       end
 
@@ -113,10 +112,9 @@ module Dependabot
 
       sig { void }
       def write_dependency_info
-        dependency_version = T.let(dependency.requirements.first&.fetch(:requirement, nil), T.nilable(String))
         dependency_info = {
           Name: dependency.name,
-          Version: dependency_version || dependency.version.to_s,
+          Version: dependency.version.to_s,
           IsVulnerable: vulnerable?,
           IgnoredVersions: ignored_versions,
           Vulnerabilities: security_advisories.map do |vulnerability|
@@ -143,7 +141,7 @@ module Dependabot
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def discovered_dependencies
         discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
-        discovery_json_reader.dependency_set(dependency_files: dependency_files, top_level_only: false)
+        discovery_json_reader.dependency_set
       end
 
       sig { override.returns(T::Boolean) }
@@ -152,10 +150,6 @@ module Dependabot
         true
       end
 
-      # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/BlockLength
-      # rubocop:disable Metrics/MethodLength
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         dependencies = discovered_dependencies.dependencies
@@ -163,16 +157,14 @@ module Dependabot
           dep = dependencies.find { |d| d.name.casecmp(dependency_details.name)&.zero? }
           next unless dep
 
-          dep_metadata = T.let({}, T::Hash[Symbol, T.untyped])
+          metadata = {}
           # For peer dependencies, instruct updater to not directly update this dependency
-          dep_metadata[:information_only] = true unless dependency.name.casecmp(dependency_details.name)&.zero?
-          dep_metadata[:is_vulnerable] = vulnerable?
+          metadata = { information_only: true } unless dependency.name.casecmp(dependency_details.name)&.zero?
 
           # rebuild the new requirements with the updated dependency details
           updated_reqs = dep.requirements.map do |r|
             r = r.clone
-            T.let(r[:metadata], T::Hash[Symbol, T.untyped])[:previous_requirement] = r[:requirement] # keep old version
-            r[:requirement] = dependency_details.version # set new version
+            r[:requirement] = dependency_details.version
             r[:source] = {
               type: "nuget_repo",
               source_url: dependency_details.info_url
@@ -180,44 +172,17 @@ module Dependabot
             r
           end
 
-          reqs = dep.requirements
-          unless vulnerable?
-            updated_reqs = updated_reqs.filter do |r|
-              req_metadata = T.let(r.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])
-              !T.let(req_metadata[:is_transitive], T::Boolean)
-            end
-            reqs = reqs.filter do |r|
-              req_metadata = T.let(r.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])
-              !T.let(req_metadata[:is_transitive], T::Boolean)
-            end
-          end
-
-          # report back the highest version that all of these dependencies can be updated to
-          # this will ensure that we get a chance to update all relevant dependencies
-          max_updatable_version = updated_reqs.filter_map do |r|
-            v = T.let(r.fetch(:requirement, nil), T.nilable(String))
-            next unless v
-
-            Dependabot::Nuget::Version.new(v)
-          end.max
-          next unless max_updatable_version
-
-          previous_version = T.let(dep.requirements.first&.fetch(:requirement, nil), T.nilable(String))
           Dependency.new(
             name: dep.name,
-            version: max_updatable_version.to_s,
+            version: dependency_details.version,
             requirements: updated_reqs,
-            previous_version: previous_version,
-            previous_requirements: reqs,
+            previous_version: dep.version,
+            previous_requirements: dep.requirements,
             package_manager: dep.package_manager,
-            metadata: dep_metadata
+            metadata: metadata
           )
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/BlockLength
-      # rubocop:enable Metrics/AbcSize
 
       sig { returns(T::Array[Dependabot::Nuget::NativeDependencyDetails]) }
       def updated_dependency_details

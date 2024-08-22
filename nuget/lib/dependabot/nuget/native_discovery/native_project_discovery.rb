@@ -1,7 +1,6 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/nuget/native_discovery/native_dependency_details"
 require "dependabot/nuget/native_discovery/native_property_details"
 require "sorbet-runtime"

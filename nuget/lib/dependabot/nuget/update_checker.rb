@@ -166,8 +166,7 @@ module Dependabot
           requirements: updated_requirements,
           previous_version: dependency.version,
           previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager,
-          metadata: { is_vulnerable: vulnerable? }
+          package_manager: dependency.package_manager
         )
         updated_dependencies = [updated_dependency]
         updated_dependencies += DependencyFinder.new(

@@ -34,10 +34,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
   end
   let(:files) { [csproj_file] + additional_files }
 
-  before do
-    Dependabot::Experiments.register(:nuget_native_analysis, true)
-  end
-
   it_behaves_like "a dependency file parser"
 
   def run_parser_test(&_block)
@@ -139,9 +135,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
             requirement: "1.1.1",
             file: "/my.csproj",
             groups: ["dependencies"],
-            metadata: {
-              is_transitive: false
-            },
             source: nil
           }])
         end
@@ -228,179 +221,14 @@ RSpec.describe Dependabot::Nuget::FileParser do
               requirement: "1.1.1",
               file: "/my.csproj",
               groups: ["dependencies"],
-              metadata: {
-                is_transitive: false
-              },
               source: nil
             }, {
               requirement: "1.0.1",
               file: "/my.vbproj",
               groups: ["dependencies"],
-              metadata: {
-                is_transitive: false
-              },
               source: nil
             }]
           )
-        end
-      end
-    end
-
-    context "with the same dependency in different files with different versions" do
-      let(:dependency_files) do
-        [
-          Dependabot::DependencyFile.new(name: "project1/project1.csproj", content: "not-used"),
-          Dependabot::DependencyFile.new(name: "project2/project2.csproj", content: "not-used")
-        ]
-      end
-
-      before do
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [{
-              FilePath: "project1/project1.csproj",
-              Dependencies: [{
-                Name: "Some.Dependency",
-                Version: "1.0.1",
-                Type: "PackageReference",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [],
-              TargetFrameworks: ["net8.0"],
-              ReferencedProjectPaths: []
-            }, {
-              FilePath: "project2/project2.csproj",
-              Dependencies: [{
-                Name: "Some.Dependency",
-                Version: "1.0.2",
-                Type: "PackageReference",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: false,
-                IsTransitive: true,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [],
-              TargetFrameworks: ["net8.0"],
-              ReferencedProjectPaths: []
-            }],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          }
-        )
-      end
-
-      it "is returns the expected set of dependencies" do
-        run_parser_test do |parser|
-          dependencies = parser.parse.map(&:to_h)
-          expect(dependencies).to eq([
-            {
-              "name" => "Some.Dependency",
-              "package_manager" => "nuget",
-              "requirements" => [
-                {
-                  file: "/project1/project1.csproj",
-                  groups: ["dependencies"],
-                  metadata: {
-                    is_transitive: false
-                  },
-                  requirement: "1.0.1",
-                  source: nil
-                }
-              ],
-              "version" => "1.0.1"
-            }
-          ])
-        end
-      end
-    end
-
-    context "with transitive dependencies" do
-      before do
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [{
-              FilePath: "my.csproj",
-              Dependencies: [{
-                Name: "Some.Dependency",
-                Version: "1.0.0",
-                Type: "PackageReference",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }, {
-                Name: "Some.Transitive.Dependency",
-                Version: "2.0.0",
-                Type: "Unknown",
-                EvaluationResult: nil,
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: false,
-                IsTransitive: true,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [],
-              TargetFrameworks: ["net8.0"],
-              ReferencedProjectPaths: []
-            }],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          }
-        )
-      end
-
-      it "is returns the expected set of dependencies" do
-        run_parser_test do |parser|
-          dependencies = parser.parse.map(&:to_h)
-          expect(dependencies).to eq([
-            {
-              "name" => "Some.Dependency",
-              "package_manager" => "nuget",
-              "requirements" => [
-                {
-                  file: "/my.csproj",
-                  groups: ["dependencies"],
-                  metadata: {
-                    is_transitive: false
-                  },
-                  requirement: "1.0.0",
-                  source: nil
-                }
-              ],
-              "version" => "1.0.0"
-            }, {
-              "name" => "Some.Transitive.Dependency",
-              "package_manager" => "nuget",
-              "requirements" => [],
-              "version" => "2.0.0"
-            }
-          ])
         end
       end
     end
@@ -472,9 +300,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
               requirement: "1.0.0",
               file: "/packages.config",
               groups: ["dependencies"],
-              metadata: {
-                is_transitive: false
-              },
               source: nil
             }]
           )
@@ -540,9 +365,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
                 requirement: "1.0.0",
                 file: "/dir/packages.config",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }]
             )
@@ -600,9 +422,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
               requirement: "1.0.45",
               file: "/global.json",
               groups: ["dependencies"],
-              metadata: {
-                is_transitive: false
-              },
               source: nil
             }]
           )
@@ -659,9 +478,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
               requirement: "1.0.0",
               file: "/.config/dotnet-tools.json",
               groups: ["dependencies"],
-              metadata: {
-                is_transitive: false
-              },
               source: nil
             }]
           )
@@ -757,17 +573,11 @@ RSpec.describe Dependabot::Nuget::FileParser do
                 requirement: "2.3.0",
                 file: "/commonprops.props",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }, {
                 requirement: "2.3.0",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }]
             )
@@ -863,17 +673,11 @@ RSpec.describe Dependabot::Nuget::FileParser do
                 requirement: "1.1.1",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }, {
                 requirement: "1.1.1",
                 file: "/packages.props",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }]
             )
@@ -974,17 +778,11 @@ RSpec.describe Dependabot::Nuget::FileParser do
                 requirement: "1.1.1",
                 file: "/my.csproj",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }, {
                 requirement: "1.1.1",
                 file: "/Directory.Packages.props",
                 groups: ["dependencies"],
-                metadata: {
-                  is_transitive: false
-                },
                 source: nil
               }]
             )
