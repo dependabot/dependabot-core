@@ -46,7 +46,7 @@ module Dependabot
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[PullRequest])
 
-          @pr_notices = T.let([], T::Array[Dependabot::Notice])
+          @notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -61,7 +61,7 @@ module Dependabot
 
           # Add a deprecation notice if the package manager is deprecated
           add_deprecation_notice(
-            notices: @pr_notices,
+            notices: @notices,
             package_manager: dependency_snapshot.package_manager
           )
 
@@ -180,8 +180,11 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
-            notices: @pr_notices
+            notices: @notices
           )
+
+          # Record any warning notices that were generated during the update process if conditions are met
+          record_warning_notices(@notices)
 
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored

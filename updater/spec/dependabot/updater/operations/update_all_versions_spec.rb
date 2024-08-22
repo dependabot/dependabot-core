@@ -152,6 +152,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
@@ -161,9 +163,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     allow(dependency_snapshot).to receive(
       :package_manager
     ).and_return(package_manager)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(
-      :add_deprecation_warn_to_pr_message
-    ).and_return(true)
   end
 
   after do
@@ -210,7 +209,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
-    context "when package manager version is 1" do
+    context "when package manager version is deprecated" do
       let(:package_manager_version) { "1" }
 
       it "creates a pull request" do
@@ -225,7 +224,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
-    context "when package manager version is 2" do
+    context "when package manager version is not deprecated" do
       let(:package_manager_version) { "2" }
 
       it "creates a pull request" do
