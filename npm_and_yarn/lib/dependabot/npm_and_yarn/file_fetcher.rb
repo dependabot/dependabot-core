@@ -32,6 +32,8 @@ module Dependabot
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
+      VALID_PACKAGE_MANAGER_REGEX = /(npm|pnpm|yarn)@\d+\.\d+\.\d+(-.+)?/
+
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
@@ -561,9 +563,20 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+        parsed_json = JSON.parse(T.must(package_json.content))
+
+        raise Dependabot::DependencyFileNotParseable, package_json.path if invalid_package_manager(parsed_json)
+        parsed_json
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
+      end
+
+      def invalid_package_manager(parsed_json)
+        package_manager = parsed_json["packageManager"]
+
+        return false if package_manager.nil?
+        return false if package_manager.match?(VALID_PACKAGE_MANAGER_REGEX)
+        return true
       end
 
       sig { returns(T.untyped) }
