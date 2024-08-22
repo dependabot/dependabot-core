@@ -566,6 +566,7 @@ module Dependabot
         parsed_json = JSON.parse(T.must(package_json.content))
 
         raise Dependabot::DependencyFileNotParseable, package_json.path if invalid_package_manager(parsed_json)
+
         parsed_json
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
@@ -576,7 +577,8 @@ module Dependabot
 
         return false if package_manager.nil?
         return false if package_manager.match?(VALID_PACKAGE_MANAGER_REGEX)
-        return true
+
+        true
       end
 
       sig { returns(T.untyped) }

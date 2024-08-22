@@ -1899,7 +1899,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
 
     it "still fetches package.json fine" do
-      expect{ file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotParseable)
+      expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotParseable)
     end
   end
 
