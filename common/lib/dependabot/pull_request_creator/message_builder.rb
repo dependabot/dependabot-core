@@ -143,8 +143,8 @@ module Dependabot
       def pr_notices
         notices = @notices || []
         unique_messages = notices.filter_map do |notice|
-          markdown = notice.markdown if notice
-          markdown unless markdown.empty?
+          markdown = notice.markdown if notice.show_in_pr
+          markdown if markdown && !markdown.empty?
         end.uniq
 
         message = unique_messages.join("\n\n")

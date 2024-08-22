@@ -203,6 +203,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   let(:mock_package_manager_instance) { concrete_package_manager_class.new }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+
     # Allow for_package_manager to return the stub_update_checker_class
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
 
@@ -219,8 +221,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     allow(dependency_snapshot)
       .to receive(:package_manager)
       .and_return(mock_package_manager_instance)
-
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
   end
 
   after do
@@ -369,10 +369,13 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
                 mode: "WARN",
                 type: "bundler_deprecated_warn",
                 package_manager_name: "bundler",
-                message: "Dependabot will stop supporting `bundler v1`!\n" \
-                         "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
+                title: "Package manager deprecation notice",
+                description: "Dependabot will stop supporting `bundler v1`!\n" \
+                             "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
                 markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                          "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+                          "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+                show_in_pr: true,
+                show_in_log: true
               )
             )
 

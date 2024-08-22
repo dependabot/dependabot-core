@@ -199,20 +199,63 @@ module Dependabot
           .void
       end
       def add_deprecation_notice(notices:, package_manager:)
-        return unless Dependabot::Experiments.enabled?(
-          :add_deprecation_warn_to_pr_message
-        )
-        return unless package_manager
-
-        return unless package_manager.is_a?(PackageManagerBase)
-
-        deprecation_notice = Notice.generate_pm_deprecation_notice(
-          package_manager
-        )
+        deprecation_notice = create_deprecation_notice(package_manager)
 
         return unless deprecation_notice
 
         notices << deprecation_notice
+      end
+
+      sig { params(notices: T.nilable(T::Array[Dependabot::Notice])).void }
+      def record_warning_notices(notices)
+        return if !notices || notices.empty?
+
+        # Find unique warning notices which are going to be shown on insight page.
+        warn_notices = unique_warn_notices(notices)
+
+        warn_notices.each do |notice|
+          # Log notice eif show in log is enabled.
+          next unless notice.show_in_log
+
+          log_notice_description(notice)
+        end
+        rescue StandardError => e
+          Dependabot.logger.error(
+            "Failed to send package manager deprecation notice warning: #{e.message}"
+          )
+      end
+
+      private
+
+      sig { params(package_manager: T.nilable(PackageManagerBase)).returns(T.nilable(Dependabot::Notice)) }
+      def create_deprecation_notice(package_manager)
+        # Feature flag check if deprecation notice should be added to notices.
+        return unless Dependabot::Experiments.enabled?(:add_deprecation_warn_to_pr_message)
+
+        return unless package_manager
+
+        return unless package_manager.is_a?(PackageManagerBase)
+
+        Notice.generate_pm_deprecation_notice(
+          package_manager
+        )
+      end
+
+      # Resurns unique warning notices which are going to be shown on insight page.
+      sig { params(notices: T::Array[Dependabot::Notice]).returns(T::Array[Dependabot::Notice]) }
+      def unique_warn_notices(notices)
+        notices
+          .select { |notice| notice.mode == Dependabot::Notice::NoticeMode::WARN }
+          .uniq { |notice| [notice.type, notice.package_manager_name] }
+      end
+
+      sig { params(notice: Dependabot::Notice).void }
+      def log_notice_description(notice)
+        # Log each non-empty line of the deprecation notice description
+        notice.description.each_line do |line|
+          line = line.strip
+          Dependabot.logger.warn(line) unless line.empty?
+        end
       end
     end
   end

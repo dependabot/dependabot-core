@@ -47,7 +47,7 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
 
-          @pr_notices = T.let([], T::Array[Dependabot::Notice])
+          @notices = T.let([], T::Array[Dependabot::Notice])
 
           return unless job.source.directory.nil? && job.source.directories&.count == 1
 
@@ -62,7 +62,7 @@ module Dependabot
 
           # Add a deprecation notice if the package manager is deprecated
           add_deprecation_notice(
-            notices: @pr_notices,
+            notices: @notices,
             package_manager: dependency_snapshot.package_manager
           )
 
@@ -146,8 +146,11 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
-            notices: @pr_notices
+            notices: @notices
           )
+
+          # Record any warning notices that were generated during the update process if conditions are met
+          record_warning_notices(@notices)
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match

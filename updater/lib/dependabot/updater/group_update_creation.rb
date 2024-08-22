@@ -123,6 +123,9 @@ module Dependabot
           notices: notices
         )
 
+        # Record any warning notices that were generated during the update process if show_in_log is true
+        record_warning_notices(notices)
+
         if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?
           log_missing_previous_version(dependency_change)
           return nil
