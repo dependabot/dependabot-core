@@ -29,6 +29,7 @@ module Dependabot
     # @param markdown [String] The markdown formatted description.
     # @param show_in_pr [Boolean] Whether the notice should be shown in a pull request.
     # @param show_in_log [Boolean] Whether the notice should be shown in the log.
+    # @param show_in_alert [Boolean] Whether the notice should be shown in alerts.
     sig do
       params(
         mode: String,
@@ -38,13 +39,14 @@ module Dependabot
         description: String,
         markdown: String,
         show_in_pr: T::Boolean,
-        show_in_log: T::Boolean
+        show_in_log: T::Boolean,
+        show_in_alert: T::Boolean
       ).void
     end
     def initialize(
       mode:, type:, package_manager_name:,
       title: "", description: "", markdown: "",
-      show_in_pr: false, show_in_log: true
+      show_in_pr: false, show_in_log: true, show_in_alert: false
     )
       @mode = mode
       @type = type
@@ -54,6 +56,7 @@ module Dependabot
       @markdown = markdown
       @show_in_pr = show_in_pr
       @show_in_log = show_in_log
+      @show_in_alert = show_in_alert
     end
 
     # Converts the Notice object to a hash.
@@ -68,7 +71,8 @@ module Dependabot
         description: @description,
         markdown: @markdown,
         show_in_pr: @show_in_pr,
-        show_in_log: @show_in_log
+        show_in_log: @show_in_log,
+        show_in_alert: @show_in_alert
       }
     end
 
@@ -152,7 +156,8 @@ module Dependabot
         description: description,
         markdown: markdown,
         show_in_pr: true,
-        show_in_log: true
+        show_in_log: true,
+        show_in_alert: true
       )
     end
 
@@ -194,7 +199,8 @@ module Dependabot
         description: description,
         markdown: markdown,
         show_in_pr: true,
-        show_in_log: true
+        show_in_log: true,
+        show_in_alert: true
       )
     end
   end

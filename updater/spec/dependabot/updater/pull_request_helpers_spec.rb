@@ -5,21 +5,25 @@ require "spec_helper"
 require "dependabot/updater"
 require "dependabot/package_manager"
 require "dependabot/notices"
+require "dependabot/service"
 
 RSpec.describe Dependabot::Updater::PullRequestHelpers do
   let(:dummy_class) do
     Class.new do
       include Dependabot::Updater::PullRequestHelpers
 
-      attr_accessor :notices
+      attr_accessor :notices, :service
 
-      def initialize
+      def initialize(service = nil)
         @notices = []
+        @service = service
       end
     end
   end
 
-  let(:dummy_instance) { dummy_class.new }
+  let(:dummy_instance) { dummy_class.new(service) }
+
+  let(:service) { instance_double(Dependabot::Service) }
 
   let(:package_manager) do
     Class.new(Dependabot::PackageManagerBase) do
@@ -43,6 +47,7 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+    allow(service).to receive(:record_update_job_warn)
   end
 
   after do
@@ -114,7 +119,8 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
           markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
                     "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
           show_in_pr: true,
-          show_in_log: true
+          show_in_log: true,
+          show_in_alert: true
         )
       end
 
@@ -123,6 +129,13 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
           line = line.strip
           expect(Dependabot.logger).to receive(:warn).with(line).once unless line.empty?
         end
+
+        expect(service).to receive(:record_update_job_warn).with(
+          package_manager: deprecation_notice.package_manager_name,
+          warn_type: deprecation_notice.type,
+          warn_title: deprecation_notice.title,
+          warn_description: deprecation_notice.description
+        )
 
         dummy_instance.record_warning_notices([deprecation_notice])
       end
@@ -135,6 +148,7 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
 
       it "does not log or record any warnings" do
         expect(Dependabot.logger).not_to receive(:warn)
+        expect(service).not_to receive(:record_update_job_warn)
 
         dummy_instance.record_warning_notices([])
       end

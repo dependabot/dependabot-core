@@ -130,7 +130,8 @@ RSpec.describe Dependabot::Notice do
             markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
                       "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
             show_in_pr: true,
-            show_in_log: true
+            show_in_log: true,
+            show_in_alert: true
           })
       end
     end
@@ -151,7 +152,8 @@ RSpec.describe Dependabot::Notice do
             markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
                       "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
             show_in_pr: true,
-            show_in_log: true
+            show_in_log: true,
+            show_in_alert: true
           })
       end
     end
@@ -206,7 +208,8 @@ RSpec.describe Dependabot::Notice do
           markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
                     "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
           show_in_pr: true,
-          show_in_log: true
+          show_in_log: true,
+          show_in_alert: true
         })
     end
   end
@@ -237,7 +240,8 @@ RSpec.describe Dependabot::Notice do
           markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
                     "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
           show_in_pr: true,
-          show_in_log: true
+          show_in_log: true,
+          show_in_alert: true
         })
     end
   end

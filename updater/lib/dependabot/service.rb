@@ -27,11 +27,15 @@ module Dependabot
     sig { returns(T::Array[T::Array[T.untyped]]) }
     attr_reader :errors
 
+    sig { returns(T::Array[T::Array[T.untyped]]) }
+    attr_reader :warnings
+
     sig { params(client: Dependabot::ApiClient).void }
     def initialize(client:)
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
       @errors = T.let([], T::Array[T.untyped])
+      @warnings = T.let([], T::Array[T.untyped])
       @threads = T.let([], T::Array[T.untyped])
     end
 
@@ -79,6 +83,24 @@ module Dependabot
     def record_update_job_error(error_type:, error_details:, dependency: nil)
       errors << [error_type.to_s, dependency]
       client.record_update_job_error(error_type: error_type, error_details: error_details)
+    end
+
+    sig do
+      params(
+        package_manager: String,
+        warn_type: T.any(String, Symbol),
+        warn_title: String,
+        warn_description: String
+      ).void
+    end
+    def record_update_job_warn(package_manager:, warn_type:, warn_title:, warn_description:)
+      warnings << [warn_type.to_s, warn_description]
+      client.record_update_job_warn(
+        package_manager: package_manager,
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
     end
 
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }

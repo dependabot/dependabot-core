@@ -186,6 +186,9 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      sig { returns(Dependabot::Service) }
+      attr_reader :service
+
       abstract!
 
       # Add deprecation notices to the list of notices
@@ -218,6 +221,9 @@ module Dependabot
           next unless notice.show_in_log
 
           log_notice_description(notice)
+
+          # If alert is enabled, sending the deprecation notice to the service for showing on the UI insight page
+          send_alert_notice(notice)
         end
         rescue StandardError => e
           Dependabot.logger.error(
@@ -256,6 +262,17 @@ module Dependabot
           line = line.strip
           Dependabot.logger.warn(line) unless line.empty?
         end
+      end
+
+      sig { params(notice: Dependabot::Notice).void }
+      def send_alert_notice(notice)
+        # Sending the deprecation notice to the service for showing on the UI insight page
+        service.record_update_job_warn(
+          package_manager: notice.package_manager_name,
+          warn_type: notice.type,
+          warn_title: notice.title,
+          warn_description: notice.description
+        )
       end
     end
   end
