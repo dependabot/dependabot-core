@@ -120,43 +120,4 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
       end
     end
   end
-
-  describe "#record_warning_notices" do
-    context "when deprecation notice is generated" do
-      let(:deprecation_notice) do
-        Dependabot::Notice.new(
-          mode: "WARN",
-          type: "bundler_deprecated_warn",
-          package_manager_name: "bundler",
-          title: "Package manager deprecation notice",
-          description: "Dependabot will stop supporting `bundler v1`!\n" \
-                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-          show_in_pr: true,
-          show_alert: true
-        )
-      end
-
-      it "records it as a warning" do
-        expect(service).to receive(:record_update_job_warn).with(
-          warn_type: deprecation_notice.type,
-          warn_title: deprecation_notice.title,
-          warn_description: deprecation_notice.description
-        )
-
-        dummy_instance.record_warning_notices([deprecation_notice])
-      end
-    end
-
-    context "when no deprecation notice is generated" do
-      before do
-        allow(dummy_instance).to receive(:create_deprecation_notice).and_return(nil)
-      end
-
-      it "does not log or record any warnings" do
-        expect(service).not_to receive(:record_update_job_warn)
-
-        dummy_instance.record_warning_notices([])
-      end
-    end
-  end
 end

@@ -161,9 +161,6 @@ module Dependabot
             notices: @notices
           )
 
-          # Record any warning notices that were generated during the update process if conditions are met
-          record_warning_notices(@notices)
-
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.

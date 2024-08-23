@@ -183,9 +183,6 @@ module Dependabot
             notices: @notices
           )
 
-          # Record any warning notices that were generated during the update process if conditions are met
-          record_warning_notices(@notices)
-
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")

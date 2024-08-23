@@ -212,23 +212,6 @@ module Dependabot
         notices << deprecation_notice
       end
 
-      sig { params(notices: T.nilable(T::Array[Dependabot::Notice])).void }
-      def record_warning_notices(notices)
-        return if !notices || notices.empty?
-
-        # Find unique warning notices which are going to be shown on insight page.
-        warn_notices = unique_warn_notices(notices)
-
-        warn_notices.each do |notice|
-          # If alert is enabled, sending the deprecation notice to the service for showing on the UI insight page
-          send_alert_notice(notice)
-        end
-        rescue StandardError => e
-          Dependabot.logger.error(
-            "Failed to send package manager deprecation notice warning: #{e.message}"
-          )
-      end
-
       sig { params(notice: Dependabot::Notice).void }
       def log_notice(notice)
         # Log each non-empty line of the deprecation notice description
@@ -262,24 +245,6 @@ module Dependabot
 
         Notice.generate_pm_deprecation_notice(
           package_manager
-        )
-      end
-
-      # Returns unique warning notices which are going to be shown on insight page.
-      sig { params(notices: T::Array[Dependabot::Notice]).returns(T::Array[Dependabot::Notice]) }
-      def unique_warn_notices(notices)
-        notices
-          .select { |notice| notice.mode == Dependabot::Notice::NoticeMode::WARN }
-          .uniq { |notice| [notice.type, notice.package_manager_name] }
-      end
-
-      sig { params(notice: Dependabot::Notice).void }
-      def send_alert_notice(notice)
-        # Sending the deprecation notice to the service for showing on the UI insight page
-        service.record_update_job_warn(
-          warn_type: notice.type,
-          warn_title: notice.title,
-          warn_description: notice.description
         )
       end
     end

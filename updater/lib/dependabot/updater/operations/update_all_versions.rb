@@ -174,9 +174,6 @@ module Dependabot
             raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
           end
 
-          # Record any warning notices that were generated during the update process if conditions are met
-          record_warning_notices(@notices)
-
           create_pull_request(dependency_change)
         end
         # rubocop:enable Metrics/PerceivedComplexity
