@@ -314,7 +314,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error message contains YN0001 response (no available resolver)" do
+    context "when the error message contains no specified version for package error" do
       let(:error_message) do
         "MessageError: Couldn't find any versions for \"@types/react-test-renderer\" that matches \"~18.2.0\"" \
         "at /opt/npm_and_yarn/node_modules/@dependabot/yarn-lib/lib/resolvers/registries/npm-resolver.js:120:13
