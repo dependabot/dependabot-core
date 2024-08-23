@@ -126,6 +126,9 @@ module Dependabot
     YARNRC_ENOENT = /Internal Error: ENOENT/
     YARNRC_ENOENT_REGEX = /Internal Error: ENOENT: no such file or directory, stat '(?<filename>.*?)'/
 
+    # if not package found with specified version
+    YARN_PACKAGE_NOT_FOUND = /Couldn't find any versions for "(?<pkg>.*?)" that matches "(?<ver>.*?)"/
+
     YN0001_FILE_NOT_RESOLVED_CODES = T.let({
       FIND_PACKAGE_LOCATION: /YN0001: UsageError: Couldn't find the (?<pkg>.*) state file/,
       NO_CANDIDATE_FOUND: /YN0001: Error: (?<pkg>.*): No candidates found/,
@@ -474,6 +477,18 @@ module Dependabot
 
           Dependabot::DependencyFileNotResolvable.new("Internal error while resolving dependency." \
                                                       "File not found \"#{filename.split('/').last}\"")
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARN_PACKAGE_NOT_FOUND],
+        handler: lambda { |message, _error, _params|
+          package_name = message.match(YARN_PACKAGE_NOT_FOUND).named_captures["pkg"]
+          version = message.match(YARN_PACKAGE_NOT_FOUND).named_captures["ver"]
+
+          Dependabot::DependencyFileNotResolvable.new("Couldn't find any versions for \"#{package_name}\" that " \
+                                                      "matches \"#{version}\"")
         },
         in_usage: false,
         matchfn: nil
