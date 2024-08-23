@@ -124,11 +124,9 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
           package_manager_name: "bundler",
           title: "Package manager deprecation notice",
           description: "Dependabot will stop supporting `bundler v1`!\n" \
-                       "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
           show_in_pr: true,
-          show_in_log: true
+          show_alert: true
         ).to_hash
       ]
     )
@@ -168,11 +166,9 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
               package_manager_name: "bundler",
               title: "Package manager deprecation notice",
               description: "Dependabot will stop supporting `bundler v1`!\n" \
-                           "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-              markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                        "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+                           "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
               show_in_pr: true,
-              show_in_log: true
+              show_alert: true
             }
           )
           create_group_update_pull_request.perform

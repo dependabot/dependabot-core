@@ -5,21 +5,25 @@ require "spec_helper"
 require "dependabot/updater"
 require "dependabot/package_manager"
 require "dependabot/notices"
+require "dependabot/service"
 
 RSpec.describe Dependabot::Updater::PullRequestHelpers do
   let(:dummy_class) do
     Class.new do
       include Dependabot::Updater::PullRequestHelpers
 
-      attr_accessor :notices
+      attr_accessor :notices, :service
 
-      def initialize
+      def initialize(service = nil)
         @notices = []
+        @service = service
       end
     end
   end
 
-  let(:dummy_instance) { dummy_class.new }
+  let(:dummy_instance) { dummy_class.new(service) }
+
+  let(:service) { instance_double(Dependabot::Service) }
 
   let(:package_manager) do
     Class.new(Dependabot::PackageManagerBase) do
@@ -43,6 +47,7 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+    allow(service).to receive(:record_update_job_warn)
   end
 
   after do
@@ -61,6 +66,21 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
         expect(notice.mode).to eq("WARN")
         expect(notice.type).to eq("bundler_deprecated_warn")
         expect(notice.package_manager_name).to eq("bundler")
+      end
+
+      it "logs deprecation notices line by line" do
+        allow(Dependabot.logger).to receive(:warn)
+
+        dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, package_manager: package_manager)
+
+        notice = dummy_instance.notices.first
+        notice.description.each_line do |line|
+          line = line.strip
+          next if line.empty?
+
+          puts "except lines: ##{line}#"
+          expect(Dependabot.logger).to have_received(:warn).with(line).once
+        end
       end
     end
 
@@ -110,19 +130,18 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
           package_manager_name: "bundler",
           title: "Package manager deprecation notice",
           description: "Dependabot will stop supporting `bundler v1`!\n" \
-                       "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
           show_in_pr: true,
-          show_in_log: true
+          show_alert: true
         )
       end
 
-      it "logs each line of the deprecation notice separately and records it as a warning" do
-        deprecation_notice.description.each_line do |line|
-          line = line.strip
-          expect(Dependabot.logger).to receive(:warn).with(line).once unless line.empty?
-        end
+      it "records it as a warning" do
+        expect(service).to receive(:record_update_job_warn).with(
+          warn_type: deprecation_notice.type,
+          warn_title: deprecation_notice.title,
+          warn_description: deprecation_notice.description
+        )
 
         dummy_instance.record_warning_notices([deprecation_notice])
       end
@@ -134,7 +153,7 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
       end
 
       it "does not log or record any warnings" do
-        expect(Dependabot.logger).not_to receive(:warn)
+        expect(service).not_to receive(:record_update_job_warn)
 
         dummy_instance.record_warning_notices([])
       end

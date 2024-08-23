@@ -57,11 +57,14 @@ module Dependabot
 
         notices = []
 
+        # Create a deprecation notice if the package manager is deprecated
+        deprecation_notice = create_deprecation_notice(dependency_snapshot.package_manager)
+
         # Add a deprecation notice if the package manager is deprecated
-        add_deprecation_notice(
-          notices: notices,
-          package_manager: dependency_snapshot.package_manager
-        )
+        if deprecation_notice
+          log_notice(deprecation_notice)
+          notices << deprecation_notice
+        end
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
@@ -123,7 +126,7 @@ module Dependabot
           notices: notices
         )
 
-        # Record any warning notices that were generated during the update process if show_in_log is true
+        # Record any warning notices that were generated during the update process if show_alert is true
         record_warning_notices(notices)
 
         if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?

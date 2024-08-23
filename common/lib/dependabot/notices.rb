@@ -15,10 +15,10 @@ module Dependabot
     extend T::Sig
 
     sig { returns(String) }
-    attr_reader :mode, :type, :package_manager_name, :title, :description, :markdown
+    attr_reader :mode, :type, :package_manager_name, :title, :description
 
     sig { returns(T::Boolean) }
-    attr_reader :show_in_pr, :show_in_log
+    attr_reader :show_in_pr, :show_alert
 
     # Initializes a new Notice object.
     # @param mode [String] The mode of the notice (e.g., "WARN", "ERROR").
@@ -26,9 +26,8 @@ module Dependabot
     # @param package_manager_name [String] The name of the package manager (e.g., "bundler").
     # @param title [String] The title of the notice.
     # @param description [String] The main description of the notice.
-    # @param markdown [String] The markdown formatted description.
     # @param show_in_pr [Boolean] Whether the notice should be shown in a pull request.
-    # @param show_in_log [Boolean] Whether the notice should be shown in the log.
+    # @param show_alert [Boolean] Whether the notice should be shown in alerts.
     sig do
       params(
         mode: String,
@@ -36,24 +35,22 @@ module Dependabot
         package_manager_name: String,
         title: String,
         description: String,
-        markdown: String,
         show_in_pr: T::Boolean,
-        show_in_log: T::Boolean
+        show_alert: T::Boolean
       ).void
     end
     def initialize(
       mode:, type:, package_manager_name:,
-      title: "", description: "", markdown: "",
-      show_in_pr: false, show_in_log: true
+      title: "", description: "",
+      show_in_pr: false, show_alert: false
     )
       @mode = mode
       @type = type
       @package_manager_name = package_manager_name
       @title = title
       @description = description
-      @markdown = markdown
       @show_in_pr = show_in_pr
-      @show_in_log = show_in_log
+      @show_alert = show_alert
     end
 
     # Converts the Notice object to a hash.
@@ -66,9 +63,8 @@ module Dependabot
         package_manager_name: @package_manager_name,
         title: @title,
         description: @description,
-        markdown: @markdown,
         show_in_pr: @show_in_pr,
-        show_in_log: @show_in_log
+        show_alert: @show_alert
       }
     end
 
@@ -83,7 +79,7 @@ module Dependabot
       ).returns(String)
     end
     def self.generate_supported_versions_description(supported_versions, support_later_versions)
-      return "" unless supported_versions&.any?
+      return "Please upgrade your package manager version" unless supported_versions&.any?
 
       versions_string = supported_versions.map { |version| "`v#{version}`" }
 
@@ -133,16 +129,9 @@ module Dependabot
       notice_type = "#{package_manager.name}_deprecated_warn"
       title = "Package manager deprecation notice"
       description = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.version}`!"
-      ## Create a warning markdown description
-      markdown = "> [!WARNING]\n"
-      ## Add the deprecation warning to the description
-      markdown += "> #{description}\n>\n"
 
       ## Add the supported versions to the description
-      unless supported_versions_description.empty?
-        description += "\n#{supported_versions_description}\n"
-        markdown += "> #{supported_versions_description}\n>\n"
-      end
+      description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?
 
       Notice.new(
         mode: mode,
@@ -150,9 +139,8 @@ module Dependabot
         package_manager_name: package_manager.name,
         title: title,
         description: description,
-        markdown: markdown,
         show_in_pr: true,
-        show_in_log: true
+        show_alert: true
       )
     end
 
@@ -175,16 +163,9 @@ module Dependabot
       notice_type = "#{package_manager.name}_unsupported_error"
       title = "Package manager unsupported notice"
       description = "Dependabot no longer supports `#{package_manager.name} v#{package_manager.version}`!"
-      ## Create an error markdown description
-      markdown = "> [!IMPORTANT]\n"
-      ## Add the error description to the description
-      markdown += "> #{description}\n>\n"
 
       ## Add the supported versions to the description
-      unless supported_versions_description.empty?
-        description += "\n#{supported_versions_description}\n"
-        markdown += "> #{supported_versions_description}\n>\n"
-      end
+      description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?
 
       Notice.new(
         mode: mode,
@@ -192,10 +173,38 @@ module Dependabot
         package_manager_name: package_manager.name,
         title: title,
         description: description,
-        markdown: markdown,
         show_in_pr: true,
-        show_in_log: true
+        show_alert: true
       )
+    end
+
+    sig { params(notice: Notice).returns(T.nilable(String)) }
+    def self.markdown_from_description(notice)
+      description = notice.description
+
+      return if description.empty?
+
+      markdown = "> [!#{markdown_mode(notice.mode)}]\n"
+      # Log each non-empty line of the deprecation notice description
+      description.each_line do |line|
+        line = line.strip
+        markdown += "> #{line}\n"
+      end
+      markdown
+    end
+
+    sig { params(mode: String).returns(String) }
+    def self.markdown_mode(mode)
+      case mode
+      when NoticeMode::INFO
+        "INFO"
+      when NoticeMode::WARN
+        "WARNING"
+      when NoticeMode::ERROR
+        "IMPORTANT"
+      else
+        "INFO"
+      end
     end
   end
 end
