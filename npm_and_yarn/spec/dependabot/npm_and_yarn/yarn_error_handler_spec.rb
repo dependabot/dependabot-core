@@ -323,7 +323,7 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
       it "raises a DependencyFileNotResolvable error with the correct message" do
         expect { error_handler.handle_error(error, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
+          .to raise_error(Dependabot::InconsistentRegistryResponse,
                           "Couldn't find any versions for \"@types/react-test-renderer\" that " \
                           "matches \"~18.2.0\"")
       end
