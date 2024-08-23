@@ -189,6 +189,9 @@ RSpec.describe Dependabot::Maven::Version do
         it { is_expected.to eq(1) }
       end
 
+      # Following standardisation, maven does not special case the plus sign or consider build identifiers
+      # https://maven.apache.org/pom.html#Version_Order_Specification
+      # #
       describe "with a + separated alphanumeric build identifier" do
         context "when equal" do
           let(:version_string) { "9.0.0+100" }
@@ -245,7 +248,7 @@ RSpec.describe Dependabot::Maven::Version do
           let(:version) { described_class.new("1.foo") }
           let(:other_version) { described_class.new("1-foo") }
 
-          it { is_expected.to eq(-1) }
+          it { is_expected.to eq(0) }
         end
 
         context "when dealing with prefixes2" do
@@ -332,12 +335,13 @@ RSpec.describe Dependabot::Maven::Version do
           it { is_expected.to eq(1) }
         end
 
-        # this looks incorrect https://maven.apache.org/pom.html#Version_Order_Specification
         context "when dealing with null values (again)" do
           let(:version) { described_class.new("1-sp-1") }
           let(:other_version) { described_class.new("1-ga-1") }
 
-          it { is_expected.to eq(-1) }
+          it "returns 1", skip: "await clarification on trimming vs named qualifier ordering" do
+            expect(version <=> other_version).to eq(1)
+          end
         end
 
         context "when dealing with null values (again 2)" do

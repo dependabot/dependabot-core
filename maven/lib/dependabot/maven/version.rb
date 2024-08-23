@@ -14,9 +14,8 @@ module Dependabot
     class Version < Dependabot::Version
       NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = {
-        "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 },
-        "+" => { qualifier: 3, number: 2 }
+        "." => { qualifier: 1, number: 3 },
+        "-" => { qualifier: 1, number: 2 }
       }.freeze
       NAMED_QUALIFIERS_HIERARCHY = {
         "a" => 1, "alpha"     => 1,
@@ -66,12 +65,11 @@ module Dependabot
         version = fill_tokens(version)
         version = trim_version(version)
 
-        other_version = stringify_version(other)
+        other_version = stringify_version(other.to_s)
         other_version = fill_tokens(other_version)
         other_version = trim_version(other_version)
 
         version, other_version = convert_dates(version, other_version)
-
         prefixed_tokens = split_into_prefixed_tokens(version)
         other_prefixed_tokens = split_into_prefixed_tokens(other_version)
 
@@ -138,7 +136,7 @@ module Dependabot
       end
 
       def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.\+])/)
+        ".#{version}".split(/(?=[\-\.])/)
       end
 
       def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
