@@ -5,25 +5,21 @@ require "spec_helper"
 require "dependabot/updater"
 require "dependabot/package_manager"
 require "dependabot/notices"
-require "dependabot/service"
 
 RSpec.describe Dependabot::Updater::PullRequestHelpers do
   let(:dummy_class) do
     Class.new do
       include Dependabot::Updater::PullRequestHelpers
 
-      attr_accessor :notices, :service
+      attr_accessor :notices
 
-      def initialize(service = nil)
+      def initialize
         @notices = []
-        @service = service
       end
     end
   end
 
-  let(:dummy_instance) { dummy_class.new(service) }
-
-  let(:service) { instance_double(Dependabot::Service) }
+  let(:dummy_instance) { dummy_class.new }
 
   let(:package_manager) do
     Class.new(Dependabot::PackageManagerBase) do
@@ -47,7 +43,6 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-    allow(service).to receive(:record_update_job_warn)
   end
 
   after do
