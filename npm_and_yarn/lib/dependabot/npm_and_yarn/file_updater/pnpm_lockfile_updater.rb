@@ -72,6 +72,11 @@ module Dependabot
 
         # Metadata inconsistent error codes
         ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL/
+        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
+
+        # Directory related error codes
+        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -119,6 +124,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/CyclomaticComplexity
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
           error_message = error.message
 
@@ -170,6 +176,26 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
+          if error_message.match?(ERR_PNPM_WORKSPACE_PKG_NOT_FOUND)
+            dependency_names = dependencies.map(&:name).join(", ")
+
+            msg = "No package named \"#{dependency_names}\" present in workspace."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
+            msg = "Error (ERR_PNPM_BROKEN_METADATA_JSON) while resolving \"pnpm-lock.yaml\" file."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND)
+            dir = error_message.match(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND).named_captures.fetch("dir")
+            msg = "Could not find linked package installation directory \"#{dir.split('/').last}\""
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
 
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
@@ -184,6 +210,7 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def raise_resolvability_error(error_message, pnpm_lock)
           dependency_names = dependencies.map(&:name).join(", ")
