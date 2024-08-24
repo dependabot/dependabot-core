@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Notice do
       let(:support_later_versions) { false }
 
       it "returns empty string" do
-        expect(generate_supported_versions_description).to eq("")
+        expect(generate_supported_versions_description).to eq("Please upgrade your package manager version")
       end
     end
 
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Notice do
       let(:support_later_versions) { false }
 
       it "returns nil" do
-        expect(generate_supported_versions_description).to eq("")
+        expect(generate_supported_versions_description).to eq("Please upgrade your package manager version")
       end
     end
   end
@@ -125,12 +125,10 @@ RSpec.describe Dependabot::Notice do
             type: "bundler_deprecated_warn",
             package_manager_name: "bundler",
             title: "Package manager deprecation notice",
-            description: "Dependabot will stop supporting `bundler v1`!\n" \
-                         "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                      "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+            description: "Dependabot will stop supporting `bundler v1`!" \
+                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
             show_in_pr: true,
-            show_in_log: true
+            show_alert: true
           })
       end
     end
@@ -146,12 +144,10 @@ RSpec.describe Dependabot::Notice do
             type: "bundler_unsupported_error",
             package_manager_name: "bundler",
             title: "Package manager unsupported notice",
-            description: "Dependabot no longer supports `bundler v1`!\n" \
-                         "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-            markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
-                      "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+            description: "Dependabot no longer supports `bundler v1`!" \
+                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
             show_in_pr: true,
-            show_in_log: true
+            show_alert: true
           })
       end
     end
@@ -201,12 +197,10 @@ RSpec.describe Dependabot::Notice do
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
           title: "Package manager deprecation notice",
-          description: "Dependabot will stop supporting `bundler v1`!\n" \
-                       "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
           show_in_pr: true,
-          show_in_log: true
+          show_alert: true
         })
     end
   end
@@ -232,12 +226,10 @@ RSpec.describe Dependabot::Notice do
           type: "bundler_unsupported_error",
           package_manager_name: "bundler",
           title: "Package manager unsupported notice",
-          description: "Dependabot no longer supports `bundler v1`!\n" \
-                       "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n",
+          description: "Dependabot no longer supports `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
           show_in_pr: true,
-          show_in_log: true
+          show_alert: true
         })
     end
   end
