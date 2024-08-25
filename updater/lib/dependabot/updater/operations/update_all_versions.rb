@@ -39,7 +39,7 @@ module Dependabot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[PullRequest])
-
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
           return unless job.source.directory.nil? && job.source.directories&.count == 1
@@ -73,6 +73,9 @@ module Dependabot
         attr_reader :error_handler
         sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies

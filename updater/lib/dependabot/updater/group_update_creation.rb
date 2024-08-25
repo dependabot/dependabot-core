@@ -55,6 +55,7 @@ module Dependabot
         )
         original_dependencies = dependency_snapshot.dependencies
 
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
         notices = []
 
         # Create a deprecation notice if the package manager is deprecated

@@ -46,7 +46,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
           @notices = T.let([], T::Array[Dependabot::Notice])
 
           return unless job.source.directory.nil? && job.source.directories&.count == 1
@@ -81,6 +81,9 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
