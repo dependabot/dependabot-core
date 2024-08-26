@@ -3324,15 +3324,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         )]
       end
 
       it do
-        expect(pr_message).to start_with(notices[0].markdown)
+        expect(pr_message).to start_with(
+          Dependabot::Notice.markdown_from_description(notices.first)
+        )
       end
     end
 
@@ -3342,24 +3345,28 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         ), Dependabot::Notice.new(
           mode: "ERROR",
           type: "bundler_unsupported_error",
           package_manager_name: "bundler",
-          message: "Dependabot no longer supports `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot no longer supports `bundler v1`!\n" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         )]
       end
 
       it do
+        markdown1 = Dependabot::Notice.markdown_from_description(notices.first)
+        markdown2 = Dependabot::Notice.markdown_from_description(notices.last)
         expect(pr_message).to start_with(
-          "#{notices[0].markdown}\n\n#{notices[1].markdown}"
+          "#{markdown1}\n\n#{markdown2}"
         )
       end
     end
@@ -3370,24 +3377,27 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!\n" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         ), Dependabot::Notice.new(
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         )]
       end
 
       it "returns a unique message" do
-        expect(pr_message).to start_with(notices[0].markdown)
-        expect(pr_message.scan(notices[0].markdown).count).to eq(1)
+        markdown = Dependabot::Notice.markdown_from_description(notices.first)
+        expect(pr_message).to start_with(markdown)
+        expect(pr_message.scan(markdown).count).to eq(1)
       end
     end
   end

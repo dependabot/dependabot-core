@@ -16,7 +16,6 @@ module Dependabot
     module Operations
       class RefreshVersionUpdatePullRequest
         extend T::Sig
-        include PullRequestHelpers
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -46,8 +45,8 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-
-          @pr_notices = T.let([], T::Array[Dependabot::Notice])
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+          @notices = T.let([], T::Array[Dependabot::Notice])
 
           return unless job.source.directory.nil? && job.source.directories&.count == 1
 
@@ -60,11 +59,9 @@ module Dependabot
           Dependabot.logger.info("Checking and updating versions pull requests...")
           dependency = dependencies.last
 
-          # Add a deprecation notice if the package manager is deprecated
-          add_deprecation_notice(
-            notices: @pr_notices,
-            package_manager: dependency_snapshot.package_manager
-          )
+          # Retrieve the list of initial notices from dependency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
@@ -81,6 +78,9 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
@@ -146,7 +146,7 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
-            notices: @pr_notices
+            notices: @notices
           )
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive

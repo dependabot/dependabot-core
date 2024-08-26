@@ -12,7 +12,6 @@ module Dependabot
     module Operations
       class UpdateAllVersions
         extend T::Sig
-        include PullRequestHelpers
 
         sig { params(_job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(_job:)
@@ -39,8 +38,8 @@ module Dependabot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[PullRequest])
-
-          @pr_notices = T.let([], T::Array[Dependabot::Notice])
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+          @notices = T.let([], T::Array[Dependabot::Notice])
 
           return unless job.source.directory.nil? && job.source.directories&.count == 1
 
@@ -52,11 +51,9 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking all dependencies for version updates...")
 
-          # Add a deprecation notice if the package manager is deprecated
-          add_deprecation_notice(
-            notices: @pr_notices,
-            package_manager: dependency_snapshot.package_manager
-          )
+          # Retrieve the list of initial notices from dependency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
         end
@@ -73,6 +70,9 @@ module Dependabot
         attr_reader :error_handler
         sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
@@ -167,7 +167,7 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
-            notices: @pr_notices
+            notices: @notices
           )
 
           if dependency_change.updated_dependency_files.empty?

@@ -26,17 +26,17 @@ class StubPackageManager < Dependabot::PackageManagerBase
 end
 
 RSpec.describe Dependabot::Notice do
-  describe ".generate_supported_versions_message" do
-    subject(:generate_supported_versions_message) do
-      described_class.generate_supported_versions_message(supported_versions, support_later_versions)
+  describe ".generate_supported_versions_description" do
+    subject(:generate_supported_versions_description) do
+      described_class.generate_supported_versions_description(supported_versions, support_later_versions)
     end
 
     context "when supported_versions has one version" do
       let(:supported_versions) { [Dependabot::Version.new("2")] }
       let(:support_later_versions) { false }
 
-      it "returns the correct message" do
-        expect(generate_supported_versions_message)
+      it "returns the correct description" do
+        expect(generate_supported_versions_description)
           .to eq("Please upgrade to version `v2`.")
       end
     end
@@ -45,8 +45,8 @@ RSpec.describe Dependabot::Notice do
       let(:supported_versions) { [Dependabot::Version.new("2")] }
       let(:support_later_versions) { true }
 
-      it "returns the correct message" do
-        expect(generate_supported_versions_message)
+      it "returns the correct description" do
+        expect(generate_supported_versions_description)
           .to eq("Please upgrade to version `v2`, or later.")
       end
     end
@@ -58,8 +58,8 @@ RSpec.describe Dependabot::Notice do
       end
       let(:support_later_versions) { false }
 
-      it "returns the correct message" do
-        expect(generate_supported_versions_message)
+      it "returns the correct description" do
+        expect(generate_supported_versions_description)
           .to eq("Please upgrade to one of the following versions: `v2`, `v3`, or `v4`.")
       end
     end
@@ -71,8 +71,8 @@ RSpec.describe Dependabot::Notice do
       end
       let(:support_later_versions) { true }
 
-      it "returns the correct message" do
-        expect(generate_supported_versions_message)
+      it "returns the correct description" do
+        expect(generate_supported_versions_description)
           .to eq("Please upgrade to one of the following versions: `v2`, `v3`, `v4`, or later.")
       end
     end
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::Notice do
       let(:support_later_versions) { false }
 
       it "returns empty string" do
-        expect(generate_supported_versions_message).to eq("")
+        expect(generate_supported_versions_description).to eq("Please upgrade your package manager version")
       end
     end
 
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Notice do
       let(:support_later_versions) { false }
 
       it "returns nil" do
-        expect(generate_supported_versions_message).to eq("")
+        expect(generate_supported_versions_description).to eq("Please upgrade your package manager version")
       end
     end
   end
@@ -124,10 +124,11 @@ RSpec.describe Dependabot::Notice do
             mode: "WARN",
             type: "bundler_deprecated_warn",
             package_manager_name: "bundler",
-            message: "Dependabot will stop supporting `bundler v1`!\n" \
-                     "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-            markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                      "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+            title: "Package manager deprecation notice",
+            description: "Dependabot will stop supporting `bundler v1`!" \
+                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+            show_in_pr: true,
+            show_alert: true
           })
       end
     end
@@ -142,10 +143,11 @@ RSpec.describe Dependabot::Notice do
             mode: "ERROR",
             type: "bundler_unsupported_error",
             package_manager_name: "bundler",
-            message: "Dependabot no longer supports `bundler v1`!\n" \
-                     "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-            markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
-                      "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+            title: "Package manager unsupported notice",
+            description: "Dependabot no longer supports `bundler v1`!" \
+                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+            show_in_pr: true,
+            show_alert: true
           })
       end
     end
@@ -194,10 +196,11 @@ RSpec.describe Dependabot::Notice do
           mode: "WARN",
           type: "bundler_deprecated_warn",
           package_manager_name: "bundler",
-          message: "Dependabot will stop supporting `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!WARNING]\n> Dependabot will stop supporting `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         })
     end
   end
@@ -222,10 +225,11 @@ RSpec.describe Dependabot::Notice do
           mode: "ERROR",
           type: "bundler_unsupported_error",
           package_manager_name: "bundler",
-          message: "Dependabot no longer supports `bundler v1`!\n" \
-                   "Please upgrade to one of the following versions: `v2`, or `v3`.\n",
-          markdown: "> [!IMPORTANT]\n> Dependabot no longer supports `bundler v1`!\n>\n" \
-                    "> Please upgrade to one of the following versions: `v2`, or `v3`.\n>\n"
+          title: "Package manager unsupported notice",
+          description: "Dependabot no longer supports `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
         })
     end
   end

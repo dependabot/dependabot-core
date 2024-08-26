@@ -24,7 +24,6 @@ module Dependabot
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
-      include PullRequestHelpers
 
       abstract!
 
@@ -55,13 +54,8 @@ module Dependabot
         )
         original_dependencies = dependency_snapshot.dependencies
 
-        notices = []
-
-        # Add a deprecation notice if the package manager is deprecated
-        add_deprecation_notice(
-          notices: notices,
-          package_manager: dependency_snapshot.package_manager
-        )
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|

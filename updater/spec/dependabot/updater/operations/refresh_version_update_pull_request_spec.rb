@@ -143,14 +143,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   end
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(stub_dependency_change)
     allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(
-      :add_deprecation_warn_to_pr_message
-    ).and_return(true)
   end
 
   after do
@@ -185,11 +184,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
 
       it "does not handle any error" do
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
-        perform
-      end
-
-      it "adds a deprecation notice" do
-        expect(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).with(package_manager).and_call_original
         perform
       end
     end

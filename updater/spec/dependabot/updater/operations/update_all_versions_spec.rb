@@ -14,6 +14,7 @@ require "dependabot/dependency_change_builder"
 require "dependabot/environment"
 require "dependabot/package_manager"
 require "dependabot/notices"
+require "dependabot/notices_helpers"
 
 require "dependabot/bundler"
 
@@ -152,18 +153,15 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive(
-      :package_manager
-    ).and_return(package_manager)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(
-      :add_deprecation_warn_to_pr_message
-    ).and_return(true)
+    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [])
   end
 
   after do
@@ -210,7 +208,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
-    context "when package manager version is 1" do
+    context "when package manager version is deprecated" do
       let(:package_manager_version) { "1" }
 
       it "creates a pull request" do
@@ -218,14 +216,9 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         expect(update_all_versions).to receive(:create_pull_request).with(stub_dependency_change)
         perform
       end
-
-      it "adds a deprecation notice" do
-        expect(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).with(package_manager).and_call_original
-        perform
-      end
     end
 
-    context "when package manager version is 2" do
+    context "when package manager version is not deprecated" do
       let(:package_manager_version) { "2" }
 
       it "creates a pull request" do
