@@ -254,12 +254,6 @@ module Dependabot
           Dependabot::MisconfiguredTooling.new("Yarn", message)
         }
       },
-      "YN0060" => {
-        message: "Incompatible peer dependency",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
-        }
-      },
       "YN0062" => {
         message: "Incompatible OS",
         handler: lambda { |message, _error, _params|
@@ -324,12 +318,6 @@ module Dependabot
           else
             Dependabot::DependencyNotFound.new(message)
           end
-        }
-      },
-      "YN0086" => {
-        message: "Peer dependencies incorrectly met",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
         }
       }
     }.freeze, T::Hash[String, {

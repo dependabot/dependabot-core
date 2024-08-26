@@ -229,31 +229,6 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
-    context "when the error message contains YN0060 response (Incompatible peer dependency)" do
-      let(:error_message) do
-        "[91m➤[39m YN0060: [38;5;166m@typescript-eslint/[39m[38;5;173mparser[39m is listed by your project " \
-        "with version [38;5;111m8.2.0[39m, which doesn't satisfy what [38;5;166m@typescript-eslint/[39" \
-        "m[38;5;173meslint-plugin[39m ([38;5;111mpe72be[39m) requests ([38;5;37m^7.0.0[39m).
-        [94m➤[39m [90mYN0000[39m: └ Completed
-        [94m➤[39m [90mYN0000[39m: ┌ Fetch step
-        ::group::Fetch step
-        ::endgroup::
-        [91m➤[39m YN0060: [38;5;166m@typescript-eslint/[39m[38;5;173mparser[39m is listed by your" \
-        " project with version [38;5;111m8.2.0[39m, which doesn't satisfy what " \
-        "[38;5;166m@typescript-eslint/[39m[38;5;173meslint-plugin[39m ([38;5;111mpe72be[39m) " \
-        "requests ([38;5;37m^7.0.0[39m).
-        [94m➤[39m [90mYN0000[39m: └ Completed
-        [94m➤[39m [90mYN0000[39m: ┌ Link step
-        ::group::Link step"
-      end
-
-      it "raises a DependencyFileNotResolvable error with the correct message" do
-        expect do
-          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
     context "when the error message contains YN0009 response (Build failed)" do
       let(:error_message) do
         "YN0009: │ @pact-foundation/pact@npm:10.0.0-beta.36 couldn't be built successfully" \
@@ -273,37 +248,6 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         "YN0068: │ [38;5;166m@cfaester/[39m[38;5;173menzyme-adapter-react-18[39m" \
           " ➤ [38;5;111mdependencies[39m ➤ [38;5;173mfunction.prototype.name[39m: " \
           "No matching package in the dependency tree;"
-      end
-
-      it "raises a DependencyFileNotResolvable error with the correct message" do
-        expect do
-          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
-        end.to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
-    context "when the error message contains YN0086 response (Peer dependencies incorrectly met)" do
-      let(:error_message) do
-        "[93m➤[39m YN0086: │ Some peer dependencies are incorrectly met; run [38;5;111myarn explain " \
-        "peer-requirements <hash>[39m for details, where [38;5;111m<hash>[39m is the six-letter p-prefixed code.
-        ::endgroup::
-        [91m➤[39m YN0060: [38;5;166m@typescript-eslint/[39m[38;5;173mparser[39m is listed" \
-        "by your project with version [38;5;111m8.2.0[39m, which doesn't satisfy what [38;5;166m" \
-        "@typescript-eslint/[39m[38;5;173meslint-plugin[39m ([38;5;111mpe72be[39m) request" \
-        " ([38;5;37m^7.0.0[39m).
-        [94m➤[39m [90mYN0000[39m: └ Completed
-        [94m➤[39m [90mYN0000[39m: ┌ Fetch step
-        ::group::Fetch step
-        ::endgroup::
-        [91m➤[39m YN0060: [38;5;166m@typescript-eslint/[39m[38;5;173mparser[39m is listed" \
-        " by your project with version [38;5;111m8.2.0[39m, which doesn't satisfy what" \
-        " [38;5;166m@typescript-eslint/[39m[38;5;173meslint-plugin[39m ([38;5;111mpe" \
-        "72be[39m) requests ([38;5;37m^7.0.0[39m).
-        [94m➤[39m [90mYN0000[39m: └ Completed
-        [94m➤[39m [90mYN0000[39m: ┌ Link step
-        ::group::Link step
-        [93m➤[39m YN0073: │ Skipped due to [38;5;111mmode=update-lockfile[39m
-        ::endgroup::"
       end
 
       it "raises a DependencyFileNotResolvable error with the correct message" do
