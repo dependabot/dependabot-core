@@ -58,7 +58,7 @@ module Dependabot
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
 
-          # Retrieve the list of initial notices from dependendency snapshot
+          # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
 
