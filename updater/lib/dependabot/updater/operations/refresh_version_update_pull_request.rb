@@ -16,7 +16,6 @@ module Dependabot
     module Operations
       class RefreshVersionUpdatePullRequest
         extend T::Sig
-        include PullRequestHelpers
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -60,11 +59,9 @@ module Dependabot
           Dependabot.logger.info("Checking and updating versions pull requests...")
           dependency = dependencies.last
 
-          # Add a deprecation notice if the package manager is deprecated
-          add_deprecation_notice(
-            notices: @notices,
-            package_manager: dependency_snapshot.package_manager
-          )
+          # Retrieve the list of initial notices from dependendency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           check_and_update_pull_request(dependencies)
         rescue StandardError => e

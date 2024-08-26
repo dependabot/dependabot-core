@@ -14,6 +14,7 @@ require "dependabot/dependency_change_builder"
 require "dependabot/environment"
 require "dependabot/package_manager"
 require "dependabot/notices"
+require "dependabot/notices_helpers"
 
 require "dependabot/bundler"
 
@@ -160,9 +161,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive(
-      :package_manager
-    ).and_return(package_manager)
+    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [])
   end
 
   after do
@@ -215,11 +214,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       it "creates a pull request" do
         expect(update_all_versions).to receive(:check_and_create_pull_request).with(dependency).and_call_original
         expect(update_all_versions).to receive(:create_pull_request).with(stub_dependency_change)
-        perform
-      end
-
-      it "adds a deprecation notice" do
-        expect(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).with(package_manager).and_call_original
         perform
       end
     end

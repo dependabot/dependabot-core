@@ -13,7 +13,6 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         extend T::Sig
         include SecurityUpdateHelpers
-        include PullRequestHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -59,11 +58,9 @@ module Dependabot
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
 
-          # Add a deprecation notice if the package manager is deprecated
-          add_deprecation_notice(
-            notices: @notices,
-            package_manager: dependency_snapshot.package_manager
-          )
+          # Retrieve the list of initial notices from dependendency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           target_dependencies = dependency_snapshot.job_dependencies
 

@@ -12,7 +12,6 @@ module Dependabot
     module Operations
       class UpdateAllVersions
         extend T::Sig
-        include PullRequestHelpers
 
         sig { params(_job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(_job:)
@@ -52,11 +51,9 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking all dependencies for version updates...")
 
-          # Add a deprecation notice if the package manager is deprecated
-          add_deprecation_notice(
-            notices: @notices,
-            package_manager: dependency_snapshot.package_manager
-          )
+          # Retrieve the list of initial notices from dependendency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
         end

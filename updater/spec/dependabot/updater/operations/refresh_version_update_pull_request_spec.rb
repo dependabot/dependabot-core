@@ -186,11 +186,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
         expect(mock_error_handler).not_to receive(:handle_dependency_error)
         perform
       end
-
-      it "adds a deprecation notice" do
-        expect(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).with(package_manager).and_call_original
-        perform
-      end
     end
   end
 

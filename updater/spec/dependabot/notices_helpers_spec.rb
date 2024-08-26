@@ -5,11 +5,12 @@ require "spec_helper"
 require "dependabot/updater"
 require "dependabot/package_manager"
 require "dependabot/notices"
+require "dependabot/notices_helpers"
 
-RSpec.describe Dependabot::Updater::PullRequestHelpers do
+RSpec.describe Dependabot::NoticesHelpers do
   let(:dummy_class) do
     Class.new do
-      include Dependabot::Updater::PullRequestHelpers
+      include Dependabot::NoticesHelpers
 
       attr_accessor :notices
 
