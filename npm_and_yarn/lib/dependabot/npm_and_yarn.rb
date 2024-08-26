@@ -130,12 +130,13 @@ module Dependabot
     YARN_PACKAGE_NOT_FOUND = /MessageError: Couldn't find any versions for "(?<pkg>.*?)" that matches "(?<ver>.*?)"/
 
     YN0001_FILE_NOT_RESOLVED_CODES = T.let({
-      FIND_PACKAGE_LOCATION: /YN0001: UsageError: Couldn't find the (?<pkg>.*) state file/,
-      NO_CANDIDATE_FOUND: /YN0001: Error: (?<pkg>.*): No candidates found/,
-      NO_SUPPORTED_RESOLVER: /YN0001:*.*Error: (?<pkg>.*) isn't supported by any available resolver/,
-      WORKSPACE_NOT_FOUND: /YN0001: Error: (?<pkg>.*): Workspace not found/,
-      ENOENT: /YN0001:*.*Thrown Error: (?<pkg>.*) ENOENT/,
-      MANIFEST_NOT_FOUND: /YN0001: Error: (?<pkg>.*): Manifest not found/
+      FIND_PACKAGE_LOCATION: /YN0001:(.*?)UsageError: Couldn't find the (?<pkg>.*) state file/,
+      NO_CANDIDATE_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): No candidates found/,
+      NO_SUPPORTED_RESOLVER: /YN0001:(.*?)Error: (?<pkg>.*) isn't supported by any available resolver/,
+      WORKSPACE_NOT_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): Workspace not found/,
+      ENOENT: /YN0001:(.*?)Thrown Error: (?<pkg>.*) ENOENT/,
+      MANIFEST_NOT_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): Manifest not found/,
+      LIBZIP_ERROR: /YN0001:(.*?)Libzip Error: Failed to open the cache entry for (?<pkg>.*): Not a zip archive/
     }.freeze, T::Hash[String, Regexp])
 
     YN0001_AUTH_ERROR_CODES = T.let({
@@ -203,6 +204,12 @@ module Dependabot
           Dependabot::DependencyFileNotResolvable.new(message)
         }
       },
+      "YN0009" => {
+        message: "Build Failed",
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
+        }
+      },
       "YN0016" => {
         message: "Remote not found",
         handler: lambda { |message, _error, _params|
@@ -228,6 +235,13 @@ module Dependabot
           Dependabot::DependencyNotFound.new(message)
         }
       },
+      "YN0041" => {
+        message: "Invalid authentication",
+        handler: lambda { |message, _error, _params|
+          url = T.must(URI.decode_www_form_component(message).split("https://").last).split("/").first
+          Dependabot::PrivateSourceAuthenticationFailure.new(url)
+        }
+      },
       "YN0046" => {
         message: "Automerge failed to parse",
         handler: lambda { |message, _error, _params|
@@ -240,6 +254,12 @@ module Dependabot
           Dependabot::MisconfiguredTooling.new("Yarn", message)
         }
       },
+      "YN0060" => {
+        message: "Incompatible peer dependency",
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
+        }
+      },
       "YN0062" => {
         message: "Incompatible OS",
         handler: lambda { |message, _error, _params|
@@ -250,6 +270,12 @@ module Dependabot
         message: "Incompatible CPU",
         handler: lambda { |message, _error, _params|
           Dependabot::IncompatibleCPU.new(message)
+        }
+      },
+      "YN0068" => {
+        message: "No matching package",
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
         }
       },
       "YN0071" => {
@@ -298,6 +324,12 @@ module Dependabot
           else
             Dependabot::DependencyNotFound.new(message)
           end
+        }
+      },
+      "YN0086" => {
+        message: "Peer dependencies incorrectly met",
+        handler: lambda { |message, _error, _params|
+          Dependabot::DependencyFileNotResolvable.new(message)
         }
       }
     }.freeze, T::Hash[String, {
