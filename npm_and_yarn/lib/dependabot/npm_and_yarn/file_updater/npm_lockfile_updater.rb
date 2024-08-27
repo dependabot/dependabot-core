@@ -93,10 +93,10 @@ module Dependabot
         REQUEST_ERROR_E403 = /Request "(?<pkg>.*)" returned a 403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
 
-        NPM_PACKAGE_NOT_FOUND_CODES = T.let({
-          PACKAGE_DISCOVERY_FAIL: /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
-          PACKAGE_DISCOVERY_FAIL_REQUIRED_BY: /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
-        }.freeze, T::Hash[String, Regexp])
+        NPM_PACKAGE_NOT_FOUND_CODES = T.let([
+          /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
+          /Couldn't find package "(?<pkg>.*)" "\required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+        ].freeze, T::Array[Regexp])
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -423,7 +423,7 @@ module Dependabot
                   "Error while updating peer dependency."
           end
 
-          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403) || error_message.match?(REQUEST_ERROR_E403) || error_message.match?(AUTH_REQUIRED_ERROR)
+          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403) || error_message.match?(REQUEST_ERROR_E403) || error_message.match?(AUTH_REQUIRED_ERROR) # rubocop:disable Layout/LineLength
             url = T.must(URI.decode_www_form_component(error_message).split("https://").last).split("/").first
             raise Dependabot::PrivateSourceAuthenticationFailure, url
           end
@@ -539,7 +539,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT) || error_message.match(UNABLE_TO_ACCESS))
+          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT) ||
+            error_message.match(UNABLE_TO_ACCESS))
             msg = sanitize_uri(git_source.named_captures.fetch("url"))
             raise Dependabot::PrivateSourceTimedOut, msg
           end
@@ -584,10 +585,9 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          NPM_PACKAGE_NOT_FOUND_CODES.each do |(_code, error_regex)|
-            if (msg = error_message.match(error_regex))
-              raise Dependabot::DependencyFileNotResolvable, msg
-            end
+          package_errors = Regexp.union(NPM_PACKAGE_NOT_FOUND_CODES)
+          if (msg = error_message.match(package_errors))
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           raise error

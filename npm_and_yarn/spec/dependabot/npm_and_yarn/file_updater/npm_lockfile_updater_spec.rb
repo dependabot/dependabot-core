@@ -769,7 +769,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "with a dependency with no access and E401 error" do
-      let(:response) { "npm WARN using --force Recommended protections disabled.
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
       npm ERR! code E401
       npm ERR! Incorrect or missing password.
       npm ERR! If you were trying to login, change your password, create an
@@ -777,60 +778,73 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       npm ERR! that means you likely typed your password in incorrectly.
       npm ERR! Please try again, or recover your password at:
       npm ERR!     https://www.npmjs.com/forgot
-      npm ERR! 
+      npm ERR!
       npm ERR! If you were doing some other operation then your saved credentials are
       npm ERR! probably out of date. To correct this please try logging in again with:
       npm ERR!     npm login
-      
-      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs/2024-07-30T08_39_47_480Z-debug-0.log" }
+
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs" \
+      "/2024-07-30T08_39_47_480Z-debug-0.log"
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): www.npmjs.com"
+              "The following source could not be reached as it requires authentication " \
+              "(and any provided details were invalid or lacked the required permissions): www.npmjs.com"
             )
         end
       end
     end
 
-
     context "with a dependency with no access and E403 error" do
-      let(:response) { "npm WARN using --force Recommended protections disabled.
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
       npm ERR! code E403
       npm ERR! 403 403 Forbidden - GET https://a0us.jfrog.io/a0us/api/npm/npm/execa
       npm ERR! 403 In most cases, you or one of your dependencies are requesting
       npm ERR! 403 a package version that is forbidden by your security policy, or
       npm ERR! 403 on a server you do not have access to.
-      
-      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs/2024-07-30T13_02_59_179Z-debug-0.log" }
+
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs" \
+      "/2024-07-30T13_02_59_179Z-debug-0.log"
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): a0us.jfrog.io"
+              "The following source could not be reached as it requires authentication (and " \
+              "any provided details were invalid or lacked the required permissions): a0us.jfrog.io"
             )
         end
       end
     end
 
     context "with a dependency with no access and E403 error" do
-      let(:response) { "https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3"\
-      ": Request \"https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3\" returned a 403" }
+      let(:response) do
+        "https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3" \
+          ": Request \"https://artifactory3-eu1.moneysupermarket.com/artifactory/" \
+          "api/npm/npm-repo/@aws-sdk%2fclient-s3\" returned a 403"
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): artifactory3-eu1.moneysupermarket.com"
+              "The following source could not be reached as it requires authentication (and any provided" \
+              " details were invalid or lacked the required permissions): artifactory3-eu1.moneysupermarket.com"
             )
         end
       end
     end
 
     context "with a registry with access that results in eai access code failure" do
-      let(:response) { "\n. request to https://registry.npmjs.org/next failed, reason: getaddrinfo EAI_AGAIN ." }
+      let(:response) do
+        "\n. request to https://registry.npmjs.org/next failed, reason: " \
+          "getaddrinfo EAI_AGAIN ."
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
@@ -856,12 +870,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "with a registry with access that results in empty reply from server error" do
-      let(:response) { "Error while executing:
+      let(:response) do
+        "Error while executing:
       /home/dependabot/bin/git ls-remote -h -t https://gitlab.dti.state.de.us/kpatel/sample-library
-      
+
       fatal: unable to access 'https://gitlab.dti.state.de.us/kpatel/sample-library/': Empty reply from server
-      
-      exited with error code: 128" }
+
+      exited with error code: 128"
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
@@ -880,7 +896,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): npm.fontawesome.com"
+              "The following source could not be reached as it requires authentication " \
+              "(and any provided details were invalid or lacked the required permissions): " \
+              "npm.fontawesome.com"
             )
         end
       end
