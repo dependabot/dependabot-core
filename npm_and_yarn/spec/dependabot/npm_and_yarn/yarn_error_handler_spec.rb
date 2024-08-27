@@ -180,7 +180,80 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         expect do
           error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
         end.to raise_error(Dependabot::DependencyFileNotResolvable,
-                           "YN0001: Error: @mui/material@npm:>5.16.7: No candidates found")
+                           "YN0001: │ Error: @mui/material@npm:>5.16.7: No candidates found")
+      end
+    end
+
+    context "when the error message contains YN0001 response (Libzip Error)" do
+      let(:error_message) do
+        "➤ YN0001: │ Libzip Error: Failed to open the cache entry for @swc/core-darwin-arm64@npm:1.4.13:" \
+        " Not a zip archive
+        at Wr.makeLibzipError (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:314:12847)
+        at new Wr (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:314:12288)
+        at T (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:429:3109)
+        at /home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:429:3173
+        at Jx (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:390:11143)
+        at Sg.factory (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:429:3164)
+        at get baseFs [as baseFs] (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:314:41188)
+        at Sg.readFilePromise (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:314:38610)
+        at bo.readFilePromise (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:314:38617)
+        at VA.loadFile (/home/dependabot/.cache/node/corepack/yarn/3.6.0/yarn.js:390:32591)
+    ::endgroup::"
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable,
+                           "YN0001: │ Libzip Error: Failed to open the cache entry " \
+                           "for @swc/core-darwin-arm64@npm:1.4.13: Not a zip archive")
+      end
+    end
+
+    context "when the error message contains YN0041 response (Invalid authentication)" do
+      let(:error_message) do
+        "[91m➤[39m YN0041: │ [38;5;166m@cadence-group/[39m[38;5;173mconventional-changelog-angular-" \
+        "jira[39m[38;5;111m@[39m[38;5;111mnpm:0.0.7::__archiveUrl=https%3A%2F%2Fnpm.pkg.github.com%2" \
+        "Fdownload%2F%40cadence-group%2Fconventional-changelog-angular-jira%2F0.0.7%2F04c2959b652882c4c017132" \
+        "f65dbaa42b6e532a4[39m: Invalid authentication (as an unknown user)
+        ::endgroup::"
+      end
+
+      it "raises a PrivateSourceAuthenticationFailure error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                           "The following source could not be reached as it requires " \
+                           "authentication (and any provided details were invalid or lacked the " \
+                           "required permissions): npm.pkg.github.com")
+      end
+    end
+
+    context "when the error message contains YN0009 response (Build failed)" do
+      let(:error_message) do
+        "YN0009: │ @pact-foundation/pact@npm:10.0.0-beta.36 couldn't be built successfully" \
+        " (exit code 127, logs can be found here: /tmp/xfs-c9e5e92d/build.log)
+        ➤ YN0000: └ Completed in 13s 325ms"
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when the error message contains YN0068 response (No matching package)" do
+      let(:error_message) do
+        "YN0068: │ [38;5;166m@cfaester/[39m[38;5;173menzyme-adapter-react-18[39m" \
+          " ➤ [38;5;111mdependencies[39m ➤ [38;5;173mfunction.prototype.name[39m: " \
+          "No matching package in the dependency tree;"
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
