@@ -769,13 +769,61 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "with a dependency with no access and E401 error" do
-      let(:response) { "code E401\nnpm ERR! Incorrect or missing password.\nnpm ERR!" }
+      let(:response) { "npm WARN using --force Recommended protections disabled.
+      npm ERR! code E401
+      npm ERR! Incorrect or missing password.
+      npm ERR! If you were trying to login, change your password, create an
+      npm ERR! authentication token or enable two-factor authentication then
+      npm ERR! that means you likely typed your password in incorrectly.
+      npm ERR! Please try again, or recover your password at:
+      npm ERR!     https://www.npmjs.com/forgot
+      npm ERR! 
+      npm ERR! If you were doing some other operation then your saved credentials are
+      npm ERR! probably out of date. To correct this please try logging in again with:
+      npm ERR!     npm login
+      
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs/2024-07-30T08_39_47_480Z-debug-0.log" }
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "code E401"
+              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): www.npmjs.com"
+            )
+        end
+      end
+    end
+
+
+    context "with a dependency with no access and E403 error" do
+      let(:response) { "npm WARN using --force Recommended protections disabled.
+      npm ERR! code E403
+      npm ERR! 403 403 Forbidden - GET https://a0us.jfrog.io/a0us/api/npm/npm/execa
+      npm ERR! 403 In most cases, you or one of your dependencies are requesting
+      npm ERR! 403 a package version that is forbidden by your security policy, or
+      npm ERR! 403 on a server you do not have access to.
+      
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs/2024-07-30T13_02_59_179Z-debug-0.log" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): a0us.jfrog.io"
+            )
+        end
+      end
+    end
+
+    context "with a dependency with no access and E403 error" do
+      let(:response) { "https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3"\
+      ": Request \"https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3\" returned a 403" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): artifactory3-eu1.moneysupermarket.com"
             )
         end
       end
@@ -807,6 +855,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with a registry with access that results in empty reply from server error" do
+      let(:response) { "Error while executing:
+      /home/dependabot/bin/git ls-remote -h -t https://gitlab.dti.state.de.us/kpatel/sample-library
+      
+      fatal: unable to access 'https://gitlab.dti.state.de.us/kpatel/sample-library/': Empty reply from server
+      
+      exited with error code: 128" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://gitlab.dti.state.de.us/kpatel/sample-library/"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in empty reply from server error" do
+      let(:response) { "https://npm.fontawesome.com/@fortawesome%2freact-fontawesome: authentication required" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication (and any provided details were invalid or lacked the required permissions): npm.fontawesome.com"
+            )
+        end
+      end
+    end
+
     context "with a registry with access that results in variation of socket hang up error" do
       let(:response) { "request to https://nexus.xyz.com/repository/npm-js/ejs failed,reason: socket hang up" }
 
@@ -817,6 +896,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
               "https://nexus.xyz.com/repository/npm-js/ejs"
             )
         end
+      end
+    end
+
+    context "with a response with package not found error" do
+      let(:response) do
+        "Couldn't find package \"leemons-plugin-client-manager-frontend:" \
+          "-react-private@1.0.0\" required by \"leemons-app@0.0.1\" on the \"npm\" registry."
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with package not found error" do
+      let(:response) do
+        "Couldn't find package \"animated\" on the \"npm\" registry."
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
