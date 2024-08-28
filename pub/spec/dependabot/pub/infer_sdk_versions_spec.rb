@@ -34,7 +34,7 @@ RSpec.describe "Helpers" do
     let(:project) { "requires_latest_beta" }
 
     it "Finds a matching beta" do
-      expect(inferred_result["flutter"]).to eq "3.1.0"
+      expect(inferred_result["flutter"]).to eq "3.25.0-0.1.pre"
       expect(inferred_result["channel"]).to eq "beta"
     end
   end
@@ -51,8 +51,8 @@ RSpec.describe "Helpers" do
   describe "Uses newest stable if allowed" do
     let(:project) { "allows_latest_stable" }
 
-    it "Finds a matching beta" do
-      expect(inferred_result["flutter"]).to eq "3.0.1"
+    it "Finds a matching stable" do
+      expect(inferred_result["flutter"]).to eq "3.24.1"
       expect(inferred_result["channel"]).to eq "stable"
     end
   end
