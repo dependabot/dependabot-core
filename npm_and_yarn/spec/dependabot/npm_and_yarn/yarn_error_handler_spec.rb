@@ -641,6 +641,133 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains undefined manifest error" do
+      let(:error_message) do
+        "Cannot read properties of undefined (reading 'manifest')"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Cannot read properties of undefined (reading 'manifest')")
+      end
+    end
+
+    context "when the error message contains 403 error" do
+      let(:error_message) do
+        "https://artifactory.wikia-inc.com/artifactory/api/npm/wikia-npm/@fandom-frontend%2fdesign-system: " \
+          "Request \"https://artifactory.wikia-inc.com/artifactory/api/npm/wikia-npm/@fandom-frontend%2fdes" \
+          "ign-system\" returned a 403"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                          "The following source could not be reached" \
+                          " as it requires authentication " \
+                          "(and any provided details were invalid or lacked " \
+                          "the required permissions): artifactory.wikia-inc.com")
+      end
+    end
+
+    context "when the error message contains authentication required error" do
+      let(:error_message) do
+        "https://npm.shopify.io/node/@shopify%2fpolaris-icons: authentication required"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                          "The following source could not be reached" \
+                          " as it requires authentication " \
+                          "(and any provided details were invalid or lacked " \
+                          "the required permissions): npm.shopify.io")
+      end
+    end
+
+    context "when the error message contains Permission denied error" do
+      let(:error_message) do
+        "https://npm.pkg.github.com/breakthroughbehavioralinc/webpack: Permission denied"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                          "The following source could not be reached" \
+                          " as it requires authentication " \
+                          "(and any provided details were invalid or lacked " \
+                          "the required permissions): npm.pkg.github.com")
+      end
+    end
+
+    context "when the error message contains Permission denied error" do
+      let(:error_message) do
+        "https://npm-proxy.fury.io/rps/webpack: bad_request"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure,
+                          "The following source could not be reached" \
+                          " as it requires authentication " \
+                          "(and any provided details were invalid or lacked " \
+                          "the required permissions): npm-proxy.fury.io")
+      end
+    end
+
+    context "when the error message contains Internal Server Error error" do
+      let(:error_message) do
+        "ResponseError: Request failed \"500 Internal Server Error\"" \
+          "at params.callback [as _callback] (/opt/npm_and_yarn/node_modules/"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Request failed \"500 Internal Server Error\"")
+      end
+    end
+
+    context "when the error message contains no package found error" do
+      let(:error_message) do
+        "MessageError: Couldn't find package \"rollup\" on the \"npm\" registry." \
+          "at /opt/npm_and_yarn/node_modules/@dependabot/yarn-lib/lib/resolvers/registries/npm-resolver.js:244:15"
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Couldn't find package \"rollup\" on the \"npm\" registry.")
+      end
+    end
+
+    context "when the error message contains no package found error" do
+      let(:error_message) do
+        "Couldn't find package \"mytest-tokens@^3.0.2\" required by \"babel-code-frame@^6.26.0\" " \
+          "on the \"npm\" registry."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Couldn't find package \"mytest-tokens@^3.0.2\" required by" \
+                          " \"babel-code-frame@^6.26.0\" on the \"npm\" registry.")
+      end
+    end
+
+    context "when the error message contains no package found error" do
+      let(:error_message) do
+        "https://npm.pkg.github.com/@graphql-codegen%2ftypescript-react-apollo:" \
+          " npm package \"typescript-react-apollo\" does not exist under owner \"graphql-codegen\""
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "npm package \"typescript-react-apollo\" does not exist under owner \"graphql-codegen\"")
+      end
+    end
+
     context "when the error message contains YARNRC_ENV_NOT_FOUND" do
       let(:error_message) do
         "Usage Error: Environment variable not found (GITHUB_TOKEN) in [38;5;170m/home/dependabot/dependabot-" \

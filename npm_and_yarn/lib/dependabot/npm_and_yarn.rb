@@ -61,6 +61,16 @@ module Dependabot
 
     SOCKET_HANG_UP = /(?<url>.*?): socket hang up/
 
+    # Misc errors
+    EEXIST = /EEXIST: file already exists, mkdir '(?<regis>.*)'/
+
+    # registry access errors
+    REQUEST_ERROR_E403 = /Request "(?<url>.*)" returned a 403/
+    AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/
+    PERMISSION_DENIED = /(?<url>.*): Permission denied/
+    BAD_REQUEST = /(?<url>.*): bad_request/
+    INTERNAL_SERVER_ERROR = /Request failed "500 Internal Server Error"/
+
     # Used to identify git unreachable error
     UNREACHABLE_GIT_CHECK_REGEX = /ls-remote --tags --heads (?<url>.*)/
 
@@ -78,6 +88,13 @@ module Dependabot
     PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX = /package "(?<package_req>.*?)"/
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req"
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
+    YARN_PACKAGE_NOT_FOUND_CODE_1 =
+      /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./
+    YARN_PACKAGE_NOT_FOUND_CODE_2 =
+      /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+    YARN_PACKAGE_NOT_FOUND_REGEX = /Couldn't find package "(?<pkg>.*)"*.* on the "(?<regis>.*)" registry./
+
+    YARN_PACKAGE_NOT_FOUND_CODE_3 = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/
 
     YN0035 = T.let({
       PACKAGE_NOT_FOUND: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): Package not found},
@@ -96,6 +113,9 @@ module Dependabot
     DEPENDENCY_MATCH_NOT_FOUND = "Couldn't find match for"
 
     DEPENDENCY_NO_VERSION_FOUND = "Couldn't find any versions"
+
+    # Manifest not found
+    MANIFEST_NOT_FOUND = /Cannot read properties of undefined \(reading '(?<file>.*)'\)/
 
     # Used to identify error if node_modules state file not resolved
     NODE_MODULES_STATE_FILE_NOT_FOUND = "Couldn't find the node_modules state file"
@@ -512,8 +532,55 @@ module Dependabot
         },
         in_usage: false,
         matchfn: nil
-      }
+      },
+      {
+        patterns: [YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(YARN_PACKAGE_NOT_FOUND_REGEX)
 
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [YARN_PACKAGE_NOT_FOUND_CODE_3],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE_3)
+
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [REQUEST_ERROR_E403, AUTH_REQUIRED_ERROR, PERMISSION_DENIED, BAD_REQUEST],
+        handler: lambda { |message, _error, _params|
+          dependency_url = T.must(URI.decode_www_form_component(message).split("https://").last).split("/").first
+
+          Dependabot::PrivateSourceAuthenticationFailure.new(dependency_url)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [MANIFEST_NOT_FOUND],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(MANIFEST_NOT_FOUND)
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [INTERNAL_SERVER_ERROR],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(INTERNAL_SERVER_ERROR)
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      }
     ].freeze, T::Array[{
       patterns: T::Array[T.any(String, Regexp)],
       handler: ErrorHandler,
