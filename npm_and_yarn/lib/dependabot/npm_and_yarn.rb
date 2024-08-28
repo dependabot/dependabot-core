@@ -88,13 +88,8 @@ module Dependabot
     PACKAGE_NOT_FOUND_PACKAGE_NAME_REGEX = /package "(?<package_req>.*?)"/
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE = "package_req"
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
-    YARN_PACKAGE_NOT_FOUND_CODE_1 =
-      /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./
-    YARN_PACKAGE_NOT_FOUND_CODE_2 =
-      /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
-    YARN_PACKAGE_NOT_FOUND_REGEX = /Couldn't find package "(?<pkg>.*)"*.* on the "(?<regis>.*)" registry./
 
-    YARN_PACKAGE_NOT_FOUND_CODE_3 = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/
+    YARN_PACKAGE_NOT_FOUND_CODE = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/
 
     YN0035 = T.let({
       PACKAGE_NOT_FOUND: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): Package not found},
@@ -534,19 +529,9 @@ module Dependabot
         matchfn: nil
       },
       {
-        patterns: [YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
+        patterns: [YARN_PACKAGE_NOT_FOUND_CODE],
         handler: lambda { |message, _error, _params|
-          msg = message.match(YARN_PACKAGE_NOT_FOUND_REGEX)
-
-          Dependabot::DependencyFileNotResolvable.new(msg)
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARN_PACKAGE_NOT_FOUND_CODE_3],
-        handler: lambda { |message, _error, _params|
-          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE_3)
+          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE)
 
           Dependabot::DependencyFileNotResolvable.new(msg)
         },

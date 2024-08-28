@@ -730,33 +730,6 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
 
     context "when the error message contains no package found error" do
       let(:error_message) do
-        "MessageError: Couldn't find package \"rollup\" on the \"npm\" registry." \
-          "at /opt/npm_and_yarn/node_modules/@dependabot/yarn-lib/lib/resolvers/registries/npm-resolver.js:244:15"
-      end
-
-      it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Couldn't find package \"rollup\" on the \"npm\" registry.")
-      end
-    end
-
-    context "when the error message contains no package found error" do
-      let(:error_message) do
-        "Couldn't find package \"mytest-tokens@^3.0.2\" required by \"babel-code-frame@^6.26.0\" " \
-          "on the \"npm\" registry."
-      end
-
-      it "raises the corresponding error class with the correct message" do
-        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
-          .to raise_error(Dependabot::DependencyFileNotResolvable,
-                          "Couldn't find package \"mytest-tokens@^3.0.2\" required by" \
-                          " \"babel-code-frame@^6.26.0\" on the \"npm\" registry.")
-      end
-    end
-
-    context "when the error message contains no package found error" do
-      let(:error_message) do
         "https://npm.pkg.github.com/@graphql-codegen%2ftypescript-react-apollo:" \
           " npm package \"typescript-react-apollo\" does not exist under owner \"graphql-codegen\""
       end
