@@ -13,10 +13,10 @@ module Dependabot
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
 
-      def self.updated_files_regex(_ = false)
+      def self.updated_files_regex
         [
-          /^Cargo\.toml$/,
-          /^Cargo\.lock$/
+          /Cargo\.toml$/, # Matches Cargo.toml in the root directory or any subdirectory
+          /Cargo\.lock$/  # Matches Cargo.lock in the root directory or any subdirectory
         ]
       end
 

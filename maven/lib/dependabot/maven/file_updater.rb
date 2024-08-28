@@ -11,7 +11,7 @@ module Dependabot
       require_relative "file_updater/declaration_finder"
       require_relative "file_updater/property_value_updater"
 
-      def self.updated_files_regex(_ = false)
+      def self.updated_files_regex
         [
           /^pom\.xml$/, %r{/pom\.xml$},
           /.*\.xml$/, %r{/.*\.xml$},

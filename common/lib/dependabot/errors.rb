@@ -226,6 +226,11 @@ module Dependabot
           "error-message": error.message
         }
       }
+    when Dependabot::OutOfDisk
+      {
+        "error-type": "out_of_disk",
+        "error-detail": {}
+      }
     when Dependabot::GoModulePathMismatch
       {
         "error-type": "go_module_path_mismatch",
@@ -234,6 +239,11 @@ module Dependabot
           "discovered-path": error.discovered_path,
           "go-mod": error.go_mod
         }
+      }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
       }
     when
       IncompatibleCPU,
@@ -507,6 +517,8 @@ module Dependabot
   class DependencyFileNotEvaluatable < DependabotError; end
 
   class DependencyFileNotResolvable < DependabotError; end
+
+  class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
   #######################
   # Source level errors #

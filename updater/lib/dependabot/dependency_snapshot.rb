@@ -5,6 +5,7 @@ require "base64"
 require "sorbet-runtime"
 
 require "dependabot/file_parsers"
+require "dependabot/notices_helpers"
 
 # This class describes the dependencies obtained from a project at a specific commit SHA
 # including both the Dependabot::DependencyFile objects at that reference as well as
@@ -15,6 +16,7 @@ require "dependabot/file_parsers"
 module Dependabot
   class DependencySnapshot
     extend T::Sig
+    include NoticesHelpers
 
     sig do
       params(job: Dependabot::Job, job_definition: T::Hash[String, T.untyped]).returns(Dependabot::DependencySnapshot)
@@ -63,6 +65,18 @@ module Dependabot
     def dependencies
       assert_current_directory_set!
       T.must(@dependencies[@current_directory])
+    end
+
+    sig { returns(T.nilable(Dependabot::PackageManagerBase)) }
+    def package_manager
+      @package_manager[@current_directory]
+    end
+
+    sig { returns(T::Array[Dependabot::Notice]) }
+    def notices
+      # The notices array in dependency snapshot stay immutable,
+      # so we can return a copy
+      @notices[@current_directory]&.dup || []
     end
 
     # Returns the subset of all project dependencies which are permitted
@@ -167,6 +181,9 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+      @package_manager = T.let({}, T::Hash[String, T.nilable(Dependabot::PackageManagerBase)])
+      @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
+
       directories.each do |dir|
         @current_directory = dir
         @dependencies[dir] = parse_files!
@@ -216,7 +233,7 @@ module Dependabot
     def dependency_file_parser
       assert_current_directory_set!
       job.source.directory = @current_directory
-      Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+      parser = Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         source: job.source,
@@ -224,6 +241,22 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
+      # Add 'package_manager' to the depedency_snapshopt to use it in operations'
+      package_manager_for_current_directory = parser.package_manager
+      @package_manager[@current_directory] = package_manager_for_current_directory
+
+      # Log deprecation notices if the package manager is deprecated
+      # and add them to the notices array
+      notices_for_current_directory = []
+
+      # add deprecation notices for the package manager
+      add_deprecation_notice(
+        notices: notices_for_current_directory,
+        package_manager: package_manager_for_current_directory
+      )
+      @notices[@current_directory] = notices_for_current_directory
+
+      parser
     end
 
     sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, String]]) }

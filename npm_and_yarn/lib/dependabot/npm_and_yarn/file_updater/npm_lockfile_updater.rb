@@ -74,9 +74,11 @@ module Dependabot
         INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
         SOCKET_HANG_UP = /(?:request to )?(?<url>.*): socket hang up/
         ESOCKETTIMEDOUT = /(?<url>.*): ESOCKETTIMEDOUT/
+        UNABLE_TO_ACCESS = /unable to access '(?<url>.*)': Empty reply from server/
         UNABLE_TO_AUTH_NPMRC = /Unable to authenticate, need: Basic, Bearer/
         UNABLE_TO_AUTH_REGISTRY = /Unable to authenticate, need: *.*(Basic|BASIC) *.*realm="(?<url>.*)"/
         MISSING_AUTH_TOKEN = /401 Unauthorized - GET (?<url>.*) - authentication token not provided/
+        AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/
         INVALID_AUTH_TOKEN =
           /401 Unauthorized - GET (?<url>.*) - unauthenticated: User cannot be authenticated with the token provided./
         NPM_PACKAGE_REGISTRY = "https://npm.pkg.github.com"
@@ -88,8 +90,13 @@ module Dependabot
         EMPTY_OBJECT_ERROR = /Object for dependency "(?<package>.*)" is empty/
         ERROR_E401 = /code E401/
         ERROR_E403 = /code E403/
+        REQUEST_ERROR_E403 = /Request "(?<pkg>.*)" returned a 403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
-        PACKAGE_DISCOVERY_FAIL = /Couldn't find package "(?<pkg>.*)" *.* on the "(?<regis>.*)" registry./
+
+        NPM_PACKAGE_NOT_FOUND_CODES = T.let([
+          /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
+          /Couldn't find package "(?<pkg>.*)" "\required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+        ].freeze, T::Array[Regexp])
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
@@ -416,8 +423,9 @@ module Dependabot
                   "Error while updating peer dependency."
           end
 
-          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403)
-            raise Dependabot::PrivateSourceAuthenticationFailure, error_message
+          if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403) || error_message.match?(REQUEST_ERROR_E403) || error_message.match?(AUTH_REQUIRED_ERROR) # rubocop:disable Layout/LineLength
+            url = T.must(URI.decode_www_form_component(error_message).split("https://").last).split("/").first
+            raise Dependabot::PrivateSourceAuthenticationFailure, url
           end
 
           if error_message.match?(MISSING_PACKAGE)
@@ -531,7 +539,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT))
+          if (git_source = error_message.match(SOCKET_HANG_UP) || error_message.match(ESOCKETTIMEDOUT) ||
+            error_message.match(UNABLE_TO_ACCESS))
             msg = sanitize_uri(git_source.named_captures.fetch("url"))
             raise Dependabot::PrivateSourceTimedOut, msg
           end
@@ -576,7 +585,10 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          raise Dependabot::DependencyFileNotResolvable, error_message if error_message.match(PACKAGE_DISCOVERY_FAIL)
+          package_errors = Regexp.union(NPM_PACKAGE_NOT_FOUND_CODES)
+          if (msg = error_message.match(package_errors))
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
 
           raise error
         end

@@ -1,6 +1,9 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
+
 # This class implements our strategy for 'refreshing' an existing Pull Request
 # that updates an insecure dependency.
 #
@@ -41,10 +44,19 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+          @notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         sig { void }
         def perform
+          Dependabot.logger.info("Starting update job for #{job.source.repo}")
+          Dependabot.logger.info("Checking and updating security pull requests...")
+
+          # Retrieve the list of initial notices from dependency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
+
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
@@ -60,6 +72,9 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def dependencies
@@ -142,7 +157,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: @notices
           )
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive

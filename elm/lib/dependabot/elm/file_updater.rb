@@ -9,7 +9,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       require_relative "file_updater/elm_json_updater"
 
-      def self.updated_files_regex(_ = false)
+      def self.updated_files_regex
         [
           /^elm\.json$/
         ]

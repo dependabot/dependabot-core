@@ -194,6 +194,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with an invalid package manager requirement in the package.json" do
+      let(:project_name) { "pnpm/invalid_package_manager" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a registry resolution that returns err_pnpm_tarball_integrity response" do
       let(:dependency_name) { "lodash" }
       let(:version) { "22.2.0" }
@@ -368,6 +377,102 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
               ]
             )
         end
+      end
+    end
+
+    context "with an err_pnpm_meta_fetch_fail response" do
+      let(:project_name) { "pnpm/meta_fetch_fail" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry resolution that returns missing_workspace_package response" do
+      let(:dependency_name) { "@storybook/react-vite" }
+      let(:version) { "8.2.9" }
+      let(:previous_version) { "8.1.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "8.2.9",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "8.1.1",
+          groups: ["optionalDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/missing_workspace_package" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry resolution that returns err_pnpm_broken_metadata_json response" do
+      let(:dependency_name) { "nodemon" }
+      let(:version) { "3.3.3" }
+      let(:previous_version) { "^3.1.3" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.3.3",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.1.3",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/broken_metadata" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry resolution that returns missing_workspace_dir_package response" do
+      let(:dependency_name) { "webpack" }
+      let(:version) { "5.94.0" }
+      let(:previous_version) { "5.93.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "5.94.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "5.93.0",
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/missing_workspace_dir_package" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

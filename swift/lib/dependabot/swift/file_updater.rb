@@ -9,7 +9,7 @@ require "dependabot/swift/file_updater/manifest_updater"
 module Dependabot
   module Swift
     class FileUpdater < Dependabot::FileUpdaters::Base
-      def self.updated_files_regex(_ = false)
+      def self.updated_files_regex
         [
           /Package(@swift-\d(\.\d){0,2})?\.swift/,
           /^Package\.resolved$/

@@ -6,6 +6,8 @@ require "sorbet-runtime"
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
 require "dependabot/workspace"
+require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -51,6 +53,9 @@ module Dependabot
           initial_dependency_files: dependency_snapshot.dependency_files
         )
         original_dependencies = dependency_snapshot.dependencies
+
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        notices = dependency_snapshot.notices
 
         Dependabot.logger.info("Updating the #{job.source.directory} directory.")
         group.dependencies.each do |dependency|
@@ -108,7 +113,8 @@ module Dependabot
           job: job,
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
-          dependency_group: group
+          dependency_group: group,
+          notices: notices
         )
 
         if Experiments.enabled?("dependency_change_validation") && !dependency_change.all_have_previous_version?

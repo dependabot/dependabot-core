@@ -186,6 +186,32 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       end
     end
 
+    context "with a dist tag" do
+      context "when it is valid requirement tag" do
+        let(:requirement_string) { "next" }
+
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "++ 2.1.2" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "unsupported_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
+      end
+    end
+
     context "with only a *" do
       let(:requirement_string) { "*" }
 

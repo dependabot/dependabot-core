@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -43,6 +44,8 @@ module Dependabot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
           @created_pull_requests = T.let([], T::Array[PullRequest])
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+          @notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -54,6 +57,10 @@ module Dependabot
         sig { void }
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+
+          # Retrieve the list of initial notices from dependency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           target_dependencies = dependency_snapshot.job_dependencies
 
@@ -76,6 +83,9 @@ module Dependabot
         attr_reader :error_handler
         sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
@@ -169,7 +179,8 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            notices: @notices
           )
 
           create_pull_request(dependency_change)

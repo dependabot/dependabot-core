@@ -30,26 +30,17 @@ module Dependabot
         end
       end
 
-      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
-      def self.updated_files_regex(allowlist_enabled = false)
-        if allowlist_enabled
-          [
-            %r{^(?:.*\/)?package\.json$},
-            %r{^(?:.*\/)?package-lock\.json$},
-            %r{^(?:.*\/)?npm-shrinkwrap\.json$},
-            %r{^(?:.*\/)?yarn\.lock$},
-            %r{^(?:.*\/)?pnpm-lock\.yaml$}
-          ]
-        else
-          # Old regex. After 100% rollout of the allowlist, this will be removed.
-          [
-            /^package\.json$/,
-            /^package-lock\.json$/,
-            /^npm-shrinkwrap\.json$/,
-            /^yarn\.lock$/,
-            /^pnpm-lock\.yaml$/
-          ]
-        end
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        [
+          %r{^(?:.*/)?package\.json$},
+          %r{^(?:.*/)?package-lock\.json$},
+          %r{^(?:.*/)?npm-shrinkwrap\.json$},
+          %r{^(?:.*/)?yarn\.lock$},
+          %r{^(?:.*/)?pnpm-lock\.yaml$},
+          %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
+          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
+        ]
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

@@ -48,8 +48,10 @@ module Dependabot
         # ERR_PNPM_FETCH ERROR CODES
         ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):  - 401/
         ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):  - 403/
+        ERR_PNPM_FETCH_404 = /ERR_PNPM_FETCH_404.*GET (?<dependency_url>.*):  - 404/
         ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):  - 500/
         ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):  - 502/
+        ERR_PNPM_FETCH_503 = /ERR_PNPM_FETCH_503.*GET (?<dependency_url>.*):  - 503/
 
         # ERR_PNPM_UNSUPPORTED_ENGINE
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
@@ -65,6 +67,16 @@ module Dependabot
         PLATFORM_PACAKGE_DEP = /Unsupported platform for (?<dep>.*)\: wanted/
         PLATFORM_VERSION_REQUIREMENT = /wanted {(?<supported_ver>.*)} \(current: (?<detected_ver>.*)\)/
         PLATFORM_PACAKGE_MANAGER = "pnpm"
+
+        INVALID_PACKAGE_SPEC = /Invalid package manager specification/
+
+        # Metadata inconsistent error codes
+        ERR_PNPM_META_FETCH_FAIL = /ERR_PNPM_META_FETCH_FAIL/
+        ERR_PNPM_BROKEN_METADATA_JSON = /ERR_PNPM_BROKEN_METADATA_JSON/
+
+        # Directory related error codes
+        ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
+        ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
 
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -111,6 +123,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/CyclomaticComplexity
         def handle_pnpm_lock_updater_error(error, pnpm_lock)
           error_message = error.message
 
@@ -131,7 +145,8 @@ module Dependabot
           end
 
           [FORBIDDEN_PACKAGE, MISSING_PACKAGE, UNAUTHORIZED_PACKAGE, ERR_PNPM_FETCH_401,
-           ERR_PNPM_FETCH_403, ERR_PNPM_FETCH_500, ERR_PNPM_FETCH_502].each do |regexp|
+           ERR_PNPM_FETCH_403, ERR_PNPM_FETCH_404, ERR_PNPM_FETCH_500, ERR_PNPM_FETCH_502, ERR_PNPM_FETCH_503]
+            .each do |regexp|
             next unless error_message.match?(regexp)
 
             dependency_url = error_message.match(regexp).named_captures["dependency_url"]
@@ -144,6 +159,40 @@ module Dependabot
 
             msg = "Error (ERR_PNPM_TARBALL_INTEGRITY) while resolving \"#{dependency_names}\"."
             Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          # TO-DO : investigate "packageManager" allowed regex
+          if error_message.match?(INVALID_PACKAGE_SPEC)
+            dependency_names = dependencies.map(&:name).join(", ")
+
+            msg = "Invalid package manager specification in package.json while resolving \"#{dependency_names}\"."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_META_FETCH_FAIL)
+
+            msg = error_message.split(ERR_PNPM_META_FETCH_FAIL).last
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_WORKSPACE_PKG_NOT_FOUND)
+            dependency_names = dependencies.map(&:name).join(", ")
+
+            msg = "No package named \"#{dependency_names}\" present in workspace."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_BROKEN_METADATA_JSON)
+            msg = "Error (ERR_PNPM_BROKEN_METADATA_JSON) while resolving \"pnpm-lock.yaml\" file."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND)
+            dir = error_message.match(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND).named_captures.fetch("dir")
+            msg = "Could not find linked package installation directory \"#{dir.split('/').last}\""
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
@@ -160,6 +209,8 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         def raise_resolvability_error(error_message, pnpm_lock)
           dependency_names = dependencies.map(&:name).join(", ")

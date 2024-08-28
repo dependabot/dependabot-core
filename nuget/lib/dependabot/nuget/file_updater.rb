@@ -16,35 +16,22 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
-      sig { override.params(allowlist_enabled: T::Boolean).returns(T::Array[Regexp]) }
-      def self.updated_files_regex(allowlist_enabled = false)
-        if allowlist_enabled
-          [
-            /^.*\.([a-z]{2})?proj$/,
-            /^packages\.config$/i,
-            /^app\.config$/i,
-            /^web\.config$/i,
-            /^global\.json$/i,
-            /^dotnet-tools\.json$/i,
-            /^Directory\.Build\.props$/i,
-            /^Directory\.Build\.targets$/i,
-            /^Packages\.props$/i
-          ]
-        else
-          # Old regex. After 100% rollout of the allowlist, this will be removed.
-          [
-            %r{^[^/]*\.([a-z]{2})?proj$},
-            /^.*\.([a-z]{2})?proj$/,
-            /^packages\.config$/i,
-            /^app\.config$/i,
-            /^web\.config$/i,
-            /^global\.json$/i,
-            /^dotnet-tools\.json$/i,
-            /^Directory\.Build\.props$/i,
-            /^Directory\.Build\.targets$/i,
-            /^Packages\.props$/i
-          ]
-        end
+      sig { override.returns(T::Array[Regexp]) }
+      def self.updated_files_regex
+        [
+          /.*\.([a-z]{2})?proj$/, # Matches files with any extension like .csproj, .vbproj, etc., in any directory
+          /packages\.config$/i,           # Matches packages.config in any directory
+          /app\.config$/i,                # Matches app.config in any directory
+          /web\.config$/i,                # Matches web.config in any directory
+          /global\.json$/i,               # Matches global.json in any directory
+          /dotnet-tools\.json$/i,         # Matches dotnet-tools.json in any directory
+          /Directory\.Build\.props$/i,    # Matches Directory.Build.props in any directory
+          /Directory\.Build\.targets$/i,  # Matches Directory.Build.targets in any directory
+          /Directory\.targets$/i,         # Matches Directory.targets in any directory or root directory
+          /Packages\.props$/i, # Matches Packages.props in any directory
+          /.*\.nuspec$/, # Matches any .nuspec files in any directory
+          %r{^\.config/dotnet-tools\.json$} # Matches .config/dotnet-tools.json in only root directory
+        ]
       end
 
       sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }

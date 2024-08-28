@@ -64,9 +64,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-
-    let(:allowlist_enabled) { true }
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -87,7 +85,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           "subdirectory/pnpm-lock.yaml",
           "apps/dependabot_business/package.json",
           "packages/package1/package.json",
-          "packages/package2/yarn.lock"
+          "packages/package2/yarn.lock",
+          ".yarn/install-state.gz",
+          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
+          ".pnp.js",
+          ".pnp.cjs"
         ]
 
         matching_files.each do |file_name|

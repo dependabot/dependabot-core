@@ -77,8 +77,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
   end
 
   describe "#updated_files_regex" do
-    subject(:updated_files_regex) { described_class.updated_files_regex(allowlist_enabled) }
-    let(:allowlist_enabled) { false } # default value
+    subject(:updated_files_regex) { described_class.updated_files_regex }
 
     it "is not empty" do
       expect(updated_files_regex).not_to be_empty
@@ -88,7 +87,9 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       it "returns true for files that should be updated" do
         matching_files = [
           "pubspec.yaml",
-          "pubspec.lock"
+          "pubspec.lock",
+          "packages/foo_bar/pubspec.yaml",
+          "packages/foo_bar/pubspec.lock"
         ]
 
         matching_files.each do |file_name|
