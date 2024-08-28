@@ -29,7 +29,7 @@ module Dependabot
         fetched_files << pubspec_yaml
         fetched_files << pubspec_lock if pubspec_lock
         # Fetch any additional pubspec.yamls in the same git repo for resolving
-        # local path-dependencies.
+        # local path-dependencies and workspace packages.
         extra_pubspecs = Dir.glob("**/pubspec.yaml", base: clone_repo_contents)
         fetched_files += extra_pubspecs.map do |pubspec|
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)

@@ -68,6 +68,10 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     files.find { |f| f.name == "pubspec.yaml" }.content
   end
 
+  def app_manifest(files)
+    files.find { |f| f.name == "app/pubspec.yaml" }.content
+  end
+
   def lockfile(files)
     files.find { |f| f.name == "pubspec.lock" }.content
   end
@@ -181,40 +185,40 @@ RSpec.describe Dependabot::Pub::FileUpdater do
     end
   end
 
-  describe "#updated_dependency_files unlock all" do
+  describe "Updates sub-project in pub workspace" do
     let(:dependencies) do
       [
         Dependabot::Dependency.new(
-          name: "protobuf",
-          version: "2.0.0",
+          name: "pub_semver",
+          version: "2.1.4",
           requirements: [{
             file: "pubspec.yaml",
-            requirement: "^2.0.0",
+            requirement: "^2.1.4",
             groups: ["direct"],
             source: nil
           }],
-          previous_version: "1.1.4",
+          previous_version: "2.0.0",
           previous_requirements: [{
             file: "pubspec.yaml",
-            requirement: "^1.1.4",
+            requirement: "^2.0.0",
             groups: ["direct"],
             source: nil
           }],
           package_manager: "pub"
         ),
         Dependabot::Dependency.new(
-          name: "fixnum",
-          version: "1.0.0",
+          name: "meta",
+          version: "1.15.0",
           requirements: [{
             file: "pubspec.yaml",
-            requirement: "^1.0.0",
+            requirement: "^1.15.0",
             groups: ["direct"],
             source: nil
           }],
-          previous_version: "0.10.11",
+          previous_version: "1.3.0-nullsafety.6",
           previous_requirements: [{
             file: "pubspec.yaml",
-            requirement: "^0.10.11",
+            requirement: "^1.3.0-nullsafety.6",
             groups: ["direct"],
             source: nil
           }],
@@ -225,10 +229,42 @@ RSpec.describe Dependabot::Pub::FileUpdater do
 
     it "updates pubspec.lock" do
       updated_files = updater.updated_dependency_files
-      expect(manifest(updated_files)).to include "protobuf: ^2.0.0"
-      expect(lockfile(updated_files)).to include "version: \"2.0.0\""
-      expect(manifest(updated_files)).to include "fixnum: ^1.0.0"
-      expect(lockfile(updated_files)).to include "version: \"1.0.0\""
+      expect(manifest(updated_files)).to include "pub_semver: ^2.1.4"
+      expect(lockfile(updated_files)).to include "version: \"2.1.4\""
+      expect(manifest(updated_files)).to include "meta: ^1.15.0"
+      expect(lockfile(updated_files)).to include "version: \"1.15.0\""
+    end
+  end
+
+  describe "#updated_dependency_files unlock all" do
+    let(:project) { "can_update_workspace" }
+    let(:dependencies) do
+      [
+        Dependabot::Dependency.new(
+          name: "meta",
+          version: "1.7.0",
+          requirements: [{
+            file: "pubspec.yaml",
+            requirement: "1.7.0",
+            groups: ["direct"],
+            source: nil
+          }],
+          previous_version: "1.6.0",
+          previous_requirements: [{
+            file: "pubspec.yaml",
+            requirement: "1.7.0",
+            groups: ["direct"],
+            source: nil
+          }],
+          package_manager: "pub"
+        )
+      ]
+    end
+
+    it "updates pubspec.lock" do
+      updated_files = updater.updated_dependency_files
+      expect(app_manifest(updated_files)).to include "meta: 1.7.0"
+      expect(lockfile(updated_files)).to include "version: \"1.7.0\""
     end
   end
 end
