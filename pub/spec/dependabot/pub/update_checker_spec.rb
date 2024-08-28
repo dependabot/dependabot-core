@@ -441,7 +441,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
               requirement: "1.3.0-nullsafety.6", groups: ["direct"], source: nil, file: "pubspec.yaml"
             }],
             "package_manager" => "pub"
-          },
+          }
         ]
       end
     end
