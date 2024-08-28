@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/version_selector"
 
 module Dependabot
   module NpmAndYarn
@@ -14,6 +15,9 @@ module Dependabot
 
       def setup(name)
         return unless @package_manager.nil? || @package_manager.start_with?("#{name}@")
+
+        version_selector = VersionSelector.new
+        version_selector.setup(@package_json)
 
         version = requested_version(name)
 
