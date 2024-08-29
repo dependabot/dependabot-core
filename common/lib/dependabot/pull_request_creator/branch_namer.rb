@@ -95,6 +95,7 @@ module Dependabot
               target_branch: target_branch,
               dependency_group: T.must(dependency_group),
               includes_security_fixes: includes_security_fixes,
+              existing_branches: existing_branches,
               separator: separator,
               prefix: prefix,
               max_length: max_length
