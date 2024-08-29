@@ -70,9 +70,11 @@ module Dependabot
             sanitized_name[[T.must(max_length) - sha.size, 0].max..] = sha
           end
 
-          deduped_branch = dedup_existing_branches(sanitized_name)
-
-          sanitized_name
+          if Dependabot::Experiments.enabled?(:dedup_branch_names)
+            dedup_existing_branches(sanitized_name)
+          else
+            sanitized_name
+          end
         end
 
         sig { params(ref: String).returns(String) }
