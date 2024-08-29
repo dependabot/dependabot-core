@@ -93,12 +93,12 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         Dependabot::Experiments.register(:dedup_branch_names, true)
       end
 
-      let!(:existing_branches) { 
+      let!(:existing_branches) do
         [
           "dependabot/dummy/business-1.5.0",
           "dependabot/dummy/business-1.5.0-1"
-        ] 
-      }
+        ]
+      end
       let!(:namer) do
         described_class.new(
           dependencies: dependencies,
