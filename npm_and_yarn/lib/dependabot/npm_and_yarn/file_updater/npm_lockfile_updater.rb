@@ -95,7 +95,7 @@ module Dependabot
 
         NPM_PACKAGE_NOT_FOUND_CODES = T.let([
           /Couldn't find package "(?<pkg>.*)" on the "(?<regis>.*)" registry./,
-          /Couldn't find package "(?<pkg>.*)" "\required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
+          /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
         ].freeze, T::Array[Regexp])
 
         # TODO: look into fixing this in npm, seems like a bug in the git
