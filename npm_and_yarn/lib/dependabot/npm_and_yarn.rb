@@ -90,6 +90,8 @@ module Dependabot
     PACKAGE_NOT_FOUND_PACKAGE_NAME_CAPTURE_SPLIT_REGEX = /(?<=\w)\@/
 
     YARN_PACKAGE_NOT_FOUND_CODE = /npm package "(?<dep>.*)" does not exist under owner "(?<regis>.*)"/
+    YARN_PACKAGE_NOT_FOUND_CODE_1 = /Couldn't find package "[^@].*(?<dep>.*)" on the "(?<regis>.*)" registry./
+    YARN_PACKAGE_NOT_FOUND_CODE_2 = /Couldn't find package "[^@].*(?<dep>.*)" required by "(?<pkg>.*)" on the "(?<regis>.*)" registry./ # rubocop:disable Layout/LineLength
 
     YN0035 = T.let({
       PACKAGE_NOT_FOUND: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): Package not found},
@@ -529,9 +531,10 @@ module Dependabot
         matchfn: nil
       },
       {
-        patterns: [YARN_PACKAGE_NOT_FOUND_CODE],
+        patterns: [YARN_PACKAGE_NOT_FOUND_CODE, YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
         handler: lambda { |message, _error, _params|
-          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE)
+          msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE) || message.match(YARN_PACKAGE_NOT_FOUND_CODE_1) ||
+          message.match(YARN_PACKAGE_NOT_FOUND_CODE_2)
 
           Dependabot::DependencyFileNotResolvable.new(msg)
         },

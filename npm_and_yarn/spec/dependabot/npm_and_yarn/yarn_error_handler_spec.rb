@@ -741,6 +741,31 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains variation of Couldn't find package error" do
+      let(:error_message) do
+        "Couldn't find package \"source-map-explorer\" on the \"npm\" registry."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Couldn't find package \"source-map-explorer\" on the \"npm\" registry.")
+      end
+    end
+
+    context "when the error message contains variation of Couldn't find package error" do
+      let(:error_message) do
+        "Couldn't find package \"dl-core-js@^1.0.0\" required by \"mahso-slide-gen@0.1.0\" on the \"npm\" registry."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Couldn't find package \"dl-core-js@^1.0.0\" required" \
+                          " by \"mahso-slide-gen@0.1.0\" on the \"npm\" registry.")
+      end
+    end
+
     context "when the error message contains YARNRC_ENV_NOT_FOUND" do
       let(:error_message) do
         "Usage Error: Environment variable not found (GITHUB_TOKEN) in [38;5;170m/home/dependabot/dependabot-" \
