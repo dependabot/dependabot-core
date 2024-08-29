@@ -38,14 +38,15 @@ module Dependabot
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, separator: "/",
-                       prefix: "dependabot", max_length: nil)
-          @dependencies  = dependencies
-          @files         = files
-          @target_branch = target_branch
-          @separator     = separator
-          @prefix        = prefix
-          @max_length    = max_length
+        def initialize(dependencies:, files:, target_branch:, existing_branches: [],
+                       separator: "/", prefix: "dependabot", max_length: nil)
+          @dependencies      = dependencies
+          @files             = files
+          @target_branch     = target_branch
+          @existing_branches = existing_branches
+          @separator         = separator
+          @prefix            = prefix
+          @max_length        = max_length
         end
 
         sig { overridable.returns(String) }
@@ -69,7 +70,23 @@ module Dependabot
             sanitized_name[[T.must(max_length) - sha.size, 0].max..] = sha
           end
 
+          deduped_branch = dedup_existing_branches(sanitized_name)
+
           sanitized_name
+        end
+
+        sig { params(ref: String).returns(String) }
+        def dedup_exisitng_branches(ref)
+          return ref unless existing_branches.include?(ref)
+
+          i = 1
+          new_ref = "#{ref}-#{i}"
+          while existing_branches.include?(new_ref)
+            i += 1
+            new_ref = "#{ref}-#{i}"
+          end
+
+          new_ref
         end
 
         sig { params(ref: String).returns(String) }
