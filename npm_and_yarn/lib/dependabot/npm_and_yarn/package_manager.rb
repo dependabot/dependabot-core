@@ -17,8 +17,7 @@ module Dependabot
         return unless @package_manager.nil? || @package_manager.start_with?("#{name}@")
 
         version_selector = VersionSelector.new
-        version_selector.setup(@package_json)
-
+        @engine_versions = version_selector.setup(@package_json)
         version = requested_version(name)
 
         if version
@@ -48,6 +47,7 @@ module Dependabot
       end
 
       def install(name, version)
+        puts(@engine_versions)
         SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only"

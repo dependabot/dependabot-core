@@ -20,6 +20,7 @@ module Dependabot
         package_manager.each do |key, value|
           Dependabot.logger.info("Engine configuration found : \"#{key}\" : \"#{value}\"")
         end
+        package_manager
       end
 
       def extracted_version(value)
