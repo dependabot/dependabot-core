@@ -15,19 +15,17 @@ module Dependabot
 
         return unless package_manager
 
+        package_manager.delete_if { |_key, value| !extracted_version(value) }
+
         package_manager.each do |key, value|
-          package_manager[key] = extracted_version(value)
-          Dependabot.logger.info("Engine configuration found : \"#{key}\" : \"#{extracted_version(value)}\"")
+          Dependabot.logger.info("Engine configuration found : \"#{key}\" : \"#{value}\"")
         end
       end
 
       def extracted_version(value)
-        if (value.match?(NODE_ENGINE_SUPPORTED_REGEX))
-          return value
-        else 
-          return 0
-        end
-        
+        return true if value.match?(NODE_ENGINE_SUPPORTED_REGEX)
+
+        false
       end
     end
   end
