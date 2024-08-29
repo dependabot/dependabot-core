@@ -65,11 +65,11 @@ module Dependabot
     EEXIST = /EEXIST: file already exists, mkdir '(?<regis>.*)'/
 
     # registry access errors
-    REQUEST_ERROR_E403 = /Request "(?<url>.*)" returned a 403/
-    AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/
-    PERMISSION_DENIED = /(?<url>.*): Permission denied/
-    BAD_REQUEST = /(?<url>.*): bad_request/
-    INTERNAL_SERVER_ERROR = /Request failed "500 Internal Server Error"/
+    REQUEST_ERROR_E403 = /Request "(?<url>.*)" returned a 403/ # Forbidden access to the URL.
+    AUTH_REQUIRED_ERROR = /(?<url>.*): authentication required/ # Authentication is required for the URL.
+    PERMISSION_DENIED = /(?<url>.*): Permission denied/ # Lack of permission to access the URL.
+    BAD_REQUEST = /(?<url>.*): bad_request/ # Inconsistent request while accessing resource.
+    INTERNAL_SERVER_ERROR = /Request failed "500 Internal Server Error"/ # Server error response by remote registry.
 
     # Used to identify git unreachable error
     UNREACHABLE_GIT_CHECK_REGEX = /ls-remote --tags --heads (?<url>.*)/
