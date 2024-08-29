@@ -33,6 +33,12 @@ public partial class AnalyzeWorker
     {
         var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
         var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        var analysisResult = await RunAsync(repoRoot, discovery, dependencyInfo);
+        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+    }
+
+    public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
+    {
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
         _logger.Log($"Starting analysis of {dependencyInfo.Name}...");
@@ -61,7 +67,7 @@ public partial class AnalyzeWorker
         bool isProjectUpdateNecessary = IsUpdateNecessary(dependencyInfo, projectsWithDependency);
         var isUpdateNecessary = isProjectUpdateNecessary || dotnetToolsHasDependency || globalJsonHasDependency;
         using var nugetContext = new NuGetContext(startingDirectory);
-        AnalysisResult result;
+        AnalysisResult analysisResult;
         try
         {
             if (isUpdateNecessary)
@@ -134,7 +140,7 @@ public partial class AnalyzeWorker
                 // should track the dependenciesToUpdate as they have already been analyzed.
             }
 
-            result = new AnalysisResult
+            analysisResult = new AnalysisResult
             {
                 UpdatedVersion = updatedVersion?.ToNormalizedString() ?? dependencyInfo.Version,
                 CanUpdate = updatedVersion is not null,
@@ -146,7 +152,7 @@ public partial class AnalyzeWorker
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
             // TODO: consolidate this error handling between AnalyzeWorker, DiscoveryWorker, and UpdateWorker
-            result = new AnalysisResult
+            analysisResult = new AnalysisResult
             {
                 ErrorType = ErrorType.AuthenticationFailure,
                 ErrorDetails = "(" + string.Join("|", nugetContext.PackageSources.Select(s => s.Source)) + ")",
@@ -156,9 +162,8 @@ public partial class AnalyzeWorker
             };
         }
 
-        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, result, _logger);
-
         _logger.Log($"Analysis complete.");
+        return analysisResult;
     }
 
     private static bool IsUpdateNecessary(DependencyInfo dependencyInfo, ImmutableArray<ProjectDiscoveryResult> projectsWithDependency)
@@ -393,7 +398,7 @@ public partial class AnalyzeWorker
 
         // Create distinct list of dependencies taking the highest version of each
         var dependencyResult = await DependencyFinder.GetDependenciesAsync(
-            workspacePath,
+            repoRoot,
             projectPath,
             projectFrameworks,
             packageIds,
