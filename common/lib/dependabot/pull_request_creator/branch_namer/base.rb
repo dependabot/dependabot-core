@@ -18,7 +18,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :target_branch
 
-        sig { returns(T.nilable(T::Array[String])) }
+        sig { returns(T::Array[String]) }
         attr_reader :existing_branches
 
         sig { returns(String) }
@@ -35,7 +35,7 @@ module Dependabot
             dependencies: T::Array[Dependency],
             files: T::Array[DependencyFile],
             target_branch: T.nilable(String),
-            existing_branches: T.nilable(T::Array[String]),
+            existing_branches: T::Array[String],
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer)

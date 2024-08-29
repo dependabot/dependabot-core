@@ -115,7 +115,7 @@ module Dependabot
     sig { returns(T.nilable(T.any(T::Array[String], Integer))) }
     attr_reader :milestone
 
-    sig { returns(T.nilable(T::Array[String])) }
+    sig { returns(T::Array[String]) }
     attr_reader :existing_branches
 
     sig { returns(String) }
@@ -162,7 +162,7 @@ module Dependabot
         reviewers: Reviewers,
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
         milestone: T.nilable(T.any(T::Array[String], Integer)),
-        existing_branches: T.nilable(T::Array[String]),
+        existing_branches: T::Array[String],
         branch_name_separator: String,
         branch_name_prefix: String,
         branch_name_max_length: T.nilable(Integer),

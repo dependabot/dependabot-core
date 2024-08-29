@@ -17,7 +17,7 @@ module Dependabot
             target_branch: T.nilable(String),
             dependency_group: Dependabot::DependencyGroup,
             includes_security_fixes: T::Boolean,
-            existing_branches: T.nilable(T::Array[String]),
+            existing_branches: T::Array[String],
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer)
