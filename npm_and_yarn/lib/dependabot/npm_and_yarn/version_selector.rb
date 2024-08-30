@@ -15,8 +15,7 @@ module Dependabot
 
         return unless package_manager
 
-
-        # Only keep matching specs versions i.e. "V20.21.2", "20.21.2", 
+        # Only keep matching specs versions i.e. "V20.21.2", "20.21.2",
         # Additional specs can be added later
         package_manager.delete_if { |_key, value| !valid_extracted_version(value) }
         package_manager.delete_if { |key, _value| key != name }

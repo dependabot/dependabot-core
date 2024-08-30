@@ -18,11 +18,6 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" }
         # we go for the sepcificity mentioned in packageManager (6.0.2)
 
-        # if (@package_manager&.include?("yarn"))
-        #   @package_manager = "yarn" 
-        # end
-
-
         if @package_manager.nil?
           version = check_engine_version(name)
         elsif @package_manager&.==name.to_s
@@ -87,16 +82,16 @@ module Dependabot
 
       def check_engine_version(name)
         Dependabot.logger.info("Fetching \"engines\" info")
-        version_selector = VersionSelector.new()
+        version_selector = VersionSelector.new
         @engine_versions = version_selector.setup(@package_json, name)
 
-        if @engine_versions.empty?
+        if @engine_versions && @engine_versions.empty?
           Dependabot.logger.info("No relevant (engines) info for \"#{name}\"")
           return
         end
 
         version = @engine_versions[name]
-        Dependabot.logger.info("Returned (engines) \"#{name}\" : \"#{version}\"")
+        Dependabot.logger.info("Returned \(engines\) \"#{name}\" : \"#{version}\"")
         version
       end
     end
