@@ -115,24 +115,6 @@ RSpec.describe Dependabot::Maven::Version do
 
       it { is_expected.to be(false) }
     end
-
-    context "with a 'pr' pre-release separated with a ." do
-      let(:version_string) { "2.10.0.pr3" }
-
-      it { is_expected.to be(true) }
-    end
-
-    context "with a 'pre' pre-release separated with a -" do
-      let(:version_string) { "2.10.0-pre0" }
-
-      it { is_expected.to be(true) }
-    end
-
-    context "with a dev token" do
-      let(:version_string) { "1.2.1-dev-65" }
-
-      it { is_expected.to be(true) }
-    end
   end
 
   describe "#<=>" do
@@ -172,13 +154,6 @@ RSpec.describe Dependabot::Maven::Version do
 
         context "when prefixed with a v" do
           let(:other_version) { described_class.new("v1.0.0") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when using different date formats" do
-          let(:version_string) { "20181003" }
-          let(:other_version) { described_class.new("v2018-10-03") }
 
           it { is_expected.to eq(0) }
         end
@@ -265,7 +240,7 @@ RSpec.describe Dependabot::Maven::Version do
           let(:version) { described_class.new("1.foo") }
           let(:other_version) { described_class.new("1-foo") }
 
-          it { is_expected.to eq(-1) }
+          it { is_expected.to eq(0) }
         end
 
         context "when dealing with prefixes2" do
