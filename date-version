@@ -1,0 +1,37 @@
+  Ubuntu
+  22.04.4
+  LTS
+Runner Image
+  Image: ubuntu-22.04
+  Version: 20240825.1.0
+  Included Software: https://github.com/actions/runner-images/blob/ubuntu22/20240825.1/images/ubuntu/Ubuntu2204-Readme.md
+  Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu22%2F20240825.1
+Runner Image Provisioner
+  2.0.384.1
+GITHUB_TOKEN Permissions
+  Actions: write
+  Attestations: write
+  Checks: write
+  Contents: write
+  Deployments: write
+  Discussions: write
+  Issues: write
+  Metadata: read
+  Packages: write
+  Pages: write
+  PullRequests: write
+  RepositoryProjects: write
+  SecurityEvents: write
+  Statuses: write
+Secret source: Actions
+Prepare workflow directory
+Prepare all required actions
+Complete job name: date-version
+ export DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
+  echo "DATE_BASED_VERSION=$DATE_BASED_VERSION" >> $GITHUB_OUTPUT
+  shell: /usr/bin/bash -e {0}
+  env:
+    UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-
+Evaluate and set job outputs
+Set output 'date'
+Cleaning up orphan processes
