@@ -1,0 +1,6 @@
+-all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+ docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+    UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-
+    COMMIT_SHA: 4b2035fd3ccf697006e3a8f8027e3b1574d1fa4b
+    NAME: bundler
+    ECOSYSTEM: bundler
