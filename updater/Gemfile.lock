@@ -23,7 +23,7 @@ PATH
       excon (~> 0.109)
       faraday (= 2.7.11)
       faraday-retry (= 2.2.0)
-      gitlab (= 4.19.0)
+      gitlab (= 5.0.0)
       json (< 2.7)
       nokogiri (~> 1.8)
       octokit (>= 4.6, < 7.0)
@@ -191,7 +191,7 @@ GEM
       ffi (>= 1.0.0)
       rake
     flamegraph (0.9.5)
-    gitlab (4.19.0)
+    gitlab (5.0.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
     google-protobuf (3.24.4)
