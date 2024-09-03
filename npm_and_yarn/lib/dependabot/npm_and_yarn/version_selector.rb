@@ -20,7 +20,7 @@ module Dependabot
         package_manager.delete_if { |_key, value| !valid_extracted_version(value) }
         package_manager.delete_if { |key, _value| key != name }
         package_manager.each do |key, value|
-          Dependabot.logger.info("Found (engines) { \"#{key}\" : \"#{value}\" }")
+          Dependabot.logger.info("Found (engines) \"#{key}\" : \"#{value}\"")
         end
 
         package_manager

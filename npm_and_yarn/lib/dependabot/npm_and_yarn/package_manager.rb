@@ -85,13 +85,16 @@ module Dependabot
         version_selector = VersionSelector.new
         @engine_versions = version_selector.setup(@package_json, name)
 
-        if @engine_versions && @engine_versions.empty?
+        # puts("name #{name}")
+        # puts("engine #{@engine_versions}")
+
+        if (@engine_versions && @engine_versions.empty?) || @engine_versions.nil?
           Dependabot.logger.info("No relevant (engines) info for \"#{name}\"")
           return
         end
 
         version = @engine_versions[name]
-        Dependabot.logger.info("Returned \(engines\) \"#{name}\" : \"#{version}\"")
+        Dependabot.logger.info("Returned (engines) \"#{name}\" : \"#{version}\"")
         version
       end
     end
