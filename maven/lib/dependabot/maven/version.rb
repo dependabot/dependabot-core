@@ -40,61 +40,13 @@ module Dependabot
       end
 
       def prerelease?
-        tokens.to_a.flatten.any? do |token|
+        bucket.to_a.flatten.any? do |token|
           token.is_a?(Integer) && token.negative?
         end
       end
 
       def <=>(other)
         bucket <=> other.bucket
-        # cmp = compare_tokens(bucket.tokens, other.bucket.tokens)
-        # return cmp unless cmp.zero?
-
-        # compare_additions(bucket.addition, other.bucket.addition)
-      end
-
-      private
-
-      def compare_tokens(a, b) # rubocop:disable Naming/MethodParameterName
-        max_idx = [a.size, b.size].max - 1
-        (0..max_idx).each do |idx|
-          cmp = compare_token_pair(a[idx], b[idx])
-          return cmp unless cmp.zero?
-        end
-        0
-      end
-
-      def compare_token_pair(a = 0, b = 0) # rubocop:disable Metrics/PerceivedComplexity
-        a ||= 0
-        b ||= 0
-
-        if a.is_a?(Integer) && b.is_a?(String)
-          return a <= 0 ? -1 : 1
-        end
-
-        if a.is_a?(String) && b.is_a?(Integer)
-          return b <= 0 ? 1 : -1
-        end
-
-        if a == Dependabot::Maven::VersionParser::SP && b.is_a?(String) && b != Dependabot::Maven::VersionParser::SP
-          return -1
-        end
-
-        if b == Dependabot::Maven::VersionParser::SP && a.is_a?(String) && a != Dependabot::Maven::VersionParser::SP
-          return 1
-        end
-
-        a <=> b # a and b are both ints or strings
-      end
-
-      def compare_additions(first, second)
-        return 0 if first.nil? && second.nil?
-
-        (first || empty_addition) <=> (second || empty_addition)
-      end
-
-      def empty_addition
-        TokenBucket.new([])
       end
     end
   end

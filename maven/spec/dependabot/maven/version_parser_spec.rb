@@ -35,7 +35,7 @@ RSpec.describe Dependabot::Maven::VersionParser do
       it "returns the correct array" do
         valid_versions.each do |input|
           version, result = input
-          expect(described_class.parse(version)).to eq(result)
+          expect(described_class.parse(version).to_a).to eq(result)
         end
       end
     end

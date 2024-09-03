@@ -95,8 +95,8 @@ module Dependabot
         @result = @token_bucket
         parse_version(false)
 
-        # raise ArgumentError, version_string if @result.to_a.empty?
-        # @result.to_a
+        raise ArgumentError, "Malformed version string #{version_string}" if @result.to_a.empty?
+
         @result
       end
 
@@ -113,7 +113,7 @@ module Dependabot
         parse_version(true)
       end
 
-      def parse_version(number_begins_partition)
+      def parse_version(number_begins_partition) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # skip leading v if any
         scanner.skip(/v/)
 
