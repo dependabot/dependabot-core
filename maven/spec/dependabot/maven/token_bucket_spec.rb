@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/maven/version_parser"
+require "dependabot/maven/token_bucket"
 
 RSpec.describe Dependabot::Maven::TokenBucket do
   subject(:token_bucket) { described_class.new(tokens: tokens, addition: addition) }
