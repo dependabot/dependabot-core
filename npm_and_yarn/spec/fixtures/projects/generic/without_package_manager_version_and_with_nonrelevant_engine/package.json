@@ -5,8 +5,9 @@
   "license": "UNLICENSED",
   "owner": "foo",
   "engines": {
-    "node": "^18.12.1"
+    "node": "^18.12.1",
+    "yarn": "<=1.9.1"
   },
   "private": true,
-  "packageManager": "yarn@3.2"
+  "packageManager": "yarn"
 }

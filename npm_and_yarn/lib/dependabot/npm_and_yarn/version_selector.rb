@@ -12,16 +12,14 @@ module Dependabot
 
       def setup(manifest_json, name)
         Dependabot.logger.info("Fetching \"engines\" info")
-        puts("Fetching \"engines\" info #{name}")
+
         engine_versions = manifest_json["engines"]
 
         if engine_versions.nil?
           Dependabot.logger.info("No info (engines) found")
           return
         end
-        # puts("here")
-        puts(engine_versions)
-        puts("--------------")
+
         # Only keep matching specs versions i.e. "V20.21.2", "20.21.2",
         # Additional specs can be added later
         # engine_versions.delete_if { |engine, _value| engine != name }
@@ -31,17 +29,14 @@ module Dependabot
 
         engine_versions.each do |key, value|
           Dependabot.logger.info("Found (engines) \"#{key}\" : \"#{value}\"")
-          puts("Found (engines) \"#{key}\" : \"#{value}\"")
         end
 
         version
       end
 
       def valid_extracted_version?(version)
-        puts("here extracted #{version}")
         return true if version.match?(NODE_ENGINE_SUPPORTED_REGEX)
 
-        puts("removed #{version}")
         false
       end
     end

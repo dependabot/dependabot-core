@@ -1903,19 +1903,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with both packageManager and engines fields of same package-manager" do
+  context "with both packageManager with version and valid engines fields (yarn)" do
     before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
-          body: fixture_to_response("projects/npm/package_manager_with_engine_info", "package.json"),
+          body: fixture_to_response("projects/generic/package_manager_with_ver_with_engine_info_yarn", "package.json"),
           headers: json_header
         )
     end
 
-    it "fetches package.json fine and yarn version is picked from packageManager" do
+    it "fetches package.json fine and yarn version is picked from packageManager and not engines" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.ecosystem_versions).to eq(
         { package_managers: { "yarn" => "3.2.3" } }
@@ -1923,14 +1925,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with both packageManager and engines fields of same package-manager" do
+  context "with both packageManager with version and valid engines fields (pnpm)" do
     before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
-          body: fixture_to_response("projects/npm/package_manager_without_version__with_engine_version",
+          body: fixture_to_response("projects/generic/package_manager_with_ver_with_engine_info_pnpm", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and pnpm version is picked from packageManager and not engines" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "pnpm" => "8.9.0" } }
+      )
+    end
+  end
+
+  context "with only packageManager and no engines fields (pnpm)" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_pnpm",
                                     "package.json"),
           headers: json_header
         )
@@ -1939,8 +1965,160 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "fetches package.json fine and yarn version is picked from packageManager" do
       expect(file_fetcher_instance.files.count).to eq(1)
       expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "pnpm" => "9.5.0" } }
+      )
+    end
+  end
+
+  context "with only packageManager and no engines fields (yarn)" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/package_manager_with_ver_with_no_engine_info_yarn",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "yarn" => "1.22.15" } }
+      )
+    end
+  end
+
+  context "with packageManager and engines fields with engine field having non relevant version (pnpm)" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/package_manager_with_ver_and_nonrelevant_engine_info_pnpm",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager and not engines" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "pnpm" => "8.15.9" } }
+      )
+    end
+  end
+
+  context "with packageManager and engines fields with engine field having non relevant version (yarn)" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/package_manager_with_ver_and_nonrelevant_engine_info_yarn",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager and not engines" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "yarn" => "1.21.1" } }
+      )
+    end
+  end
+
+  context "with both packageManager and engines fields of same package-manager" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/without_package_manager_version_and_with_engine_version",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from engines" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
         { package_managers: { "yarn" => "1.9.1" } }
       )
+    end
+  end
+
+  context "with both packageManager and engines fields of same package-manager" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/without_package_manager_version_and_with_nonrelevant_engine",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+    end
+  end
+
+  context "with packageManager without version and engines fields missing" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/package_manager_without_version_and_no_engines",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and no new version of packageManager is installed" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+    end
+  end
+
+  context "without packageManager and with engines fields" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/generic/without_package_manager_version_and_with_engine_version",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager" do
+      expect(file_fetcher_instance.files.count).to eq(1)
     end
   end
 
