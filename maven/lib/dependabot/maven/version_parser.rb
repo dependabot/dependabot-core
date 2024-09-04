@@ -31,7 +31,12 @@ module Dependabot
         compare_additions(addition, other.addition)
       end
 
-      sig { params(first: T::Array[Integer], second: T::Array[Integer]).returns(T.nilable(Integer)) }
+      sig do
+        params(
+          first: T::Array[T.any(String, Integer)],
+          second: T::Array[T.any(String, Integer)]
+        ).returns(T.nilable(Integer))
+      end
       def compare_tokens(first, second)
         max_idx = [first.size, second.size].max - 1
         (0..max_idx).each do |idx|
