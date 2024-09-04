@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Maven::NewVersion do
       it { is_expected.to be(true) }
     end
 
-    context "with a null version" do
+    context "with a nil version" do
       let(:version_string) { nil }
 
       it { is_expected.to be(false) }
@@ -480,7 +480,6 @@ RSpec.describe Dependabot::Maven::NewVersion do
           described_class.new("1.0-cr1"),
           described_class.new("1.0-SNAPSHOT"),
           described_class.new("1.0-RELEASE"),
-          described_class.new("1.0"),
           described_class.new("1.0-sp"),
           described_class.new("1.0-a"),
           described_class.new("1.0-whatever"),

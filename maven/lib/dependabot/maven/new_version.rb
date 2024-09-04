@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/maven/version_parser"
@@ -9,47 +9,60 @@ require "dependabot/utils"
 
 module Dependabot
   module Maven
-    class NewVersion < Dependabot::Version
-      PRERELEASE_QUALIFIERS = [
+    class NewVersion
+      extend T::Sig
+      extend T::Helpers
+
+      PRERELEASE_QUALIFIERS = T.let([
         Dependabot::Maven::VersionParser::ALPHA,
         Dependabot::Maven::VersionParser::BETA,
         Dependabot::Maven::VersionParser::MILESTONE,
         Dependabot::Maven::VersionParser::RC,
         Dependabot::Maven::VersionParser::SNAPSHOT
-      ].freeze
+      ].freeze, T::Array[Integer])
 
-      attr_accessor :bucket
+      sig { returns(Dependabot::Maven::TokenBucket) }
+      attr_accessor :token_bucket
 
+      sig { params(version: T.nilable(String)).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil? || version.empty?
 
-        Dependabot::Maven::VersionParser.parse(version.to_s).any?
+        Dependabot::Maven::VersionParser.parse(version.to_s).to_a.any?
       end
 
+      sig { params(version: T.nilable(String)).void }
       def initialize(version)
-        @version_string = version.to_s
-        @bucket = Dependabot::Maven::VersionParser.parse(version.to_s)
+        @version_string = T.let(version, T.nilable(String))
+        @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version.to_s), Dependabot::Maven::TokenBucket)
       end
 
+      sig { returns(String) }
       def inspect
-        "#<#{self.class} #{@version_string}>"
+        "#<#{self.class} #{version_string}>"
       end
 
+      sig { returns(String) }
       def to_s
-        @version_string
+        T.must(version_string)
       end
 
+      sig { returns(T::Boolean) }
       def prerelease?
-        bucket.to_a.flatten.any? do |token|
+        token_bucket.to_a.flatten.any? do |token|
           token.is_a?(Integer) && token.negative?
         end
       end
 
+      sig { params(other: ::Dependabot::Maven::NewVersion).returns(Integer) }
       def <=>(other)
-        bucket <=> other.bucket
+        T.must(token_bucket <=> other.token_bucket)
       end
+
+      private
+
+      sig { returns(T.nilable(String)) }
+      attr_reader :version_string
     end
   end
 end
-
-Dependabot::Utils.register_version_class("maven", Dependabot::Maven::NewVersion)

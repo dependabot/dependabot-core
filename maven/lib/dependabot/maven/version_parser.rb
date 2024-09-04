@@ -1,4 +1,4 @@
-# typed: ignore
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -8,67 +8,92 @@ require "strscan"
 #
 module Dependabot
   module Maven
-    TokenBucket = Struct.new(:tokens, :addition) do
+    class TokenBucket < T::Struct
+      extend T::Sig
+      extend T::Helpers
+      include Comparable
+
+      prop :tokens, T::Array[T.untyped]
+      prop :addition, T.nilable(TokenBucket)
+
+      sig { returns(T::Array[T.untyped]) }
       def to_a
         return tokens if addition.nil?
 
         tokens.clone.append(addition.to_a)
       end
 
+      sig { params(other: TokenBucket).returns(T.nilable(Integer)) }
       def <=>(other)
         cmp = compare_tokens(tokens, other.tokens)
-        return cmp unless cmp.zero?
+        return cmp unless cmp&.zero?
 
         compare_additions(addition, other.addition)
       end
 
-      def compare_tokens(a, b) # rubocop:disable Naming/MethodParameterName
-        max_idx = [a.size, b.size].max - 1
+      sig { params(first: T::Array[Integer], second: T::Array[Integer]).returns(T.nilable(Integer)) }
+      def compare_tokens(first, second)
+        max_idx = [first.size, second.size].max - 1
         (0..max_idx).each do |idx|
-          cmp = compare_token_pair(a[idx], b[idx])
-          return cmp unless cmp.zero?
+          cmp = compare_token_pair(first[idx], second[idx])
+          return cmp unless T.must(cmp).zero?
         end
         0
       end
 
-      def compare_token_pair(a = 0, b = 0) # rubocop:disable Metrics/PerceivedComplexity
-        a ||= 0
-        b ||= 0
+      sig do
+        params(
+          first: T.nilable(T.any(String, Integer)),
+          second: T.nilable(T.any(String, Integer))
+        ).returns(T.nilable(Integer))
+      end
+      def compare_token_pair(first = 0, second = 0) # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity
+        first ||= 0
+        second ||= 0
 
-        if a.is_a?(Integer) && b.is_a?(String)
-          return a <= 0 ? -1 : 1
+        if first.is_a?(Integer) && second.is_a?(String)
+          return first <= 0 ? -1 : 1
         end
 
-        if a.is_a?(String) && b.is_a?(Integer)
-          return b <= 0 ? 1 : -1
+        if first.is_a?(String) && second.is_a?(Integer)
+          return second <= 0 ? 1 : -1
         end
 
-        if a == Dependabot::Maven::VersionParser::SP && b.is_a?(String) && b != Dependabot::Maven::VersionParser::SP
+        if first == Dependabot::Maven::VersionParser::SP &&
+           second.is_a?(String) && second != Dependabot::Maven::VersionParser::SP
           return -1
         end
 
-        if b == Dependabot::Maven::VersionParser::SP && a.is_a?(String) && a != Dependabot::Maven::VersionParser::SP
+        if second == Dependabot::Maven::VersionParser::SP &&
+           first.is_a?(String) && first != Dependabot::Maven::VersionParser::SP
           return 1
         end
 
-        a <=> b # a and b are both ints or strings
+        if first.is_a?(Integer) && second.is_a?(Integer)
+          first <=> second
+        elsif first.is_a?(String) && second.is_a?(String)
+          first <=> second
+        end
       end
 
+      sig do
+        params(first: T.nilable(TokenBucket), second: T.nilable(TokenBucket)).returns(T.nilable(Integer))
+      end
       def compare_additions(first, second)
         return 0 if first.nil? && second.nil?
 
         (first || empty_addition) <=> (second || empty_addition)
       end
 
+      sig { returns(TokenBucket) }
       def empty_addition
-        TokenBucket.new([])
+        TokenBucket.new(tokens: [])
       end
     end
 
     class VersionParser
       extend T::Sig
       extend T::Helpers
-      include Comparable
 
       ALPHA = -5
       BETA = -4
@@ -77,42 +102,51 @@ module Dependabot
       SNAPSHOT = -1
       SP = "sp"
 
-      def self.parse(version_string)
-        new(version_string).parse
+      sig { params(version: T.nilable(String)).returns(TokenBucket) }
+      def self.parse(version)
+        raise ArgumentError, "Malformed version string #{version}" if version.nil?
+
+        new(version).parse
       end
 
-      sig { returns(String) }
-      attr_reader :version_string
-
-      sig { params(version_string: String).void }
-      def initialize(version_string)
-        @version_string = version_string
+      sig { params(version: String).void }
+      def initialize(version)
+        @version = version
+        @token_bucket = T.let(TokenBucket.new(tokens: []), T.nilable(TokenBucket))
+        @parse_result = T.let(@token_bucket, T.nilable(TokenBucket))
+        @scanner = T.let(StringScanner.new(version.downcase), StringScanner)
       end
 
+      sig { returns(TokenBucket) }
       def parse
-        @scanner = StringScanner.new(version_string.downcase)
-        @token_bucket = TokenBucket.new([])
-        @result = @token_bucket
         parse_version(false)
 
-        raise ArgumentError, "Malformed version string #{version_string}" if @result.to_a.empty?
+        raise ArgumentError, "Malformed version string #{version}" if parse_result.to_a.empty?
 
-        @result
+        T.must(parse_result)
       end
 
       private
 
-      # sig { returns(String) }
+      sig { returns(StringScanner) }
       attr_reader :scanner
 
+      sig { returns(String) }
+      attr_reader :version
+
+      sig { returns(T.nilable(TokenBucket)) }
+      attr_reader :parse_result
+
+      sig { params(token: T.nilable(T.any(String, Integer))).void }
       def parse_addition(token = nil)
-        @token_bucket.addition = TokenBucket.new([token].compact)
-        @token_bucket = @token_bucket.addition
+        @token_bucket&.addition = TokenBucket.new(tokens: [token].compact)
+        @token_bucket = @token_bucket&.addition
 
         scanner.skip(/-+/)
         parse_version(true)
       end
 
+      sig { params(number_begins_partition: T.nilable(T::Boolean)).void }
       def parse_version(number_begins_partition) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
         # skip leading v if any
         scanner.skip(/v/)
@@ -122,7 +156,7 @@ module Dependabot
             if number_begins_partition
               parse_addition(s.to_i)
             else
-              @token_bucket.tokens << s.to_i
+              T.must(@token_bucket).tokens << s.to_i
             end
 
           elsif (s = scanner.match?(/a\d+/))
