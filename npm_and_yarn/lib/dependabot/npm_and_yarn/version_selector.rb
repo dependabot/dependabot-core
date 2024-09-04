@@ -11,24 +11,37 @@ module Dependabot
       NODE_ENGINE_SUPPORTED_REGEX = /^(v|V?)\d*(?:\.\d*\.\d*)?$/
 
       def setup(manifest_json, name)
-        package_manager = manifest_json["engines"]
+        Dependabot.logger.info("Fetching \"engines\" info")
+        puts("Fetching \"engines\" info #{name}")
+        engine_versions = manifest_json["engines"]
 
-        return unless package_manager
-
+        if engine_versions.nil?
+          Dependabot.logger.info("No info (engines) found")
+          return
+        end
+        # puts("here")
+        puts(engine_versions)
+        puts("--------------")
         # Only keep matching specs versions i.e. "V20.21.2", "20.21.2",
         # Additional specs can be added later
-        package_manager.delete_if { |_key, value| !valid_extracted_version(value) }
-        package_manager.delete_if { |key, _value| key != name }
-        package_manager.each do |key, value|
+        # engine_versions.delete_if { |engine, _value| engine != name }
+        engine_versions.delete_if { |_key, value| !valid_extracted_version?(value) }
+        version = engine_versions.select { |engine, _value| engine.to_s.match(name) }
+        # params.select { |key, value| key.to_s.match(/^choice\d+/) }
+
+        engine_versions.each do |key, value|
           Dependabot.logger.info("Found (engines) \"#{key}\" : \"#{value}\"")
+          puts("Found (engines) \"#{key}\" : \"#{value}\"")
         end
 
-        package_manager
+        version
       end
 
-      def valid_extracted_version(value)
-        return true if value.match?(NODE_ENGINE_SUPPORTED_REGEX)
+      def valid_extracted_version?(version)
+        puts("here extracted #{version}")
+        return true if version.match?(NODE_ENGINE_SUPPORTED_REGEX)
 
+        puts("removed #{version}")
         false
       end
     end

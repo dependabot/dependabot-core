@@ -1903,6 +1903,47 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with both packageManager and engines fields of same package-manager" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/package_manager_with_engine_info", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "yarn" => "3.2.3" } }
+      )
+    end
+  end
+
+  context "with both packageManager and engines fields of same package-manager" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/package_manager_without_version__with_engine_version",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from packageManager" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "yarn" => "1.9.1" } }
+      )
+    end
+  end
+
   context "with lockfileVersion not in integer format" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
