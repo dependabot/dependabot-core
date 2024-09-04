@@ -16,6 +16,7 @@ module Dependabot
     module Operations
       class RefreshVersionUpdatePullRequest
         extend T::Sig
+        include PullRequestHelpers
 
         sig { params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -146,8 +147,13 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
+            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
             notices: @notices
           )
+
+          # Send warning alerts to the API if any warning notices are present.
+          # Note that only notices with notice.show_alert set to true will be sent.
+          record_warning_notices(notices) if notices.any?
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
