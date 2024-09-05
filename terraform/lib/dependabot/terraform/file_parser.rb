@@ -44,6 +44,8 @@ module Dependabot
 
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
+          next if file.support_file?
+
           modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
             details = details.first
