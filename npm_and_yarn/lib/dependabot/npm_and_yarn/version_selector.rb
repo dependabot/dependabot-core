@@ -22,10 +22,8 @@ module Dependabot
 
         # Only keep matching specs versions i.e. "V20.21.2", "20.21.2",
         # Additional specs can be added later
-        # engine_versions.delete_if { |engine, _value| engine != name }
         engine_versions.delete_if { |_key, value| !valid_extracted_version?(value) }
         version = engine_versions.select { |engine, _value| engine.to_s.match(name) }
-        # params.select { |key, value| key.to_s.match(/^choice\d+/) }
 
         engine_versions.each do |key, value|
           Dependabot.logger.info("Found (engines) \"#{key}\" : \"#{value}\"")
@@ -35,9 +33,7 @@ module Dependabot
       end
 
       def valid_extracted_version?(version)
-        return true if version.match?(NODE_ENGINE_SUPPORTED_REGEX)
-
-        false
+        version.match?(NODE_ENGINE_SUPPORTED_REGEX)
       end
     end
   end
