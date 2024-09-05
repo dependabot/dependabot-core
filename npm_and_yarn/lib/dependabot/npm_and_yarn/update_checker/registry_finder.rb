@@ -90,6 +90,8 @@ module Dependabot
                    Excon::Error::Socket,
                    JSON::ParserError
               nil
+            rescue ArgumentError => e
+              raise DependencyFileNotResolvable, e.message
             end&.fetch("registry")
 
           @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")

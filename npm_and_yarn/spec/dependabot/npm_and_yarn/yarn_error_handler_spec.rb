@@ -210,6 +210,40 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains requirement not specified error" do
+      let(:error_message) do
+        "[YN0001]: Exception error, Detail: ➤ YN0000: ┌ Resolution step" \
+          "kubernetes-dashboard@workspace:. provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests" # rubocop:disable Layout/LineLength
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable,
+                           "provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests") # rubocop:disable Layout/LineLength
+      end
+    end
+
+    context "when the error message contains YN0001 response (ENOENT)" do
+      let(:error_message) do
+        "[[YN0001]: Exception error, Detail: ➤ YN0000: · Yarn 4.4.1
+        ➤ YN0000: ┌ Resolution step
+        ➤ YN0001: │ Error: @symfony/ux-chartjs@file:vendor/symfony/ux-chartjs/assets#vendor/symfony:" \
+        "/ux-chartjs/assets::hash=3bb657&locator=root-workspace-0b6124%40workspace%3A.: " \
+        "ENOENT: no such file or directory, lstat '/home/dependabot/dependabot-updater/repo/vendor/" \
+        "symfony/ux-chartjs/assets'
+        ➤ YN0000: └ Completed in 0s 478ms
+        ➤ YN0000: · Failed with errors in 0s 512ms"
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable,
+                           "ENOENT: no such file or directory")
+      end
+    end
+
     context "when the error message contains YN0041 response (Invalid authentication)" do
       let(:error_message) do
         "[91m➤[39m YN0041: │ [38;5;166m@cadence-group/[39m[38;5;173mconventional-changelog-angular-" \

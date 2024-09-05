@@ -329,6 +329,8 @@ module Dependabot
               password: password
             }
           )
+        rescue URI::InvalidURIError => e
+          raise DependencyFileNotResolvable, e.message
         end
 
         def check_npm_response(npm_response)
