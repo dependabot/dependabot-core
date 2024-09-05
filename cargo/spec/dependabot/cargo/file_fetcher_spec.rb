@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       stub_request(:get, url + "excluded/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 200, body: member_fixture, headers: json_header)
+        .to_return(status: 200, body: excluded_fixture, headers: json_header)
     end
 
     let(:parent_fixture) do
