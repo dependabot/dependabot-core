@@ -188,7 +188,7 @@ module Dependabot
       # Log each non-empty line of the deprecation notice description
       description.each_line do |line|
         line = line.strip
-        markdown += "> #{line}\n"
+        markdown += "> #{line}\n\n"
       end
       markdown
     end
