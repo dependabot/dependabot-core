@@ -146,7 +146,13 @@ module Dependabot
                 file: fetched_file,
                 previously_fetched_files: previously_fetched_files
               )
-            [fetched_file, *grandchild_requirement_files]
+
+            # If this path dependency file is a workspace member that inherits from
+            # its root workspace, we search for the root to include it so Cargo can
+            # resolve the path dependency file manifest properly.
+            root = find_workspace_root(fetched_file, file) if workspace_member?(parsed_file(fetched_file))
+
+            [fetched_file, *grandchild_requirement_files, root]
           rescue Dependabot::DependencyFileNotFound
             next unless required_path?(file, path)
 
@@ -216,6 +222,64 @@ module Dependabot
         end
 
         paths
+      end
+
+      # See if this Cargo manifest inherits any property from a workspace
+      # (e.g. edition = { workspace = true }).
+      def workspace_member?(hash)
+        hash.each do |key, value|
+          if key == "workspace" && value == true
+            return true
+          elsif value.is_a?(Hash)
+            return workspace_member?(value)
+          end
+        end
+        false
+      end
+
+      # Find workspace root of this workspace member, first via package.workspace
+      # manifest key if present, otherwise resort to searching parent directories
+      # up till the repository root.
+      #
+      # original_manifest used for providing a useful error message.
+      sig do
+        params(workspace_member: Dependabot::DependencyFile,
+               original_manifest: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
+      end
+      def find_workspace_root(workspace_member, original_manifest)
+        current_dir = workspace_member.name.rpartition("/").first
+
+        workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
+        unless workspace_root_dir.nil?
+          workspace_root = fetch_file_from_host(
+            File.join(current_dir, workspace_root_dir, "Cargo.toml"),
+            fetch_submodules: true
+          )
+          return workspace_root if parsed_file(workspace_root)["workspace"]
+
+          msg = "Could not resolve workspace root for path dependency " \
+                "#{workspace_member.path} of #{original_manifest.path}"
+          raise Dependabot::DependencyFileNotEvaluatable, msg
+        end
+
+        parent_dirs = current_dir.scan("/").length - 1
+        while parent_dirs >= 0
+          current_dir = File.join(current_dir, "..")
+          begin
+            parent_manifest = fetch_file_from_host(
+              File.join(current_dir, "Cargo.toml"),
+              fetch_submodules: true
+            )
+            return parent_manifest if parsed_file(parent_manifest)["workspace"]
+          rescue Dependabot::DependencyFileNotFound
+            # Cargo.toml not found in this parent, keep searching up
+          end
+          parent_dirs -= 1
+        end
+
+        msg = "Could not resolve workspace root for path dependency " \
+              "#{workspace_member.path} of #{original_manifest.path}"
+        raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
       def workspace_dependency_paths_from_file(file)
