@@ -1,0 +1,13 @@
+{
+  "name": "package-manager-unparseable",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "owner": "foo",
+  "engines": {
+    "node": "^18.12.1",
+    "yarn": "2.3.2"
+  },
+  "private": true,
+  "packageManager": "yarn@3.2.3"
+}
