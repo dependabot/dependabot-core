@@ -24,16 +24,19 @@ module Dependabot
       sig { returns(Dependabot::Maven::TokenBucket) }
       attr_accessor :token_bucket
 
-      sig { params(version: T.nilable(String)).returns(T::Boolean) }
+      sig { params(version: String).returns(T::Boolean) }
       def self.correct?(version)
-        return false if version.nil? || version.empty?
+        return false if version.empty?
 
         Dependabot::Maven::VersionParser.parse(version.to_s).to_a.any?
+      rescue Dependabot::BadRequirementError
+        Dependabot.logger.info("Malformed version string - #{version}")
+        false
       end
 
-      sig { params(version: T.nilable(String)).void }
+      sig { params(version: String).void }
       def initialize(version)
-        @version_string = T.let(version, T.nilable(String))
+        @version_string = T.let(version, String)
         @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version), Dependabot::Maven::TokenBucket)
       end
 
@@ -44,7 +47,7 @@ module Dependabot
 
       sig { returns(String) }
       def to_s
-        T.must(version_string)
+        version_string
       end
 
       sig { returns(T::Boolean) }
@@ -61,7 +64,7 @@ module Dependabot
 
       private
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       attr_reader :version_string
     end
   end

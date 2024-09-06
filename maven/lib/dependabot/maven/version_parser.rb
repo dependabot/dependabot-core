@@ -22,8 +22,8 @@ module Dependabot
 
       sig { params(version: T.nilable(String)).returns(TokenBucket) }
       def self.parse(version)
-        raise ArgumentError, "Malformed version string - string is nil" if version.nil?
-        raise ArgumentError, "Malformed version string - string is empty" if version.empty?
+        raise BadRequirementError, "Malformed version string - string is nil" if version.nil?
+        raise BadRequirementError, "Malformed version string - string is empty" if version.empty?
 
         new(version).parse
       end
@@ -40,7 +40,8 @@ module Dependabot
       def parse
         parse_version(false)
 
-        raise ArgumentError, "Malformed version string #{version}" if parse_result.to_a.empty?
+        # no tokens: version is just one of the tokens we split on e.g '.' or '-'
+        raise BadRequirementError, "Malformed version string - #{version}" if parse_result.to_a.empty?
 
         T.must(parse_result)
       end
@@ -129,7 +130,7 @@ module Dependabot
             number_begins_partition = true
 
           else
-            raise ArgumentError, "Malformed version string - #{version}"
+            raise BadRequirementError, "Malformed version string - #{version}"
           end
         end
       end
