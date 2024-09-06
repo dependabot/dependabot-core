@@ -47,7 +47,7 @@ module Dependabot
             Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\". Skipped checking \"engines\".")
           end
         else
-          return unless @package_manager.nil? || @package_manager.start_with?("#{name}@")
+          return unless @package_manager.nil? || @package_manager&.start_with?("#{name}@")
         end
 
         version ||= requested_version(name)
