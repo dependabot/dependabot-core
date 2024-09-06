@@ -23,7 +23,7 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
 
-        if Dependabot::Experiments.enabled?("enable_pnpm_yarn_dynamic_engine")
+        if Dependabot::Experiments.enabled?(:enable_pnpm_yarn_dynamic_engine)
 
           unless @package_manager&.start_with?("#{name}@") || (@package_manager&.==name.to_s) || @package_manager.nil?
             return
