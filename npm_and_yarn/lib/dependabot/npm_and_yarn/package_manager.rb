@@ -19,18 +19,18 @@ module Dependabot
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
-        # we go for the sepcificity mentioned in packageManager (6.0.2)
-        # Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+        # we go for the specificity mentioned in packageManager (6.0.2)
+
         if Dependabot::Experiments.enabled?("enable_pnpm_yarn_dynamic_engine")
 
-          unless @package_manager.nil? || @package_manager.start_with?("#{name}@") ||
-                 (@package_manager && @package_manager == name.to_s)
+          unless @package_manager&.start_with?("#{name}@") || @package_manager == name.to_s || @package_manager.nil?
             return
           end
 
           if @engines && @package_manager.nil?
             # if "packageManager" doesn't exists in manifest file,
             # we check if we can extract "engines" information
+            Dependabot.logger.info("No \"packageManager\" info found for \"#{name}\"")
             version = check_engine_version(name)
 
           elsif @package_manager&.==name.to_s
@@ -42,13 +42,13 @@ module Dependabot
           elsif @package_manager&.start_with?("#{name}@")
             # if "packageManager" info has version specification i.e. yarn@3.3.1
             # we go with the version in "packageManager"
-            Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\"")
+            Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\". Skipped checking \"engines\".")
           end
         else
           return unless @package_manager.nil? || @package_manager.start_with?("#{name}@")
         end
 
-        version = requested_version(name) if version.nil?
+        version ||= requested_version(name)
 
         if version
 
@@ -95,6 +95,7 @@ module Dependabot
         match = @package_manager.match(/^#{name}@(?<version>\d+.\d+.\d+)/)
         return unless match
 
+        Dependabot.logger.info("Requested version #{match['version']}")
         match["version"]
       end
 
@@ -102,6 +103,7 @@ module Dependabot
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile
 
+        Dependabot.logger.info("Estimating version")
         Helpers.send(:"#{name}_version_numeric", lockfile)
       end
 
@@ -109,7 +111,7 @@ module Dependabot
         version_selector = VersionSelector.new
         engine_versions = version_selector.setup(@package_json, name)
 
-        if (engine_versions && engine_versions.empty?) || engine_versions.nil?
+        if engine_versions.empty? || engine_versions.nil?
           Dependabot.logger.info("No relevant (engines) info for \"#{name}\"")
           return
         end

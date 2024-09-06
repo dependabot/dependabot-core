@@ -2071,6 +2071,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       stub_request(:get, File.join(url, "package.json?ref=sha"))
         .to_return(
           status: 200,
+          body: fixture_to_response("projects/generic/with_package_manager_and_pnpm_npm_engine_info",
+                                    "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches package.json fine and yarn version is picked from engines" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.ecosystem_versions).to eq(
+        { package_managers: { "pnpm" => "8.9.1" } }
+      )
+    end
+  end
+
+  context "with both packageManager and engines fields of same package-manager" do
+    before do
+      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
           body: fixture_to_response("projects/generic/without_package_manager_version_and_with_nonrelevant_engine",
                                     "package.json"),
           headers: json_header
