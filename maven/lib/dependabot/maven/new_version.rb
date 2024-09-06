@@ -34,7 +34,7 @@ module Dependabot
       sig { params(version: T.nilable(String)).void }
       def initialize(version)
         @version_string = T.let(version, T.nilable(String))
-        @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version.to_s), Dependabot::Maven::TokenBucket)
+        @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version), Dependabot::Maven::TokenBucket)
       end
 
       sig { returns(String) }

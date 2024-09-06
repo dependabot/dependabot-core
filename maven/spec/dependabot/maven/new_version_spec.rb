@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Maven::NewVersion do
 
     context "with a null version" do
       let(:version_string) { nil }
-      let(:err_msg) { "Malformed version string #{version_string}" }
+      let(:err_msg) { "Malformed version string - string is nil" }
 
       it "raises an exception" do
         expect { version }.to raise_error(ArgumentError, err_msg)

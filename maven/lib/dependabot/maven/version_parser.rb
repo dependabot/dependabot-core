@@ -22,7 +22,8 @@ module Dependabot
 
       sig { params(version: T.nilable(String)).returns(TokenBucket) }
       def self.parse(version)
-        raise ArgumentError, "Malformed version string #{version}" if version.nil?
+        raise ArgumentError, "Malformed version string - string is nil" if version.nil?
+        raise ArgumentError, "Malformed version string - string is empty" if version.empty?
 
         new(version).parse
       end
@@ -128,7 +129,7 @@ module Dependabot
             number_begins_partition = true
 
           else
-            raise ArgumentError, scanner.rest
+            raise ArgumentError, "Malformed version string - #{version}"
           end
         end
       end
