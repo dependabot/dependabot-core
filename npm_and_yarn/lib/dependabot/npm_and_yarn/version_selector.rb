@@ -13,7 +13,7 @@ module Dependabot
       # such as "20.8.7", "8.1.2", "8.21.2",
       NODE_ENGINE_SUPPORTED_REGEX = /^\d+(?:\.\d+)*$/
 
-      sig { params(manifest_json: T.untyped, name: String).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(manifest_json: T::Hash[String, T.untyped], name: String).returns(T::Hash[Symbol, T.untyped]) }
       def setup(manifest_json, name)
         engine_versions = manifest_json["engines"]
 
