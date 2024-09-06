@@ -7,6 +7,8 @@ require "dependabot/npm_and_yarn/version_selector"
 module Dependabot
   module NpmAndYarn
     class PackageManager
+      extend T::Sig
+      extend T::Helpers
       def initialize(package_json, lockfiles:)
         @package_json = package_json
         @lockfiles = lockfiles
@@ -20,7 +22,7 @@ module Dependabot
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
-        # Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
+
         if Dependabot::Experiments.enabled?("enable_pnpm_yarn_dynamic_engine")
 
           unless @package_manager&.start_with?("#{name}@") || @package_manager == name.to_s || @package_manager.nil?
@@ -107,6 +109,7 @@ module Dependabot
         Helpers.send(:"#{name}_version_numeric", lockfile)
       end
 
+      sig { params(name: T.untyped).returns(T.nilable(String)) }
       def check_engine_version(name)
         version_selector = VersionSelector.new
         engine_versions = version_selector.setup(@package_json, name)
