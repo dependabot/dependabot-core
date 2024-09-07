@@ -37,6 +37,7 @@ module Dependabot
 
     sig { params(notice: Dependabot::Notice).void }
     def log_notice(notice)
+      logger = Dependabot.logger
       # Log each non-empty line of the deprecation notice description
       notice.description.each_line do |line|
         line = line.strip
@@ -44,13 +45,13 @@ module Dependabot
 
         case notice.mode
         when Dependabot::Notice::NoticeMode::INFO
-          return Dependabot.logger.info(line)
+          logger.info(line)
         when Dependabot::Notice::NoticeMode::WARN
-          Dependabot.logger.warn(line)
+          logger.warn(line)
         when Dependabot::Notice::NoticeMode::ERROR
-          Dependabot.logger.error(line)
+          logger.error(line)
         else
-          Dependabot.logger.info(line)
+          logger.info(line)
         end
       end
     end

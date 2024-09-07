@@ -190,6 +190,7 @@ module Dependabot
         line = line.strip
         markdown += "> #{line}\n"
       end
+      markdown += ">\n\n"
       markdown
     end
 
