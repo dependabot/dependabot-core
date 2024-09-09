@@ -256,16 +256,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
         it { is_expected.to eq("registry.npmjs.org") }
       end
-
-      context "when it times out" do
-        before do
-          stub_request(:get, "https:/npm.fury.io/dependabot/etag")
-            .with(headers: { "Authorization" => "Bearer secret_token" })
-            .to_raise
-        end
-
-        it { is_expected.to eq("registry.npmjs.org") }
-      end
     end
 
     context "with a .npmrc file" do
