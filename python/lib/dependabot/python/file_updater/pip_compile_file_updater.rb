@@ -499,8 +499,6 @@ module Dependabot
 
           options << "--no-annotate" unless requirements_file.content.include?("# via ")
 
-          options << "--no-header"
-
           options << "--pre" if requirements_file.content.include?("--pre")
 
           options << "--no-strip-extras" if requirements_file.content.include?("--no-strip-extras")
