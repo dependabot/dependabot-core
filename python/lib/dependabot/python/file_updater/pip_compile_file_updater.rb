@@ -511,7 +511,7 @@ module Dependabot
             options << "--resolver=#{resolver}"
           end
 
-          options << "--universal" if requirement_file.content.include?("--universal")
+          options << "--universal" if requirements_file.content.include?("--universal")
 
           options
         end
