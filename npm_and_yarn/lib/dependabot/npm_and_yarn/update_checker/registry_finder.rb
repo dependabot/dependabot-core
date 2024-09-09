@@ -90,7 +90,7 @@ module Dependabot
                    Excon::Error::Socket,
                    JSON::ParserError
               nil
-            rescue ArgumentError => e
+            rescue URI::InvalidURIError => e
               raise DependencyFileNotResolvable, e.message
             end&.fetch("registry")
 

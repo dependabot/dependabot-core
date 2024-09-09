@@ -161,7 +161,6 @@ module Dependabot
     }.freeze, T::Hash[String, Regexp])
 
     YN0001_REQ_NOT_FOUND_CODES = T.let({
-      NO_FILE_DIR: /ENOENT(.*?)no such file or directory/,
       REQUIREMENT_NOT_SATISFIED: /provides (?<dep>.*)(.*?)with version (?<ver>.*), which doesn't satisfy what (?<pkg>.*) requests/, # rubocop:disable Layout/LineLength
       REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
     }.freeze, T::Hash[String, Regexp])
