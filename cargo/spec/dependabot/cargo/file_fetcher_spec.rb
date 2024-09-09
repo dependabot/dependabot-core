@@ -678,7 +678,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
 
       stub_request(:get, url + "excluded/Cargo.toml?ref=sha")
         .with(headers: { "Authorization" => "token token" })
-        .to_return(status: 200, body: member_fixture, headers: json_header)
+        .to_return(status: 200, body: excluded_fixture, headers: json_header)
     end
 
     let(:parent_fixture) do
@@ -740,6 +740,164 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     it "raises a DependencyFileNotFound error" do
       expect { file_fetcher_instance.files }
         .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
+  context "with a path dependency to a workspace member" do
+    let(:url) do
+      "https://api.github.com/repos/gocardless/bump/contents/"
+    end
+
+    before do
+      # Contents of these dirs aren't important
+      stub_request(:get, /#{Regexp.escape(url)}detached_crate_(success|fail_1|fail_2)\?ref=sha/)
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member", "contents_dir_detached_crate_success.json"),
+          headers: json_header
+        )
+
+      # Ignoring any .cargo requests
+      stub_request(:get, %r{#{Regexp.escape(url)}\w+/\.cargo\?ref=sha})
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # All the manifest requests
+      stub_request(:get, url + "detached_crate_fail_1/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_detached_crate_fail_1.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "detached_crate_fail_2/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_detached_crate_fail_2.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "detached_crate_success/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_detached_crate_success.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "detached_workspace_member/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_detached_workspace_member.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "incorrect_detached_workspace_member/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_incorrect_detached_workspace_member.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "incorrect_workspace/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_incorrect_workspace.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "workspace/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member", "contents_cargo_manifest_workspace.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "workspace/nested_one/nested_two/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member",
+                        "contents_cargo_manifest_workspace_nested_one_nested_two.json"),
+          headers: json_header
+        )
+
+      # nested_one dir has nothing of interest
+      stub_request(:get, url + "workspace/nested_one?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: "[]", headers: json_header)
+      stub_request(:get, url + "workspace/nested_one/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+    end
+
+    context "with a resolvable workspace root" do
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "detached_crate_success/"
+        )
+      end
+
+      it "fetches the dependency successfully" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(
+            Cargo.toml
+            ../detached_workspace_member/Cargo.toml
+            ../workspace/Cargo.toml
+            ../workspace/nested_one/nested_two/Cargo.toml
+          ))
+        expect(file_fetcher_instance.files.map(&:path))
+          .to match_array(%w(
+            /detached_crate_success/Cargo.toml
+            /detached_workspace_member/Cargo.toml
+            /workspace/Cargo.toml
+            /workspace/nested_one/nested_two/Cargo.toml
+          ))
+      end
+    end
+
+    context "with no workspace root via parent directory search" do
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "detached_crate_fail_1/"
+        )
+      end
+
+      it "raises a DependencyFileNotEvaluatable error" do
+        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+          expect(error.message)
+            .to eq("Could not resolve workspace root for path dependency " \
+                   "/incorrect_workspace/Cargo.toml of /detached_crate_fail_1/Cargo.toml")
+        end
+      end
+    end
+
+    context "with no workspace root via package.workspace key" do
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "detached_crate_fail_2/"
+        )
+      end
+
+      it "raises a DependencyFileNotEvaluatable error" do
+        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+          expect(error.message)
+            .to eq("Could not resolve workspace root for path dependency " \
+                   "/incorrect_detached_workspace_member/Cargo.toml of /detached_crate_fail_2/Cargo.toml")
+        end
+      end
     end
   end
 end
