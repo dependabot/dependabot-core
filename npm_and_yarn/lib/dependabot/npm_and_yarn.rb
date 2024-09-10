@@ -160,6 +160,11 @@ module Dependabot
       AUTH_ERROR: /YN0001:*.*Fatal Error: could not read Username for '(?<url>.*)': terminal prompts disabled/
     }.freeze, T::Hash[String, Regexp])
 
+    YN0001_REQ_NOT_FOUND_CODES = T.let({
+      REQUIREMENT_NOT_SATISFIED: /provides (?<dep>.*)(.*?)with version (?<ver>.*), which doesn't satisfy what (?<pkg>.*) requests/, # rubocop:disable Layout/LineLength
+      REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
+    }.freeze, T::Hash[String, Regexp])
+
     class Utils
       extend T::Sig
 
@@ -212,6 +217,13 @@ module Dependabot
               return Dependabot::PrivateSourceAuthenticationFailure.new(url)
             end
           end
+
+          YN0001_REQ_NOT_FOUND_CODES.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
           Dependabot::DependabotError.new(message)
         }
       },
