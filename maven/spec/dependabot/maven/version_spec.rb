@@ -38,11 +38,8 @@ RSpec.describe Dependabot::Maven::Version do
 
     context "with a malformed version string" do
       let(:version_string) { "-" }
-      let(:err_msg) { "Malformed version string #{version_string}" }
 
-      it "raises an exception" do
-        expect { version }.to raise_error(ArgumentError, err_msg)
-      end
+      it { is_expected.to be(false) }
     end
   end
 
@@ -85,21 +82,21 @@ RSpec.describe Dependabot::Maven::Version do
       it { is_expected.to eq("1.0.0_pre1") }
     end
 
-    context "with a null version" do
+    context "with a blank version" do
       let(:version_string) { nil }
-      let(:err_msg) { "Malformed version string #{version_string}" }
+      let(:err_msg) { "Malformed version string - string is nil" }
 
       it "raises an exception" do
-        expect { version }.to raise_error(ArgumentError, err_msg)
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
       end
     end
 
     context "with a malformed version string" do
       let(:version_string) { "-" }
-      let(:err_msg) { "Malformed version string #{version_string}" }
+      let(:err_msg) { "Malformed version string - #{version_string}" }
 
       it "raises an exception" do
-        expect { version }.to raise_error(ArgumentError, err_msg)
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
       end
     end
   end

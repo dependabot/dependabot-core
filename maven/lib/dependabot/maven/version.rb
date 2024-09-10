@@ -41,6 +41,8 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
+        raise BadRequirementError, "Malformed version string - string is nil" if version.nil?
+
         @version_string = T.let(version.to_s, String)
         @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version_string), Dependabot::Maven::TokenBucket)
       end
