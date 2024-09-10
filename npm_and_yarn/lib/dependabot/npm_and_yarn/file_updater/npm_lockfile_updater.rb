@@ -98,6 +98,15 @@ module Dependabot
           /Couldn't find package "(?<pkg>.*)" required by "(?<dep>.*)" on the "(?<regis>.*)" registry./
         ].freeze, T::Array[Regexp])
 
+        # dependency access protocol not supported by packagemanager
+        UNSUPPORTED_PROTOCOL = /EUNSUPPORTEDPROTOCOL\n(.*?)Unsupported URL Type "(?<access_method>.*)"/
+
+        # Internal server error returned from registry
+        SERVER_ERROR_500 = /500 Internal Server Error - GET (?<regis>.*)/
+
+        # issue related when dependency url is not mentioned correctly
+        UNRESOLVED_REFERENCE = /Unable to resolve reference (?<deps>.*)/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -428,6 +437,18 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, url
           end
 
+          if error_message.match?(SERVER_ERROR_500)
+            url = T.must(URI.decode_www_form_component(error_message).split("https://").last).split("/").first
+            msg = "Server error (500) while accessing #{url}."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (error_msg = error_message.match(UNRESOLVED_REFERENCE))
+            dep = error_msg.named_captures["deps"]
+            msg = "Unable to resolve reference #{dep}."
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
           if error_message.match?(MISSING_PACKAGE)
             package_name = T.must(error_message.match(MISSING_PACKAGE))
                             .named_captures["package_req"]
@@ -587,6 +608,11 @@ module Dependabot
 
           package_errors = Regexp.union(NPM_PACKAGE_NOT_FOUND_CODES)
           if (msg = error_message.match(package_errors))
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (error_msg = error_message.match(UNSUPPORTED_PROTOCOL))
+            msg = "Unsupported protocol \"#{error_msg.named_captures.fetch('access_method')}\" while accessing dependency." # rubocop:disable Layout/LineLength
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
