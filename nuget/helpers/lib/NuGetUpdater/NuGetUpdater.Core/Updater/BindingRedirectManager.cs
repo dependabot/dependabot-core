@@ -304,12 +304,12 @@ internal static class BindingRedirectManager
     {
         public bool Equals(AssemblyIdentity? x, AssemblyIdentity? y) =>
             string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x?.PublicKeyToken, y?.PublicKeyToken, StringComparison.OrdinalIgnoreCase);
+            string.Equals(x?.PublicKeyToken ?? "null", y?.PublicKeyToken ?? "null", StringComparison.OrdinalIgnoreCase);
 
         public int GetHashCode(AssemblyIdentity obj) =>
             HashCode.Combine(
                 obj.Name?.ToLowerInvariant(),
-                obj.PublicKeyToken?.ToLowerInvariant()
+                obj.PublicKeyToken?.ToLowerInvariant() ?? "null"
             );
     }
 }
