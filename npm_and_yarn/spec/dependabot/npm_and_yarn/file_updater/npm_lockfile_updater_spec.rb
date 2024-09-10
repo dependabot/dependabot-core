@@ -938,6 +938,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with a response with EUNSUPPORTEDPROTOCOL error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code EUNSUPPORTEDPROTOCOL
+        npm ERR! Unsupported URL Type \"link:\": link:dayjs/plugin/relativeTime"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with 500 Internal Server error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code E500
+        npm ERR! 500 Internal Server Error - GET https://registry.npmjs.org/get-intrinsic"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with Unable to resolve reference error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Unable to resolve reference $eslint"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a registry with access that results in ESOCKETTIMEDOUT error" do
       let(:response) { "https://npm.pkg.github.com/@group%2ffe-release: ESOCKETTIMEDOUT" }
 
