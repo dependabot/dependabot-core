@@ -174,7 +174,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.5.1)
     docile (1.4.0)
-    docker_registry2 (1.18.0)
+    docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
