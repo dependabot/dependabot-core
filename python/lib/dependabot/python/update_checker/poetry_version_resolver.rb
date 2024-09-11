@@ -23,6 +23,9 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        extend T::Sig
+        extend T::Helpers
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
@@ -44,6 +47,8 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :credentials
         attr_reader :repo_contents_path
+
+        sig { returns(Dependabot::Python::PoetryErrorHandler) }
         attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
@@ -51,8 +56,8 @@ module Dependabot
           @dependency_files         = dependency_files
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
-          @error_handler = ErrorHandler.new(dependencies: dependency,
-                                            dependency_files: dependency_files)
+          @error_handler = PoetryErrorHandler.new(dependencies: dependency,
+                                                  dependency_files: dependency_files)
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -330,7 +335,15 @@ module Dependabot
       end
     end
 
-    class ErrorHandler < UpdateChecker
+    class PoetryErrorHandler < UpdateChecker
+      extend T::Sig
+
+      sig do
+        params(
+          dependencies: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
       def initialize(dependencies:, dependency_files:)
         @dependencies = dependencies
         @dependency_files = dependency_files
@@ -338,7 +351,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[Dependabot::Dependency]) }
+      sig { returns(Dependabot::Dependency) }
       attr_reader :dependencies
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -346,8 +359,9 @@ module Dependabot
 
       public
 
+      sig { params(error: Exception).void }
       def handle_poetry_error(error)
-        return unless (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS))
+        return true unless (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS))
 
         raise DependencyFileNotResolvable, msg
       end

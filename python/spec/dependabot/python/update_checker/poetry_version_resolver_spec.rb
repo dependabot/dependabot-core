@@ -378,7 +378,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 
     let(:error_handler) do
-      Dependabot::Python::ErrorHandler.new(
+      Dependabot::Python::PoetryErrorHandler.new(
         dependencies: dependency,
         dependency_files: dependency_files
       )
