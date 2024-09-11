@@ -38,16 +38,21 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
+
         attr_reader :dependency
         attr_reader :dependency_files
         attr_reader :credentials
         attr_reader :repo_contents_path
+        attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
+          @error_handler = ErrorHandler.new(dependencies: dependency,
+                                            dependency_files: dependency_files)
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -115,6 +120,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         def handle_poetry_errors(error)
+          error_handler.handle_poetry_error(error)
+
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
             match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
@@ -320,6 +327,29 @@ module Dependabot
         def normalise(name)
           NameNormaliser.normalise(name)
         end
+      end
+    end
+
+    class ErrorHandler < UpdateChecker
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      def handle_poetry_error(error)
+        return unless (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS))
+
+        raise DependencyFileNotResolvable, msg
       end
     end
   end

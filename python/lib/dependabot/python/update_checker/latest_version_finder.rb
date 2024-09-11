@@ -175,6 +175,8 @@ module Dependabot
         def available_versions
           @available_versions ||=
             index_urls.flat_map do |index_url|
+              validate_index(index_url)
+
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
               index_response = registry_response_for_dependency(index_url)
@@ -282,6 +284,15 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
+        end
+
+        def validate_index(index_url)
+          sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+
+          return if /\A#{URI::DEFAULT_PARSER.make_regexp}\z/.match?(index_url)
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Invalid URL: #{sanitized_url}"
         end
       end
     end
