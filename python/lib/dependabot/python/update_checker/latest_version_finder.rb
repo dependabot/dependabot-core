@@ -289,7 +289,7 @@ module Dependabot
         def validate_index(index_url)
           sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
-          return if /\A#{URI::DEFAULT_PARSER.make_regexp}\z/.match?(index_url)
+          return if index_url&.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
 
           raise Dependabot::DependencyFileNotResolvable,
                 "Invalid URL: #{sanitized_url}"
