@@ -374,7 +374,7 @@ RSpec.describe namespace::PoetryVersionResolver do
     end
   end
 
-  describe "handles SharedHelpers::HelperSubprocessFailed erros raised by version resolver" do
+  describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 
     let(:error_handler) do
