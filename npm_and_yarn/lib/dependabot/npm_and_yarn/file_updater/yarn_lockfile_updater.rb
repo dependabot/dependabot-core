@@ -17,9 +17,6 @@ module Dependabot
   module NpmAndYarn
     class FileUpdater < Dependabot::FileUpdaters::Base
       class YarnLockfileUpdater
-        extend T::Sig
-        extend T::Helpers
-
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
         require_relative "package_json_preparer"
@@ -51,8 +48,6 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :repo_contents_path
         attr_reader :credentials
-
-        sig { returns(Dependabot::NpmAndYarn::YarnErrorHandler) }
         attr_reader :error_handler
 
         def top_level_dependencies
