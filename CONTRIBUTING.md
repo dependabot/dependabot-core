@@ -19,7 +19,7 @@ By submitting a contribution, you agree that contribution is licensed to GitHub 
 4. Add [tests for it](README.md#running-tests). This is important so we don't break it in a future version unintentionally.
 5. Ensure your code is well-documented and easy to understand.
 6. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
-7. If you are helping bump a version or add new ecosystem support to Dependabot, please file a corresponding PR for the change in the [GitHub docs repo](https://docs.github.com/en/contributing/collaborating-on-github-docs/about-contributing-to-github-docs). The Dependabot docs are primarily in [this directory](https://github.com/github/docs/tree/main/content/code-security/dependabot).
+7. If you are helping bump a version or add new ecosystem support to Dependabot, please file a corresponding PR for the change in the [GitHub docs repo](https://docs.github.com/en/contributing/collaborating-on-github-docs/about-contributing-to-github-docs). The list of supported package manager versions lives [here](https://github.com/github/docs/tree/main/data/reusables/dependabot). The rest of the Dependabot docs are primarily in [this directory](https://github.com/github/docs/tree/main/content/code-security/dependabot) and [this directory](https://github.com/github/docs/tree/main/data/reusables/dependabot).
 
 ## Project layout
 
