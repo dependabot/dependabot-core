@@ -16,6 +16,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       repo_contents_path: nil
     )
   end
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -368,6 +369,29 @@ RSpec.describe namespace::PoetryVersionResolver do
               expect(error.message)
                 .to include("depends on black (^18), version solving failed")
             end
+        end
+      end
+    end
+  end
+
+  describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
+    subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
+
+    let(:error_handler) do
+      Dependabot::Python::PoetryErrorHandler.new(
+        dependencies: dependency,
+        dependency_files: dependency_files
+      )
+    end
+    let(:exception) { Exception.new(response) }
+
+    context "with incompatible constraints mentioned in requirements" do
+      let(:response) { "Incompatible constraints in requirements of histolab (0.7.0):" }
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Incompatible constraints in requirements of histolab (0.7.0):")
         end
       end
     end

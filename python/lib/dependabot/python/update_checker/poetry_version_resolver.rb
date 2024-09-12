@@ -23,6 +23,9 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        extend T::Sig
+        extend T::Helpers
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
@@ -38,16 +41,23 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
+
         attr_reader :dependency
         attr_reader :dependency_files
         attr_reader :credentials
         attr_reader :repo_contents_path
+
+        sig { returns(Dependabot::Python::PoetryErrorHandler) }
+        attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
+          @error_handler = PoetryErrorHandler.new(dependencies: dependency,
+                                                  dependency_files: dependency_files)
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -115,6 +125,8 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         def handle_poetry_errors(error)
+          error_handler.handle_poetry_error(error)
+
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
             match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
@@ -320,6 +332,38 @@ module Dependabot
         def normalise(name)
           NameNormaliser.normalise(name)
         end
+      end
+    end
+
+    class PoetryErrorHandler < UpdateChecker
+      extend T::Sig
+
+      sig do
+        params(
+          dependencies: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(Dependabot::Dependency) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      sig { params(error: Exception).void }
+      def handle_poetry_error(error)
+        return true unless (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS))
+
+        raise DependencyFileNotResolvable, msg
       end
     end
   end
