@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: dev/brettfo/nuget-report-dependencies
 jobs:
   discover:
     runs-on: ubuntu-latest
