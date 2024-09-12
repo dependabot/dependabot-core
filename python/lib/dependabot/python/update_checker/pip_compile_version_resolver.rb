@@ -251,10 +251,14 @@ module Dependabot
             options << "--output-file=#{requirements_file.name}"
           end
 
-          command = "pyenv exec pip-compile"
-          if (requirements_file = compiled_file_for_filename(filename)) &&
-             requirements_file.content.include?("uv pip compile")
-            command = "pyenv exec uv pip compile"
+          if (requirements_file = compiled_file_for_filename(filename))
+            if requirements_file.content.include?("uv pip compile")
+              options += uv_pip_compile_options_from_compiled_file(requirements_file)
+              command = "pyenv exec uv pip compile"
+            else
+              options += pip_compile_options_from_compiled_file(requirements_file)
+              command = "pyenv exec pip-compile"
+            end
           end
 
           [options.join(" "), command]
