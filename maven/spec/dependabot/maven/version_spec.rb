@@ -36,6 +36,12 @@ RSpec.describe Dependabot::Maven::Version do
       it { is_expected.to be(false) }
     end
 
+    context "with an empty version" do
+      let(:version_string) { "" }
+
+      it { is_expected.to be(false) }
+    end
+
     context "with a malformed version string" do
       let(:version_string) { "-" }
 
@@ -82,9 +88,18 @@ RSpec.describe Dependabot::Maven::Version do
       it { is_expected.to eq("1.0.0_pre1") }
     end
 
-    context "with a blank version" do
+    context "with a nil version" do
       let(:version_string) { nil }
       let(:err_msg) { "Malformed version string - string is nil" }
+
+      it "raises an exception" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
+      end
+    end
+
+    context "with an empty version" do
+      let(:version_string) { "" }
+      let(:err_msg) { "Malformed version string - string is empty" }
 
       it "raises an exception" do
         expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
@@ -157,6 +172,26 @@ RSpec.describe Dependabot::Maven::Version do
 
   describe "#<=>" do
     subject { version.send(:<=>, other_version) }
+
+    context "when comparing to a Gem::Version" do
+      context "when lower" do
+        let(:other_version) { Gem::Version.new("0.9.0") }
+
+        it { is_expected.to eq(1) }
+      end
+
+      context "when equal" do
+        let(:other_version) { Gem::Version.new("1.0.0") }
+
+        it { is_expected.to eq(0) }
+      end
+
+      context "when greater" do
+        let(:other_version) { Gem::Version.new("1.1.0") }
+
+        it { is_expected.to eq(-1) }
+      end
+    end
 
     context "with semantic versions" do
       let(:versions) do
@@ -489,6 +524,30 @@ RSpec.describe Dependabot::Maven::Version do
       it "sorts versions correctly" do
         expect(versions.shuffle.sort).to eq(versions)
       end
+    end
+  end
+
+  describe "compatibility with Gem::Requirement" do
+    subject { requirement.satisfied_by?(version) }
+
+    let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
+
+    context "with a valid version" do
+      let(:version_string) { "1.0.0" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with an invalid version" do
+      let(:version_string) { "0.9.0" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with a valid dash-separated version" do
+      let(:version_string) { "1.1.0-pre" }
+
+      it { is_expected.to be(true) }
     end
   end
 end
