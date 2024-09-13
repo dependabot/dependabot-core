@@ -93,6 +93,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a lockfile with tarball urls we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "when there is a unsupported engine response from registry" do
       let(:dependency_name) { "@blocknote/core" }
       let(:version) { "0.15.4" }
