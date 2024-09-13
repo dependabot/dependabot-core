@@ -124,33 +124,4 @@ RSpec.describe Dependabot::Notice do
         })
     end
   end
-
-  describe ".generate_pm_unsupported_notice" do
-    subject(:generate_pm_unsupported_notice) do
-      described_class.generate_pm_unsupported_notice(package_manager)
-    end
-
-    let(:package_manager) do
-      StubPackageManager.new(
-        name: "bundler",
-        version: Dependabot::Version.new("1"),
-        supported_versions: supported_versions
-      )
-    end
-    let(:supported_versions) { [Dependabot::Version.new("2"), Dependabot::Version.new("3")] }
-
-    it "returns the correct unsupported notice" do
-      expect(generate_pm_unsupported_notice.to_hash)
-        .to eq({
-          mode: "ERROR",
-          type: "bundler_unsupported_error",
-          package_manager_name: "bundler",
-          title: "Package manager unsupported notice",
-          description: "Dependabot no longer supports `bundler v1`!" \
-                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-          show_in_pr: true,
-          show_alert: true
-        })
-    end
-  end
 end
