@@ -10,10 +10,7 @@ module Dependabot
     PACKAGE_MANAGER = "bundler"
 
     # Keep versions in ascending order
-    SUPPORTED_BUNDLER_VERSIONS = T.let([
-      Version.new("1"),
-      Version.new("2")
-    ].freeze, T::Array[Dependabot::Version])
+    SUPPORTED_BUNDLER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
 
     DEPRECATED_BUNDLER_VERSIONS = T.let([
       Version.new("1")
