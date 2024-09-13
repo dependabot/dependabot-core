@@ -699,6 +699,18 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the exception message contains malformed registry error response" do
+      let(:error_message) do
+        "Received malformed response from registry for \"teste-react-jv\". The registry may be down."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Received malformed response from registry for \"teste-react-jv\". The registry may be down.")
+      end
+    end
+
     context "when the error message contains Permission denied error" do
       let(:error_message) do
         "https://npm.pkg.github.com/breakthroughbehavioralinc/webpack: Permission denied"
