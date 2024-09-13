@@ -1011,6 +1011,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
     end
+
+    context "with a npm error response that returns a git checkout error" do
+      let(:response) do
+        "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75
+      fatal: reference is not a tree: 8cb9036b503920679c95528fa584d3e973b64f75"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75"
+            )
+        end
+      end
+    end
+
+    context "with a npm error response that invalid version error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Invalid Version: ^8.0.1
+
+        npm ERR! A complete log of this run can be found in: " \
+        "/home/dependabot/.npm/_logs/2024-09-12T06_08_54_947Z-debug-0.log"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Found invalid version \"^8.0.1\" while updating"
+            )
+        end
+      end
+    end
   end
 
   context "with a override that conflicts with direct dependency" do
