@@ -41,6 +41,9 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
+        # If the version is unsupported, the unsupported error is getting raised separately.
+        return false if unsupported?
+
         deprecated_versions.include?(version)
       end
 

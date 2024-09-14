@@ -242,8 +242,9 @@ module Dependabot
         options: job.experiments
       )
       # Add 'package_manager' to the depedency_snapshopt to use it in operations'
-      package_manager_for_current_directory = parser.package_manager
-      @package_manager[@current_directory] = package_manager_for_current_directory
+      package_manager = parser.package_manager
+
+      @package_manager[@current_directory] = package_manager
 
       # Log deprecation notices if the package manager is deprecated
       # and add them to the notices array
@@ -252,7 +253,7 @@ module Dependabot
       # add deprecation notices for the package manager
       add_deprecation_notice(
         notices: notices_for_current_directory,
-        package_manager: package_manager_for_current_directory
+        package_manager: package_manager
       )
       @notices[@current_directory] = notices_for_current_directory
 

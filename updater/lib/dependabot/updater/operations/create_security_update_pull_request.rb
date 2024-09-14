@@ -90,6 +90,9 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
+
           check_and_create_pull_request(dependency)
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_dependency_error(
