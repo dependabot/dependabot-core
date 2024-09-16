@@ -105,6 +105,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
+        # rubocop:disable Metrics/CyclomaticComplexity
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pull_request(dependency)
           dependency = vulnerable_version(dependency) if dependency.metadata[:all_versions]
@@ -201,6 +202,7 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
           return dependency if dependency.metadata[:all_versions].count == 1
