@@ -27,6 +27,20 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
         [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
       end
 
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        # If the version is unsupported, the unsupported error is getting raised separately.
+        return false if unsupported?
+
+        deprecated_versions.include?(version)
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        # Determine if the Bundler version is unsupported.
+        version < supported_versions.first
+      end
+
       def support_later_versions?
         true
       end
