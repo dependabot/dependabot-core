@@ -40,14 +40,6 @@ module Dependabot
       attr_reader :supported_versions
 
       sig { override.returns(T::Boolean) }
-      def deprecated?
-        # If the version is unsupported, the unsupported error is getting raised separately.
-        return false if unsupported?
-
-        deprecated_versions.include?(version)
-      end
-
-      sig { override.returns(T::Boolean) }
       def unsupported?
         # Check if the feature flag for Bundler v1 unsupported error is enabled.
         return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)

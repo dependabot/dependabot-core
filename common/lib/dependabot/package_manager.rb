@@ -55,6 +55,9 @@ module Dependabot
     #   package_manager.deprecated? #=> true
     sig { returns(T::Boolean) }
     def deprecated?
+      # If the version is unsupported, the unsupported error is getting raised separately.
+      return false if unsupported?
+
       deprecated_versions.include?(version)
     end
 
