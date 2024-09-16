@@ -305,6 +305,29 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         perform
       end
     end
+
+    context "when package manager version is unsupported" do
+      let(:package_manager_version) { "1" }
+      let(:supported_versions) { %w(2 3) }
+
+      before do
+        # Enable the feature flag for unsupported version
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:bundler_v1_unsupported_error)
+          .and_return(true)
+
+        # Ensure unsupported? method returns true so the error is triggered
+        allow(package_manager).to receive(:unsupported?).and_return(true)
+      end
+
+      it "logs the ToolVersionNotSupported error to the error handler" do
+        # Ensure the error handler receives the expected error
+        expect(mock_error_handler).to receive(:handle_dependency_error)
+          .with(hash_including(error: instance_of(Dependabot::ToolVersionNotSupported)))
+
+        perform
+      end
+    end
   end
 
   describe "#check_and_create_pull_request" do
