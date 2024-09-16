@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/version"
+require "dependabot/experiments"
 require "dependabot/package_manager"
 require "dependabot/notices"
 
