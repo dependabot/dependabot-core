@@ -50,19 +50,33 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
   end
 
+  describe "SUPPORTED_BUNDLER_VERSIONS" do
+    it "is in ascending order" do
+      expect(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS).to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS.sort)
+    end
+  end
+
   describe "#deprecated?" do
-    context "when version is deprecated?" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:bundler_v1_unsupported_error)
+        .and_return(feature_flag_enabled)
+    end
+
+    context "when version is deprecated but not unsupported" do
       let(:version) { "1" }
+      let(:feature_flag_enabled) { false }
 
       it "returns true" do
         expect(package_manager.deprecated?).to be true
       end
     end
 
-    context "when version is not deprecated" do
-      let(:version) { "2" }
+    context "when version is unsupported" do
+      let(:version) { "0.9" }
+      let(:feature_flag_enabled) { true }
 
-      it "returns false" do
+      it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
       end
     end
