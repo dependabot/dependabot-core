@@ -60,9 +60,6 @@ module Dependabot
           Dependabot.logger.info("Checking and updating versions pull requests...")
           dependency = dependencies.last
 
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
-
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
@@ -140,6 +137,9 @@ module Dependabot
           if requirements_to_unlock == :update_not_possible
             return close_pull_request(reason: :update_no_longer_possible)
           end
+
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock

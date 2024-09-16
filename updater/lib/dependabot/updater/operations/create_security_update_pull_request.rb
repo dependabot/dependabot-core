@@ -90,9 +90,6 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
-
           check_and_create_pull_request(dependency)
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_dependency_error(
@@ -147,6 +144,9 @@ module Dependabot
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
           return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
+
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock

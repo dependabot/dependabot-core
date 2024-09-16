@@ -45,7 +45,7 @@ module Dependabot
         return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
 
         # Determine if the Bundler version is unsupported.
-        version < supported_versions.first
+        supported_versions.any? && version < supported_versions.first
       end
     end
   end
