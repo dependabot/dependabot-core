@@ -52,7 +52,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
   describe "SUPPORTED_BUNDLER_VERSIONS" do
     it "is in ascending order" do
-      expect(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS).to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS.sort)
+      expect(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS)
+        .to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS.sort)
     end
   end
 
