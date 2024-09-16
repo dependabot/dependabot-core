@@ -46,13 +46,9 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
-
-        # Raise an error if the package manager version is unsupported
-        dependency_snapshot.package_manager&.raise_if_unsupported!
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
@@ -139,7 +135,6 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
-      # rubocop:enable Metrics/CyclomaticComplexity
       def log_missing_previous_version(dependency_change)
         deps_no_previous_version = dependency_change.updated_dependencies.reject(&:previous_version).map(&:name)
         deps_no_change = dependency_change.updated_dependencies.reject(&:requirements_changed?).map(&:name)
@@ -215,6 +210,9 @@ module Dependabot
           .returns(T::Array[Dependabot::Dependency])
       end
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+        # Raise an error if the package manager version is unsupported
+        dependency_snapshot.package_manager&.raise_if_unsupported!
+
         checker = update_checker_for(
           dependency,
           dependency_files,
