@@ -338,6 +338,15 @@ module Dependabot
     class PoetryErrorHandler < UpdateChecker
       extend T::Sig
 
+      # if a valid config value is not found in project.toml file
+      INVALID_CONFIGURATION = /The Poetry configuration is invalid:(?<ver>.*)/
+
+      # if .toml has incorrect version specification i.e. <0.2.0app
+      INVALID_VERSION = /Could not parse version constraint: (?<ver>.*)/
+
+      # dependency source link not accessible
+      INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
+
       sig do
         params(
           dependencies: Dependabot::Dependency,
@@ -361,9 +370,14 @@ module Dependabot
 
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
-        return true unless (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS))
+        Dependabot.logger.warn(error.message)
 
-        raise DependencyFileNotResolvable, msg
+        if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
+            error.message.match(INVALID_CONFIGURATION) || error.message.match(INVALID_VERSION) ||
+            error.message.match(INVALID_LINK))
+
+          raise DependencyFileNotResolvable, msg
+        end
       end
     end
   end

@@ -395,5 +395,48 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "with invalid configuration in pyproject.toml file" do
+      let(:response) do
+        "The Poetry configuration is invalid:
+      - data.group.dev.dependencies.h5 must be valid exactly by one definition (0 matches found)"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("The Poetry configuration is invalid")
+        end
+      end
+    end
+
+    context "with invalid version for dependency mentioned in pyproject.toml file" do
+      let(:response) do
+        "Resolving dependencies...
+        Could not parse version constraint: <0.2.0app"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Could not parse version constraint: <0.2.0app")
+        end
+      end
+    end
+
+    context "with invalid dependecy source link in pyproject.toml file" do
+      let(:response) do
+        "Updating dependencies
+        Resolving dependencies...
+        No valid distribution links found for package: \"llama-cpp-python\" version: \"0.2.82\""
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("No valid distribution links found for package: \"llama-cpp-python\" version: \"0.2.82\"")
+        end
+      end
+    end
   end
 end
