@@ -48,21 +48,22 @@ RSpec.describe Dependabot::Python::Version do
       it { is_expected.to be(false) }
     end
 
-    context "with an invalid version" do
-      let(:version_string) { "bad" }
+    context "with invalid versions" do
+      versions = [
+        "bad",
+        "1.0+a+",
+        "1.0++",
+        "1.0+_foobar",
+        "1.0+foo&asd",
+        "1.0+1+1",
+        "1.0.0+abc 123",
+        "v1.8.0--failed-release-attempt"
+      ]
 
-      it { is_expected.to be(false) }
-
-      context "when version includes an invalid local version" do
-        let(:version_string) { "1.0.0+abc 123" }
-
-        it { is_expected.to be(false) }
-      end
-
-      context "when version includes two dashes" do
-        let(:version_string) { "v1.8.0--failed-release-attempt" }
-
-        it { is_expected.to be(false) }
+      versions.each do |version|
+        it "returns false for #{version}" do
+          expect(described_class.correct?(version)).to be false
+        end
       end
     end
   end
@@ -130,6 +131,7 @@ RSpec.describe Dependabot::Python::Version do
         expect(described_class.new(v)).to eq v
       end
     end
+
     it "handles missing version segments" do
       expect(described_class.new("1")).to eq "v1.0"
       expect(described_class.new("1")).to eq "v1.0.0"
@@ -140,9 +142,33 @@ RSpec.describe Dependabot::Python::Version do
     subject { version.prerelease? }
 
     context "with a prerelease" do
-      let(:version_string) { "1.0.0alpha" }
+      versions =
+        [
+          "1.0.dev0",
+          "1.0.dev1",
+          "1.0a1.dev1",
+          "1.0b1.dev1",
+          "1.0c1.dev1",
+          "1.0rc1.dev1",
+          "1.0a1",
+          "1.0b1",
+          "1.0c1",
+          "1.0rc1",
+          "1.0a1.post1.dev1",
+          "1.0b1.post1.dev1",
+          "1.0c1.post1.dev1",
+          "1.0rc1.post1.dev1",
+          "1.0a1.post1",
+          "1.0b1.post1",
+          "1.0c1.post1",
+          "1.0rc1.post1"
+        ]
 
-      it { is_expected.to be(true) }
+      versions.each do |version|
+        it "returns true for #{version}" do
+          expect(described_class.new(version).prerelease?).to be true
+        end
+      end
     end
 
     context "with a normal release" do
@@ -161,12 +187,18 @@ RSpec.describe Dependabot::Python::Version do
 
         it { is_expected.to be(false) }
       end
+    end
 
-      context "when using a dot" do
-        let(:version_string) { "1.0.0.post1" }
+    context "with a dev release" do
+      let(:version_string) { "1.0+dev" }
 
-        it { is_expected.to be(false) }
-      end
+      it { is_expected.to be(false) }
+    end
+
+    context "with a dev release" do
+      let(:version_string) { "1.0.post1+dev" }
+
+      it { is_expected.to be(false) }
     end
   end
 
