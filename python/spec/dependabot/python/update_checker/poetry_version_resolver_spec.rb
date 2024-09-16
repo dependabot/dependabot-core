@@ -424,7 +424,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "with invalid dependecy source link in pyproject.toml file" do
+    context "with invalid dependency source link in pyproject.toml file" do
       let(:response) do
         "Updating dependencies
         Resolving dependencies...

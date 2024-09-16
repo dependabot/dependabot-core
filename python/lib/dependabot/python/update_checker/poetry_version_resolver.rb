@@ -339,7 +339,7 @@ module Dependabot
       extend T::Sig
 
       # if a valid config value is not found in project.toml file
-      INVALID_CONFIGURATION = /The Poetry configuration is invalid:(?<ver>.*)/
+      INVALID_CONFIGURATION = /The Poetry configuration is invalid:(?<config>.*)/
 
       # if .toml has incorrect version specification i.e. <0.2.0app
       INVALID_VERSION = /Could not parse version constraint: (?<ver>.*)/
