@@ -35,27 +35,6 @@ module Dependabot
       notices << deprecation_notice
     end
 
-    # Add a deprecation notice to the notice list if the package manager is deprecated
-    # if the package manager is deprecated.
-    #  notices << deprecation_notices if deprecation_notices
-    sig do
-      params(
-        notices: T::Array[Dependabot::Notice],
-        package_manager: T.nilable(PackageManagerBase)
-      )
-        .void
-    end
-    def raise_package_manager_unsupported_error(notices:, package_manager:)
-      # Create a deprecation notice if the package manager is deprecated
-      deprecation_notice = create_deprecation_notice(package_manager)
-
-      return unless deprecation_notice
-
-      log_notice(deprecation_notice)
-
-      notices << deprecation_notice
-    end
-
     sig { params(notice: Dependabot::Notice).void }
     def log_notice(notice)
       logger = Dependabot.logger
