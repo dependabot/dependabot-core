@@ -187,6 +187,12 @@ RSpec.describe Dependabot::Python::Version do
 
         it { is_expected.to be(false) }
       end
+
+      context "when using a dot" do
+        let(:version_string) { "1.0.0.post1" }
+
+        it { is_expected.to be(false) }
+      end
     end
 
     context "with a dev release" do
