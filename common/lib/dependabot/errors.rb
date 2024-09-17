@@ -245,6 +245,12 @@ module Dependabot
         "error-type": "illformed_requirement",
         "error-detail": { message: error.message }
       }
+    when RegistryError
+      {
+        "error-type": "registry_error",
+        "error-detail": { status: error.status,
+                          msg: error.message }
+      }
     when
       IncompatibleCPU,
       NetworkUnsafeHTTP
@@ -608,6 +614,19 @@ module Dependabot
     def initialize(source)
       @source = T.let(sanitize_source(source), String)
       msg = "Missing or invalid authentication token while accessing github package : #{@source}"
+      super(msg)
+    end
+  end
+
+  class RegistryError < DependabotError
+    extend T::Sig
+
+    sig { returns(Integer) }
+    attr_reader :status
+
+    sig { params(status: Integer, msg: String).void }
+    def initialize(status, msg)
+      @status = status
       super(msg)
     end
   end
