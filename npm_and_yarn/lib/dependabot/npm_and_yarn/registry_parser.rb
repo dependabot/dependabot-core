@@ -46,7 +46,7 @@ module Dependabot
                    end
 
         package_name = url_base.gsub("%2F", "/").match(%r{@.*/})
-        "#{T.must(package_name)}#{T.must(url_base.gsub('%2F', '/').split('/').last)}"
+        "#{package_name}#{T.must(url_base.gsub('%2F', '/').split('/').last)}"
       end
 
       private

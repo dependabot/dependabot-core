@@ -144,6 +144,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a private registry we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access_no_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "when there is a unsupported engine response (pnpm) from registry" do
       let(:dependency_name) { "eslint" }
       let(:version) { "9.9.0" }
