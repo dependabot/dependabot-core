@@ -17,15 +17,6 @@ module Dependabot
       class LatestVersionFinder
         extend T::Sig
 
-        class RegistryError < StandardError
-          attr_reader :status
-
-          def initialize(status, msg)
-            @status = status
-            super(msg)
-          end
-        end
-
         def initialize(dependency:, credentials:, dependency_files:,
                        ignored_versions:, security_advisories:,
                        raise_on_ignored: false)
