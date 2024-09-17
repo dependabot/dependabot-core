@@ -44,8 +44,7 @@ module Dependabot
         # Check if the feature flag for Bundler v1 unsupported error is enabled.
         return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
 
-        # Determine if the Bundler version is unsupported.
-        supported_versions.any? && version < supported_versions.first
+        supported_versions.all? { |supported| supported > version }
       end
     end
   end
