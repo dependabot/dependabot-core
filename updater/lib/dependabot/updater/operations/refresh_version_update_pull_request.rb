@@ -138,6 +138,9 @@ module Dependabot
             return close_pull_request(reason: :update_no_longer_possible)
           end
 
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
+
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
           )

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/version"
+require "dependabot/experiments"
 require "dependabot/package_manager"
 require "dependabot/notices"
 
@@ -23,6 +24,23 @@ class StubPackageManager < Dependabot::PackageManagerBase
   attr_reader :unsupported_versions
   attr_reader :supported_versions
   attr_reader :support_later_versions
+
+  sig { override.returns(T::Boolean) }
+  def deprecated?
+    # If the version is unsupported, the unsupported error is getting raised separately.
+    return false if unsupported?
+
+    deprecated_versions.include?(version)
+  end
+
+  sig { override.returns(T::Boolean) }
+  def unsupported?
+    # Check if the feature flag for Bundler v1 unsupported error is enabled.
+    return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
+
+    # Determine if the Bundler version is unsupported.
+    version < supported_versions.first
+  end
 end
 
 RSpec.describe Dependabot::Notice do
@@ -96,86 +114,6 @@ RSpec.describe Dependabot::Notice do
     end
   end
 
-  describe ".generate_support_notice" do
-    subject(:generate_support_notice) do
-      described_class.generate_support_notice(package_manager)
-    end
-
-    let(:package_manager) do
-      StubPackageManager.new(
-        name: "bundler",
-        version: Dependabot::Version.new("1"),
-        deprecated_versions: deprecated_versions,
-        unsupported_versions: unsupported_versions,
-        supported_versions: supported_versions
-      )
-    end
-
-    let(:supported_versions) { [Dependabot::Version.new("2"), Dependabot::Version.new("3")] }
-    let(:deprecated_versions) { [Dependabot::Version.new("1")] }
-    let(:unsupported_versions) { [] }
-
-    context "when the package manager is deprecated" do
-      let(:unsupported_versions) { [] }
-
-      it "returns the correct support notice" do
-        expect(generate_support_notice.to_hash)
-          .to eq({
-            mode: "WARN",
-            type: "bundler_deprecated_warn",
-            package_manager_name: "bundler",
-            title: "Package manager deprecation notice",
-            description: "Dependabot will stop supporting `bundler v1`!" \
-                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-            show_in_pr: true,
-            show_alert: true
-          })
-      end
-    end
-
-    context "when the package manager is unsupported" do
-      let(:deprecated_versions) { [] }
-      let(:unsupported_versions) { [Dependabot::Version.new("1")] }
-
-      it "returns the correct support notice" do
-        expect(generate_support_notice.to_hash)
-          .to eq({
-            mode: "ERROR",
-            type: "bundler_unsupported_error",
-            package_manager_name: "bundler",
-            title: "Package manager unsupported notice",
-            description: "Dependabot no longer supports `bundler v1`!" \
-                         "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-            show_in_pr: true,
-            show_alert: true
-          })
-      end
-    end
-
-    context "when the package manager is neither deprecated nor unsupported" do
-      let(:version) { Dependabot::Version.new("2") }
-      let(:supported_versions) do
-        [Dependabot::Version.new("2"), Dependabot::Version.new("3"),
-         Dependabot::Version.new("4")]
-      end
-      let(:deprecated_versions) { [] }
-      let(:unsupported_versions) { [] }
-      let(:package_manager) do
-        StubPackageManager.new(
-          name: "bundler",
-          version: Dependabot::Version.new("2"),
-          deprecated_versions: deprecated_versions,
-          unsupported_versions: unsupported_versions,
-          supported_versions: supported_versions
-        )
-      end
-
-      it "returns nil" do
-        expect(generate_support_notice).to be_nil
-      end
-    end
-  end
-
   describe ".generate_pm_deprecation_notice" do
     subject(:generate_pm_deprecation_notice) do
       described_class.generate_pm_deprecation_notice(package_manager)
@@ -198,35 +136,6 @@ RSpec.describe Dependabot::Notice do
           package_manager_name: "bundler",
           title: "Package manager deprecation notice",
           description: "Dependabot will stop supporting `bundler v1`!" \
-                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-          show_in_pr: true,
-          show_alert: true
-        })
-    end
-  end
-
-  describe ".generate_pm_unsupported_notice" do
-    subject(:generate_pm_unsupported_notice) do
-      described_class.generate_pm_unsupported_notice(package_manager)
-    end
-
-    let(:package_manager) do
-      StubPackageManager.new(
-        name: "bundler",
-        version: Dependabot::Version.new("1"),
-        supported_versions: supported_versions
-      )
-    end
-    let(:supported_versions) { [Dependabot::Version.new("2"), Dependabot::Version.new("3")] }
-
-    it "returns the correct unsupported notice" do
-      expect(generate_pm_unsupported_notice.to_hash)
-        .to eq({
-          mode: "ERROR",
-          type: "bundler_unsupported_error",
-          package_manager_name: "bundler",
-          title: "Package manager unsupported notice",
-          description: "Dependabot no longer supports `bundler v1`!" \
                        "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
           show_in_pr: true,
           show_alert: true

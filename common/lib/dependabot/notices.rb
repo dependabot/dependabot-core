@@ -94,22 +94,6 @@ module Dependabot
       "Please upgrade to one of the following versions: #{versions_string}#{later_description}."
     end
 
-    # Generates a support notice for the given package manager.
-    # @param package_manager [PackageManagerBase] The package manager object.
-    # @return [Notice, nil] The generated notice or nil if no notice is applicable.
-    sig do
-      params(
-        package_manager: PackageManagerBase
-      ).returns(T.nilable(Notice))
-    end
-    def self.generate_support_notice(package_manager)
-      deprecation_notice = generate_pm_deprecation_notice(package_manager)
-
-      return deprecation_notice if deprecation_notice
-
-      generate_pm_unsupported_notice(package_manager)
-    end
-
     # Generates a deprecation notice for the given package manager.
     # @param package_manager [PackageManagerBase] The package manager object.
     # @return [Notice, nil] The generated deprecation notice or nil if the package manager is not deprecated.
@@ -129,40 +113,6 @@ module Dependabot
       notice_type = "#{package_manager.name}_deprecated_warn"
       title = "Package manager deprecation notice"
       description = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.version}`!"
-
-      ## Add the supported versions to the description
-      description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?
-
-      Notice.new(
-        mode: mode,
-        type: notice_type,
-        package_manager_name: package_manager.name,
-        title: title,
-        description: description,
-        show_in_pr: true,
-        show_alert: true
-      )
-    end
-
-    # Generates an unsupported notice for the given package manager.
-    # @param package_manager [PackageManagerBase] The package manager object.
-    # @return [Notice, nil] The generated unsupported notice or nil if the package manager is not unsupported.
-    sig do
-      params(
-        package_manager: PackageManagerBase
-      ).returns(T.nilable(Notice))
-    end
-    def self.generate_pm_unsupported_notice(package_manager)
-      return nil unless package_manager.unsupported?
-
-      mode = NoticeMode::ERROR
-      supported_versions_description = generate_supported_versions_description(
-        package_manager.supported_versions,
-        package_manager.support_later_versions?
-      )
-      notice_type = "#{package_manager.name}_unsupported_error"
-      title = "Package manager unsupported notice"
-      description = "Dependabot no longer supports `#{package_manager.name} v#{package_manager.version}`!"
 
       ## Add the supported versions to the description
       description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?

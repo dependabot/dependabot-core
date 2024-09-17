@@ -55,6 +55,9 @@ module Dependabot
     #   package_manager.deprecated? #=> true
     sig { returns(T::Boolean) }
     def deprecated?
+      # If the version is unsupported, the unsupported error is getting raised separately.
+      return false if unsupported?
+
       deprecated_versions.include?(version)
     end
 
@@ -64,12 +67,23 @@ module Dependabot
     #   package_manager.unsupported? #=> false
     sig { returns(T::Boolean) }
     def unsupported?
-      return true if unsupported_versions.include?(version)
-
-      supported_versions = self.supported_versions
-      return version < supported_versions.first if supported_versions.any?
-
       false
+    end
+
+    # Raises an error if the current package manager version is unsupported.
+    # If the version is unsupported, it raises a ToolVersionNotSupported error.
+    sig { void }
+    def raise_if_unsupported!
+      return unless unsupported?
+
+      # Example: v2.*, v3.*
+      supported_versions_message = supported_versions.map { |v| "v#{v}.*" }.join(", ")
+
+      raise ToolVersionNotSupported.new(
+        name,
+        version.to_s,
+        supported_versions_message
+      )
     end
 
     # Indicates if the package manager supports later versions beyond those listed in supported_versions.

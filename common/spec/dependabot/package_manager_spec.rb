@@ -12,7 +12,7 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
       end
 
       def version
-        Dependabot::Version.new("1.0.0")
+        @version ||= Dependabot::Version.new("1.0.0")
       end
 
       def deprecated_versions
@@ -24,7 +24,21 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
       end
 
       def supported_versions
-        [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+        @supported_versions ||= [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        # If the version is unsupported, treat it as unsupported, not deprecated.
+        return false if unsupported?
+
+        deprecated_versions.include?(version)
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        # Determine if the version is unsupported based on supported_versions.
+        version < supported_versions.first
       end
 
       def support_later_versions?
@@ -91,42 +105,63 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
     it "returns an empty array by default" do
       expect(default_package_manager.supported_versions).to eq([])
     end
+
+    it "is in ascending order" do
+      expect(package_manager.supported_versions).to eq(package_manager.supported_versions.sort)
+    end
   end
 
   describe "#deprecated?" do
-    it "returns true if the current version is deprecated" do
-      expect(package_manager.deprecated?).to be true
+    context "when version is deprecated but not unsupported" do
+      let(:version) { Dependabot::Version.new("1") }
+
+      it "returns true" do
+        package_manager.instance_variable_set(:@version, version)
+        package_manager.instance_variable_set(:@supported_versions,
+                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        expect(package_manager.deprecated?).to be true
+      end
     end
 
-    it "returns false if the current version is not deprecated" do
-      allow(package_manager).to receive(:version).and_return(Dependabot::Version.new("1.1.0"))
-      expect(package_manager.deprecated?).to be false
-    end
+    context "when version is unsupported" do
+      let(:version) { Dependabot::Version.new("0.9.0") }
 
-    it "returns true if the current version is a major version and deprecated" do
-      allow(package_manager).to receive(:version).and_return(Dependabot::Version.new("1"))
-      expect(package_manager.deprecated?).to be true
+      it "returns false as unsupported takes precedence" do
+        package_manager.instance_variable_set(:@version, version)
+        package_manager.instance_variable_set(:@supported_versions,
+                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        expect(package_manager.deprecated?).to be false
+      end
     end
   end
 
   describe "#unsupported?" do
-    it "returns true if the current version is unsupported" do
-      allow(package_manager).to receive(:version).and_return(Dependabot::Version.new("0.9.0"))
-      expect(package_manager.unsupported?).to be true
+    context "when version is unsupported" do
+      let(:version) { Dependabot::Version.new("0.9.0") }
+
+      it "returns true" do
+        package_manager.instance_variable_set(:@version, version)
+        package_manager.instance_variable_set(:@supported_versions,
+                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        expect(package_manager.unsupported?).to be true
+      end
     end
 
-    it "returns false if the current version is supported" do
-      expect(package_manager.unsupported?).to be false
+    context "when version is supported" do
+      let(:version) { Dependabot::Version.new("2.0.0") }
+
+      it "returns false" do
+        package_manager.instance_variable_set(:@version, version)
+        package_manager.instance_variable_set(:@supported_versions,
+                                              [Dependabot::Version.new("1"), Dependabot::Version.new("2")])
+        expect(package_manager.unsupported?).to be false
+      end
     end
 
-    it "returns false if there is no list of supported versions" do
-      allow(default_package_manager).to receive(:version).and_return(Dependabot::Version.new("1.0.0"))
-      expect(default_package_manager.unsupported?).to be false
-    end
-
-    it "returns true if the current version is a major version and unsupported" do
-      allow(package_manager).to receive(:version).and_return(Dependabot::Version.new("0"))
-      expect(package_manager.unsupported?).to be true
+    context "when there is no list of supported versions" do
+      it "returns false" do
+        expect(default_package_manager.unsupported?).to be false
+      end
     end
   end
 
