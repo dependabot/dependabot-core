@@ -1,0 +1,9 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/${ENV_VAR}"
+
+[dev-packages]
+pytest = "==3.4.0"
+
+[packages]
+requests = "==2.18.0"
