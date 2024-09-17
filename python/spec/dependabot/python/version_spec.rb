@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Python::Version do
       "1.0.0-beta.11",
       "1.0.0-rc.1",
       "1",
-      # "1.0.0.post", TODO fails comparing to 1
+      "1.0.0.post", # TODO: fails comparing to 1
       "1.0.0+gc1",
       "1.post2",
       "1.post2+gc1",
@@ -119,6 +119,7 @@ RSpec.describe Dependabot::Python::Version do
       "2!0.1.0",
       "10!0.1.0"
     ]
+
     sorted_versions.combination(2).each do |lhs, rhs|
       it "'#{lhs}' < '#{rhs}'" do
         expect(described_class.new(lhs)).to be < rhs
@@ -132,9 +133,85 @@ RSpec.describe Dependabot::Python::Version do
       end
     end
 
+    context "when sorting a list of versions" do
+      let(:versions) do
+        [
+          # Implicit epoch of 0
+          "1.0.dev456",
+          "1.0a1",
+          "1.0a2.dev456",
+          "1.0a12.dev456",
+          "1.0a12",
+          "1.0b1.dev456",
+          "1.0b2",
+          "1.0b2.post345.dev456",
+          "1.0b2.post345",
+          "1.0b2-346",
+          "1.0c1.dev456",
+          "1.0c1",
+          "1.0rc2",
+          "1.0c3",
+          "1.0",
+          "1.0.post456.dev34",
+          "1.0.post456",
+          "1.1.dev1",
+          "1.2+123abc",
+          "1.2+123abc456",
+          "1.2+abc",
+          "1.2+abc123",
+          "1.2+abc123def",
+          "1.2+1234.abc",
+          "1.2+123456",
+          "1.2.r32+123456",
+          "1.2.rev33+123456",
+          # Explicit epoch of 1
+          "1!1.0.dev456",
+          "1!1.0a1",
+          "1!1.0a2.dev456",
+          "1!1.0a12.dev456",
+          "1!1.0a12",
+          "1!1.0b1.dev456",
+          "1!1.0b2",
+          "1!1.0b2.post345.dev456",
+          "1!1.0b2.post345",
+          "1!1.0b2-346",
+          "1!1.0c1.dev456",
+          "1!1.0c1",
+          "1!1.0rc2",
+          "1!1.0c3",
+          "1!1.0",
+          "1!1.0.post456.dev34",
+          "1!1.0.post456",
+          "1!1.1.dev1",
+          "1!1.2+123abc",
+          "1!1.2+123abc456",
+          "1!1.2+abc",
+          "1!1.2+abc123",
+          "1!1.2+abc123def",
+          "1!1.2+1234.abc",
+          "1!1.2+123456",
+          "1!1.2.r32+123456",
+          "1!1.2.rev33+123456"
+        ]
+      end
+
+      it "returns list in the correct order" do
+        expect(versions.shuffle.sort).to eq versions
+      end
+    end
+
     it "handles missing version segments" do
       expect(described_class.new("1")).to eq "v1.0"
       expect(described_class.new("1")).to eq "v1.0.0"
+    end
+
+    context "with equivalent release candidates" do
+      let(:version) { described_class.new("1.0rc1") }
+      let(:other_version) { described_class.new("1.0c1") }
+
+      it "returns 0" do
+        expect(version <=> other_version).to eq 0
+      end
     end
   end
 
