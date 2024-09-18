@@ -743,13 +743,63 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a workspace root containing a path dependency to a member" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_without_lockfile.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_in_workspace_root",
+                        "contents_cargo_manifest_workspace.json"),
+          headers: json_header
+        )
+      stub_request(:get, url + "child/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_in_workspace_root",
+                        "contents_cargo_manifest_child.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the dependencies successfully" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(.cargo/config.toml Cargo.toml child/Cargo.toml))
+      expect(file_fetcher_instance.files.map(&:path))
+        .to match_array(%w(/.cargo/config.toml /Cargo.toml /child/Cargo.toml))
+    end
+  end
+
   context "with a path dependency to a workspace member" do
+    let(:root_url) do
+      "https://api.github.com/repos/gocardless/bump/"
+    end
     let(:url) do
-      "https://api.github.com/repos/gocardless/bump/contents/"
+      root_url + "contents/"
     end
 
     before do
+      # No root Cargo.toml
+      stub_request(:get, root_url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
       # Contents of these dirs aren't important
+      stub_request(:get, root_url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "path_dependency_workspace_member", "contents_dir_detached_crate_success.json"),
+          headers: json_header
+        )
       stub_request(:get, /#{Regexp.escape(url)}detached_crate_(success|fail_1|fail_2)\?ref=sha/)
         .with(headers: { "Authorization" => "token token" })
         .to_return(
@@ -846,7 +896,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
       end
 
-      it "fetches the dependency successfully" do
+      it "fetches the dependencies successfully" do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(
             Cargo.toml
@@ -873,12 +923,15 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
       end
 
-      it "raises a DependencyFileNotEvaluatable error" do
-        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
-          expect(error.message)
-            .to eq("Could not resolve workspace root for path dependency " \
-                   "/incorrect_workspace/Cargo.toml of /detached_crate_fail_1/Cargo.toml")
-        end
+      it "fetches as many dependencies as possible, without erroring" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(
+            ../incorrect_workspace/Cargo.toml Cargo.toml
+          ))
+        expect(file_fetcher_instance.files.map(&:path))
+          .to match_array(%w(
+            /detached_crate_fail_1/Cargo.toml /incorrect_workspace/Cargo.toml
+          ))
       end
     end
 
@@ -891,12 +944,15 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
       end
 
-      it "raises a DependencyFileNotEvaluatable error" do
-        expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
-          expect(error.message)
-            .to eq("Could not resolve workspace root for path dependency " \
-                   "/incorrect_detached_workspace_member/Cargo.toml of /detached_crate_fail_2/Cargo.toml")
-        end
+      it "fetches as many dependencies as possible, without erroring" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(
+            ../incorrect_detached_workspace_member/Cargo.toml Cargo.toml
+          ))
+        expect(file_fetcher_instance.files.map(&:path))
+          .to match_array(%w(
+            /detached_crate_fail_2/Cargo.toml /incorrect_detached_workspace_member/Cargo.toml
+          ))
       end
     end
   end

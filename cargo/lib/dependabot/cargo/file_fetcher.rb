@@ -150,7 +150,7 @@ module Dependabot
             # If this path dependency file is a workspace member that inherits from
             # its root workspace, we search for the root to include it so Cargo can
             # resolve the path dependency file manifest properly.
-            root = find_workspace_root(fetched_file, file) if workspace_member?(parsed_file(fetched_file))
+            root = find_workspace_root(fetched_file) if workspace_member?(parsed_file(fetched_file))
 
             [fetched_file, *grandchild_requirement_files, root]
           rescue Dependabot::DependencyFileNotFound
@@ -240,13 +240,10 @@ module Dependabot
       # Find workspace root of this workspace member, first via package.workspace
       # manifest key if present, otherwise resort to searching parent directories
       # up till the repository root.
-      #
-      # original_manifest used for providing a useful error message.
       sig do
-        params(workspace_member: Dependabot::DependencyFile,
-               original_manifest: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
+        params(workspace_member: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile))
       end
-      def find_workspace_root(workspace_member, original_manifest)
+      def find_workspace_root(workspace_member)
         current_dir = workspace_member.name.rpartition("/").first
 
         workspace_root_dir = parsed_file(workspace_member).dig("package", "workspace")
@@ -257,12 +254,11 @@ module Dependabot
           )
           return workspace_root if parsed_file(workspace_root)["workspace"]
 
-          msg = "Could not resolve workspace root for path dependency " \
-                "#{workspace_member.path} of #{original_manifest.path}"
-          raise Dependabot::DependencyFileNotEvaluatable, msg
+          # To avoid accidentally breaking backward compatibility, we don't throw errors
+          return nil
         end
 
-        parent_dirs = current_dir.scan("/").length - 1
+        parent_dirs = current_dir.scan("/").length
         while parent_dirs >= 0
           current_dir = File.join(current_dir, "..")
           begin
@@ -277,9 +273,8 @@ module Dependabot
           parent_dirs -= 1
         end
 
-        msg = "Could not resolve workspace root for path dependency " \
-              "#{workspace_member.path} of #{original_manifest.path}"
-        raise Dependabot::DependencyFileNotEvaluatable, msg
+        # To avoid accidentally breaking backward compatibility, we don't throw errors
+        nil
       end
 
       def workspace_dependency_paths_from_file(file)
