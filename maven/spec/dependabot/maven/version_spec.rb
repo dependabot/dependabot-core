@@ -170,6 +170,14 @@ RSpec.describe Dependabot::Maven::Version do
     it { is_expected.to eq("#<#{described_class} #{version_string}>") }
   end
 
+  describe "#to_semver" do
+    subject { described_class.new(version_string).to_semver }
+
+    let(:version_string) { "1.0.0+build1" }
+
+    it { is_expected.to eq version_string }
+  end
+
   describe "#<=>" do
     subject { version.send(:<=>, other_version) }
 

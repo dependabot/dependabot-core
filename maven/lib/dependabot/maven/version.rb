@@ -45,6 +45,7 @@ module Dependabot
 
         @version_string = T.let(version.to_s, String)
         @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version_string), Dependabot::Maven::TokenBucket)
+        super(version.to_s.tr("_", "-"))
       end
 
       sig { returns(String) }
@@ -68,11 +69,6 @@ module Dependabot
       def <=>(other)
         other = Dependabot::Maven::Version.new(other.to_s) unless other.is_a? Dependabot::Maven::Version
         T.must(token_bucket <=> T.cast(other, Dependabot::Maven::Version).token_bucket)
-      end
-
-      sig { returns(Integer) }
-      def hash
-        token_bucket.hash
       end
 
       private
