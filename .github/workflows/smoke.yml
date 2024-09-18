@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: amazimbe/update-maven-test
+  SMOKE_TEST_BRANCH: main
 jobs:
   discover:
     runs-on: ubuntu-latest
