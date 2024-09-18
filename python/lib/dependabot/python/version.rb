@@ -16,14 +16,50 @@ module Dependabot
       attr_reader :post_release_version
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-      VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
-                        '(-[0-9A-Za-z]+(\.[0-9a-zA-Z]+)*)?' \
-                        '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
+      # VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+      #                   '(-[0-9A-Za-z]+(\.[0-9a-zA-Z]+)*)?' \
+      #                   '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
+
+      VERSION_PATTERN = %r{(?:\+(?(<local>[a-z0-9])+(?:[-_\.]([a-z0-9])+)*))?       # local version}x
+
+      # VERSION_PATTERN = <<~TEXT
+      #   v?
+      #   # (?:
+      #   #     (?:(?P<epoch>[0-9]+)!)?                           # epoch
+      #   #     (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+      #   #     (?P<pre>                                          # pre-release
+      #   #         [-_\.]?
+      #   #         (?P<pre_l>alpha|a|beta|b|preview|pre|c|rc)
+      #   #         [-_\.]?
+      #   #         (?P<pre_n>[0-9]+)?
+      #   #     )?
+      #   #     (?P<post>                                         # post release
+      #   #         (?:-(?P<post_n1>[0-9]+))
+      #   #         |
+      #   #         (?:
+      #   #             [-_\.]?
+      #   #             (?P<post_l>post|rev|r)
+      #   #             [-_\.]?
+      #   #             (?P<post_n2>[0-9]+)?
+      #   #         )
+      #   #     )?
+      #   #     (?P<dev>                                          # dev release
+      #   #         [-_\.]?
+      #   #         (?P<dev_l>dev)
+      #   #         [-_\.]?
+      #   #         (?P<dev_n>[0-9]+)?
+      #   #     )?
+      #   # )
+      #   (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+      # TEXT
+
+      # ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
+      ANCHORED_VERSION_PATTERN = /#{VERSION_PATTERN}/
 
       def self.correct?(version)
         return false if version.nil?
 
+        debugger
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
