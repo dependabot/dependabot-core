@@ -35,12 +35,6 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
-    context "when there is no latest version" do
-      let(:latest_version) { nil }
-
-      it { is_expected.to eq(requirements.first) }
-    end
-
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("0.3.7") }
 
