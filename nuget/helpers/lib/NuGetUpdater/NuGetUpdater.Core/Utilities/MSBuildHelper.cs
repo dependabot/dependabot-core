@@ -702,7 +702,7 @@ internal static partial class MSBuildHelper
                 <RunAnalyzers>false</RunAnalyzers>
                 <NuGetInteractive>false</NuGetInteractive>
                 <DesignTimeBuild>true</DesignTimeBuild>
-                <TargetPlatformVersion Condition="$(TargetFramework.Contains("-"))">1.0</TargetPlatformVersion>
+                <TargetPlatformVersion Condition=" $(TargetFramework.Contains('-')) ">1.0</TargetPlatformVersion>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
