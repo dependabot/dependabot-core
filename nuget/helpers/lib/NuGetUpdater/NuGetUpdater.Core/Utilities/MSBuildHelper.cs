@@ -701,6 +701,7 @@ internal static partial class MSBuildHelper
                 <GenerateDependencyFile>true</GenerateDependencyFile>
                 <RunAnalyzers>false</RunAnalyzers>
                 <NuGetInteractive>false</NuGetInteractive>
+                <DesignTimeBuild>true</DesignTimeBuild>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
