@@ -702,6 +702,7 @@ internal static partial class MSBuildHelper
                 <RunAnalyzers>false</RunAnalyzers>
                 <NuGetInteractive>false</NuGetInteractive>
                 <DesignTimeBuild>true</DesignTimeBuild>
+                <TargetPlatformVersion>1.0</TargetPlatformVersion>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
