@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@private-pkg/inner-source-top-secret-npm-2": "1.0.3"
+    "dep-2": "1.0.3"
   }
 }

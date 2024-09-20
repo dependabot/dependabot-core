@@ -144,12 +144,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when there is a private registry we don't have access to" do
+    context "when there is a private registry and package name is not specified" do
       let(:project_name) { "pnpm/private_package_access_no_package_name" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+          .to raise_error(Dependabot::DependencyNotFound)
       end
     end
 
