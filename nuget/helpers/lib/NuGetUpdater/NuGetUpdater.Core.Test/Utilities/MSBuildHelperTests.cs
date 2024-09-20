@@ -525,7 +525,7 @@ public class MSBuildHelperTests : TestBase
         Assert.Equal("""
             <Project>
                 <PropertyGroup>
-                    <TargetFramework>net8.0</TargetFramework>
+                    <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
                 </PropertyGroup>
                 <ItemGroup>
                     <PackageReference Include="Some.Package" Version="1.1.1" />
