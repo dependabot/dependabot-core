@@ -1,10 +1,12 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 ####################################################################
 # For more details on Terraform version constraints, see:          #
 # https://www.terraform.io/docs/modules/usage.html#module-versions #
 ####################################################################
+
+require "sorbet-runtime"
 
 require "dependabot/terraform/version"
 require "dependabot/terraform/requirement"
@@ -46,9 +48,18 @@ module Dependabot
     #   }
     # }
     class RequirementsUpdater
+      extend T::Sig
+
       # @param requirements [Hash{Symbol => String, Array, Hash}]
       # @param latest_version [Dependabot::Terraform::Version]
       # @param tag_for_latest_version [String, NilClass]
+      sig do
+        params(
+          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          latest_version: T.nilable(Dependabot::Version::VersionParameter),
+          tag_for_latest_version: T.nilable(String)
+        ).void
+      end
       def initialize(requirements:, latest_version:, tag_for_latest_version:)
         @requirements = requirements
         @tag_for_latest_version = tag_for_latest_version
@@ -56,7 +67,7 @@ module Dependabot
         return unless latest_version
         return unless version_class.correct?(latest_version)
 
-        @latest_version = version_class.new(latest_version)
+        @latest_version = T.let(version_class.new(latest_version), Dependabot::Terraform::Version)
       end
 
       # @return requirements [Hash{Symbol => String, Array, Hash}]
@@ -64,9 +75,8 @@ module Dependabot
       #   * groups [Array] no-op for terraform
       #   * file [String] the file that specified this dependency
       #   * source [Hash{Symbol => String}] The updated git or registry source details
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
-        return requirements unless latest_version
-
         # NOTE: Order is important here. The FileUpdater needs the updated
         # requirement at index `i` to correspond to the previous requirement
         # at the same index.
@@ -81,10 +91,16 @@ module Dependabot
 
       private
 
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       attr_reader :requirements
+
+      sig { returns(Dependabot::Terraform::Version) }
       attr_reader :latest_version
+
+      sig { returns(T.nilable(String)) }
       attr_reader :tag_for_latest_version
 
+      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
       def update_git_requirement(req)
         return req unless req.dig(:source, :ref)
         return req unless tag_for_latest_version
@@ -92,6 +108,7 @@ module Dependabot
         req.merge(source: req[:source].merge(ref: tag_for_latest_version))
       end
 
+      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
       def update_registry_requirement(req)
         return req if req.fetch(:requirement).nil?
 
@@ -111,6 +128,7 @@ module Dependabot
       end
 
       # Updates the version in a "~>" constraint to allow the given version
+      sig { params(req_string: String).returns(String) }
       def update_twiddle_version(req_string)
         old_version = requirement_class.new(req_string)
                                        .requirements.first.last
@@ -118,6 +136,7 @@ module Dependabot
         req_string.sub(old_version.to_s, updated_version)
       end
 
+      sig { params(req_string: String).returns(T::Array[Dependabot::Terraform::Requirement]) }
       def update_range(req_string)
         requirement_class.new(req_string).requirements.flat_map do |r|
           ruby_req = requirement_class.new(r.join(" "))
@@ -131,6 +150,13 @@ module Dependabot
         end
       end
 
+      sig do
+        params(
+          new_version: Dependabot::Terraform::Version,
+          old_version: Dependabot::Terraform::Version
+        )
+          .returns(String)
+      end
       def at_same_precision(new_version, old_version)
         release_precision =
           old_version.to_s.split(".").count { |i| i.match?(/^\d+$/) }
@@ -149,6 +175,13 @@ module Dependabot
 
       # Updates the version in a "<" or "<=" constraint to allow the given
       # version
+      sig do
+        params(
+          requirement: Dependabot::Requirement,
+          version_to_be_permitted: T.any(String, Dependabot::Terraform::Version)
+        )
+          .returns(Dependabot::Terraform::Requirement)
+      end
       def update_greatest_version(requirement, version_to_be_permitted)
         if version_to_be_permitted.is_a?(String)
           version_to_be_permitted =
@@ -164,7 +197,7 @@ module Dependabot
           if index < index_to_update
             version_to_be_permitted.segments[index]
           elsif index == index_to_update
-            version_to_be_permitted.segments[index] + 1
+            version_to_be_permitted.segments[index].to_i + 1
           else
             0
           end
@@ -173,10 +206,12 @@ module Dependabot
         requirement_class.new("#{op} #{new_segments.join('.')}")
       end
 
+      sig { returns(T.class_of(Dependabot::Terraform::Version)) }
       def version_class
         Version
       end
 
+      sig { returns(T.class_of(Dependabot::Terraform::Requirement)) }
       def requirement_class
         Requirement
       end
