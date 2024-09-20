@@ -1,5 +1,8 @@
 name: Sorbet
 on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - "main"
   pull_request:
   workflow_dispatch:
 
