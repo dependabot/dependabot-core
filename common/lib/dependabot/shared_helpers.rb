@@ -484,6 +484,12 @@ module Dependabot
       env_keys = env ? env.compact.map { |k, v| "#{k}=#{v}" }.join(" ") + " " : ""
       "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
     end
+
+    sig { params(additional_path: String).returns(String) }
+    def self.add_to_path_variable(additional_path:)
+      current_path = ENV['PATH']
+      ENV['PATH'] = "#{current_path}:#{additional_path}"
+    end
     private_class_method :helper_subprocess_bash_command
   end
 end

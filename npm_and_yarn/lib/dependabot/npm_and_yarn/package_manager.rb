@@ -73,6 +73,8 @@ module Dependabot
 
       private
 
+      COREPACK_SUPPORTED_PMS = ["npm", "yarn", "pnpm"]
+
       def raise_if_unsupported!(name, version)
         return unless name == "pnpm"
         return unless Version.new(version) < Version.new("7")
@@ -83,10 +85,42 @@ module Dependabot
       def install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
+        if COREPACK_SUPPORTED_PMS.include?(name)
+          corepack_install(name, version)
+        elsif name == "bun"
+          bun_install(version)
+        end
+      end
+
+      def corepack_install(name, version)
         SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only"
         )
+      end
+
+      def bun_install(version)
+        arch, os = RbConfig::CONFIG["platform"].split("-")
+        uri = URI("https://bun.sh/download/#{version}/#{os}/#{arch}?avx2=true&profile=false")
+
+        binpath = Pathname.new(File.join(Dir.home, ".bun", "bin")).expand_path
+        FileUtils.mkdir_p(binpath)
+
+        zippath = Pathname.new(File.join(binpath, "bun.zip")).expand_path
+        IO.copy_stream(URI.open(uri), zippath)
+
+        raise ToolVersionNotSupported.new("bun", version, "1.*") unless File.exist?(zippath)
+
+        bunpath = Pathname.new(File.join(binpath, "bun")).expand_path
+        Zip::File.open(zippath) do |zip|
+          binfile = zip.select do |file|
+            file.file_type_is?(:file)
+          end.first
+          zip.extract(binfile, bunpath)
+        end
+
+        SharedHelpers.add_to_path_variable(binpath.to_s)
+        FileUtils.rm_f(zippath)
       end
 
       def requested_version(name)
