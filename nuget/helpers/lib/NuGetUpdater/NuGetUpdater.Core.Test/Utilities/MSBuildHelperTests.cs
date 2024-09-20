@@ -497,6 +497,44 @@ public class MSBuildHelperTests : TestBase
         }
     }
 
+    [Fact]
+    public void UpdateWithWorkloadsTargetFrameworks()
+    {
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, Property>
+        {
+            { "PackageVersion1", new("PackageVersion1", "1.1.1", "Packages.props") },
+        };
+
+        // Act
+        var (resultType, _, evaluatedValue, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+
+        Assert.Equal(EvaluationResultType.Success, resultType);
+
+        // Assert
+        Assert.Equal("""
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.1.1" />
+                </ItemGroup>
+            </Project>
+            """, evaluatedValue);
+    }
+
+
     #region
     // Updating root package
     // CS-Script Code to 2.0.0 requires its dependency Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and its transitive dependency Microsoft.CodeAnalysis.Common to be 3.6.0
