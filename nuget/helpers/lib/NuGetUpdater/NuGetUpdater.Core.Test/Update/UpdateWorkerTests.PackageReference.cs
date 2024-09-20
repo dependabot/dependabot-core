@@ -3069,7 +3069,7 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
-        public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
+        public async Task ProcessingProjectWithWorkloadReferencesDoesNotFail()
         {
             // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
             // still process the update
@@ -3082,7 +3082,7 @@ public partial class UpdateWorkerTests
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
+                        <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
                         <IsAspireHost>true</IsAspireHost>
                       </PropertyGroup>
                       <ItemGroup>
@@ -3093,7 +3093,7 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
+                        <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
                         <IsAspireHost>true</IsAspireHost>
                       </PropertyGroup>
                       <ItemGroup>
