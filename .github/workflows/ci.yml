@@ -90,7 +90,7 @@ jobs:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
+      - uses: ruby/setup-ruby@f321cf5a4d1533575411f8752cf25b86478b0442 # v1.193.0
         with:
           bundler-cache: true
       - run: ./bin/lint
