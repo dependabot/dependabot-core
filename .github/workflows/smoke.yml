@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: revert-228-amazimbe/use-new-maven-version
 jobs:
   discover:
     runs-on: ubuntu-latest
