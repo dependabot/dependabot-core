@@ -13,36 +13,36 @@ module Gitlab
     #
     # @return [Array<Symbol>]
     #
-    # source://gitlab//lib/gitlab.rb#51
+    # source://gitlab//lib/gitlab.rb#52
     def actions; end
 
     # Alias for Gitlab::Client.new
     #
     # @return [Gitlab::Client]
     #
-    # source://gitlab//lib/gitlab.rb#20
+    # source://gitlab//lib/gitlab.rb#21
     def client(options = T.unsafe(nil)); end
 
     # Delegate to HTTParty.http_proxy
     #
-    # source://gitlab//lib/gitlab.rb#44
+    # source://gitlab//lib/gitlab.rb#45
     def http_proxy(address = T.unsafe(nil), port = T.unsafe(nil), username = T.unsafe(nil), password = T.unsafe(nil)); end
 
-    # source://gitlab//lib/gitlab.rb#25
+    # source://gitlab//lib/gitlab.rb#26
     def method_missing(method, *args, **keywargs, &block); end
 
     # Delegate to Gitlab::Client
     #
     # @return [Boolean]
     #
-    # source://gitlab//lib/gitlab.rb#39
+    # source://gitlab//lib/gitlab.rb#40
     def respond_to_missing?(method_name, include_private = T.unsafe(nil)); end
   end
 end
 
 # @private
 #
-# source://gitlab//lib/gitlab/api.rb#6
+# source://gitlab//lib/gitlab/api.rb#5
 class Gitlab::API < ::Gitlab::Request
   # Creates a new API.
   #
@@ -88,7 +88,10 @@ class Gitlab::API < ::Gitlab::Request
   def user_agent=(_arg0); end
 
   class << self
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
     def default_cookies; end
+
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
     def default_options; end
   end
 end
@@ -374,6 +377,7 @@ class Gitlab::Client < ::Gitlab::API
   include ::Gitlab::Client::Markdown
   include ::Gitlab::Client::MergeRequestApprovals
   include ::Gitlab::Client::MergeRequests
+  include ::Gitlab::Client::MergeTrains
   include ::Gitlab::Client::Milestones
   include ::Gitlab::Client::Namespaces
   include ::Gitlab::Client::Notes
@@ -383,6 +387,7 @@ class Gitlab::Client < ::Gitlab::API
   include ::Gitlab::Client::Pipelines
   include ::Gitlab::Client::ProjectBadges
   include ::Gitlab::Client::ProjectClusters
+  include ::Gitlab::Client::ProjectExports
   include ::Gitlab::Client::ProjectReleaseLinks
   include ::Gitlab::Client::ProjectReleases
   include ::Gitlab::Client::Projects
@@ -407,28 +412,79 @@ class Gitlab::Client < ::Gitlab::API
   include ::Gitlab::Client::Versions
   include ::Gitlab::Client::Wikis
 
+  # Create group access token
+  #
+  # @example
+  #   Gitlab.create_group_access_token(2, "token", ["api", "read_user"])
+  #   Gitlab.create_group_access_token(2, "token", ["api", "read_user"], 20)
+  #   Gitlab.create_group_access_token(2, "token", ["api", "read_user"], 20, "1970-01-01")
+  # @param group_id [Integer] The ID of the group.
+  # @param name [String] Name for group access token.
+  # @param scopes [Array<String>] Array of scopes for the group access token
+  # @param access_level [Integer] Project access level (10: Guest, 20: Reporter, 30: Developer, 40: Maintainer, 50: Owner).
+  # @param expires_at [String] Date for group access token expiration in ISO format.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#489
+  def create_group_access_token(group_id, name, scopes, access_level = T.unsafe(nil), expires_at = T.unsafe(nil)); end
+
+  # Get group access token information
+  #
+  # @example
+  #   Gitlab.group_access_token(1, 1)
+  # @param group_id [Integer] The ID of the group.
+  # @param group_access_token_id [Integer] ID of the group access token.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#472
+  def group_access_token(group_id, group_access_token_id); end
+
+  # Get all access tokens for a group
+  #
+  # @example
+  #   Gitlab.group_access_tokens(1)
+  # @param group_id [Integer] The ID of the group.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#460
+  def group_access_tokens(group_id); end
+
   # Text representation of the client, masking private token.
   #
   # @return [String]
   #
-  # source://gitlab//lib/gitlab/client.rb#76
+  # source://gitlab//lib/gitlab/client.rb#78
   def inspect; end
+
+  # Revoke a group access token
+  #
+  # @example
+  #   Gitlab.revoke_group_access_token(1, 1)
+  # @param user_id [Integer] The ID of the group.
+  # @param group_access_token_id [Integer] ID of the group access token.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#504
+  def revoke_group_access_token(group_id, group_access_token_id); end
 
   # Utility method for URL encoding of a string.
   # Copied from https://ruby-doc.org/stdlib-2.7.0/libdoc/erb/rdoc/ERB/Util.html
   #
   # @return [String]
   #
-  # source://gitlab//lib/gitlab/client.rb#86
+  # source://gitlab//lib/gitlab/client.rb#88
   def url_encode(url); end
 
   private
 
-  # source://gitlab//lib/gitlab/client.rb#92
+  # source://gitlab//lib/gitlab/client.rb#94
   def only_show_last_four_chars(token); end
 
   class << self
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
     def default_cookies; end
+
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#46
     def default_options; end
   end
 end
@@ -1561,8 +1617,8 @@ module Gitlab::Client::Commits
   #   Gitlab.commit_merge_requests(5, 'c9f9662a9b1116c838b523ed64c6abdb4aae4b8b')
   # @option options
   # @option options
-  # @param project [Integer] The ID of a project.
   # @param sha [String] The commit hash.
+  # @param project [Integer] The ID of a project.
   # @param options [Hash] a customizable set of options
   # @return [Array<Gitlab::ObjectifiedHash>]
   # @see https://docs.gitlab.com/ce/api/commits.html#list-merge-requests-associated-with-a-commit
@@ -1626,11 +1682,11 @@ module Gitlab::Client::Commits
   #
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
   # @param branch [String] the branch name you wish to commit to
-  # @param message [String] the commit message
   # @param An [Array[Hash]] array of action hashes to commit as a batch. See the next table for what attributes it can take.
   # @param options [Hash] a customizable set of options
+  # @param message [String] the commit message
+  # @param project [Integer, String] The ID or name of a project.
   # @return [Gitlab::ObjectifiedHash] hash of commit related data
   # @see https://docs.gitlab.com/ce/api/commits.html#create-a-commit-with-multiple-files-and-actions
   #
@@ -1699,8 +1755,8 @@ module Gitlab::Client::Commits
   #   Gitlab.commit_merge_requests(5, 'c9f9662a9b1116c838b523ed64c6abdb4aae4b8b')
   # @option options
   # @option options
-  # @param project [Integer] The ID of a project.
   # @param sha [String] The commit hash.
+  # @param project [Integer] The ID of a project.
   # @param options [Hash] a customizable set of options
   # @return [Array<Gitlab::ObjectifiedHash>]
   # @see https://docs.gitlab.com/ce/api/commits.html#list-merge-requests-associated-with-a-commit
@@ -1765,10 +1821,10 @@ module Gitlab::Client::Commits
   # @option options
   # @option options
   # @option options
+  # @param options [Hash] A customizable set of options.
   # @param project [Integer, String] The ID or name of a project.
   # @param sha [String] The commit hash
   # @param state [String] of the status. Can be: pending, running, success, failed, canceled
-  # @param options [Hash] A customizable set of options.
   #
   # source://gitlab//lib/gitlab/client/commits.rb#168
   def repo_update_commit_status(project, sha, state, options = T.unsafe(nil)); end
@@ -1796,10 +1852,10 @@ module Gitlab::Client::Commits
   # @option options
   # @option options
   # @option options
+  # @param options [Hash] A customizable set of options.
   # @param project [Integer, String] The ID or name of a project.
   # @param sha [String] The commit hash
   # @param state [String] of the status. Can be: pending, running, success, failed, canceled
-  # @param options [Hash] A customizable set of options.
   #
   # source://gitlab//lib/gitlab/client/commits.rb#168
   def update_commit_status(project, sha, state, options = T.unsafe(nil)); end
@@ -2581,6 +2637,34 @@ module Gitlab::Client::Groups
   # source://gitlab//lib/gitlab/client/groups.rb#340
   def add_group_custom_attribute(key, value, group_id); end
 
+  # Add a new group hook
+  #
+  # @example
+  #   Gitlab.add_group_hook(3, "https://example.com/my-hook-receiver", {token: "verify me"})
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @param group_id [Integer] The ID of a group.
+  # @param the [String] hook url which will receive the selected events
+  # @param options [Hash] a customizable set of options
+  # @return [Gitlab::ObjectifiedHash] Response body matches https://docs.gitlab.com/ee/api/groups.html#get-group-hook
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#406
+  def add_group_hook(group_id, url, options = T.unsafe(nil)); end
+
   # Adds a user to group.
   #
   # @example
@@ -2654,6 +2738,17 @@ module Gitlab::Client::Groups
   # source://gitlab//lib/gitlab/client/groups.rb#354
   def delete_group_custom_attribute(key, group_id = T.unsafe(nil)); end
 
+  # Delete a group hook
+  #
+  # @example
+  #   Gitlab.delete_group_hook(3, 1)
+  # @param group_id [Integer] The ID of a group.
+  # @param hook_id [Integer] The ID of a group.
+  # @return [Gitlab::ObjectifiedHash] no body, will evaluate to an empty hash. https://docs.gitlab.com/ee/api/groups.html#delete-group-hook
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#448
+  def delete_group_hook(group_id, hook_id); end
+
   # Delete LDAP group link
   #
   # @example
@@ -2682,6 +2777,35 @@ module Gitlab::Client::Groups
   #
   # source://gitlab//lib/gitlab/client/groups.rb#255
   def edit_group(id, options = T.unsafe(nil)); end
+
+  # Edit a group hook
+  #
+  # @example
+  #   Gitlab.edit_group_hook(3, 1, "https://example.com/my-hook-receiver", {token: "verify me"})
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @param group_id [Integer] The ID of a group.
+  # @param hook_id [Integer] The ID of a group.
+  # @param the [String] hook url which will receive the selected events
+  # @param options [Hash] a customizable set of options
+  # @return [Gitlab::ObjectifiedHash] Response body matches https://docs.gitlab.com/ee/api/groups.html#edit-group-hook
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#436
+  def edit_group_hook(group_id, hook_id, url, options = T.unsafe(nil)); end
 
   # Edit a user of a group.
   #
@@ -2760,6 +2884,17 @@ module Gitlab::Client::Groups
   #
   # source://gitlab//lib/gitlab/client/groups.rb#104
   def group_descendants(id, options = T.unsafe(nil)); end
+
+  # get specified group hook
+  #
+  # @example
+  #   Gitlab.group_hook(3, 1)
+  # @param group_id [Integer] The ID of a group.
+  # @param hook_id [Integer] The ID of the hook.
+  # @return [Gitlab::ObjectifiedHash] The hook https://docs.gitlab.com/ee/api/groups.html#get-group-hook
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#377
+  def group_hook(group_id, hook_id); end
 
   # Gets a list of issues of a group.
   #
@@ -2861,6 +2996,16 @@ module Gitlab::Client::Groups
   #
   # source://gitlab//lib/gitlab/client/groups.rb#17
   def groups(options = T.unsafe(nil)); end
+
+  # List all the specified groups hooks
+  #
+  # @example
+  #   Gitlab.list_group_hooks(3)
+  # @param group_id [Integer] The ID of a group.
+  # @return [Gitlab::PaginatedResponse] List of registered hooks https://docs.gitlab.com/ee/api/groups.html#hooks
+  #
+  # source://gitlab//lib/gitlab/client/groups.rb#365
+  def list_group_hooks(group_id); end
 
   # Removes user from user group.
   #
@@ -3085,6 +3230,16 @@ module Gitlab::Client::Issues
   #
   # source://gitlab//lib/gitlab/client/issues.rb#216
   def participants_on_issue(project, id); end
+
+  # List related merge requests
+  #
+  # @example
+  #   Gitlab.related_merge_requests(3, 42)
+  # @param project [Integer, String] The ID or name of a project.
+  # @param id [Integer] The ID of an issue.
+  #
+  # source://gitlab//lib/gitlab/client/issues.rb#238
+  def related_merge_requests(project, id); end
 
   # Reopens an issue.
   #
@@ -3401,10 +3556,10 @@ module Gitlab::Client::Labels
   #   Gitlab.create_label(42, "Backlog", '#DD10AA')
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param name [String] The name of a label.
-  # @param color [String] The color of a label.
   # @param options [Hash] A customizable set of options.
+  # @param name [String] The name of a label.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param color [String] The color of a label.
   # @return [Gitlab::ObjectifiedHash] Information about created label.
   #
   # source://gitlab//lib/gitlab/client/labels.rb#30
@@ -3964,7 +4119,7 @@ module Gitlab::Client::MergeRequests
   # @param id [Integer] The ID of a merge request diff version.
   # @return [Gitlab::ObjectifiedHash] Record of the specific diff
   #
-  # source://gitlab//lib/gitlab/client/merge_requests.rb#368
+  # source://gitlab//lib/gitlab/client/merge_requests.rb#380
   def merge_request_diff_version(project, merge_request_id, version_id); end
 
   # Gets a list of merge request diff versions
@@ -3976,8 +4131,20 @@ module Gitlab::Client::MergeRequests
   # @param id [Integer] The ID of a merge request.
   # @return [Gitlab::ObjectifiedHash] A list of the merge request versions.
   #
-  # source://gitlab//lib/gitlab/client/merge_requests.rb#355
+  # source://gitlab//lib/gitlab/client/merge_requests.rb#367
   def merge_request_diff_versions(project, merge_request_id); end
+
+  # Gets a list of merge request diffs
+  #
+  # @example
+  #   Gitlab.merge_request_diffs(5, 1)
+  #   Gitlab.merge_request_diffs('gitlab', 1)
+  # @param project [Integer, String] The ID or name of a project.
+  # @param id [Integer] The ID of a merge request.
+  # @return [Gitlab::ObjectifiedHash] A list of the merge request diffs.
+  #
+  # source://gitlab//lib/gitlab/client/merge_requests.rb#355
+  def merge_request_diffs(project, merge_request_id); end
 
   # Get single merge request discussion
   #
@@ -4050,7 +4217,7 @@ module Gitlab::Client::MergeRequests
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Rebase progress status
   #
-  # source://gitlab//lib/gitlab/client/merge_requests.rb#382
+  # source://gitlab//lib/gitlab/client/merge_requests.rb#394
   def rebase_merge_request(project, id, options = T.unsafe(nil)); end
 
   # Resolve a merge request discussion
@@ -4116,11 +4283,11 @@ module Gitlab::Client::MergeRequests
   #   Gitlab.update_merge_request_discussion_note('gitlab', 1, 1, 1, body: 'note')
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param id [Integer] The ID of a merge request.
-  # @param discussion_id [Integer] The ID of a discussion.
   # @param note_id [Integer] The ID of a discussion note.
   # @param options [Hash] A customizable set of options.
+  # @param id [Integer] The ID of a merge request.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param discussion_id [Integer] The ID of a discussion.
   # @return [Gitlab::ObjectifiedHash] The merge request discussion note.
   #
   # source://gitlab//lib/gitlab/client/merge_requests.rb#317
@@ -4136,6 +4303,60 @@ module Gitlab::Client::MergeRequests
   #
   # source://gitlab//lib/gitlab/client/merge_requests.rb#15
   def user_merge_requests(options = T.unsafe(nil)); end
+end
+
+# Defines methods related to merge trains.
+#
+# @see https://docs.gitlab.com/ee/api/merge_trains.html
+#
+# source://gitlab//lib/gitlab/client/merge_trains.rb#6
+module Gitlab::Client::MergeTrains
+  # Add a merge request to the merge train targeting the merge request’s target branch.
+  #
+  # @option options
+  # @option options
+  # @option options
+  # @param project [Integer, String] The ID or name of a project.
+  # @param merge_request_iid [Integer] The IID of the merge request.
+  # @param options [Hash] A customizable set of options.
+  # @return [Array<Gitlab::ObjectifiedHash>] <description>
+  #
+  # source://gitlab//lib/gitlab/client/merge_trains.rb#51
+  def add_merge_request_to_merge_train(project, merge_request_iid, options = T.unsafe(nil)); end
+
+  # Get all merge requests added to a merge train for the requested target branch.
+  #
+  # @option options
+  # @option options
+  # @param project [Integer, String] The ID or name of a project.
+  # @param target_branch [String] The target branch of the merge train.
+  # @param options [Hash] A customizable set of options.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/merge_trains.rb#29
+  def merge_train_merge_requests(project, target_branch, options = T.unsafe(nil)); end
+
+  # Get merge train information for the requested merge request.
+  #
+  # @param project [Integer, String] The ID or name of a project.
+  # @param merge_request_iid [Integer] The IID of the merge request.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/merge_trains.rb#38
+  def merge_train_status(project, merge_request_iid); end
+
+  # Get list of merge trains for a project.
+  #
+  # @example
+  #   Gitlab.merge_trains(1, scope: :active, sort: :asc)
+  # @option options
+  # @option options
+  # @param project [Integer, String] The ID or name of a project.
+  # @param options [Hash] A customizable set of options.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/merge_trains.rb#17
+  def merge_trains(project, options = T.unsafe(nil)); end
 end
 
 # Defines methods related to milestones.
@@ -4920,7 +5141,7 @@ module Gitlab::Client::Pipelines
   # @param id [Integer] The ID of a pipeline.
   # @return [Gitlab::ObjectifiedHash] The pipelines changes.
   #
-  # source://gitlab//lib/gitlab/client/pipelines.rb#77
+  # source://gitlab//lib/gitlab/client/pipelines.rb#89
   def cancel_pipeline(project, id); end
 
   # Create a pipeline.
@@ -4932,7 +5153,7 @@ module Gitlab::Client::Pipelines
   # @param variables [Hash] Variables passed to pipelines
   # @return [Gitlab::ObjectifiedHash] The pipelines changes.
   #
-  # source://gitlab//lib/gitlab/client/pipelines.rb#55
+  # source://gitlab//lib/gitlab/client/pipelines.rb#67
   def create_pipeline(project, ref, variables = T.unsafe(nil)); end
 
   # Delete a pipeline
@@ -4943,7 +5164,7 @@ module Gitlab::Client::Pipelines
   # @param id [Integer] The ID of a pipeline.
   # @return [void] This API call returns an empty response body.
   #
-  # source://gitlab//lib/gitlab/client/pipelines.rb#101
+  # source://gitlab//lib/gitlab/client/pipelines.rb#113
   def delete_pipeline(project, id); end
 
   # Gets a single pipeline.
@@ -4968,6 +5189,17 @@ module Gitlab::Client::Pipelines
   # source://gitlab//lib/gitlab/client/pipelines.rb#42
   def pipeline_test_report(project, id); end
 
+  # Gets a single pipeline's variables.
+  #
+  # @example
+  #   Gitlab.pipeline_variables(5, 36)
+  # @param project [Integer, String] The ID or name of a project.
+  # @param id [Integer] The ID of a pipeline.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/pipelines.rb#54
+  def pipeline_variables(project, id); end
+
   # Gets a list of project pipelines.
   #
   # @example
@@ -4990,8 +5222,21 @@ module Gitlab::Client::Pipelines
   # @param id [Integer] The ID of a pipeline.
   # @return [Array<Gitlab::ObjectifiedHash>] The pipelines changes.
   #
-  # source://gitlab//lib/gitlab/client/pipelines.rb#89
+  # source://gitlab//lib/gitlab/client/pipelines.rb#101
   def retry_pipeline(project, id); end
+
+  # Update a pipeline metadata
+  #
+  # @example
+  #   Gitlab.update_pipeline_metadata(5, 1, name: 'new name')
+  # @option options
+  # @param project [Integer, String] The ID or name of a project.
+  # @param id [Integer] The ID of a pipeline.
+  # @param options [Hash] a customizable set of options
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/pipelines.rb#126
+  def update_pipeline_metadata(project, id, options = T.unsafe(nil)); end
 end
 
 # Defines methods related to project badges.
@@ -5140,6 +5385,48 @@ module Gitlab::Client::ProjectClusters
   def project_clusters(project); end
 end
 
+# Defines methods related to project exports.
+#
+# @see https://docs.gitlab.com/ce/api/project_import_export.html
+#
+# source://gitlab//lib/gitlab/client/project_exports.rb#6
+module Gitlab::Client::ProjectExports
+  # Start a new export
+  #
+  # @example
+  #   Gitlab.export_project(2)
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @param id [Integer, String] The ID or path of a project.
+  # @param options [Hash] A customizable set of options.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/project_exports.rb#19
+  def export_project(id, options = T.unsafe(nil)); end
+
+  # Get the status of export
+  #
+  # @example
+  #   Gitlab.export_project_status(2)
+  # @param id [Integer, String] The ID or path of a project.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/project_exports.rb#30
+  def export_project_status(id); end
+
+  # Download the finished export
+  #
+  # @example
+  #   Gitlab.exported_project_download(2)
+  # @param id [Integer, String] The ID or path of a project.
+  # @return [Gitlab::FileResponse]
+  #
+  # source://gitlab//lib/gitlab/client/project_exports.rb#41
+  def exported_project_download(id); end
+end
+
 # Defines methods related to project release links.
 #
 # @see https://docs.gitlab.com/ce/api/releases/links.html
@@ -5201,10 +5488,10 @@ module Gitlab::Client::ProjectReleaseLinks
   #   Gitlab.update_project_release_link(5, 'v0.3', 1, { name: 'awesome-v0.2.dmg', url: 'http://192.168.10.15:3000' })
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param tag_name [String] The tag where the release will be created from.
-  # @param link_id [Integer] The id of the link.
   # @param options [Hash] A customizable set of options.
+  # @param tag_name [String] The tag where the release will be created from.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param link_id [Integer] The id of the link.
   # @return [Gitlab::ObjectifiedHash] Information about the updated release link.
   #
   # source://gitlab//lib/gitlab/client/project_release_links.rb#59
@@ -5244,6 +5531,16 @@ module Gitlab::Client::ProjectReleases
   #
   # source://gitlab//lib/gitlab/client/project_releases.rb#75
   def delete_project_release(project, tag_name); end
+
+  # Gets Latest Release
+  #
+  # @example
+  #   Gitlab.project_latest_release(5)
+  # @param project [Integer, String] The ID or name of a project
+  # @return [Gitlab::ObjectifiedHash] Information about the release
+  #
+  # source://gitlab//lib/gitlab/client/project_releases.rb#86
+  def project_latest_release(project); end
 
   # Gets a Release by a tag name
   #
@@ -5306,10 +5603,10 @@ module Gitlab::Client::Projects
   # @param project [Integer, String] The ID or path of a project.
   # @param url [String] The hook URL.
   # @param options [Hash] A customizable set of options.
-  # @param option [Boolean] :push_events Trigger hook on push events (0 = false, 1 = true)
   # @param option [Boolean] :issues_events Trigger hook on issues events (0 = false, 1 = true)
   # @param option [Boolean] :merge_requests_events Trigger hook on merge_requests events (0 = false, 1 = true)
   # @param option [Boolean] :tag_push_events Trigger hook on push_tag events (0 = false, 1 = true)
+  # @param option [Boolean] :push_events Trigger hook on push events (0 = false, 1 = true)
   # @return [Gitlab::ObjectifiedHash] Information about added hook.
   #
   # source://gitlab//lib/gitlab/client/projects.rb#224
@@ -5548,10 +5845,10 @@ module Gitlab::Client::Projects
   # @param id [Integer] The ID of the hook.
   # @param url [String] The hook URL.
   # @param options [Hash] A customizable set of options.
-  # @param option [Boolean] :push_events Trigger hook on push events (0 = false, 1 = true)
   # @param option [Boolean] :issues_events Trigger hook on issues events (0 = false, 1 = true)
   # @param option [Boolean] :merge_requests_events Trigger hook on merge_requests events (0 = false, 1 = true)
   # @param option [Boolean] :tag_push_events Trigger hook on push_tag events (0 = false, 1 = true)
+  # @param option [Boolean] :push_events Trigger hook on push events (0 = false, 1 = true)
   # @return [Gitlab::ObjectifiedHash] Information about updated hook.
   #
   # source://gitlab//lib/gitlab/client/projects.rb#243
@@ -5720,10 +6017,10 @@ module Gitlab::Client::Projects
   #   Gitlab.project_template(1, 'licenses', 'gpl', { project: 'some project', fullname: 'Holder Holding' })
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or URL-encoded path of the project.
-  # @param type [String] The type (dockerfiles|gitignores|gitlab_ci_ymls|licenses) of the template
-  # @param key [String] The key of the template, as obtained from the collection endpoint
   # @param options [Hash] A customizable set of options.
+  # @param type [String] The type (dockerfiles|gitignores|gitlab_ci_ymls|licenses) of the template
+  # @param project [Integer, String] The ID or URL-encoded path of the project.
+  # @param key [String] The key of the template, as obtained from the collection endpoint
   # @return [Gitlab::ObjectifiedHash]
   # @see https://docs.gitlab.com/ce/api/project_templates.html
   #
@@ -6218,12 +6515,12 @@ module Gitlab::Client::RepositoryFiles
   #   Gitlab.create_file(42, "path", "branch", "content", "commit message")
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param path [String] full path to new file.
-  # @param branch [String] the name of the branch.
   # @param content [String] file content.
   # @param commit_message [String] ...commit message.
   # @param options [Hash] Optional additional details for commit
+  # @param branch [String] the name of the branch.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param path [String] full path to new file.
   # @return [Gitlab::ObjectifiedHash]
   #
   # source://gitlab//lib/gitlab/client/repository_files.rb#73
@@ -6235,12 +6532,12 @@ module Gitlab::Client::RepositoryFiles
   #   Gitlab.edit_file(42, "path", "branch", "content", "commit message")
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param path [String] full path of file to update.
-  # @param branch [String] the name of the branch to commit changes to.
   # @param content [String] new file content.
   # @param commit_message [String] ...commit message.
   # @param options [Hash] Optional additional details for commit
+  # @param branch [String] the name of the branch to commit changes to.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param path [String] full path of file to update.
   # @return [Gitlab::ObjectifiedHash]
   #
   # source://gitlab//lib/gitlab/client/repository_files.rb#94
@@ -6289,11 +6586,11 @@ module Gitlab::Client::RepositoryFiles
   #   Gitlab.remove_file(42, "path", "branch", "commit message")
   # @option options
   # @option options
-  # @param project [Integer, String] The ID or name of a project.
-  # @param path [String] full path of file to delete.
-  # @param branch [String] the name of the branch to commit the deletion to.
   # @param commit_message [String] ...a commit message ;)
   # @param options [Hash] Optional additional details for commit
+  # @param path [String] full path of file to delete.
+  # @param project [Integer, String] The ID or name of a project.
+  # @param branch [String] the name of the branch to commit the deletion to.
   # @return [Gitlab::ObjectifiedHash]
   #
   # source://gitlab//lib/gitlab/client/repository_files.rb#114
@@ -6335,9 +6632,9 @@ module Gitlab::Client::RepositorySubmodules
   # @param project [Integer, String] The ID or name of a project.
   # @param submodule [String] full path of submodule to update.
   # @param options [Hash] A customizable set of options.
-  # @param options [String] :branch the name of the branch to commit changes to.
   # @param options [String] :commit_sha commit SHA to update the submodule to.
   # @param options [String] :commit_message commit message text.
+  # @param options [String] :branch the name of the branch to commit changes to.
   # @return [Gitlab::ObjectifiedHash]
   #
   # source://gitlab//lib/gitlab/client/repository_submodules.rb#23
@@ -6494,6 +6791,49 @@ module Gitlab::Client::Runners
   #
   # source://gitlab//lib/gitlab/client/runners.rb#37
   def all_runners(options = T.unsafe(nil)); end
+
+  # Creates a new group runner with the new Gitlab approach (v16.0+) and returns the id/token information
+  # https://docs.gitlab.com/ee/api/users.html#create-a-runner
+  # You must use an access token with the create_runner scope
+  #
+  # @example
+  #   Gitlab.create_group_runner(9, tag_list: ['one', 'two'])
+  #   Gitlab.create_group_runner(9, paused: false, description: 'A note', run_untagged: true)
+  # @param group(required) [String] Group ID.
+  # @param options [Hash] A customizable set of options.
+  # @return [Gitlab::ObjectifiedHash] Response against runner registration
+  #
+  # source://gitlab//lib/gitlab/client/runners.rb#222
+  def create_group_runner(group, options = T.unsafe(nil)); end
+
+  # Creates a new instance runner with the new Gitlab approach (v16.0+) and returns the id/token information
+  # You must be an administrator of the GitLab instance
+  # You must use an access token with the create_runner scope
+  # https://docs.gitlab.com/ee/api/users.html#create-a-runner
+  #
+  # @example
+  #   Gitlab.create_instance_runner(tag_list: ['one', 'two'])
+  #   Gitlab.create_instance_runner(paused: false, description: 'A note', run_untagged: true)
+  # @param group(required) [String] Project ID.
+  # @param options [Hash] A customizable set of options.
+  # @return [Gitlab::ObjectifiedHash] Response against runner registration
+  #
+  # source://gitlab//lib/gitlab/client/runners.rb#253
+  def create_instance_runner(options = T.unsafe(nil)); end
+
+  # Creates a new project runner with the new Gitlab approach (v16.0+) and returns the id/token information
+  # https://docs.gitlab.com/ee/api/users.html#create-a-runner
+  # You must use an access token with the create_runner scope
+  #
+  # @example
+  #   Gitlab.create_project_runner(12, tag_list: ['one', 'two'])
+  #   Gitlab.create_project_runner(12, paused: false, description: 'A note', run_untagged: true)
+  # @param project(required) [String] Project ID.
+  # @param options [Hash] A customizable set of options.
+  # @return [Gitlab::ObjectifiedHash] Response against runner registration
+  #
+  # source://gitlab//lib/gitlab/client/runners.rb#237
+  def create_project_runner(project, options = T.unsafe(nil)); end
 
   # Deletes a registed Runner.
   #
@@ -6665,6 +7005,28 @@ module Gitlab::Client::Runners
   #
   # source://gitlab//lib/gitlab/client/runners.rb#206
   def verify_auth_registered_runner(token); end
+
+  private
+
+  # Creates a runner linked to the current user.
+  # You must use an access token with the create_runner scope
+  # https://docs.gitlab.com/ee/api/users.html#create-a-runner
+  #
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @option options
+  # @param options(required) [Hash] A customizable set of options.
+  # @param options [Hash] a customizable set of options
+  # @return [Gitlab::ObjectifiedHash] Response against runner registration {"id": 1, "token": foo "token_expires_at": null}
+  #
+  # source://gitlab//lib/gitlab/client/runners.rb#274
+  def create_runner(options); end
 end
 
 # Defines methods related to global searches, searching in projects and searching in groups.
@@ -7389,6 +7751,16 @@ end
 #
 # source://gitlab//lib/gitlab/client/users.rb#7
 module Gitlab::Client::Users
+  # Activate the specified user. Available only for admin.
+  #
+  # @example
+  #   Gitlab.activate_user(15)
+  # @param user_id [Integer] The Id of user
+  # @return [Boolean] success or not
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#147
+  def activate_user(user_id); end
+
   # Gets a list of user activities (for admin access only).
   #
   # @example
@@ -7399,7 +7771,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#147
+  # source://gitlab//lib/gitlab/client/users.rb#185
   def activities(options = T.unsafe(nil)); end
 
   # Creates a new email
@@ -7413,7 +7785,7 @@ module Gitlab::Client::Users
   # @param skip_confirmation [Boolean] Skip confirmation and assume e-mail is verified
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#255
+  # source://gitlab//lib/gitlab/client/users.rb#293
   def add_email(email, user_id = T.unsafe(nil), skip_confirmation = T.unsafe(nil)); end
 
   # Creates a new custom_attribute
@@ -7425,7 +7797,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#326
+  # source://gitlab//lib/gitlab/client/users.rb#377
   def add_user_custom_attribute(key, value, user_id); end
 
   # Approves the specified user. Available only for admin.
@@ -7435,7 +7807,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The Id of user
   # @return [Boolean] success or not
   #
-  # source://gitlab//lib/gitlab/client/users.rb#120
+  # source://gitlab//lib/gitlab/client/users.rb#158
   def approve_user(user_id); end
 
   # Blocks the specified user. Available only for admin.
@@ -7445,8 +7817,35 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The Id of user
   # @return [Boolean] success or not
   #
-  # source://gitlab//lib/gitlab/client/users.rb#98
+  # source://gitlab//lib/gitlab/client/users.rb#114
   def block_user(user_id); end
+
+  # Create personal access token
+  #
+  # @example
+  #   Gitlab.create_personal_access_token(2, "token", ["api", "read_user"])
+  #   Gitlab.create_personal_access_token(2, "token", ["api", "read_user"], "1970-01-01")
+  # @param user_id [Integer] The ID of the user.
+  # @param name [String] Name of the personal access token.
+  # @param scopes [Array<String>] Array of scopes for the impersonation token
+  # @param expires_at [String] Date for impersonation token expiration in ISO format.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#458
+  def create_personal_access_token(user_id, name, scopes, expires_at = T.unsafe(nil)); end
+
+  # Creates a service account.
+  # Requires authentication from an admin account.
+  #
+  # @example
+  #   Gitlab.create_service_account('service_account_6018816a18e515214e0c34c2b33523fc', 'Service account user')
+  # @param name [String] (required) The email of the service account.
+  # @param username [String] (required) The username of the service account.
+  # @raise [ArgumentError]
+  # @return [Gitlab::ObjectifiedHash] Information about created service account.
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#70
+  def create_service_account(*args); end
 
   # Creates a new SSH key.
   #
@@ -7458,7 +7857,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Information about created SSH key.
   #
-  # source://gitlab//lib/gitlab/client/users.rb#192
+  # source://gitlab//lib/gitlab/client/users.rb#230
   def create_ssh_key(title, key, options = T.unsafe(nil)); end
 
   # Creates a new user.
@@ -7494,8 +7893,18 @@ module Gitlab::Client::Users
   # @param expires_at [String] Date for impersonation token expiration in ISO format.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#379
+  # source://gitlab//lib/gitlab/client/users.rb#430
   def create_user_impersonation_token(user_id, name, scopes, expires_at = T.unsafe(nil)); end
+
+  # Deactivates the specified user. Available only for admin.
+  #
+  # @example
+  #   Gitlab.deactivate_user(15)
+  # @param user_id [Integer] The Id of user
+  # @return [Boolean] success or not
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#136
+  def deactivate_user(user_id); end
 
   # Delete email
   # Will delete a email an authorized user if no user ID passed.
@@ -7507,7 +7916,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#274
+  # source://gitlab//lib/gitlab/client/users.rb#312
   def delete_email(id, user_id = T.unsafe(nil)); end
 
   # Deletes an SSH key.
@@ -7519,7 +7928,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Information about deleted SSH key.
   #
-  # source://gitlab//lib/gitlab/client/users.rb#210
+  # source://gitlab//lib/gitlab/client/users.rb#248
   def delete_ssh_key(id, options = T.unsafe(nil)); end
 
   # Deletes a user.
@@ -7529,7 +7938,7 @@ module Gitlab::Client::Users
   # @param id [Integer] The ID of a user.
   # @return [Gitlab::ObjectifiedHash] Information about deleted user.
   #
-  # source://gitlab//lib/gitlab/client/users.rb#87
+  # source://gitlab//lib/gitlab/client/users.rb#103
   def delete_user(user_id); end
 
   # Delete custom_attribute
@@ -7541,8 +7950,18 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#340
+  # source://gitlab//lib/gitlab/client/users.rb#391
   def delete_user_custom_attribute(key, user_id); end
+
+  # Disables two factor authentication (2FA) for the specified user.
+  #
+  # @example
+  #   Gitlab.disable_two_factor(1)
+  # @param id [Integer] The ID of a user.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#517
+  def disable_two_factor(user_id); end
 
   # Updates a user.
   #
@@ -7559,7 +7978,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Gitlab::ObjectifiedHash] Information about created user.
   #
-  # source://gitlab//lib/gitlab/client/users.rb#76
+  # source://gitlab//lib/gitlab/client/users.rb#92
   def edit_user(user_id, options = T.unsafe(nil)); end
 
   # Get a single email.
@@ -7569,7 +7988,7 @@ module Gitlab::Client::Users
   # @param id [Integer] The ID of a email.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#240
+  # source://gitlab//lib/gitlab/client/users.rb#278
   def email(id); end
 
   # Gets user emails.
@@ -7581,8 +8000,27 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#228
+  # source://gitlab//lib/gitlab/client/users.rb#266
   def emails(user_id = T.unsafe(nil)); end
+
+  # Lists all projects and groups a user is a member of
+  #
+  # @example
+  #   Gitlab.memberships(2)
+  # @param user_id [Integer] The ID of the user.
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#495
+  def memberships(user_id); end
+
+  # Revoke a personal access token
+  #
+  # @example
+  #   Gitlab.revoke_personal_access_token(1)
+  # @param personal_access_token_id [Integer] ID of the personal access token.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#506
+  def revoke_personal_access_token(personal_access_token_id); end
 
   # Revoke an impersonation token
   #
@@ -7592,8 +8030,18 @@ module Gitlab::Client::Users
   # @param impersonation_token_id [Integer] ID of the impersonation token.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#393
+  # source://gitlab//lib/gitlab/client/users.rb#485
   def revoke_user_impersonation_token(user_id, impersonation_token_id); end
+
+  # Rotate a personal access token
+  #
+  # @example
+  #   Gitlab.rotate_personal_access_token(1)
+  # @param personal_access_token_id [Integer] ID of the personal access token.
+  # @return [Gitlab::ObjectifiedHash]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#471
+  def rotate_personal_access_token(personal_access_token_id, expires_at = T.unsafe(nil)); end
 
   # Creates a new user session.
   #
@@ -7604,7 +8052,7 @@ module Gitlab::Client::Users
   # @param password [String] The password of a user.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#133
+  # source://gitlab//lib/gitlab/client/users.rb#171
   def session(email, password); end
 
   # Gets information about SSH key.
@@ -7614,7 +8062,7 @@ module Gitlab::Client::Users
   # @param id [Integer] The ID of a user's SSH key.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#178
+  # source://gitlab//lib/gitlab/client/users.rb#216
   def ssh_key(id); end
 
   # Gets a list of user's SSH keys.
@@ -7628,7 +8076,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#162
+  # source://gitlab//lib/gitlab/client/users.rb#200
   def ssh_keys(options = T.unsafe(nil)); end
 
   # Unblocks the specified user. Available only for admin.
@@ -7638,7 +8086,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The Id of user
   # @return [Boolean] success or not
   #
-  # source://gitlab//lib/gitlab/client/users.rb#109
+  # source://gitlab//lib/gitlab/client/users.rb#125
   def unblock_user(user_id); end
 
   # Gets information about a user.
@@ -7653,6 +8101,17 @@ module Gitlab::Client::Users
   # source://gitlab//lib/gitlab/client/users.rb#30
   def user(id = T.unsafe(nil)); end
 
+  # Get user by username
+  #
+  # @example
+  #   Gitlab.user_by_username('gitlab')
+  # @param username [String] A username to get.
+  # @param options [Hash] A customizable set of options.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#340
+  def user_by_username(username, options = T.unsafe(nil)); end
+
   # Gets single user custom_attribute.
   #
   # @example
@@ -7661,7 +8120,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#313
+  # source://gitlab//lib/gitlab/client/users.rb#364
   def user_custom_attribute(key, user_id); end
 
   # Gets user custom_attributes.
@@ -7671,7 +8130,7 @@ module Gitlab::Client::Users
   # @param user_id [Integer] The ID of a user.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#301
+  # source://gitlab//lib/gitlab/client/users.rb#352
   def user_custom_attributes(user_id); end
 
   # Get impersonation token information
@@ -7682,7 +8141,7 @@ module Gitlab::Client::Users
   # @param impersonation_token_id [Integer] ID of the impersonation token.
   # @return [Gitlab::ObjectifiedHash]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#364
+  # source://gitlab//lib/gitlab/client/users.rb#415
   def user_impersonation_token(user_id, impersonation_token_id); end
 
   # Get all impersonation tokens for a user
@@ -7693,10 +8152,20 @@ module Gitlab::Client::Users
   # @param state [String] Filter impersonation tokens by state {}
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#352
+  # source://gitlab//lib/gitlab/client/users.rb#403
   def user_impersonation_tokens(user_id); end
 
-  # Search for groups by name
+  # Get all personal access tokens for a user
+  #
+  # @example
+  #   Gitlab.user_personal_access_tokens(1)
+  # @param user_id [Integer] The ID of the user.
+  # @return [Array<Gitlab::ObjectifiedHash>]
+  #
+  # source://gitlab//lib/gitlab/client/users.rb#443
+  def user_personal_access_tokens(user_id); end
+
+  # Search for users by name
   #
   # @example
   #   Gitlab.user_search('gitlab')
@@ -7706,7 +8175,7 @@ module Gitlab::Client::Users
   # @param options [Hash] A customizable set of options.
   # @return [Array<Gitlab::ObjectifiedHash>]
   #
-  # source://gitlab//lib/gitlab/client/users.rb#289
+  # source://gitlab//lib/gitlab/client/users.rb#327
   def user_search(search, options = T.unsafe(nil)); end
 
   # Gets a list of users.
@@ -8108,6 +8577,97 @@ end
 # source://gitlab//lib/gitlab/file_response.rb#6
 Gitlab::FileResponse::HEADER_CONTENT_DISPOSITION = T.let(T.unsafe(nil), String)
 
+# source://gitlab//lib/gitlab/headers/page_links.rb#4
+module Gitlab::Headers; end
+
+# Parses link header.
+#
+# @private
+#
+# source://gitlab//lib/gitlab/headers/page_links.rb#8
+class Gitlab::Headers::PageLinks
+  # @return [PageLinks] a new instance of PageLinks
+  #
+  # source://gitlab//lib/gitlab/headers/page_links.rb#16
+  def initialize(headers); end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def first; end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def first=(_arg0); end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def last; end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def last=(_arg0); end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def next; end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def next=(_arg0); end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def prev; end
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#14
+  def prev=(_arg0); end
+
+  private
+
+  # source://gitlab//lib/gitlab/headers/page_links.rb#24
+  def extract_links(header); end
+end
+
+# source://gitlab//lib/gitlab/headers/page_links.rb#10
+Gitlab::Headers::PageLinks::DELIM_LINKS = T.let(T.unsafe(nil), String)
+
+# source://gitlab//lib/gitlab/headers/page_links.rb#9
+Gitlab::Headers::PageLinks::HEADER_LINK = T.let(T.unsafe(nil), String)
+
+# source://gitlab//lib/gitlab/headers/page_links.rb#11
+Gitlab::Headers::PageLinks::LINK_REGEX = T.let(T.unsafe(nil), Regexp)
+
+# source://gitlab//lib/gitlab/headers/page_links.rb#12
+Gitlab::Headers::PageLinks::METAS = T.let(T.unsafe(nil), Array)
+
+# Parses total header.
+#
+# @private
+#
+# source://gitlab//lib/gitlab/headers/total.rb#8
+class Gitlab::Headers::Total
+  # @return [Total] a new instance of Total
+  #
+  # source://gitlab//lib/gitlab/headers/total.rb#14
+  def initialize(headers); end
+
+  # Returns the value of attribute total.
+  #
+  # source://gitlab//lib/gitlab/headers/total.rb#12
+  def total; end
+
+  # Sets the attribute total
+  #
+  # @param value the value to set the attribute total to.
+  #
+  # source://gitlab//lib/gitlab/headers/total.rb#12
+  def total=(_arg0); end
+
+  private
+
+  # source://gitlab//lib/gitlab/headers/total.rb#22
+  def extract_total(header_total); end
+end
+
+# source://gitlab//lib/gitlab/headers/total.rb#9
+Gitlab::Headers::Total::HEADER_TOTAL = T.let(T.unsafe(nil), String)
+
+# source://gitlab//lib/gitlab/headers/total.rb#10
+Gitlab::Headers::Total::TOTAL_REGEX = T.let(T.unsafe(nil), Regexp)
+
 # Converts hashes to the objects.
 #
 # source://gitlab//lib/gitlab/objectified_hash.rb#5
@@ -8160,59 +8720,6 @@ class Gitlab::ObjectifiedHash
   def respond_to_missing?(method_name, include_private = T.unsafe(nil)); end
 end
 
-# Parses link header.
-#
-# @private
-#
-# source://gitlab//lib/gitlab/page_links.rb#7
-class Gitlab::PageLinks
-  # @return [PageLinks] a new instance of PageLinks
-  #
-  # source://gitlab//lib/gitlab/page_links.rb#15
-  def initialize(headers); end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def first; end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def first=(_arg0); end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def last; end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def last=(_arg0); end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def next; end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def next=(_arg0); end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def prev; end
-
-  # source://gitlab//lib/gitlab/page_links.rb#13
-  def prev=(_arg0); end
-
-  private
-
-  # source://gitlab//lib/gitlab/page_links.rb#23
-  def extract_links(header); end
-end
-
-# source://gitlab//lib/gitlab/page_links.rb#9
-Gitlab::PageLinks::DELIM_LINKS = T.let(T.unsafe(nil), String)
-
-# source://gitlab//lib/gitlab/page_links.rb#8
-Gitlab::PageLinks::HEADER_LINK = T.let(T.unsafe(nil), String)
-
-# source://gitlab//lib/gitlab/page_links.rb#10
-Gitlab::PageLinks::LINK_REGEX = T.let(T.unsafe(nil), Regexp)
-
-# source://gitlab//lib/gitlab/page_links.rb#11
-Gitlab::PageLinks::METAS = T.let(T.unsafe(nil), Array)
-
 # Wrapper class of paginated response.
 #
 # source://gitlab//lib/gitlab/paginated_response.rb#5
@@ -8225,7 +8732,7 @@ class Gitlab::PaginatedResponse
   # source://gitlab//lib/gitlab/paginated_response.rb#12
   def ==(other); end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#49
+  # source://gitlab//lib/gitlab/paginated_response.rb#50
   def auto_paginate(&block); end
 
   # Returns the value of attribute client.
@@ -8240,80 +8747,83 @@ class Gitlab::PaginatedResponse
   # source://gitlab//lib/gitlab/paginated_response.rb#6
   def client=(_arg0); end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#105
+  # source://gitlab//lib/gitlab/paginated_response.rb#110
   def client_relative_path(link); end
 
   # @yield [current]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#36
+  # source://gitlab//lib/gitlab/paginated_response.rb#37
   def each_page; end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#77
+  # source://gitlab//lib/gitlab/paginated_response.rb#82
   def first_page; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#72
+  # source://gitlab//lib/gitlab/paginated_response.rb#77
   def first_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#72
+  # source://gitlab//lib/gitlab/paginated_response.rb#77
   def has_first_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#61
+  # source://gitlab//lib/gitlab/paginated_response.rb#66
   def has_last_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#83
+  # source://gitlab//lib/gitlab/paginated_response.rb#88
   def has_next_page?; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#94
+  # source://gitlab//lib/gitlab/paginated_response.rb#99
   def has_prev_page?; end
 
   # source://gitlab//lib/gitlab/paginated_response.rb#16
   def inspect; end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#66
+  # source://gitlab//lib/gitlab/paginated_response.rb#71
   def last_page; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#61
+  # source://gitlab//lib/gitlab/paginated_response.rb#66
   def last_page?; end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#45
+  # source://gitlab//lib/gitlab/paginated_response.rb#46
   def lazy_paginate; end
 
   # source://gitlab//lib/gitlab/paginated_response.rb#20
   def method_missing(name, *args, &block); end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#88
+  # source://gitlab//lib/gitlab/paginated_response.rb#93
   def next_page; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#83
+  # source://gitlab//lib/gitlab/paginated_response.rb#88
   def next_page?; end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#55
+  # source://gitlab//lib/gitlab/paginated_response.rb#56
   def paginate_with_limit(limit, &block); end
 
   # source://gitlab//lib/gitlab/paginated_response.rb#32
   def parse_headers!(headers); end
 
-  # source://gitlab//lib/gitlab/paginated_response.rb#99
+  # source://gitlab//lib/gitlab/paginated_response.rb#104
   def prev_page; end
 
   # @return [Boolean]
   #
-  # source://gitlab//lib/gitlab/paginated_response.rb#94
+  # source://gitlab//lib/gitlab/paginated_response.rb#99
   def prev_page?; end
+
+  # source://gitlab//lib/gitlab/paginated_response.rb#62
+  def total; end
 
   private
 
@@ -8349,6 +8859,9 @@ class Gitlab::Request
 
   # source://gitlab//lib/gitlab/request.rb#42
   def get(path, options = T.unsafe(nil)); end
+
+  # source://gitlab//lib/gitlab/request.rb#42
+  def patch(path, options = T.unsafe(nil)); end
 
   # source://gitlab//lib/gitlab/request.rb#42
   def post(path, options = T.unsafe(nil)); end
@@ -8405,9 +8918,16 @@ class Gitlab::Request
     # source://gitlab//lib/gitlab/request.rb#35
     def decode(response); end
 
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
     def default_cookies; end
+
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
     def default_cookies=(_arg0); end
+
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
     def default_options; end
+
+    # source://httparty/0.22.0/lib/httparty/module_inheritable_attributes.rb#32
     def default_options=(_arg0); end
 
     # Converts the response body to an ObjectifiedHash.
