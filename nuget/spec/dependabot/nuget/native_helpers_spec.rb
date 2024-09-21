@@ -119,7 +119,8 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "test",
         "--configuration",
         "Release",
-        project_path
+        project_path,
+        "--tl:on"
       ].join(" ")
     end
 
