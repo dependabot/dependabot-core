@@ -119,8 +119,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "test",
         "--configuration",
         "Release",
-        project_path,
-        "/p:NuGetAudit=false"
+        project_path
       ].join(" ")
     end
 
@@ -131,7 +130,8 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).to include("Build succeeded")
+        expect(dotnet_test).to include("failed: 0,")
       end
     end
 
@@ -142,7 +142,8 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).to include("Build succeeded")
+        expect(dotnet_test).to include("failed: 0,")
       end
     end
   end
