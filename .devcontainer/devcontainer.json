@@ -35,7 +35,8 @@
       "extensions": [
         "ms-vscode-remote.remote-containers",
         "rubocop.vscode-rubocop",
-        "shopify.ruby-extensions-pack"
+        "shopify.ruby-extensions-pack",
+        "ms-dotnettools.csdevkit"
       ],
       "settings": {
         "[ruby]": {
