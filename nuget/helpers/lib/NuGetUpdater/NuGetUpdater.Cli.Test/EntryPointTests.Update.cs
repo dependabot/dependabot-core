@@ -353,7 +353,6 @@ public partial class EntryPointTests
                 """);
             var executableName = Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), "NuGetUpdater.Cli.dll");
             var executableArgs = string.Join(" ",
-            [
                 executableName,
                 "update",
                 "--repo-root",
@@ -366,8 +365,7 @@ public partial class EntryPointTests
                 "13.0.1",
                 "--previous-version",
                 "7.0.1",
-                "--verbose"
-            ]);
+                "--verbose");
 
             // verify base run
             var workingDirectory = tempDir.DirectoryPath;
