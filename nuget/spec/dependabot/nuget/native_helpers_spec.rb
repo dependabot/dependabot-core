@@ -134,8 +134,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Build succeeded")
-        expect(dotnet_test).to include("failed: 0,")
+        expect(dotnet_test).to include("Passed!")
       end
     end
 
@@ -146,8 +145,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Build succeeded")
-        expect(dotnet_test).to include("failed: 0,")
+        expect(dotnet_test).to include("Passed!")
       end
     end
   end
