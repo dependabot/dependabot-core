@@ -486,14 +486,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node})
+          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
           .and_return(["", exit_status])
       end
 
       context "when it's in the current (default) branch" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
         end
 
@@ -507,7 +507,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/releases/v1\n", exit_status])
         end
 
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
         end
 
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
         end
 
