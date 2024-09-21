@@ -13,9 +13,12 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
+using NuGet;
 using NuGet.Configuration;
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
@@ -31,27 +34,52 @@ internal static partial class MSBuildHelper
         // Ensure MSBuild types are registered before calling a method that loads the types
         if (!IsMSBuildRegistered)
         {
-            var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
-            var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
-            foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
-            {
-                Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}` for MSBuild detection.");
-                File.Move(globalJsonPath, tempGlobalJsonPath);
-            }
-
-            try
+            SidelineGlobalJsonAsync(currentDirectory, rootDirectory, () =>
             {
                 var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
-            }
-            finally
+                return Task.CompletedTask;
+            }).Wait();
+        }
+    }
+
+    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, bool retainMSBuildSdks = false)
+    {
+        var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
+        var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
+        foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
+        {
+            Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
+            File.Move(globalJsonPath, tempGlobalJsonPath);
+            if (retainMSBuildSdks)
             {
-                foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
+                // custom SDKs might need to be retained for other operations; rebuild `global.json` with only the relevant key
+                var originalContent = await File.ReadAllTextAsync(tempGlobalJsonPath);
+                var jsonNode = JsonHelper.ParseNode(originalContent);
+                if (jsonNode is JsonObject obj &&
+                    obj.TryGetPropertyValue("msbuild-sdks", out var sdks) &&
+                    sdks is not null)
                 {
-                    Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}` after MSBuild discovery.");
-                    File.Move(tempGlobalJsonPath, globalJsonpath);
+                    var newObj = new JsonObject()
+                    {
+                        ["msbuild-sdks"] = sdks.DeepClone(),
+                    };
+                    await File.WriteAllTextAsync(globalJsonPath, newObj.ToJsonString());
                 }
+            }
+        }
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
+            {
+                Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
+                File.Move(tempGlobalJsonPath, globalJsonpath, overwrite: retainMSBuildSdks);
             }
         }
     }
@@ -141,7 +169,7 @@ internal static partial class MSBuildHelper
                                                         string.Equals(property.Condition, $"'$({property.Name})' == ''", StringComparison.OrdinalIgnoreCase);
                 if (hasEmptyCondition || conditionIsCheckingForEmptyString)
                 {
-                    properties[property.Name] = new(property.Name, property.Value, buildFile.RelativePath);
+                    properties[property.Name] = new(property.Name, property.Value, PathHelper.NormalizePathToUnix(buildFile.RelativePath));
                 }
             }
         }
@@ -185,8 +213,9 @@ internal static partial class MSBuildHelper
                 var versionSpecification = packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("Version", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? packageItem.Metadata.FirstOrDefault(m => m.Name.Equals("VersionOverride", StringComparison.OrdinalIgnoreCase))?.Value
                                            ?? string.Empty;
-                foreach (var attributeValue in new[] { packageItem.Include, packageItem.Update })
+                foreach (var rawAttributeValue in new[] { packageItem.Include, packageItem.Update })
                 {
+                    var attributeValue = rawAttributeValue?.Trim();
                     if (!string.IsNullOrWhiteSpace(attributeValue))
                     {
                         if (packageInfo.TryGetValue(attributeValue, out var existingInfo))
@@ -231,11 +260,7 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            // We don't know the version for range requirements or wildcard
-            // requirements, so return "" for these.
-            yield return packageVersion.Contains(',') || packageVersion.Contains('*')
-                ? new Dependency(name, string.Empty, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate)
-                : new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
@@ -309,13 +334,189 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static bool UseNewDependencySolver()
+    {
+        return Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true";
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    {
+        if (UseNewDependencySolver())
+        {
+            return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
+        }
+        else
+        {
+            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
+        }
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
+        PackageManager packageManager = new PackageManager(repoRoot, projectPath);
+
+        try
+        {
+            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+
+            // Add Dependency[] packages to List<PackageToUpdate> existingPackages
+            List<PackageToUpdate> existingPackages = packages
+            .Select(existingPackage => new PackageToUpdate
+            {
+                PackageName = existingPackage.Name,
+                CurrentVersion = existingPackage.Version
+            })
+            .ToList();
+
+            // Add Dependency[] update to List<PackageToUpdate> packagesToUpdate
+            List<PackageToUpdate> packagesToUpdate = update
+            .Where(package => package.Version != null)
+            .Select(package => new PackageToUpdate
+            {
+                PackageName = package.Name,
+                NewVersion = package.Version.ToString()
+            })
+            .ToList();
+
+            foreach (PackageToUpdate existing in existingPackages)
+            {
+                var foundPackage = packagesToUpdate.Where(p => string.Equals(p.PackageName, existing.PackageName, StringComparison.OrdinalIgnoreCase));
+                if (!foundPackage.Any())
+                {
+                    existing.NewVersion = existing.CurrentVersion;
+                }
+            }
+
+            // Create a duplicate set of existingPackages for flexible package reference addition and removal 
+            List<PackageToUpdate> existingDuplicate = new List<PackageToUpdate>(existingPackages);
+
+            // Bool to keep track of if anything was added to the existingDuplicate list
+            bool added = false;
+
+            // If package 'isnt there, add it to the existingDuplicate list
+            foreach (PackageToUpdate package in packagesToUpdate)
+            {
+                if (!existingDuplicate.Any(p => string.Equals(p.PackageName, package.PackageName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    existingDuplicate.Add(package);
+                    added = true;
+                }
+            }
+
+            // If you have to use the existingDuplicate list
+            if (added == true)
+            {
+                // Add existing versions to existing list
+                packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate);
+
+                // Make relationships
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath));
+
+                // Update all to new versions
+                foreach (var package in existingDuplicate)
+                {
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath));
+                }
+            }
+
+            // Editing existing list because nothing was added to existingDuplicate
+            else
+            {
+                // Add existing versions to existing list
+                packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate);
+
+                // Make relationships
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath));
+
+                // Update all to new versions
+                foreach (var package in existingPackages)
+                {
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath));
+                }
+            }
+
+            // Make new list to remove and differentiate between existingDuplicate and existingPackages lists
+            List<PackageToUpdate> packagesToRemove = existingDuplicate
+            .Where(existingPackageDupe => !existingPackages.Contains(existingPackageDupe) && existingPackageDupe.IsSpecific == true)
+            .ToList();
+
+            foreach (PackageToUpdate package in packagesToRemove)
+            {
+                existingDuplicate.Remove(package);
+            }
+
+            if (existingDuplicate != null)
+            {
+                existingPackages = existingDuplicate;
+            }
+
+            // Convert back to Dependency [], use NewVersion if available, otherwise use CurrentVersion
+            List<Dependency> candidatePackages = existingPackages
+            .Select(package => new Dependency(
+                package.PackageName,
+                package.NewVersion ?? package.CurrentVersion,
+                DependencyType.Unknown,
+                null,
+                null,
+                false,
+                false,
+                false,
+                false,
+                false
+            ))
+            .ToList();
+
+            // Return as array
+            Dependency[] candidatePackagesArray = candidatePackages.ToArray();
+
+            var targetFrameworks = new NuGetFramework[] { NuGetFramework.Parse(targetFramework) };
+
+            var resolveProjectPath = projectPath;
+
+            if (!Path.IsPathRooted(resolveProjectPath) || !File.Exists(resolveProjectPath))
+            {
+                resolveProjectPath = Path.GetFullPath(Path.Join(repoRoot, resolveProjectPath));
+            }
+
+            NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(resolveProjectPath));
+
+            // Target framework compatibility check
+            foreach (var package in candidatePackages)
+            {
+                if (!NuGetVersion.TryParse(package.Version, out var nuGetVersion))
+                {
+                    // If version is not valid, return original packages and revert
+                    return packages;
+                }
+
+                var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
+
+                bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks.ToImmutableArray(), nugetContext, logger, CancellationToken.None);
+                if (!isNewPackageCompatible)
+                {
+                    // If the package target framework is not compatible, return original packages and revert
+                    return packages;
+                }
+            }
+
+            return candidatePackagesArray;
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"restore \"{tempProjectPath}\"", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdOut);
 
             // simple cases first
             // if restore failed, nothing we can do
@@ -336,22 +537,22 @@ internal static partial class MSBuildHelper
             Dictionary<string, HashSet<NuGetVersion>> badPackagesAndCandidateVersionsDictionary = new(StringComparer.OrdinalIgnoreCase);
 
             // and for each of those packages, find all versions greater than the one that's currently installed
-            foreach ((string packageName, NuGetVersion packageVersion) in badPackagesAndVersions)
+            foreach ((string PackageName, NuGetVersion packageVersion) in badPackagesAndVersions)
             {
                 // this command dumps a JSON object with all versions of the specified package from all package sources
-                (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"package search {packageName} --exact-match --format json", workingDirectory: tempDirectory.FullName);
+                (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", $"package search {PackageName} --exact-match --format json", workingDirectory: tempDirectory.FullName);
                 if (exitCode != 0)
                 {
                     continue;
                 }
 
                 // ensure collection exists
-                if (!badPackagesAndCandidateVersionsDictionary.ContainsKey(packageName))
+                if (!badPackagesAndCandidateVersionsDictionary.ContainsKey(PackageName))
                 {
-                    badPackagesAndCandidateVersionsDictionary.Add(packageName, new HashSet<NuGetVersion>());
+                    badPackagesAndCandidateVersionsDictionary.Add(PackageName, new HashSet<NuGetVersion>());
                 }
 
-                HashSet<NuGetVersion> foundVersions = badPackagesAndCandidateVersionsDictionary[packageName];
+                HashSet<NuGetVersion> foundVersions = badPackagesAndCandidateVersionsDictionary[PackageName];
 
                 var json = JsonHelper.ParseNode(stdOut);
                 if (json?["searchResult"] is JsonArray searchResults)
@@ -483,11 +684,13 @@ internal static partial class MSBuildHelper
                     // if the source is relative to the original location, copy it to the temp directory
                     if (PathHelper.IsSubdirectoryOf(nugetConfigDir!, localSource.Source))
                     {
-                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSource.Source);
+                        // normalize the directory separators and copy the contents
+                        string localSourcePath = localSource.Source.Replace("\\", "/");
+                        string sourceRelativePath = Path.GetRelativePath(nugetConfigDir!, localSourcePath);
                         string destPath = Path.Join(tempDir.FullName, sourceRelativePath);
-                        if (Directory.Exists(localSource.Source))
+                        if (Directory.Exists(localSourcePath))
                         {
-                            PathHelper.CopyDirectory(localSource.Source, destPath);
+                            PathHelper.CopyDirectory(localSourcePath, destPath);
                         }
                     }
                 }
@@ -508,6 +711,7 @@ internal static partial class MSBuildHelper
                 <TargetFramework>{targetFramework}</TargetFramework>
                 <GenerateDependencyFile>true</GenerateDependencyFile>
                 <RunAnalyzers>false</RunAnalyzers>
+                <NuGetInteractive>false</NuGetInteractive>
               </PropertyGroup>
               <ItemGroup>
                 {packageReferences}
@@ -542,6 +746,7 @@ internal static partial class MSBuildHelper
               <PropertyGroup>
                 <!-- For Windows-specific apps -->
                 <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <!-- Really ensure CPM is disabled -->
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
@@ -566,6 +771,7 @@ internal static partial class MSBuildHelper
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{tempProjectPath}\" /t:_ReportDependencies", workingDirectory: tempDirectory.FullName);
+            ThrowOnUnauthenticatedFeed(stdout);
 
             if (exitCode == 0)
             {
@@ -577,9 +783,9 @@ internal static partial class MSBuildHelper
                     .Where(match => match.Success)
                     .Select(match =>
                     {
-                        var packageName = match.Groups["PackageName"].Value;
-                        var isTransitive = !topLevelPackagesNames.Contains(packageName);
-                        return new Dependency(packageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
+                        var PackageName = match.Groups["PackageName"].Value;
+                        var isTransitive = !topLevelPackagesNames.Contains(PackageName);
+                        return new Dependency(PackageName, match.Groups["PackageVersion"].Value, DependencyType.Unknown, TargetFrameworks: tfms, IsTransitive: isTransitive);
                     })
                     .ToArray();
 
@@ -600,6 +806,30 @@ internal static partial class MSBuildHelper
             catch
             {
             }
+        }
+    }
+
+    internal static void ThrowOnUnauthenticatedFeed(string stdout)
+    {
+        var unauthorizedMessageSnippets = new string[]
+        {
+            "The plugin credential provider could not acquire credentials",
+            "401 (Unauthorized)",
+            "error NU1301: Unable to load the service index for source",
+        };
+        if (unauthorizedMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
+        }
+    }
+
+    internal static void ThrowOnMissingFile(string output)
+    {
+        var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
+        var match = missingFilePattern.Match(output);
+        if (match.Success)
+        {
+            throw new MissingFileException(match.Groups["FilePath"].Value);
         }
     }
 

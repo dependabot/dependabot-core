@@ -1,6 +1,14 @@
+# Testing a grouped multi-dir configuration.
+
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \), dependency-b \( from 2.2.3 to 2.2.5 \)'
 pr-created foo/expected.json bar/expected.json
+
+# Testing a grouped multi-dir configuration with pre-existing PR for the group.
+# Should result in no PRs.
+
+dependabot update -f input-preexisting.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+! stdout create_pull_request
 
 -- foo/manifest.json --
 {
@@ -76,7 +84,39 @@ job:
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
   dependency-groups:
-    - name: first
+    - name: all
       rules:
         patterns:
           - "*"
+
+-- input-preexisting.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/foo"
+      - "/bar"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: all
+      rules:
+        patterns:
+          - "*"
+  existing-group-pull-requests:
+    - dependency-group-name: all
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
+          directory: "/foo"
+        - dependency-name: dependency-b
+          dependency-version: 2.2.5
+          directory: "/foo"
+        - dependency-name: dependency-b
+          dependency-version: 2.2.5
+          directory: "/bar"
+        - dependency-name: dependency-c
+          dependency-version: 3.2.5
+          directory: "/bar"

@@ -24,6 +24,7 @@ internal static class SdkPackageUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;
@@ -31,7 +32,7 @@ internal static class SdkPackageUpdater
 
         if (isTransitive)
         {
-            await UpdateTransitiveDependencyAsnyc(projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
+            await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
         }
         else
         {
@@ -78,8 +79,10 @@ internal static class SdkPackageUpdater
                 tfm,
                 topLevelDependencies,
                 logger);
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
+            foreach (var dependency in dependencies)
             {
+                var packageName = dependency.Name;
+                var packageVersion = dependency.Version;
                 if (packageVersion is null)
                 {
                     continue;
@@ -121,7 +124,7 @@ internal static class SdkPackageUpdater
         return true;
     }
 
-    private static async Task UpdateTransitiveDependencyAsnyc(string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    private static async Task UpdateTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
     {
         var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
             .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
@@ -131,7 +134,7 @@ internal static class SdkPackageUpdater
         }
         else
         {
-            await AddTransitiveDependencyAsync(projectPath, dependencyName, newDependencyVersion, logger);
+            await AddTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, logger);
         }
     }
 
@@ -220,16 +223,21 @@ internal static class SdkPackageUpdater
         directoryPackages.Update(updatedXml);
     }
 
-    private static async Task AddTransitiveDependencyAsync(string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
+    private static async Task AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
     {
-        logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
-
-        // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
-        var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: Path.GetDirectoryName(projectPath));
-        if (exitCode != 0)
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        await MSBuildHelper.SidelineGlobalJsonAsync(projectDirectory, repoRootPath, async () =>
         {
-            logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
-        }
+            logger.Log($"    Adding [{dependencyName}/{newDependencyVersion}] as a top-level package reference.");
+
+            // see https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"add {projectPath} package {dependencyName} --version {newDependencyVersion}", workingDirectory: projectDirectory);
+            MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
+            if (exitCode != 0)
+            {
+                logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+            }
+        }, retainMSBuildSdks: true);
     }
 
     /// <summary>
@@ -263,8 +271,10 @@ internal static class SdkPackageUpdater
         var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (_, dependencies) in tfmsAndDependencies)
         {
-            foreach (var (packageName, packageVersion, _, _, _, _, _, _, _, _) in dependencies)
+            foreach (var dependency in dependencies)
             {
+                var packageName = dependency.Name;
+                var packageVersion = dependency.Version;
                 if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                     existingVersion != packageVersion)
                 {
@@ -297,6 +307,7 @@ internal static class SdkPackageUpdater
         IDictionary<string, string> peerDependencies,
         Logger logger)
     {
+
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
@@ -315,7 +326,20 @@ internal static class SdkPackageUpdater
         {
             foreach (string tfm in targetFrameworks)
             {
-                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
+                if (MSBuildHelper.UseNewDependencySolver())
+                {
+                    // Find the index of the dependency we are updating and revert it to the previous version
+                    int dependencyIndex = Array.FindIndex(updatedTopLevelDependencies, d => string.Equals(d.Name, dependencyName, StringComparison.OrdinalIgnoreCase));
+                    if (dependencyIndex != -1)
+                    {
+                        var originalDependency = updatedTopLevelDependencies[dependencyIndex];
+                        updatedTopLevelDependencies[dependencyIndex] = originalDependency with { Version = previousDependencyVersion };
+                    }
+
+                }
+                Dependency[] update = [new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference)];
+                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
+
                 if (resolvedDependencies is null)
                 {
                     logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
@@ -336,7 +360,7 @@ internal static class SdkPackageUpdater
                     continue;
                 }
 
-                // update all other dependencies
+                // update all dependencies
                 foreach (Dependency resolvedDependency in resolvedDependencies
                                                           .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                                                           .Where(d => d.Version is not null))
@@ -590,7 +614,7 @@ internal static class SdkPackageUpdater
         string packageName)
         => buildFile.PackageItemNodes.Where(e =>
             string.Equals(
-                e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase),
+                (e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase))?.Trim(),
                 packageName,
                 StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);

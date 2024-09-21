@@ -81,6 +81,21 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
+    sig do
+      params(
+        warn_type: T.any(String, Symbol),
+        warn_title: String,
+        warn_description: String
+      ).void
+    end
+    def record_update_job_warning(warn_type:, warn_title:, warn_description:)
+      client.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+    end
+
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
@@ -128,7 +143,8 @@ module Dependabot
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
-        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups
+        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups,
+        ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only?
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
     end

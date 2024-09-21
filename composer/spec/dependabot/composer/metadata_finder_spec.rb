@@ -38,8 +38,6 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, packagist_url).to_return(status: 200, body: packagist_response)
@@ -50,6 +48,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       headers: {}
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

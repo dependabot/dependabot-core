@@ -175,12 +175,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
 
         its([:hashes]) do
-          is_expected.to match_array(
-            [
-              { algorithm: "sha256", hash: "2ccb79b01" },
-              { algorithm: "sha256", hash: "2ccb79b02" }
-            ]
-          )
+          is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
+                                         { algorithm: "sha256", hash: "2ccb79b02" })
         end
 
         context "when spread over multiple lines" do
@@ -191,12 +187,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to match_array(
-              [
-                { algorithm: "sha256", hash: "2ccb79b01" },
-                { algorithm: "sha256", hash: "2ccb79b02" }
-              ]
-            )
+            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
+                                           { algorithm: "sha256", hash: "2ccb79b02" })
           end
         end
 
@@ -215,12 +207,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to match_array(
-              [
-                { algorithm: "sha256", hash: "2ccb79b01" },
-                { algorithm: "sha256", hash: "2ccb79b02" }
-              ]
-            )
+            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
+                                           { algorithm: "sha256", hash: "2ccb79b02" })
           end
         end
 
@@ -240,12 +228,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
           end
 
           its([:hashes]) do
-            is_expected.to match_array(
-              [
-                { algorithm: "sha256", hash: "2ccb79b01" },
-                { algorithm: "sha256", hash: "2ccb79b02" }
-              ]
-            )
+            is_expected.to contain_exactly({ algorithm: "sha256", hash: "2ccb79b01" },
+                                           { algorithm: "sha256", hash: "2ccb79b02" })
           end
         end
       end

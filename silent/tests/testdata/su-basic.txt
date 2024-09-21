@@ -2,6 +2,14 @@ dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/depe
 stderr 'created \| dependency-a \( from 1.2.3 to 1.2.4 \)'
 pr-created expected.json
 
+dependabot update -f input-rebase-old.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'updated \| dependency-a \( from 1.2.3 to 1.2.4 \)'
+pr-updated expected.json
+
+dependabot update -f input-rebase-new.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'updated \| dependency-a \( from 1.2.3 to 1.2.4 \)'
+pr-updated expected.json
+
 -- manifest.json --
 {
   "dependency-a": { "version": "1.2.3" },
@@ -55,3 +63,62 @@ job:
       rules:
         patterns:
           - "*"
+
+-- input-rebase-old.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  # If present, groups are ignored
+  dependency-groups:
+    - name: all
+      rules:
+        patterns:
+          - "*"
+  updating-a-pull-request: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.4
+
+-- input-rebase-new.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  # If present, groups are ignored
+  dependency-groups:
+    - name: all
+      rules:
+        patterns:
+          - "*"
+  updating-a-pull-request: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.4
+        directory: "/"

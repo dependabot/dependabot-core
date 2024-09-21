@@ -24,6 +24,12 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       package_manager: "bundler"
     )
   end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/#{dependency_name}"
+    )
+  end
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
@@ -35,14 +41,8 @@ RSpec.describe Dependabot::MetadataFinders::Base do
       "password" => "token"
     }]
   end
-  before { allow(finder).to receive(:source).and_return(source) }
 
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/#{dependency_name}"
-    )
-  end
+  before { allow(finder).to receive(:source).and_return(source) }
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

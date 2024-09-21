@@ -33,7 +33,7 @@ RSpec.describe Dependabot::DependencySnapshot do
     Dependabot::Source.new(
       provider: "github",
       repo: "dependabot-fixtures/dependabot-test-ruby-package",
-      directory: "/",
+      directory: directory,
       directories: directories
     )
   end
@@ -58,12 +58,12 @@ RSpec.describe Dependabot::DependencySnapshot do
       Dependabot::DependencyFile.new(
         name: "Gemfile",
         content: fixture("bundler/original/Gemfile"),
-        directory: "/"
+        directory: directory
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
         content: fixture("bundler/original/Gemfile.lock"),
-        directory: "/"
+        directory: directory
       )
     ]
   end
@@ -99,8 +99,29 @@ RSpec.describe Dependabot::DependencySnapshot do
       }
     end
 
+    it "handles dependencies" do
+      snapshot = create_dependency_snapshot
+      snapshot.add_handled_dependencies(%w(a b))
+      expect(snapshot.handled_dependencies).to eq(Set.new(%w(a b)))
+    end
+
     context "when there are multiple directories" do
+      let(:directory) { nil }
       let(:directories) { %w(/foo /bar) }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: "/foo"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: "/bar"
+          )
+        ]
+      end
 
       it "handles dependencies per directory" do
         snapshot = create_dependency_snapshot
@@ -173,7 +194,8 @@ RSpec.describe Dependabot::DependencySnapshot do
 
         expect(snapshot.ungrouped_dependencies.length).to be(2)
 
-        snapshot.add_handled_dependencies(group.dependencies.find { |d| d.name == "dummy-pkg-a" }.name)
+        snapshot.current_directory = directory
+        snapshot.add_handled_dependencies("dummy-pkg-a")
         expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
 
         Dependabot::Experiments.reset!
@@ -252,6 +274,121 @@ RSpec.describe Dependabot::DependencySnapshot do
 
       it "raises an error" do
         expect { create_dependency_snapshot }.to raise_error(KeyError)
+      end
+    end
+  end
+
+  describe "::mark_group_handled" do
+    subject(:create_dependency_snapshot) do
+      described_class.create_from_job_definition(
+        job: job,
+        job_definition: job_definition
+      )
+    end
+
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      package_manager: "bundler",
+                      security_updates_only?: false,
+                      repo_contents_path: nil,
+                      credentials: [],
+                      reject_external_code?: false,
+                      source: source,
+                      dependency_groups: dependency_groups,
+                      allowed_update?: true,
+                      dependency_group_to_refresh: nil,
+                      dependencies: nil,
+                      experiments: { large_hadron_collider: true },
+                      existing_group_pull_requests: existing_group_pull_requests)
+    end
+
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "dependabot-fixtures/dependabot-test-ruby-package",
+        directories: %w(/foo /bar),
+        branch: nil,
+        api_endpoint: "https://api.github.com/",
+        hostname: "github.com"
+      )
+    end
+
+    let(:dependency_groups) do
+      [
+        {
+          "name" => "group-a",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "exclude-patterns" => ["dummy-pkg-b"]
+          }
+        }
+      ]
+    end
+
+    let(:existing_group_pull_requests) do
+      [
+        {
+          "group" => "group-a",
+          "dependencies" => %w(dummy-pkg-a)
+        }
+      ]
+    end
+
+    let(:job_definition) do
+      {
+        "base_commit_sha" => base_commit_sha,
+        "base64_dependency_files" => encode_dependency_files(dependency_files)
+      }
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: "/foo"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: "/foo"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: "/bar"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: "/bar"
+        )
+      ]
+    end
+
+    it "marks the dependencies handled for all directories" do
+      snapshot = create_dependency_snapshot
+      snapshot.mark_group_handled(snapshot.groups.first)
+
+      snapshot.current_directory = "/foo"
+      expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+
+      snapshot.current_directory = "/bar"
+      expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+    end
+
+    context "when there are no existing group pull requests" do
+      let(:existing_group_pull_requests) { [] }
+
+      it "marks the dependencies that would have been covered as handled" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+
+        snapshot.current_directory = "/foo"
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+
+        snapshot.current_directory = "/bar"
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
       end
     end
   end

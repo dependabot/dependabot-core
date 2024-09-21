@@ -17,6 +17,7 @@ module Dependabot
             target_branch: T.nilable(String),
             dependency_group: Dependabot::DependencyGroup,
             includes_security_fixes: T::Boolean,
+            existing_branches: T::Array[String],
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer)
@@ -24,11 +25,12 @@ module Dependabot
             .void
         end
         def initialize(dependencies:, files:, target_branch:, dependency_group:, includes_security_fixes:,
-                       separator: "/", prefix: "dependabot", max_length: nil)
+                       existing_branches: [], separator: "/", prefix: "dependabot", max_length: nil)
           super(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
+            existing_branches: existing_branches,
             separator: separator,
             prefix: prefix,
             max_length: max_length,

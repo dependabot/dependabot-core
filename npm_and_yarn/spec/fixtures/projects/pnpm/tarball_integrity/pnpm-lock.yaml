@@ -1,0 +1,25 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  fetch-factory:
+    specifier: ^0.0.1
+    version: 0.0.1
+  lodash:
+    specifier: latest
+    version: 4.17.21
+
+devDependencies:
+  etag:
+    specifier: ^1.0.0
+    version: 1.7.0
+
+packages:
+
+  /iconv-lite@0.4.15:
+    resolution: {integrity: sha512-RGR+c9Lm+tLsvU57FTJJtdbv2hQw42Yl2n26tVIBaYmZzLN+EGfroUugN/z9nJf9kOXd49hBmpoGr4FEm+A4pw==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: false

@@ -102,13 +102,51 @@ module Dependabot
     sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
     def record_update_job_error(error_type:, error_details:)
       ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_error", kind: :internal) do |_span|
-        ::Dependabot::OpenTelemetry.record_update_job_error(job_id: job_id, error_type: error_type,
-                                                            error_details: error_details)
+        ::Dependabot::OpenTelemetry.record_update_job_error(
+          job_id: job_id,
+          error_type: error_type,
+          error_details: error_details
+        )
         api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
         body = {
           data: {
             "error-type": error_type,
             "error-details": error_details
+          }
+        }
+        response = http_client.post(api_url, json: body)
+        raise ApiError, response.body if response.code >= 400
+      rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+        retry_count ||= 0
+        retry_count += 1
+        raise if retry_count > 3
+
+        sleep(rand(3.0..10.0))
+        retry
+      end
+    end
+
+    sig do
+      params(
+        warn_type: T.any(String, Symbol),
+        warn_title: String,
+        warn_description: String
+      ).void
+    end
+    def record_update_job_warning(warn_type:, warn_title:, warn_description:)
+      ::Dependabot::OpenTelemetry.tracer.in_span("record_update_job_message", kind: :internal) do |_span|
+        ::Dependabot::OpenTelemetry.record_update_job_warning(
+          job_id: job_id,
+          warn_type: warn_type,
+          warn_title: warn_title,
+          warn_description: warn_description
+        )
+        api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_warning"
+        body = {
+          data: {
+            "warn-type": warn_type,
+            "warn-title": warn_title,
+            "warn-description": warn_description
           }
         }
         response = http_client.post(api_url, json: body)
@@ -279,7 +317,8 @@ module Dependabot
             name: dep.name,
             "previous-version": dep.previous_version,
             requirements: dep.requirements,
-            "previous-requirements": dep.previous_requirements
+            "previous-requirements": dep.previous_requirements,
+            directory: dep.directory
           }.merge({
             version: dep.version,
             removed: dep.removed? ? true : nil

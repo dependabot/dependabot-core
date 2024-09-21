@@ -93,12 +93,13 @@ module Dependabot
       #
       # options supports custom feature enablement
       sig do
-        params(
-          source: Dependabot::Source,
-          credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String]
-        )
+        overridable
+          .params(
+            source: Dependabot::Source,
+            credentials: T::Array[Dependabot::Credential],
+            repo_contents_path: T.nilable(String),
+            options: T::Hash[String, String]
+          )
           .void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})

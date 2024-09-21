@@ -571,6 +571,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           context "when specifying a semver requirement" do
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
+            let(:git_pack_fixture_name) { "is-number" }
 
             before do
               git_url = "https://github.com/jonschlinkert/is-number.git"
@@ -586,8 +587,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   headers: git_header
                 )
             end
-
-            let(:git_pack_fixture_name) { "is-number" }
 
             its(:length) { is_expected.to eq(1) }
 
@@ -1304,19 +1303,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "^1.1.0",
-                  file: "packages/package1/package.json",
-                  groups: ["devDependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.0.0",
-                  file: "other_package/package.json",
-                  groups: ["devDependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              )
+              is_expected.to contain_exactly({
+                requirement: "^1.1.0",
+                file: "packages/package1/package.json",
+                groups: ["devDependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.0.0",
+                file: "other_package/package.json",
+                groups: ["devDependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              })
             end
           end
 
@@ -1328,24 +1325,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.2.0") }
 
             its(:requirements) do
-              is_expected.to match_array(
-                [{
-                  requirement: "1.2.0",
-                  file: "package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.2.1",
-                  file: "other_package/package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }, {
-                  requirement: "^1.2.1",
-                  file: "packages/package1/package.json",
-                  groups: ["dependencies"],
-                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
-                }]
-              )
+              is_expected.to contain_exactly({
+                requirement: "1.2.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "other_package/package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "packages/package1/package.json",
+                groups: ["dependencies"],
+                source: { type: "registry", url: "https://registry.yarnpkg.com" }
+              })
             end
           end
         end
@@ -1360,14 +1355,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("lerna")
             expect(dependency.version).to eq("3.6.0")
-            expect(dependency.requirements).to match_array(
-              [{
-                requirement: "^3.6.0",
-                file: "package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }]
-            )
+            expect(dependency.requirements).to contain_exactly({
+              requirement: "^3.6.0",
+              file: "package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            })
           end
 
           it "parses the etag dependency" do
@@ -1375,19 +1368,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("etag")
             expect(dependency.version).to eq("1.8.0")
-            expect(dependency.requirements).to match_array(
-              [{
-                requirement: "^1.1.0",
-                file: "packages/package1/package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }, {
-                requirement: "^1.0.0",
-                file: "packages/other_package/package.json",
-                groups: ["devDependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }]
-            )
+            expect(dependency.requirements).to contain_exactly({
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }, {
+              requirement: "^1.0.0",
+              file: "packages/other_package/package.json",
+              groups: ["devDependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            })
           end
         end
       end
@@ -1432,19 +1423,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.8.1") }
 
           its(:requirements) do
-            is_expected.to match_array(
-              [{
-                requirement: "^1.1.0",
-                file: "packages/package1/package.json",
-                groups: ["devDependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.0.0",
-                file: "other_package/package.json",
-                groups: ["devDependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }]
-            )
+            is_expected.to contain_exactly({
+              requirement: "^1.1.0",
+              file: "packages/package1/package.json",
+              groups: ["devDependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.0.0",
+              file: "other_package/package.json",
+              groups: ["devDependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            })
           end
         end
 
@@ -1456,24 +1445,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.2.0") }
 
           its(:requirements) do
-            is_expected.to match_array(
-              [{
-                requirement: "1.2.0",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.2.1",
-                file: "other_package/package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }, {
-                requirement: "^1.2.1",
-                file: "packages/package1/package.json",
-                groups: ["dependencies"],
-                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
-              }]
-            )
+            is_expected.to contain_exactly({
+              requirement: "1.2.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.2.1",
+              file: "other_package/package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }, {
+              requirement: "^1.2.1",
+              file: "packages/package1/package.json",
+              groups: ["dependencies"],
+              source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+            })
           end
         end
       end
@@ -1508,20 +1495,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       it "includes both registries" do
         expect(parsed_file.count).to be(1)
-        expect(parsed_file[0].requirements).to match_array([
-          {
-            requirement: "^10.5.12",
-            file: "package.json",
-            groups: ["dependencies"],
-            source: { type: "registry", url: "https://registry.yarnpkg.com" }
-          },
-          {
-            requirement: "10.5.12",
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: { type: "registry", url: "https://registry.yarnpkg.com" }
-          }
-        ])
+        expect(parsed_file[0].requirements).to contain_exactly({
+          requirement: "^10.5.12",
+          file: "package.json",
+          groups: ["dependencies"],
+          source: { type: "registry", url: "https://registry.yarnpkg.com" }
+        }, {
+          requirement: "10.5.12",
+          file: "package.json",
+          groups: ["devDependencies"],
+          source: { type: "registry", url: "https://registry.yarnpkg.com" }
+        })
       end
     end
 
@@ -1553,6 +1537,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             package_manager: "npm_and_yarn"
           )
         ])
+      end
+    end
+  end
+
+  describe "missing package.json manifest file" do
+    let(:child_class) do
+      Class.new(described_class) do
+        def check_required_files
+          %w(manifest).each do |filename|
+            unless get_original_file(filename)
+              raise Dependabot::DependencyFileNotFound.new(nil,
+                                                           "package.json not found.")
+            end
+          end
+        end
+      end
+    end
+    let(:parser_instance) do
+      child_class.new(dependency_files: files, source: source)
+    end
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/"
+      )
+    end
+
+    let(:gemfile) do
+      Dependabot::DependencyFile.new(
+        content: "a",
+        name: "manifest",
+        directory: "/path/to"
+      )
+    end
+    let(:files) { [gemfile] }
+
+    describe ".new" do
+      context "when the required file is present" do
+        let(:files) { [gemfile] }
+
+        it "doesn't raise" do
+          expect { parser_instance }.not_to raise_error
+        end
+      end
+
+      context "when the required file is missing" do
+        let(:files) { [] }
+
+        it "raises" do
+          expect { parser_instance }.to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
+    describe "#get_original_file" do
+      subject { parser_instance.send(:get_original_file, filename) }
+
+      context "when the requested file is present" do
+        let(:filename) { "manifest" }
+
+        it { is_expected.to eq(gemfile) }
+      end
+
+      context "when the requested file is not present" do
+        let(:filename) { "package.json" }
+
+        it { is_expected.to be_nil }
       end
     end
   end

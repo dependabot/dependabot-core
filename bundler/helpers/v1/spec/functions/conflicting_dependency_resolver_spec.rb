@@ -42,52 +42,42 @@ RSpec.describe Functions::ConflictingDependencyResolver do
       let(:target_version) { "6.0.0" }
 
       it "returns a list of dependencies that block the update" do
-        expect(conflicting_dependencies).to match_array(
-          [
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0)",
-              "name" => "rails",
-              "requirement" => "= 5.2.0",
-              "version" => "5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via actionpack (5.2.0)",
-              "name" => "actionpack",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via actionview (5.2.0)",
-              "name" => "actionview",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activejob (5.2.0)",
-              "name" => "activejob",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activemodel (5.2.0)",
-              "name" => "activemodel",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activerecord (5.2.0)",
-              "name" => "activerecord",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            },
-            {
-              "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via railties (5.2.0)",
-              "name" => "railties",
-              "version" => "5.2.0",
-              "requirement" => "= 5.2.0"
-            }
-          ]
-        )
+        expect(conflicting_dependencies).to contain_exactly({
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0)",
+          "name" => "rails",
+          "requirement" => "= 5.2.0",
+          "version" => "5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via actionpack (5.2.0)",
+          "name" => "actionpack",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via actionview (5.2.0)",
+          "name" => "actionview",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activejob (5.2.0)",
+          "name" => "activejob",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activemodel (5.2.0)",
+          "name" => "activemodel",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via activerecord (5.2.0)",
+          "name" => "activerecord",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        }, {
+          "explanation" => "rails (5.2.0) requires activesupport (= 5.2.0) via railties (5.2.0)",
+          "name" => "railties",
+          "version" => "5.2.0",
+          "requirement" => "= 5.2.0"
+        })
       end
     end
 
@@ -98,28 +88,22 @@ RSpec.describe Functions::ConflictingDependencyResolver do
       let(:project_name) { "multiple_blocking" }
 
       it "returns all of the blocking dependencies" do
-        expect(conflicting_dependencies).to match_array(
-          [
-            {
-              "explanation" => "actionmailer (5.0.0) requires activesupport (= 5.0.0) via actionpack (5.0.0)",
-              "name" => "actionpack",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            },
-            {
-              "explanation" => "actionview (5.0.0) requires activesupport (= 5.0.0)",
-              "name" => "actionview",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            },
-            {
-              "explanation" => "actionmailer (5.0.0) requires activesupport (= 5.0.0) via activejob (5.0.0)",
-              "name" => "activejob",
-              "version" => "5.0.0",
-              "requirement" => "= 5.0.0"
-            }
-          ]
-        )
+        expect(conflicting_dependencies).to contain_exactly({
+          "explanation" => "actionmailer (5.0.0) requires activesupport (= 5.0.0) via actionpack (5.0.0)",
+          "name" => "actionpack",
+          "version" => "5.0.0",
+          "requirement" => "= 5.0.0"
+        }, {
+          "explanation" => "actionview (5.0.0) requires activesupport (= 5.0.0)",
+          "name" => "actionview",
+          "version" => "5.0.0",
+          "requirement" => "= 5.0.0"
+        }, {
+          "explanation" => "actionmailer (5.0.0) requires activesupport (= 5.0.0) via activejob (5.0.0)",
+          "name" => "activejob",
+          "version" => "5.0.0",
+          "requirement" => "= 5.0.0"
+        })
       end
     end
 

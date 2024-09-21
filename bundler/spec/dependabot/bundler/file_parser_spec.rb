@@ -566,19 +566,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
             .to match_array(%w(business statesman))
           expect(dependencies.first.name).to eq("business")
           expect(dependencies.first.requirements)
-            .to match_array(
-              [{
-                file: "Gemfile",
-                requirement: "~> 1.4.0",
-                groups: [:default],
-                source: nil
-              }, {
-                file: "subdir/example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: nil
-              }]
-            )
+            .to contain_exactly({
+              file: "Gemfile",
+              requirement: "~> 1.4.0",
+              groups: [:default],
+              source: nil
+            }, {
+              file: "subdir/example.gemspec",
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil
+            })
         end
 
         context "with a gemspec with a float version number" do
@@ -600,19 +598,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.first.version)
             .to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
           expect(dependencies.first.requirements)
-            .to match_array(
-              [{
-                file: "example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: {
-                  type: "git",
-                  url: "git@github.com:dependabot-fixtures/business",
-                  branch: nil,
-                  ref: "master"
-                }
-              }]
-            )
+            .to contain_exactly({
+              file: "example.gemspec",
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "git@github.com:dependabot-fixtures/business",
+                branch: nil,
+                ref: "master"
+              }
+            })
         end
 
         it "includes source details on the gemspec requirement", :bundler_v2_only do
@@ -621,19 +617,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.first.version)
             .to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
           expect(dependencies.first.requirements)
-            .to match_array(
-              [{
-                file: "example.gemspec",
-                requirement: "~> 1.0",
-                groups: ["runtime"],
-                source: {
-                  type: "git",
-                  url: "git@github.com:dependabot-fixtures/business",
-                  branch: nil,
-                  ref: nil
-                }
-              }]
-            )
+            .to contain_exactly({
+              file: "example.gemspec",
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "git@github.com:dependabot-fixtures/business",
+                branch: nil,
+                ref: nil
+              }
+            })
         end
       end
 
@@ -644,22 +638,17 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.map(&:name))
             .to match_array(%w(business statesman))
           expect(dependencies.map(&:requirements))
-            .to match_array(
-              [
-                [{
-                  requirement: "~> 1.0",
-                  groups: ["runtime"],
-                  source: nil,
-                  file: "example.gemspec"
-                }],
-                [{
-                  requirement: "~> 1.0",
-                  groups: ["runtime"],
-                  source: nil,
-                  file: "example2.gemspec"
-                }]
-              ]
-            )
+            .to contain_exactly([{
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil,
+              file: "example.gemspec"
+            }], [{
+              requirement: "~> 1.0",
+              groups: ["runtime"],
+              source: nil,
+              file: "example2.gemspec"
+            }])
         end
       end
 
@@ -858,6 +847,12 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.map(&:name)).not_to include("statesman")
         end
       end
+    end
+  end
+
+  describe "#package_manager" do
+    it "returns the correct package manager" do
+      expect(parser.package_manager).to be_a(Dependabot::Bundler::PackageManager)
     end
   end
 end

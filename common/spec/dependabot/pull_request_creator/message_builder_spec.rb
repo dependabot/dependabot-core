@@ -22,7 +22,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service,
       dependency_group: dependency_group,
-      ignore_conditions: ignore_conditions
+      ignore_conditions: ignore_conditions,
+      notices: notices
     )
   end
 
@@ -50,6 +51,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:commit_message_options) { { signoff_details: signoff_details, trailers: trailers } }
   let(:signoff_details) { nil }
   let(:trailers) { nil }
+  let(:notices) { [] }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "redirect.github.com" }
   let(:dependency_group) { nil }
@@ -166,6 +168,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
   end
 
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
+
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 
@@ -196,7 +207,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
           it {
-            is_expected.to eq("build(deps): bump business from 1.4.0 to 1.5.0")
+            expect(pr_name).to eq("build(deps): bump business from 1.4.0 to 1.5.0")
           }
         end
 
@@ -498,7 +509,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         it do
-          is_expected.to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
+          expect(pr_name).to eq("chore(deps): bump business from 1.4.0 to 1.5.0")
         end
 
         context "when capitalizing message" do
@@ -512,7 +523,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
 
           it do
-            is_expected.to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
+            expect(pr_name).to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
           end
         end
 
@@ -527,14 +538,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
 
           it do
-            is_expected.to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
+            expect(pr_name).to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
           end
 
           context "when commit messages are explicitly configured" do
             let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
 
             it do
-              is_expected.to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
+              expect(pr_name).to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
             end
           end
         end
@@ -580,7 +591,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         it do
-          is_expected.to eq("Upgrade: Bump business from 1.4.0 to 1.5.0")
+          expect(pr_name).to eq("Upgrade: Bump business from 1.4.0 to 1.5.0")
         end
 
         context "with a security vulnerability fixed" do
@@ -611,7 +622,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         include_context "with multiple git sources"
 
         it "has the correct name" do
-          is_expected.to eq(
+          expect(pr_name).to eq(
             "Update actions/checkout requirement to v2.2.0"
           )
         end
@@ -843,6 +854,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
+      let(:commits_response) { fixture("github", "commits.json") }
 
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -852,8 +864,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
-
-      let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the all-the-things group") }
 
@@ -946,6 +956,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       let(:source) do
         Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directories: ["/foo", "/bar"])
       end
+      let(:commits_response) { fixture("github", "commits.json") }
       let(:dependency_group) do
         Dependabot::DependencyGroup.new(name: "go_modules", rules: { patterns: ["*"] })
       end
@@ -959,8 +970,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             headers: json_header
           )
       end
-
-      let(:commits_response) { fixture("github", "commits.json") }
 
       it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0 in the go_modules group across 1 directory") }
 
@@ -1568,10 +1577,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "<details>\n" \
               "<summary>Vulnerabilities fixed</summary>\n" \
               "<blockquote>\n" \
-              "<p><strong>Serious vulnerability</strong>\n" \
-              "A vulnerability that allows arbitrary code\n" \
+              "<p><strong>Serious vulnerability</strong><br />\n" \
+              "A vulnerability that allows arbitrary code<br />\n" \
               "execution.</p>\n" \
-              "<p>Patched versions: &gt; 1.5.0\n" \
+              "<p>Patched versions: &gt; 1.5.0<br />\n" \
               "Unaffected versions: none</p>\n" \
               "</blockquote>\n" \
               "</details>\n"
@@ -3317,6 +3326,89 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         expect(pr_message).not_to include("Changelog: dependency")
       end
     end
+
+    context "with generated single notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
+        )]
+      end
+
+      it do
+        expect(pr_message).to start_with(
+          Dependabot::Notice.markdown_from_description(notices.first)
+        )
+      end
+    end
+
+    context "with generated multiple notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
+        ), Dependabot::Notice.new(
+          mode: "ERROR",
+          type: "bundler_unsupported_error",
+          package_manager_name: "bundler",
+          title: "Package manager deprecation notice",
+          description: "Dependabot no longer supports `bundler v1`!\n" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
+        )]
+      end
+
+      it do
+        markdown1 = Dependabot::Notice.markdown_from_description(notices.first)
+        markdown2 = Dependabot::Notice.markdown_from_description(notices.last)
+        expect(pr_message).to start_with(
+          "#{markdown1}\n\n#{markdown2}"
+        )
+      end
+    end
+
+    context "with duplicate notices" do
+      let(:notices) do
+        [Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!\n" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
+        ), Dependabot::Notice.new(
+          mode: "WARN",
+          type: "bundler_deprecated_warn",
+          package_manager_name: "bundler",
+          title: "Package manager deprecation notice",
+          description: "Dependabot will stop supporting `bundler v1`!" \
+                       "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+          show_in_pr: true,
+          show_alert: true
+        )]
+      end
+
+      it "returns a unique message" do
+        markdown = Dependabot::Notice.markdown_from_description(notices.first)
+        expect(pr_message).to start_with(markdown)
+        expect(pr_message.scan(markdown).count).to eq(1)
+      end
+    end
   end
 
   describe "#commit_message", :vcr do
@@ -3334,7 +3426,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     it "renders the expected message" do
-      is_expected.to eql(expected_commit_message)
+      expect(commit_message).to eql(expected_commit_message)
     end
 
     context "with a PR name that is too long" do
@@ -3451,14 +3543,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
 
       it "uses gitmoji" do
-        is_expected.to start_with(":arrow_up: Bump ")
+        expect(commit_message).to start_with(":arrow_up: Bump ")
       end
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
 
         it "uses gitmoji" do
-          is_expected.to start_with(":arrow_up::lock: Bump ")
+          expect(commit_message).to start_with(":arrow_up::lock: Bump ")
         end
       end
     end

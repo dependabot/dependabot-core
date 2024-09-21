@@ -14,36 +14,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
       dependency: dependency
     )
   end
-  let(:credentials) do
-    [Dependabot::Credential.new({
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    })]
-  end
-  let(:dependency_files) { [requirements_file] }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "requests",
-      version: "2.4.1",
-      requirements: [{
-        requirement: "==2.4.1",
-        file: "requirements.txt",
-        groups: ["dependencies"],
-        source: nil
-      }],
-      package_manager: "pip"
-    )
-  end
-
-  before do
-    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
-  end
-
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
-
   let(:pipfile) do
     Dependabot::DependencyFile.new(
       name: "Pipfile",
@@ -72,6 +44,32 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     )
   end
   let(:pip_conf_fixture_name) { "custom_index" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
+  let(:dependency_files) { [requirements_file] }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: "requests",
+      version: "2.4.1",
+      requirements: [{
+        requirement: "==2.4.1",
+        file: "requirements.txt",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "pip"
+    )
+  end
+
+  before do
+    stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
+  end
 
   describe "#index_urls" do
     subject(:index_urls) { finder.index_urls }
@@ -195,12 +193,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [pip_conf] }
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            [
-              "https://pypi.org/simple/",
-              "https://pypi.weasyldev.com/weasyl/source/+simple/"
-            ]
-          )
+          expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/weasyl/source/+simple/")
         end
 
         context "when including an environment variables" do
@@ -227,12 +220,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             end
 
             it "gets the right index URLs" do
-              expect(index_urls).to match_array(
-                [
-                  "https://pypi.org/simple/",
-                  "https://pypi.weasyldev.com/weasyl/source/+simple/"
-                ]
-              )
+              expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/weasyl/source/+simple/")
             end
 
             context "with a gemfury style" do
@@ -245,12 +233,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               let(:url) { "https://pypi.weasyldev.com/source/+simple/luigi/" }
 
               it "gets the right index URLs" do
-                expect(index_urls).to match_array(
-                  [
-                    "https://pypi.org/simple/",
-                    "https://pypi.weasyldev.com/source/+simple/"
-                  ]
-                )
+                expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/source/+simple/")
               end
             end
 
@@ -269,12 +252,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               end
 
               it "gets the right index URLs" do
-                expect(index_urls).to match_array(
-                  [
-                    "https://pypi.org/simple/",
-                    "https://user:pass@pypi.weasyldev.com/source/+simple/"
-                  ]
-                )
+                expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://user:pass@pypi.weasyldev.com/source/+simple/")
               end
             end
           end
@@ -286,24 +264,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [requirements_file] }
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            [
-              "https://pypi.org/simple/",
-              "https://pypi.weasyldev.com/weasyl/source/+simple/"
-            ]
-          )
+          expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/weasyl/source/+simple/")
         end
 
         context "with quotes" do
           let(:requirements_fixture_name) { "extra_index_quotes.txt" }
 
           it "gets the right index URLs" do
-            expect(index_urls).to match_array(
-              [
-                "https://pypi.org/simple/",
-                "https://cakebot.mycloudrepo.io/public/repositories/py/"
-              ]
-            )
+            expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://cakebot.mycloudrepo.io/public/repositories/py/")
           end
         end
       end
@@ -313,12 +281,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [pyproject] }
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            [
-              "https://pypi.org/simple/",
-              "https://some.internal.registry.com/pypi/"
-            ]
-          )
+          expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://some.internal.registry.com/pypi/")
         end
       end
 
@@ -327,11 +290,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         let(:dependency_files) { [pyproject] }
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            [
-              "https://pypi.org/simple/"
-            ]
-          )
+          expect(index_urls).to contain_exactly("https://pypi.org/simple/")
         end
       end
 
@@ -353,9 +312,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            ["https://some.internal.registry.com/pypi/"]
-          )
+          expect(index_urls).to contain_exactly("https://some.internal.registry.com/pypi/")
         end
       end
 
@@ -369,12 +326,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         end
 
         it "gets the right index URLs" do
-          expect(index_urls).to match_array(
-            [
-              "https://pypi.org/simple/",
-              "https://pypi.weasyldev.com/weasyl/source/+simple/"
-            ]
-          )
+          expect(index_urls).to contain_exactly("https://pypi.org/simple/", "https://pypi.weasyldev.com/weasyl/source/+simple/")
         end
       end
     end

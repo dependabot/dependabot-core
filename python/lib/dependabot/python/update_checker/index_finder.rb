@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/update_checker"
@@ -51,8 +51,6 @@ module Dependabot
             pip_conf_index_urls[:main] ||
             pyproject_index_urls[:main] ||
             PYPI_BASE_URL
-
-          return unless url
 
           clean_check_and_remove_environment_variables(url)
         end

@@ -44,19 +44,19 @@ public partial class EntryPointTests
                         Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "my", "my.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
                         EndProject
                         Global
-                          GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                            GlobalSection(SolutionConfigurationPlatforms) = preSolution
                             Debug|Any CPU = Debug|Any CPU
                             Release|Any CPU = Release|Any CPU
-                          EndGlobalSection
-                          GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                            EndGlobalSection
+                            GlobalSection(ProjectConfigurationPlatforms) = postSolution
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
                             {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
-                          EndGlobalSection
-                          GlobalSection(SolutionProperties) = preSolution
+                            EndGlobalSection
+                            GlobalSection(SolutionProperties) = preSolution
                             HideSolutionNode = FALSE
-                          EndGlobalSection
+                            EndGlobalSection
                         EndGlobal
                         """),
                     ("path/to/my.csproj", """
@@ -82,7 +82,7 @@ public partial class EntryPointTests
                           <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                         </packages>
                         """)
-                ],
+                      ],
                 expectedFiles:
                 [
                     ("path/to/my.csproj", """
@@ -253,7 +253,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
@@ -271,8 +271,7 @@ public partial class EntryPointTests
                           </ItemGroup>
                         </Project>
                         """),
-                    ("some-dir/project1/project.csproj",
-                        """
+                    ("some-dir/project1/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <OutputType>Exe</OutputType>
@@ -300,7 +299,7 @@ public partial class EntryPointTests
                         """),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                        
+
                           <ItemGroup>
                             <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
@@ -408,6 +407,7 @@ public partial class EntryPointTests
                 try
                 {
                     await MockNuGetPackagesInDirectory(packages, path);
+
                     var args = getArgs(path);
                     var result = await Program.Main(args);
                     if (result != 0)

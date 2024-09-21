@@ -83,7 +83,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
             let(:requirement_string) { "^0.0.*" }
 
             it do
-              is_expected.to eq(described_class.new(">= 0.0.0", "< 1.0.0.a"))
+              expect(requirement).to eq(described_class.new(">= 0.0.0", "< 1.0.0.a"))
             end
 
             context "with a pre-release specifier" do
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::GoModules::Requirement do
             let(:requirement_string) { "^0.0.3" }
 
             it do
-              is_expected.to eq(described_class.new(">= 0.0.3", "< 1.0.0.a"))
+              expect(requirement).to eq(described_class.new(">= 0.0.3", "< 1.0.0.a"))
             end
           end
         end
@@ -253,12 +253,8 @@ RSpec.describe Dependabot::GoModules::Requirement do
       let(:requirement_string) { "^1.1.0 || ^2.1.0" }
 
       it "returns an array of requirements" do
-        expect(requirements).to match_array(
-          [
-            described_class.new(">= 1.1.0", "< 2.0.0.a"),
-            described_class.new(">= 2.1.0", "< 3.0.0.a")
-          ]
-        )
+        expect(requirements).to contain_exactly(described_class.new(">= 1.1.0", "< 2.0.0.a"),
+                                                described_class.new(">= 2.1.0", "< 3.0.0.a"))
       end
     end
   end

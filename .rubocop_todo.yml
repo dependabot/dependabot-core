@@ -22,19 +22,10 @@ RSpec/AnyInstance:
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
     - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
 
-# Offense count: 7
-RSpec/BeforeAfterAll:
-  Exclude:
-    - 'nuget/spec/dependabot/nuget/update_checker/dependency_finder_spec.rb'
-    - 'pub/spec/dependabot/pub/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-
 # Offense count: 1286
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
   Max: 98
-
 
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, SpecSuffixOnly.
@@ -52,47 +43,11 @@ RSpec/FilePath:
     - 'nuget/spec/dependabot/nuget/update_checker/repository_finder_spec.rb'
     - 'nuget/spec/dependabot/nuget/update_checker/tfm_finder_spec.rb'
 
-# Offense count: 56
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/HooksBeforeExamples:
-  Enabled: false
-
-# Offense count: 213
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: single_line_only, single_statement_only, disallow, require_implicit
-RSpec/ImplicitSubject:
-  Enabled: false
-
-# Offense count: 70
-# Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
-RSpec/IndexedLet:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/helper_spec.rb'
-    - 'cargo/spec/dependabot/cargo/file_parser_spec.rb'
-    - 'common/spec/dependabot/dependency_file_spec.rb'
-    - 'common/spec/dependabot/dependency_group_spec.rb'
-    - 'common/spec/dependabot/dependency_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'github_actions/spec/dependabot/github_actions/update_checker_spec.rb'
-    - 'hex/spec/dependabot/hex/file_parser_spec.rb'
-    - 'hex/spec/dependabot/hex/file_updater/lockfile_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/file_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/update_checker_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_updater/pip_compile_file_updater_spec.rb'
-    - 'python/spec/dependabot/python/update_checker/latest_version_finder_spec.rb'
-
 # Offense count: 29
 # Configuration parameters: AssignmentOnly.
 RSpec/InstanceVariable:
   Exclude:
-    - 'bundler/helpers/v2/spec/ruby_version_spec.rb'
-    - 'common/spec/dependabot/clients/azure_spec.rb'
     - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/file_updater_spec.rb'
-    - 'pub/spec/dependabot/pub/infer_sdk_versions_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
 
 # Offense count: 22
 RSpec/IteratedExpectation:
@@ -112,10 +67,6 @@ RSpec/IteratedExpectation:
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
 
-# Offense count: 141
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/MatchArray:
-  Enabled: false
 
 # Offense count: 3
 RSpec/MessageChain:
@@ -129,11 +80,6 @@ RSpec/MessageChain:
 # SupportedStyles: have_received, receive
 RSpec/MessageSpies:
   Enabled: false
-
-# Offense count: 1
-RSpec/MultipleDescribes:
-  Exclude:
-    - 'common/spec/dependabot/errors_spec.rb'
 
 # Offense count: 1380
 RSpec/MultipleExpectations:
@@ -163,23 +109,6 @@ RSpec/OverwritingSetup:
     - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
     - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
 
-# Offense count: 47
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: Strict, EnforcedStyle, AllowedExplicitMatchers.
-# SupportedStyles: inflected, explicit
-RSpec/PredicateMatcher:
-  Exclude:
-    - 'common/spec/dependabot/dependency_file_spec.rb'
-    - 'common/spec/dependabot/dependency_group_spec.rb'
-    - 'common/spec/dependabot/experiments_spec.rb'
-    - 'common/spec/dependabot/file_updaters/artifact_updater_spec.rb'
-    - 'common/spec/dependabot/file_updaters/vendor_updater_spec.rb'
-    - 'common/spec/dependabot/workspace/git_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_parser/pyproject_files_parser_spec.rb'
-    - 'updater/spec/dependabot/job_spec.rb'
-
 # Offense count: 4
 RSpec/RepeatedExample:
   Exclude:
@@ -197,40 +126,6 @@ RSpec/RepeatedExampleGroupBody:
 # Offense count: 45
 RSpec/RepeatedExampleGroupDescription:
   Enabled: false
-
-# Offense count: 251
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ScatteredLet:
-  Enabled: false
-
-# Offense count: 36
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ScatteredSetup:
-  Exclude:
-    - 'bundler/spec/dependabot/bundler/file_fetcher_spec.rb'
-    - 'cargo/spec/dependabot/cargo/file_fetcher_spec.rb'
-    - 'common/spec/dependabot/clients/bitbucket_spec.rb'
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb'
-    - 'composer/spec/dependabot/composer/update_checker_spec.rb'
-    - 'docker/spec/dependabot/docker/file_parser_spec.rb'
-    - 'elm/spec/dependabot/elm/file_fetcher_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_fetcher_spec.rb'
-    - 'gradle/spec/dependabot/gradle/update_checker/multi_dependency_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/file_fetcher_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/metadata_finder_spec.rb'
-    - 'nuget/spec/dependabot/nuget/file_fetcher_spec.rb'
-    - 'python/spec/dependabot/python/file_fetcher_spec.rb'
-
-# Offense count: 24
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: string, symbol
-RSpec/SharedExamples:
-  Exclude:
-    - 'pub/spec/dependabot/pub/update_checker_spec.rb'
-    - 'pub/spec/spec_helper.rb'
-    - 'updater/spec/dependabot/service_spec.rb'
 
 # Offense count: 10
 # Configuration parameters: Include, CustomTransform, IgnoreMethods, IgnoreMetadata.
@@ -278,14 +173,6 @@ RSpec/SubjectStub:
 RSpec/UnspecifiedException:
   Exclude:
     - 'updater/spec/dependabot/job_spec.rb'
-
-# Offense count: 3
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: constant, string
-RSpec/VerifiedDoubleReference:
-  Exclude:
-    - 'updater/spec/dependabot/updater/operations/refresh_group_update_pull_request_spec.rb'
 
 # Offense count: 26
 # Configuration parameters: IgnoreNameless, IgnoreSymbolicNames.

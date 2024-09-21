@@ -16,11 +16,10 @@ module Dependabot
 
       def self.updated_files_regex
         [
-          /^Gemfile$/,
-          /^Gemfile\.lock$/,
-          /^gems\.rb$/,
-          /^gems\.locked$/,
-          /^*\.gemspec$/
+          # Matches Gemfile, Gemfile.lock, gems.rb, gems.locked, .gemspec files, and anything in vendor directory
+          %r{^(Gemfile(\.lock)?|gems\.(rb|locked)|.*\.gemspec|vendor/.*)$},
+          # Matches the same files in any subdirectory
+          %r{^.*/(Gemfile|Gemfile\.lock|gems\.rb|gems\.locked)$}
         ]
       end
 

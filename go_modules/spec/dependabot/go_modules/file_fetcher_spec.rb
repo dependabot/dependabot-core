@@ -23,13 +23,11 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
   let(:branch) { "master" }
   let(:repo) { "dependabot-fixtures/go-modules-lib" }
 
-  it_behaves_like "a dependency file fetcher"
-
-  after { FileUtils.rm_rf(repo_contents_path) }
-
   after do
     FileUtils.rm_rf(repo_contents_path)
   end
+
+  it_behaves_like "a dependency file fetcher"
 
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name))

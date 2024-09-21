@@ -26,11 +26,19 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     end
 
     context "with a dist tag" do
-      let(:requirement_string) { "next" }
+      context "when it is supported tag" do
+        let(:requirement_string) { "next" }
 
-      it "raises a bad requirement error" do
-        expect { requirement }
-          .to raise_error(Gem::Requirement::BadRequirementError)
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is not supported tag or unknown versioning" do
+        let(:requirement_string) { "some_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
       end
     end
 
@@ -178,6 +186,32 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       end
     end
 
+    context "with a dist tag" do
+      context "when it is valid requirement tag" do
+        let(:requirement_string) { "next" }
+
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "++ 2.1.2" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "unsupported_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
+      end
+    end
+
     context "with only a *" do
       let(:requirement_string) { "*" }
 
@@ -240,7 +274,7 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
   end
 
   describe "#requirements_array" do
-    subject { described_class.requirements_array(requirement_string) }
+    subject(:reqs) { described_class.requirements_array(requirement_string) }
 
     context "with multiple intersecting requirements" do
       let(:requirement_string) { ">=1.0.0 <=1.5.0" }
@@ -258,12 +292,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "^1.0.0 || ^2.0.0" }
 
       it do
-        is_expected.to match_array(
-          [
-            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
-            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
-          ]
-        )
+        expect(reqs).to contain_exactly(Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+                                        Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a"))
       end
     end
 
@@ -271,12 +301,8 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { "(^1.0.0 || ^2.0.0)" }
 
       it do
-        is_expected.to match_array(
-          [
-            Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
-            Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
-          ]
-        )
+        expect(reqs).to contain_exactly(Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
+                                        Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a"))
       end
     end
   end

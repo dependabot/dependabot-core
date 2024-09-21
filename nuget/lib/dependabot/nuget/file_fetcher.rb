@@ -34,15 +34,16 @@ module Dependabot
       end
 
       sig do
-        params(
-          source: Dependabot::Source,
-          credentials: T::Array[Credential],
-          repo_contents_path: T.nilable(String),
-          options: T::Hash[String, String]
-        ).void
+        override
+          .params(
+            source: Dependabot::Source,
+            credentials: T::Array[Credential],
+            repo_contents_path: T.nilable(String),
+            options: T::Hash[String, String]
+          ).void
       end
       def initialize(source:, credentials:, repo_contents_path: nil, options: {})
-        super(source: source, credentials: credentials, repo_contents_path: repo_contents_path, options: options)
+        super
 
         @sln_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @sln_project_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
@@ -50,6 +51,7 @@ module Dependabot
         @fetched_files = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
         @nuget_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @packages_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @assembly_binding_redirect_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @packages_lock_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
@@ -60,6 +62,7 @@ module Dependabot
           *directory_build_files,
           *imported_property_files,
           *packages_config_files,
+          *assembly_binding_redirect_config_files,
           *nuget_config_files,
           *packages_lock_files,
           global_json,
@@ -125,6 +128,23 @@ module Dependabot
           candidate_paths.filter_map do |dir|
             file = repo_contents(dir: dir)
                    .find { |f| f.name.casecmp("packages.config").zero? }
+            fetch_file_from_host(File.join(dir, file.name)) if file
+          end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def assembly_binding_redirect_config_files
+        return @assembly_binding_redirect_config_files if @assembly_binding_redirect_config_files
+
+        candidate_paths =
+          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+        # Assembly binding redirects can appear in any app/web.config file for a .NET Framework project
+        # https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions#specify-assembly-binding-in-configuration-files
+        @assembly_binding_redirect_config_files =
+          candidate_paths.filter_map do |dir|
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.match?(/^(app|web)\.config$/i) }
             fetch_file_from_host(File.join(dir, file.name)) if file
           end
       end

@@ -1,3 +1,7 @@
+using System.Text.Json;
+
+using NuGetUpdater.Core.Discover;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -33,7 +37,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 Projects = [
                     new()
                     {
@@ -48,6 +52,54 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", projectPath),
                             new("TargetFramework", "net8.0", projectPath),
+                        ]
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDependencyWithTrailingSpacesInAttribute()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "src",
+            files: new[]
+            {
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <SomePackageVersion>9.0.1</SomePackageVersion>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include=" Some.Package    " Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("SomePackageVersion", "9.0.1", "src/project.csproj"),
+                            new("TargetFramework", "net8.0", "src/project.csproj"),
                         ]
                     }
                 ]
@@ -92,7 +144,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 Projects = [
                     new()
                     {
@@ -151,7 +203,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "src",
+                Path = "src",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()
@@ -276,7 +328,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             },
             expectedResult: new()
             {
-                FilePath = "",
+                Path = "",
                 ExpectedProjectCount = 2,
                 Projects = [
                     new()
@@ -319,6 +371,185 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
                     ]
                 }
+            }
+        );
+    }
+
+    [Fact]
+    public async Task NonSupportedProjectExtensionsAreSkipped()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            workspacePath: "/",
+            files: new[]
+            {
+                ("solution.sln", """
+                    Microsoft Visual Studio Solution File, Format Version 12.00
+                    # Visual Studio Version 17
+                    VisualStudioVersion = 17.10.35027.167
+                    MinimumVisualStudioVersion = 10.0.40219.1
+                    Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "supported", "src\supported.csproj", "{4A3B8D8A-A585-4593-8AF3-DED05AE3C40F}"
+                    EndProject
+                    Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "unsupported", "src\unsupported.vdproj", "{271E533C-8A44-4572-8C18-CD65A79F8658}"
+                    EndProject
+                    Global
+                    	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                    		Debug|Any CPU = Debug|Any CPU
+                    		Release|Any CPU = Release|Any CPU
+                    	EndGlobalSection
+                    	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                    		{4A3B8D8A-A585-4593-8AF3-DED05AE3C40F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                    		{4A3B8D8A-A585-4593-8AF3-DED05AE3C40F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                    		{4A3B8D8A-A585-4593-8AF3-DED05AE3C40F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                    		{4A3B8D8A-A585-4593-8AF3-DED05AE3C40F}.Release|Any CPU.Build.0 = Release|Any CPU
+                    		{271E533C-8A44-4572-8C18-CD65A79F8658}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                    		{271E533C-8A44-4572-8C18-CD65A79F8658}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                    		{271E533C-8A44-4572-8C18-CD65A79F8658}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                    		{271E533C-8A44-4572-8C18-CD65A79F8658}.Release|Any CPU.Build.0 = Release|Any CPU
+                    	EndGlobalSection
+                    	GlobalSection(SolutionProperties) = preSolution
+                    		HideSolutionNode = FALSE
+                    	EndGlobalSection
+                    	GlobalSection(ExtensibilityGlobals) = postSolution
+                    		SolutionGuid = {EE5BDEF7-1D4D-4773-9659-FC4A3846CD6D}
+                    	EndGlobalSection
+                    EndGlobal
+                    """),
+                ("src/supported.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/unsupported.vdproj", """
+                    "DeployProject"
+                    {
+                    "SomeKey" = "SomeValue"
+                    }
+                    """),
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/supported.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        ExpectedDependencyCount = 2,
+                        Dependencies = [
+                            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net8.0", @"src/supported.csproj"),
+                        ]
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+    {
+        using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+        var discoveryResultPath = Path.Combine(temporaryDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+        await DiscoveryWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, discoveryResultPath, new()
+        {
+            ErrorType = ErrorType.AuthenticationFailure,
+            ErrorDetails = "<some package feed>",
+            Path = "/",
+            Projects = [],
+        });
+        var discoveryContents = await File.ReadAllTextAsync(discoveryResultPath);
+
+        // raw result file should look like this:
+        // {
+        //   ...
+        //   "ErrorType": "AuthenticationFailure",
+        //   "ErrorDetails": "<some package feed>",
+        //   ...
+        // }
+        var jsonDocument = JsonDocument.Parse(discoveryContents);
+        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
+        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+
+        Assert.Equal("AuthenticationFailure", errorType.GetString());
+        Assert.Equal("<some package feed>", errorDetails.GetString());
+    }
+
+    [Fact]
+    public async Task ReportsPrivateSourceAuthenticationFailure()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (401, "{}"),
+            };
+        }
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        await TestDiscoveryAsync(
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Path = "",
+                Projects = [],
             }
         );
     }

@@ -115,6 +115,9 @@ module Dependabot
     sig { returns(T.nilable(T.any(T::Array[String], Integer))) }
     attr_reader :milestone
 
+    sig { returns(T::Array[String]) }
+    attr_reader :existing_branches
+
     sig { returns(String) }
     attr_reader :branch_name_separator
 
@@ -159,6 +162,7 @@ module Dependabot
         reviewers: Reviewers,
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
         milestone: T.nilable(T.any(T::Array[String], Integer)),
+        existing_branches: T::Array[String],
         branch_name_separator: String,
         branch_name_prefix: String,
         branch_name_max_length: T.nilable(Integer),
@@ -182,9 +186,9 @@ module Dependabot
                    custom_labels: nil, author_details: nil, signature_key: nil,
                    commit_message_options: {}, vulnerabilities_fixed: {},
                    reviewers: nil, assignees: nil, milestone: nil,
-                   branch_name_separator: "/", branch_name_prefix: "dependabot",
-                   branch_name_max_length: nil, label_language: false,
-                   automerge_candidate: false,
+                   existing_branches: [], branch_name_separator: "/",
+                   branch_name_prefix: "dependabot", branch_name_max_length: nil,
+                   label_language: false, automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
                    provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil,
@@ -204,6 +208,7 @@ module Dependabot
       @assignees                  = assignees
       @milestone                  = milestone
       @vulnerabilities_fixed      = vulnerabilities_fixed
+      @existing_branches          = existing_branches
       @branch_name_separator      = branch_name_separator
       @branch_name_prefix         = branch_name_prefix
       @branch_name_max_length     = branch_name_max_length
@@ -397,6 +402,7 @@ module Dependabot
           files: files,
           target_branch: source.branch,
           dependency_group: dependency_group,
+          existing_branches: existing_branches,
           separator: branch_name_separator,
           prefix: branch_name_prefix,
           max_length: branch_name_max_length,

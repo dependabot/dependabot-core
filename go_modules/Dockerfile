@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.22.3-bookworm as go
+FROM docker.io/library/golang:1.22.5-bookworm as go
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
@@ -27,3 +27,10 @@ ENV GOTOOLCHAIN="go1.20.10"
 # This pre-installs go 1.20 so that each job doesn't have to do it.
 RUN go version
 ENV GO_LEGACY=$GOTOOLCHAIN
+
+# Enable automatic pulling of files stored with Git LFS.
+# This is crucial for the Go toolchain to correctly compute module hashes in repositories
+# with LFS committed files.
+# This is relevant only for Go Modules embedding (with //go:embed) large files and does not
+# affect repositories that do not commit files to LFS.
+ENV GIT_LFS_SKIP_SMUDGE=1

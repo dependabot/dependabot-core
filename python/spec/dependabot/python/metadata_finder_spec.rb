@@ -36,8 +36,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     )
   end
 
-  it_behaves_like "a dependency metadata finder"
-
   before do
     stub_request(:get, "https://example.com/status").to_return(
       status: 200,
@@ -47,6 +45,8 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     stub_request(:get, "https://initd.org/status").to_return(status: 404)
     stub_request(:get, "https://pypi.org/status").to_return(status: 404)
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -80,6 +80,8 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           "index-url" => "https://username:password@pypi.posrip.com/pypi/"
         })]
       end
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
+
       before do
         private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
         stub_request(:get, pypi_url).to_return(status: 404, body: "")
@@ -87,8 +89,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .with(basic_auth: %w(username password))
           .to_return(status: 200, body: pypi_response)
       end
-
-      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
@@ -316,6 +316,12 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi", "pypi_response_extras.json") }
 
       it { is_expected.to eq("https://github.com/celery/celery") }
+    end
+
+    context "when the dependency source is in project_urls" do
+      let(:pypi_response) { fixture("pypi", "pypi_response_project_urls_source.json") }
+
+      it { is_expected.to eq("https://github.com/xxxxx/django-split-settings") }
     end
   end
 

@@ -48,16 +48,12 @@ RSpec.describe(Dependabot::Bundler::UpdateChecker::ConflictingDependencyResolver
     end
 
     it "returns the right array of blocking dependencies" do
-      expect(conflicting_dependencies).to match_array(
-        [
-          {
-            "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
-            "name" => "dummy-pkg-b",
-            "version" => "1.0.0",
-            "requirement" => "< 2.0.0"
-          }
-        ]
-      )
+      expect(conflicting_dependencies).to contain_exactly({
+        "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
+        "name" => "dummy-pkg-b",
+        "version" => "1.0.0",
+        "requirement" => "< 2.0.0"
+      })
     end
 
     context "with no blocking dependencies" do

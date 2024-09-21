@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "cgi"
@@ -30,6 +30,7 @@ module Dependabot
       # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
 
@@ -42,6 +43,7 @@ module Dependabot
 
       private
 
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
           modules = parsed_file(file).fetch("module", {})
@@ -50,9 +52,9 @@ module Dependabot
 
             source = source_from(details)
             # Cannot update local path modules, skip
-            next if source[:type] == "path"
+            next if source && source[:type] == "path"
 
-            dependency_set << build_terraform_dependency(file, name, source, details)
+            dependency_set << build_terraform_dependency(file, name, T.must(source), details)
           end
 
           parsed_file(file).fetch("terraform", []).each do |terraform|
@@ -66,6 +68,7 @@ module Dependabot
         end
       end
 
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
           modules = parsed_file(file).fetch("terraform", [])
@@ -81,6 +84,15 @@ module Dependabot
         end
       end
 
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          name: String,
+          source: T::Hash[Symbol, T.untyped],
+          details: T.untyped
+        )
+          .returns(Dependabot::Dependency)
+      end
       def build_terraform_dependency(file, name, source, details)
         # dep_name should be unique for a source, using the info derived from
         # the source or the source name provides this uniqueness
@@ -109,17 +121,25 @@ module Dependabot
         )
       end
 
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          name: String,
+          details: T.any(String, T::Hash[String, T.untyped])
+        )
+          .returns(Dependabot::Dependency)
+      end
       def build_provider_dependency(file, name, details = {})
         deprecated_provider_error(file) if deprecated_provider?(details)
 
-        source_address = details.fetch("source", nil)
+        source_address = T.cast(details, T::Hash[String, T.untyped]).fetch("source", nil)
         version_req = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
         dependency_name = source_address ? "#{namespace}/#{name}" : name
 
         Dependency.new(
-          name: dependency_name,
-          version: determine_version_for(hostname, namespace, name, version_req),
+          name: T.must(dependency_name),
+          version: determine_version_for(T.must(hostname), T.must(namespace), T.must(name), version_req),
           package_manager: "terraform",
           requirements: [
             requirement: version_req,
@@ -134,6 +154,7 @@ module Dependabot
         )
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.noreturn) }
       def deprecated_provider_error(file)
         raise Dependabot::DependencyFileNotParseable.new(
           file.path,
@@ -143,18 +164,20 @@ module Dependabot
         )
       end
 
+      sig { params(details: Object).returns(T::Boolean) }
       def deprecated_provider?(details)
         # The old syntax for terraform providers v0.12- looked like
         # "tls ~> 2.1" which gets parsed as a string instead of a hash
         details.is_a?(String)
       end
 
+      sig { params(file: Dependabot::DependencyFile, source: T::Hash[Symbol, String]).returns(Dependabot::Dependency) }
       def build_terragrunt_dependency(file, source)
         dep_name = Source.from_url(source[:url]) ? T.must(Source.from_url(source[:url])).repo : source[:url]
         version = version_from_ref(source[:ref])
 
         Dependency.new(
-          name: dep_name,
+          name: T.must(dep_name),
           version: version,
           package_manager: "terraform",
           requirements: [
@@ -167,6 +190,7 @@ module Dependabot
       end
 
       # Full docs at https://www.terraform.io/docs/modules/sources.html
+      sig { params(details_hash: T::Hash[String, String]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
         bare_source = RegistryClient.get_proxied_source(raw_source)
@@ -183,10 +207,11 @@ module Dependabot
             return nil
           end
 
-        source_details[:proxy_url] = raw_source if raw_source != bare_source
+        T.must(source_details)[:proxy_url] = raw_source if raw_source != bare_source
         source_details
       end
 
+      sig { params(source_address: T.nilable(String), name: String).returns(T::Array[String]) }
       def provider_source_from(source_address, name)
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         matches = {} if matches.nil?
@@ -198,6 +223,7 @@ module Dependabot
         ]
       end
 
+      sig { params(source_string: T.untyped).returns(T::Hash[Symbol, String]) }
       def registry_source_details_from(source_string)
         parts = source_string.split("//").first.split("/")
 
@@ -219,6 +245,7 @@ module Dependabot
         end
       end
 
+      sig { params(name: String, source: T::Hash[Symbol, T.untyped]).returns(String) }
       def git_dependency_name(name, source)
         git_source = Source.from_url(source[:url])
         if git_source && source[:ref]
@@ -233,13 +260,14 @@ module Dependabot
         end
       end
 
+      sig { params(source_string: String).returns(T::Hash[Symbol, T.nilable(String)]) }
       def git_source_details_from(source_string)
         git_url = source_string.strip.gsub(/^git::/, "")
         git_url = "https://" + git_url unless git_url.start_with?("git@") || git_url.include?("://")
 
         bare_uri =
           if git_url.include?("git@")
-            git_url.split("git@").last.sub(":", "/")
+            T.must(git_url.split("git@").last).sub(":", "/")
           else
             git_url.sub(%r{.*?://}, "")
           end
@@ -255,14 +283,16 @@ module Dependabot
         }
       end
 
+      sig { params(ref: T.nilable(String)).returns(T.nilable(String)) }
       def version_from_ref(ref)
         version_regex = GitCommitChecker::VERSION_REGEX
         return unless ref&.match?(version_regex)
 
-        ref.match(version_regex).named_captures.fetch("version")
+        ref.match(version_regex)&.named_captures&.fetch("version")
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
         return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
@@ -272,11 +302,11 @@ module Dependabot
         return :mercurial if source_string.start_with?("hg::")
         return :s3 if source_string.start_with?("s3::")
 
-        raise "Unknown src: #{source_string}" if source_string.split("/").first.include?("::")
+        raise "Unknown src: #{source_string}" if source_string.split("/").first&.include?("::")
 
         return :registry unless source_string.start_with?("http")
 
-        path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
+        path_uri = URI.parse(T.must(source_string.split(%r{(?<!:)//}).first))
         query_uri = URI.parse(source_string)
         return :http_archive if path_uri.path.end_with?(*RegistryClient::ARCHIVE_EXTENSIONS)
         return :http_archive if query_uri.query&.include?("archive=")
@@ -307,8 +337,9 @@ module Dependabot
       #     }
       #   ],
       # }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
       def parsed_file(file)
-        @parsed_buildfile ||= {}
+        @parsed_buildfile ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
         @parsed_buildfile[file.name] ||= SharedHelpers.in_a_temporary_directory do
           File.write("tmp.tf", file.content)
 
@@ -335,27 +366,40 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable.new(file.path, msg)
       end
 
+      sig { returns(String) }
       def terraform_parser_path
         helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
         Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
       end
 
+      sig { returns(String) }
       def terraform_hcl2_parser_path
         helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
         Pathname.new(File.join(helper_bin_dir, "hcl2json")).cleanpath.to_path
       end
 
+      sig { returns(String) }
       def native_helpers_root
         default_path = File.join(__dir__, "../../../helpers/install-dir")
         ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
       end
 
+      sig { override.void }
       def check_required_files
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
       end
 
+      sig do
+        params(
+          hostname: String,
+          namespace: String,
+          name: String,
+          constraint: T.nilable(String)
+        )
+          .returns(T.nilable(String))
+      end
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
@@ -363,14 +407,17 @@ module Dependabot
           .dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
       end
 
+      sig { returns(T::Hash[String, T.untyped]) }
       def lockfile_content
-        @lockfile_content ||=
+        @lockfile_content ||= T.let(
           begin
             lockfile = dependency_files.find do |file|
               file.name == ".terraform.lock.hcl"
             end
             lockfile ? parsed_file(lockfile) : {}
-          end
+          end,
+          T.nilable(T::Hash[String, T.untyped])
+        )
       end
     end
   end

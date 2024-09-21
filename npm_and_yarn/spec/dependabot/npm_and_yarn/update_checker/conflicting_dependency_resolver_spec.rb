@@ -43,16 +43,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       let(:dependency_files) { project_dependency_files("npm6/subdependency_out_of_range_gt") }
 
       it "returns the right array of blocking dependencies" do
-        expect(conflicting_dependencies).to match_array(
-          [
-            {
-              "explanation" => "objnest@4.1.2 requires abind@^1.0.0",
-              "name" => "objnest",
-              "version" => "4.1.2",
-              "requirement" => "^1.0.0"
-            }
-          ]
-        )
+        expect(conflicting_dependencies).to contain_exactly({
+          "explanation" => "objnest@4.1.2 requires abind@^1.0.0",
+          "name" => "objnest",
+          "version" => "4.1.2",
+          "requirement" => "^1.0.0"
+        })
       end
 
       context "with no blocking dependencies" do
@@ -68,16 +64,12 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::ConflictingDependencyResol
       let(:dependency_files) { project_dependency_files("yarn/subdependency_out_of_range_gt") }
 
       it "returns the right array of blocking dependencies" do
-        expect(conflicting_dependencies).to match_array(
-          [
-            {
-              "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
-              "name" => "objnest",
-              "requirement" => "^1.0.0",
-              "version" => "4.1.4"
-            }
-          ]
-        )
+        expect(conflicting_dependencies).to contain_exactly({
+          "explanation" => "objnest@4.1.4 requires abind@^1.0.0",
+          "name" => "objnest",
+          "requirement" => "^1.0.0",
+          "version" => "4.1.4"
+        })
       end
     end
   end

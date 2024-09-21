@@ -41,6 +41,7 @@ deps_shared_with_common = %w(
   rubocop-sorbet
   simplecov
   stackprof
+  strscan
   turbo_tests
   vcr
   webmock

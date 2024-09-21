@@ -16,11 +16,13 @@ require "dependabot/errors"
 module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
       require "dependabot/bundler/file_parser/gemspec_declaration_finder"
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
         dependency_set += gemfile_dependencies
@@ -28,6 +30,11 @@ module Dependabot
         dependency_set += lockfile_dependencies
         check_external_code(dependency_set.dependencies)
         dependency_set.dependencies
+      end
+
+      sig { returns(PackageManagerBase) }
+      def package_manager
+        PackageManager.new(bundler_version)
       end
 
       private

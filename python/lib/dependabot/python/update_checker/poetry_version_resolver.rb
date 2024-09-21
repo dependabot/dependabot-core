@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -23,6 +23,9 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+        extend T::Sig
+        extend T::Helpers
+
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (Failed to checkout
           (?<tag>.+?)
@@ -38,16 +41,23 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
+
         attr_reader :dependency
         attr_reader :dependency_files
         attr_reader :credentials
         attr_reader :repo_contents_path
+
+        sig { returns(Dependabot::Python::PoetryErrorHandler) }
+        attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
+          @error_handler = PoetryErrorHandler.new(dependencies: dependency,
+                                                  dependency_files: dependency_files)
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -113,12 +123,15 @@ module Dependabot
           raise "No version in lockfile!"
         end
 
+        # rubocop:disable Metrics/AbcSize
         def handle_poetry_errors(error)
+          error_handler.handle_poetry_error(error)
+
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
             match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = if (url = match.named_captures.fetch("url"))
-                     File.basename(URI.parse(url).path)
+                     File.basename(T.must(URI.parse(url).path))
                    else
                      message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
                             .named_captures.fetch("name")
@@ -146,6 +159,7 @@ module Dependabot
           # change then we want to hear about it
           raise
         end
+        # rubocop:enable Metrics/AbcSize
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
@@ -317,6 +331,52 @@ module Dependabot
 
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+      end
+    end
+
+    class PoetryErrorHandler < UpdateChecker
+      extend T::Sig
+
+      # if a valid config value is not found in project.toml file
+      INVALID_CONFIGURATION = /The Poetry configuration is invalid:(?<config>.*)/
+
+      # if .toml has incorrect version specification i.e. <0.2.0app
+      INVALID_VERSION = /Could not parse version constraint: (?<ver>.*)/
+
+      # dependency source link not accessible
+      INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
+
+      sig do
+        params(
+          dependencies: Dependabot::Dependency,
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(Dependabot::Dependency) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      sig { params(error: Exception).void }
+      def handle_poetry_error(error)
+        Dependabot.logger.warn(error.message)
+
+        if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
+            error.message.match(INVALID_CONFIGURATION) || error.message.match(INVALID_VERSION) ||
+            error.message.match(INVALID_LINK))
+
+          raise DependencyFileNotResolvable, msg
         end
       end
     end

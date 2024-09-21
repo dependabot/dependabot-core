@@ -12,7 +12,7 @@ RSpec.describe namespace::CliParser do
     Dependabot::Elm::Version.new(version_string)
   end
   describe "#decode_install_preview" do
-    subject { described_class.decode_install_preview(output) }
+    subject(:decode_install_preview) { described_class.decode_install_preview(output) }
 
     context "when a first install is needed" do
       let(:output) do
@@ -32,7 +32,7 @@ Do you approve of this plan? [Y/n]
       end
 
       it do
-        is_expected.to include("rtfeldman/elm-css" => elm_version("13.1.1"))
+        expect(decode_install_preview).to include("rtfeldman/elm-css" => elm_version("13.1.1"))
       end
     end
 
@@ -57,7 +57,7 @@ Do you approve of this plan? [Y/n]
       end
 
       it do
-        is_expected.to include("rtfeldman/elm-css" => elm_version("14.0.0"))
+        expect(decode_install_preview).to include("rtfeldman/elm-css" => elm_version("14.0.0"))
       end
     end
   end
