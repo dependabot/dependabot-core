@@ -213,6 +213,7 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
@@ -226,6 +227,7 @@ public partial class UpdateWorkerTests
                     (Path: "src/Project/Project.csproj", Content: """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
