@@ -134,7 +134,13 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Passed!")
+        # In CI when the terminal logger is disabled by default in .NET 9 there is no
+        # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
+        # Instead we have to rely on the cmd invocation failing with a non-zero exit code
+        # if any tests fail. Locally when the terminal logger is enabled we can check
+        # there is an absence of any evidence of test failures in the output.
+        # expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).not_to include("Build failed")
       end
     end
 
@@ -145,7 +151,13 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
 
       it "contains the expected output" do
-        expect(dotnet_test).to include("Passed!")
+        # In CI when the terminal logger is disabled by default in .NET 9 there is no
+        # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
+        # Instead we have to rely on the cmd invocation failing with a non-zero exit code
+        # if any tests fail. Locally when the terminal logger is enabled we can check
+        # there is an absence of any evidence of test failures in the output.
+        # expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).not_to include("Build failed")
       end
     end
   end
