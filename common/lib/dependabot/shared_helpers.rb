@@ -426,6 +426,7 @@ module Dependabot
     end
     def self.run_shell_command(command,
                                allow_unsafe_shell_command: false,
+                               cwd: nil,
                                env: {},
                                fingerprint: nil,
                                stderr_to_stdout: true)
@@ -434,10 +435,13 @@ module Dependabot
 
       puts cmd if ENV["DEBUG_HELPERS"] == "true"
 
+      opts = {}
+      opts[:chdir] = cwd if cwd
+
       if stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd)
+        stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
       end
 
       time_taken = Time.now - start

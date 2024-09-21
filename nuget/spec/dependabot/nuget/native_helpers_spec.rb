@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
 
   describe "#native_csharp_tests" do
     subject(:dotnet_test) do
-      Dependabot::SharedHelpers.run_shell_command(command)
+      Dependabot::SharedHelpers.run_shell_command(command, cwd: cwd)
     end
 
     let(:command) do
@@ -119,9 +119,12 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "test",
         "--configuration",
         "Release",
-        project_path,
-        "--tl:on"
+        project_path
       ].join(" ")
+    end
+
+    let(:cwd) do
+      File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater")
     end
 
     context "when the output is from `dotnet test NuGetUpdater.Core.Test` output" do
