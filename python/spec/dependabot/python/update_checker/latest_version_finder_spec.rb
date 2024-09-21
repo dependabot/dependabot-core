@@ -330,6 +330,26 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
               end
           end
         end
+
+        context "when the url is invalid (env)" do
+          let(:requirements_fixture_name) { "custom_index_invalid_env.txt" }
+
+          it "raises a helpful error" do
+            error_class = Dependabot::DependencyFileNotResolvable
+            expect { latest_version }
+              .to raise_error(error_class) do |error|
+                expect(error.message)
+                  .to eq("Invalid URL: $PIP_INDEX_URL/")
+              end
+          end
+        end
+
+        context "when the url is valid" do
+          let(:requirements_fixture_name) { "custom_index_valid.txt" }
+          let(:dependency_files) { [requirements_file] }
+
+          it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+        end
       end
 
       context "when setting in a Pipfile" do

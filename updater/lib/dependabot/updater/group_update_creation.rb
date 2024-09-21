@@ -241,6 +241,9 @@ module Dependabot
           return []
         end
 
+        # Raise an error if the package manager version is unsupported
+        dependency_snapshot.package_manager&.raise_if_unsupported!
+
         checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )

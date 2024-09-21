@@ -165,6 +165,9 @@ module Dependabot
       REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
     }.freeze, T::Hash[String, Regexp])
 
+    # registry returns malformed response
+    REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
+
     class Utils
       extend T::Sig
 
@@ -576,6 +579,15 @@ module Dependabot
         patterns: [INTERNAL_SERVER_ERROR],
         handler: lambda { |message, _error, _params|
           msg = message.match(INTERNAL_SERVER_ERROR)
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [REGISTRY_NOT_REACHABLE],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(REGISTRY_NOT_REACHABLE)
           Dependabot::DependencyFileNotResolvable.new(msg)
         },
         in_usage: false,
