@@ -419,6 +419,7 @@ module Dependabot
       params(
         command: String,
         allow_unsafe_shell_command: T::Boolean,
+        cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean
