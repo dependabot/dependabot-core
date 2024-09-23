@@ -5,12 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  '@private-pkg/exp-npm-2':
+  'exp-npm-2':
     specifier: 1.0.3
     version: 1.0.3
 
 packages:
 
-  /@private-pkg/exp-npm-2@1.0.3:
+  /exp-npm-2@1.0.3:
     resolution: {integrity: sha512-5Kt5AHgt2qE9YFlRnqizh36k1lcuTdGQP3UsxJgxVUo1Uxh4Z7vDgr7wDBm2hp4PjZ6soE4zupSyfaCbYguQqg==, tarball: https://npm.pkg.github.com/download/@dsp-testing/inner-source-top-secret-npm-2/1.0.3/0a19a66110450848d0a88b1be211cadae740a86f0c1c1658ed89c9f391b8f605}
     dev: false
