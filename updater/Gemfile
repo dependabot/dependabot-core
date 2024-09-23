@@ -24,7 +24,7 @@ gem "dependabot-swift", path: "../swift"
 gem "dependabot-terraform", path: "../terraform"
 
 gem "http", "~> 5.1"
-gem "octokit", "6.1.1"
+gem "octokit", "7.2.0"
 gem "opentelemetry-exporter-otlp", "~> 0.26"
 gem "opentelemetry-instrumentation-excon", "~> 0.22"
 gem "opentelemetry-instrumentation-faraday", "~> 0.23"
