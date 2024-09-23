@@ -227,14 +227,6 @@ module Dependabot
           "error-message": error.message
         }
       }
-    when Dependabot::DependencyFileNotParseable
-      {
-        "error-type": "dependency_file_not_parseable",
-        "error-detail": {
-          message: error.message,
-          "file-path": error.file_path
-        }
-      }
     when Dependabot::OutOfDisk
       {
         "error-type": "out_of_disk",
