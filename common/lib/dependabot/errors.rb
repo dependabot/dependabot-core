@@ -161,7 +161,6 @@ module Dependabot
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
-  # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
@@ -282,7 +281,6 @@ module Dependabot
   end
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
-  # rubocop:enable Metrics/AbcSize
   # rubocop:enable Lint/RedundantCopDisableDirective
 
   class DependabotError < StandardError
