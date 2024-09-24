@@ -144,6 +144,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a private registry we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access_with_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "when there is a private registry we don't have access to and no package name is mentioned" do
+      let(:dependency_name) { "rollup" }
+      let(:version) { "3.29.5" }
+      let(:previous_version) { "^2.79.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.29.5",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.79.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:project_name) { "pnpm/private_dep_access_with_no_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound)
+      end
+    end
+
     context "when there is a unsupported engine response (pnpm) from registry" do
       let(:dependency_name) { "eslint" }
       let(:version) { "9.9.0" }

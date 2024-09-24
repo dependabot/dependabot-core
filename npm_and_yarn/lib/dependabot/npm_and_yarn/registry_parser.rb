@@ -46,7 +46,10 @@ module Dependabot
                    end
 
         package_name = url_base.gsub("%2F", "/").match(%r{@.*/})
-        "#{T.must(package_name)}#{T.must(url_base.gsub('%2F', '/').split('/').last)}"
+
+        return T.must(url_base.gsub("%2F", "/").split("/").last) unless package_name
+
+        "#{package_name}#{T.must(url_base.gsub('%2F', '/').split('/').last)}"
       end
 
       private
