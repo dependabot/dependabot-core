@@ -33,9 +33,6 @@ module Dependabot
         '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig { returns(String) }
-      attr_accessor :version_string
-
       def self.correct?(version)
         return false if version.nil?
 
@@ -94,14 +91,11 @@ module Dependabot
         0
       end
 
-      # Copied from common/config/ignore_condition.rb
-      # Not completely correct as we only split versions by . but
-      # this is what we currently have in prod and it will be addressed when I merge
-      # the new maven version specification
-      sig { returns(T::Array[String]) }
+      sig { override.returns(T::Array[String]) }
       def ignored_patch_versions
         parts = to_semver.split(".")
         version_parts = parts.fill("0", parts.length...2)
+        # the a0 is so we can get the next earliest prerelease patch version
         upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + ["a0"]
         lower_bound = "> #{to_semver}"
         upper_bound = "< #{upper_parts.join('.')}"
@@ -109,11 +103,7 @@ module Dependabot
         ["#{lower_bound}, #{upper_bound}"]
       end
 
-      # Copied from common/config/ignore_condition.rb
-      # Not completely correct as we only split versions by . but
-      # this is what we currently have in prod and it will be addressed when I merge
-      # the new maven version specification
-      sig { returns(T::Array[String]) }
+      sig { override.returns(T::Array[String]) }
       def ignored_minor_versions
         parts = to_semver.split(".")
         version_parts = parts.fill("0", parts.length...2)
@@ -125,14 +115,10 @@ module Dependabot
         ["#{lower_bound}, #{upper_bound}"]
       end
 
-      # Copied from common/config/ignore_condition.rb
-      # Not completely correct as we only split versions by . but
-      # this is what we currently have in prod and it will be addressed when I merge
-      # the new maven version specification
-      sig { returns(T::Array[String]) }
+      sig { override.returns(T::Array[String]) }
       def ignored_major_versions
         version_parts = to_semver.split(".")
-        lower_parts = [version_parts[0].to_i + 1] + ["a0"] # earliest major version prerelease
+        lower_parts = [version_parts[0].to_i + 1] + ["a0"] # earliest next major version prerelease
         lower_bound = ">= #{lower_parts.join('.')}"
 
         [lower_bound]
