@@ -62,11 +62,11 @@ module Dependabot
         transformed_update_types.flat_map do |t|
           case t
           when PATCH_VERSION_TYPE
-            ignore_patch(semver)
+            version.respond_to?(:ignored_patch_versions) ? version.ignored_patch_versions : ignore_patch(semver)
           when MINOR_VERSION_TYPE
-            ignore_minor(semver)
+            version.respond_to?(:ignored_minor_versions) ? version.ignored_minor_versions : ignore_minor(semver)
           when MAJOR_VERSION_TYPE
-            ignore_major(semver)
+            version.respond_to?(:ignored_major_versions) ? version.ignored_major_versions : ignore_major(semver)
           else
             []
           end

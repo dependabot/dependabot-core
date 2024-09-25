@@ -383,6 +383,30 @@ RSpec.describe Dependabot::Maven::Version do
     end
   end
 
+  describe "#ignored_major_versions" do
+    subject(:ignored_versions) { version.ignored_major_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 2.a0"]) }
+  end
+
+  describe "#ignored_minor_versions" do
+    subject(:ignored_versions) { version.ignored_minor_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 1.3.a0, < 2.a0"]) }
+  end
+
+  describe "#ignored_patch_versions" do
+    subject(:ignored_versions) { version.ignored_patch_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq(["> #{version_string}, < 1.3.a0"]) }
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
 
