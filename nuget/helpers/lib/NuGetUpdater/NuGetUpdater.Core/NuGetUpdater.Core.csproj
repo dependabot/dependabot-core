@@ -21,7 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="NuGetUpdater.Core.Test"/>
+    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test" />
+    <InternalsVisibleTo Include="NuGetUpdater.Core.Test" />
   </ItemGroup>
 
 </Project>
