@@ -12,7 +12,7 @@ public static class ProcessEx
         var redirectInitiated = new ManualResetEventSlim();
         var process = new Process
         {
-            StartInfo = new ProcessStartInfo(fileName, arguments ?? Array.Empty<string>())
+            StartInfo = new ProcessStartInfo(fileName, arguments ?? [])
             {
                 UseShellExecute = false, // required to redirect output
                 RedirectStandardOutput = true,
