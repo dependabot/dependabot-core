@@ -16,6 +16,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       repo_contents_path: nil
     )
   end
+
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -368,6 +369,72 @@ RSpec.describe namespace::PoetryVersionResolver do
               expect(error.message)
                 .to include("depends on black (^18), version solving failed")
             end
+        end
+      end
+    end
+  end
+
+  describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
+    subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
+
+    let(:error_handler) do
+      Dependabot::Python::PoetryErrorHandler.new(
+        dependencies: dependency,
+        dependency_files: dependency_files
+      )
+    end
+    let(:exception) { Exception.new(response) }
+
+    context "with incompatible constraints mentioned in requirements" do
+      let(:response) { "Incompatible constraints in requirements of histolab (0.7.0):" }
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Incompatible constraints in requirements of histolab (0.7.0):")
+        end
+      end
+    end
+
+    context "with invalid configuration in pyproject.toml file" do
+      let(:response) do
+        "The Poetry configuration is invalid:
+      - data.group.dev.dependencies.h5 must be valid exactly by one definition (0 matches found)"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("The Poetry configuration is invalid")
+        end
+      end
+    end
+
+    context "with invalid version for dependency mentioned in pyproject.toml file" do
+      let(:response) do
+        "Resolving dependencies...
+        Could not parse version constraint: <0.2.0app"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Could not parse version constraint: <0.2.0app")
+        end
+      end
+    end
+
+    context "with invalid dependency source link in pyproject.toml file" do
+      let(:response) do
+        "Updating dependencies
+        Resolving dependencies...
+        No valid distribution links found for package: \"llama-cpp-python\" version: \"0.2.82\""
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("No valid distribution links found for package: \"llama-cpp-python\" version: \"0.2.82\"")
         end
       end
     end

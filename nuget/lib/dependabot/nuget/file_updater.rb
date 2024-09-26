@@ -19,20 +19,39 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          %r{^[^/]*\.([a-z]{2})?proj$},
-          /^packages\.config$/i,
-          /^global\.json$/i,
-          /^dotnet-tools\.json$/i,
-          /^Directory\.Build\.props$/i,
-          /^Directory\.Build\.targets$/i,
-          /^Packages\.props$/i
+          /.*\.([a-z]{2})?proj$/, # Matches files with any extension like .csproj, .vbproj, etc., in any directory
+          /packages\.config$/i,           # Matches packages.config in any directory
+          /app\.config$/i,                # Matches app.config in any directory
+          /web\.config$/i,                # Matches web.config in any directory
+          /global\.json$/i,               # Matches global.json in any directory
+          /dotnet-tools\.json$/i,         # Matches dotnet-tools.json in any directory
+          /Directory\.Build\.props$/i,    # Matches Directory.Build.props in any directory
+          /Directory\.Build\.targets$/i,  # Matches Directory.Build.targets in any directory
+          /Directory\.targets$/i,         # Matches Directory.targets in any directory or root directory
+          /Packages\.props$/i, # Matches Packages.props in any directory
+          /.*\.nuspec$/, # Matches any .nuspec files in any directory
+          %r{^\.config/dotnet-tools\.json$} # Matches .config/dotnet-tools.json in only root directory
         ]
+      end
+
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def self.differs_in_more_than_blank_lines?(original_content, updated_content)
+        # Compare the line counts of the original and updated content, but ignore lines only containing white-space.
+        # This prevents false positives when there are trailing empty lines in the original content, for example.
+        original_lines = (original_content&.lines || []).map(&:strip).reject(&:empty?)
+        updated_lines = updated_content.lines.map(&:strip).reject(&:empty?)
+
+        # if the line count differs, then something changed
+        return true unless original_lines.count == updated_lines.count
+
+        # check each line pair, ignoring blanks (filtered above)
+        original_lines.zip(updated_lines).any? { |pair| pair[0] != pair[1] }
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = "/"
-        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+        all_updated_files = SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
           end
@@ -43,7 +62,7 @@ module Dependabot
             normalized_content = normalize_content(f, updated_content)
             next if normalized_content == f.content
 
-            next if only_deleted_lines?(f.content, normalized_content)
+            next unless FileUpdater.differs_in_more_than_blank_lines?(f.content, normalized_content)
 
             puts "The contents of file [#{f.name}] were updated."
 
@@ -51,6 +70,10 @@ module Dependabot
           end
           updated_files
         end
+
+        raise UpdateNotPossible, dependencies.map(&:name) if all_updated_files.empty?
+
+        all_updated_files
       end
 
       private
@@ -214,14 +237,6 @@ module Dependabot
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
-      end
-
-      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
-      def only_deleted_lines?(original_content, updated_content)
-        original_lines = original_content&.lines || []
-        updated_lines = updated_content.lines
-
-        original_lines.count > updated_lines.count
       end
     end
   end

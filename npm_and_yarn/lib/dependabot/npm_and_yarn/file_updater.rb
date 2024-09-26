@@ -33,11 +33,13 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          /^package\.json$/,
-          /^package-lock\.json$/,
-          /^npm-shrinkwrap\.json$/,
-          /^yarn\.lock$/,
-          /^pnpm-lock\.yaml$/
+          %r{^(?:.*/)?package\.json$},
+          %r{^(?:.*/)?package-lock\.json$},
+          %r{^(?:.*/)?npm-shrinkwrap\.json$},
+          %r{^(?:.*/)?yarn\.lock$},
+          %r{^(?:.*/)?pnpm-lock\.yaml$},
+          %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
+          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
       end
 
@@ -139,7 +141,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No package.json!" unless get_original_file("package.json")
+        raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
       sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }

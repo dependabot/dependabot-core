@@ -149,42 +149,6 @@ internal static class BindingRedirectManager
             return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
                    || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
         }
-
-        static string GetConfigFileName(XmlDocumentSyntax document)
-        {
-            var guidValue = document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "ProjectGuid"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-            return guidValue switch
-            {
-                "{E24C65DC-7377-472B-9ABA-BC803B73C61A}" or "{349C5851-65DF-11DA-9384-00065B846F21}" => "Web.config",
-                _ => "App.config"
-            };
-        }
-
-        static string GenerateDefaultAppConfig(XmlDocumentSyntax document)
-        {
-            var frameworkVersion = GetFrameworkVersion(document);
-            return $"""
-                <?xml version="1.0" encoding="utf-8" ?>
-                <configuration>
-                    <startup>
-                        <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
-                    </startup>
-                </configuration>
-                """;
-        }
-
-        static string? GetFrameworkVersion(XmlDocumentSyntax document)
-        {
-            return document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "TargetFrameworkVersion"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-        }
     }
 
     private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<Runtime_AssemblyBinding> bindingRedirects)
@@ -213,10 +177,24 @@ internal static class BindingRedirectManager
 
         foreach (var bindingRedirect in bindingRedirects)
         {
-            // Look to see if we already have this in the list of bindings already in config.
-            if (currentBindings.TryGetValue((bindingRedirect.Name, bindingRedirect.PublicKeyToken), out var existingBinding))
+            // If the binding redirect already exists in config, update it. Otherwise, add it.
+            var bindingAssemblyIdentity = new AssemblyIdentity(bindingRedirect.Name, bindingRedirect.PublicKeyToken);
+            if (currentBindings.Contains(bindingAssemblyIdentity))
             {
-                UpdateBindingRedirectElement(existingBinding, bindingRedirect);
+                // Check if there are multiple bindings in config for this assembly and remove all but the first one.
+                // Normally there should only be one binding per assembly identity unless the config is malformed, which we'll fix here like NuGet.exe would.
+                var existingBindings = currentBindings[bindingAssemblyIdentity];
+                if (existingBindings.Any())
+                {
+                    // Remove all but the first element
+                    foreach (var bindingElement in existingBindings.Skip(1))
+                    {
+                        RemoveElement(bindingElement);
+                    }
+
+                    // Update the first one with the new binding
+                    UpdateBindingRedirectElement(existingBindings.First(), bindingRedirect);
+                }
             }
             else
             {
@@ -228,7 +206,10 @@ internal static class BindingRedirectManager
             }
         }
 
-        return document.ToString();
+        return string.Concat(
+            document.Declaration?.ToString() ?? String.Empty, // Ensure the <?xml> declaration node is preserved, if present
+            document.ToString()
+        );
 
         static XDocument GetConfiguration(string configFileContent)
         {
@@ -278,7 +259,7 @@ internal static class BindingRedirectManager
             }
         }
 
-        static Dictionary<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
+        static ILookup<AssemblyIdentity, XElement> GetAssemblyBindings(XElement runtime)
         {
             var dependencyAssemblyElements = runtime.Elements(AssemblyBindingName)
                 .Elements(DependentAssemblyName);
@@ -291,7 +272,12 @@ internal static class BindingRedirectManager
             });
 
             // Return a mapping from binding to element
-            return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken), p => p.Element);
+            // It is possible that multiple elements exist for the same assembly identity, so use a lookup (1:*) instead of a dictionary (1:1) 
+            return assemblyElementPairs.ToLookup(
+                p => new AssemblyIdentity(p.Binding.Name, p.Binding.PublicKeyToken),
+                p => p.Element,
+                new AssemblyIdentityIgnoreCaseComparer()
+            );
         }
 
         static XElement GetAssemblyBindingElement(XElement runtime)
@@ -308,5 +294,22 @@ internal static class BindingRedirectManager
 
             return assemblyBinding;
         }
+    }
+
+    internal sealed record AssemblyIdentity(string Name, string PublicKeyToken);
+
+    // Case-insensitive comparer. This helps avoid creating duplicate binding redirects when there is a case form mismatch between assembly identities.
+    // Especially important for PublicKeyToken which is typically lowercase (using NuGet.exe), but can also be uppercase when using other tools (e.g. Visual Studio auto-resolve assembly conflicts feature).
+    internal sealed class AssemblyIdentityIgnoreCaseComparer : IEqualityComparer<AssemblyIdentity>
+    {
+        public bool Equals(AssemblyIdentity? x, AssemblyIdentity? y) =>
+            string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x?.PublicKeyToken ?? "null", y?.PublicKeyToken ?? "null", StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(AssemblyIdentity obj) =>
+            HashCode.Combine(
+                obj.Name?.ToLowerInvariant(),
+                obj.PublicKeyToken?.ToLowerInvariant() ?? "null"
+            );
     }
 }

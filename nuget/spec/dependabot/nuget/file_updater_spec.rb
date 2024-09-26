@@ -110,6 +110,67 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       end
   end
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "project.csproj",
+          "library.fsproj",
+          "app.vbproj",
+          "packages.config",
+          "app.config",
+          "web.config",
+          "global.json",
+          "dotnet-tools.json",
+          "Directory.Build.props",
+          "Source/Directory.Build.props",
+          "Directory.targets",
+          "src/Directory.targets",
+          "Directory.Build.targets",
+          "Directory.Packages.props",
+          "Source/Directory.Packages.props",
+          "Packages.props",
+          "Proj1/Proj1/Proj1.csproj",
+          ".config/dotnet-tools.json",
+          ".nuspec",
+          "subdirectory/.nuspec",
+          "Service/Contract/packages.config"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json",
+          "Gemfile",
+          "Gemfile.lock",
+          "NuGet.Config",
+          "nuget.config",
+          "Proj1/Proj1/NuGet.Config",
+          "Proj1/Proj1/test/nuGet.config"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     before do
       intercept_native_tools(
@@ -161,20 +222,25 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           )
         end
       end
+    end
 
-      context "when the file has only deleted lines" do
-        before do
-          allow(File).to receive(:read)
-            .and_call_original
-          allow(File).to receive(:read)
-            .with("#{repo_contents_path}/Proj1/Proj1/Proj1.csproj")
-            .and_return("")
-        end
+    context "when no update is performed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "This.Dependency.Does.Not.Exist",
+          version: "4.5.6",
+          previous_version: "1.2.3",
+          requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "4.5.6", groups: [], source: nil }],
+          previous_requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "1.2.3", groups: [], source: nil }],
+          package_manager: "nuget"
+        )
+      end
 
-        it "does not update the project" do
-          run_update_test do |updater|
-            expect(updater.updated_dependency_files.map(&:name)).to be_empty
-          end
+      it "raises the expected error" do
+        run_update_test do |updater|
+          expect do
+            updater.updated_dependency_files
+          end.to raise_error(Dependabot::UpdateNotPossible)
         end
       end
     end
@@ -260,6 +326,171 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           }
         )
       end
+    end
+  end
+
+  describe "#differs_in_more_than_blank_lines?" do
+    subject(:result) { described_class.differs_in_more_than_blank_lines?(original_content, updated_content) }
+
+    context "when the original content is `nil` and updated is empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when the original content is `nil` and updated is non-empty" do
+      let(:original_content) { nil }
+      let(:updated_content) { "line1\nline2" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when there is a difference with no blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when there is a difference with blank lines" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a blank line was added" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a blank line was removed, but no other changes" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(false) }
+    end
+
+    context "when a line was removed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a blank line was removed and another was changed" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+          UPDATED-LINE-2
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when a line was added and blank lines are present" do
+      let(:original_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          original-line-3
+        TEXT
+      end
+      let(:updated_content) do
+        <<~TEXT
+          original-line-1
+
+          original-line-2
+          SOME-NEW-LINE
+          original-line-3
+        TEXT
+      end
+
+      it { is_expected.to be(true) }
+    end
+
+    context "when the only difference is a trailing newline" do
+      let(:original_content) { "line-1\nline-2\n" }
+      let(:updated_content) { "line-1\nline-2" }
+
+      it { is_expected.to be(false) }
     end
   end
 end

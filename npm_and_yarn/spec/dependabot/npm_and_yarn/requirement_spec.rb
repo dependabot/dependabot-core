@@ -26,11 +26,19 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
     end
 
     context "with a dist tag" do
-      let(:requirement_string) { "next" }
+      context "when it is supported tag" do
+        let(:requirement_string) { "next" }
 
-      it "raises a bad requirement error" do
-        expect { requirement }
-          .to raise_error(Gem::Requirement::BadRequirementError)
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is not supported tag or unknown versioning" do
+        let(:requirement_string) { "some_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
       end
     end
 
@@ -175,6 +183,32 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         let(:requirement_string) { "~> 0.5" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 0.5").to_s) }
+      end
+    end
+
+    context "with a dist tag" do
+      context "when it is valid requirement tag" do
+        let(:requirement_string) { "next" }
+
+        it { expect { requirement }.not_to raise_error }
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "++ 2.1.2" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
+      end
+
+      context "when it is illformed requirement" do
+        let(:requirement_string) { "unsupported_tag" }
+
+        it "raises a bad requirement error" do
+          expect { requirement }
+            .to raise_error(Gem::Requirement::BadRequirementError)
+        end
       end
     end
 

@@ -37,7 +37,8 @@ module Dependabot
       def self.updated_files_regex
         [
           /^go\.mod$/,
-          /^go\.sum$/
+          /^go\.sum$/,
+          %r{^vendor/.*}
         ]
       end
 

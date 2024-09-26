@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/version"
+require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
 
 module Dependabot
@@ -11,6 +12,8 @@ module Dependabot
 
       sig { params(json: T::Hash[String, T.untyped]).returns(DependencyAnalysis) }
       def self.from_json(json)
+        Dependabot::Nuget::NativeHelpers.ensure_no_errors(json)
+
         updated_version = T.let(json.fetch("UpdatedVersion"), String)
         can_update = T.let(json.fetch("CanUpdate"), T::Boolean)
         version_comes_from_multi_dependency_property = T.let(json.fetch("VersionComesFromMultiDependencyProperty"),

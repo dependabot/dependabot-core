@@ -37,15 +37,33 @@ internal record NuGetContext : IDisposable
             .Where(p => p.IsEnabled)
             .ToImmutableArray();
         Logger = logger ?? NullLogger.Instance;
-        TempPackageDirectory = Path.Combine(Path.GetTempPath(), ".dependabot", "packages");
+        TempPackageDirectory = Path.Combine(Path.GetTempPath(), $"dependabot-packages_{Guid.NewGuid():d}");
+        Directory.CreateDirectory(TempPackageDirectory);
     }
 
     public void Dispose()
     {
         SourceCacheContext.Dispose();
+        if (Directory.Exists(TempPackageDirectory))
+        {
+            try
+            {
+                Directory.Delete(TempPackageDirectory, recursive: true);
+            }
+            catch
+            {
+            }
+        }
     }
 
     private readonly Dictionary<PackageIdentity, string?> _packageInfoUrlCache = new();
+
+    public static string[] GetPackageSourceUrls(string currentDirectory)
+    {
+        using var context = new NuGetContext(currentDirectory);
+        var sourceUrls = context.PackageSources.Select(s => s.Source).ToArray();
+        return sourceUrls;
+    }
 
     public async Task<string?> GetPackageInfoUrlAsync(string packageId, string packageVersion, CancellationToken cancellationToken)
     {
@@ -86,15 +104,24 @@ internal record NuGetContext : IDisposable
                 continue;
             }
 
-            var existsInFeed = await feed.Exists(
-                packageIdentity,
-                includeUnlisted: false,
-                SourceCacheContext,
-                NullLogger.Instance,
-                cancellationToken);
-            if (!existsInFeed)
+            try
             {
-                message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
+                // a non-compliant v2 API returning 404 can cause this to throw
+                var existsInFeed = await feed.Exists(
+                    packageIdentity,
+                    includeUnlisted: false,
+                    SourceCacheContext,
+                    NullLogger.Instance,
+                    cancellationToken);
+                if (!existsInFeed)
+                {
+                    message.AppendLine($"    package {packageIdentity} does not exist in {source.Name}");
+                    continue;
+                }
+            }
+            catch (FatalProtocolException)
+            {
+                // if anything goes wrong here, the package source obviously doesn't contain the requested package
                 continue;
             }
 

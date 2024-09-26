@@ -18,7 +18,16 @@ module Dependabot
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
       def self.updated_files_regex
-        [/^build\.gradle(\.kts)?$/, %r{/build\.gradle(\.kts)?$}, %r{/gradle/libs\.versions\.toml$}]
+        [
+          # Matches build.gradle or build.gradle.kts in root directory
+          %r{(^|.*/)build\.gradle(\.kts)?$},
+          # Matches gradle/libs.versions.toml in root or any subdirectory
+          %r{(^|.*/)?gradle/libs\.versions\.toml$},
+          # Matches settings.gradle or settings.gradle.kts in root or any subdirectory
+          %r{(^|.*/)settings\.gradle(\.kts)?$},
+          # Matches dependencies.gradle in root or any subdirectory
+          %r{(^|.*/)dependencies\.gradle$}
+        ]
       end
 
       def updated_dependency_files
@@ -56,6 +65,7 @@ module Dependabot
 
       def update_buildfiles_for_dependency(buildfiles:, dependency:)
         files = buildfiles.dup
+
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
         reqs = dependency.requirements.zip(dependency.previous_requirements)
@@ -68,10 +78,12 @@ module Dependabot
 
           buildfile = files.find { |f| f.name == new_req.fetch(:file) }
 
-          # Exception raised to handle issue that arises when buildfiles function (see this file)
-          # removes the build file that contains the dependency itself. So no build file exists to
-          # update dependency, This behaviour is evident for extremely small number of users
-          # that have added separate repos as sub-modules in parent projects
+          # Currently, Dependabot assumes that Gradle projects using Gradle submodules are all in a single
+          # repo. However, some projects are actually using git submodule references for the Gradle submodules.
+          # When this happens, Dependabot's FileFetcher thinks the Gradle submodules are eligible for update,
+          # but then the FileUpdater filters out the git submodule reference from the build file. So we end up
+          # with no relevant build file, leaving us with no way to update that dependency.
+          # TODO: Figure out a way to actually navigate this rather than throwing an exception.
 
           raise DependencyFileNotResolvable, "No build file found to update the dependency" if buildfile.nil?
 

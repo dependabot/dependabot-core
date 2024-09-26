@@ -4,7 +4,7 @@ using NuGetUpdater.Core.Discover;
 
 namespace NuGetUpdater.Core.Test.Discover;
 
-public record ExpectedWorkspaceDiscoveryResult
+public record ExpectedWorkspaceDiscoveryResult : NativeResult
 {
     public required string Path { get; init; }
     public bool IsSuccess { get; init; } = true;

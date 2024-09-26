@@ -12,62 +12,9 @@ namespace NuGetUpdater.Core.Analyze;
 /// See Gem::Version for a description on how versions and requirements work
 /// together in RubyGems.
 /// </remarks>
-public class Requirement
+public abstract class Requirement
 {
-    private static readonly ImmutableDictionary<string, Func<NuGetVersion, NuGetVersion, bool>> Operators = new Dictionary<string, Func<NuGetVersion, NuGetVersion, bool>>()
-    {
-        ["="] = (v, r) => v == r,
-        ["!="] = (v, r) => v != r,
-        [">"] = (v, r) => v > r,
-        ["<"] = (v, r) => v < r,
-        [">="] = (v, r) => v >= r,
-        ["<="] = (v, r) => v <= r,
-        ["~>"] = (v, r) => v >= r && v.Version < Bump(r),
-    }.ToImmutableDictionary();
-
-    public static Requirement Parse(string requirement)
-    {
-        var splitIndex = requirement.LastIndexOfAny(['=', '>', '<']);
-
-        // Throw if the requirement is all operator and no version.
-        if (splitIndex == requirement.Length - 1)
-        {
-            throw new ArgumentException($"`{requirement}` is a invalid requirement string", nameof(requirement));
-        }
-
-        string[] parts = splitIndex == -1
-            ? [requirement.Trim()]
-            : [requirement[..(splitIndex + 1)].Trim(), requirement[(splitIndex + 1)..].Trim()];
-
-        var op = parts.Length == 1 ? "=" : parts[0];
-        var version = NuGetVersion.Parse(parts[^1]);
-
-        return new Requirement(op, version);
-    }
-
-    public string Operator { get; }
-    public NuGetVersion Version { get; }
-
-    public Requirement(string op, NuGetVersion version)
-    {
-        if (!Operators.ContainsKey(op))
-        {
-            throw new ArgumentException("Invalid operator", nameof(op));
-        }
-
-        Operator = op;
-        Version = version;
-    }
-
-    public override string ToString()
-    {
-        return $"{Operator} {Version}";
-    }
-
-    public bool IsSatisfiedBy(NuGetVersion version)
-    {
-        return Operators[Operator](version, Version);
-    }
+    public abstract bool IsSatisfiedBy(NuGetVersion version);
 
     private static readonly Dictionary<string, Version> BumpMap = [];
     /// <summary>
@@ -101,5 +48,108 @@ public class Requirement
         BumpMap[version.OriginalVersion!] = bumpedVersion;
 
         return bumpedVersion;
+    }
+
+    public static Requirement Parse(string requirement)
+    {
+        var specificParts = requirement.Split(',');
+        if (specificParts.Length == 1)
+        {
+            return IndividualRequirement.ParseIndividual(requirement);
+        }
+
+        var specificRequirements = specificParts.Select(IndividualRequirement.ParseIndividual).ToArray();
+        return new MultiPartRequirement(specificRequirements);
+    }
+}
+
+
+public class IndividualRequirement : Requirement
+{
+    private static readonly ImmutableDictionary<string, Func<NuGetVersion, NuGetVersion, bool>> Operators = new Dictionary<string, Func<NuGetVersion, NuGetVersion, bool>>()
+    {
+        ["="] = (v, r) => v == r,
+        ["!="] = (v, r) => v != r,
+        [">"] = (v, r) => v > r,
+        ["<"] = (v, r) => v < r,
+        [">="] = (v, r) => v >= r,
+        ["<="] = (v, r) => v <= r,
+        ["~>"] = (v, r) => v >= r && v.Version < Bump(r),
+    }.ToImmutableDictionary();
+
+    public string Operator { get; }
+    public NuGetVersion Version { get; }
+
+    public IndividualRequirement(string op, NuGetVersion version)
+    {
+        if (!Operators.ContainsKey(op))
+        {
+            throw new ArgumentException("Invalid operator", nameof(op));
+        }
+
+        Operator = op;
+        Version = version;
+    }
+
+    public override string ToString()
+    {
+        return $"{Operator} {Version}";
+    }
+
+    public override bool IsSatisfiedBy(NuGetVersion version)
+    {
+        return Operators[Operator](version, Version);
+    }
+
+    public static IndividualRequirement ParseIndividual(string requirement)
+    {
+        var splitIndex = requirement.LastIndexOfAny(['=', '>', '<']);
+
+        // Throw if the requirement is all operator and no version.
+        if (splitIndex == requirement.Length - 1)
+        {
+            throw new ArgumentException($"`{requirement}` is a invalid requirement string", nameof(requirement));
+        }
+
+        string[] parts = splitIndex == -1
+            ? [requirement.Trim()]
+            : [requirement[..(splitIndex + 1)].Trim(), requirement[(splitIndex + 1)..].Trim()];
+
+        var op = parts.Length == 1 ? "=" : parts[0];
+        var versionString = parts[^1];
+
+        // allow for single character wildcards; may be asterisk (NuGet-style: 1.*) or a single letter (alternate style: 1.x)
+        var versionParts = versionString.Split('.');
+        var recreatedVersionParts = versionParts.Select(vp => vp.Length == 1 && (vp == "*" || char.IsAsciiLetter(vp[0])) ? "0" : vp).ToArray();
+
+        var rebuiltVersionString = string.Join(".", recreatedVersionParts);
+        var version = NuGetVersion.Parse(rebuiltVersionString);
+
+        return new IndividualRequirement(op, version);
+    }
+}
+
+public class MultiPartRequirement : Requirement
+{
+    public ImmutableArray<IndividualRequirement> Parts { get; }
+
+    public MultiPartRequirement(IndividualRequirement[] parts)
+    {
+        if (parts.Length <= 1)
+        {
+            throw new ArgumentException("At least two parts are required", nameof(parts));
+        }
+
+        Parts = parts.ToImmutableArray();
+    }
+
+    public override string ToString()
+    {
+        return string.Join(", ", Parts);
+    }
+
+    public override bool IsSatisfiedBy(NuGetVersion version)
+    {
+        return Parts.All(part => part.IsSatisfiedBy(version));
     }
 }

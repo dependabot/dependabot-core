@@ -118,7 +118,8 @@ RSpec.describe Dependabot::ApiClient do
                   "source" => nil
                 }
               ],
-            "version" => "1.8.0"
+            "version" => "1.8.0",
+            "directory" => "/"
           }
         ])
         expect(data["updated-dependency-files"]).to eql([
@@ -375,6 +376,47 @@ RSpec.describe Dependabot::ApiClient do
       expect(WebMock)
         .to have_requested(:post, url)
         .with(headers: { "Authorization" => "token" })
+    end
+  end
+
+  describe "record_update_job_warning" do
+    let(:record_update_job_warning_url) { "http://example.com/update_jobs/1/record_update_job_warning" }
+
+    let(:warn_type) { "test_warning_type" }
+    let(:warn_title) { "Test Warning Title" }
+    let(:warn_description) { "Test Warning Description" }
+
+    before do
+      stub_request(:post, record_update_job_warning_url)
+        .to_return(status: 204, headers: headers)
+    end
+
+    it "hits the correct endpoint" do
+      client.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+
+      expect(WebMock)
+        .to have_requested(:post, record_update_job_warning_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+
+      expect(WebMock).to(have_requested(:post, record_update_job_warning_url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data["warn-type"]).to eq(warn_type)
+        expect(data["warn-title"]).to eq(warn_title)
+        expect(data["warn-description"]).to eq(warn_description)
+      end)
     end
   end
 

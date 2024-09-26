@@ -1,8 +1,5 @@
 name: Specs
 on:  # yamllint disable-line rule:truthy
-  push:
-    branches:
-      - "main"
   pull_request:
   schedule:
     - cron: "0 0 * * *"
@@ -49,6 +46,7 @@ jobs:
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: changes
         with:
+          token: '' # use git commands to avoid excessive rate limit usage
           filters: .github/ci-filters.yml
 
       - name: Build ecosystem image
@@ -92,7 +90,7 @@ jobs:
       BUNDLE_GEMFILE: updater/Gemfile
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      - uses: ruby/setup-ruby@3a77c29278ae80936b4cb030fefc7d21c96c786f # v1.185.0
+      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
         with:
           bundler-cache: true
       - run: ./bin/lint
@@ -111,9 +109,9 @@ jobs:
       - name: Build ecosystem image
         run: script/build silent
       - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: 1.21
+          go-version: 1.22
       - name: Download Dependabot CLI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
