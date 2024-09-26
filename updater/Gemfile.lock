@@ -194,7 +194,7 @@ GEM
     gitlab (5.0.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
-    google-protobuf (3.24.4)
+    google-protobuf (3.25.5)
     googleapis-common-protos-types (1.9.0)
       google-protobuf (~> 3.18)
     gpgme (2.0.24)
