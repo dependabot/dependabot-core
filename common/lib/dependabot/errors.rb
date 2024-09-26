@@ -240,6 +240,13 @@ module Dependabot
           "go-mod": error.go_mod
         }
       }
+    when Dependabot::UpdateNotPossible
+      {
+        "error-type": "update_not_possible",
+        "error-detail": {
+          dependencies: error.dependencies
+        }
+      }
     when BadRequirementError
       {
         "error-type": "illformed_requirement",
@@ -638,6 +645,21 @@ module Dependabot
   ###########################
   # Dependency level errors #
   ###########################
+
+  class UpdateNotPossible < DependabotError
+    extend T::Sig
+
+    sig { returns(T::Array[String]) }
+    attr_reader :dependencies
+
+    sig { params(dependencies: T::Array[String]).void }
+    def initialize(dependencies)
+      @dependencies = dependencies
+
+      msg = "The following dependencies could not be updated: #{@dependencies.join(', ')}"
+      super(msg)
+    end
+  end
 
   class GitDependenciesNotReachable < DependabotError
     extend T::Sig
