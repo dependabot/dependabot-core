@@ -8,7 +8,7 @@ namespace NuGetUpdater.Core.Analyze;
 internal static class DependencyFinder
 {
     public static async Task<ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>>> GetDependenciesAsync(
-        string workspacePath,
+        string repoRoot,
         string projectPath,
         IEnumerable<NuGetFramework> frameworks,
         ImmutableHashSet<string> packageIds,
@@ -26,7 +26,7 @@ internal static class DependencyFinder
         foreach (var framework in frameworks)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
-                workspacePath,
+                repoRoot,
                 projectPath,
                 framework.ToString(),
                 packages,
