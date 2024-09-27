@@ -347,6 +347,15 @@ module Dependabot
       # dependency source link not accessible
       INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
 
+      # Python version range mentioned in .toml [tool.poetry.dependencies] python = "x.x" is not satified by dependency
+      PYTHON_RANGE_NOT_SATISFIED = /(?<dep>.*) requires Python (?<req_ver>.*), so it will not be satisfied for Python (?<men_ver>.*)/ # rubocop:disable Layout/LineLength
+
+      # package version mentioned in .toml not found in package index
+      PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
+
+      # error code 401 while accessing registry
+      ERROR_401 = /401 Client Error/
+
       sig do
         params(
           dependencies: Dependabot::Dependency,
@@ -366,6 +375,15 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       attr_reader :dependency_files
 
+      sig do
+        params(
+          url: T.nilable(String)
+        ).returns(String)
+      end
+      def sanitize_url(url)
+        T.must(url&.match(%r{^(?:https?://)?(?:[^@\n])?([^:/\n?]+)})).to_s
+      end
+
       public
 
       sig { params(error: Exception).void }
@@ -378,6 +396,17 @@ module Dependabot
 
           raise DependencyFileNotResolvable, msg
         end
+
+        if (msg = error.message.match(PACKAGE_NOT_FOUND))
+          raise DependencyFileNotResolvable, msg
+        end
+
+        raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
+
+        return unless error.message.match?(ERROR_401)
+
+        url = URI.extract(error.message).first.then { sanitize_url(_1) }
+        raise PrivateSourceAuthenticationFailure, url
       end
     end
   end
