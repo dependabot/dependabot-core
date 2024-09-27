@@ -347,7 +347,7 @@ module Dependabot
       # dependency source link not accessible
       INVALID_LINK = /No valid distribution links found for package: "(?<dep>.*)" version: "(?<ver>.*)"/
 
-      # Python version range mentioned in .toml [tool.poetry.dependencies] python = "x.x" is not satified by dependency
+      # Python version range mentioned in .toml [tool.poetry.dependencies] python = "x.x" is not satisfied by dependency
       PYTHON_RANGE_NOT_SATISFIED = /(?<dep>.*) requires Python (?<req_ver>.*), so it will not be satisfied for Python (?<men_ver>.*)/ # rubocop:disable Layout/LineLength
 
       # package version mentioned in .toml not found in package index
