@@ -493,7 +493,7 @@ module Dependabot
         def uv_pip_compile_options_from_compiled_file(requirements_file)
           options = ["--output-file=#{requirements_file.name}"]
 
-          options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
+          options << "--no-emit-index-url" if requirements_file.content.include?("index-url http")
 
           options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
 
@@ -507,9 +507,7 @@ module Dependabot
             options << "--emit-build-options"
           end
 
-          if (resolver = RESOLVER_REGEX.match(requirements_file.content))
-            options << "--resolver=#{resolver}"
-          end
+          # options skips the resolver option, as it has no effect for uv.
 
           options << "--universal" if requirements_file.content.include?("--universal")
 
