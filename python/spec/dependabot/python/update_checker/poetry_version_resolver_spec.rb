@@ -456,7 +456,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "with private registry authentication error code 401 file" do
+    context "with dependency spec version not found in package index" do
       let(:response) do
         "Creating virtualenv pyiceberg-xBYdM_d2-py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
         Updating dependencies
