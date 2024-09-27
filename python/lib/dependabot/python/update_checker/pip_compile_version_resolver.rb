@@ -32,6 +32,7 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
 
         attr_reader :dependency
         attr_reader :dependency_files
