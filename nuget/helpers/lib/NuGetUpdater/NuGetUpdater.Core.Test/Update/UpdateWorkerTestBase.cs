@@ -257,14 +257,6 @@ public abstract class UpdateWorkerTestBase : TestBase
                 package.WriteToDirectory(localFeedPath);
             }
 
-            // override various nuget locations
-            foreach (var envName in new[] { "NUGET_PACKAGES", "NUGET_HTTP_CACHE_PATH", "NUGET_SCRATCH", "NUGET_PLUGINS_CACHE_PATH" })
-            {
-                string dir = Path.Join(temporaryDirectory, envName);
-                Directory.CreateDirectory(dir);
-                Environment.SetEnvironmentVariable(envName, dir);
-            }
-
             // ensure only the test feed is used
             string relativeLocalFeedPath = Path.GetRelativePath(temporaryDirectory, localFeedPath);
             await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "NuGet.Config"), $"""
@@ -277,6 +269,14 @@ public abstract class UpdateWorkerTestBase : TestBase
                 </configuration>
                 """
             );
+        }
+
+        // override various nuget locations
+        foreach (var envName in new[] { "NUGET_PACKAGES", "NUGET_HTTP_CACHE_PATH", "NUGET_SCRATCH", "NUGET_PLUGINS_CACHE_PATH" })
+        {
+            string dir = Path.Join(temporaryDirectory, envName);
+            Directory.CreateDirectory(dir);
+            Environment.SetEnvironmentVariable(envName, dir);
         }
     }
 
