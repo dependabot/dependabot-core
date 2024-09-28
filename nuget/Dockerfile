@@ -16,7 +16,7 @@ RUN apt-get update \
 ARG POWERSHELL_VERSION=7.4.5
 RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
  && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
- && INSTALL_PATH=/opt/microsoft/powershell/${POWERSHELL_VERSION_MAJOR} \
+ && INSTALL_PATH=/usr/local/microsoft/powershell/${POWERSHELL_VERSION_MAJOR} \
  && curl --location --output /tmp/powershell.tar.gz "https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/powershell-${POWERSHELL_VERSION}-linux-${ARCH}.tar.gz" \
  && mkdir -p $INSTALL_PATH \
  && tar zxf /tmp/powershell.tar.gz -C $INSTALL_PATH \
