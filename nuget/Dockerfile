@@ -1,20 +1,29 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
+ARG TARGETARCH
+
 USER root
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 # install dependencies
-RUN source /etc/os-release \
- && curl --location --output /tmp/packages-microsoft-prod.deb "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb" \
- && dpkg -i /tmp/packages-microsoft-prod.deb \
- && rm /tmp/packages-microsoft-prod.deb
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
     jq \
     libicu-dev=70.1-2 \
-    powershell \
  && rm -rf /var/lib/apt/lists/*
+
+ARG POWERSHELL_VERSION=7.4.5
+RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
+ && POWERSHELL_VERSION_MAJOR=$(echo $POWERSHELL_VERSION | cut -d. -f1) \
+ && INSTALL_PATH=/opt/microsoft/powershell/${POWERSHELL_VERSION_MAJOR} \
+ && curl --location --output /tmp/powershell.tar.gz "https://github.com/PowerShell/PowerShell/releases/download/v${POWERSHELL_VERSION}/powershell-${POWERSHELL_VERSION}-linux-${ARCH}.tar.gz" \
+ && mkdir -p $INSTALL_PATH \
+ && tar zxf /tmp/powershell.tar.gz -C $INSTALL_PATH \
+ && chmod +x $INSTALL_PATH/pwsh \
+ && ln -s $INSTALL_PATH/pwsh /usr/bin/pwsh \
+ && rm /tmp/powershell.tar.gz \
+ && pwsh --version
 
 # Install .NET SDK
 ARG DOTNET_LTS_SDK_VERSION=8.0.402
