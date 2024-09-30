@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "json", "< 2.7"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", ">= 4.6", "< 8.0"
-  spec.add_dependency "opentelemetry-sdk", "~> 1.3"
+  spec.add_dependency "opentelemetry-sdk", "~> 1.5"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "sorbet-runtime", "~> 0.5.11178"
