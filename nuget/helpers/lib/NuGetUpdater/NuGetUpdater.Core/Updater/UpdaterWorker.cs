@@ -25,6 +25,15 @@ public class UpdaterWorker
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
     {
+        var result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+        if (resultOutputPath is { })
+        {
+            await WriteResultFile(result, resultOutputPath, _logger);
+        }
+    }
+
+    public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    {
         MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
         UpdateOperationResult result;
 
@@ -83,10 +92,7 @@ public class UpdaterWorker
         }
 
         _processedProjectPaths.Clear();
-        if (resultOutputPath is { })
-        {
-            await WriteResultFile(result, resultOutputPath, _logger);
-        }
+        return result;
     }
 
     internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, Logger logger)
@@ -189,5 +195,11 @@ public class UpdaterWorker
 
         // Some repos use a mix of packages.config and PackageReference
         await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+
+        // Update lock file if exists
+        if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
+        {
+            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
+        }
     }
 }

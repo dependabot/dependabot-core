@@ -30,7 +30,7 @@ public partial class DiscoveryWorker
         _logger = logger;
     }
 
-    public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
+    public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
         MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
 
@@ -102,11 +102,16 @@ public partial class DiscoveryWorker
             };
         }
 
-        await WriteResultsAsync(repoRootPath, outputPath, result);
-
         _logger.Log("Discovery complete.");
-
         _processedProjectPaths.Clear();
+
+        return result;
+    }
+
+    public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
+    {
+        var result = await RunAsync(repoRootPath, workspacePath);
+        await WriteResultsAsync(repoRootPath, outputPath, result);
     }
 
     /// <summary>

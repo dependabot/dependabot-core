@@ -438,5 +438,54 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "with private registry authentication error code 401 file" do
+      let(:response) do
+        "Creating virtualenv non-package-mode-r7N_A6Jx-py3.11 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        Source (factorypal): Failed to retrieve metadata at https://fp-pypi.sm00p.com/simple/
+        401 Client Error: Unauthorized for url: https://fp-pypi.sm00p.com/simple/"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://fp-pypi.sm00p.com")
+        end
+      end
+    end
+
+    context "with dependency spec version not found in package index" do
+      let(:response) do
+        "Creating virtualenv pyiceberg-xBYdM_d2-py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        Package docutils (0.21.post1) not found."
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("Package docutils (0.21.post1) not found.")
+        end
+      end
+    end
+
+    context "with package 'python' specification is incompatible with dependency" do
+      let(:response) do
+        "Resolving dependencies...
+        The current project's supported Python range (>=3.8,<4.0) is not compatible with some of the required " \
+        " packages Python requirement: - scipy requires Python <3.13,>=3.9, so it will not be satisfied for" \
+        " Python >=3.8,<3.9 || >=3.13,<4.0"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include("scipy requires Python <3.13,>=3.9, so it will not be satisfied for")
+        end
+      end
+    end
   end
 end
