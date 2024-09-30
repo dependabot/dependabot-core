@@ -242,8 +242,11 @@ module Dependabot
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
+          # default to UseNewNugetPackageResolved _unless_ nuget_legacy_dependency_solver is enabled
           env = {}
-          env["UseNewNugetPackageResolver"] = "true" if Dependabot::Experiments.enabled?(:nuget_dependency_solver)
+          unless Dependabot::Experiments.enabled?(:nuget_legacy_dependency_solver)
+            env["UseNewNugetPackageResolver"] = "true"
+          end
           output = SharedHelpers.run_shell_command(command,
                                                    allow_unsafe_shell_command: true,
                                                    fingerprint: fingerprint,
