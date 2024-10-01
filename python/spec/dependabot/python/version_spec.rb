@@ -69,12 +69,20 @@ RSpec.describe Dependabot::Python::Version do
   end
 
   describe ".new" do
-    subject { described_class.new(version_string) }
+    subject(:version) { described_class.new(version_string) }
 
     context "with a blank string" do
       let(:version_string) { "" }
 
       it { is_expected.to eq(Gem::Version.new("0")) }
+    end
+
+    context "with a valid version" do
+      let(:version_string) { "1!1.3b2.post345.dev456" }
+
+      it "is parsed correctly" do
+        expect(version.epoch).to eq 1
+      end
     end
   end
 
@@ -130,6 +138,15 @@ RSpec.describe Dependabot::Python::Version do
     sorted_versions.each do |v|
       it "equals itself #{v}" do
         expect(described_class.new(v)).to eq v
+      end
+    end
+
+    context "when sorting 2 versions" do
+      let(:version_string) { "1.0a1" }
+      let(:other_version) { described_class.new("1.0a2.dev456") }
+
+      it "orders correctsly" do
+        expect(version <=> other_version).to eq(-1)
       end
     end
 
