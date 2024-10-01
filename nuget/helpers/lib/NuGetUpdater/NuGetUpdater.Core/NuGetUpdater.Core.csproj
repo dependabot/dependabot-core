@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
@@ -8,15 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="TargetFrameworkReporter.targets" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\NuGetProjects\NuGet.CommandLine\NuGet.CommandLine.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="GuiLabs.Language.Xml" />
     <PackageReference Include="DiffPlex" />
-    <PackageReference Include="Microsoft.Build.Locator" />
     <PackageReference Include="Microsoft.Build" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Build.Locator" />
+    <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="Runtime" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageReference Include="MSBuild.StructuredLogger" />
     <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
   </ItemGroup>
 

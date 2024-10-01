@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -171,10 +171,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             UpdatedVersion: "$(NukeVersion)",
             CanUpdate: false,
             VersionComesFromMultiDependencyProperty: false,
-            UpdatedDependencies: [],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
+            UpdatedDependencies: []
           }
         )
       end
@@ -212,7 +209,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -271,7 +268,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -315,7 +312,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             Path: "",
             IsSuccess: false,
             Projects: [],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -374,7 +371,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -443,7 +440,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -524,7 +521,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -605,7 +602,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -684,7 +681,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -765,7 +762,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
