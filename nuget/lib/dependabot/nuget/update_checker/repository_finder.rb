@@ -68,6 +68,20 @@ module Dependabot
         }
       end
 
+      sig { params(source_name: String).returns(String) }
+      def self.escape_source_name_to_element_name(source_name)
+        source_name.chars.map do |c|
+          case c
+          when /[A-Za-z0-9\-_.]/
+            # letters, digits, hyphens, underscores, and periods are all directly allowed
+            c
+          else
+            # otherwise it needs to be escaped as a 4 digit hex value
+            "_x#{c.ord.to_s(16).rjust(4, '0')}_"
+          end
+        end.join
+      end
+
       private
 
       sig { returns(Dependabot::Dependency) }
@@ -376,7 +390,7 @@ module Dependabot
           next source_details[:token] = nil unless key
           next source_details[:token] = nil if key.match?(/^\d/)
 
-          tag = key.gsub(" ", "_x0020_")
+          tag = RepositoryFinder.escape_source_name_to_element_name(key)
           creds_nodes = doc.css("configuration > packageSourceCredentials " \
                                 "> #{tag} > add")
 
