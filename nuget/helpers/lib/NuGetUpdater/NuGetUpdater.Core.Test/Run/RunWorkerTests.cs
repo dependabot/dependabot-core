@@ -169,6 +169,98 @@ public class RunWorkerTests
         );
     }
 
+    [Fact]
+    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
+    {
+        static (int, string) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                // all other requests are unauthorized
+                _ => (401, "{}"),
+            };
+        }
+        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+        await RunAsync(
+            packages:
+            [
+            ],
+            job: new Job()
+            {
+                PackageManager = "nuget",
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "/",
+                },
+                AllowedUpdates =
+                [
+                    new() { UpdateType = "all" }
+                ]
+            },
+            files:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """),
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles = [],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new PrivateSourceAuthenticationFailure()
+                {
+                    Details = $"({http.BaseUrl.TrimEnd('/')}/index.json)"
+                },
+                new MarkAsProcessed()
+                {
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                }
+            ]
+        );
+    }
+
     private static async Task RunAsync(Job job, TestFile[] files, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null)
     {
         // arrange

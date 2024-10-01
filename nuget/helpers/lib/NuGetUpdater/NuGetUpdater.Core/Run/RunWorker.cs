@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -35,25 +36,73 @@ public class RunWorker
         await File.WriteAllTextAsync(outputFilePath.FullName, resultJson);
     }
 
-    public async Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    public Task<RunResult> RunAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
     {
-        MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
+        return RunWithErrorHandlingAsync(job, repoContentsPath, baseCommitSha);
+    }
 
-        var allDependencyFiles = new Dictionary<string, DependencyFile>();
-        foreach (var directory in job.GetAllDirectories())
-        {
-            var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha);
-            foreach (var dependencyFile in result.Base64DependencyFiles)
-            {
-                allDependencyFiles[dependencyFile.Name] = dependencyFile;
-            }
-        }
-
+    private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
+    {
+        JobErrorBase? error = null;
+        string[] lastUsedPackageSourceUrls = []; // used for error reporting below
         var runResult = new RunResult()
         {
-            Base64DependencyFiles = allDependencyFiles.Values.ToArray(),
+            Base64DependencyFiles = [],
             BaseCommitSha = baseCommitSha,
         };
+
+        try
+        {
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
+
+            var allDependencyFiles = new Dictionary<string, DependencyFile>();
+            foreach (var directory in job.GetAllDirectories())
+            {
+                var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
+                lastUsedPackageSourceUrls = NuGetContext.GetPackageSourceUrls(localPath);
+                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha);
+                foreach (var dependencyFile in result.Base64DependencyFiles)
+                {
+                    allDependencyFiles[dependencyFile.Name] = dependencyFile;
+                }
+            }
+
+            runResult = new RunResult()
+            {
+                Base64DependencyFiles = allDependencyFiles.Values.ToArray(),
+                BaseCommitSha = baseCommitSha,
+            };
+        }
+        catch (HttpRequestException ex)
+        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            error = new PrivateSourceAuthenticationFailure()
+            {
+                Details = $"({string.Join("|", lastUsedPackageSourceUrls)})",
+            };
+        }
+        catch (MissingFileException ex)
+        {
+            error = new DependencyFileNotFound()
+            {
+                Details = ex.FilePath,
+            };
+        }
+        catch (Exception ex)
+        {
+            error = new UnknownError()
+            {
+                Details = ex.ToString(),
+            };
+        }
+
+        if (error is not null)
+        {
+            await _apiHandler.RecordUpdateJobError(error);
+        }
+
+        await _apiHandler.MarkAsProcessed(new() { BaseCommitSha = baseCommitSha });
+
         return runResult;
     }
 
@@ -61,7 +110,6 @@ public class RunWorker
     {
         var discoveryWorker = new DiscoveryWorker(_logger);
         var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
-        // TODO: check discoveryResult.ErrorType
 
         _logger.Log("Discovery JSON content:");
         _logger.Log(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
@@ -123,7 +171,6 @@ public class RunWorker
                     };
                     var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     // TODO: log analysisResult
-                    // TODO: check analysisResult.ErrorType
                     if (analysisResult.CanUpdate)
                     {
                         // TODO: this is inefficient, but not likely causing a bottleneck
@@ -153,7 +200,6 @@ public class RunWorker
                         var updateWorker = new UpdaterWorker(_logger);
                         var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix();
                         var updateResult = await updateWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
-                        // TODO: check specific contents of result.ErrorType
                         // TODO: need to report if anything was actually updated
                         if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
                         {
@@ -206,7 +252,6 @@ public class RunWorker
             // TODO: throw if no updates performed
         }
 
-        await _apiHandler.MarkAsProcessed(new() { BaseCommitSha = baseCommitSha });
         var result = new RunResult()
         {
             Base64DependencyFiles = originalDependencyFileContents.Select(kvp => new DependencyFile()

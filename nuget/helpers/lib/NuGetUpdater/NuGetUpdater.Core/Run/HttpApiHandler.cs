@@ -25,6 +25,11 @@ public class HttpApiHandler : IApiHandler
         _jobId = jobId;
     }
 
+    public async Task RecordUpdateJobError(JobErrorBase error)
+    {
+        await PostAsJson("record_update_job_error", error);
+    }
+
     public async Task UpdateDependencyList(UpdatedDependencyList updatedDependencyList)
     {
         await PostAsJson("update_dependency_list", updatedDependencyList);
