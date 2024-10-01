@@ -18,7 +18,7 @@ internal static class LockFileUpdater
 
         await MSBuildHelper.SidelineGlobalJsonAsync(projectDirectory, repoRootPath, async () =>
         {
-            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"restore --force-evaluate {projectPath}", workingDirectory: projectDirectory);
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", ["restore", "--force-evaluate", projectPath], workingDirectory: projectDirectory);
             if (exitCode != 0)
             {
                 logger.Log($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
