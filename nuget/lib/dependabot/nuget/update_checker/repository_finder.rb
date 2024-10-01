@@ -13,6 +13,7 @@ require "dependabot/nuget/http_response_helpers"
 
 module Dependabot
   module Nuget
+    # rubocop:disable Metrics/ClassLength
     class RepositoryFinder
       extend T::Sig
 
@@ -48,7 +49,15 @@ module Dependabot
         @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
         @known_repositories = @known_repositories.map do |repo|
-          { url: URI::DEFAULT_PARSER.escape(repo[:url]), token: repo[:token] }
+          url = repo[:url]
+          begin
+            url = URI::DEFAULT_PARSER.parse(url).to_s
+          rescue URI::InvalidURIError
+            # e.g., the url has spaces or unacceptable symbols
+            url = URI::DEFAULT_PARSER.escape(url)
+          end
+
+          { url: url, token: repo[:token] }
         end
         @known_repositories.uniq
       end
@@ -452,5 +461,6 @@ module Dependabot
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

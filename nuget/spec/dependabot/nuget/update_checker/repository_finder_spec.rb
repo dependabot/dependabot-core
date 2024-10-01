@@ -105,4 +105,43 @@ RSpec.describe Dependabot::Nuget::RepositoryFinder do
       end
     end
   end
+
+  describe "#known_repositories" do
+    subject(:url) do
+      dependency = Dependabot::Dependency.new(
+        name: "Some.Package",
+        version: "1.0.0",
+        requirements: [],
+        package_manager: "nuget"
+      )
+      instance = described_class.new(dependency: dependency, credentials: credentials)
+      instance.known_repositories.first.fetch(:url)
+    end
+
+    let(:credentials) { [{ "type" => "nuget_feed", "url" => feed_url }] }
+
+    context "when no escaping is required" do
+      let(:feed_url) { "https://nuget.example.com/v3/index.json" }
+
+      it { is_expected.to eq("https://nuget.example.com/v3/index.json") }
+    end
+
+    context "when escaping is required" do
+      let(:feed_url) { "https://nuget.example.com/feed with spaces/v3/index.json" }
+
+      it { is_expected.to eq("https://nuget.example.com/feed%20with%20spaces/v3/index.json") }
+    end
+
+    context "when escaping has already been done" do
+      let(:feed_url) { "https://nuget.example.com/feed%20with%20spaces/v3/index.json" }
+
+      it { is_expected.to eq("https://nuget.example.com/feed%20with%20spaces/v3/index.json") }
+    end
+
+    context "when the feed is a relative local path" do
+      let(:feed_url) { "../packages" }
+
+      it { is_expected.to eq("../packages") }
+    end
+  end
 end
