@@ -33,6 +33,11 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(PackageManagerBase) }
+      def package_manager
+        PackageManager.new(composer_version)
+      end
+
       private
 
       def manifest_dependencies
@@ -207,6 +212,10 @@ module Dependabot
 
       def lockfile
         @lockfile ||= get_original_file("composer.lock")
+      end
+
+      def composer_version
+        @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
       end
     end
   end
