@@ -42,7 +42,7 @@ module Dependabot
       def deprecated?
         return false if unsupported?
 
-        # Check if the feature flag for Composer v1 unsupported error is enabled.
+        # Check if the feature flag for Composer v1 deprecation warning is enabled.
         return false unless Dependabot::Experiments.enabled?(:composer_v1_deprecation_warning)
 
         deprecated_versions.include?(version)
