@@ -16,6 +16,7 @@ public partial class UpdateWorkerTests
         [InlineData("net472")]
         [InlineData("net7.0")]
         [InlineData("net8.0")]
+        [InlineData("net9.0")]
         public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude(string tfm)
         {
             // update Some.Package from 9.0.1 to 13.0.1
@@ -186,6 +187,7 @@ public partial class UpdateWorkerTests
                 projectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
@@ -199,6 +201,7 @@ public partial class UpdateWorkerTests
                     (Path: "src/Project/Project.csproj", Content: """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
@@ -211,6 +214,7 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
@@ -224,6 +228,7 @@ public partial class UpdateWorkerTests
                     (Path: "src/Project/Project.csproj", Content: """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
                           <ItemGroup>
@@ -244,7 +249,7 @@ public partial class UpdateWorkerTests
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
                     // necessary for the `net8.0-windows10.0.19041.0` TFM
-                    new("Microsoft.Windows.SDK.NET.Ref", "10.0.19041.31", Files:
+                    new("Microsoft.Windows.SDK.NET.Ref", "10.0.19041.34", Files:
                     [
                         ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
                             <FileList Name="Windows SDK .NET 6.0">
@@ -548,6 +553,7 @@ public partial class UpdateWorkerTests
                     <Project Sdk="Microsoft.NET.Sdk">
 
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
 
@@ -562,6 +568,7 @@ public partial class UpdateWorkerTests
                     <Project Sdk="Microsoft.NET.Sdk">
 
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
 
@@ -588,6 +595,7 @@ public partial class UpdateWorkerTests
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
@@ -608,6 +616,7 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>

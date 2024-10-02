@@ -391,6 +391,7 @@ namespace NuGetUpdater.Core.Test
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net6.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0"),
+            WellKnownReferencePackage("Microsoft.AspNetCore.App", "net9.0"),
             WellKnownReferencePackage("Microsoft.NETCore.App", "net6.0",
             [
                 ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
@@ -412,9 +413,17 @@ namespace NuGetUpdater.Core.Test
                     </FileList>
                     """))
             ]),
+            WellKnownReferencePackage("Microsoft.NETCore.App", "net9.0",
+            [
+                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
+                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="9.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
+                    </FileList>
+                    """))
+            ]),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net6.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0"),
+            WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net9.0"),
         ];
     }
 }

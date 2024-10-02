@@ -9,7 +9,7 @@
             NuGetUpdater\NuGetUpdater.Core\FrameworkChecker\SupportedFrameworks.cs
       2. Update tests as needed at `NuGetUpdater\NuGetUpdater.Core.Test\FrameworkChecker\CompatibilityCheckerFacts.cs`
     -->
-    <CommonTargetFramework>net8.0</CommonTargetFramework>
+    <CommonTargetFramework>net9.0</CommonTargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseArtifactsOutput>true</UseArtifactsOutput>
     <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>

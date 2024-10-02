@@ -419,6 +419,7 @@ module Dependabot
       params(
         command: String,
         allow_unsafe_shell_command: T::Boolean,
+        cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean
@@ -426,6 +427,7 @@ module Dependabot
     end
     def self.run_shell_command(command,
                                allow_unsafe_shell_command: false,
+                               cwd: nil,
                                env: {},
                                fingerprint: nil,
                                stderr_to_stdout: true)
@@ -434,10 +436,13 @@ module Dependabot
 
       puts cmd if ENV["DEBUG_HELPERS"] == "true"
 
+      opts = {}
+      opts[:chdir] = cwd if cwd
+
       if stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd)
+        stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
       end
 
       time_taken = Time.now - start

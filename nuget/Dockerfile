@@ -17,7 +17,8 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install .NET SDK
-ARG DOTNET_SDK_VERSION=8.0.303
+ARG DOTNET_LTS_SDK_VERSION=8.0.402
+ARG DOTNET_STS_SDK_VERSION=9.0.100-rc.1.24452.12
 ARG DOTNET_SDK_INSTALL_URL=https://dot.net/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
@@ -30,7 +31,8 @@ ENV NUGET_SCRATCH=/opt/nuget/helpers/tmp
 RUN curl --location --output "${DOTNET_INSTALL_SCRIPT_PATH}" "${DOTNET_SDK_INSTALL_URL}" \
  && chmod +x "${DOTNET_INSTALL_SCRIPT_PATH}" \
  && mkdir -p "${DOTNET_INSTALL_DIR}" \
- && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
+ && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_LTS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
+ && "${DOTNET_INSTALL_SCRIPT_PATH}" --version "${DOTNET_STS_SDK_VERSION}" --install-dir "${DOTNET_INSTALL_DIR}" \
  && chown -R dependabot:dependabot "$DOTNET_INSTALL_DIR"
 ENV PATH="${PATH}:${DOTNET_INSTALL_DIR}"
 RUN dotnet --list-runtimes
