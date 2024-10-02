@@ -1,8 +1,10 @@
 using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Analyze;
 using NuGetUpdater.Core.Test.Update;
@@ -334,6 +336,11 @@ public partial class EntryPointTests
                     Console.SetOut(originalOut);
                     Console.SetError(originalErr);
                 }
+
+                var resultPath = Path.Join(path, AnalyzeWorker.AnalysisDirectoryName, $"{dependencyName}.json");
+                var resultJson = await File.ReadAllTextAsync(resultPath);
+                var resultObject = JsonSerializer.Deserialize<AnalysisResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                return resultObject!;
             });
 
             ValidateAnalysisResult(expectedResult, actualResult);

@@ -263,14 +263,16 @@ module Dependabot
       sig { params(json: T::Hash[String, T.untyped]).void }
       def self.ensure_no_errors(json)
         error_type = T.let(json.fetch("ErrorType", nil), T.nilable(String))
-        error_details = T.let(json.fetch("ErrorDetails", nil), T.nilable(String))
+        error_details = json.fetch("ErrorDetails", nil)
         case error_type
         when "None", nil
           # no issue
         when "AuthenticationFailure"
-          raise PrivateSourceAuthenticationFailure, error_details
+          raise PrivateSourceAuthenticationFailure, T.let(error_details, T.nilable(String))
         when "MissingFile"
-          raise DependencyFileNotFound, error_details
+          raise DependencyFileNotFound, T.let(error_details, T.nilable(String))
+        when "UpdateNotPossible"
+          raise UpdateNotPossible, T.let(error_details, T::Array[String])
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end

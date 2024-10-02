@@ -25,7 +25,8 @@ public class DiscoveryWorkerTestBase
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
 
             var worker = new DiscoveryWorker(new Logger(verbose: true));
-            await worker.RunAsync(directoryPath, workspacePath, DiscoveryWorker.DiscoveryResultFileName);
+            var result = await worker.RunWithErrorHandlingAsync(directoryPath, workspacePath);
+            return result;
         });
 
         ValidateWorkspaceResult(expectedResult, actualResult);
@@ -108,18 +109,14 @@ public class DiscoveryWorkerTestBase
         }
     }
 
-    protected static async Task<WorkspaceDiscoveryResult> RunDiscoveryAsync(TestFile[] files, Func<string, Task> action)
+    protected static async Task<WorkspaceDiscoveryResult> RunDiscoveryAsync(TestFile[] files, Func<string, Task<WorkspaceDiscoveryResult>> action)
     {
         // write initial files
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
         // run discovery
-        await action(temporaryDirectory.DirectoryPath);
-
-        // gather results
-        var resultPath = Path.Join(temporaryDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
-        var resultJson = await File.ReadAllTextAsync(resultPath);
-        return JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions)!;
+        var result = await action(temporaryDirectory.DirectoryPath);
+        return result;
     }
 
     internal class PropertyComparer : IEqualityComparer<Property>

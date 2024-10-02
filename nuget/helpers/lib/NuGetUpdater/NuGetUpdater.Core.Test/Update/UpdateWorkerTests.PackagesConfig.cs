@@ -2106,7 +2106,7 @@ public partial class UpdateWorkerTests
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
             var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
             Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails);
+            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails.ToString());
         }
 
         [Fact]
@@ -2186,6 +2186,84 @@ public partial class UpdateWorkerTests
                 {
                     ErrorType = ErrorType.AuthenticationFailure,
                     ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                }
+            );
+        }
+
+        [Fact]
+        public async Task MissingDependencyErrorIsReported()
+        {
+            // trying to update Some.Package from 1.0.1 to 1.0.2, but another package isn't available; update fails
+            await TestUpdateForProject("Some.Package", "1.0.1", "1.0.2",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net45"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.2", "net45"),
+
+                    // the package `Unrelated.Package/1.0.0` is missing and will cause the update to fail
+                ],
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Unrelated.Package.1.0.0\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.1" targetFramework="net45" />
+                      <package id="Unrelated.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Unrelated.Package.1.0.0\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.1" targetFramework="net45" />
+                      <package id="Unrelated.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                expectedResult: new()
+                {
+                    ErrorType = ErrorType.UpdateNotPossible,
+                    ErrorDetails = new[] { "Unrelated.Package.1.0.0" },
                 }
             );
         }
