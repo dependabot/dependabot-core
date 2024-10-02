@@ -16,16 +16,20 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       attr_reader :release
+
+      sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :dev
 
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :pre
 
+      sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :post
+
       attr_reader :local
 
-      NEGATIVE_INFINITY = -10
-      INFINITY = 10
+      INFINITY = 1000
+      NEGATIVE_INFINITY = -INFINITY
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
       VERSION_PATTERN = /
@@ -70,11 +74,18 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
+        raise Dependabot::BadRequirementError, "Malformed version string - string is nil" if version.nil?
+
         @version_string = version.to_s
+
+        raise Dependabot::BadRequirementError, "Malformed version string - string is empty" if @version_string.empty?
 
         matches = ANCHORED_VERSION_PATTERN.match(@version_string.downcase)
 
-        raise Dependabot::BadRequirementError unless matches
+        unless matches
+          raise Dependabot::BadRequirementError,
+                "Malformed version string - #{@version_string} does not match regex"
+        end
 
         @epoch = matches["epoch"].to_i
         @release = matches["release"]&.split(".")&.map(&:to_i) || []
@@ -82,24 +93,8 @@ module Dependabot
         @post = parse_letter_version(matches["post_l"], matches["post_n1"] || matches["post_n2"])
         @dev = parse_letter_version(matches["dev_l"], matches["dev_n"])
         @local = parse_local_version(matches["local"])
+        super(matches["release"] || "")
       end
-
-      # def initialize(version)
-      #   @version_string = version.to_s
-      #   version, @local_version = @version_string.split("+")
-      #   version ||= ""
-      #   version = version.gsub(/^v/, "")
-      #   if version.include?("!")
-      #     @epoch, version = version.split("!")
-      #   else
-      #     @epoch = "0"
-      #   end
-      #   version = normalise_prerelease(version)
-      #   version, @post_release_version = version.split(/\.r(?=\d)/)
-      #   version ||= ""
-      #   @local_version = normalise_prerelease(@local_version) if @local_version
-      #   super
-      # end
 
       def to_s
         @version_string
@@ -107,6 +102,11 @@ module Dependabot
 
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
+      end
+
+      sig { returns(T::Boolean) }
+      def prerelease?
+        !!(pre || dev)
       end
 
       sig { params(other: T.any(String, Dependabot::Python::Version)).returns(Integer) }
@@ -119,20 +119,25 @@ module Dependabot
         release_comparison = release_version_comparison(other)
         return release_comparison unless release_comparison.zero?
 
-        pre_comparison = pre_version_comparison(other)
+        pre_comparison = compare_keys(pre_cmp_key, other.pre_cmp_key)
         return pre_comparison unless pre_comparison.zero?
 
-        post_comparison = post_cmp_key <=> other.post_cmp_key
+        post_comparison = compare_keys(post_cmp_key, other.post_cmp_key)
         return post_comparison unless post_comparison.zero?
 
-        local_version_comparison(other)
+        dev_comparison = compare_keys(dev_cmp_key, other.dev_cmp_key)
+        return dev_comparison unless dev_comparison.zero?
+
+        compare_keys(local_cmp_key, other.local_cmp_key)
       end
 
-      sig { params(other: Dependabot::Python::Version).returns(Integer) }
-      def pre_version_comparison(other)
-        key = pre_cmp_key
-        other_key = other.pre_cmp_key
-
+      sig do
+        params(
+          key: T.any(Integer, T::Array[T.any(String, Integer)]),
+          other_key: T.any(Integer, T::Array[T.any(String, Integer)])
+        ).returns(Integer)
+      end
+      def compare_keys(key, other_key)
         if key.is_a?(Integer) && other_key.is_a?(Integer)
           key <=> other_key
         elsif key.is_a?(Array) && other_key.is_a?(Array)
@@ -155,8 +160,6 @@ module Dependabot
         end
       end
 
-      private
-
       def local_cmp_key
         if local.nil?
           # Versions without a local segment should sort before those with one.
@@ -177,28 +180,34 @@ module Dependabot
         end
       end
 
+      sig { returns(T.any(Integer, T::Array[T.any(String, Integer)])) }
       def post_cmp_key
         # Versions without a post segment should sort before those with one.
-        if post.nil?
-          NEGATIVE_INFINITY
-        else
-          post
-        end
+        return NEGATIVE_INFINITY if post.nil?
+
+        T.must(post)
       end
+
+      def dev_cmp_key
+        # Versions without a dev segment should sort after those with one.
+        return INFINITY if dev.nil?
+
+        T.must(dev)
+      end
+
+      private
 
       def release_version_comparison(other)
         tokens, other_tokens = pad_for_comparison(release, other.release)
-
         tokens <=> other_tokens
-
-        # tokens.zip(other_tokens).each do |token, other_token|
-        #   result = token <=> other_token
-        #   return result unless result.zero?
-        # end
-
-        # 0
       end
 
+      sig do
+        params(
+          tokens: T::Array[Integer],
+          other_tokens: T::Array[Integer]
+        ).returns(T::Array[T::Array[Integer]])
+      end
       def pad_for_comparison(tokens, other_tokens)
         tokens = tokens.dup
         other_tokens = other_tokens.dup
@@ -206,9 +215,9 @@ module Dependabot
         longer = [tokens, other_tokens].max_by(&:count)
         shorter = [tokens, other_tokens].min_by(&:count)
 
-        difference = longer.length - shorter.length
+        difference = T.must(longer).length - T.must(shorter).length
 
-        difference.times { shorter << 0 }
+        difference.times { T.must(shorter) << 0 }
 
         [tokens, other_tokens]
       end
@@ -218,7 +227,7 @@ module Dependabot
         return if local.nil?
 
         # Takes a string like abc.1.twelve and turns it into ["abc", 1, "twelve"]
-        local.split(/[\._-]/).map { |s| /\d+/.match?(s) ? s.to_i : s }
+        local.split(/[\._-]/).map { |s| /^\d+$/.match?(s) ? s.to_i : s }
       end
 
       sig do
@@ -238,9 +247,9 @@ module Dependabot
             letter = "a"
           elsif letter == "beta"
             letter = "b"
-          elsif letter in %w(c pre preview)
+          elsif %w(c pre preview).include? letter
             letter = "rc"
-          elsif letter in %w(rev r)
+          elsif %w(rev r).include? letter
             letter = "post"
           end
 
