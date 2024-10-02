@@ -13,6 +13,7 @@ require "dependabot/nuget/http_response_helpers"
 
 module Dependabot
   module Nuget
+    # rubocop:disable Metrics/ClassLength
     class RepositoryFinder
       extend T::Sig
 
@@ -48,7 +49,15 @@ module Dependabot
         @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
         @known_repositories = @known_repositories.map do |repo|
-          { url: URI::DEFAULT_PARSER.escape(repo[:url]), token: repo[:token] }
+          url = repo[:url]
+          begin
+            url = URI::DEFAULT_PARSER.parse(url).to_s
+          rescue URI::InvalidURIError
+            # e.g., the url has spaces or unacceptable symbols
+            url = URI::DEFAULT_PARSER.escape(url)
+          end
+
+          { url: url, token: repo[:token] }
         end
         @known_repositories.uniq
       end
@@ -66,6 +75,20 @@ module Dependabot
           auth_header: {},
           repository_type: "v3"
         }
+      end
+
+      sig { params(source_name: String).returns(String) }
+      def self.escape_source_name_to_element_name(source_name)
+        source_name.chars.map do |c|
+          case c
+          when /[A-Za-z0-9\-_.]/
+            # letters, digits, hyphens, underscores, and periods are all directly allowed
+            c
+          else
+            # otherwise it needs to be escaped as a 4 digit hex value
+            "_x#{c.ord.to_s(16).rjust(4, '0')}_"
+          end
+        end.join
       end
 
       private
@@ -376,7 +399,7 @@ module Dependabot
           next source_details[:token] = nil unless key
           next source_details[:token] = nil if key.match?(/^\d/)
 
-          tag = key.gsub(" ", "_x0020_")
+          tag = RepositoryFinder.escape_source_name_to_element_name(key)
           creds_nodes = doc.css("configuration > packageSourceCredentials " \
                                 "> #{tag} > add")
 
@@ -438,5 +461,6 @@ module Dependabot
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

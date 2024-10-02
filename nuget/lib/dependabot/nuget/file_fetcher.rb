@@ -52,6 +52,7 @@ module Dependabot
         @nuget_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @packages_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         @assembly_binding_redirect_config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
+        @packages_lock_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -63,6 +64,7 @@ module Dependabot
           *packages_config_files,
           *assembly_binding_redirect_config_files,
           *nuget_config_files,
+          *packages_lock_files,
           global_json,
           dotnet_tools_json,
           packages_props
@@ -264,6 +266,21 @@ module Dependabot
                                  named_file_up_tree_from_project_file(f, "nuget.config")
                                end].compact.uniq
         @nuget_config_files
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def packages_lock_files
+        return @packages_lock_files if @packages_lock_files
+
+        candidate_paths =
+          [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
+
+        @packages_lock_files =
+          candidate_paths.filter_map do |dir|
+            file = repo_contents(dir: dir)
+                   .find { |f| f.name.casecmp("packages.lock.json").zero? }
+            fetch_file_from_host(File.join(dir, file.name)) if file
+          end
       end
 
       sig do

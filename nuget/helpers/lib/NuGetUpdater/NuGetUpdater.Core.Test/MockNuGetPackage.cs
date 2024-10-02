@@ -315,7 +315,7 @@ namespace NuGetUpdater.Core.Test
                     </Project>
                     """
                 );
-                var (exitCode, stdout, stderr) = ProcessEx.RunAsync("dotnet", $"msbuild {projectPath} /t:_ReportCurrentSdkVersion").Result;
+                var (exitCode, stdout, stderr) = ProcessEx.RunAsync("dotnet", ["msbuild", projectPath, "/t:_ReportCurrentSdkVersion"]).Result;
                 if (exitCode != 0)
                 {
                     throw new Exception($"Failed to report the current SDK version:\n{stdout}\n{stderr}");

@@ -17,6 +17,7 @@ internal sealed class Program
             DiscoverCommand.GetCommand(setExitCode),
             AnalyzeCommand.GetCommand(setExitCode),
             UpdateCommand.GetCommand(setExitCode),
+            RunCommand.GetCommand(setExitCode),
         };
         command.TreatUnmatchedTokensAsErrors = true;
 

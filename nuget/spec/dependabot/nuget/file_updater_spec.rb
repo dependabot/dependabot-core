@@ -223,6 +223,27 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
       end
     end
+
+    context "when no update is performed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "This.Dependency.Does.Not.Exist",
+          version: "4.5.6",
+          previous_version: "1.2.3",
+          requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "4.5.6", groups: [], source: nil }],
+          previous_requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "1.2.3", groups: [], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+
+      it "raises the expected error" do
+        run_update_test do |updater|
+          expect do
+            updater.updated_dependency_files
+          end.to raise_error(Dependabot::UpdateNotPossible)
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files_with_wildcard" do

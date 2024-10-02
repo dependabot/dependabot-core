@@ -51,7 +51,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = "/"
-        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+        all_updated_files = SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
           end
@@ -70,6 +70,10 @@ module Dependabot
           end
           updated_files
         end
+
+        raise UpdateNotPossible, dependencies.map(&:name) if all_updated_files.empty?
+
+        all_updated_files
       end
 
       private

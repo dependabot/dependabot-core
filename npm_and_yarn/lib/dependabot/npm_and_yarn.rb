@@ -362,7 +362,7 @@ module Dependabot
       {
         patterns: [INVALID_NAME_IN_PACKAGE_JSON],
         handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotParseable.new(message)
+          Dependabot::DependencyFileNotResolvable.new(message)
         },
         in_usage: false,
         matchfn: nil

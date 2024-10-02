@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "opentelemetry/sdk"
+require "opentelemetry-metrics-sdk"
 
 module Dependabot
   module OpenTelemetry
@@ -33,6 +34,7 @@ module Dependabot
       puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
+      require "opentelemetry-exporter-otlp-metrics"
 
       # OpenTelemetry instrumentation expects the related gem to be loaded.
       # While most are already loaded by this point in initialization, some are not.
