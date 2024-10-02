@@ -14,7 +14,7 @@ module Dependabot
       sig { returns(Integer) }
       attr_reader :epoch
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[Integer]) }
       attr_reader :release
 
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
@@ -26,6 +26,7 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :post
 
+      sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :local
 
       INFINITY = 1000
@@ -109,9 +110,10 @@ module Dependabot
         !!(pre || dev)
       end
 
-      sig { params(other: T.any(String, Dependabot::Python::Version)).returns(Integer) }
+      sig { params(other: VersionParameter).returns(Integer) }
       def <=>(other)
-        other = Dependabot::Python::Version.new(other.to_s) unless other.is_a?(Python::Version)
+        other = Dependabot::Python::Version.new(other.to_s) unless other.is_a?(Dependabot::Python::Version)
+        other = T.cast(other, Dependabot::Python::Version)
 
         epoch_comparison = epoch <=> other.epoch
         return epoch_comparison unless epoch_comparison.zero?
@@ -160,6 +162,7 @@ module Dependabot
         end
       end
 
+      sig { returns(T.any(Integer, T::Array[T.any(String, Integer)])) }
       def local_cmp_key
         if local.nil?
           # Versions without a local segment should sort before those with one.
@@ -170,7 +173,7 @@ module Dependabot
           # - Alphanumeric segments sort lexicographically
           # - Numeric segments sort numerically
           # - Shorter versions sort before longer versions when the prefixes match exactly
-          local.map do |token|
+          local&.map do |token|
             if token.is_a?(Integer)
               [token, ""]
             else
@@ -188,6 +191,7 @@ module Dependabot
         T.must(post)
       end
 
+      sig { returns(T.any(Integer, T::Array[T.any(String, Integer)])) }
       def dev_cmp_key
         # Versions without a dev segment should sort after those with one.
         return INFINITY if dev.nil?
@@ -197,6 +201,7 @@ module Dependabot
 
       private
 
+      sig { params(other: Dependabot::Python::Version).returns(Integer) }
       def release_version_comparison(other)
         tokens, other_tokens = pad_for_comparison(release, other.release)
         tokens <=> other_tokens
