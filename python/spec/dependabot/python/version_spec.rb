@@ -48,6 +48,12 @@ RSpec.describe Dependabot::Python::Version do
       it { is_expected.to be(false) }
     end
 
+    context "with an empty version" do
+      let(:version_string) { "" }
+
+      it { is_expected.to be(false) }
+    end
+
     context "with invalid versions" do
       versions = [
         "bad",
@@ -71,10 +77,22 @@ RSpec.describe Dependabot::Python::Version do
   describe ".new" do
     subject(:version) { described_class.new(version_string) }
 
-    context "with a blank string" do
+    context "with an empty string" do
       let(:version_string) { "" }
+      let(:error_msg) { "Malformed version string - string is empty" }
 
-      it { is_expected.to eq(Gem::Version.new("0")) }
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
+      end
+    end
+
+    context "with a nil version" do
+      let(:version_string) { nil }
+      let(:error_msg) { "Malformed version string - string is nil" }
+
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
+      end
     end
 
     context "with a valid version" do
@@ -82,6 +100,15 @@ RSpec.describe Dependabot::Python::Version do
 
       it "is parsed correctly" do
         expect(version.epoch).to eq 1
+      end
+    end
+
+    context "with an invalid version" do
+      let(:version_string) { "1.0++" }
+      let(:error_msg) { "Malformed version string - #{version_string} does not match regex" }
+
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
       end
     end
   end
@@ -104,7 +131,6 @@ RSpec.describe Dependabot::Python::Version do
 
   describe "#<=>" do
     sorted_versions = [
-      "",
       "0.9",
       "1.0.0-alpha",
       "1.0.0-a.1",
@@ -113,8 +139,8 @@ RSpec.describe Dependabot::Python::Version do
       "1.0.0-beta.11",
       "1.0.0-rc.1",
       "1",
-      "1.0.0.post", # TODO: fails comparing to 1
       "1.0.0+gc1",
+      "1.0.0.post",
       "1.post2",
       "1.post2+gc1",
       "1.post2+gc1.2",
@@ -141,17 +167,8 @@ RSpec.describe Dependabot::Python::Version do
       end
     end
 
-    context "when sorting 2 versions" do
-      let(:version_string) { "1.0a1" }
-      let(:other_version) { described_class.new("1.0a2.dev456") }
-
-      it "orders correctsly" do
-        expect(version <=> other_version).to eq(-1)
-      end
-    end
-
     context "when sorting a list of versions" do
-      let(:versions) do
+      let(:version_strings) do
         [
           # Implicit epoch of 0
           "1.0.dev456",
@@ -212,6 +229,8 @@ RSpec.describe Dependabot::Python::Version do
         ]
       end
 
+      let(:versions) { version_strings.map { |v| described_class.new(v) } }
+
       it "returns list in the correct order" do
         expect(versions.shuffle.sort).to eq versions
       end
@@ -220,6 +239,15 @@ RSpec.describe Dependabot::Python::Version do
     it "handles missing version segments" do
       expect(described_class.new("1")).to eq "v1.0"
       expect(described_class.new("1")).to eq "v1.0.0"
+    end
+
+    context "with equivalent release candidates" do
+      let(:version) { described_class.new("1!1.0.dev456") }
+      let(:other_version) { described_class.new("1.0.dev456") }
+
+      it "returns 0" do
+        expect(version <=> other_version).to eq 1
+      end
     end
 
     context "with equivalent release candidates" do
@@ -236,27 +264,27 @@ RSpec.describe Dependabot::Python::Version do
     subject { version.prerelease? }
 
     context "with a prerelease" do
-      versions =
-        [
-          "1.0.dev0",
-          "1.0.dev1",
-          "1.0a1.dev1",
-          "1.0b1.dev1",
-          "1.0c1.dev1",
-          "1.0rc1.dev1",
-          "1.0a1",
-          "1.0b1",
-          "1.0c1",
-          "1.0rc1",
-          "1.0a1.post1.dev1",
-          "1.0b1.post1.dev1",
-          "1.0c1.post1.dev1",
-          "1.0rc1.post1.dev1",
-          "1.0a1.post1",
-          "1.0b1.post1",
-          "1.0c1.post1",
-          "1.0rc1.post1"
-        ]
+      versions = [
+        "1.0.dev0",
+        "1.0.dev1",
+        "1.0a1.dev1",
+        "1.0b1.dev1",
+        "1.0c1.dev1",
+        "1.0rc1.dev1",
+        "1.0a1",
+        "1.0b1",
+        "1.0c1",
+        "1.0rc1",
+        "1.0a1.post1.dev1",
+        "1.0b1.post1.dev1",
+        "1.0c1.post1.dev1",
+        "1.0rc1.post1.dev1",
+        "1.0a1.post1",
+        "1.0b1.post1",
+        "1.0c1.post1",
+        "1.0rc1.post1",
+        "1!1.0a1"
+      ]
 
       versions.each do |version|
         it "returns true for #{version}" do
@@ -289,13 +317,13 @@ RSpec.describe Dependabot::Python::Version do
       end
     end
 
-    context "with a dev release" do
+    context "with a local release" do
       let(:version_string) { "1.0+dev" }
 
       it { is_expected.to be(false) }
     end
 
-    context "with a dev release" do
+    context "with a local post release" do
       let(:version_string) { "1.0.post1+dev" }
 
       it { is_expected.to be(false) }
