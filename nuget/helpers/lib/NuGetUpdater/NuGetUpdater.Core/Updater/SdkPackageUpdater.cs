@@ -350,7 +350,7 @@ internal static class SdkPackageUpdater
                 var specificResolvedDependency = resolvedDependencies.Where(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 if (specificResolvedDependency is null)
                 {
-                    logger.Log($"    Unable resolve requested dependency for {dependencyName} in {projectFile.Path}.");
+                    logger.Log($"    Unable to resolve requested dependency for {dependencyName} in {projectFile.Path}.");
                     continue;
                 }
 
