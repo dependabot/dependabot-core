@@ -4,9 +4,7 @@
 require "dependabot/version"
 require "dependabot/utils"
 
-# Python versions can include a local version identifier, which Ruby can't
-# parse. This class augments Gem::Version with local version identifier info.
-# See https://www.python.org/dev/peps/pep-0440 for details.
+# See https://packaging.python.org/en/latest/specifications/version-specifiers for spec details.
 
 module Dependabot
   module Python
