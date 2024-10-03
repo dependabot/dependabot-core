@@ -61,21 +61,36 @@ RSpec.describe Dependabot::Composer::PackageManager do
     before do
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:composer_v1_deprecation_warning)
-        .and_return(feature_flag_enabled)
+        .and_return(feature_flag_deprecation_enabled)
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:composer_v1_unsupported_error)
+        .and_return(feature_flag_unsupported_enabled)
     end
 
-    context "when version is deprecated but not unsupported" do
+    context "when feature flag `composer_v1_deprecation_warning` is enabled and version is deprecated" do
       let(:version) { "1" }
-      let(:feature_flag_enabled) { false }
+      let(:feature_flag_deprecation_enabled) { true }
+      let(:feature_flag_unsupported_enabled) { false }
 
       it "returns true" do
         expect(package_manager.deprecated?).to be true
       end
     end
 
-    context "when version is unsupported" do
+    context "when feature flag `composer_v1_deprecation_warning` is disabled" do
+      let(:version) { "1" }
+      let(:feature_flag_deprecation_enabled) { false }
+      let(:feature_flag_unsupported_enabled) { false }
+
+      it "returns false" do
+        expect(package_manager.deprecated?).to be false
+      end
+    end
+
+    context "when version is unsupported and takes precedence" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
+      let(:feature_flag_deprecation_enabled) { true }
+      let(:feature_flag_unsupported_enabled) { true }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -87,30 +102,30 @@ RSpec.describe Dependabot::Composer::PackageManager do
     before do
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:composer_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
+        .and_return(feature_flag_unsupported_enabled)
     end
 
-    context "when feature flag is enabled and version is unsupported" do
+    context "when feature flag `composer_v1_unsupported_error` is enabled and version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
+      let(:feature_flag_unsupported_enabled) { true }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
       end
     end
 
-    context "when feature flag is enabled and version is supported" do
-      let(:version) { "2" }
-      let(:feature_flag_enabled) { true }
+    context "when feature flag `composer_v1_unsupported_error` is disabled" do
+      let(:version) { "0.9" }
+      let(:feature_flag_unsupported_enabled) { false }
 
       it "returns false" do
         expect(package_manager.unsupported?).to be false
       end
     end
 
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
+    context "when feature flag is enabled and version is supported" do
+      let(:version) { "2" }
+      let(:feature_flag_unsupported_enabled) { true }
 
       it "returns false" do
         expect(package_manager.unsupported?).to be false

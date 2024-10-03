@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/package_manager"
+require "dependabot/composer/version"
 
 module Dependabot
   module Composer
