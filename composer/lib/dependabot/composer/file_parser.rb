@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/composer"
 require "dependabot/dependency"
 require "dependabot/composer/version"
 require "dependabot/file_parsers"
