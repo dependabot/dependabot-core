@@ -3429,6 +3429,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       expect(commit_message).to eql(expected_commit_message)
     end
 
+    context "when changelog file does not contain relevant versions" do
+      it "does not contain changelog url" do
+        stub_const("Dependabot::MetadataFinders::Base::ChangelogFinder::CHANGELOG_NAMES",
+                   T.let(%w(license).freeze, T::Array[String]))
+
+        expect(commit_message).to end_with(
+          "- [Release notes](https://github.com/gocardless/business/releases)\n" \
+          "- [Commits](https://github.com/gocardless/business/compare/v1.4.0...v1.5.0)"
+        )
+      end
+    end
+
     context "with a PR name that is too long" do
       before do
         allow(builder).to receive(:pr_name)
