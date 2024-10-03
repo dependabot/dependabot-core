@@ -6,6 +6,11 @@ require "dependabot/composer/version"
 module Dependabot
   module Composer
     module Helpers
+      V1 = "1"
+      V2 = "2"
+      # If we are updating a project with no lock file then the default should be the newest version
+      DEFAULT = V2
+
       # From composers json-schema: https://getcomposer.org/schema.json
       COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*$}
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
@@ -22,16 +27,16 @@ module Dependabot
 
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
           version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
-          return version.canonical_segments.first == 1 ? "1" : "2"
+          return version.canonical_segments.first == 1 ? V1 : V2
         elsif v1_unsupported
-          return "2" if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
-          return "2" if invalid_v2_requirement?(composer_json)
+          return V2 if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
+          return V2 if invalid_v2_requirement?(composer_json)
         else
-          return "1" if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
-          return "1" if invalid_v2_requirement?(composer_json)
+          return V1 if composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
+          return V1 if invalid_v2_requirement?(composer_json)
         end
 
-        "2"
+        V2
       end
 
       def self.dependency_url_from_git_clone_error(message)
