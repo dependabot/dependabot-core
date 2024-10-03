@@ -12,7 +12,7 @@ module Dependabot
       DEFAULT = V2
 
       # From composers json-schema: https://getcomposer.org/schema.json
-      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*$}
+      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$}
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
       PLATFORM_PACKAGE_REGEX = /
         ^(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*
