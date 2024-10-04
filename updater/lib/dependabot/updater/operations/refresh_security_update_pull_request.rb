@@ -145,12 +145,6 @@ module Dependabot
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
-          if lead_dep_name && job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
-                                                                                   lead_dep_latest_available_ver.to_s)
-            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, PR update not required.") # rubocop:disable Layout/LineLength
-            return
-          end
-
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
@@ -174,6 +168,14 @@ module Dependabot
           # Send warning alerts to the API if any warning notices are present.
           # Note that only notices with notice.show_alert set to true will be sent.
           record_warning_notices(notices) if notices.any?
+
+          if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
+            job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
+                                                                 lead_dep_latest_available_ver.to_s))
+            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, Updating PR.")
+            update_pull_request(dependency_change)
+            return
+          end
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
