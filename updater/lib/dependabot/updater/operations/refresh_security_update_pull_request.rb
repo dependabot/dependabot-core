@@ -139,9 +139,17 @@ module Dependabot
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
-          Dependabot.logger.info("Latest version is #{checker.latest_version}")
+          lead_dep_latest_available_ver = checker.latest_version
+
+          Dependabot.logger.info("Latest version is #{lead_dep_latest_available_ver}")
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
+
+          if lead_dep_name && job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
+                                                                                   lead_dep_latest_available_ver.to_s)
+            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, PR update not required.") # rubocop:disable Layout/LineLength
+            return
+          end
 
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
@@ -193,6 +201,19 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
+
+        sig { params(lead_dep_name: String, existing_pr_lead_dep_ver: String).returns(T::Boolean) }
+        def pr_lead_dep_latest_ver(lead_dep_name, existing_pr_lead_dep_ver)
+          job.existing_pull_requests.each do |existing_pr|
+            existing_pr.dependencies.each do |deps|
+              next unless (deps.name.eql? lead_dep_name) && (deps.version.eql? existing_pr_lead_dep_ver)
+
+              Dependabot.logger.info("Matching entry found in existing PR. Dependency name: #{deps.name}, version: #{deps.version}") # rubocop:disable Layout/LineLength
+              return true
+            end
+          end
+          false
+        end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
