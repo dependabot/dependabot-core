@@ -169,11 +169,12 @@ module Dependabot
           # Note that only notices with notice.show_alert set to true will be sent.
           record_warning_notices(notices) if notices.any?
 
+          # Dependabot::Experiments.register(:existing_pr_version_match, false)
+
           if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
             job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
                                                                  lead_dep_latest_available_ver.to_s))
-            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, Updating PR.")
-            update_pull_request(dependency_change)
+            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, Skipping updating PR.")
             return
           end
 
