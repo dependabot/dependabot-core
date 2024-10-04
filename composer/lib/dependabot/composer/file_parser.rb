@@ -1,6 +1,7 @@
 # typed: true
 # frozen_string_literal: true
 
+require "dependabot/composer"
 require "dependabot/dependency"
 require "dependabot/composer/version"
 require "dependabot/file_parsers"
@@ -31,6 +32,11 @@ module Dependabot
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
         dependency_set.dependencies
+      end
+
+      sig { returns(PackageManagerBase) }
+      def package_manager
+        PackageManager.new(composer_version)
       end
 
       private
@@ -207,6 +213,10 @@ module Dependabot
 
       def lockfile
         @lockfile ||= get_original_file("composer.lock")
+      end
+
+      def composer_version
+        @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
       end
     end
   end
