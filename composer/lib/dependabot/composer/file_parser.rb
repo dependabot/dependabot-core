@@ -28,7 +28,6 @@ module Dependabot
       ].freeze, T::Array[T::Hash[Symbol, String]])
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
-      @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
       def parse
         dependency_set = T.let(DependencySet.new, DependencySet)
         dependency_set += manifest_dependencies
