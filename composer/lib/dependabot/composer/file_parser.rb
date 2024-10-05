@@ -217,7 +217,7 @@ module Dependabot
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-      def parsed_lockfile
+      def parsed_lockfile # rubocop:disable Metrics/PerceivedComplexity
         return unless lockfile
 
         content = lockfile&.content
