@@ -162,8 +162,8 @@ module Dependabot
             job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
                                                                  lead_dep_latest_available_ver.to_s))
 
-            msg = "Lead dependency (#{lead_dep_name}) and its version (#{lead_dep_latest_available_ver}) is " \
-                  " already upto date in existing pull request, skipping updating pull request."
+            msg = "Lead dependency (#{lead_dep_name}) version (#{lead_dep_latest_available_ver}) is " \
+                  " already upto date in pull request, skipping updating pull request."
 
             Dependabot.logger.info(msg)
 
