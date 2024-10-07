@@ -8,9 +8,9 @@ namespace NuGetUpdater.Core;
 internal abstract class JsonBuildFile : BuildFile<string>
 {
     protected Lazy<JsonNode?> Node;
-    private readonly Logger logger;
+    private readonly ILogger logger;
 
-    public JsonBuildFile(string repoRootPath, string path, string contents, Logger logger)
+    public JsonBuildFile(string repoRootPath, string path, string contents, ILogger logger)
         : base(repoRootPath, path, contents)
     {
         Node = new Lazy<JsonNode?>(() => null);

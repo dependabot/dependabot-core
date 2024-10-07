@@ -133,7 +133,7 @@ public abstract class UpdateWorkerTestBase : TestBase
             await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
             // run update
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             var projectPath = placeFilesInSrc ? $"src/{projectFilePath}" : projectFilePath;
             var actualResult = await worker.RunWithErrorHandlingAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             if (expectedResult is { })
@@ -229,7 +229,7 @@ public abstract class UpdateWorkerTestBase : TestBase
             await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
             var slnPath = Path.Combine(temporaryDirectory, slnName);
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 

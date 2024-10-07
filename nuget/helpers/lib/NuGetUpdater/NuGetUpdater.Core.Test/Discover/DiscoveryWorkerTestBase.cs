@@ -24,7 +24,7 @@ public class DiscoveryWorkerTestBase
         {
             await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
 
-            var worker = new DiscoveryWorker(new Logger(verbose: true));
+            var worker = new DiscoveryWorker(new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, workspacePath);
             return result;
         });

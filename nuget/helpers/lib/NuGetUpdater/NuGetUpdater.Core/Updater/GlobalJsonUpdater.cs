@@ -8,7 +8,7 @@ internal static class GlobalJsonUpdater
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         if (!MSBuildHelper.TryGetGlobalJsonPath(repoRootPath, workspacePath, out var globalJsonPath))
         {

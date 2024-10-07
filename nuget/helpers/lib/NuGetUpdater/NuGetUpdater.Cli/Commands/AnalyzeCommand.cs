@@ -11,7 +11,6 @@ internal static class AnalyzeCommand
     internal static readonly Option<FileInfo> DependencyFilePathOption = new("--dependency-file-path") { IsRequired = true };
     internal static readonly Option<FileInfo> DiscoveryFilePathOption = new("--discovery-file-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> AnalysisFolderOption = new("--analysis-folder-path") { IsRequired = true };
-    internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -20,17 +19,16 @@ internal static class AnalyzeCommand
             RepoRootOption,
             DependencyFilePathOption,
             DiscoveryFilePathOption,
-            AnalysisFolderOption,
-            VerboseOption
+            AnalysisFolderOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, discoveryPath, dependencyPath, analysisDirectory, verbose) =>
+        command.SetHandler(async (repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
         {
-            var worker = new AnalyzeWorker(new Logger(verbose));
+            var worker = new AnalyzeWorker(new ConsoleLogger());
             await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
-        }, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption, VerboseOption);
+        }, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption);
 
         return command;
     }

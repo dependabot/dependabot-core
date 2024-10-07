@@ -14,7 +14,7 @@ internal static class DependencyFinder
         ImmutableHashSet<string> packageIds,
         NuGetVersion version,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionString = version.ToNormalizedString();

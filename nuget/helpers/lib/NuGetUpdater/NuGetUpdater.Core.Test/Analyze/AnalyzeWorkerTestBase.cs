@@ -36,7 +36,7 @@ public class AnalyzeWorkerTestBase
             var discoveryPath = Path.GetFullPath(DiscoveryWorker.DiscoveryResultFileName, directoryPath);
             var dependencyPath = Path.GetFullPath(relativeDependencyPath, directoryPath);
 
-            var worker = new AnalyzeWorker(new Logger(verbose: true));
+            var worker = new AnalyzeWorker(new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, discoveryPath, dependencyPath);
             return result;
         });

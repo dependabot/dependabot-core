@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class PackagesConfigDiscovery
 {
-    public static PackagesConfigDiscoveryResult? Discover(string workspacePath, string projectPath, Logger logger)
+    public static PackagesConfigDiscoveryResult? Discover(string workspacePath, string projectPath, ILogger logger)
     {
         if (!NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath))
         {

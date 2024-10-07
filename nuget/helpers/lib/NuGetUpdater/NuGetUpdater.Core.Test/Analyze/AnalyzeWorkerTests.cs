@@ -739,7 +739,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             ErrorDetails = "<some package feed>",
             UpdatedVersion = "",
             UpdatedDependencies = [],
-        }, new Logger(false));
+        }, new TestLogger());
         var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
 
         // raw result file should look like this:
