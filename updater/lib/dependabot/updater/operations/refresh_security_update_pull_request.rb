@@ -156,6 +156,20 @@ module Dependabot
             requirements_to_unlock: requirements_to_unlock
           )
 
+          # Dependabot::Experiments.register(:existing_pr_version_match, true)
+
+          if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
+            job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
+                                                                 lead_dep_latest_available_ver.to_s))
+
+            msg = "Lead dependency (#{lead_dep_name}) and its version (#{lead_dep_latest_available_ver}) is " \
+                  " already upto date in existing pull request, skipping updating pull request."
+
+            Dependabot.logger.info(msg)
+
+            return
+          end
+
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
@@ -168,15 +182,6 @@ module Dependabot
           # Send warning alerts to the API if any warning notices are present.
           # Note that only notices with notice.show_alert set to true will be sent.
           record_warning_notices(notices) if notices.any?
-
-          # Dependabot::Experiments.register(:existing_pr_version_match, false)
-
-          if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
-            job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
-                                                                 lead_dep_latest_available_ver.to_s))
-            Dependabot.logger.info("Lead dependency version is already upto date in existing pr, Skipping updating PR.")
-            return
-          end
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
@@ -205,6 +210,8 @@ module Dependabot
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
 
+        # Feature testing to fix issues related with scenarios when a PR is updated while containing
+        # the same version in existing PR and dependeabot updater closes and raised same PR
         sig { params(lead_dep_name: String, existing_pr_lead_dep_ver: String).returns(T::Boolean) }
         def pr_lead_dep_latest_ver(lead_dep_name, existing_pr_lead_dep_ver)
           job.existing_pull_requests.each do |existing_pr|
@@ -215,6 +222,9 @@ module Dependabot
               return true
             end
           end
+          false
+        rescue StandardError => e
+          Dependabot.logger.error("Error while evaluating existing PR: #{e.message}")
           false
         end
 
