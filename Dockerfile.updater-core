@@ -118,7 +118,7 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # Note that RubyGems & Bundler versions are currently released in sync, but
 # RubyGems version is one major ahead. So when bumping to RubyGems 3.y.z, Bundler
 # version will jump to 2.y.z
-ARG RUBYGEMS_VERSION=3.5.16
+ARG RUBYGEMS_VERSION=3.5.21
 RUN gem update --system $RUBYGEMS_VERSION
 
 RUN bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
