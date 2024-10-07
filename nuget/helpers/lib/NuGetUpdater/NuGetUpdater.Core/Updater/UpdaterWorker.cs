@@ -25,6 +25,16 @@ public class UpdaterWorker
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
     {
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+        if (resultOutputPath is { })
+        {
+            await WriteResultFile(result, resultOutputPath, _logger);
+        }
+    }
+
+    // this is a convenient method for tests
+    internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    {
         UpdateOperationResult result = new(); // assumed to be ok until proven otherwise
         try
         {
@@ -52,11 +62,16 @@ public class UpdaterWorker
                 ErrorDetails = ex.FilePath,
             };
         }
-
-        if (resultOutputPath is { })
+        catch (UpdateNotPossibleException ex)
         {
-            await WriteResultFile(result, resultOutputPath, _logger);
+            result = new()
+            {
+                ErrorType = ErrorType.UpdateNotPossible,
+                ErrorDetails = ex.Dependencies,
+            };
         }
+
+        return result;
     }
 
     public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)

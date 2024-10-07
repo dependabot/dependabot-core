@@ -192,4 +192,67 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       end
     end
   end
+
+  describe "#ensure_no_errors" do
+    subject(:error_message) do
+      described_class.ensure_no_errors(JSON.parse(json))
+
+      # defaults to no error
+      return nil
+    rescue StandardError => e
+      return e.to_s
+    end
+
+    context "when nothing is reported" do
+      let(:json) { "{}" } # an empty object
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when the error is expclicitly none" do
+      let(:json) do
+        {
+          ErrorType: "None"
+        }.to_json
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when an authentication failure is encountered" do
+      let(:json) do
+        {
+          ErrorType: "AuthenticationFailure",
+          ErrorDetails: "(some-source)"
+        }.to_json
+      end
+
+      it { is_expected.to include(": (some-source)") }
+    end
+
+    context "when a file is missing" do
+      let(:json) do
+        {
+          ErrorType: "MissingFile",
+          ErrorDetails: "some.file"
+        }.to_json
+      end
+
+      it { is_expected.to include("some.file not found") }
+    end
+
+    context "when an update is not possible" do
+      let(:json) do
+        {
+          ErrorType: "UpdateNotPossible",
+          ErrorDetails: [
+            "dependency 1",
+            "dependency 2"
+          ]
+        }.to_json
+      end
+
+      it { is_expected.to include("dependency 1, dependency 2") }
+    end
+  end
 end

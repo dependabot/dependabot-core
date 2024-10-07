@@ -6,4 +6,5 @@ public enum ErrorType
     None,
     AuthenticationFailure,
     MissingFile,
+    UpdateNotPossible,
 }

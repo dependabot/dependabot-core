@@ -833,6 +833,17 @@ internal static partial class MSBuildHelper
         }
     }
 
+    internal static void ThrowOnMissingPackages(string output)
+    {
+        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^'].*)' is not found on source");
+        var matchCollection = missingPackagesPattern.Matches(output);
+        var missingPackages = matchCollection.Select(m => m.Groups["PackageName"].Value).Distinct().ToArray();
+        if (missingPackages.Length > 0)
+        {
+            throw new UpdateNotPossibleException(missingPackages);
+        }
+    }
+
     internal static bool TryGetGlobalJsonPath(string repoRootPath, string workspacePath, [NotNullWhen(returnValue: true)] out string? globalJsonPath)
     {
         globalJsonPath = PathHelper.GetFileInDirectoryOrParent(workspacePath, repoRootPath, "global.json", caseSensitive: false);

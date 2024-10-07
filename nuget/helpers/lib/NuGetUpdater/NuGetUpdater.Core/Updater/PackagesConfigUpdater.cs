@@ -139,6 +139,7 @@ internal static class PackagesConfigUpdater
 
                     if (exitCodeAgain != 0)
                     {
+                        MSBuildHelper.ThrowOnMissingPackages(restoreOutput);
                         throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
                     }
 
@@ -147,6 +148,7 @@ internal static class PackagesConfigUpdater
 
                 MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
                 MSBuildHelper.ThrowOnMissingFile(fullOutput);
+                MSBuildHelper.ThrowOnMissingPackages(fullOutput);
                 throw new Exception(fullOutput);
             }
         }

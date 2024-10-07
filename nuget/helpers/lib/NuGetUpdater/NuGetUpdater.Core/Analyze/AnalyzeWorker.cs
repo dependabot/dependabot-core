@@ -31,6 +31,13 @@ public partial class AnalyzeWorker
 
     public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
     {
+        var analysisResult = await RunWithErrorHandlingAsync(repoRoot, discoveryPath, dependencyPath);
+        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+    }
+
+    internal async Task<AnalysisResult> RunWithErrorHandlingAsync(string repoRoot, string discoveryPath, string dependencyPath)
+    {
         AnalysisResult analysisResult;
         var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
         var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
@@ -54,7 +61,7 @@ public partial class AnalyzeWorker
             };
         }
 
-        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+        return analysisResult;
     }
 
     public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
