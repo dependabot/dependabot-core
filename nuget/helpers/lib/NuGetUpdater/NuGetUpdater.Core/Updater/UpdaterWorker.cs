@@ -9,7 +9,7 @@ namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
 {
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
@@ -18,7 +18,7 @@ public class UpdaterWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public UpdaterWorker(Logger logger)
+    public UpdaterWorker(ILogger logger)
     {
         _logger = logger;
     }
@@ -122,7 +122,7 @@ public class UpdaterWorker
         return new UpdateOperationResult();
     }
 
-    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, Logger logger)
+    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
         logger.Log($"  Writing update result to [{resultOutputPath}].");
 

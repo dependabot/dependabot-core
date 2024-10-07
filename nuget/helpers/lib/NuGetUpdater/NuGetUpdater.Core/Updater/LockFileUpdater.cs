@@ -5,7 +5,7 @@ internal static class LockFileUpdater
     public static async Task UpdateLockFileAsync(
         string repoRootPath,
         string projectPath,
-        Logger logger)
+        ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
         var lockPath = Path.Combine(projectDirectory, "packages.lock.json");
@@ -23,6 +23,6 @@ internal static class LockFileUpdater
             {
                 logger.Log($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
-        }, retainMSBuildSdks: true);
+        }, logger, retainMSBuildSdks: true);
     }
 }

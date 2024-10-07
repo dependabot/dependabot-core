@@ -20,7 +20,7 @@ internal static class NuGetHelper
         return false;
     }
 
-    internal static async Task<bool> DownloadNuGetPackagesAsync(string repoRoot, string projectPath, IReadOnlyCollection<Dependency> packages, Logger logger)
+    internal static async Task<bool> DownloadNuGetPackagesAsync(string repoRoot, string projectPath, IReadOnlyCollection<Dependency> packages, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("msbuild_sdk_restore_");
         try

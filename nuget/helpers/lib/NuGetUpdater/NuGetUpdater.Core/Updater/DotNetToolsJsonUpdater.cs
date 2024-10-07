@@ -8,7 +8,7 @@ internal static class DotNetToolsJsonUpdater
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
