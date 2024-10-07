@@ -26,7 +26,7 @@ module Dependabot
       def ecosystem_versions
         {
           package_managers: {
-            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile) || "unknown"
+            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile)
           }
         }
       end
