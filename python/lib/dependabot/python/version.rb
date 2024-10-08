@@ -13,7 +13,7 @@ module Dependabot
       attr_reader :epoch
 
       sig { returns(T::Array[Integer]) }
-      attr_reader :release
+      attr_reader :release_segment
 
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :dev
@@ -87,7 +87,7 @@ module Dependabot
         end
 
         @epoch = matches["epoch"].to_i
-        @release = matches["release"]&.split(".")&.map(&:to_i) || []
+        @release_segment = matches["release"]&.split(".")&.map(&:to_i) || []
         @pre = parse_letter_version(matches["pre_l"], matches["pre_n"])
         @post = parse_letter_version(matches["post_l"], matches["post_n1"] || matches["post_n2"])
         @dev = parse_letter_version(matches["dev_l"], matches["dev_n"])
@@ -95,10 +95,17 @@ module Dependabot
         super(matches["release"] || "")
       end
 
+      sig { override.params(version: VersionParameter).returns(Dependabot::Python::Version) }
+      def self.new(version)
+        T.cast(super, Dependabot::Python::Version)
+      end
+
+      sig { returns(String) }
       def to_s
         @version_string
       end
 
+      sig { returns(String) }
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
       end
@@ -106,6 +113,11 @@ module Dependabot
       sig { returns(T::Boolean) }
       def prerelease?
         !!(pre || dev)
+      end
+
+      sig { returns(Dependabot::Python::Version) }
+      def release
+        Dependabot::Python::Version.new(release_segment.join("."))
       end
 
       sig { params(other: VersionParameter).returns(Integer) }
@@ -201,7 +213,7 @@ module Dependabot
 
       sig { params(other: Dependabot::Python::Version).returns(Integer) }
       def release_version_comparison(other)
-        tokens, other_tokens = pad_for_comparison(release, other.release)
+        tokens, other_tokens = pad_for_comparison(release_segment, other.release_segment)
         tokens <=> other_tokens
       end
 
