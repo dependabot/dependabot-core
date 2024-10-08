@@ -35,23 +35,37 @@ module Dependabot
       YARN_DEFAULT_VERSION = YARN_V3
       YARN_FALLBACK_VERSION = YARN_V1
 
-      # NPM 7 uses lockfileVersion 2
-      # NPN 8 uses lockfileVersion 2
-      # NPN 9 uses lockfileVersion 3
+      # Determines the npm version based on the lockfile version
+      # - NPM 7 uses lockfileVersion 2
+      # - NPM 8 uses lockfileVersion 2
+      # - NPM 9 uses lockfileVersion 3
+
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        lockfile_content = T.must(lockfile.content)
-        lockfile_version = JSON.parse(lockfile_content)["lockfileVersion"].to_i
+        lockfile_content = lockfile.content
 
-        return NPM_V8 if lockfile_version == 2 # Corresponds to npm 7, 8
-        return NPM_V9 if lockfile_version == 3 # Corresponds to npm 9
+        # Return default NPM version if there's no lockfile or it's empty
+        return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
-        # Default to npm 9 if lockfileVersion is not in the specific range
-        return NPM_DEFAULT_VERSION if lockfile_version < 2 || lockfile_version > 3
+        parsed_lockfile = JSON.parse(lockfile_content)
 
-        NPM_FALLBACK_VERSION  # Default fallback to npm 8
+        lockfile_version_str = parsed_lockfile["lockfileVersion"]
+
+        # Default to npm default version if lockfileVersion is missing or empty
+        return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
+
+        lockfile_version = lockfile_version_str.to_i
+
+        case lockfile_version
+        when 2
+          NPM_V8 # Corresponds to npm 7, 8
+        when 3
+          NPM_V9 # Corresponds to npm 9
+        else
+          NPM_FALLBACK_VERSION # Default fallback if unexpected version
+        end
       rescue JSON::ParserError
-        NPM_FALLBACK_VERSION  # Fallback to npm 8 if parsing fails
+        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
       sig { params(yarn_lock: DependencyFile).returns(Integer) }

@@ -96,7 +96,9 @@ module Dependabot
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile
 
-        Helpers.send(:"#{name}_version_numeric", lockfile)
+        version = Helpers.send(:"#{name}_version_numeric", lockfile)
+
+        Dependabot.logger.info("Guessed version info \"#{name}\" : \"#{version}\"")
       end
 
       sig { params(name: T.untyped).returns(T.nilable(String)) }
