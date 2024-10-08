@@ -18,7 +18,7 @@ module Dependabot
       NPM_V9 = 9
       NPM_V8 = 8
       NPM_DEFAULT_VERSION = NPM_V9
-      NPM_FALLBACK_VERSION = NPM_V8
+      NPM_FALLBACK_VERSION = NPM_V9
 
       # PNPM Version Constants
       PNPM_V9 = 9
@@ -35,12 +35,19 @@ module Dependabot
       YARN_DEFAULT_VERSION = YARN_V3
       YARN_FALLBACK_VERSION = YARN_V1
 
+      # NPM 7 uses lockfileVersion 2
+      # NPN 8 uses lockfileVersion 2
+      # NPN 9 uses lockfileVersion 3
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
         lockfile_content = T.must(lockfile.content)
         lockfile_version = JSON.parse(lockfile_content)["lockfileVersion"].to_i
 
-        return NPM_DEFAULT_VERSION if lockfile_version >= 3 # Corresponds to npm 9
+        return NPM_V8 if lockfile_version == 2 # Corresponds to npm 7, 8
+        return NPM_V9 if lockfile_version == 3 # Corresponds to npm 9
+
+        # Default to npm 9 if lockfileVersion is not in the specific range
+        return NPM_DEFAULT_VERSION if lockfile_version < 2 || lockfile_version > 3
 
         NPM_FALLBACK_VERSION  # Default fallback to npm 8
       rescue JSON::ParserError
