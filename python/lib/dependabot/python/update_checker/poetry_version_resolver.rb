@@ -194,12 +194,30 @@ module Dependabot
           message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
+        def edit_file(file_content)
+          changed_string = ""
+          temp_content = file_content
+          temp_content.lines.map do |line|
+            next if line.start_with?("packages = ") || line.include?(", develop = true") || line.include?('"*"')
+
+            changed_string += line
+
+            puts line if line.include?("packages = ") || line.include?(", develop = true") || line.include?("*")
+          end.join
+          edited = changed_string
+
+          edited
+        end
+
         def write_temporary_dependency_files(updated_req: nil,
                                              update_pyproject: true)
+
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            # new_content = file.content
+            new_content = edit_file(file.content)
+            File.write(path, new_content)
           end
 
           # Overwrite the .python-version with updated content
