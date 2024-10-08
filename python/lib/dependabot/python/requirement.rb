@@ -17,14 +17,24 @@ module Dependabot
       # Add equality and arbitrary-equality matchers
       OPS = OPS.merge(
         "==" => ->(v, r) { v == r },
-        "===" => ->(v, r) { v.to_s == r.to_s }
+        "===" => ->(v, r) { v.to_s == r.to_s },
+        "~>" => ->(v, r) { v >= r && v.release.join(".") < r.bump }
       )
+
+      # OPS = { # :nodoc:
+      #   "=" => lambda {|v, r| v == r },
+      #   "!=" => lambda {|v, r| v != r },
+      #   ">" => lambda {|v, r| v > r },
+      #   "<" => lambda {|v, r| v < r },
+      #   ">=" => lambda {|v, r| v >= r },
+      #   "<=" => lambda {|v, r| v <= r }
+      # }.freeze
 
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
       PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
@@ -41,9 +51,9 @@ module Dependabot
           raise BadRequirementError, msg
         end
 
-        return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+        return DefaultRequirement if matches[:op] == ">=" && matches[:version] == "0"
 
-        [matches[1] || "=", Python::Version.new(T.must(matches[2]))]
+        [matches[:op] || "=", Python::Version.new(T.must(matches[:version]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
