@@ -15,7 +15,7 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
-      NPM_V9 = 8
+      NPM_V9 = 9
       NPM_V8 = 8
       NPM_DEFAULT_VERSION = NPM_V8
       NPM_FALLBACK_VERSION = NPM_V8
