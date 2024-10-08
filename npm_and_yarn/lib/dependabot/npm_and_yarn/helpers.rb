@@ -39,7 +39,6 @@ module Dependabot
       # - NPM 7 uses lockfileVersion 2
       # - NPM 8 uses lockfileVersion 2
       # - NPM 9 uses lockfileVersion 3
-
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
         lockfile_content = lockfile.content
