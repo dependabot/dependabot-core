@@ -18,17 +18,12 @@ module Dependabot
       OPS = OPS.merge(
         "==" => ->(v, r) { v == r },
         "===" => ->(v, r) { v.to_s == r.to_s },
-        "~>" => ->(v, r) { v >= r && v.release.join(".") < r.bump }
+        "~>" => lambda { |v, r|
+                  v = Python::Version.new(v.release_segment.join("."))
+                  r = Python::Version.new(r.release_segment.join("."))
+                  v >= r && v.release < r.bump
+                }
       )
-
-      # OPS = { # :nodoc:
-      #   "=" => lambda {|v, r| v == r },
-      #   "!=" => lambda {|v, r| v != r },
-      #   ">" => lambda {|v, r| v > r },
-      #   "<" => lambda {|v, r| v < r },
-      #   ">=" => lambda {|v, r| v >= r },
-      #   "<=" => lambda {|v, r| v <= r }
-      # }.freeze
 
       quoted = OPS.keys.sort_by(&:length).reverse
                   .map { |k| Regexp.quote(k) }.join("|")
