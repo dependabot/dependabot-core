@@ -269,7 +269,7 @@ module Dependabot
           if git_url.include?("git@")
             T.must(git_url.split("git@").last).sub(":", "/")
           else
-            git_url.sub(%r{.*?://}, "")
+            git_url.sub(%r{(?:\w{3,5})?://}, "")
           end
 
         querystr = URI.parse("https://" + bare_uri).query
@@ -292,6 +292,7 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
         return :interpolation if source_string.include?("${")
@@ -308,11 +309,12 @@ module Dependabot
 
         path_uri = URI.parse(T.must(source_string.split(%r{(?<!:)//}).first))
         query_uri = URI.parse(source_string)
-        return :http_archive if path_uri.path.end_with?(*RegistryClient::ARCHIVE_EXTENSIONS)
+        return :http_archive if RegistryClient::ARCHIVE_EXTENSIONS.any? { |ext| path_uri.path&.end_with?(ext) }
         return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       # == Returns:
