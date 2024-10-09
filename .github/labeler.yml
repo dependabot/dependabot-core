@@ -50,6 +50,10 @@
 - changed-files:
   - any-glob-to-any-file: maven/**
 
+"L: java:maven_osv":
+- changed-files:
+  - any-glob-to-any-file: maven_osv/**
+
 "L: dotnet:nuget":
 - changed-files:
   - any-glob-to-any-file: nuget/**

@@ -94,6 +94,7 @@ COPY --chown=dependabot:dependabot go_modules/.bundle go_modules/dependabot-go_m
 COPY --chown=dependabot:dependabot gradle/.bundle gradle/dependabot-gradle.gemspec gradle/
 COPY --chown=dependabot:dependabot hex/.bundle hex/dependabot-hex.gemspec hex/
 COPY --chown=dependabot:dependabot maven/.bundle maven/dependabot-maven.gemspec maven/
+COPY --chown=dependabot:dependabot maven_osv/.bundle maven_osv/dependabot-maven_osv.gemspec maven_osv/
 COPY --chown=dependabot:dependabot npm_and_yarn/.bundle npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
 COPY --chown=dependabot:dependabot nuget/.bundle nuget/dependabot-nuget.gemspec nuget/
 COPY --chown=dependabot:dependabot pub/.bundle pub/dependabot-pub.gemspec pub/
@@ -103,7 +104,7 @@ COPY --chown=dependabot:dependabot swift/.bundle swift/dependabot-swift.gemspec 
 COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven maven_osv gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done

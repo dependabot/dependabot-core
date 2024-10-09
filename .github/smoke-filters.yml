@@ -38,6 +38,9 @@ hex:
 maven:
   - *common
   - 'maven/**'
+maven_osv:
+  - *common
+  - 'maven_osv/**'
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'

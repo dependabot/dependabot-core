@@ -37,6 +37,9 @@
 "L: java:maven":
     - '(maven)'
 
+"L: java:maven_osv":
+    - '(maven_osv)'
+
 "L: dotnet:nuget":
     - '(nuget)'
 

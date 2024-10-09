@@ -17,6 +17,7 @@ RSpec/AnyInstance:
     - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
     - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
     - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
+    - 'maven_osv/spec/dependabot/maven_osv/metadata_finder_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
     - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
@@ -63,6 +64,7 @@ RSpec/IteratedExpectation:
     - 'gradle/spec/dependabot/gradle/file_updater_spec.rb'
     - 'hex/spec/dependabot/hex/file_updater_spec.rb'
     - 'maven/spec/dependabot/maven/file_updater_spec.rb'
+    - 'maven_osv/spec/dependabot/maven_osv/file_updater_spec.rb'
     - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
     - 'python/spec/dependabot/python/file_updater_spec.rb'
@@ -102,7 +104,7 @@ RSpec/OverwritingSetup:
     - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
     - 'docker/spec/dependabot/docker/file_updater_spec.rb'
     - 'gradle/spec/dependabot/gradle/update_checker/version_finder_spec.rb'
-    - 'maven/spec/dependabot/maven/update_checker/version_finder_spec.rb'
+    - 'maven_osv/spec/dependabot/maven_osv/update_checker/version_finder_spec.rb'
     - 'nuget/spec/dependabot/nuget/update_checker/repository_finder_spec.rb'
     - 'python/spec/dependabot/python/update_checker/pip_version_resolver_spec.rb'
     - 'python/spec/dependabot/python/update_checker_spec.rb'
@@ -120,7 +122,7 @@ RSpec/RepeatedExampleGroupBody:
   Exclude:
     - 'cargo/spec/dependabot/cargo/file_fetcher_spec.rb'
     - 'composer/spec/dependabot/composer/update_checker/latest_version_finder_spec.rb'
-    - 'maven/spec/dependabot/maven_spec.rb'
+    - 'maven_osv/spec/dependabot/maven_osv_spec.rb'
     - 'pub/spec/dependabot/pub/requirements_spec.rb'
 
 # Offense count: 45

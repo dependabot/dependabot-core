@@ -21,6 +21,7 @@
 --ignore=gradle/spec/
 --ignore=hex/spec/
 --ignore=maven/spec/
+--ignore=maven_osv/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
 --ignore=pub/spec/

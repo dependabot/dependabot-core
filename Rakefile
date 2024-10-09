@@ -22,6 +22,7 @@ GEMSPECS = %w(
   nuget/dependabot-nuget.gemspec
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
+  maven_osv/dependabot-maven_osv.gemspec
   bundler/dependabot-bundler.gemspec
   elm/dependabot-elm.gemspec
   cargo/dependabot-cargo.gemspec

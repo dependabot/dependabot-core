@@ -60,6 +60,11 @@
     "ecosystem": "maven"
   },
   {
+    "core": "maven_osv",
+    "test": "maven_osv",
+    "ecosystem": "maven_osv"
+  },
+  {
     "core": "npm_and_yarn",
     "test": "npm",
     "ecosystem": "npm"

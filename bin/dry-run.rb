@@ -23,6 +23,7 @@
 # - pip (includes pipenv)
 # - npm_and_yarn
 # - maven
+# - maven_osv
 # - gradle
 # - cargo
 # - hex
@@ -62,6 +63,7 @@ $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./hex/lib"
 $LOAD_PATH << "./maven/lib"
+$LOAD_PATH << "./maven_osv/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
@@ -107,6 +109,7 @@ require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/hex"
 require "dependabot/maven"
+require "dependabot/maven_osv"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"

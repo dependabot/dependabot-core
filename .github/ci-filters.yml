@@ -45,6 +45,9 @@ hex:
 maven:
   - *shared
   - 'maven/**'
+maven_osv:
+- *shared
+- 'maven_osv/**'
 npm_and_yarn:
   - *shared
   - 'npm_and_yarn/**'

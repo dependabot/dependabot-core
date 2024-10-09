@@ -69,6 +69,7 @@ module Dependabot
         "gomod" => "go_modules",
         "gradle" => "gradle",
         "maven" => "maven",
+        "maven_osv" => "maven_osv",
         "mix" => "hex",
         "nuget" => "nuget",
         "npm" => "npm_and_yarn",

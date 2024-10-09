@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-gradle", Dependabot::VERSION
   spec.add_dependency "dependabot-hex", Dependabot::VERSION
   spec.add_dependency "dependabot-maven", Dependabot::VERSION
+  spec.add_dependency "dependabot-maven_osv", Dependabot::VERSION
   spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
   spec.add_dependency "dependabot-nuget", Dependabot::VERSION
   spec.add_dependency "dependabot-pub", Dependabot::VERSION

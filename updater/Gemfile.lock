@@ -92,6 +92,12 @@ PATH
       dependabot-common (= 0.279.0)
 
 PATH
+  remote: ../maven_osv
+  specs:
+    dependabot-maven_osv (0.279.0)
+      dependabot-common (= 0.279.0)
+
+PATH
   remote: ../maven
   specs:
     dependabot-maven (0.279.0)
@@ -421,6 +427,7 @@ DEPENDENCIES
   dependabot-gradle!
   dependabot-hex!
   dependabot-maven!
+  dependabot-maven_osv!
   dependabot-npm_and_yarn!
   dependabot-nuget!
   dependabot-pub!

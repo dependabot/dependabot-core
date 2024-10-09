@@ -36,6 +36,7 @@ Sentry.init do |config|
     nuget|
     gradle|
     maven|
+    maven_osv|
     hex|
     cargo|
     go_modules|
@@ -66,6 +67,7 @@ require "dependabot/composer"
 require "dependabot/nuget"
 require "dependabot/gradle"
 require "dependabot/maven"
+require "dependabot/maven_osv"
 require "dependabot/hex"
 require "dependabot/cargo"
 require "dependabot/go_modules"

@@ -18,6 +18,7 @@ dependabot \
   -v "$(pwd)"/gradle:/home/dependabot/gradle \
   -v "$(pwd)"/hex:/home/dependabot/hex \
   -v "$(pwd)"/maven:/home/dependabot/maven \
+  -v "$(pwd)"/maven_osv:/home/dependabot/maven_osv \
   -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
   -v "$(pwd)"/pub:/home/dependabot/pub \

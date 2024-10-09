@@ -62,6 +62,7 @@ jobs:
           - { name: gradle, ecosystem: gradle }
           - { name: hex, ecosystem: mix }
           - { name: maven, ecosystem: maven }
+          - { name: maven_osv, ecosystem: maven_osv }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
           - { name: pub, ecosystem: pub }
