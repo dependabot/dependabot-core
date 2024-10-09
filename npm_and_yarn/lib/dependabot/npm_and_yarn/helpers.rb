@@ -15,7 +15,6 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
-      NPM_V9 = 9
       NPM_V8 = 8
       NPM_V6 = 6
       NPM_DEFAULT_VERSION = NPM_V8
@@ -77,7 +76,9 @@ module Dependabot
 
         lockfile_version = lockfile_version_str.to_i
 
-        return NPM_V9 if lockfile_version == 3
+        # Using npm 8 as the default for lockfile_version > 2.
+        # Update needed to support npm 9+ based on lockfile version.
+        return NPM_V8 if lockfile_version >= 2
 
         NPM_DEFAULT_VERSION
       rescue JSON::ParserError
