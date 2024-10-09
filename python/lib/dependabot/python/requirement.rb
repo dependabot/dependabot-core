@@ -19,8 +19,10 @@ module Dependabot
         "==" => ->(v, r) { v == r },
         "===" => ->(v, r) { v.to_s == r.to_s },
         "~>" => lambda { |v, r|
-                  v = Python::Version.new(v.release_segment.join("."))
-                  r = Python::Version.new(r.release_segment.join("."))
+                  if Dependabot::Experiments.enabled?(:python_new_version)
+                    v = Python::Version.new(v.release_segment.join("."))
+                    r = Python::Version.new(r.release_segment.join("."))
+                  end
                   v >= r && v.release < r.bump
                 }
       )
@@ -29,11 +31,11 @@ module Dependabot
                   .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
       PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
-      def self.parse(obj)
+      def self.parse(obj) # rubocop:disable Metrics/PerceivedComplexity
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         line = obj.to_s
@@ -41,14 +43,24 @@ module Dependabot
           line = matches[1]
         end
 
-        unless (matches = PATTERN.match(line))
+        pattern = if Dependabot::Experiments.enabled?(:python_new_version)
+                    quoted = OPS.keys.sort_by(&:length).reverse
+                                .map { |k| Regexp.quote(k) }.join("|")
+                    version_pattern = Python::Version::NEW_VERSION_PATTERN
+                    pattern_raw = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
+                    /\A#{pattern_raw}\z/
+                  else
+                    PATTERN
+                  end
+
+        unless (matches = pattern.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise BadRequirementError, msg
         end
 
-        return DefaultRequirement if matches[:op] == ">=" && matches[:version] == "0"
+        return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[:op] || "=", Python::Version.new(T.must(matches[:version]))]
+        [matches[1] || "=", Python::Version.new(T.must(matches[2]))]
       end
 
       # Returns an array of requirements. At least one requirement from the

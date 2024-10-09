@@ -8,6 +8,10 @@ require "dependabot/python/version"
 RSpec.describe Dependabot::Python::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
 
+  before do
+    Dependabot::Experiments.register(:python_new_version, true)
+  end
+
   let(:requirement_string) { ">=1.0.0" }
   let(:version_class) { Dependabot::Python::Version }
 
