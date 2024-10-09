@@ -41,6 +41,8 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        PACKAGE_REFERENCE = /(?<package>.+?) = {\s?path = "*.*", develop = true\s?}/
+
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
         attr_reader :dependency
@@ -194,19 +196,18 @@ module Dependabot
           message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
-        def edit_file(file_content)
-          changed_string = ""
-          temp_content = file_content
-          temp_content.lines.map do |line|
-            next if line.start_with?("packages = ") || line.include?(", develop = true") || line.include?('"*"')
+        def remove_packages(file_content)
+          cleaned_content = ""
+          file_content.lines.map do |line|
+            if line.match?(PACKAGE_REFERENCE)
+              Dependabot.logger.info("Project reference found in dependency list: #{line}")
+            end
 
-            changed_string += line
+            next if line.match?(PACKAGE_REFERENCE)
 
-            puts line if line.include?("packages = ") || line.include?(", develop = true") || line.include?("*")
+            cleaned_content += line
           end.join
-          edited = changed_string
-
-          edited
+          cleaned_content
         end
 
         def write_temporary_dependency_files(updated_req: nil,
@@ -215,9 +216,15 @@ module Dependabot
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            # new_content = file.content
-            new_content = edit_file(file.content)
-            File.write(path, new_content)
+
+            Dependabot::Experiments.register(:remove_packages, true)
+
+            if Dependabot::Experiments.enabled?(:remove_packages) && file.name.include?(".toml")
+              file_content = remove_packages(file.content)
+              File.write(path, file_content)
+            else
+              File.write(path, file.content)
+            end
           end
 
           # Overwrite the .python-version with updated content
