@@ -18,7 +18,6 @@ module Dependabot
       NPM_V9 = 9
       NPM_V8 = 8
       NPM_DEFAULT_VERSION = NPM_V8
-      NPM_FALLBACK_VERSION = NPM_V8
 
       # PNPM Version Constants
       PNPM_V9 = 9
@@ -81,7 +80,7 @@ module Dependabot
 
         NPM_DEFAULT_VERSION
       rescue JSON::ParserError
-        NPM_FALLBACK_VERSION # Fallback to default npm version if parsing fails
+        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
       sig { params(yarn_lock: DependencyFile).returns(Integer) }
