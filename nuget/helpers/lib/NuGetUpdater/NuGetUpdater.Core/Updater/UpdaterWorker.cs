@@ -70,6 +70,14 @@ public class UpdaterWorker
                 ErrorDetails = ex.Dependencies,
             };
         }
+        catch (Exception ex)
+        {
+            result = new()
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+            };
+        }
 
         return result;
     }
