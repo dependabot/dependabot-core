@@ -17,6 +17,7 @@ module Dependabot
       # NPM Version Constants
       NPM_V9 = 9
       NPM_V8 = 8
+      NPM_V6 = 6
       NPM_DEFAULT_VERSION = NPM_V8
 
       # PNPM Version Constants
@@ -49,11 +50,11 @@ module Dependabot
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric_npm6_or_higher(lockfile)
         lockfile_content = T.must(lockfile.content)
-        return 8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
+        return NPM_V8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
 
-        6
+        NPM_V6
       rescue JSON::ParserError
-        6
+        NPM_V6
       end
 
       # Determines the npm version based on the lockfile version
