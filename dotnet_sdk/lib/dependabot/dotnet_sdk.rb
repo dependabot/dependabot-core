@@ -13,7 +13,7 @@ require "dependabot/dotnet_sdk/version"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
-  .register_label_details("dotnet_sdk", name: "dotnet_sdk_package_manager", colour: "2753E3")
+  .register_label_details("dotnet_sdk", name: "dotnet_sdk_package_manager", colour: "512BD4")
 
 require "dependabot/dependency"
 Dependabot::Dependency
