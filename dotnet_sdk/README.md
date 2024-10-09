@@ -1,4 +1,4 @@
-## `dependabot-dotbet-sdk`
+## `dependabot-dotnet-sdk`
 
 .NET SDK support for [`dependabot-core`][core-repo].
 
