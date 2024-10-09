@@ -1,0 +1,9 @@
+{
+  "ref": "refs/heads/master",
+  "url": "https://api.github.com/repos/gocardless/bump/git/refs/heads/master",
+  "object": {
+    "type": "commit",
+    "sha": "aa218f56b14c9653891f9e74264a383fa43fefbd",
+    "url": "https://api.github.com/repos/gocardless/bump/git/commits/aa218f56b14c9653891f9e74264a383fa43fefbd"
+  }
+}

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/*
+ * $Id$
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+-->
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.struts</groupId>
+        <artifactId>struts2-parent</artifactId>
+        <version>2.5.10</version>
+    </parent>
+    <artifactId>struts2-apps</artifactId>
+    <packaging>pom</packaging>
+    <name>Struts 2 Webapps</name>
+    <modules>
+        <module>showcase</module>
+        <module>rest-showcase</module>
+    </modules>
+    <build>
+        <plugins>
+            <!-- Include source code under WEB-INF/src/java -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-sources</id>
+                        <phase>process-sources</phase>
+                        <configuration>
+                            <tasks>
+                                <copy todir="${project.build.directory}/${project.artifactId}/WEB-INF/src/java" failonerror="false">
+                                    <fileset dir="${basedir}/src/main/java" />
+                                </copy>
+                                <copy todir="${project.build.directory}/${project.artifactId}/WEB-INF/src/java" failonerror="false">
+                                    <fileset dir="${basedir}/src/main/resources" />
+                                </copy>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>${basedir}/src/main/resources</directory>
+                            <targetPath>META-INF</targetPath>
+                            <includes>
+                                <include>LICENSE.txt</include>
+                                <include>NOTICE.txt</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                    <warSourceExcludes>WEB-INF/classes/LICENSE.txt,WEB-INF/classes/NOTICE.txt</warSourceExcludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                    <skipDeploy>true</skipDeploy>
+                    <generateReports>false</generateReports>
+                </configuration>
+            </plugin>
+        </plugins>
+        <finalName>${project.artifactId}</finalName>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.struts</groupId>
+            <artifactId>struts2-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${struts2.springPlatformVersion}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>

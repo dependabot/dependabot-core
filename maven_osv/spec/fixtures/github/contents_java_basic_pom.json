@@ -1,0 +1,18 @@
+{
+  "name": "pom.xml",
+  "path": "pom.xml",
+  "sha": "3bc1640c9cc83c05b7a5c38909076f25998fd780",
+  "size": 5682,
+  "url": "https://api.github.com/repos/evenh/versionmonitor/contents/pom.xml?ref=master",
+  "html_url": "https://github.com/evenh/versionmonitor/blob/master/pom.xml",
+  "git_url": "https://api.github.com/repos/evenh/versionmonitor/git/blobs/3bc1640c9cc83c05b7a5c38909076f25998fd780",
+  "download_url": "https://raw.githubusercontent.com/evenh/versionmonitor/master/pom.xml",
+  "type": "file",
+  "content": "PHByb2plY3QgeG1sbnM9Imh0dHA6Ly9tYXZlbi5hcGFjaGUub3JnL1BPTS80\nLjAuMCIKICAgICAgICAgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8y\nMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIKICAgICAgICAgeHNpOnNjaGVtYUxv\nY2F0aW9uPSJodHRwOi8vbWF2ZW4uYXBhY2hlLm9yZy9QT00vNC4wLjAgaHR0\ncDovL21hdmVuLmFwYWNoZS5vcmcvbWF2ZW4tdjRfMF8wLnhzZCI+CiAgPG1v\nZGVsVmVyc2lvbj40LjAuMDwvbW9kZWxWZXJzaW9uPgoKICA8Z3JvdXBJZD5j\nb20uZGVwZW5kYWJvdDwvZ3JvdXBJZD4KICA8YXJ0aWZhY3RJZD5iYXNpYy1w\nb208L2FydGlmYWN0SWQ+CiAgPHZlcnNpb24+MC4wLjEtUkVMRUFTRTwvdmVy\nc2lvbj4KICA8bmFtZT5EZXBlbmRhYm90IEJhc2ljIFBPTTwvbmFtZT4KCiAg\nPHBhY2thZ2luZz5wb208L3BhY2thZ2luZz4KCiAgPGRlcGVuZGVuY2llcz4K\nICAgIDxkZXBlbmRlbmN5PgogICAgICA8Z3JvdXBJZD5jb20uZ29vZ2xlLmd1\nYXZhPC9ncm91cElkPgogICAgICA8YXJ0aWZhY3RJZD5ndWF2YTwvYXJ0aWZh\nY3RJZD4KICAgICAgPHZlcnNpb24+MjMuMy1qcmU8L3ZlcnNpb24+CiAgICA8\nL2RlcGVuZGVuY3k+CgogICAgPGRlcGVuZGVuY3k+CiAgICAgIDxncm91cElk\nPm9yZy5hcGFjaGUuaHR0cGNvbXBvbmVudHM8L2dyb3VwSWQ+CiAgICAgIDxh\ncnRpZmFjdElkPmh0dHBjbGllbnQ8L2FydGlmYWN0SWQ+CiAgICAgIDx2ZXJz\naW9uPjQuNS4zPC92ZXJzaW9uPgogICAgPC9kZXBlbmRlbmN5PgogIDwvZGVw\nZW5kZW5jaWVzPgo8L3Byb2plY3Q+Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/evenh/versionmonitor/contents/pom.xml?ref=master",
+    "git": "https://api.github.com/repos/evenh/versionmonitor/git/blobs/3bc1640c9cc83c05b7a5c38909076f25998fd780",
+    "html": "https://github.com/evenh/versionmonitor/blob/master/pom.xml"
+  }
+}

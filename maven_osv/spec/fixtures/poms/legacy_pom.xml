@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>my-fantastic-project</artifactId>
+        <groupId>net.evenh.multimodule</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+
+    <modules>
+        <module>webapp</module>
+        <module>some-spring-project</module>
+    </modules>
+
+    <packaging>pom</packaging>
+    <artifactId>legacy</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.evenh.multimodule</groupId>
+            <artifactId>util</artifactId>
+        </dependency>
+    </dependencies>
+</project>
