@@ -32,6 +32,12 @@ public partial class DiscoveryWorker
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
     {
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath);
+        await WriteResultsAsync(repoRootPath, outputPath, result);
+    }
+
+    internal async Task<WorkspaceDiscoveryResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath)
+    {
         WorkspaceDiscoveryResult result;
         try
         {
@@ -49,7 +55,7 @@ public partial class DiscoveryWorker
             };
         }
 
-        await WriteResultsAsync(repoRootPath, outputPath, result);
+        return result;
     }
 
     internal async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)

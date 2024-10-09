@@ -35,10 +35,10 @@ public class AnalyzeWorkerTestBase
 
             var discoveryPath = Path.GetFullPath(DiscoveryWorker.DiscoveryResultFileName, directoryPath);
             var dependencyPath = Path.GetFullPath(relativeDependencyPath, directoryPath);
-            var analysisPath = Path.GetFullPath(AnalyzeWorker.AnalysisDirectoryName, directoryPath);
 
             var worker = new AnalyzeWorker(new Logger(verbose: true));
-            await worker.RunAsync(directoryPath, discoveryPath, dependencyPath, analysisPath);
+            var result = await worker.RunWithErrorHandlingAsync(directoryPath, discoveryPath, dependencyPath);
+            return result;
         });
 
         ValidateAnalysisResult(expectedResult, actualResult);
@@ -78,17 +78,13 @@ public class AnalyzeWorkerTestBase
         }
     }
 
-    protected static async Task<AnalysisResult> RunAnalyzerAsync(string dependencyName, TestFile[] files, Func<string, Task> action)
+    protected static async Task<AnalysisResult> RunAnalyzerAsync(string dependencyName, TestFile[] files, Func<string, Task<AnalysisResult>> action)
     {
         // write initial files
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
 
         // run discovery
-        await action(temporaryDirectory.DirectoryPath);
-
-        // gather results
-        var resultPath = Path.Join(temporaryDirectory.DirectoryPath, AnalyzeWorker.AnalysisDirectoryName, $"{dependencyName}.json");
-        var resultJson = await File.ReadAllTextAsync(resultPath);
-        return JsonSerializer.Deserialize<AnalysisResult>(resultJson, DiscoveryWorker.SerializerOptions)!;
+        var result = await action(temporaryDirectory.DirectoryPath);
+        return result;
     }
 }

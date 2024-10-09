@@ -88,6 +88,13 @@ public class RunWorker
                 Details = ex.FilePath,
             };
         }
+        catch (UpdateNotPossibleException ex)
+        {
+            error = new UpdateNotPossible()
+            {
+                Details = ex.Dependencies,
+            };
+        }
         catch (Exception ex)
         {
             error = new UnknownError()
