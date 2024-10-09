@@ -142,7 +142,9 @@ module Dependabot
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
-          Dependabot.logger.info("Latest version is #{checker.latest_version}")
+          lead_dep_latest_available_ver = checker.latest_version
+
+          Dependabot.logger.info("Latest version is #{lead_dep_latest_available_ver}")
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
@@ -156,6 +158,20 @@ module Dependabot
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
           )
+
+          # Dependabot::Experiments.register(:existing_pr_version_match, true)
+
+          if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
+            job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
+                                                                 lead_dep_latest_available_ver.to_s))
+
+            msg = "Lead dependency (#{lead_dep_name}) version (#{lead_dep_latest_available_ver}) is " \
+                  " already upto date in pull request, skipping updating pull request."
+
+            Dependabot.logger.info(msg)
+
+            return
+          end
 
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
@@ -196,6 +212,24 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
+
+        # Feature testing to fix issues related with scenarios when a PR is updated while containing
+        # the same version in existing PR and dependeabot updater closes and raised same PR
+        sig { params(lead_dep_name: String, existing_pr_lead_dep_ver: String).returns(T::Boolean) }
+        def pr_lead_dep_latest_ver(lead_dep_name, existing_pr_lead_dep_ver)
+          job.existing_pull_requests.each do |existing_pr|
+            existing_pr.dependencies.each do |deps|
+              next unless (deps.name.eql? lead_dep_name) && (deps.version.eql? existing_pr_lead_dep_ver)
+
+              Dependabot.logger.info("Matching entry found in existing PR. Dependency name: #{deps.name}, version: #{deps.version}") # rubocop:disable Layout/LineLength
+              return true
+            end
+          end
+          false
+        rescue StandardError => e
+          Dependabot.logger.error("Error while evaluating existing PR: #{e.message}")
+          false
+        end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
