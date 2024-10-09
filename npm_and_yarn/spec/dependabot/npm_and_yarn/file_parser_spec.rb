@@ -152,7 +152,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           subject { dependencies.find { |d| d.name == "etag" } }
 
           let(:npm_fallback_version_above_v6_enabled) { false }
-          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6/invalid_version_requirement") }
 
           it { is_expected.to be_nil }
