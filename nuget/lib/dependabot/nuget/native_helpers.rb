@@ -273,6 +273,8 @@ module Dependabot
           raise DependencyFileNotFound, T.let(error_details, T.nilable(String))
         when "UpdateNotPossible"
           raise UpdateNotPossible, T.let(error_details, T::Array[String])
+        when "Unknown"
+          raise DependabotError, T.let(error_details, String)
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end
