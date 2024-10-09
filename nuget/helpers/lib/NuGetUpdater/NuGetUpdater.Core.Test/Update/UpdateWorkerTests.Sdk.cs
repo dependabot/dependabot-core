@@ -2969,6 +2969,42 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task ProcessingProjectWithWorkloadReferencesDoesNotFail()
+        {
+            // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
+            // still process the update
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="7.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
+                        <IsAspireHost>true</IsAspireHost>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
         public async Task ProcessingProjectWithAspireDoesNotFailEvenThoughWorkloadIsNotInstalled()
         {
             // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can
@@ -3007,7 +3043,7 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData("true")]
         [InlineData(null)]
-        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(string variableValue)
+        public async Task ProjectWithWorkloadsShouldNotFail(string variableValue)
         {
             using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
 
@@ -3022,7 +3058,7 @@ public partial class UpdateWorkerTests
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
+                        <TargetFrameworks>net8.0;net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst</TargetFrameworks>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Other.Package" Version="$(SomeUnresolvableProperty)" />
@@ -3033,7 +3069,7 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
+                        <TargetFrameworks>net8.0;net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst</TargetFrameworks>
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Other.Package" Version="$(SomeUnresolvableProperty)" />
