@@ -40,11 +40,11 @@ module Dependabot
       # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
+        fallback_version_npm8 = true; # Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
 
-        return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
+        npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
 
-        npm_version_numeric_npm6_or_higher(lockfile)
+        # npm_version_numeric_npm6_or_higher(lockfile)
       end
 
       sig { params(lockfile: DependencyFile).returns(Integer) }
