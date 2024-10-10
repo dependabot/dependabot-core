@@ -20,6 +20,7 @@ module Dependabot
       def self.updated_files_regex
         [
           /.*\.([a-z]{2})?proj$/, # Matches files with any extension like .csproj, .vbproj, etc., in any directory
+          /packages\.lock\.json/,         # Matches packages.lock.json in any directory
           /packages\.config$/i,           # Matches packages.config in any directory
           /app\.config$/i,                # Matches app.config in any directory
           /web\.config$/i,                # Matches web.config in any directory
