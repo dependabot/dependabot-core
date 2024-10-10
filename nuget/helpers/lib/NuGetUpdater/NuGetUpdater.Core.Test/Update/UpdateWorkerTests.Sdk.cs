@@ -54,12 +54,12 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData("true")]
-        [InlineData(null)]
-        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceIncludeTheory(string variableValue)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceIncludeTheory(bool useDependencySolver)
         {
             // update Some.Package from 9.0.1 to 13.0.1
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
             await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
                 packages:
                 [
@@ -99,7 +99,7 @@ public partial class UpdateWorkerTests
         public async Task CallingResolveDependencyConflictsNew()
         {
             // update Microsoft.CodeAnalysis.Common from 4.9.2 to 4.10.0
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", "true")]);
+            using var _ = new DependencySolverEnvironment();
             await TestUpdateForProject("Microsoft.CodeAnalysis.Common", "4.9.2", "4.10.0",
                 // initial
                 projectContents: $"""
@@ -535,11 +535,11 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("true")]
-        public async Task AddPackageReference_InProjectFile_ForTransientDependency(string variableValue)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task AddPackageReference_InProjectFile_ForTransientDependency(bool useDependencySolver)
         {
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
             // add transient package Some.Transient.Dependency from 5.0.1 to 5.0.2
             await TestUpdateForProject("Some.Transient.Dependency", "5.0.1", "5.0.2", isTransitive: true,
                 packages:
@@ -2915,11 +2915,11 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData("true")]
-        [InlineData(null)]
-        public async Task NoChange_IfThereAreIncoherentVersions(string variableValue)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task NoChange_IfThereAreIncoherentVersions(bool useDependencySolver)
         {
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
 
             // trying to update `Transitive.Dependency` to 1.1.0 would normally pull `Some.Package` from 1.0.0 to 1.1.0,
             // but the TFM doesn't allow it
@@ -3005,11 +3005,11 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData("true")]
-        [InlineData(null)]
-        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(string variableValue)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(bool useDependencySolver)
         {
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
 
             // the property `$(SomeUnresolvableProperty)` cannot be resolved
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
@@ -3045,11 +3045,11 @@ public partial class UpdateWorkerTests
         }
 
         [Theory]
-        [InlineData("true")]
-        [InlineData(null)]
-        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage(string variableValue)
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage(bool useDependencySolver)
         {
-            using var env = new TemporaryEnvironment([("UseNewNugetPackageResolver", variableValue)]);
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
 
             // updating Some.Package from 3.3.30 requires that Some.Package.Extensions also be updated
             await TestUpdateForProject("Some.Package", "3.3.30", "3.4.3",
