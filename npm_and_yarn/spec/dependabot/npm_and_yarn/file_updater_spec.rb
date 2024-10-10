@@ -354,6 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a git dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -622,6 +623,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: gitlab" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -670,6 +672,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: github" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency") }
 
           it "correctly update the lockfiles" do
