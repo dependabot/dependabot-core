@@ -123,6 +123,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           "project.csproj",
           "library.fsproj",
           "app.vbproj",
+          "packages.lock.json",
           "packages.config",
           "app.config",
           "web.config",
