@@ -57,8 +57,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     )
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
   before do
     FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
   end
 
   it_behaves_like "a dependency file updater"
@@ -128,6 +137,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with both npm and yarn lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 
       it "updates the files" do
@@ -142,6 +153,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "without a lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6/simple_manifest") }
 
       its(:length) { is_expected.to eq(1) }
@@ -154,6 +167,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with multiple dependencies" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
       let(:dependencies) do
@@ -282,6 +297,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "with diverged lockfiles" do
       context "when updating a sub-dependency" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:dependency_name) { "stringstream" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
@@ -309,6 +325,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a shrinkwrap" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm4/shrinkwrap") }
 
       let(:updated_shrinkwrap) do
@@ -337,6 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a git dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -397,6 +415,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when specified as a full URL" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           it "only updates the lockfile" do
@@ -414,6 +434,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the lockfile has an outdated source" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_outdated_source") }
 
             it "updates the lockfile" do
@@ -439,6 +461,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the package lock is empty" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_empty_npm_lockfile") }
 
             it "updates the lockfile" do
@@ -454,6 +478,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when previously causing problems" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_git_url") }
 
             let(:dependency_name) { "slick-carousel" }
@@ -495,6 +521,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using ssh" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_ssh") }
 
             it "only updates the lockfile" do
@@ -551,6 +579,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
 
             context "with an npm6 lockfile" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency") }
 
               it "doesn't update the 'from' entry" do
@@ -569,6 +599,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using a URL token" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_token") }
 
             it "only updates the lockfile" do
@@ -591,6 +623,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: gitlab" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -639,6 +672,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: github" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency") }
 
           it "correctly update the lockfiles" do
@@ -657,6 +691,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a requirement" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { "^4.0.0" }
         let(:git_pack_fixture_name) { "is-number" }
         let(:ref) { "master" }
@@ -741,6 +776,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a reference" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { nil }
         let(:ref) { "4.0.0" }
         let(:old_req) { nil }
@@ -980,6 +1016,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a path-based dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/path_dependency") }
 
       let(:dependency_name) { "lodash" }
@@ -1017,6 +1054,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a lerna.json and both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
 
       let(:dependency_name) { "etag" }
@@ -1081,6 +1119,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when updating a sub dependency with both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update") }
 
       let(:dependency_name) { "extend" }
@@ -1136,6 +1175,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "when one lockfile version is out of range" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range") }
 
         it "updates out of range to latest resolvable version" do
@@ -1167,6 +1207,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when a wildcard is specified" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
       let(:version) { "0.2.0" }
@@ -1195,6 +1236,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     # npm specific tests #
     ######################
     describe "npm 6 specific" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/simple") }
 
       context "when the package lock is empty" do
