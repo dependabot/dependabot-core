@@ -1,7 +1,7 @@
 name: Branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - main
@@ -55,6 +55,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
           - { name: github_actions, ecosystem: github-actions }
