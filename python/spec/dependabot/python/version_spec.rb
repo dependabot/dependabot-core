@@ -275,10 +275,6 @@ RSpec.describe Dependabot::Python::Version do
   describe "#prerelease?" do
     subject { version.prerelease? }
 
-    before do
-      Dependabot::Experiments.register(:python_new_version, true)
-    end
-
     context "with a prerelease" do
       versions = [
         "1.0.dev0",
@@ -348,10 +344,6 @@ RSpec.describe Dependabot::Python::Version do
 
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
-
-    before do
-      Dependabot::Experiments.register(:python_new_version, true)
-    end
 
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
 

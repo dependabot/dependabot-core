@@ -28,7 +28,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/
       PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
-      def self.parse(obj) # rubocop:disable Metrics/PerceivedComplexity
+      def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         line = obj.to_s
@@ -36,15 +36,15 @@ module Dependabot
           line = matches[1]
         end
 
-        pattern = if Dependabot::Experiments.enabled?(:python_new_version)
-                    quoted = OPS.keys.sort_by(&:length).reverse
-                                .map { |k| Regexp.quote(k) }.join("|")
-                    version_pattern = Python::Version::NEW_VERSION_PATTERN
-                    pattern_raw = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
-                    /\A#{pattern_raw}\z/
-                  else
-                    PATTERN
-                  end
+        pattern = PATTERN
+
+        if Dependabot::Experiments.enabled?(:python_new_version)
+          quoted = OPS.keys.sort_by(&:length).reverse
+                      .map { |k| Regexp.quote(k) }.join("|")
+          version_pattern = Python::Version::NEW_VERSION_PATTERN
+          pattern_raw = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
+          pattern = /\A#{pattern_raw}\z/
+        end
 
         unless (matches = pattern.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
