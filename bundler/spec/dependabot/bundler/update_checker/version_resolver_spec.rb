@@ -119,43 +119,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with a Bundler v1 version specified", :bundler_v1_only do
-        let(:requirement_string) { "~> 1.4.0" }
-
-        let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
-
-        its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
-
-        context "when attempting to update Bundler" do
-          let(:dependency_name) { "bundler" }
-          let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
-
-          include_context "when stubbing rubygems versions api"
-
-          its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
-
-          context "when wrapped in a source block" do
-            let(:dependency_files) do
-              bundler_project_dependency_files("bundler_specified_in_source_bundler_specified")
-            end
-
-            its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
-          end
-
-          context "when required by another dependency" do
-            let(:gemfile_fixture_name) { "bundler_specified_and_required" }
-            let(:lockfile_fixture_name) do
-              "bundler_specified_and_required.lock"
-            end
-
-            it "is nil" do
-              skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
-              expect(latest_resolvable_version_details).to be_nil
-            end
-          end
-        end
-      end
-
       context "with a Bundler v2 version specified", :bundler_v2_only do
         let(:requirement_string) { "~> 1.4.0" }
 

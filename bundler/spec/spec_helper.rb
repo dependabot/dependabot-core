@@ -52,11 +52,6 @@ ensure
 end
 
 RSpec.configure do |config|
-  config.around do |example|
-      example.run
-    end
-  end
-
   config.after do
     # Cleanup side effects from cloning git gems, so that they don't interfere
     # with other specs.
