@@ -36,7 +36,17 @@ module Dependabot
           line = matches[1]
         end
 
-        unless (matches = PATTERN.match(line))
+        pattern = PATTERN
+
+        if Dependabot::Experiments.enabled?(:python_new_version)
+          quoted = OPS.keys.sort_by(&:length).reverse
+                      .map { |k| Regexp.quote(k) }.join("|")
+          version_pattern = Python::Version::NEW_VERSION_PATTERN
+          pattern_raw = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
+          pattern = /\A#{pattern_raw}\z/
+        end
+
+        unless (matches = pattern.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise BadRequirementError, msg
         end
@@ -128,7 +138,8 @@ module Dependabot
         upper_bound = parts.map.with_index do |part, i|
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          elsif i > first_non_zero_index && i == 2 then "0.a"
+          # .dev has lowest precedence: https://packaging.python.org/en/latest/specifications/version-specifiers/#summary-of-permitted-suffixes-and-relative-ordering
+          elsif i > first_non_zero_index && i == 2 then "0.dev"
           else
             0
           end
@@ -151,7 +162,7 @@ module Dependabot
                   .first(req_string.split(".").index { |s| s.include?("*") } + 1)
                   .join(".")
                   .gsub(/\*(?!$)/, "0")
-                  .gsub(/\*$/, "0.a")
+                  .gsub(/\*$/, "0.dev")
                   .tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
