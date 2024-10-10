@@ -37,7 +37,7 @@ def bundler_project_dependency_file(project, filename:)
 end
 
 def bundler_build_tmp_repo(project)
-  build_tmp_repo(project, path: "projects/bundler1")
+  build_tmp_repo(project, path: "projects/bundler2")
 end
 
 def suppress_output

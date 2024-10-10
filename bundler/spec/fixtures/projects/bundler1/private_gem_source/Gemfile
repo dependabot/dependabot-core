@@ -1,7 +1,0 @@
-# frozen_string_literal: true
-
-source "https://rubygems.org"
-
-gem "business", "~> 1.4.0"
-gem "prius", source: "https://rubygems.pkg.github.com/dsp-testing"
-gem "statesman", "~> 1.2.0"
