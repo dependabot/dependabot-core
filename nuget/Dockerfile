@@ -17,8 +17,8 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install .NET SDK
-ARG DOTNET_LTS_SDK_VERSION=8.0.402
-ARG DOTNET_STS_SDK_VERSION=9.0.100-rc.1.24452.12
+ARG DOTNET_LTS_SDK_VERSION=8.0.403
+ARG DOTNET_STS_SDK_VERSION=9.0.100-rc.2.24474.11
 ARG DOTNET_SDK_INSTALL_URL=https://dot.net/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
