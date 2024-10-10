@@ -30,6 +30,18 @@ RSpec.describe namespace::SubdependencyVersionResolver do
   end
   let(:ignored_versions) { [] }
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
@@ -145,6 +157,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
     end
 
     context "with a npm5 package-lock.json" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_files) { project_dependency_files("npm5/subdependency_update") }
 
       let(:dependency) do
@@ -200,6 +213,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
 
       context "when using npm5" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:dependency_files) { project_dependency_files("npm5_and_yarn/npm_subdependency_update") }
 
         # NOTE: npm5 lockfiles have exact version requires so can't easily
