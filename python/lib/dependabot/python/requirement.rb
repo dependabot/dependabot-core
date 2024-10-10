@@ -17,14 +17,7 @@ module Dependabot
       # Add equality and arbitrary-equality matchers
       OPS = OPS.merge(
         "==" => ->(v, r) { v == r },
-        "===" => ->(v, r) { v.to_s == r.to_s },
-        "~>" => lambda { |v, r|
-                  if Dependabot::Experiments.enabled?(:python_new_version)
-                    v = Python::Version.new(v.release_segment.join("."))
-                    r = Python::Version.new(r.release_segment.join("."))
-                  end
-                  v >= r && v.release < r.bump
-                }
+        "===" => ->(v, r) { v.to_s == r.to_s }
       )
 
       quoted = OPS.keys.sort_by(&:length).reverse
@@ -145,7 +138,8 @@ module Dependabot
         upper_bound = parts.map.with_index do |part, i|
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          elsif i > first_non_zero_index && i == 2 then "0.a"
+          # .dev has lowest precedence: https://packaging.python.org/en/latest/specifications/version-specifiers/#summary-of-permitted-suffixes-and-relative-ordering
+          elsif i > first_non_zero_index && i == 2 then "0.dev"
           else
             0
           end
@@ -168,7 +162,7 @@ module Dependabot
                   .first(req_string.split(".").index { |s| s.include?("*") } + 1)
                   .join(".")
                   .gsub(/\*(?!$)/, "0")
-                  .gsub(/\*$/, "0.a")
+                  .gsub(/\*$/, "0.dev")
                   .tap { |s| exact_op ? s.gsub!(/^(?<!!)=*/, "~>") : s }
       end
     end
