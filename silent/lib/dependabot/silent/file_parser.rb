@@ -34,6 +34,7 @@ module SilentPackageManager
         name: name,
         version: info["version"],
         package_manager: "silent",
+        directory: source&.directory,
         requirements: [{
           requirement: info["version"],
           file: T.must(dependency_files.first).name,
