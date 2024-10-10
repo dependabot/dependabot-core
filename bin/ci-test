@@ -11,7 +11,7 @@ function print_usage() {
 function handle_args() {
   export SUITE_NAME=$1
   case $SUITE_NAME in
-    bundler1 | bundler2)
+    bundler2)
       export MODULE=bundler
       ;;
     "")

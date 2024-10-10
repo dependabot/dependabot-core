@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1, ecosystem: bundler }
           - { path: bundler, name: bundler2, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: common, name: common, ecosystem: common}
