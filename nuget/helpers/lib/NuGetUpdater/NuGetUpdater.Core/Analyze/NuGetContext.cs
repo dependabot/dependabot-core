@@ -19,10 +19,10 @@ internal record NuGetContext : IDisposable
     public ISettings Settings { get; }
     public IMachineWideSettings MachineWideSettings { get; }
     public ImmutableArray<PackageSource> PackageSources { get; }
-    public ILogger Logger { get; }
+    public NuGet.Common.ILogger Logger { get; }
     public string TempPackageDirectory { get; }
 
-    public NuGetContext(string? currentDirectory = null, ILogger? logger = null)
+    public NuGetContext(string? currentDirectory = null, NuGet.Common.ILogger? logger = null)
     {
         SourceCacheContext = new SourceCacheContext();
         PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);

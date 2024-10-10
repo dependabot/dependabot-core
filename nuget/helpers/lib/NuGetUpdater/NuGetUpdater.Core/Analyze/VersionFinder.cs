@@ -15,7 +15,7 @@ internal static class VersionFinder
         string packageId,
         NuGetVersion currentVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionFilter = CreateVersionFilter(currentVersion);
@@ -26,7 +26,7 @@ internal static class VersionFinder
     public static Task<VersionResult> GetVersionsAsync(
         DependencyInfo dependencyInfo,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var packageId = dependencyInfo.Name;
@@ -42,7 +42,7 @@ internal static class VersionFinder
         NuGetVersion currentVersion,
         Func<NuGetVersion, bool> versionFilter,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var includePrerelease = currentVersion.IsPrerelease;
@@ -130,7 +130,7 @@ internal static class VersionFinder
         IEnumerable<string> packageIds,
         NuGetVersion version,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         foreach (var packageId in packageIds)
@@ -148,7 +148,7 @@ internal static class VersionFinder
         string packageId,
         NuGetVersion version,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var includePrerelease = version.IsPrerelease;

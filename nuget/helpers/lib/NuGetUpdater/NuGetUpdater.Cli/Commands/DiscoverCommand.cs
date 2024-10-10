@@ -10,7 +10,6 @@ internal static class DiscoverCommand
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
     internal static readonly Option<string> WorkspaceOption = new("--workspace") { IsRequired = true };
     internal static readonly Option<FileInfo> OutputOption = new("--output") { IsRequired = true };
-    internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -18,17 +17,16 @@ internal static class DiscoverCommand
         {
             RepoRootOption,
             WorkspaceOption,
-            OutputOption,
-            VerboseOption
+            OutputOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, workspace, outputPath, verbose) =>
+        command.SetHandler(async (repoRoot, workspace, outputPath) =>
         {
-            var worker = new DiscoveryWorker(new Logger(verbose));
+            var worker = new DiscoveryWorker(new ConsoleLogger());
             await worker.RunAsync(repoRoot.FullName, workspace, outputPath.FullName);
-        }, RepoRootOption, WorkspaceOption, OutputOption, VerboseOption);
+        }, RepoRootOption, WorkspaceOption, OutputOption);
 
         return command;
     }

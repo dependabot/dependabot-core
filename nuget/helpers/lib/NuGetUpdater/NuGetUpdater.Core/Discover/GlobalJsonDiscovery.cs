@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class GlobalJsonDiscovery
 {
-    public static GlobalJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, Logger logger)
+    public static GlobalJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, ILogger logger)
     {
         if (!MSBuildHelper.TryGetGlobalJsonPath(repoRootPath, workspacePath, out var globalJsonPath))
         {

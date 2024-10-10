@@ -20,7 +20,7 @@ public partial class UpdateWorkerTests
                 ErrorDetails = "<some package feed>",
             };
             var resultFilePath = Path.Combine(temporaryDirectory.DirectoryPath, "update-result.json");
-            await UpdaterWorker.WriteResultFile(result, resultFilePath, new Logger(false));
+            await UpdaterWorker.WriteResultFile(result, resultFilePath, new TestLogger());
             var resultContent = await File.ReadAllTextAsync(resultFilePath);
 
             // raw result file should look like this:
