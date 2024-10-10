@@ -36,10 +36,6 @@ def bundler_project_dependency_file(project, filename:)
   dependency_file
 end
 
-def bundler_build_tmp_repo(project)
-  build_tmp_repo(project, path: "projects/bundler2")
-end
-
 def suppress_output
   original_stderr = $stderr.clone
   original_stdout = $stdout.clone
