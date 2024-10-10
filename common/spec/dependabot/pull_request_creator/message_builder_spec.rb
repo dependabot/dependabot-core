@@ -5,6 +5,7 @@ require "octokit"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/exception_capturer"
 require "dependabot/pull_request_creator/message_builder"
 
 RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
