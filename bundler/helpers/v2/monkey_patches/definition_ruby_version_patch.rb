@@ -14,7 +14,7 @@ module BundlerDefinitionRubyVersionPatch
           file_content.strip
         end
       Bundler::RubyVersion.new(ruby_version, nil, nil, nil) if ruby_version
-    rescue SystemCallError
+    rescue SystemCallError, Gem::Requirement::BadRequirementError
       # .ruby-version doesn't exist, fallback to the Ruby Dependabot runs
     end
   end
