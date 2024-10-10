@@ -254,5 +254,16 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
 
       it { is_expected.to include("dependency 1, dependency 2") }
     end
+
+    context "when any other error is returned" do
+      let(:json) do
+        {
+          ErrorType: "Unknown",
+          ErrorDetails: "some error details"
+        }.to_json
+      end
+
+      it { is_expected.to include("some error details") }
+    end
   end
 end
