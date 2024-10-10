@@ -456,6 +456,69 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with private registry authentication 403 Client Error" do
+      let(:response) do
+        "Creating virtualenv reimbursement-coverage-api-fKdRenE--py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        403 Client Error:  for url: https://fp-pypi.sm00p.com/simple/"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://fp-pypi.sm00p.com")
+        end
+      end
+    end
+
+    context "with private registry authentication 404 Client Error" do
+      let(:response) do
+        "NetworkConnectionError('404 Client Error: Not Found for url: https://raw.example.com/example/flow/" \
+          "constraints-$%7BAIRFLOW_VERSION%7D/constraints-3.10.txt'"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://raw.example.com")
+        end
+      end
+    end
+
+    context "with private registry authentication 504 Server Error" do
+      let(:response) do
+        "Creating virtualenv alk-service-import-product-TbrdR40A-py3.8 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+
+        504 Server Error:  for url: https://pypi.com:8443/packages/alk_ci-1.whl#sha256=f9"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse) do |error|
+          expect(error.message)
+            .to include("https://pypi.com")
+        end
+      end
+    end
+
+    context "with private index authentication HTTP error 404" do
+      let(:response) do
+        "HTTP error 404 while getting " \
+          "https://<redacted>.com/compute-cloud/8e1a9.zip" \
+          "Not Found for URL" \
+          " https://example.com/compute-cloud/[FILTERED_REPO]/archive/a5bf58e7a37be7503e1a79febf8b555b9d28e1a9.zip"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://example.com")
+        end
+      end
+    end
+
     context "with dependency spec version not found in package index" do
       let(:response) do
         "Creating virtualenv pyiceberg-xBYdM_d2-py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
