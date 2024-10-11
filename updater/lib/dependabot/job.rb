@@ -232,12 +232,12 @@ module Dependabot
     end
 
     sig { returns(T.nilable(String)) }
-    def security_dependency
+    def security_advisory_dependency
       security_advisories.first&.fetch("dependency-name")
     end
 
     sig { returns(T::Boolean) }
-    def security_dependency?
+    def security_advisory?
       return false if security_advisories.nil?
 
       true

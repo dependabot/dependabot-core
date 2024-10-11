@@ -130,12 +130,20 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
 
-          # Dependabot::Experiments.register(:lead_security_dependency, true)
-          security_dep = job.security_dependency if job.security_dependency?
+          # Dependabot::Experiments.register(:lead_security_dependency, false)
+          security_dep = job.security_advisory_dependency if job.security_advisory?
 
           lead_dep_name = job_dependencies.first&.downcase
 
           lead_dep_name = security_dep if Dependabot::Experiments.enabled?(:lead_security_dependency)
+
+          # telemetry data collection
+          if Dependabot::Experiments.enabled?(:lead_security_dependency)
+            Dependabot.logger.info(
+              "1. Security advisory dependency: #{security_dep}\n" \
+              "2. First dependency: #{job_dependencies.first&.downcase}"
+            )
+          end
 
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
@@ -146,9 +154,7 @@ module Dependabot
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
-          lead_dep_latest_available_ver = checker.latest_version
-
-          Dependabot.logger.info("Latest version is #{lead_dep_latest_available_ver}")
+          Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
