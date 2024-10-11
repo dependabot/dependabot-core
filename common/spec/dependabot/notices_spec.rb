@@ -126,6 +126,7 @@ RSpec.describe Dependabot::Notice do
     end
 
     it "returns the correct deprecation notice" do
+      allow(package_manager).to receive(:unsupported?).and_return(false)
       expect(generate_pm_deprecation_notice.to_hash)
         .to eq({
           mode: "WARN",
