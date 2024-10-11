@@ -13,8 +13,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        # TODO: Where to link to?
-        nil
+        Source.from_url("https://github.com/dotnet/sdk")
       end
     end
   end
