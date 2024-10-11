@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       expect(command).to eq("/path/to/NuGetUpdater.Cli update --repo-root /path/to/repo " \
                             '--solution-or-project /path/to/repo/src/some\ project/some_project.csproj ' \
                             "--dependency Some.Package --new-version 1.2.3 --previous-version 1.2.2 " \
-                            "--result-output-path /path/to/result.json --verbose")
+                            "--result-output-path /path/to/result.json")
     end
 
     context "when invoking tool with spaces in path, it generates expected warning" do
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
 
   describe "#native_csharp_tests" do
     subject(:dotnet_test) do
-      Dependabot::SharedHelpers.run_shell_command(command, cwd: cwd)
+      Dependabot::SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, cwd: cwd)
     end
 
     let(:command) do
@@ -119,6 +119,9 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "test",
         "--configuration",
         "Release",
+        "--tl:off",
+        "--logger",
+        "\"console;verbosity=normal\"",
         project_path
       ].join(" ")
     end

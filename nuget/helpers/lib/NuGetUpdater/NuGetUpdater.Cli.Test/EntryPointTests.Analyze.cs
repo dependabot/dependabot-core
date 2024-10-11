@@ -34,7 +34,6 @@ public partial class EntryPointTests
                     Path.Join(path, "Some.Package.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages: [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repositoryXml]),
@@ -151,7 +150,6 @@ public partial class EntryPointTests
                     Path.Join(path, "some-global-tool.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages:
                 [
@@ -239,7 +237,6 @@ public partial class EntryPointTests
                     Path.Join(path, "Some.MSBuild.Sdk.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages:
                 [

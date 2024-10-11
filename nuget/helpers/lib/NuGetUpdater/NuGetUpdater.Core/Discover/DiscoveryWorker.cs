@@ -16,7 +16,7 @@ public partial class DiscoveryWorker
 {
     public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
@@ -25,7 +25,7 @@ public partial class DiscoveryWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public DiscoveryWorker(Logger logger)
+    public DiscoveryWorker(ILogger logger)
     {
         _logger = logger;
     }
@@ -125,7 +125,7 @@ public partial class DiscoveryWorker
     /// Restores MSBuild SDKs from the given dependencies.
     /// </summary>
     /// <returns>Returns `true` when SDKs were restored successfully.</returns>
-    private async Task<bool> TryRestoreMSBuildSdksAsync(string repoRootPath, string workspacePath, ImmutableArray<Dependency> dependencies, Logger logger)
+    private async Task<bool> TryRestoreMSBuildSdksAsync(string repoRootPath, string workspacePath, ImmutableArray<Dependency> dependencies, ILogger logger)
     {
         var msbuildSdks = dependencies
             .Where(d => d.Type == DependencyType.MSBuildSdk && !string.IsNullOrEmpty(d.Version))

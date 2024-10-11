@@ -454,7 +454,7 @@ public partial class UpdateWorkerTests
             //
             // do the update
             //
-            UpdaterWorker worker = new(new(verbose: true));
+            UpdaterWorker worker = new(new TestLogger());
             await worker.RunAsync(tempDirectory.DirectoryPath, projectPath, "Some.Package", "1.0.0", "1.1.0", isTransitive: false);
 
             //

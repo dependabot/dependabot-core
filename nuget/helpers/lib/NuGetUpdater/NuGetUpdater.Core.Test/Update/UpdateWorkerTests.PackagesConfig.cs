@@ -2105,7 +2105,7 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);

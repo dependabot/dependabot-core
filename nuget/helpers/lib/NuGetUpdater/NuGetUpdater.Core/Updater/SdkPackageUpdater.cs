@@ -15,7 +15,7 @@ internal static class SdkPackageUpdater
         string previousDependencyVersion,
         string newDependencyVersion,
         bool isTransitive,
-        Logger logger)
+        ILogger logger)
     {
         // SDK-style project, modify the XML directly
         logger.Log("  Running for SDK-style project");
@@ -64,7 +64,7 @@ internal static class SdkPackageUpdater
         Dependency[] topLevelDependencies,
         string dependencyName,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         var newDependencyNuGetVersion = NuGetVersion.Parse(newDependencyVersion);
 
@@ -124,7 +124,7 @@ internal static class SdkPackageUpdater
         return true;
     }
 
-    private static async Task UpdateTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    private static async Task UpdateTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ImmutableArray<ProjectBuildFile> buildFiles, ILogger logger)
     {
         var directoryPackagesWithPinning = buildFiles.OfType<ProjectBuildFile>()
             .FirstOrDefault(bf => IsCpmTransitivePinningEnabled(bf));
@@ -160,7 +160,7 @@ internal static class SdkPackageUpdater
         return isTransitivePinningEnabled is not null && string.Equals(isTransitivePinningEnabled, "true", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, Logger logger)
+    private static void PinTransitiveDependency(ProjectBuildFile directoryPackages, string dependencyName, string newDependencyVersion, ILogger logger)
     {
         var existingPackageVersionElement = directoryPackages.ItemNodes
             .Where(e => e.Name.Equals("PackageVersion", StringComparison.OrdinalIgnoreCase) &&
@@ -223,7 +223,7 @@ internal static class SdkPackageUpdater
         directoryPackages.Update(updatedXml);
     }
 
-    private static async Task AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, Logger logger)
+    private static async Task AddTransitiveDependencyAsync(string repoRootPath, string projectPath, string dependencyName, string newDependencyVersion, ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         await MSBuildHelper.SidelineGlobalJsonAsync(projectDirectory, repoRootPath, async () =>
@@ -237,7 +237,7 @@ internal static class SdkPackageUpdater
             {
                 logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
-        }, retainMSBuildSdks: true);
+        }, logger, retainMSBuildSdks: true);
     }
 
     /// <summary>
@@ -250,7 +250,7 @@ internal static class SdkPackageUpdater
         string[] tfms,
         string dependencyName,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         var newDependency = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.Unknown) };
         var tfmsAndDependencies = new Dictionary<string, Dependency[]>();
@@ -305,7 +305,7 @@ internal static class SdkPackageUpdater
         string previousDependencyVersion,
         string newDependencyVersion,
         IDictionary<string, string> peerDependencies,
-        Logger logger)
+        ILogger logger)
     {
 
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
@@ -376,7 +376,7 @@ internal static class SdkPackageUpdater
         string dependencyName,
         string? previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         var foundCorrect = false;
         var foundUnsupported = false;
@@ -619,7 +619,7 @@ internal static class SdkPackageUpdater
                 StringComparison.OrdinalIgnoreCase) &&
             (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
 
-    private static async Task<bool> AreDependenciesCoherentAsync(string repoRootPath, string projectPath, string dependencyName, Logger logger, ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms)
+    private static async Task<bool> AreDependenciesCoherentAsync(string repoRootPath, string projectPath, string dependencyName, ILogger logger, ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms)
     {
         var updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
         foreach (var tfm in tfms)
@@ -636,7 +636,7 @@ internal static class SdkPackageUpdater
         return true;
     }
 
-    private static async Task SaveBuildFilesAsync(ImmutableArray<ProjectBuildFile> buildFiles, Logger logger)
+    private static async Task SaveBuildFilesAsync(ImmutableArray<ProjectBuildFile> buildFiles, ILogger logger)
     {
         foreach (var buildFile in buildFiles)
         {

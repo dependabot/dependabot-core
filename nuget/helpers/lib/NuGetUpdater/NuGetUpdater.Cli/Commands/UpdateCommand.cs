@@ -12,7 +12,6 @@ internal static class UpdateCommand
     internal static readonly Option<string> NewVersionOption = new("--new-version") { IsRequired = true };
     internal static readonly Option<string> PreviousVersionOption = new("--previous-version") { IsRequired = true };
     internal static readonly Option<bool> IsTransitiveOption = new("--transitive", getDefaultValue: () => false);
-    internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
     internal static readonly Option<string?> ResultOutputPathOption = new("--result-output-path", getDefaultValue: () => null);
 
     internal static Command GetCommand(Action<int> setExitCode)
@@ -25,18 +24,17 @@ internal static class UpdateCommand
             NewVersionOption,
             PreviousVersionOption,
             IsTransitiveOption,
-            VerboseOption,
             ResultOutputPathOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, verbose, resultOutputPath) =>
+        command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, resultOutputPath) =>
         {
-            var worker = new UpdaterWorker(new Logger(verbose));
+            var worker = new UpdaterWorker(new ConsoleLogger());
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive, resultOutputPath);
             setExitCode(0);
-        }, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, VerboseOption, ResultOutputPathOption);
+        }, RepoRootOption, SolutionOrProjectFileOption, DependencyNameOption, NewVersionOption, PreviousVersionOption, IsTransitiveOption, ResultOutputPathOption);
 
         return command;
     }

@@ -21,7 +21,7 @@ internal static class CompatibilityChecker
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var (isDevDependency, packageFrameworks) = await GetPackageInfoAsync(
@@ -37,7 +37,7 @@ internal static class CompatibilityChecker
         ImmutableArray<NuGetFramework> projectFrameworks,
         bool isDevDependency,
         ImmutableArray<NuGetFramework> packageFrameworks,
-        Logger logger)
+        ILogger logger)
     {
         // development dependencies are packages such as analyzers which need to be compatible with the compiler not the
         // project itself, but some packages that report themselves as development dependencies still contain target
