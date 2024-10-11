@@ -11,8 +11,14 @@ end
 
 require "#{common_dir}/spec/spec_helper.rb"
 
+module PackageManagerHelper
+  def self.bundler_version
+    "2"
+  end
+end
+
 def bundler_project_dependency_files(project, directory: "/")
-  project_dependency_files(File.join("bundler2", project), directory: directory)
+  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project), directory: directory)
     .each do |dep|
       dep.support_file = dep.name.end_with?(".ruby-version", ".tool-versions")
     end
