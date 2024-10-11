@@ -49,9 +49,7 @@ module Dependabot
 
       sig { returns(String) }
       def update
-        previous_json = JSON.parse(T.must(global_json.content))
-        previous_json["sdk"]["version"] = T.must(dependency.requirements.first)[:requirement]
-        JSON.pretty_generate(previous_json)
+        T.must(global_json.content).gsub(T.must(dependency.previous_version), T.must(dependency.version))
       end
     end
   end
