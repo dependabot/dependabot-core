@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("blocked_by_subdep") }
 
-        it "is still able to upgrade to the latest version by upgrading the subdep as well", :bundler_v2_only do
+        it "is still able to upgrade to the latest version by upgrading the subdep as well" do
           expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("2.0.0"))
         end
       end
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with a Bundler v2 version specified", :bundler_v2_only do
+      context "with a Bundler v2 version specified" do
         let(:requirement_string) { "~> 1.4.0" }
 
         let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with a dependency that requires bundler v2", :bundler_v2_only do
+      context "with a dependency that requires bundler v2" do
         let(:dependency_name) { "guard-bundler" }
         let(:requirement_string) { "3.0.0" }
 
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_listed_subdep") }
 
-        it "is still able to upgrade", :bundler_v2_only do
+        it "is still able to upgrade" do
           expect(latest_resolvable_version_details[:version]).to be > Gem::Version.new("3.6.0")
         end
       end
@@ -358,7 +358,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           }
         end
 
-        it "still resolves fine if the circular dependency does not cause any conflicts", :bundler_v2_only do
+        it "still resolves fine if the circular dependency does not cause any conflicts" do
           expect(resolver.latest_resolvable_version_details[:version].to_s).to eq("0.0.1")
         end
       end

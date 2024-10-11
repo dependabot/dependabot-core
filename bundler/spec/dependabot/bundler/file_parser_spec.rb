@@ -172,7 +172,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       its(:length) { is_expected.to eq(5) }
 
-      describe "an untagged dependency", :bundler_v2_only do
+      describe "an untagged dependency" do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
 
         let(:expected_requirements) do
@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency", :bundler_v2_only do
+      describe "a github dependency" do
         subject { dependencies.find { |d| d.name == "business" } }
 
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      context "with a subdependency of a git source", :bundler_v2_only do
+      context "with a subdependency of a git source" do
         subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
 
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }

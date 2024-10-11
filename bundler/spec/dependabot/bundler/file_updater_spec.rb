@@ -380,7 +380,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(file.content).to include("statesman (1.3.1)")
           end
 
-          it "does not touch the yanked gem", :bundler_v2_only do
+          it "does not touch the yanked gem" do
             expect(file.content).to include("business (1.4.1)")
           end
         end
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("statesman (1.2.1)")
         end
 
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+        it "preserves the BUNDLED WITH line in the lockfile" do
           expect(file.content).to include("BUNDLED WITH\n   2.2.0")
         end
 
@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         }]
       end
 
-      it "returns the latest version", :bundler_v2_only do
+      it "returns the latest version" : do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end
