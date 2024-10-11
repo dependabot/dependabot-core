@@ -1507,7 +1507,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         }]
       end
 
-      it "returns the latest version" : do
+      it "returns the latest version" do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end
