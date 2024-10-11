@@ -89,9 +89,8 @@ module DummyPkgHelpers
 
     sig { override.returns(T::Boolean) }
     def unsupported?
-      return false unless name == "bundler"
-
-      version < supported_versions.first
+      # Check if the version is not supported
+      supported_versions.all? { |supported| supported > version }
     end
   end
 end

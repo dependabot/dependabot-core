@@ -111,11 +111,25 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     )
   end
 
+  let(:package_manager) do
+    DummyPkgHelpers::StubPackageManager.new(
+      name: "bundler",
+      version: package_manager_version,
+      deprecated_versions: deprecated_versions,
+      supported_versions: supported_versions
+    )
+  end
+
+  let(:package_manager_version) { "2" }
+  let(:supported_versions) { %w(2 3) }
+  let(:deprecated_versions) { %w(1) }
+
   before do
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(stub_dependency_change)
+    allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
   end
 
   after do
@@ -154,14 +168,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
 
     context "when package manager version is unsupported" do
       let(:package_manager_version) { "1" }
-      let(:error) { Dependabot::ToolVersionNotSupported.new("bundler", "1", "v2.*, v3.*") }
-
-      before do
-        allow(refresh_security_update_pull_request).to receive(:check_and_update_pull_request).and_raise(error)
-      end
 
       it "handles the ToolVersionNotSupported error with the error handler" do
-        expect(mock_error_handler).to receive(:handle_dependency_error).with(error: error, dependency: dependency)
+        expect(mock_error_handler).to receive(:handle_dependency_error).with(
+          error: instance_of(Dependabot::ToolVersionNotSupported),
+          dependency: dependency
+        )
         perform
       end
     end

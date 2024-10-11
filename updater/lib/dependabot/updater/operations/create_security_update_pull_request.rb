@@ -59,6 +59,8 @@ module Dependabot
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
 
+          target_dependencies = dependency_snapshot.job_dependencies
+
           # Raise an error if the package manager version is unsupported
           dependency_snapshot.package_manager&.raise_if_unsupported!
 
@@ -66,15 +68,13 @@ module Dependabot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
 
-          target_dependencies = dependency_snapshot.job_dependencies
-
           if target_dependencies.empty?
             record_security_update_dependency_not_found
           else
             target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
           end
         rescue StandardError => e
-          error_handler.handle_dependency_error(error: e, dependency: target_dependencies&.last)
+          error_handler.handle_dependency_error(error: e, dependency: target_dependencies&.first)
         end
 
         private

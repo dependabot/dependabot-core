@@ -308,16 +308,11 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       let(:package_manager_version) { "1" }
       let(:supported_versions) { %w(2 3) }
 
-      before do
-        # Ensure unsupported? method returns true so the error is triggered
-        allow(package_manager).to receive(:unsupported?).and_return(true)
-      end
-
-      it "logs the ToolVersionNotSupported error to the error handler" do
-        # Ensure the error handler receives the expected error
-        expect(mock_error_handler).to receive(:handle_dependency_error)
-          .with(hash_including(error: instance_of(Dependabot::ToolVersionNotSupported)))
-
+      it "handles the ToolVersionNotSupported error with the error handler" do
+        expect(mock_error_handler).to receive(:handle_dependency_error).with(
+          error: instance_of(Dependabot::ToolVersionNotSupported),
+          dependency: dependency
+        )
         perform
       end
     end

@@ -173,6 +173,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
 
     context "when package manager version is unsupported" do
       let(:package_manager_version) { "1" }
+      let(:supported_versions) { %w(2 3) }
 
       it "handles the ToolVersionNotSupported error with the error handler" do
         expect(mock_error_handler).to receive(:handle_dependency_error).with(
