@@ -68,7 +68,6 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        # Just check if there are any files at all.
         return if dependency_files.any?
 
         raise "No dependency files!"
