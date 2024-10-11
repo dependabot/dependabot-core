@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Bundler::PackageManager do
       let(:version) { "1" }
 
       it "returns true" do
-        allow(described_class).to receive(:unsupported).and_return(false)
+        allow(package_manager).to receive_messages(deprecated?: true)
         expect(package_manager.deprecated?).to be true
       end
     end
@@ -77,15 +77,7 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#unsupported?" do
-    context "when feature flag is enabled and version is unsupported" do
-      let(:version) { "0.9" }
-
-      it "returns true" do
-        expect(package_manager.unsupported?).to be true
-      end
-    end
-
-    context "when feature flag is enabled and version is supported" do
+    context "when version is supported" do
       let(:version) { "2" }
 
       it "returns false" do
@@ -93,18 +85,17 @@ RSpec.describe Dependabot::Bundler::PackageManager do
       end
     end
 
-    context "when feature flag is disabled" do
+    context "when version is not supported" do
       let(:version) { "0.9" }
 
-      it "returns false" do
-        allow(described_class).to receive(:unsupported).and_return(false)
-        expect(package_manager.unsupported?).to be false
+      it "returns true" do
+        expect(package_manager.unsupported?).to be true
       end
     end
   end
 
   describe "#raise_if_unsupported!" do
-    context "when feature flag is enabled and version is unsupported" do
+    context "when version is unsupported" do
       let(:version) { "0.9" }
 
       it "raises a ToolVersionNotSupported error" do
@@ -112,11 +103,10 @@ RSpec.describe Dependabot::Bundler::PackageManager do
       end
     end
 
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
+    context "when version is supported" do
+      let(:version) { "2.1" }
 
       it "does not raise an error" do
-        allow(described_class).to receive(:unsupported).and_return(false)
         expect { package_manager.raise_if_unsupported! }.not_to raise_error
       end
     end
