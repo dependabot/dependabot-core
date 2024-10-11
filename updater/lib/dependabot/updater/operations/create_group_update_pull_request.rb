@@ -60,16 +60,15 @@ module Dependabot
 
           if dependency_change&.updated_dependencies&.any?
             Dependabot.logger.info("Creating a pull request for '#{group.name}'")
-            begin
-              service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
-            rescue StandardError => e
-              error_handler.handle_job_error(error: e, dependency_group: group)
-            end
+            service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
           end
 
           dependency_change
+        rescue StandardError => e
+          error_handler.handle_job_error(error: e, dependency_group: group)
+          nil
         end
 
         private

@@ -60,6 +60,8 @@ module Dependabot
           # More notices can be added during the update process
 
           dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+        rescue StandardError => e
+          error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
         end
 
         private

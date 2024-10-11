@@ -73,6 +73,8 @@ module Dependabot
           else
             target_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
           end
+        rescue StandardError => e
+          error_handler.handle_dependency_error(error: e, dependency: target_dependencies&.last)
         end
 
         private
