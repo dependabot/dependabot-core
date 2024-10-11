@@ -309,6 +309,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
 
       it "updates the pull request" do
+        allow(package_manager).to receive(:unsupported?).and_return(false)
         expect(refresh_version_update_pull_request).to receive(
           :update_pull_request
         ).with(stub_dependency_change)
@@ -334,6 +335,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       end
 
       it "creates a new pull request" do
+        allow(package_manager).to receive(:unsupported?).and_return(false)
         expect(refresh_version_update_pull_request).to receive(
           :create_pull_request
         ).with(stub_dependency_change)
