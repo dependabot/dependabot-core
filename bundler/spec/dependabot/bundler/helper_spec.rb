@@ -14,15 +14,6 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_v1) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
-      BUNDLED WITH
-        1.17.3
-    LOCKFILE
-  end
-
   let(:lockfile_bundled_with_v2) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
@@ -50,14 +41,6 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(no_lockfile)).to eql("2")
     end
 
-    it "is 1 if there is no bundled with string" do
-      expect(described_method(lockfile_bundled_with_missing)).to eql("1")
-    end
-
-    it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
-    end
-
     it "is 2 if it was bundled with a v2.x version" do
       expect(described_method(lockfile_bundled_with_v2)).to eql("2")
     end
@@ -78,10 +61,6 @@ RSpec.describe Dependabot::Bundler::Helpers do
 
     it "is unspecified if there is no bundled with string" do
       expect(described_method(lockfile_bundled_with_missing)).to eql("unspecified")
-    end
-
-    it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
     end
 
     it "is 2 if it was bundled with a v2.x version" do
