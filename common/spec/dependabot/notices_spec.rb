@@ -35,9 +35,6 @@ class StubPackageManager < Dependabot::PackageManagerBase
 
   sig { override.returns(T::Boolean) }
   def unsupported?
-    # Check if the feature flag for Bundler v1 unsupported error is enabled.
-    return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
     # Determine if the Bundler version is unsupported.
     version < supported_versions.first
   end

@@ -58,24 +58,17 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#deprecated?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
     context "when version is deprecated but not unsupported" do
       let(:version) { "1" }
-      let(:feature_flag_enabled) { false }
 
       it "returns true" do
+        allow(described_class).to receive(:unsupported).and_return(false)
         expect(package_manager.deprecated?).to be true
       end
     end
 
     context "when version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -84,15 +77,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#unsupported?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
     context "when feature flag is enabled and version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
@@ -101,7 +87,6 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
     context "when feature flag is enabled and version is supported" do
       let(:version) { "2" }
-      let(:feature_flag_enabled) { true }
 
       it "returns false" do
         expect(package_manager.unsupported?).to be false
@@ -110,24 +95,17 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
     context "when feature flag is disabled" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
 
       it "returns false" do
+        allow(described_class).to receive(:unsupported).and_return(false)
         expect(package_manager.unsupported?).to be false
       end
     end
   end
 
   describe "#raise_if_unsupported!" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
     context "when feature flag is enabled and version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
@@ -136,9 +114,9 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
     context "when feature flag is disabled" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
 
       it "does not raise an error" do
+        allow(described_class).to receive(:unsupported).and_return(false)
         expect { package_manager.raise_if_unsupported! }.not_to raise_error
       end
     end

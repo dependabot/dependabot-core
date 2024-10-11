@@ -208,8 +208,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
@@ -310,11 +308,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       let(:supported_versions) { %w(2 3) }
 
       before do
-        # Enable the feature flag for unsupported version
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:bundler_v1_unsupported_error)
-          .and_return(true)
-
         # Ensure unsupported? method returns true so the error is triggered
         allow(package_manager).to receive(:unsupported?).and_return(true)
       end

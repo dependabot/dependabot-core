@@ -168,14 +168,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
-  end
-
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 

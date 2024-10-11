@@ -52,9 +52,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
   before do
     FileUtils.mkdir_p(tmp_path)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:bundler_v1_unsupported_error)
-      .and_return(true)
   end
 
   it_behaves_like "a dependency file updater"

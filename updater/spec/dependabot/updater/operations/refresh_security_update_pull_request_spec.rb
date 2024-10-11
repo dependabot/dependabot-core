@@ -112,8 +112,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
