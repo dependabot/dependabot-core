@@ -59,10 +59,10 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking and updating versions pull requests...")
 
+          dependency = dependencies.last
+
           # Raise an error if the package manager version is unsupported
           dependency_snapshot.package_manager&.raise_if_unsupported!
-
-          dependency = dependencies.last
 
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
