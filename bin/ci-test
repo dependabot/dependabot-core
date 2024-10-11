@@ -10,17 +10,7 @@ function print_usage() {
 
 function handle_args() {
   export SUITE_NAME=$1
-  case $SUITE_NAME in
-    bundler2)
-      export MODULE=bundler
-      ;;
-    "")
-      print_usage
-      exit 1
-      ;;
-    *)
-      export MODULE=$SUITE_NAME
-  esac
+  export MODULE=bundler
 
   if ! [ -d "$MODULE" ]; then
     print_usage
@@ -32,6 +22,7 @@ function handle_args() {
     exit 1
   fi
 }
+
 
 function build() {
   export DOCKER_BUILDKIT=1
