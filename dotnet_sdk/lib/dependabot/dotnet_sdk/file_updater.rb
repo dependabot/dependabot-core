@@ -30,13 +30,11 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       def dependency
-        # Dockerfiles will only ever be updating a single dependency
         T.must(dependencies.first)
       end
 
       sig { override.void }
       def check_required_files
-        # Just check if there are any files at all.
         return if dependency_files.any?
 
         raise "No global.json configuration!"
