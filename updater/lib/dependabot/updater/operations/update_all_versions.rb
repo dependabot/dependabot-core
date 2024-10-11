@@ -52,6 +52,9 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking all dependencies for version updates...")
 
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
+
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
@@ -171,9 +174,6 @@ module Dependabot
             # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
             notices: @notices
           )
-
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
 
           if dependency_change.updated_dependency_files.empty?
             raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"

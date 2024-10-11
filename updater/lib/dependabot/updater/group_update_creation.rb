@@ -46,9 +46,13 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
       def compile_all_dependency_changes_for(group)
         prepare_workspace
+
+        # Raise an error if the package manager version is unsupported
+        dependency_snapshot.package_manager&.raise_if_unsupported!
 
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
@@ -132,6 +136,7 @@ module Dependabot
         cleanup_workspace
       end
 
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/MethodLength
@@ -240,9 +245,6 @@ module Dependabot
           )
           return []
         end
-
-        # Raise an error if the package manager version is unsupported
-        dependency_snapshot.package_manager&.raise_if_unsupported!
 
         checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
