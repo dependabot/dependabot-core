@@ -603,8 +603,12 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task UpdateBindingRedirectInWebConfig()
+        // the xml can take various shapes and they're all formatted, so we need very specific values here
+        [Theory]
+        [InlineData("<Content Include=\"web.config\" />")]
+        [InlineData("<Content Include=\"web.config\">\n    </Content>")]
+        [InlineData("<Content Include=\"web.config\">\n      <SubType>Designer</SubType>\n    </Content>")]
+        public async Task UpdateBindingRedirectInWebConfig(string webConfigXml)
         {
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
                 packages:
@@ -612,7 +616,7 @@ public partial class UpdateWorkerTests
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
                 ],
-                projectContents: """
+                projectContents: $$"""
                     <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
                         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -669,7 +673,7 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                       <ItemGroup>
                         <None Include="packages.config" />
-                        <Content Include="web.config" />
+                        {{webConfigXml}}
                         <Content Include="web.Debug.config">
                           <DependentUpon>web.config</DependentUpon>
                         </Content>
@@ -711,7 +715,7 @@ public partial class UpdateWorkerTests
                         </configuration>
                         """)
                 ],
-                expectedProjectContents: """
+                expectedProjectContents: $$"""
                     <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
                         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -768,7 +772,7 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                       <ItemGroup>
                         <None Include="packages.config" />
-                        <Content Include="web.config" />
+                        {{webConfigXml}}
                         <Content Include="web.Debug.config">
                           <DependentUpon>web.config</DependentUpon>
                         </Content>
