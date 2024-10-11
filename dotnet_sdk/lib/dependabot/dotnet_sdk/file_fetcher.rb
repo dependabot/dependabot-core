@@ -12,7 +12,7 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.end_with?("global.json") }
+        filenames.any? { |f| File.basename(f) == "global.json" }
       end
 
       sig { override.returns(String) }

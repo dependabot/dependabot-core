@@ -40,4 +40,13 @@ RSpec.describe Dependabot::DotnetSdk::FileFetcher do
         .with_message("global.json not found in /src")
     end
   end
+
+  context "without a global.json in repo root" do
+    let(:project_name) { "no_config" }
+    let(:directory) { "/" }
+
+    it "returns an empty array" do
+      expect { file_fetcher_instance.files }.to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
 end
