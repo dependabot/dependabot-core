@@ -50,9 +50,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
     )
   end
 
-  before do
-    FileUtils.mkdir_p(tmp_path)
-  end
+  before { FileUtils.mkdir_p(tmp_path) }
 
   it_behaves_like "a dependency file updater"
 
