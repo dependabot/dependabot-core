@@ -1172,6 +1172,122 @@ RSpec.describe Dependabot::Updater do
           end
         end
 
+        context "when the security advisory job is used as lead dependency" do
+          before do
+            Dependabot::Experiments.register(:lead_security_dependency, true)
+          end
+
+          after do
+            Dependabot::Experiments.register(:lead_security_dependency, false)
+          end
+
+          it "creates the pull request" do
+            stub_update_checker(vulnerable?: true)
+
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:create_pull_request)
+            expect(Dependabot.logger)
+              .to receive(:info)
+              .with(/Security advisory dependency:/)
+
+            updater.run
+          end
+        end
+
+        context "when a PR already exists and security advisory dependency is used a lead dependency" do
+          before do
+            Dependabot::Experiments.register(:lead_security_dependency, true)
+          end
+
+          after do
+            Dependabot::Experiments.register(:lead_security_dependency, false)
+          end
+
+          it "updates the dependency" do
+            stub_update_checker
+
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              existing_pull_requests: [
+                [
+                  {
+                    "dependency-name" => "dummy-pkg-b",
+                    "dependency-version" => "1.2.0"
+                  }
+                ]
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:update_pull_request).once
+            expect(Dependabot.logger)
+              .to receive(:info)
+              .with(/Security advisory dependency:/)
+            expect(Dependabot.logger)
+              .to receive(:info)
+              .with(/Submitting dummy-pkg-b pull request for update/)
+
+            updater.run
+          end
+
+          context "when dealing with a different version" do
+            it "updates the dependency" do
+              stub_update_checker
+
+              job = build_job(
+                security_updates_only: true,
+                requested_dependencies: %w(dummy-pkg-a dummy-pkg-b),
+                security_advisories: [
+                  {
+                    "dependency-name" => "dummy-pkg-b",
+                    "affected-versions" => ["1.1.0"]
+                  }
+                ],
+                existing_pull_requests: [
+                  [
+                    {
+                      "dependency-name" => "dummy-pkg-b",
+                      "dependency-version" => "1.1.0"
+                    }
+                  ]
+                ],
+                updating_a_pull_request: true
+              )
+              service = build_service
+              updater = build_updater(service: service, job: job)
+
+              expect(service).to receive(:create_pull_request).once
+              expect(Dependabot.logger)
+                .to receive(:info)
+                .with(/Security advisory dependency:/)
+
+              updater.run
+            end
+          end
+        end
+
         context "when the dependency is vulnerable in a security update but updates aren't allowed" do
           it "closes the pull request" do
             stub_update_checker(vulnerable?: true)
@@ -1307,6 +1423,87 @@ RSpec.describe Dependabot::Updater do
           end
         end
       end
+
+      # context "when a PR already exists and lead dependency is taken from security advisory" do
+      #   # before do
+      #   #   Dependabot::Experiments.register(:lead_security_dependency, true)
+      #   # end
+
+      #   # after do
+      #   #   Dependabot::Experiments.register(:lead_security_dependency, false)
+      #   # end
+
+      #   it "updates the dependency with security update" do
+      #     stub_update_checker
+
+      #     job = build_job(
+      #       requested_dependencies: %w(Dummy-pkg-b),
+      #       existing_pull_requests: [
+      #         [
+      #           {
+      #             "dependency-name" => "dummy-pkg-b",
+      #             "dependency-version" => "1.2.0"
+      #           }
+      #         ]
+      #       ],
+      #       updating_a_pull_request: true
+      #     )
+      #     service = build_service
+      #     updater = build_updater(service: service, job: job)
+
+      #     expect(service).to receive(:update_pull_request).once
+
+      #     updater.run
+      #   end
+
+      #   context "when dealing with a different version" do
+      #     it "updates the dependency" do
+      #       stub_update_checker
+
+      #       job = build_job(
+      #         requested_dependencies: ["Dummy-pkg-b"],
+      #         existing_pull_requests: [
+      #           [
+      #             {
+      #               "dependency-name" => "dummy-pkg-b",
+      #               "dependency-version" => "1.1.1"
+      #             }
+      #           ]
+      #         ],
+      #         updating_a_pull_request: true
+      #       )
+      #       service = build_service
+      #       updater = build_updater(service: service, job: job)
+
+      #       expect(service).to receive(:create_pull_request).once
+
+      #       updater.run
+      #     end
+      #   end
+
+      #   it "updates the dependency" do
+      #     stub_update_checker
+
+      #     job = build_job(
+      #       requested_dependencies: ["Dummy-pkg-b"],
+      #       existing_pull_requests: [
+      #         [
+      #           {
+      #             "dependency-name" => "dummy-pkg-b",
+      #             "dependency-version" => "1.2.0"
+      #           }
+      #         ]
+      #       ],
+      #       updating_a_pull_request: true
+      #     )
+      #     service = build_service
+      #     updater = build_updater(service: service, job: job)
+
+      #     expect(service).to receive(:update_pull_request).once
+
+      #     updater.run
+      #   end
+      # end
 
       context "when the job is to create a security PR" do
         context "when the dependency is vulnerable" do
