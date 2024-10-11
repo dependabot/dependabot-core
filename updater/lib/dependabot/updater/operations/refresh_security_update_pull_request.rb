@@ -129,7 +129,14 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
+
+          # Dependabot::Experiments.register(:lead_security_dependency, true)
+          security_dep = job.security_dependency if job.security_dependency?
+
           lead_dep_name = job_dependencies.first&.downcase
+
+          lead_dep_name = security_dep if Dependabot::Experiments.enabled?(:lead_security_dependency)
+
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
@@ -156,20 +163,6 @@ module Dependabot
             requirements_to_unlock: requirements_to_unlock
           )
 
-          # Dependabot::Experiments.register(:existing_pr_version_match, true)
-
-          if Dependabot::Experiments.enabled?(:existing_pr_version_match) && (lead_dep_name &&
-            job.existing_pull_requests && pr_lead_dep_latest_ver(lead_dep_name,
-                                                                 lead_dep_latest_available_ver.to_s))
-
-            msg = "Lead dependency (#{lead_dep_name}) version (#{lead_dep_latest_available_ver}) is " \
-                  " already upto date in pull request, skipping updating pull request."
-
-            Dependabot.logger.info(msg)
-
-            return
-          end
-
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
@@ -187,7 +180,9 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job_dependencies.map(&:downcase)
-          if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
+          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
+
+          if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
@@ -209,24 +204,6 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/CyclomaticComplexity
-
-        # Feature testing to fix issues related with scenarios when a PR is updated while containing
-        # the same version in existing PR and dependeabot updater closes and raised same PR
-        sig { params(lead_dep_name: String, existing_pr_lead_dep_ver: String).returns(T::Boolean) }
-        def pr_lead_dep_latest_ver(lead_dep_name, existing_pr_lead_dep_ver)
-          job.existing_pull_requests.each do |existing_pr|
-            existing_pr.dependencies.each do |deps|
-              next unless (deps.name.eql? lead_dep_name) && (deps.version.eql? existing_pr_lead_dep_ver)
-
-              Dependabot.logger.info("Matching entry found in existing PR. Dependency name: #{deps.name}, version: #{deps.version}") # rubocop:disable Layout/LineLength
-              return true
-            end
-          end
-          false
-        rescue StandardError => e
-          Dependabot.logger.error("Error while evaluating existing PR: #{e.message}")
-          false
-        end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
         def requirements_to_unlock(checker)
