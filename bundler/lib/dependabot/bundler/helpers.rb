@@ -26,8 +26,7 @@ module Dependabot
       end
 
       # If we are updating a project with a Gemfile.lock that does not specify
-      # the version it was bundled with, we failover to V1 on the assumption
-      # it was created with an old version that didn't add this information
+      # the version it was bundled with, we failover to V2
       sig { returns(String) }
       def self.failover_version
         DEFAULT
