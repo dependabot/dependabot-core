@@ -89,10 +89,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         let(:dependency_files) { bundler_project_dependency_files("blocked_by_subdep") }
 
-        it "only upgrades as far as the subdep allows", :bundler_v1_only do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("1.1.0"))
-        end
-
         it "is still able to upgrade to the latest version by upgrading the subdep as well", :bundler_v2_only do
           expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("2.0.0"))
         end
@@ -135,27 +131,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           it "returns nil as resolution returns the bundler version installed by core" do
             expect(latest_resolvable_version_details).to be_nil
           end
-        end
-      end
-
-      context "with a dependency that requires bundler v1", :bundler_v1_only do
-        let(:dependency_name) { "guard-bundler" }
-        let(:requirement_string) { "2.2.1" }
-
-        let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
-
-        its([:version]) { is_expected.to eq(Gem::Version.new("2.2.1")) }
-      end
-
-      context "when bundled with v1 and requesting a version that requires bundler v2", :bundler_v1_only do
-        let(:dependency_name) { "guard-bundler" }
-        let(:requirement_string) { "~> 3.0.0" }
-
-        let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
-
-        it "raises a DependencyFileNotResolvable error" do
-          expect { latest_resolvable_version_details }
-            .to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
 
@@ -209,10 +184,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:requirement_string) { ">= 0" }
 
         let(:dependency_files) { bundler_project_dependency_files("version_conflict_with_listed_subdep") }
-
-        it "does not allow the upgrade", :bundler_v1_only do
-          expect(latest_resolvable_version_details[:version]).to eq(Gem::Version.new("3.6.0"))
-        end
 
         it "is still able to upgrade", :bundler_v2_only do
           expect(latest_resolvable_version_details[:version]).to be > Gem::Version.new("3.6.0")
@@ -385,10 +356,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             branch: "master",
             ref: "master"
           }
-        end
-
-        it "is nil", :bundler_v1_only do
-          expect(resolver.latest_resolvable_version_details).to be_nil
         end
 
         it "still resolves fine if the circular dependency does not cause any conflicts", :bundler_v2_only do

@@ -378,10 +378,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(file.content).to include("statesman (1.3.1)")
           end
 
-          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
-            expect(file.content).to include("business (1.18.0)")
-          end
-
           it "does not touch the yanked gem", :bundler_v2_only do
             expect(file.content).to include("business (1.4.1)")
           end
@@ -397,10 +393,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
         it "doesn't change the version of the other (also outdated) gem" do
           expect(file.content).to include("statesman (1.2.1)")
-        end
-
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
-          expect(file.content).to include("BUNDLED WITH\n   1.10.6")
         end
 
         it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
@@ -1511,10 +1503,6 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           groups: [],
           source: nil
         }]
-      end
-
-      it "raises an error", :bundler_v1_only do
-        expect { updated_gemfile }.to raise_error(/Bundler could not find compatible versions for gem "bundler"/)
       end
 
       it "returns the latest version", :bundler_v2_only do
