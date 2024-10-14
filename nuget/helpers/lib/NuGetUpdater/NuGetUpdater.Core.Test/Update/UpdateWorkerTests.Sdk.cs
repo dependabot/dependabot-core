@@ -95,6 +95,66 @@ public partial class UpdateWorkerTests
               );
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PeerDependenciesAreUpdatedEvenWhenNotExplicit(bool useDependencySolver)
+        {
+            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            await TestUpdateForProject("AspNetCore.HealthChecks.Rabbitmq", "5.0.2", "7.0.0",
+                projectFile: ("a/a.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <OutputType>Exe</OutputType>
+                        <TargetFramework>net6.0</TargetFramework>
+                        <ImplicitUsings>enable</ImplicitUsings>
+                        <Nullable>enable</Nullable>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                additionalFiles:
+                [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <ItemGroup>
+                            <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="5.0.2" />
+                            <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.17" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <OutputType>Exe</OutputType>
+                        <TargetFramework>net6.0</TargetFramework>
+                        <ImplicitUsings>enable</ImplicitUsings>
+                        <Nullable>enable</Nullable>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <ItemGroup>
+                            <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="7.0.0" />
+                            <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.9" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+            );
+        }
+
         [Fact]
         public async Task CallingResolveDependencyConflictsNew()
         {
@@ -2908,6 +2968,45 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
                       <ItemGroup>
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdatingTransitiveDependencyWithNewSolverCanUpdateJustTheTopLevelPackage()
+        {
+            // we've been asked to explicitly update a transitive dependency, but we can solve it by updating the top-level package instead
+            using var _ = new DependencySolverEnvironment();
+            await TestUpdateForProject("Transitive.Package", "1.0.0", "2.0.0",
+                isTransitive: true,
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[1.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[2.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net8.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
                     """

@@ -342,18 +342,6 @@ internal static partial class MSBuildHelper
 
     internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
     {
-        if (UseNewDependencySolver())
-        {
-            return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
-        }
-        else
-        {
-            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
-        }
-    }
-
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
-    {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
@@ -510,7 +498,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsWithBruteForce(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
