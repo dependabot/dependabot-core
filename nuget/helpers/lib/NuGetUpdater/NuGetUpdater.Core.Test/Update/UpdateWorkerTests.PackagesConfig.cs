@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using NuGet;
 
+using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -603,8 +604,12 @@ public partial class UpdateWorkerTests
             );
         }
 
-        [Fact]
-        public async Task UpdateBindingRedirectInWebConfig()
+        // the xml can take various shapes and they're all formatted, so we need very specific values here
+        [Theory]
+        [InlineData("<Content Include=\"web.config\" />")]
+        [InlineData("<Content Include=\"web.config\">\n    </Content>")]
+        [InlineData("<Content Include=\"web.config\">\n      <SubType>Designer</SubType>\n    </Content>")]
+        public async Task UpdateBindingRedirectInWebConfig(string webConfigXml)
         {
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
                 packages:
@@ -612,7 +617,7 @@ public partial class UpdateWorkerTests
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
                 ],
-                projectContents: """
+                projectContents: $$"""
                     <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
                         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -669,7 +674,7 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                       <ItemGroup>
                         <None Include="packages.config" />
-                        <Content Include="web.config" />
+                        {{webConfigXml}}
                         <Content Include="web.Debug.config">
                           <DependentUpon>web.config</DependentUpon>
                         </Content>
@@ -711,7 +716,7 @@ public partial class UpdateWorkerTests
                         </configuration>
                         """)
                 ],
-                expectedProjectContents: """
+                expectedProjectContents: $$"""
                     <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                       <PropertyGroup>
                         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -768,7 +773,7 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                       <ItemGroup>
                         <None Include="packages.config" />
-                        <Content Include="web.config" />
+                        {{webConfigXml}}
                         <Content Include="web.Debug.config">
                           <DependentUpon>web.config</DependentUpon>
                         </Content>
@@ -2100,13 +2105,13 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
             var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
             Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails);
+            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails.ToString());
         }
 
         [Fact]
@@ -2190,6 +2195,215 @@ public partial class UpdateWorkerTests
             );
         }
 
+        [Fact]
+        public async Task ReportsUnexpectedResponseFromNuGetServer()
+        {
+            static (int, string) TestHttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+                return uri.PathAndQuery switch
+                {
+                    // initial and search query are good, update should be possible...
+                    "/index.json" => (200, $$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """),
+                    "/registrations/some.package/index.json" => (200, $$"""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.1.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "id": "Some.Package",
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            },
+                                            "packageContent": "{{baseUrl}}/download/some.package/1.0.0/some.package.1.0.0.nupkg",
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "id": "Some.Package",
+                                                "listed": true,
+                                                "version": "1.1.0"
+                                            },
+                                            "packageContent": "{{baseUrl}}/download/some.package/1.1.0/some.package.1.1.0.nupkg",
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """),
+                    // ...but all other calls to the server fail
+                    _ => (500, "{}"),
+                };
+            }
+            using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
+            await TestUpdateForProject("Some.Package", "1.0.0", "1.1.0",
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("NuGet.Config", $"""
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                expectedResult: new()
+                {
+                    ErrorType = ErrorType.Unknown,
+                    ErrorDetailsRegex = "Response status code does not indicate success",
+                }
+            );
+        }
+
+        [Fact]
+        public async Task MissingDependencyErrorIsReported()
+        {
+            // trying to update Some.Package from 1.0.1 to 1.0.2, but another package isn't available; update fails
+            await TestUpdateForProject("Some.Package", "1.0.1", "1.0.2",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net45"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.2", "net45"),
+
+                    // the package `Unrelated.Package/1.0.0` is missing and will cause the update to fail
+                ],
+                // existing
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Unrelated.Package.1.0.0\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.1" targetFramework="net45" />
+                      <package id="Unrelated.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Some.Package.1.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                          <HintPath>packages\Unrelated.Package.1.0.0\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="1.0.1" targetFramework="net45" />
+                      <package id="Unrelated.Package" version="1.0.0" targetFramework="net45" />
+                    </packages>
+                    """,
+                expectedResult: new()
+                {
+                    ErrorType = ErrorType.UpdateNotPossible,
+                    ErrorDetails = new[] { "Unrelated.Package.1.0.0" },
+                }
+            );
+        }
+
         protected static Task TestUpdateForProject(
             string dependencyName,
             string oldVersion,
@@ -2201,7 +2415,7 @@ public partial class UpdateWorkerTests
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null,
             MockNuGetPackage[]? packages = null,
-            UpdateOperationResult? expectedResult = null)
+            ExpectedUpdateOperationResult? expectedResult = null)
         {
             var realizedAdditionalFiles = new List<(string Path, string Content)>
             {

@@ -353,8 +353,21 @@ module Dependabot
       # package version mentioned in .toml not found in package index
       PACKAGE_NOT_FOUND = /Package (?<pkg>.*) ((?<req_ver>.*)) not found./
 
-      # error code 401 while accessing registry
-      ERROR_401 = /401 Client Error/
+      # client access error codes while accessing package index
+      CLIENT_ERROR_CODES = T.let({
+        error401: /401 Client Error/,
+        error403: /403 Client Error/,
+        error404: /404 Client Error/,
+        http403: /HTTP error 403/,
+        http404: /HTTP error 404/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
+
+      # server response error codes while accessing package index
+      SERVER_ERROR_CODES = T.let({
+        server502: /502 Server Error/,
+        server503: /503 Server Error/,
+        server504: /504 Server Error/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
 
       sig do
         params(
@@ -386,6 +399,8 @@ module Dependabot
 
       public
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
         Dependabot.logger.warn(error.message)
@@ -403,11 +418,22 @@ module Dependabot
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
 
-        return unless error.message.match?(ERROR_401)
+        SERVER_ERROR_CODES.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
 
-        url = URI.extract(error.message).first.then { sanitize_url(_1) }
-        raise PrivateSourceAuthenticationFailure, url
+          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          raise InconsistentRegistryResponse, index_url
+        end
+
+        CLIENT_ERROR_CODES.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
+          raise PrivateSourceAuthenticationFailure, index_url
+        end
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

@@ -12,7 +12,7 @@ namespace NuGetUpdater.Core.Run;
 public class RunWorker
 {
     private readonly IApiHandler _apiHandler;
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -21,7 +21,7 @@ public class RunWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public RunWorker(IApiHandler apiHandler, Logger logger)
+    public RunWorker(IApiHandler apiHandler, ILogger logger)
     {
         _apiHandler = apiHandler;
         _logger = logger;
@@ -86,6 +86,13 @@ public class RunWorker
             error = new DependencyFileNotFound()
             {
                 Details = ex.FilePath,
+            };
+        }
+        catch (UpdateNotPossibleException ex)
+        {
+            error = new UpdateNotPossible()
+            {
+                Details = ex.Dependencies,
             };
         }
         catch (Exception ex)

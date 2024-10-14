@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class DirectoryPackagesPropsDiscovery
 {
-    public static DirectoryPackagesPropsDiscoveryResult? Discover(string repoRootPath, string workspacePath, ImmutableArray<ProjectDiscoveryResult> projectResults, Logger logger)
+    public static DirectoryPackagesPropsDiscoveryResult? Discover(string repoRootPath, string workspacePath, ImmutableArray<ProjectDiscoveryResult> projectResults, ILogger logger)
     {
         var projectResult = projectResults.FirstOrDefault(
             p => p.Properties.FirstOrDefault(prop => prop.Name.Equals("ManagePackageVersionsCentrally", StringComparison.OrdinalIgnoreCase)) is Property property

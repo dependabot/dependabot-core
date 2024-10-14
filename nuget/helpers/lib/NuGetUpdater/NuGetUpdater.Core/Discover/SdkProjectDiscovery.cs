@@ -6,7 +6,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, Logger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string projectPath, ILogger logger)
     {
         // Determine which targets and props files contribute to the build.
         var (buildFiles, projectTargetFrameworks) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
@@ -97,7 +97,7 @@ internal static class SdkProjectDiscovery
         return results.ToImmutable();
     }
 
-    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(string repoRootPath, string projectPath, ImmutableArray<string> tfms, ImmutableArray<Dependency> directDependencies, Logger logger)
+    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(string repoRootPath, string projectPath, ImmutableArray<string> tfms, ImmutableArray<Dependency> directDependencies, ILogger logger)
     {
         Dictionary<string, Dependency> transitiveDependencies = new(StringComparer.OrdinalIgnoreCase);
         foreach (var tfm in tfms)

@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.FrameworkChecker;
 
 public class CompatibilityChecker
 {
-    public static bool IsCompatible(string[] projectTfms, string[] packageTfms, Logger logger)
+    public static bool IsCompatible(string[] projectTfms, string[] packageTfms, ILogger logger)
     {
         var projectFrameworks = projectTfms.Select(ParseFramework);
         var packageFrameworks = packageTfms.Select(ParseFramework);

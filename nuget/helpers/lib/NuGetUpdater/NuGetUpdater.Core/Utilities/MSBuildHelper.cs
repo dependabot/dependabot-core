@@ -44,13 +44,14 @@ internal static partial class MSBuildHelper
         }
     }
 
-    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, bool retainMSBuildSdks = false)
+    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, ILogger? logger = null, bool retainMSBuildSdks = false)
     {
+        logger ??= new ConsoleLogger();
         var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
         var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
         foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
         {
-            Console.WriteLine($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
+            logger.Log($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
             File.Move(globalJsonPath, tempGlobalJsonPath);
             if (retainMSBuildSdks)
             {
@@ -78,7 +79,7 @@ internal static partial class MSBuildHelper
         {
             foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
             {
-                Console.WriteLine($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
+                logger.Log($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
                 File.Move(tempGlobalJsonPath, globalJsonpath, overwrite: retainMSBuildSdks);
             }
         }
@@ -316,7 +317,7 @@ internal static partial class MSBuildHelper
         return false;
     }
 
-    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static async Task<bool> DependenciesAreCoherentAsync(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
@@ -339,7 +340,7 @@ internal static partial class MSBuildHelper
         return Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true";
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
     {
         if (UseNewDependencySolver())
         {
@@ -351,7 +352,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, Logger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
@@ -417,7 +418,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath));
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
                 }
             }
 
@@ -433,7 +434,7 @@ internal static partial class MSBuildHelper
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath));
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
                 }
             }
 
@@ -509,7 +510,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Logger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
@@ -762,7 +763,7 @@ internal static partial class MSBuildHelper
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
-        Logger? logger = null)
+        ILogger? logger = null)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -830,6 +831,17 @@ internal static partial class MSBuildHelper
         if (match.Success)
         {
             throw new MissingFileException(match.Groups["FilePath"].Value);
+        }
+    }
+
+    internal static void ThrowOnMissingPackages(string output)
+    {
+        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^'].*)' is not found on source");
+        var matchCollection = missingPackagesPattern.Matches(output);
+        var missingPackages = matchCollection.Select(m => m.Groups["PackageName"].Value).Distinct().ToArray();
+        if (missingPackages.Length > 0)
+        {
+            throw new UpdateNotPossibleException(missingPackages);
         }
     }
 

@@ -22,7 +22,7 @@ internal static class PackagesConfigUpdater
         string previousDependencyVersion,
         string newDependencyVersion,
         string packagesConfigPath,
-        Logger logger
+        ILogger logger
     )
     {
         logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
@@ -92,7 +92,7 @@ internal static class PackagesConfigUpdater
         await projectBuildFile.SaveAsync();
     }
 
-    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, Logger logger)
+    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, ILogger logger)
     {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
@@ -139,6 +139,7 @@ internal static class PackagesConfigUpdater
 
                     if (exitCodeAgain != 0)
                     {
+                        MSBuildHelper.ThrowOnMissingPackages(restoreOutput);
                         throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
                     }
 
@@ -147,6 +148,7 @@ internal static class PackagesConfigUpdater
 
                 MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
                 MSBuildHelper.ThrowOnMissingFile(fullOutput);
+                MSBuildHelper.ThrowOnMissingPackages(fullOutput);
                 throw new Exception(fullOutput);
             }
         }

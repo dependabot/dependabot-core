@@ -16,7 +16,7 @@ public partial class AnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -24,12 +24,19 @@ public partial class AnalyzeWorker
         Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
     };
 
-    public AnalyzeWorker(Logger logger)
+    public AnalyzeWorker(ILogger logger)
     {
         _logger = logger;
     }
 
     public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
+    {
+        var analysisResult = await RunWithErrorHandlingAsync(repoRoot, discoveryPath, dependencyPath);
+        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+    }
+
+    internal async Task<AnalysisResult> RunWithErrorHandlingAsync(string repoRoot, string discoveryPath, string dependencyPath)
     {
         AnalysisResult analysisResult;
         var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
@@ -54,7 +61,7 @@ public partial class AnalyzeWorker
             };
         }
 
-        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+        return analysisResult;
     }
 
     public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
@@ -206,7 +213,7 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
@@ -232,7 +239,7 @@ public partial class AnalyzeWorker
         NuGetVersion version,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
@@ -260,7 +267,7 @@ public partial class AnalyzeWorker
         ImmutableArray<NuGetFramework> projectFrameworks,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
@@ -292,7 +299,7 @@ public partial class AnalyzeWorker
         IEnumerable<NuGetVersion> orderedVersions,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
@@ -343,7 +350,7 @@ public partial class AnalyzeWorker
         NuGetVersion currentVersion,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         foreach (var packageId in packageIds)
@@ -369,7 +376,7 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         // We need to find all projects which have the given dependency. Even in cases that they
@@ -452,7 +459,7 @@ public partial class AnalyzeWorker
             }).ToImmutableArray();
     }
 
-    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, Logger logger)
+    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, ILogger logger)
     {
         if (!Directory.Exists(analysisDirectory))
         {

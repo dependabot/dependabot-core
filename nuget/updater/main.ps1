@@ -78,8 +78,7 @@ function Update-Files {
         --api-url $env:DEPENDABOT_API_URL `
         --job-id $env:DEPENDABOT_JOB_ID `
         --output-path $env:DEPENDABOT_OUTPUT_PATH `
-        --base-commit-sha $baseCommitSha `
-        --verbose
+        --base-commit-sha $baseCommitSha
 }
 
 try {

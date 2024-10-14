@@ -14,22 +14,83 @@ module Dependabot
       YARN_PATH_NOT_FOUND =
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
+      # NPM Version Constants
+      NPM_V8 = 8
+      NPM_V6 = 6
+      NPM_DEFAULT_VERSION = NPM_V8
+
+      # PNPM Version Constants
+      PNPM_V9 = 9
+      PNPM_V8 = 8
+      PNPM_V7 = 7
+      PNPM_V6 = 6
+      PNPM_DEFAULT_VERSION = PNPM_V9
+      PNPM_FALLBACK_VERSION = PNPM_V6
+
+      # YARN Version Constants
+      YARN_V3 = 3
+      YARN_V2 = 2
+      YARN_V1 = 1
+      YARN_DEFAULT_VERSION = YARN_V3
+      YARN_FALLBACK_VERSION = YARN_V1
+
+      # Determines the npm version depends to the feature flag
+      # If the feature flag is enabled, we are going to use the minimum version npm 8
+      # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: DependencyFile).returns(Integer) }
       def self.npm_version_numeric(lockfile)
-        lockfile_content = T.must(lockfile.content)
-        return 8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
+        fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
 
-        6
+        return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
+
+        npm_version_numeric_npm6_or_higher(lockfile)
+      end
+
+      sig { params(lockfile: DependencyFile).returns(Integer) }
+      def self.npm_version_numeric_npm6_or_higher(lockfile)
+        lockfile_content = T.must(lockfile.content)
+        return NPM_V8 if JSON.parse(lockfile_content)["lockfileVersion"].to_i >= 2
+
+        NPM_V6
       rescue JSON::ParserError
-        6
+        NPM_V6
+      end
+
+      # Determines the npm version based on the lockfile version
+      # - NPM 7 uses lockfileVersion 2
+      # - NPM 8 uses lockfileVersion 2
+      # - NPM 9 uses lockfileVersion 3
+      sig { params(lockfile: DependencyFile).returns(Integer) }
+      def self.npm_version_numeric_npm8_or_higher(lockfile)
+        lockfile_content = lockfile.content
+
+        # Return default NPM version if there's no lockfile or it's empty
+        return NPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
+
+        parsed_lockfile = JSON.parse(lockfile_content)
+
+        lockfile_version_str = parsed_lockfile["lockfileVersion"]
+
+        # Default to npm default version if lockfileVersion is missing or empty
+        return NPM_DEFAULT_VERSION if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
+
+        lockfile_version = lockfile_version_str.to_i
+
+        # Using npm 8 as the default for lockfile_version > 2.
+        # Update needed to support npm 9+ based on lockfile version.
+        return NPM_V8 if lockfile_version >= 2
+
+        NPM_DEFAULT_VERSION
+      rescue JSON::ParserError
+        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
       sig { params(yarn_lock: DependencyFile).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
         if yarn_berry?(yarn_lock)
-          3
+          YARN_DEFAULT_VERSION
         else
-          1
+          YARN_FALLBACK_VERSION
         end
       end
 
@@ -38,15 +99,12 @@ module Dependabot
 
       sig { params(pnpm_lock: DependencyFile).returns(Integer) }
       def self.pnpm_version_numeric(pnpm_lock)
-        if pnpm_lockfile_version(pnpm_lock).to_f >= 9.0
-          9
-        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 6.0
-          8
-        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
-          7
-        else
-          6
-        end
+        pnpm_lockfile_version = pnpm_lockfile_version(pnpm_lock).to_f
+        return PNPM_V9 if pnpm_lockfile_version >= 9.0
+        return PNPM_V8 if pnpm_lockfile_version >= 6.0
+        return PNPM_V7 if pnpm_lockfile_version >= 5.4
+
+        PNPM_FALLBACK_VERSION
       end
 
       def self.fetch_yarnrc_yml_value(key, default_value)
@@ -61,7 +119,7 @@ module Dependabot
       def self.npm8?(package_lock)
         return true unless package_lock
 
-        npm_version_numeric(package_lock) == 8
+        npm_version_numeric(package_lock) == NPM_V8
       end
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(T::Boolean) }
@@ -140,12 +198,12 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def self.yarn_berry_skip_build?
-        yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
+        yarn_major_version >= YARN_V3 && (yarn_zero_install? || yarn_offline_cache?)
       end
 
       sig { returns(T::Boolean) }
       def self.yarn_berry_disable_scripts?
-        yarn_major_version == 2 || !yarn_zero_install?
+        yarn_major_version == YARN_V2 || !yarn_zero_install?
       end
 
       sig { returns(T::Boolean) }

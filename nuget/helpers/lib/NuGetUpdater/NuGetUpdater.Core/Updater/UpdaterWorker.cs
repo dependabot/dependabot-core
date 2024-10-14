@@ -9,7 +9,7 @@ namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
 {
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
@@ -18,12 +18,22 @@ public class UpdaterWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public UpdaterWorker(Logger logger)
+    public UpdaterWorker(ILogger logger)
     {
         _logger = logger;
     }
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
+    {
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+        if (resultOutputPath is { })
+        {
+            await WriteResultFile(result, resultOutputPath, _logger);
+        }
+    }
+
+    // this is a convenient method for tests
+    internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
     {
         UpdateOperationResult result = new(); // assumed to be ok until proven otherwise
         try
@@ -52,11 +62,24 @@ public class UpdaterWorker
                 ErrorDetails = ex.FilePath,
             };
         }
-
-        if (resultOutputPath is { })
+        catch (UpdateNotPossibleException ex)
         {
-            await WriteResultFile(result, resultOutputPath, _logger);
+            result = new()
+            {
+                ErrorType = ErrorType.UpdateNotPossible,
+                ErrorDetails = ex.Dependencies,
+            };
         }
+        catch (Exception ex)
+        {
+            result = new()
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+            };
+        }
+
+        return result;
     }
 
     public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
@@ -99,7 +122,7 @@ public class UpdaterWorker
         return new UpdateOperationResult();
     }
 
-    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, Logger logger)
+    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
         logger.Log($"  Writing update result to [{resultOutputPath}].");
 
