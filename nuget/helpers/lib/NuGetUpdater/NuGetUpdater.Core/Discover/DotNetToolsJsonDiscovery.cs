@@ -4,7 +4,7 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class DotNetToolsJsonDiscovery
 {
-    public static DotNetToolsJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, Logger logger)
+    public static DotNetToolsJsonDiscoveryResult? Discover(string repoRootPath, string workspacePath, ILogger logger)
     {
         if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {

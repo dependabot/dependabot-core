@@ -28,8 +28,7 @@ module Dependabot
           "--project-tfms",
           *project_tfms,
           "--package-tfms",
-          *package_tfms,
-          "--verbose"
+          *package_tfms
         ]
         command = Shellwords.join(command_parts)
 
@@ -39,8 +38,7 @@ module Dependabot
           "--project-tfms",
           "<project-tfms>",
           "--package-tfms",
-          "<package-tfms>",
-          "--verbose"
+          "<package-tfms>"
         ].join(" ")
 
         puts "running NuGet updater:\n" + command
@@ -68,8 +66,7 @@ module Dependabot
           "--workspace",
           workspace_path,
           "--output",
-          output_path,
-          "--verbose"
+          output_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -82,8 +79,7 @@ module Dependabot
           "--workspace",
           "<path-to-workspace>",
           "--output",
-          "<path-to-output>",
-          "--verbose"
+          "<path-to-output>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -127,8 +123,7 @@ module Dependabot
           "--dependency-file-path",
           dependency_file_path,
           "--analysis-folder-path",
-          analysis_folder_path,
-          "--verbose"
+          analysis_folder_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -141,8 +136,7 @@ module Dependabot
           "--dependency-file-path",
           "<dependency-file-path>",
           "--analysis-folder-path",
-          "<analysis_folder_path>",
-          "--verbose"
+          "<analysis_folder_path>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -191,8 +185,7 @@ module Dependabot
           dependency.previous_version,
           is_transitive ? "--transitive" : nil,
           "--result-output-path",
-          result_output_path,
-          "--verbose"
+          result_output_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -212,8 +205,7 @@ module Dependabot
           "<previous-version>",
           is_transitive ? "--transitive" : nil,
           "--result-output-path",
-          "<result-output-path>",
-          "--verbose"
+          "<result-output-path>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -273,6 +265,8 @@ module Dependabot
           raise DependencyFileNotFound, T.let(error_details, T.nilable(String))
         when "UpdateNotPossible"
           raise UpdateNotPossible, T.let(error_details, T::Array[String])
+        when "Unknown"
+          raise DependabotError, T.let(error_details, String)
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end

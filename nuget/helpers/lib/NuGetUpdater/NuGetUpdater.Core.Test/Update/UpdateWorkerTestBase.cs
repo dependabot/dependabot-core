@@ -1,3 +1,4 @@
+using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -91,7 +92,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         TestFile[]? additionalFilesExpected = null,
         MockNuGetPackage[]? packages = null,
         string projectFilePath = "test-project.csproj",
-        UpdateOperationResult? expectedResult = null)
+        ExpectedUpdateOperationResult? expectedResult = null)
         => TestUpdateForProject(
             dependencyName,
             oldVersion,
@@ -114,7 +115,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         TestFile[]? additionalFiles = null,
         TestFile[]? additionalFilesExpected = null,
         MockNuGetPackage[]? packages = null,
-        UpdateOperationResult? expectedResult = null)
+        ExpectedUpdateOperationResult? expectedResult = null)
     {
         additionalFiles ??= [];
         additionalFilesExpected ??= [];
@@ -133,7 +134,7 @@ public abstract class UpdateWorkerTestBase : TestBase
             await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
             // run update
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             var projectPath = placeFilesInSrc ? $"src/{projectFilePath}" : projectFilePath;
             var actualResult = await worker.RunWithErrorHandlingAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             if (expectedResult is { })
@@ -151,10 +152,17 @@ public abstract class UpdateWorkerTestBase : TestBase
         AssertContainsFiles(expectedResultFiles, actualResult);
     }
 
-    protected static void ValidateUpdateOperationResult(UpdateOperationResult expectedResult, UpdateOperationResult actualResult)
+    protected static void ValidateUpdateOperationResult(ExpectedUpdateOperationResult expectedResult, UpdateOperationResult actualResult)
     {
         Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
-        Assert.Equivalent(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        if (expectedResult.ErrorDetailsRegex is not null && actualResult.ErrorDetails is string errorDetails)
+        {
+            Assert.Matches(expectedResult.ErrorDetailsRegex, errorDetails);
+        }
+        else
+        {
+            Assert.Equivalent(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        }
     }
 
     protected static Task TestNoChangeforSolution(
@@ -229,7 +237,7 @@ public abstract class UpdateWorkerTestBase : TestBase
             await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
             var slnPath = Path.Combine(temporaryDirectory, slnName);
-            var worker = new UpdaterWorker(new Logger(verbose: true));
+            var worker = new UpdaterWorker(new TestLogger());
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 

@@ -116,19 +116,19 @@ internal static class BindingRedirectManager
             return null;
         }
 
-        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetContent(configFile)));
+        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetValue(configFile)));
         var configFileContents = await File.ReadAllTextAsync(configFilePath);
         return new ConfigurationFile(configFilePath, configFileContents, false);
 
-        static string GetContent(IXmlElementSyntax element)
+        static string GetValue(IXmlElementSyntax element)
         {
-            var content = element.GetContentValue();
+            var content = element.GetAttributeValue("Include");
             if (!string.IsNullOrEmpty(content))
             {
                 return content;
             }
 
-            content = element.GetAttributeValue("Include");
+            content = element.GetContentValue();
             if (!string.IsNullOrEmpty(content))
             {
                 return content;
@@ -139,7 +139,7 @@ internal static class BindingRedirectManager
 
         static bool IsConfigFile(IXmlElementSyntax element)
         {
-            var content = GetContent(element);
+            var content = GetValue(element);
             if (content is null)
             {
                 return false;
