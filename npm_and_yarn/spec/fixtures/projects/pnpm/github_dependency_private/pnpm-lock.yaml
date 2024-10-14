@@ -11,18 +11,18 @@ importers:
       cross-fetch:
         specifier: ^3.1.5
         version: 3.1.5
-      electron-context-menu:
-        specifier: github:Zelcord/electron-context-menu
-        version: https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32
+      pnpm_github_dependency_private:
+        specifier: github:dsp-testing/pnpm_github_dependency_private
+        version: https://codeload.github.com/dsp-testing/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32
 
 packages:
 
   cross-fetch@3.1.5:
     resolution: {integrity: sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==}
 
-  electron-context-menu@https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32:
-    resolution: {tarball: https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
-    name: electron-context-menu
+  pnpm_github_dependency_private@https://codeload.github.com/dsp-testing/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32:
+    resolution: {tarball: https://codeload.github.com/dsp-testing/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
+    name: pnpm_github_dependency_private
     version: 3.5.0
 
   node-fetch@2.6.7:
@@ -51,7 +51,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  electron-context-menu@https://codeload.github.com/Zelcord/electron-context-menu/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32: {}
+  pnpm_github_dependency_private@https://codeload.github.com/dsp-testing/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32: {}
 
   node-fetch@2.6.7:
     dependencies:

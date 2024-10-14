@@ -374,7 +374,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dsp-testing/pnpm_github_dependency_private"
               ]
             )
         end
@@ -419,7 +419,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dsp-testing/pnpm_github_dependency_private"
               ]
             )
         end

@@ -18,6 +18,6 @@
     "homepage": "https://github.com/Zelcord/Zelcord#readme",
     "dependencies": {
         "cross-fetch": "^3.1.5",
-        "electron-context-menu": "github:Zelcord/electron-context-menu"
+        "pnpm_github_dependency_private": "github:dsp-testing/pnpm_github_dependency_private"
     }
 }
