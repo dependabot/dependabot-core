@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   include DependencyFileHelpers
   include DummyPkgHelpers
 
-  subject(:group_update_all) do
+  subject(:refresh_group) do
     described_class.new(
       service: mock_service,
       job: job,
@@ -55,18 +55,40 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     instance_double(Dependabot::Updater::ErrorHandler)
   end
 
+  let(:job_definition) do
+    job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
+  end
+
+  let(:dependency_files) do
+    original_bundler_files
+  end
+
+  let(:package_manager) do
+    DummyPkgHelpers::StubPackageManager.new(
+      name: "bundler",
+      version: package_manager_version,
+      deprecated_versions: deprecated_versions,
+      supported_versions: supported_versions
+    )
+  end
+
+  let(:package_manager_version) { "2" }
+  let(:supported_versions) { %w(2 3) }
+  let(:deprecated_versions) { %w(1) }
+
   after do
     Dependabot::Experiments.reset!
+  end
+
+  before do
+    allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
+    allow(job).to receive(:package_manager).and_return("bundler")
   end
 
   describe "#perform" do
     context "when the same dependencies need to be updated to the same target versions" do
       let(:job_definition) do
         job_definition_fixture("bundler/version_updates/group_update_refresh")
-      end
-
-      let(:dependency_files) do
-        original_bundler_files
       end
 
       before do
@@ -79,7 +101,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
         end
 
-        group_update_all.perform
+        refresh_group.perform
       end
     end
 
@@ -99,7 +121,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       it "closes the pull request" do
         expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
-        group_update_all.perform
+        refresh_group.perform
       end
     end
 
@@ -124,7 +146,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
         end
 
-        group_update_all.perform
+        refresh_group.perform
       end
     end
 
@@ -147,7 +169,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
         end
 
-        group_update_all.perform
+        refresh_group.perform
       end
     end
 
@@ -169,7 +191,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
         expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
-        group_update_all.perform
+        refresh_group.perform
 
         # It added all of the other existing grouped PRs to the handled list
         expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
@@ -202,7 +224,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           job: job
         )
 
-        group_update_all.perform
+        refresh_group.perform
       end
     end
 
@@ -229,16 +251,24 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
         expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
 
-        group_update_all.perform
+        refresh_group.perform
+      end
+    end
+
+    context "when package manager version is unsupported" do
+      let(:package_manager_version) { "1" }
+
+      it "handles the ToolVersionNotSupported error with the error handler" do
+        expect(mock_error_handler).to receive(:handle_job_error).with(
+          error: instance_of(Dependabot::ToolVersionNotSupported),
+          dependency_group: dependency_snapshot.job_group
+        )
+        refresh_group.perform
       end
     end
   end
 
   describe "#deduce_updated_dependency" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
-    end
-
     let(:dependency_files) do
       original_bundler_files
     end
@@ -250,13 +280,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     it "returns nil if dependency is nil" do
       dependency = nil
       original_dependency = dependency_snapshot.dependencies.first
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(refresh_group.deduce_updated_dependency(dependency, original_dependency)).to be_nil
     end
 
     it "returns nil if original_dependency is nil" do
       dependency = dependency_snapshot.dependencies.first
       original_dependency = nil
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(refresh_group.deduce_updated_dependency(dependency, original_dependency)).to be_nil
     end
   end
 
@@ -294,7 +324,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -303,7 +333,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -312,7 +342,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -326,7 +356,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
 
@@ -336,7 +366,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -346,7 +376,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
     end
@@ -361,7 +391,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -371,7 +401,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
 
@@ -381,7 +411,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
     end
@@ -396,7 +426,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -406,7 +436,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -416,7 +446,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
     end
