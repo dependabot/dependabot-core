@@ -1,7 +1,7 @@
-const conflictingDependencyParser = require("./conflicting-dependency-parser");
-const vulnerabilityAuditor = require("./vulnerability-auditor");
+import conflictingDependencyParser from "./conflicting-dependency-parser";
+import vulnerabilityAuditor from "./vulnerability-auditor";
 
-module.exports = {
+export default {
   findConflictingDependencies:
     conflictingDependencyParser.findConflictingDependencies,
   vulnerabilityAuditor:
