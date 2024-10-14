@@ -118,8 +118,8 @@ module Dependabot
 
             upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
           end
-        rescue StandardError => e
-          error_handler.handle_job_error(error: e, dependency_group: group)
+        rescue ToolVersionNotSupported => e
+          error_handler.handle_job_error(error: e, dependency_group: job_group)
         end
 
         private

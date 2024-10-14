@@ -66,7 +66,7 @@ module Dependabot
           end
 
           dependency_change
-        rescue StandardError => e
+        rescue ToolVersionNotSupported => e
           error_handler.handle_job_error(error: e, dependency_group: group)
           nil
         end
