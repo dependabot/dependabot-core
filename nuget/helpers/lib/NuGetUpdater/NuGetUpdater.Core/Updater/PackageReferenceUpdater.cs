@@ -28,8 +28,8 @@ internal static class PackageReferenceUpdater
         bool isTransitive,
         ILogger logger)
     {
-        // SDK-style project, modify the XML directly
-        logger.Log("  Running for SDK-style project");
+        // PackageReference project; modify the XML directly
+        logger.Log("  Running 'PackageReference' project direct XML update");
 
         (ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
