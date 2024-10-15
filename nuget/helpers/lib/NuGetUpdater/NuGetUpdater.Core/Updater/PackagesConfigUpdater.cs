@@ -13,6 +13,14 @@ using Console = System.Console;
 
 namespace NuGetUpdater.Core;
 
+/// <summary>
+/// Handles package updates for projects that use packages.config.
+/// </summary>
+/// <remarks>
+/// packages.config can only be used in non-SDK-style project files targeting .NET Framework.
+/// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
+///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+/// <remarks>
 internal static class PackagesConfigUpdater
 {
     public static async Task UpdateDependencyAsync(
