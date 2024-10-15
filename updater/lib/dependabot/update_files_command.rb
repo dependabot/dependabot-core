@@ -128,6 +128,6 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
   end
 end
