@@ -33,9 +33,8 @@ internal static class PackagesConfigUpdater
         ILogger logger
     )
     {
-        logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
-
-        // use NuGet.exe to perform update
+        // packages.config project; use NuGet.exe to perform update
+        logger.Log($"  Found '{NuGetHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);

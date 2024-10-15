@@ -23,7 +23,7 @@ internal static class BindingRedirectManager
     /// </summary>
     /// <remarks>
     /// Assembly binding redirects are only applicable to projects targeting .NET Framework.
-    /// .NET Framework is restricted to non-SDK-style project files using either packages.config OR `<PackageReference>` MSBuild items.
+    /// .NET Framework targets can appear in SDK-style OR non-SDK-style project files, using either packages.config OR `<PackageReference>` MSBuild items.
     /// See: https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions
     ///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
     /// </remarks>
@@ -43,8 +43,7 @@ internal static class BindingRedirectManager
         var bindings = BindingRedirectResolver.GetBindingRedirects(projectBuildFile.Path, references.Select(static x => x.Include));
         if (!bindings.Any())
         {
-            // no bindings are configured, nothing to update
-            // TODO: This assumption may not always be correct; A project could have no binding redirects prior to the update, but now requires them after the update.
+            // no bindings found in the project file, nothing to update
             return;
         }
 
