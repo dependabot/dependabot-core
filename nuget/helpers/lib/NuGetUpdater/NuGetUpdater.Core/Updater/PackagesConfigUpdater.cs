@@ -17,7 +17,7 @@ namespace NuGetUpdater.Core;
 /// Handles package updates for projects that use packages.config.
 /// </summary>
 /// <remarks>
-/// packages.config can only be used in non-SDK-style project files targeting .NET Framework.
+/// packages.config can appear in non-SDK-style projects, but not in SDK-style projects.
 /// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
 ///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
 /// <remarks>
