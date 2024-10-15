@@ -190,7 +190,7 @@ docker run --rm -ti \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
   -v "$(pwd)/maven/script:$CODE_DIR/maven/script" \
   -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
-  -v "$(pwd)/maven_osv/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
+  -v "$(pwd)/maven_osv/.rubocop.yml:$CODE_DIR/maven_osv/.rubocop.yml" \
   -v "$(pwd)/maven_osv/dependabot-maven_osv.gemspec:$CODE_DIR/maven_osv/dependabot-maven_osv.gemspec" \
   -v "$(pwd)/maven_osv/lib:$CODE_DIR/maven_osv/lib" \
   -v "$(pwd)/maven_osv/script:$CODE_DIR/maven_osv/script" \
