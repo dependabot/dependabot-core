@@ -67,7 +67,7 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
