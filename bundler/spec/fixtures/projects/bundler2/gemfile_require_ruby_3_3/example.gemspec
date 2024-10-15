@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.files        = Dir["CHANGELOG.md", "LICENSE.txt", "README.md",
                           "lib/**/*", "helpers/**/*"]
 
-  spec.required_ruby_version = ">= 3.3.3"
+  spec.required_ruby_version = ">= 3.3.4"
   spec.required_rubygems_version = ">= 3.5.3"
 
   spec.add_dependency 'business', '~> 1.0'
