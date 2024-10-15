@@ -24,7 +24,7 @@ module Dependabot
                   .map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Python::Version::VERSION_PATTERN
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
       PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
@@ -36,24 +36,14 @@ module Dependabot
           line = matches[1]
         end
 
-        pattern = PATTERN
-
-        if Dependabot::Experiments.enabled?(:python_new_version)
-          quoted = OPS.keys.sort_by(&:length).reverse
-                      .map { |k| Regexp.quote(k) }.join("|")
-          version_pattern = Python::Version::NEW_VERSION_PATTERN
-          pattern_raw = "\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze
-          pattern = /\A#{pattern_raw}\z/
-        end
-
-        unless (matches = pattern.match(line))
+        unless (matches = PATTERN.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise BadRequirementError, msg
         end
 
-        return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+        return DefaultRequirement if matches[:op] == ">=" && matches[:version] == "0"
 
-        [matches[1] || "=", Python::Version.new(T.must(matches[2]))]
+        [matches[:op] || "=", Python::Version.new(T.must(matches[:version]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
