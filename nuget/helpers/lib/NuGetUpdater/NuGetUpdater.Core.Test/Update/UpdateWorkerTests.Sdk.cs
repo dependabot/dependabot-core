@@ -101,18 +101,22 @@ public partial class UpdateWorkerTests
         public async Task PeerDependenciesAreUpdatedEvenWhenNotExplicit(bool useDependencySolver)
         {
             using var _ = new DependencySolverEnvironment(useDependencySolver);
-            await TestUpdateForProject("AspNetCore.HealthChecks.Rabbitmq", "5.0.2", "7.0.0",
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [(null, [("Transitive.Package", "[1.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0", [(null, [("Transitive.Package", "[2.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net8.0"),
+                ],
                 projectFile: ("a/a.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <OutputType>Exe</OutputType>
-                        <TargetFramework>net6.0</TargetFramework>
-                        <ImplicitUsings>enable</ImplicitUsings>
-                        <Nullable>enable</Nullable>
+                        <TargetFramework>net8.0</TargetFramework>
                         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """),
@@ -121,8 +125,8 @@ public partial class UpdateWorkerTests
                     ("Directory.Packages.props", """
                         <Project>
                           <ItemGroup>
-                            <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="5.0.2" />
-                            <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="5.0.17" />
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                            <PackageVersion Include="Transitive.Package" Version="1.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
@@ -130,14 +134,11 @@ public partial class UpdateWorkerTests
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
-                        <OutputType>Exe</OutputType>
-                        <TargetFramework>net6.0</TargetFramework>
-                        <ImplicitUsings>enable</ImplicitUsings>
-                        <Nullable>enable</Nullable>
+                        <TargetFramework>net8.0</TargetFramework>
                         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """,
@@ -146,8 +147,8 @@ public partial class UpdateWorkerTests
                     ("Directory.Packages.props", """
                         <Project>
                           <ItemGroup>
-                            <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="7.0.0" />
-                            <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="7.0.9" />
+                            <PackageVersion Include="Some.Package" Version="2.0.0" />
+                            <PackageVersion Include="Transitive.Package" Version="2.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
