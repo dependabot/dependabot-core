@@ -9,8 +9,8 @@ dependencies:
     specifier: ^3.1.5
     version: 3.1.5
   pnpm_github_dependency_private:
-    specifier: github:dsp-testing/pnpm_github_dependency_private
-    version: github.com/dsp-testing/pnpm_github_dependency_private/280c81398c02a063f46e3285a9708d8db1a7ce32
+    specifier: github:dependabot-fixtures/pnpm_github_dependency_private
+    version: github.com/dependabot-fixtures/pnpm_github_dependency_private/280c81398c02a063f46e3285a9708d8db1a7ce32
 
 packages:
 
@@ -49,8 +49,8 @@ packages:
       webidl-conversions: 3.0.1
     dev: false
 
-  github.com/dsp-testing/pnpm_github_dependency_private/280c81398c02a063f46e3285a9708d8db1a7ce32:
-    resolution: {tarball: https://codeload.github.com/dsp-testing/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
+  github.com/dependabot-fixtures/pnpm_github_dependency_private/280c81398c02a063f46e3285a9708d8db1a7ce32:
+    resolution: {tarball: https://codeload.github.com/dependabot-fixtures/pnpm_github_dependency_private/tar.gz/280c81398c02a063f46e3285a9708d8db1a7ce32}
     name: pnpm_github_dependency_private
     version: 3.5.0
     dev: false
