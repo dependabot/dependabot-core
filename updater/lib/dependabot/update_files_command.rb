@@ -80,6 +80,16 @@ module Dependabot
         # Check if the error is a known "run halting" state we should handle
         if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
           { "error-type": error_type }
+        elsif error.is_a?(ToolVersionNotSupported)
+          Dependabot.logger.error(error.message)
+          {
+            "error-type": "tool_version_not_supported",
+            "error-detail": {
+              "tool-name": error.tool_name,
+              "detected-version": error.detected_version,
+              "supported-versions": error.supported_versions
+            }
+          }
         else
           # If it isn't, then log all the details and let the application error
           # tracker know about it

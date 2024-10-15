@@ -241,8 +241,9 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
-      # Add 'package_manager' to the depedency_snapshopt to use it in operations'
+      # Add 'package_manager' to the dependency_snapshot to use it in operations
       package_manager = parser.package_manager
+      package_manager&.raise_if_unsupported!
 
       @package_manager[@current_directory] = package_manager
 
