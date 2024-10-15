@@ -243,6 +243,7 @@ module Dependabot
       )
       # Add 'package_manager' to the dependency_snapshot to use it in operations
       package_manager = parser.package_manager
+      # Raise an error if the package manager version is unsupported
       package_manager&.raise_if_unsupported!
 
       @package_manager[@current_directory] = package_manager
