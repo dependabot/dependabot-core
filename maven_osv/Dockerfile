@@ -7,16 +7,16 @@ RUN go install "github.com/google/osv-scanner/cmd/osv-scanner@${OSV_SCANNER_VERS
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+ENV OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY="/opt/osv"
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="${OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY}/osv-scanner"
+ENV PATH=${DEPENDABOT_NATIVE_HELPERS_PATH}:$PATH
 
 USER dependabot
 COPY --chown=dependabot:dependabot maven_osv $DEPENDABOT_HOME/maven_osv
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
-COPY --chown=dependabot:dependabot --from=go /go/bin/osv-scanner $DEPENDABOT_NATIVE_HELPERS_PATH/osv-scanner/osv-scanner
+COPY --chown=dependabot:dependabot --from=go /go/bin/osv-scanner $DEPENDABOT_NATIVE_HELPERS_PATH/osv-scanner
 
-ENV PATH=${DEPENDABOT_NATIVE_HELPERS_PATH}/osv-scanner:$PATH
-
-ENV OSV_SCANNER_OFFLINE_DB_DIR=${DEPENDABOT_NATIVE_HELPERS_PATH}/osv-scanner/Maven
-RUN mkdir -p "${OSV_SCANNER_OFFLINE_DB_DIR}" && \
-    curl --output "${OSV_SCANNER_OFFLINE_DB_DIR}/all.zip" https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip
+RUN mkdir -p "${OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY}/osv-scanner/Maven" && \
+    curl --output "${OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY}/osv-scanner/Maven/all.zip" \
+                  https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip
