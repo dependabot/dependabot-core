@@ -12,9 +12,11 @@ module Dependabot
     # Keep versions in ascending order
     SUPPORTED_BUNDLER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
 
-    DEPRECATED_BUNDLER_VERSIONS = T.let([
-      Version.new("1")
-    ].freeze, T::Array[Dependabot::Version])
+    # Currently, we don't support any deprecated versions of Bundler
+    # When a version is going to be unsupported, it will be added here for a while to give users time to upgrade
+    # Example for deprecation:
+    # DEPRECATED_BUNDLER_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
+    DEPRECATED_BUNDLER_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     class PackageManager < PackageManagerBase
       extend T::Sig
@@ -41,9 +43,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        # Check if the feature flag for Bundler v1 unsupported error is enabled.
-        return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
+        # Check if the version is not supported
         supported_versions.all? { |supported| supported > version }
       end
     end

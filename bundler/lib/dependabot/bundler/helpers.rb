@@ -20,21 +20,16 @@ module Dependabot
 
         if (matches = lockfile.content&.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version].to_i >= 2 ? V2 : V1
-        elsif Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-          DEFAULT
         else
-          failover_version
+          DEFAULT
         end
       end
 
       # If we are updating a project with a Gemfile.lock that does not specify
-      # the version it was bundled with, we failover to V1 on the assumption
-      # it was created with an old version that didn't add this information
+      # the version it was bundled with, we failover to V2
       sig { returns(String) }
       def self.failover_version
-        return V2 if Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
-        V1
+        DEFAULT
       end
 
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
