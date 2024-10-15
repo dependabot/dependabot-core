@@ -231,18 +231,6 @@ module Dependabot
       @reject_external_code
     end
 
-    sig { returns(T.nilable(String)) }
-    def security_advisory_dependency
-      security_advisories.first&.fetch("dependency-name")
-    end
-
-    sig { returns(T::Boolean) }
-    def security_advisory?
-      return false if security_advisories.nil?
-
-      true
-    end
-
     # TODO: Remove vulnerability checking
     #
     # This method does too much, let's make it focused on _just_ determining

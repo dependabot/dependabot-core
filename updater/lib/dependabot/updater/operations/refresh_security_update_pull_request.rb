@@ -131,8 +131,8 @@ module Dependabot
           # what users have specified in their manifest.
           # Dependabot::Experiments.register(:lead_security_dependency, true)
 
-          if Dependabot::Experiments.enabled?(:lead_security_dependency) && job.security_advisory?
-            lead_dep_name = job.security_advisory_dependency
+          if Dependabot::Experiments.enabled?(:lead_security_dependency)
+            lead_dep_name = security_advisory_dependency
 
             # telemetry data collection
             Dependabot.logger.info(
@@ -299,6 +299,11 @@ module Dependabot
                                  "#{job_dependencies.join(', ')} - #{reason_string}")
 
           service.close_pull_request(job_dependencies, reason)
+        end
+
+        sig { returns(String) }
+        def security_advisory_dependency
+          T.cast(job.security_advisories.first, T::Hash[String, String])["dependency-name"].to_s
         end
       end
     end
