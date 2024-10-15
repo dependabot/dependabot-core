@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname ${BASH_SOURCE[0]})" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
+ADVISORY_DB_GIT_DIR="${ADVISORY_DB_GIT_DIR:-${1:-"$PWD"}}"
+TMP_DIR="$(mktemp -d)"
+
+mkdir -p "$ADVISORY_DB_GIT_DIR"
+if [ ! -d "$ADVISORY_DB_GIT_DIR/.git" ]; then
+    git clone --depth=1 --single-branch --branch=main https://github.com/github/advisory-database "$ADVISORY_DB_GIT_DIR"
+fi
+
+while IFS= read -r -d '' dir; do
+    "$SCRIPT_DIR/generate-offline-advisory-data.js" "$dir" "$TMP_DIR" &
+done < <(find advisories/github-reviewed -type d -depth 2 -prune -print0)
+
+wait < <(jobs -p)
+mkdir -p "$BASE_DIR/osv-scanner/Maven"
+(cd "$TMP_DIR" && zip -r "$BASE_DIR/osv-scanner/Maven/all.zip" .)

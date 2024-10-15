@@ -3,3 +3,5 @@
 /.env
 /tmp
 /dependabot-*.gem
+**/advisory-database/
+**/osv-scanner/Maven
