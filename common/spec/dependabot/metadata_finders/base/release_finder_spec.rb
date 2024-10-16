@@ -493,13 +493,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           end
         end
 
-        context "doesn't filter out the correct tag due to an unrelated tag containing the package name" do
+        context "when there are tags containing the dependency name as a substring" do
           let(:dependency_name) { "React" }
           let(:dependency_version) { "18.3.1" }
           let(:dependency_previous_version) { "18.3.0" }
           let(:github_response) { fixture("github", "releases_with_mixed_tag_formats.json") }
 
-          it "gets the right text" do
+          it "doesn't filter out the correct tag due to unrelated tags containing the package name" do
             expect(releases_text)
               .to eq(
                     "## 18.3.1 (April 26, 2024)\n" \
