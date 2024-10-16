@@ -54,6 +54,9 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking and updating security pull requests...")
 
+          # Raise an error if the package manager version is unsupported
+          dependency_snapshot.package_manager&.raise_if_unsupported!
+
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
@@ -139,6 +142,14 @@ module Dependabot
               "Security advisory dependency: #{lead_dep_name}\n" \
               "First dependency in list: #{job_dependencies.first&.downcase}"
             )
+
+            if lead_dep_name != job_dependencies.first&.downcase
+              Dependabot.logger.info(
+                "Difference found between security-advisory (#{lead_dep_name}) and " \
+                "first-dependency (#{job_dependencies.first&.downcase})"
+              )
+            end
+
           else
             lead_dep_name = job_dependencies.first&.downcase
           end
