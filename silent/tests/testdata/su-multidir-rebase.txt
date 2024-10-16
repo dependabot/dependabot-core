@@ -5,12 +5,14 @@ pr-updated backend/expected.json
 
 -- frontend/manifest.json --
 {
-  "dependency-a": { "version": "1.2.3" }
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.3.3" }
 }
 
 -- backend/manifest.json --
 {
-  "dependency-a": { "version": "1.2.3" }
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.3.3" }
 }
 
 -- utilities/manifest.json --
@@ -20,12 +22,14 @@ pr-updated backend/expected.json
 
 -- frontend/expected.json --
 {
-  "dependency-a": { "version": "1.2.4" }
+  "dependency-a": { "version": "1.2.4" },
+  "dependency-b": { "version": "2.3.3" }
 }
 
 -- backend/expected.json --
 {
-  "dependency-a": { "version": "1.2.4" }
+  "dependency-a": { "version": "1.2.4" },
+  "dependency-b": { "version": "2.3.3" }
 }
 
 -- dependency-a --
@@ -40,6 +44,7 @@ pr-updated backend/expected.json
 -- dependency-b --
 {
   "versions": [
+    "2.3.3",
     "2.3.4",
     "2.3.5"
   ]
