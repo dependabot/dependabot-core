@@ -136,8 +136,8 @@ module Dependabot
 
             # telemetry data collection
             Dependabot.logger.info(
-              "1. Security advisory dependency: #{lead_dep_name}\n" \
-              "2. First dependency in list: #{job_dependencies.first&.downcase}"
+              "Security advisory dependency: #{lead_dep_name}\n" \
+              "First dependency in list: #{job_dependencies.first&.downcase}"
             )
           else
             lead_dep_name = job_dependencies.first&.downcase
