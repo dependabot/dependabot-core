@@ -265,7 +265,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       end
     end
 
-    context "when the update is allowed and lead depedency is out of order with security advisory" do
+    context "when the update is allowed and lead dependency is out of order with security advisory" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
         allow(stub_update_checker).to receive_messages(
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       end
     end
 
-    context "when the update is allowed and lead depedency is out of order with security advisory" do
+    context "when the update is allowed and lead dependency is out of order with security advisory" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
         allow(stub_update_checker).to receive_messages(
