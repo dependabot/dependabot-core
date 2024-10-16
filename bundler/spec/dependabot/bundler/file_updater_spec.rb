@@ -1509,5 +1509,171 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end
+
+    context "when vendoring" do
+      let(:project_name) { "vendored_gems" }
+      let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
+
+      before do
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem")
+          .to_return(
+            status: 200,
+            body: fixture("ruby", "gems", "business-1.5.0.gem")
+          )
+      end
+
+      after do
+        FileUtils.remove_entry repo_contents_path
+      end
+
+      it "vendors the new dependency" do
+        expect(updater.updated_dependency_files.map(&:name))
+          .to contain_exactly(
+            "vendor/cache/business-1.4.0.gem",
+            "vendor/cache/business-1.5.0.gem",
+            "Gemfile",
+            "Gemfile.lock"
+          )
+      end
+
+      it "base64 encodes vendored gems" do
+        file = updater.updated_dependency_files.find do |f|
+          f.name == "vendor/cache/business-1.5.0.gem"
+        end
+
+        expect(file.content_encoding).to eq("base64")
+      end
+
+      it "deletes the old vendored gem" do
+        file = updater.updated_dependency_files.find do |f|
+          f.name == "vendor/cache/business-1.4.0.gem"
+        end
+
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+
+      context "with dependencies that are not unlocked by the update" do
+        let(:project_name) { "conditional" }
+
+        before do
+          stub_request(:get, "https://rubygems.org/gems/statesman-1.2.1.gem")
+            .to_return(
+              status: 200,
+              body: fixture("ruby", "gems", "statesman-1.2.1.gem")
+            )
+        end
+
+        it "does not delete the cached file" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "vendor/cache/addressable-7.2.0.gem"
+          end
+          vendor_files =
+            Dir.entries(Pathname.new(repo_contents_path).join("vendor/cache"))
+
+          expect(file).to be_nil
+          expect(vendor_files).to include("statesman-7.2.0.gem")
+        end
+      end
+
+      context "with a git dependency" do
+        let(:project_name) { "vendored_git" }
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "dependabot-test-ruby-package",
+            version: "1c6331732c41e4557a16dacb82534f1d1c831848",
+            previous_version: "81073f9462f228c6894e3e384d0718def310d99f",
+            requirements: requirements,
+            previous_requirements: previous_requirements,
+            package_manager: "bundler"
+          )
+        end
+        let(:requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.1",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "dependabot-test-ruby-package"
+            }
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "dependabot-test-ruby-package"
+            }
+          }]
+        end
+
+        removed = "vendor/cache/dependabot-test-ruby-package-81073f9462f2"
+        added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
+
+        it "vendors the new dependency" do
+          expect(updater.updated_dependency_files.map(&:name))
+            .to contain_exactly(
+              "#{removed}/.bundlecache",
+              "#{removed}/README.md",
+              "#{removed}/test-ruby-package.gemspec",
+              "#{added}/.bundlecache",
+              "#{added}/.gitignore",
+              "#{added}/README.md",
+              "#{added}/dependabot-test-ruby-package.gemspec",
+              "Gemfile",
+              "Gemfile.lock"
+            )
+        end
+
+        it "deletes the old vendored repo" do
+          file = updater.updated_dependency_files.find do |f|
+            f.name == "#{removed}/.bundlecache"
+          end
+
+          expect(file&.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+        end
+
+        it "does not base64 encode vendored code" do
+          updater.updated_dependency_files
+                 .select { |f| f.name.start_with?(added) }
+                 .reject { |f| f.name.end_with?(".bundlecache") }
+                 .each { |f| expect(f.content_encoding).to eq("") }
+        end
+      end
+    end
+
+    context "when vendoring with subdir" do
+      let(:project_name) { "vendored_gems_with_subdir" }
+      let(:directory) { "/acceptance" }
+      let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
+
+      before do
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem")
+          .to_return(
+            status: 200,
+            body: fixture("ruby", "gems", "business-1.5.0.gem")
+          )
+      end
+
+      after do
+        FileUtils.remove_entry repo_contents_path
+      end
+
+      it "vendors the new dependency" do
+        expect(updater.updated_dependency_files.map(&:name))
+          .to contain_exactly(
+            "vendor/cache/business-1.4.0.gem",
+            "vendor/cache/business-1.5.0.gem",
+            "Gemfile",
+            "Gemfile.lock"
+          )
+      end
+    end
   end
 end
