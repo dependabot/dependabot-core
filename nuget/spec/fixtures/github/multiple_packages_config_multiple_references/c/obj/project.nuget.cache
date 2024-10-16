@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "4OKPbLTuJnk=",
+  "success": true,
+  "projectFilePath": "/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config_multiple_references/c/projectc.csproj",
+  "expectedPackageFiles": [
+    "/Users/sebastian/.nuget/packages/serilog/2.10.0/serilog.2.10.0.nupkg.sha512"
+  ],
+  "logs": []
+}
