@@ -21,7 +21,6 @@ module Dependabot
         if (matches = lockfile.content&.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version].to_i >= 2 ? V2 : V1
         else
-        else
           DEFAULT
         end
       end
