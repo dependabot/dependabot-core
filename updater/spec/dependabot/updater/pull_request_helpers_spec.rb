@@ -46,8 +46,6 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
     allow(service).to receive(:record_update_job_warning)
   end
 

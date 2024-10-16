@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   include DependencyFileHelpers
   include DummyPkgHelpers
 
-  subject(:group_update_all) do
+  subject(:refresh_group) do
     described_class.new(
       service: mock_service,
       job: job,
@@ -55,188 +55,208 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     instance_double(Dependabot::Updater::ErrorHandler)
   end
 
+  let(:job_definition) do
+    job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
+  end
+
+  let(:dependency_files) do
+    original_bundler_files
+  end
+
+  let(:package_manager) do
+    DummyPkgHelpers::StubPackageManager.new(
+      name: "bundler",
+      version: package_manager_version,
+      deprecated_versions: deprecated_versions,
+      supported_versions: supported_versions
+    )
+  end
+
+  let(:package_manager_version) { "2" }
+  let(:supported_versions) { %w(2 3) }
+  let(:deprecated_versions) { %w(1) }
+
   after do
     Dependabot::Experiments.reset!
   end
 
-  context "when the same dependencies need to be updated to the same target versions" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh")
-    end
+  before do
+    allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
+    allow(job).to receive(:package_manager).and_return("bundler")
+  end
 
-    let(:dependency_files) do
-      original_bundler_files
-    end
-
-    before do
-      stub_rubygems_calls
-    end
-
-    it "updates the existing pull request without errors" do
-      expect(mock_service).to receive(:update_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+  describe "#perform" do
+    context "when the same dependencies need to be updated to the same target versions" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh")
       end
 
-      group_update_all.perform
-    end
-  end
-
-  context "when the dependencies have been since been updated by someone else and there's nothing to do" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh")
-    end
-
-    let(:dependency_files) do
-      updated_bundler_files
-    end
-
-    before do
-      stub_rubygems_calls
-    end
-
-    it "closes the pull request" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
-
-      group_update_all.perform
-    end
-  end
-
-  context "when the dependencies that need to be updated have changed" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files
-    end
-
-    before do
-      stub_rubygems_calls
-    end
-
-    it "closes the existing pull request and creates a new one" do
-      expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b dummy-pkg-c), :dependencies_changed)
-
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      before do
+        stub_rubygems_calls
       end
 
-      group_update_all.perform
-    end
-  end
+      it "updates the existing pull request without errors" do
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+          expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+        end
 
-  context "when a dependency needs to be updated to a different version" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_versions_changed")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files
+        refresh_group.perform
+      end
     end
 
-    before do
-      stub_rubygems_calls
-    end
-
-    it "creates a new pull request to supersede the existing one" do
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+    context "when the dependencies have been since been updated by someone else and there's nothing to do" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh")
       end
 
-      group_update_all.perform
-    end
-  end
+      let(:dependency_files) do
+        updated_bundler_files
+      end
 
-  # This shouldn't be possible as the grouped update shouldn't put a dependency in more than one group.
-  # But it's useful to test what will happen on refresh if it does get in this state.
-  context "when there is a pull request for an overlapping group" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
-    end
+      before do
+        stub_rubygems_calls
+      end
 
-    let(:dependency_files) do
-      original_bundler_files
-    end
+      it "closes the pull request" do
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
 
-    before do
-      stub_rubygems_calls
+        refresh_group.perform
+      end
     end
 
-    it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+    context "when the dependencies that need to be updated have changed" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
+      end
 
-      group_update_all.perform
+      let(:dependency_files) do
+        original_bundler_files
+      end
 
-      # It added all of the other existing grouped PRs to the handled list
-      expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
-                                                                         dummy-pkg-d))
-    end
-  end
+      before do
+        stub_rubygems_calls
+      end
 
-  context "when the target dependency group is no longer present in the project's config" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_missing_group")
-    end
+      it "closes the existing pull request and creates a new one" do
+        expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b dummy-pkg-c), :dependencies_changed)
 
-    let(:dependency_files) do
-      original_bundler_files
-    end
+        expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+          expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+        end
 
-    before do
-      stub_rubygems_calls
-    end
-
-    it "does nothing, logs a warning and notices an error" do
-      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
-
-      expect(Dependabot.logger).to receive(:warn).with(
-        "The 'everything-everywhere-all-at-once' group has been removed from the update config."
-      )
-
-      expect(mock_service).to receive(:capture_exception).with(
-        error: an_instance_of(Dependabot::DependabotError),
-        job: job
-      )
-
-      group_update_all.perform
-    end
-  end
-
-  context "when the target dependency group no longer matches any dependencies in the project" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_empty_group")
+        refresh_group.perform
+      end
     end
 
-    let(:dependency_files) do
-      original_bundler_files
+    context "when a dependency needs to be updated to a different version" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_versions_changed")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+      end
+
+      it "creates a new pull request to supersede the existing one" do
+        expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+          expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+        end
+
+        refresh_group.perform
+      end
     end
 
-    before do
-      stub_rubygems_calls
+    # This shouldn't be possible as the grouped update shouldn't put a dependency in more than one group.
+    # But it's useful to test what will happen on refresh if it does get in this state.
+    context "when there is a pull request for an overlapping group" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+      end
+
+      it "considers the dependencies in the other PRs as handled, and closes the duplicate PR" do
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :update_no_longer_possible)
+
+        refresh_group.perform
+
+        # It added all of the other existing grouped PRs to the handled list
+        expect(dependency_snapshot.handled_dependencies).to match_array(%w(dummy-pkg-a dummy-pkg-b dummy-pkg-c
+                                                                           dummy-pkg-d))
+      end
     end
 
-    it "logs a warning and tells the service to close the Pull Request" do
-      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
+    context "when the target dependency group is no longer present in the project's config" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_missing_group")
+      end
 
-      allow(Dependabot.logger).to receive(:warn)
-      expect(Dependabot.logger).to receive(:warn).with(
-        "Skipping update group for 'everything-everywhere-all-at-once' as it does not match any allowed dependencies."
-      )
+      let(:dependency_files) do
+        original_bundler_files
+      end
 
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
+      before do
+        stub_rubygems_calls
+      end
 
-      group_update_all.perform
+      it "does nothing, logs a warning and notices an error" do
+        # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
+
+        expect(Dependabot.logger).to receive(:warn).with(
+          "The 'everything-everywhere-all-at-once' group has been removed from the update config."
+        )
+
+        expect(mock_service).to receive(:capture_exception).with(
+          error: an_instance_of(Dependabot::DependabotError),
+          job: job
+        )
+
+        refresh_group.perform
+      end
+    end
+
+    context "when the target dependency group no longer matches any dependencies in the project" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_empty_group")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files
+      end
+
+      before do
+        stub_rubygems_calls
+      end
+
+      it "logs a warning and tells the service to close the Pull Request" do
+        # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
+
+        allow(Dependabot.logger).to receive(:warn)
+        expect(Dependabot.logger).to receive(:warn).with(
+          "Skipping update group for 'everything-everywhere-all-at-once' as it does not match any allowed dependencies."
+        )
+
+        expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
+
+        refresh_group.perform
+      end
     end
   end
 
   describe "#deduce_updated_dependency" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_dependencies_changed")
-    end
-
     let(:dependency_files) do
       original_bundler_files
     end
@@ -248,13 +268,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     it "returns nil if dependency is nil" do
       dependency = nil
       original_dependency = dependency_snapshot.dependencies.first
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(refresh_group.deduce_updated_dependency(dependency, original_dependency)).to be_nil
     end
 
     it "returns nil if original_dependency is nil" do
       dependency = dependency_snapshot.dependencies.first
       original_dependency = nil
-      expect(group_update_all.deduce_updated_dependency(dependency, original_dependency)).to be_nil
+      expect(refresh_group.deduce_updated_dependency(dependency, original_dependency)).to be_nil
     end
   end
 
@@ -292,7 +312,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -301,7 +321,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -310,7 +330,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       let(:latest_version) { "1.2.3" }
 
       it "returns false" do
-        expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+        expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
       end
     end
 
@@ -324,7 +344,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
 
@@ -334,7 +354,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -344,7 +364,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
     end
@@ -359,7 +379,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -369,7 +389,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
 
@@ -379,7 +399,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
     end
@@ -394,7 +414,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -404,7 +424,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns false" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(false)
         end
       end
 
@@ -414,7 +434,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         end
 
         it "returns true" do
-          expect(group_update_all.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
+          expect(refresh_group.semver_rules_allow_grouping?(group, dependency, checker)).to be(true)
         end
       end
     end
