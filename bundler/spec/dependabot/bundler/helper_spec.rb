@@ -14,6 +14,14 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
+  let(:lockfile_bundled_with_v1) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      Mock Gemfile.lock Content Goes Here
+      BUNDLED WITH
+        1.17.3
+    LOCKFILE
+  end
+
   let(:lockfile_bundled_with_v2) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       Mock Gemfile.lock Content Goes Here
