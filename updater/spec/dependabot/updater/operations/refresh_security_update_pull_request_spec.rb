@@ -79,6 +79,36 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
     )
   end
 
+  let(:dependency_b) do
+    Dependabot::Dependency.new(
+      name: "dummy-pkg-b",
+      version: "3.0.0",
+      requirements: [{
+        file: "Gemfile",
+        requirement: "~> 4.0.0",
+        groups: ["default"],
+        source: nil
+      }],
+      package_manager: "bundler",
+      metadata: { all_versions: ["3.0.0"] }
+    )
+  end
+
+  let(:dependency_c) do
+    Dependabot::Dependency.new(
+      name: "dummy-pkg-c",
+      version: "3.0.0",
+      requirements: [{
+        file: "Gemfile",
+        requirement: "~> 4.0.0",
+        groups: ["default"],
+        source: nil
+      }],
+      package_manager: "bundler",
+      metadata: { all_versions: ["3.0.0"] }
+    )
+  end
+
   let(:stub_update_checker) do
     instance_double(
       Dependabot::UpdateCheckers::Base,
@@ -112,6 +142,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
   end
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
+
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
@@ -214,6 +246,68 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
           expect(refresh_security_update_pull_request).to receive(:create_pull_request)
           refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
         end
+      end
+    end
+
+    context "when the update is allowed and lead dependency is out of order with security advisory" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(job).to receive_messages(allowed_update?: true,
+                                       security_advisories: [{ "dependency-name" => "dummy-pkg-a" }])
+      end
+
+      after do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
+      end
+
+      it "checks if a pull request already exists" do
+        allow(job).to receive(:dependencies).and_return(%w(dummy-pkg-b dummy-pkg-c dummy-pkg-a))
+        allow(refresh_security_update_pull_request).to receive(:existing_pull_request).and_return(true)
+        allow(Dependabot.logger).to receive(:info).and_call_original
+
+        expect(refresh_security_update_pull_request).to receive(:create_pull_request)
+
+        expect(Dependabot.logger)
+          .to receive(:info)
+          .with matching(/Security advisory dependency: dummy-pkg-a\nFirst dependency in list: dummy-pkg-b/)
+
+        refresh_security_update_pull_request.send(:check_and_update_pull_request,
+                                                  [dependency, dependency_b, dependency_c])
+      end
+    end
+
+    context "when the update is allowed and lead dependency is out of order with security advisory" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(job).to receive_messages(allowed_update?: true,
+                                       security_advisories: [{ "dependency-name" => "dummy-pkg-a" }])
+      end
+
+      after do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
+      end
+
+      it "checks if a pull request already exists" do
+        allow(job).to receive(:dependencies).and_return(%w(dummy-pkg-a))
+        allow(refresh_security_update_pull_request).to receive(:existing_pull_request).and_return(true)
+        allow(Dependabot.logger).to receive(:info).and_call_original
+
+        expect(refresh_security_update_pull_request).to receive(:update_pull_request)
+
+        expect(Dependabot.logger)
+          .to receive(:info)
+          .with matching(/Security advisory dependency: dummy-pkg-a/)
+
+        refresh_security_update_pull_request.send(:check_and_update_pull_request,
+                                                  [dependency])
       end
     end
   end
