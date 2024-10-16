@@ -25,14 +25,6 @@ module Dependabot
         end
       end
 
-      # If we are updating a project with a Gemfile.lock that does not specify
-      # the version it was bundled with, we failover to V2
-      # the version it was bundled with, we failover to V2
-      sig { returns(String) }
-      def self.failover_version
-        V2
-      end
-
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.detected_bundler_version(lockfile)
         return "unknown" unless lockfile
