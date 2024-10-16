@@ -35,9 +35,6 @@ class StubPackageManager < Dependabot::PackageManagerBase
 
   sig { override.returns(T::Boolean) }
   def unsupported?
-    # Check if the feature flag for Bundler v1 unsupported error is enabled.
-    return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
     # Determine if the Bundler version is unsupported.
     version < supported_versions.first
   end
@@ -129,6 +126,7 @@ RSpec.describe Dependabot::Notice do
     end
 
     it "returns the correct deprecation notice" do
+      allow(package_manager).to receive(:unsupported?).and_return(false)
       expect(generate_pm_deprecation_notice.to_hash)
         .to eq({
           mode: "WARN",

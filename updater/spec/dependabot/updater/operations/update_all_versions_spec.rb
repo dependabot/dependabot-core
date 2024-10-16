@@ -151,9 +151,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
@@ -213,6 +210,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       let(:package_manager_version) { "1" }
 
       it "creates a pull request" do
+        allow(package_manager).to receive(:unsupported?).and_return(false)
         expect(update_all_versions).to receive(:check_and_create_pull_request).with(dependency).and_call_original
         expect(mock_service).to receive(:record_update_job_warning).with(
           warn_type: warning_deprecation_notice.type,

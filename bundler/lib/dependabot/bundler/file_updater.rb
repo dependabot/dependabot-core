@@ -147,6 +147,7 @@ module Dependabot
       end
 
       def updated_lockfile_content
+        puts "It is here"
         @updated_lockfile_content ||=
           LockfileUpdater.new(
             dependencies: dependencies,

@@ -42,15 +42,6 @@ RSpec.describe Dependabot::NoticesHelpers do
     end.new
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:bundler_v1_unsupported_error).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
-  end
-
   describe "#add_deprecation_notice" do
     context "when package manager is provided and is deprecated" do
       it "adds a deprecation notice to the notices array" do

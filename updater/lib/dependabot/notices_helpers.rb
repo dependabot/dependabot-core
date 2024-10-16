@@ -60,9 +60,6 @@ module Dependabot
 
     sig { params(package_manager: T.nilable(PackageManagerBase)).returns(T.nilable(Dependabot::Notice)) }
     def create_deprecation_notice(package_manager)
-      # Feature flag check if deprecation notice should be added to notices.
-      return unless Dependabot::Experiments.enabled?(:add_deprecation_warn_to_pr_message)
-
       return unless package_manager
 
       return unless package_manager.is_a?(PackageManagerBase)

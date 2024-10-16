@@ -172,32 +172,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
       its(:length) { is_expected.to eq(5) }
 
-      describe "an untagged dependency", :bundler_v1_only do
-        subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
-
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-
-        its(:version) do
-          is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
-        end
-      end
-
-      describe "an untagged dependency", :bundler_v2_only do
+      describe "an untagged dependency" do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
 
         let(:expected_requirements) do
@@ -247,34 +222,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency", :bundler_v1_only do
-        subject { dependencies.find { |d| d.name == "business" } }
-
-        let(:dependency_files) { bundler_project_dependency_files("github_source") }
-
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/business.git",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-
-        its(:version) do
-          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
-        end
-      end
-
-      describe "a github dependency", :bundler_v2_only do
+      describe "a github dependency" do
         subject { dependencies.find { |d| d.name == "business" } }
 
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
@@ -301,31 +249,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      context "with a subdependency of a git source", :bundler_v1_only do
-        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
-
-        let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
-
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "https://github.com/dependabot-fixtures/kaminari",
-              branch: nil,
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("kaminari-actionview") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-      end
-
-      context "with a subdependency of a git source", :bundler_v2_only do
+      context "with a subdependency of a git source" do
         subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
 
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
@@ -586,48 +510,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
             expect(dependencies.map(&:name))
               .to match_array(%w(business statesman))
           end
-        end
-      end
-
-      context "with an unparseable git dep that also appears in the gemspec", :bundler_v1_only do
-        let(:dependency_files) { bundler_project_dependency_files("git_source_unparseable") }
-
-        it "includes source details on the gemspec requirement" do
-          expect(dependencies.map(&:name)).to match_array(%w(business))
-          expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.version)
-            .to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
-          expect(dependencies.first.requirements)
-            .to contain_exactly({
-              file: "example.gemspec",
-              requirement: "~> 1.0",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "git@github.com:dependabot-fixtures/business",
-                branch: nil,
-                ref: "master"
-              }
-            })
-        end
-
-        it "includes source details on the gemspec requirement", :bundler_v2_only do
-          expect(dependencies.map(&:name)).to match_array(%w(business))
-          expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.version)
-            .to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
-          expect(dependencies.first.requirements)
-            .to contain_exactly({
-              file: "example.gemspec",
-              requirement: "~> 1.0",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "git@github.com:dependabot-fixtures/business",
-                branch: nil,
-                ref: nil
-              }
-            })
         end
       end
 

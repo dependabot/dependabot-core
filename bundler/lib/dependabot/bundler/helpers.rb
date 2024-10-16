@@ -21,11 +21,13 @@ module Dependabot
         if (matches = lockfile.content&.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version].to_i >= 2 ? V2 : V1
         else
+        else
           DEFAULT
         end
       end
 
       # If we are updating a project with a Gemfile.lock that does not specify
+      # the version it was bundled with, we failover to V2
       # the version it was bundled with, we failover to V2
       sig { returns(String) }
       def self.failover_version
