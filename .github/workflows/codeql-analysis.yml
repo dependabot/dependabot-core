@@ -56,7 +56,6 @@ jobs:
           languages: ${{ matrix.language }}
           config: |
             paths-ignore:
-              - 'bundler/spec/fixtures/projects/bundler1/invalid_ruby/Gemfile'
               - 'bundler/spec/fixtures/projects/bundler2/invalid_ruby/Gemfile'
         if: matrix.language == 'ruby'
 

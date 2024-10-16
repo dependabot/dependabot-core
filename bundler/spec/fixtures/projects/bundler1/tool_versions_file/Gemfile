@@ -1,6 +1,0 @@
-source "https://rubygems.org"
-
-ruby File.open('.tool-versions', 'rb') { |f| f.read.match(/ruby (.*)\n/)[1] }
-
-gem "business", "~> 1.4.0"
-gem "statesman", "~> 1.2.0"
