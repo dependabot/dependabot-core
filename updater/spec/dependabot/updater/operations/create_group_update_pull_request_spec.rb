@@ -139,7 +139,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(stub_dependency_change)
-    allow(package_manager).to receive(:unsupported?).and_return(false)
   end
 
   after do

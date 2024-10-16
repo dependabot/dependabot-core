@@ -131,7 +131,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       .to receive(:create_from)
       .and_return(stub_dependency_change)
     allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
-    allow(package_manager).to receive(:unsupported?).and_return(false)
   end
 
   after do

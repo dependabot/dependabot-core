@@ -222,7 +222,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       notices: [warning_deprecation_notice]
     )
     allow(job).to receive(:security_fix?).and_return(true)
-    allow(package_manager).to receive(:unsupported?).and_return(false)
   end
 
   after do
@@ -273,7 +272,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       let(:package_manager_version) { "1" }
 
       it "creates a pull request" do
-        allow(package_manager).to receive(:unsupported?).and_return(false)
         expect(create_security_update_pull_request)
           .to receive(:check_and_create_pull_request)
           .with(dependency).and_call_original

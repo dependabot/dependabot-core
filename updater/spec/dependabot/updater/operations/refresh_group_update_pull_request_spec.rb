@@ -83,7 +83,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   before do
     allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
     allow(job).to receive(:package_manager).and_return("bundler")
-    allow(package_manager).to receive(:unsupported?).and_return(false)
   end
 
   describe "#perform" do

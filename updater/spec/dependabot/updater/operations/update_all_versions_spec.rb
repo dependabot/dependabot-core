@@ -210,7 +210,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       let(:package_manager_version) { "1" }
 
       it "creates a pull request" do
-        allow(package_manager).to receive(:unsupported?).and_return(false)
         expect(update_all_versions).to receive(:check_and_create_pull_request).with(dependency).and_call_original
         expect(mock_service).to receive(:record_update_job_warning).with(
           warn_type: warning_deprecation_notice.type,
