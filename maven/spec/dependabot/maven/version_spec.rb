@@ -93,7 +93,6 @@ RSpec.describe Dependabot::Maven::Version do
       let(:err_msg) { "Malformed version string - string is nil" }
 
       it "raises an exception" do
-        debugger
         expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
       end
     end
