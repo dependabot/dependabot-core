@@ -71,6 +71,10 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(lockfile_bundled_with_missing)).to eql("unspecified")
     end
 
+    it "is 1 if it was bundled with a v1.x version" do
+      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
+    end
+
     it "is 2 if it was bundled with a v2.x version" do
       expect(described_method(lockfile_bundled_with_v2)).to eql("2")
     end
