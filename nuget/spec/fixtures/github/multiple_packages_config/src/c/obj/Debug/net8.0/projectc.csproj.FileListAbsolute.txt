@@ -1,6 +1,0 @@
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.csproj.AssemblyReference.cache
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.GeneratedMSBuildEditorConfig.editorconfig
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.AssemblyInfoInputs.cache
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.AssemblyInfo.cs
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.csproj.CoreCompileInputs.cache
-/Users/sebastian/Desktop/repos/dependabot-core/nuget/spec/fixtures/github/multiple_packages_config/src/c/obj/Debug/net8.0/projectc.sourcelink.json
