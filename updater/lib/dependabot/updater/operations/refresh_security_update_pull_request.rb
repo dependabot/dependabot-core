@@ -139,6 +139,14 @@ module Dependabot
               "Security advisory dependency: #{lead_dep_name}\n" \
               "First dependency in list: #{job_dependencies.first&.downcase}"
             )
+
+            if lead_dep_name != job_dependencies.first&.downcase
+              Dependabot.logger.info(
+                "Difference found between security-advisory (#{lead_dep_name}) and " \
+                "first-dependency (#{job_dependencies.first&.downcase})"
+              )
+            end
+
           else
             lead_dep_name = job_dependencies.first&.downcase
           end
