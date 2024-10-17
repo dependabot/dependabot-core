@@ -152,6 +152,11 @@ docker run --rm -ti \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$(pwd)/dotnet_sdk/.rubocop.yml:$CODE_DIR/dotnet_sdk/.rubocop.yml" \
+  -v "$(pwd)/dotnet_sdk/dependabot-dotnet_sdk.gemspec:$CODE_DIR/dotnet_sdk/dependabot-dotnet_sdk.gemspec" \
+  -v "$(pwd)/dotnet_sdk/lib:$CODE_DIR/dotnet_sdk/lib" \
+  -v "$(pwd)/dotnet_sdk/script:$CODE_DIR/dotnet_sdk/script" \
+  -v "$(pwd)/dotnet_sdk/spec:$CODE_DIR/dotnet_sdk/spec" \
   -v "$(pwd)/dry-run:$CODE_DIR/dry-run" \
   -v "$(pwd)/elm/.rubocop.yml:$CODE_DIR/elm/.rubocop.yml" \
   -v "$(pwd)/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \
