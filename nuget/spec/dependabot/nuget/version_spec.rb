@@ -43,15 +43,31 @@ RSpec.describe Dependabot::Nuget::Version do
     end
 
     context "with an invalid version" do
-      let(:version_string) { "bad" }
+      let(:invalid_versions) do
+        %w(
+          1.2.3-0123
+          1.1.2+.123
+          1.2.3.DEV
+          -beta10
+          +beta.1
+          alpha.1
+          1.0.0-alpha_beta
+          1.0.0-alpha.......1
+          9.8.7+meta+meta
+        )
+      end
+
+      it "returns false" do
+        invalid_versions.each do |version|
+          expect(described_class.correct?(version)).to be(false)
+        end
+      end
+    end
+
+    context "when including build information" do
+      let(:version_string) { "1.0.0+abc 123" }
 
       it { is_expected.to be(false) }
-
-      context "when including build information" do
-        let(:version_string) { "1.0.0+abc 123" }
-
-        it { is_expected.to be(false) }
-      end
     end
   end
 
@@ -118,6 +134,10 @@ RSpec.describe Dependabot::Nuget::Version do
       it "ignores the build identifier #{v}+build" do
         expect(described_class.new(v)).to eq described_class.new("#{v}+build")
       end
+    end
+
+    it "sorts versions correctly" do
+      expect(sorted_versions.shuffle.sort).to eq sorted_versions
     end
 
     it "ignores case for pre-release" do
