@@ -221,7 +221,7 @@ public class UpdaterWorker
         }
 
         // Some repos use a mix of packages.config and PackageReference
-        await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+        await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
 
         // Update lock file if exists
         if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))

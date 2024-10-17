@@ -6,7 +6,18 @@ using NuGet.Versioning;
 
 namespace NuGetUpdater.Core;
 
-internal static class SdkPackageUpdater
+/// <summary>
+/// Handles package updates for projects containing `<PackageReference>` MSBuild items.
+/// </summary>
+/// <remarks>
+/// PackageReference items can appear in both SDK-style AND non-SDK-style project files.
+/// By default, PackageReference is used by [SDK-style] projects targeting .NET Core, .NET Standard, and UWP.
+/// By default, packages.config is used by [non-SDK-style] projects targeting .NET Framework; However, they can be migrated to PackageReference too.
+/// See: https://learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#project-type-support
+///      https://learn.microsoft.com/en-us/nuget/consume-packages/migrate-packages-config-to-package-reference
+///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+/// </remarks>
+internal static class PackageReferenceUpdater
 {
     public static async Task UpdateDependencyAsync(
         string repoRootPath,
@@ -17,8 +28,8 @@ internal static class SdkPackageUpdater
         bool isTransitive,
         ILogger logger)
     {
-        // SDK-style project, modify the XML directly
-        logger.Log("  Running for SDK-style project");
+        // PackageReference project; modify the XML directly
+        logger.Log("  Running 'PackageReference' project direct XML update");
 
         (ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
 
