@@ -406,6 +406,7 @@ module Dependabot
               fetched_files_set.merge(grandchild_property_files)
             rescue Dependabot::DependencyFileNotFound
               # Don't worry about missing files, just skip them for now
+              Dependabot.logger.info("unable to find expected file #{file.name}")
               nil
             end
           end
