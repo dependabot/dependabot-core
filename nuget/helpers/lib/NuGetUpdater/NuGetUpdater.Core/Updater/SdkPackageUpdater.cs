@@ -30,19 +30,26 @@ internal static class SdkPackageUpdater
             return;
         }
 
-        if (isTransitive)
+        var peerDependencies = await GetUpdatedPeerDependenciesAsync(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, logger);
+        if (MSBuildHelper.UseNewDependencySolver())
         {
-            await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
+            await UpdateDependencyWithConflictResolution(repoRootPath, buildFiles, tfms, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, peerDependencies, logger);
         }
         else
         {
-            var peerDependencies = await GetUpdatedPeerDependenciesAsync(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, logger);
-            if (peerDependencies is null)
+            if (isTransitive)
             {
-                return;
+                await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
             }
+            else
+            {
+                if (peerDependencies is null)
+                {
+                    return;
+                }
 
-            await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
+                await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
+            }
         }
 
         if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, logger, buildFiles, tfms))
@@ -51,6 +58,61 @@ internal static class SdkPackageUpdater
         }
 
         await SaveBuildFilesAsync(buildFiles, logger);
+    }
+
+    public static async Task UpdateDependencyWithConflictResolution(
+        string repoRootPath,
+        ImmutableArray<ProjectBuildFile> buildFiles,
+        string[] targetFrameworks,
+        string projectPath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        bool isTransitive,
+        IDictionary<string, string> peerDependencies,
+        ILogger logger)
+    {
+        var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        var isDependencyTopLevel = topLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+        var dependenciesToUpdate = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference) };
+
+        // update the initial dependency...
+        TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
+
+        // ...and the peer dependencies...
+        foreach (var (packageName, packageVersion) in peerDependencies.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
+        {
+            TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
+        }
+
+        // ...and everything else
+        foreach (var projectFile in buildFiles)
+        {
+            foreach (var tfm in targetFrameworks)
+            {
+                var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, topLevelDependencies, dependenciesToUpdate, logger);
+                if (resolvedDependencies is null)
+                {
+                    logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
+                    continue;
+                }
+
+                var isDependencyInResolutionSet = resolvedDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+                if (isTransitive && !isDependencyTopLevel && isDependencyInResolutionSet)
+                {
+                    // a transitive dependency had to be pinned; add it here
+                    await UpdateTransitiveDependencyAsync(repoRootPath, projectPath, dependencyName, newDependencyVersion, buildFiles, logger);
+                }
+
+                // update all resolved dependencies that aren't the initial dependency
+                foreach (var resolvedDependency in resolvedDependencies
+                                                    .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+                                                    .Where(d => d.Version is not null))
+                {
+                    TryUpdateDependencyVersion(buildFiles, resolvedDependency.Name, previousDependencyVersion: null, newDependencyVersion: resolvedDependency.Version!, logger);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -307,7 +369,7 @@ internal static class SdkPackageUpdater
         IDictionary<string, string> peerDependencies,
         ILogger logger)
     {
-
+        // update dependencies...
         var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
         if (result == UpdateResult.NotFound)
         {
@@ -320,26 +382,13 @@ internal static class SdkPackageUpdater
             TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion, logger);
         }
 
-        // now make all dependency requirements coherent
+        // ...and make them all coherent
         Dependency[] updatedTopLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
         foreach (ProjectBuildFile projectFile in buildFiles)
         {
             foreach (string tfm in targetFrameworks)
             {
-                if (MSBuildHelper.UseNewDependencySolver())
-                {
-                    // Find the index of the dependency we are updating and revert it to the previous version
-                    int dependencyIndex = Array.FindIndex(updatedTopLevelDependencies, d => string.Equals(d.Name, dependencyName, StringComparison.OrdinalIgnoreCase));
-                    if (dependencyIndex != -1)
-                    {
-                        var originalDependency = updatedTopLevelDependencies[dependencyIndex];
-                        updatedTopLevelDependencies[dependencyIndex] = originalDependency with { Version = previousDependencyVersion };
-                    }
-
-                }
-                Dependency[] update = [new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference)];
-                Dependency[]? resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, update, logger);
-
+                var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(repoRootPath, projectFile.Path, tfm, updatedTopLevelDependencies, logger);
                 if (resolvedDependencies is null)
                 {
                     logger.Log($"    Unable to resolve dependency conflicts for {projectFile.Path}.");
@@ -360,7 +409,7 @@ internal static class SdkPackageUpdater
                     continue;
                 }
 
-                // update all dependencies
+                // update all versions
                 foreach (Dependency resolvedDependency in resolvedDependencies
                                                           .Where(d => !d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                                                           .Where(d => d.Version is not null))
