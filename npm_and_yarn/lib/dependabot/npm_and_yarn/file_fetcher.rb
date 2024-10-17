@@ -250,7 +250,7 @@ module Dependabot
         # Loop through parent directories looking for a pnpm-lock
         (1..directory.split("/").count).each do |i|
           @pnpm_lock = fetch_file_from_host(("../" * i) + PNPMPackageManager::LOCKFILE_NAME)
-                   .tap { |f| f.support_file = true }
+                       .tap { |f| f.support_file = true }
           break if @pnpm_lock
         rescue Dependabot::DependencyFileNotFound
           # Ignore errors (pnpm_lock.yaml may not be present)
