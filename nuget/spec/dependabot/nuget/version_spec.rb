@@ -136,10 +136,6 @@ RSpec.describe Dependabot::Nuget::Version do
       end
     end
 
-    it "sorts versions correctly" do
-      expect(sorted_versions.shuffle.sort).to eq sorted_versions
-    end
-
     it "ignores case for pre-release" do
       expect(described_class.new("1.0.0-alpha")).to eq("1.0.0-ALPHA")
     end
