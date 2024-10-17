@@ -11,6 +11,8 @@ require "sorbet-runtime"
 require "dependabot/terraform/version"
 require "dependabot/terraform/requirement"
 
+require 'logger'
+
 module Dependabot
   module Terraform
     # Takes an array of `requirements` hashes for a dependency at the old
@@ -190,17 +192,17 @@ module Dependabot
         op, version = requirement.requirements.first
         version = version.release if version.prerelease?
 
-        index_to_update =
-          version.segments.map.with_index { |seg, i| seg.zero? ? 0 : i }.max
-
-        new_segments = version.segments.map.with_index do |_, index|
-          if index < index_to_update
+        # When 'less than'/'<', increment the last segment
+        if op == "<"
+          new_segments = version.segments.map.with_index do |_, index|
             version_to_be_permitted.segments[index]
-          elsif index == index_to_update
-            version_to_be_permitted.segments[index].to_i + 1
-          else
-            0
           end
+          new_segments[-1] += 1
+        # When 'less-than/equal'/'<=', use the new version as-is
+        elsif op == "<="
+          new_segments = version_to_be_permitted.segments
+        else
+          raise "Unexpected operation: #{op}"
         end
 
         requirement_class.new("#{op} #{new_segments.join('.')}")
