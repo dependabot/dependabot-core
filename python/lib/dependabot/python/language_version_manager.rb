@@ -11,9 +11,9 @@ module Dependabot
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
         3.12.5
         3.11.9
-        3.10.13
+        3.10.15
         3.9.18
-        3.8.18
+        3.8.20
       ).freeze
 
       def initialize(python_requirement_parser:)
