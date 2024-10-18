@@ -10,7 +10,7 @@ namespace NuGetUpdater.Core.Test.Update;
 
 public partial class UpdateWorkerTests
 {
-    public class Sdk : UpdateWorkerTestBase
+    public class PackageReference : UpdateWorkerTestBase
     {
         [Theory]
         [InlineData("net472")]

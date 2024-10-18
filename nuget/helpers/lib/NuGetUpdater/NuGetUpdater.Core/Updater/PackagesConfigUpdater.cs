@@ -13,6 +13,14 @@ using Console = System.Console;
 
 namespace NuGetUpdater.Core;
 
+/// <summary>
+/// Handles package updates for projects that use packages.config.
+/// </summary>
+/// <remarks>
+/// packages.config can appear in non-SDK-style projects, but not in SDK-style projects.
+/// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
+///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+/// <remarks>
 internal static class PackagesConfigUpdater
 {
     public static async Task UpdateDependencyAsync(
@@ -25,9 +33,8 @@ internal static class PackagesConfigUpdater
         ILogger logger
     )
     {
-        logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
-
-        // use NuGet.exe to perform update
+        // packages.config project; use NuGet.exe to perform update
+        logger.Log($"  Found '{NuGetHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
