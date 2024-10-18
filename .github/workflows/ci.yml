@@ -20,6 +20,7 @@ jobs:
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
