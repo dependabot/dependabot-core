@@ -1,0 +1,26 @@
+job:
+  dependencies:
+  - express
+  - path-to-regexp
+  - react-router-dom
+  security-advisories:
+  - dependency-name: path-to-regexp
+    affected-versions:
+    - '>= 0, < 0.1.10'
+    - '>= 0.2.0, < 8.0.0'
+  existing-pull-requests:
+  - - dependency-name: path-to-regexp
+      dependency-version: 0.1.10
+    - dependency-name: express
+      dependency-version: 4.21.1
+    - dependency-name: react-router-dom
+      dependency-version: 6.27.0
+  security-updates-only: true
+  updating-a-pull-request: true
+  source:
+    directories:
+    - /
+    provider: github
+    repo: brettfo/dependabot-npm-closing
+    branch: main
+  package-manager: npm_and_yarn
