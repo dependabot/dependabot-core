@@ -26,6 +26,7 @@ module Dependabot
               version: dep.version,
               package_manager: dep.package_manager,
               requirements: requirements,
+              directory: source&.directory,
               metadata: dep.metadata
             )
           else

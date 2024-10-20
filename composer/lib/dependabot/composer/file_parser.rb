@@ -92,6 +92,7 @@ module Dependabot
             ),
             groups: [group]
           }],
+          directory: source&.directory,
           package_manager: "composer"
         )
       end
@@ -130,6 +131,7 @@ module Dependabot
           name: name,
           version: version,
           requirements: [],
+          directory: source&.directory,
           package_manager: "composer",
           subdependency_metadata: [{
             production: keys.fetch(:group) != "development"
