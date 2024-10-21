@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/version_selector"
+require "dependabot/package_manager"
 
 module Dependabot
   module NpmAndYarn
