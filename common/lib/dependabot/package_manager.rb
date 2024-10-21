@@ -10,47 +10,55 @@ module Dependabot
 
     abstract!
 
-    # The name of the package manager (e.g., "bundler").
-    # @example
-    #   package_manager.name #=> "bundler"
-    sig { abstract.returns(String) }
-    def name; end
+    # Initialize common attributes for all package managers
+    # @param ecosystem [String] the name of the ecosystem (e.g., "npm_and_yarn", "composer").
+    # @param name [String] the name of the package manager (e.g., "npm", "bundler").
+    # @param version [Dependabot::Version] the version of the package manager (e.g., "6.0.0").
+    # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
+    # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
+    sig do
+      params(ecosystem: String, name: String, version: Dependabot::Version,
+             deprecated_versions: T::Array[Dependabot::Version], supported_versions: T::Array[Dependabot::Version]).void
+    end
+    def initialize(ecosystem, name, version, deprecated_versions = [], supported_versions = [])
+      @ecosystem = T.let(ecosystem, String)
+      @name = T.let(name, String)
+      @version = T.let(version, Dependabot::Version)
+      @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
+      @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
+    end
 
-    # The version of the package manager (e.g., Dependabot::Version.new("2.1.4")).
+    # The name of the ecosystem (e.g., "npm_and_yarn", "composer").
     # @example
-    #   package_manager.version #=> Dependabot::Version.new("2.1.4")
-    sig { abstract.returns(Dependabot::Version) }
-    def version; end
+    #   package_manager.ecosystem #=> "npm_and_yarn"
+    sig { returns(String) }
+    attr_reader :ecosystem
+
+    # The name of the package manager (e.g., "npm", "bundler").
+    # @example
+    #   package_manager.name #=> "npm"
+    sig { returns(String) }
+    attr_reader :name
+
+    # The version of the package manager (e.g., "6.0.0").
+    # @example
+    #   package_manager.version #=> "6.0.0"
+    sig { returns(Dependabot::Version) }
+    attr_reader :version
 
     # Returns an array of deprecated versions of the package manager.
-    # By default, returns an empty array if not overridden in the subclass.
     # @example
     #   package_manager.deprecated_versions #=> [Dependabot::Version.new("1.0.0"), Dependabot::Version.new("1.1.0")]
     sig { returns(T::Array[Dependabot::Version]) }
-    def deprecated_versions
-      []
-    end
-
-    # Returns an array of unsupported versions of the package manager.
-    # By default, returns an empty array if not overridden in the subclass.
-    # @example
-    #   package_manager.unsupported_versions #=> [Dependabot::Version.new("0.9.0")]
-    sig { returns(T::Array[Dependabot::Version]) }
-    def unsupported_versions
-      []
-    end
+    attr_reader :deprecated_versions
 
     # Returns an array of supported versions of the package manager.
-    # By default, returns an empty array if not overridden in the subclass.
     # @example
     #   package_manager.supported_versions #=> [Dependabot::Version.new("2.0.0"), Dependabot::Version.new("2.1.0")]
     sig { returns(T::Array[Dependabot::Version]) }
-    def supported_versions
-      []
-    end
+    attr_reader :supported_versions
 
     # Checks if the current version is deprecated.
-    # Returns true if the version is in the deprecated_versions array; false otherwise.
     # @example
     #   package_manager.deprecated? #=> true
     sig { returns(T::Boolean) }
@@ -63,11 +71,21 @@ module Dependabot
 
     # Checks if the current version is unsupported.
     # Returns true if the version is in the unsupported_versions array; false otherwise.
+    # Subclasses can override this method if they have custom logic for unsupported versions.
     # @example
     #   package_manager.unsupported? #=> false
     sig { returns(T::Boolean) }
     def unsupported?
-      false
+      unsupported_versions.include?(version)
+    end
+
+    # Returns an array of unsupported versions of the package manager.
+    # By default, returns an empty array if not overridden in the subclass.
+    # @example
+    #   package_manager.unsupported_versions #=> [Dependabot::Version.new("0.9.0")]
+    sig { returns(T::Array[Dependabot::Version]) }
+    def unsupported_versions
+      []
     end
 
     # Raises an error if the current package manager version is unsupported.
