@@ -145,7 +145,9 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
 
-        unless @package_manager_meta&.start_with?("#{name}@") || (@package_manager_meta&.==name.to_s) || @package_manager_meta.nil?
+        unless @package_manager_meta&.start_with?("#{name}@") ||
+               (@package_manager_meta&.==name.to_s) ||
+               @package_manager_meta.nil?
           return
         end
 
