@@ -12,10 +12,6 @@ RSpec.describe Dependabot::Python::Version do
   describe ".correct?" do
     subject { described_class.correct?(version_string) }
 
-    before do
-      Dependabot::Experiments.register(:python_new_version, true)
-    end
-
     context "with a valid version" do
       let(:version_string) { "1.0.0" }
 
@@ -148,7 +144,7 @@ RSpec.describe Dependabot::Python::Version do
       "1.0.0-rc.1",
       "1",
       "1.0.0+gc1",
-      # "1.0.0.post", TODO fails comparing to 1
+      "1.0.0.post", # TODO: fails comparing to 1
       "1.post2",
       "1.post2+gc1",
       "1.post2+gc1.2",
@@ -238,10 +234,6 @@ RSpec.describe Dependabot::Python::Version do
       end
 
       let(:versions) { version_strings.map { |v| described_class.new(v) } }
-
-      before do
-        Dependabot::Experiments.register(:python_new_version, true)
-      end
 
       it "returns list in the correct order" do
         expect(versions.shuffle.sort).to eq versions
