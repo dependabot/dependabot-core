@@ -70,22 +70,16 @@ module Dependabot
     end
 
     # Checks if the current version is unsupported.
-    # Returns true if the version is in the unsupported_versions array; false otherwise.
-    # Subclasses can override this method if they have custom logic for unsupported versions.
+    # Returns true if the version lower then all supported versions.
     # @example
     #   package_manager.unsupported? #=> false
     sig { returns(T::Boolean) }
     def unsupported?
-      unsupported_versions.include?(version)
-    end
+      # If there is no defined supported_versions, we assume that all versions are supported
+      return false if supported_versions.empty?
 
-    # Returns an array of unsupported versions of the package manager.
-    # By default, returns an empty array if not overridden in the subclass.
-    # @example
-    #   package_manager.unsupported_versions #=> [Dependabot::Version.new("0.9.0")]
-    sig { returns(T::Array[Dependabot::Version]) }
-    def unsupported_versions
-      []
+      # Check if the version is not supported
+      supported_versions.all? { |supported| supported > version }
     end
 
     # Raises an error if the current package manager version is unsupported.

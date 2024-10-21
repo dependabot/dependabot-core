@@ -32,7 +32,7 @@ module Dependabot
         # Specific unsupported logic for Composer
         return false unless Dependabot::Experiments.enabled?(:composer_v1_unsupported_error)
 
-        supported_versions.all? { |supported| supported > version }
+        super # Call the `unsupported?` method from the super class.
       end
 
       sig { override.returns(T::Boolean) }
@@ -40,7 +40,7 @@ module Dependabot
         # Specific deprecated logic for Composer
         return false unless Dependabot::Experiments.enabled?(:composer_v1_deprecation_warning)
 
-        super # Use the logic in the base class
+        super # Call the `deprecated?` method from the super class.
       end
     end
   end

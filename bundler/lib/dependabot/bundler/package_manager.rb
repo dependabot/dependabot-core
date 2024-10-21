@@ -32,13 +32,6 @@ module Dependabot
           SUPPORTED_BUNDLER_VERSIONS
         )
       end
-
-      # Override the unsupported? logic specific to Bundler
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Check if the version is not supported
-        supported_versions.all? { |supported| supported > version }
-      end
     end
   end
 end
