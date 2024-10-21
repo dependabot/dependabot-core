@@ -22,12 +22,13 @@ module Dependabot
     class PackageManager < PackageManagerBase
       extend T::Sig
 
-      sig { params(version: T.any(String, Dependabot::Version)).void }
-      def initialize(version)
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
         super(
           ECOSYSTEM,
           PACKAGE_MANAGER,
-          Version.new(version),
+          raw_version,
+          Version.new(raw_version),
           DEPRECATED_BUNDLER_VERSIONS,
           SUPPORTED_BUNDLER_VERSIONS
         )

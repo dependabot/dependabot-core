@@ -13,27 +13,31 @@ module Dependabot
     # Initialize common attributes for all package managers
     # @param ecosystem [String] the name of the ecosystem (e.g., "npm_and_yarn", "composer").
     # @param name [String] the name of the package manager (e.g., "npm", "bundler").
-    # @param version [Dependabot::Version] the version of the package manager (e.g., "6.0.0").
+    # @param raw_version [String] the version of the package manager (e.g., "6.0.0").
+    # @param version [Dependabot::Version] the version of the package manager Version.new("1.0.0").
     # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
     # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
     sig do
       params(
         ecosystem: String,
         name: String,
+        raw_version: String,
         version: Dependabot::Version,
         deprecated_versions: T::Array[Dependabot::Version],
         supported_versions: T::Array[Dependabot::Version]
       ).void
     end
-    def initialize(
+    def initialize( # rubocop:disable Metrics/ParameterLists
       ecosystem,
       name,
+      raw_version,
       version,
       deprecated_versions = [],
       supported_versions = []
     )
       @ecosystem = T.let(ecosystem, String)
       @name = T.let(name, String)
+      @raw_version = T.let(raw_version, String)
       @version = T.let(version, Dependabot::Version)
       @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
       @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
@@ -50,6 +54,12 @@ module Dependabot
     #   package_manager.name #=> "npm"
     sig { returns(String) }
     attr_reader :name
+
+    # The version of the package manager (e.g., "6.0.0").
+    # @example
+    #   package_manager.version #=> "6.0.0"
+    sig { returns(String) }
+    attr_reader :raw_version
 
     # The version of the package manager (e.g., "6.0.0").
     # @example
