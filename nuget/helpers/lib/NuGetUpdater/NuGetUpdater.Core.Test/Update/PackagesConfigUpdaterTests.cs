@@ -30,7 +30,7 @@ public class PackagesConfigUpdaterTests : TestBase
             """,
             "Newtonsoft.Json",
             "7.0.1",
-            @"..\packages"
+            "../packages"
         ];
 
         // project without namespace
@@ -48,7 +48,7 @@ public class PackagesConfigUpdaterTests : TestBase
             """,
             "Newtonsoft.Json",
             "7.0.1",
-            @"..\packages"
+            "../packages"
         ];
 
         // project with non-standard packages path
@@ -66,7 +66,7 @@ public class PackagesConfigUpdaterTests : TestBase
             """,
             "Newtonsoft.Json",
             "7.0.1",
-            @"..\not-a-path-you-would-expect"
+            "../not-a-path-you-would-expect"
         ];
     }
 }
