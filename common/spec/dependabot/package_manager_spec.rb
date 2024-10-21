@@ -8,10 +8,12 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
   let(:concrete_class) do
     Class.new(Dependabot::PackageManagerBase) do
       def initialize
+        raw_version = "1.0.0"
         super(
           "bundler", # ecosystem
           "bundler", # name
-          Dependabot::Version.new("1.0.0"), # version
+          raw_version,
+          Dependabot::Version.new(raw_version), # version
           [Dependabot::Version.new("1")], # deprecated_versions
           [Dependabot::Version.new("1"), Dependabot::Version.new("2")] # supported_versions
         )
@@ -40,10 +42,12 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
   let(:default_concrete_class) do
     Class.new(Dependabot::PackageManagerBase) do
       def initialize
+        raw_version = "1.0.0"
         super(
           "bundler", # ecosystem
           "bundler", # name
-          Dependabot::Version.new("1.0.0"), # version
+          raw_version,
+          Dependabot::Version.new(raw_version), # version
         )
       end
     end
