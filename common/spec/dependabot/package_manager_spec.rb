@@ -7,24 +7,14 @@ require "dependabot/package_manager"
 RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
   let(:concrete_class) do
     Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        @version ||= Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0")]
-      end
-
-      def supported_versions
-        @supported_versions ||= [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+      def initialize
+        super(
+          "bundler", # ecosystem
+          "bundler", # name
+          Dependabot::Version.new("1.0.0"), # version
+          [Dependabot::Version.new("1")], # deprecated_versions
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")] # supported_versions
+        )
       end
 
       sig { override.returns(T::Boolean) }
@@ -49,12 +39,12 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
 
   let(:default_concrete_class) do
     Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
+      def initialize
+        super(
+          "bundler", # ecosystem
+          "bundler", # name
+          Dependabot::Version.new("1.0.0"), # version
+        )
       end
     end
   end
@@ -81,16 +71,6 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
 
     it "returns an empty array by default" do
       expect(default_package_manager.deprecated_versions).to eq([])
-    end
-  end
-
-  describe "#unsupported_versions" do
-    it "returns an array of unsupported versions" do
-      expect(package_manager.unsupported_versions).to eq([Dependabot::Version.new("0")])
-    end
-
-    it "returns an empty array by default" do
-      expect(default_package_manager.unsupported_versions).to eq([])
     end
   end
 

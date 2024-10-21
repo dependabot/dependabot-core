@@ -17,10 +17,21 @@ module Dependabot
     # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
     # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
     sig do
-      params(ecosystem: String, name: String, version: Dependabot::Version,
-             deprecated_versions: T::Array[Dependabot::Version], supported_versions: T::Array[Dependabot::Version]).void
+      params(
+        ecosystem: String,
+        name: String,
+        version: Dependabot::Version,
+        deprecated_versions: T::Array[Dependabot::Version],
+        supported_versions: T::Array[Dependabot::Version]
+      ).void
     end
-    def initialize(ecosystem, name, version, deprecated_versions = [], supported_versions = [])
+    def initialize(
+      ecosystem,
+      name,
+      version,
+      deprecated_versions = [],
+      supported_versions = []
+    )
       @ecosystem = T.let(ecosystem, String)
       @name = T.let(name, String)
       @version = T.let(version, Dependabot::Version)
