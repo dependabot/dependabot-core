@@ -172,9 +172,6 @@ module Dependabot
             notices: @notices
           )
 
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
-
           if dependency_change.updated_dependency_files.empty?
             raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
           end

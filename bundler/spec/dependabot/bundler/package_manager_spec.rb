@@ -58,24 +58,17 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#deprecated?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
     context "when version is deprecated but not unsupported" do
       let(:version) { "1" }
-      let(:feature_flag_enabled) { false }
 
       it "returns true" do
+        allow(package_manager).to receive_messages(deprecated?: true)
         expect(package_manager.deprecated?).to be true
       end
     end
 
     context "when version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -84,59 +77,34 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#unsupported?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
+    context "when version is supported" do
+      let(:version) { "2" }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
+      end
     end
 
-    context "when feature flag is enabled and version is unsupported" do
+    context "when version is not supported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
       end
     end
-
-    context "when feature flag is enabled and version is supported" do
-      let(:version) { "2" }
-      let(:feature_flag_enabled) { true }
-
-      it "returns false" do
-        expect(package_manager.unsupported?).to be false
-      end
-    end
-
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
-
-      it "returns false" do
-        expect(package_manager.unsupported?).to be false
-      end
-    end
   end
 
   describe "#raise_if_unsupported!" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
-    context "when feature flag is enabled and version is unsupported" do
+    context "when version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
+    context "when version is supported" do
+      let(:version) { "2.1" }
 
       it "does not raise an error" do
         expect { package_manager.raise_if_unsupported! }.not_to raise_error

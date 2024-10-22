@@ -342,18 +342,6 @@ internal static partial class MSBuildHelper
 
     internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
     {
-        if (UseNewDependencySolver())
-        {
-            return await ResolveDependencyConflictsNew(repoRoot, projectPath, targetFramework, packages, update, logger);
-        }
-        else
-        {
-            return await ResolveDependencyConflictsOld(repoRoot, projectPath, targetFramework, packages, logger);
-        }
-    }
-
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsNew(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
-    {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
@@ -510,7 +498,7 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static async Task<Dependency[]?> ResolveDependencyConflictsOld(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
+    internal static async Task<Dependency[]?> ResolveDependencyConflictsWithBruteForce(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
@@ -824,13 +812,24 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnMissingFile(string output)
+    internal static string? GetMissingFile(string output)
     {
         var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
         var match = missingFilePattern.Match(output);
         if (match.Success)
         {
-            throw new MissingFileException(match.Groups["FilePath"].Value);
+            return match.Groups["FilePath"].Value;
+        }
+
+        return null;
+    }
+
+    internal static void ThrowOnMissingFile(string output)
+    {
+        var missingFile = GetMissingFile(output);
+        if (missingFile is not null)
+        {
+            throw new MissingFileException(missingFile);
         }
     }
 

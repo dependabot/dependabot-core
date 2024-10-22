@@ -4,6 +4,8 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/package_manager"
+require "dependabot/silent/package_manager"
 require "sorbet-runtime"
 
 module SilentPackageManager
@@ -22,6 +24,19 @@ module SilentPackageManager
       end
 
       dependency_set.dependencies
+    rescue JSON::ParserError
+      raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
+    end
+
+    sig { returns(Dependabot::PackageManagerBase) }
+    def package_manager
+      meta_data = JSON.parse(manifest_content)["silent"]
+      silent_version = if meta_data.nil?
+                         "2"
+                       else
+                         meta_data["version"]
+                       end
+      Dependabot::Silent::PackageManager.new(silent_version)
     rescue JSON::ParserError
       raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end

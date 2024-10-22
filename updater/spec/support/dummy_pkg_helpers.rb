@@ -89,10 +89,8 @@ module DummyPkgHelpers
 
     sig { override.returns(T::Boolean) }
     def unsupported?
-      # Check if the feature flag for Bundler v1 unsupported error is enabled.
-      return false unless name == "bundler" && Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
-      version < supported_versions.first
+      # Check if the version is not supported
+      supported_versions.all? { |supported| supported > version }
     end
   end
 end
