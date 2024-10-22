@@ -812,13 +812,24 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnMissingFile(string output)
+    internal static string? GetMissingFile(string output)
     {
         var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
         var match = missingFilePattern.Match(output);
         if (match.Success)
         {
-            throw new MissingFileException(match.Groups["FilePath"].Value);
+            return match.Groups["FilePath"].Value;
+        }
+
+        return null;
+    }
+
+    internal static void ThrowOnMissingFile(string output)
+    {
+        var missingFile = GetMissingFile(output);
+        if (missingFile is not null)
+        {
+            throw new MissingFileException(missingFile);
         }
     }
 
