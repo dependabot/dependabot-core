@@ -93,7 +93,7 @@ internal static class PackagesConfigUpdater
         projectBuildFile.NormalizeDirectorySeparatorsInProject();
 
         // Update binding redirects
-        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile);
+        await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
 
         logger.Log("    Writing project file back to disk");
         await projectBuildFile.SaveAsync();
@@ -196,7 +196,7 @@ internal static class PackagesConfigUpdater
         return processes;
     }
 
-    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string packagesConfigPath)
+    internal static string? GetPathToPackagesDirectory(ProjectBuildFile projectBuildFile, string dependencyName, string dependencyVersion, string? packagesConfigPath)
     {
         // the packages directory can be found from the hint path of the matching dependency, e.g., when given "Newtonsoft.Json", "7.0.1", and a project like this:
         // <Project>
@@ -242,7 +242,7 @@ internal static class PackagesConfigUpdater
             }
         }
 
-        if (partialPathMatch is null)
+        if (partialPathMatch is null && packagesConfigPath is not null)
         {
             // if we got this far, we couldn't find the packages directory for the specified dependency and there are 2 possibilities:
             // 1. the dependency doesn't actually exist in this project
