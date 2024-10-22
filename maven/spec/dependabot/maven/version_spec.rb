@@ -559,6 +559,14 @@ RSpec.describe Dependabot::Maven::Version do
     it { is_expected.to eq(["> #{version_string}, < 1.3.a0"]) }
   end
 
+  describe "#lowest_prerelease_suffix" do
+    subject(:ignored_versions) { version.lowest_prerelease_suffix }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq "a0" }
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
 
