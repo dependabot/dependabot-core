@@ -254,6 +254,11 @@ module Dependabot
         T.must(dev)
       end
 
+      sig { returns(String) }
+      def lowest_prerelease_suffix
+        "dev0"
+      end
+
       private
 
       sig { params(other: Dependabot::Python::Version).returns(Integer) }
