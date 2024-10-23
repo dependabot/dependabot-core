@@ -63,6 +63,13 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     )
   end
 
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
+    )
+  end
+
   let(:package_manager) do
     DummyPkgHelpers::StubPackageManager.new(
       name: "bundler",
@@ -157,7 +164,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [
+    allow(dependency_snapshot).to receive_messages(ecosystem: ecosystem, notices: [
       warning_deprecation_notice
     ])
   end

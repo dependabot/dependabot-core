@@ -38,7 +38,10 @@ module Dependabot
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
-          Ecosystem.new(ECOSYSTEM, PackageManager.new(composer_version)),
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: PackageManager.new(composer_version)
+          ),
           T.nilable(Ecosystem)
         )
       end

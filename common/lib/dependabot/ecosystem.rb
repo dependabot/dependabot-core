@@ -187,32 +187,32 @@ module Dependabot
       attr_reader :req_max
     end
 
-    # Initialize with mandatory ecosystem and optional language information.
-    # @param ecosystem [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
+    # Initialize with mandatory name and optional language information.
+    # @param name [String] the name of the name (e.g., "bundler", "npm_and_yarn").
     # @param package_manager [VersionManager] the package manager
     # @param language [T.nilable(VersionManager)] optional language version information.
     sig do
       params(
-        ecosystem: String,
+        name: String,
         package_manager: VersionManager,
         language: T.nilable(VersionManager)
       ).void
     end
     def initialize(
-      ecosystem,
-      package_manager,
-      language = nil
+      name:,
+      package_manager:,
+      language: nil
     )
-      @ecosystem = T.let(ecosystem, String)
+      @name = T.let(name, String)
       @package_manager = T.let(package_manager, VersionManager)
       @language = T.let(language, T.nilable(VersionManager))
     end
 
-    # The name of the ecosystem (mandatory).
+    # The name of the name (mandatory).
     # @example
-    # ecosystem #=> "npm_and_yarn"
+    # name #=> "npm_and_yarn"
     sig { returns(String) }
-    attr_reader :ecosystem
+    attr_reader :name
 
     # The information related to the package manager (mandatory).
     # @example

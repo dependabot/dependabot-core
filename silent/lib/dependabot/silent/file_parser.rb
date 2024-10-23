@@ -38,8 +38,8 @@ module SilentPackageManager
                        end
       @ecosystem ||= T.let(
         Dependabot::Ecosystem.new(
-          Dependabot::Silent::ECOSYSYEM,
-          Dependabot::Silent::PackageManager.new(silent_version)
+          name: Dependabot::Silent::ECOSYSYEM,
+          package_manager: Dependabot::Silent::PackageManager.new(silent_version)
         ),
         T.nilable(Dependabot::Ecosystem)
       )
