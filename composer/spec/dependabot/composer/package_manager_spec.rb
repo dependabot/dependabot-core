@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/composer/package_manager"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Composer::PackageManager do

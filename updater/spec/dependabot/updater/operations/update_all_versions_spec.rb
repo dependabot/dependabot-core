@@ -12,7 +12,7 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/update_all_versions"
 require "dependabot/dependency_change_builder"
 require "dependabot/environment"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/notices_helpers"
 

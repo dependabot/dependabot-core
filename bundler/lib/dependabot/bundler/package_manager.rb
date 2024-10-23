@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/bundler/version"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
 module Dependabot
   module Bundler

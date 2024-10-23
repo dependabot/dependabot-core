@@ -11,7 +11,7 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
 require "dependabot/dependency_change_builder"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 
 require "dependabot/bundler"

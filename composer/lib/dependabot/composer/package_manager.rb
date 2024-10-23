@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/composer/version"
 
 module Dependabot
