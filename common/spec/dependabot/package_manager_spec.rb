@@ -7,24 +7,15 @@ require "dependabot/ecosystem"
 RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
   let(:concrete_class) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def name
-        "bundler"
-      end
-
-      def version
-        @version ||= Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0")]
-      end
-
-      def supported_versions
-        @supported_versions ||= [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          "bundler", # name
+          raw_version,
+          Dependabot::Version.new(raw_version), # version
+          [Dependabot::Version.new("1")], # deprecated_versions
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")] # supported_versions
+        )
       end
 
       sig { override.returns(T::Boolean) }

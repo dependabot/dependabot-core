@@ -184,10 +184,6 @@ module Dependabot
       attr_reader :req_max
     end
 
-    class Language
-      extend T::Sig
-    end
-
     # Initialize with mandatory ecosystem and optional language information.
     # @param ecosystem [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
     # @param package_managers [VersionManager] the package manager
