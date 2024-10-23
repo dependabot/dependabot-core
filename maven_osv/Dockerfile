@@ -1,7 +1,7 @@
 # TODO: download osv-scanner from https://github.com/google/osv-scanner/releases
 # once maven remediation features are formally released.
-FROM docker.io/library/golang:1.22.7-bookworm as go
-ARG OSV_SCANNER_VERSION=v1.9.1-0.20241015015803-cbe2f70b372b
+FROM docker.io/library/golang:1.22.7-bookworm AS go
+ARG OSV_SCANNER_VERSION=e054385a544da5981185fee64165c4d2ea4d889c
 RUN go install "github.com/google/osv-scanner/cmd/osv-scanner@${OSV_SCANNER_VERSION}"
 
 FROM ghcr.io/dependabot/dependabot-updater-core
