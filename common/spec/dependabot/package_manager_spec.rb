@@ -40,12 +40,13 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
 
   let(:default_concrete_class) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          "bundler", # name
+          raw_version,
+          Dependabot::Version.new(raw_version)
+        )
       end
     end
   end
@@ -72,16 +73,6 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
 
     it "returns an empty array by default" do
       expect(default_package_manager.deprecated_versions).to eq([])
-    end
-  end
-
-  describe "#unsupported_versions" do
-    it "returns an array of unsupported versions" do
-      expect(package_manager.unsupported_versions).to eq([Dependabot::Version.new("0")])
-    end
-
-    it "returns an empty array by default" do
-      expect(default_package_manager.unsupported_versions).to eq([])
     end
   end
 

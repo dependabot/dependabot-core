@@ -99,7 +99,10 @@ module Dependabot
       #   package_manager.unsupported? #=> false
       sig { returns(T::Boolean) }
       def unsupported?
-        supported_versions.empty? || supported_versions.all? { |v| v > version }
+        return false if supported_versions.empty?
+
+        # Check if the version is not supported
+        supported_versions.all? { |supported| supported > version }
       end
 
       # Raises an error if the current package manager or language version is unsupported.
