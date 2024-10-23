@@ -22,7 +22,7 @@ module Dependabot
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
-          "bundler",
+          "composer",
           raw_version,
           Version.new(raw_version),
           DEPRECATED_COMPOSER_VERSIONS,
