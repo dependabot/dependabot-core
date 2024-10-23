@@ -204,6 +204,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+
+      context "with a local version" do
+        before do
+          Dependabot::Experiments.register(:python_new_version, true)
+        end
+
+        let(:dependency_version) { "2.6.0a1+local.1" }
+
+        it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
+      end
     end
 
     context "when raise_on_ignored is enabled and later versions are allowed" do
