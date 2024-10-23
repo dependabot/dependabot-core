@@ -7,6 +7,14 @@ require "dependabot/version"
 RSpec.describe Dependabot::Version do
   subject(:version) { described_class.new(version_string) }
 
+  describe "#lowest_prerelease_suffix" do
+    subject(:ignored_versions) { version.lowest_prerelease_suffix }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq "a" }
+  end
+
   describe "#ignored_major_versions" do
     subject(:ignored_versions) { version.ignored_major_versions }
 

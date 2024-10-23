@@ -342,6 +342,14 @@ RSpec.describe Dependabot::Python::Version do
     end
   end
 
+  describe "#lowest_prerelease_suffix" do
+    subject { version.lowest_prerelease_suffix }
+
+    let(:version_string) { "1.2.3" }
+
+    it { is_expected.to eq "dev0" }
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
 
