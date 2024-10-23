@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is a Dependabot::Version" do
-      let(:version) { Dependabot::Version.new("2") }
+      let(:version) { "2" }
 
       it "sets the version correctly" do
         expect(package_manager.version).to eq(version)

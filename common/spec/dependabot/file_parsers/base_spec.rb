@@ -47,24 +47,15 @@ RSpec.describe Dependabot::FileParsers::Base do
 
   let(:concrete_package_manager_class) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1.0.0")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0.9.0")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")]
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          "bundler", # name
+          raw_version,
+          Dependabot::Version.new(raw_version), # version
+          [Dependabot::Version.new("1.0.0")], # deprecated_versions
+          [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")] # supported_versions
+        )
       end
 
       def support_later_versions?
@@ -126,7 +117,6 @@ RSpec.describe Dependabot::FileParsers::Base do
         expect(pm.name).to eq("bundler")
         expect(pm.version).to eq(Dependabot::Version.new("1.0.0"))
         expect(pm.deprecated_versions).to eq([Dependabot::Version.new("1.0.0")])
-        expect(pm.unsupported_versions).to eq([Dependabot::Version.new("0.9.0")])
         expect(pm.supported_versions).to eq([Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")])
         expect(pm.support_later_versions?).to be true
       end
