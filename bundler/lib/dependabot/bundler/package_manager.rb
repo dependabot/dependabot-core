@@ -18,33 +18,18 @@ module Dependabot
     # DEPRECATED_BUNDLER_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
     DEPRECATED_BUNDLER_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    class PackageManager < PackageManagerBase
+    class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      sig { params(version: T.any(String, Dependabot::Version)).void }
-      def initialize(version)
-        @version = T.let(Version.new(version), Dependabot::Version)
-        @name = T.let(PACKAGE_MANAGER, String)
-        @deprecated_versions = T.let(DEPRECATED_BUNDLER_VERSIONS, T::Array[Dependabot::Version])
-        @supported_versions = T.let(SUPPORTED_BUNDLER_VERSIONS, T::Array[Dependabot::Version])
-      end
-
-      sig { override.returns(String) }
-      attr_reader :name
-
-      sig { override.returns(Dependabot::Version) }
-      attr_reader :version
-
-      sig { override.returns(T::Array[Dependabot::Version]) }
-      attr_reader :deprecated_versions
-
-      sig { override.returns(T::Array[Dependabot::Version]) }
-      attr_reader :supported_versions
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Check if the version is not supported
-        supported_versions.all? { |supported| supported > version }
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
+        super(
+          "bundler",
+          raw_version,
+          Version.new(raw_version),
+          DEPRECATED_BUNDLER_VERSIONS,
+          SUPPORTED_BUNDLER_VERSIONS,
+       )
       end
     end
   end
