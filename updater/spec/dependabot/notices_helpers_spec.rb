@@ -24,22 +24,21 @@ RSpec.describe Dependabot::NoticesHelpers do
 
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
+      def initialize
+        raw_version = "1"
+        super(
+          "bundler", # name
+          raw_version,
+          Dependabot::Version.new(raw_version), # version
+          [Dependabot::Version.new("1")], # deprecated_versions
+          [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+        )
       end
     end.new
+  end
+
+  before do
+    allow(package_manager).to receive(:unsupported?).and_return(false)
   end
 
   describe "#add_deprecation_notice" do
@@ -82,20 +81,15 @@ RSpec.describe Dependabot::NoticesHelpers do
     context "when package manager is not deprecated" do
       let(:package_manager) do
         Class.new(Dependabot::Ecosystem::VersionManager) do
-          def name
-            "bundler"
-          end
-
-          def version
-            Dependabot::Version.new("2")
-          end
-
-          def deprecated_versions
-            [Dependabot::Version.new("1")]
-          end
-
-          def supported_versions
-            [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
+          def initialize
+            raw_version = "2"
+            super(
+              "bundler", # name
+              raw_version,
+              Dependabot::Version.new(raw_version), # version
+              [Dependabot::Version.new("1")], # deprecated_versions
+              [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+            )
           end
         end.new
       end
