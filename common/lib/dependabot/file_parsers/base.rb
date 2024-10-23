@@ -54,8 +54,8 @@ module Dependabot
       sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
 
-      sig { returns(T.nilable(Ecosystem::VersionManager)) }
-      def package_manager
+      sig { returns(T.nilable(Ecosystem)) }
+      def ecosystem
         nil
       end
 

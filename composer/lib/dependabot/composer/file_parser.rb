@@ -35,9 +35,12 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(Ecosystem::VersionManager) }
-      def package_manager
-        PackageManager.new(composer_version)
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(ECOSYSTEM, PackageManager.new(composer_version)),
+          T.nilable(Ecosystem)
+        )
       end
 
       private

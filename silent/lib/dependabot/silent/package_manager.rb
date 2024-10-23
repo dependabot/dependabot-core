@@ -7,6 +7,7 @@ require "dependabot/ecosystem"
 
 module Dependabot
   module Silent
+    ECOSYSYEM = "silent"
     PACKAGE_MANAGER = "silent"
 
     SUPPORTED_SILENT_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])

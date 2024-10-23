@@ -7,6 +7,7 @@ require "dependabot/ecosystem"
 
 module Dependabot
   module Bundler
+    ECOSYSTEM = "bundler"
     PACKAGE_MANAGER = "bundler"
 
     # Keep versions in ascending order

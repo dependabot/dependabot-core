@@ -28,15 +28,21 @@ module SilentPackageManager
       raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end
 
-    sig { returns(Dependabot::Ecosystem::VersionManager) }
-    def package_manager
+    sig { returns(Dependabot::Ecosystem) }
+    def ecosystem
       meta_data = JSON.parse(manifest_content)["silent"]
       silent_version = if meta_data.nil?
                          "2"
                        else
                          meta_data["version"]
                        end
-      Dependabot::Silent::PackageManager.new(silent_version)
+      @ecosystem ||= T.let(
+        Dependabot::Ecosystem.new(
+          Dependabot::Silent::ECOSYSYEM,
+          Dependabot::Silent::PackageManager.new(silent_version)
+        ),
+        T.nilable(Dependabot::Ecosystem)
+      )
     rescue JSON::ParserError
       raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end

@@ -7,6 +7,7 @@ require "dependabot/composer/version"
 
 module Dependabot
   module Composer
+    ECOSYSTEM = "composer"
     PACKAGE_MANAGER = "composer"
 
     # Keep versions in ascending order

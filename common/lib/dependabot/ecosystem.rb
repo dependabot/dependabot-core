@@ -189,22 +189,22 @@ module Dependabot
 
     # Initialize with mandatory ecosystem and optional language information.
     # @param ecosystem [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
-    # @param package_managers [VersionManager] the package manager
+    # @param package_manager [VersionManager] the package manager
     # @param language [T.nilable(VersionManager)] optional language version information.
     sig do
       params(
         ecosystem: String,
-        package_managers: T::Array[VersionManager],
+        package_manager: VersionManager,
         language: T.nilable(VersionManager)
       ).void
     end
     def initialize(
       ecosystem,
-      package_managers,
+      package_manager,
       language = nil
     )
       @ecosystem = T.let(ecosystem, String)
-      @package_managers = T.let(package_managers, T::Array[VersionManager])
+      @package_manager = T.let(package_manager, VersionManager)
       @language = T.let(language, T.nilable(VersionManager))
     end
 
@@ -214,53 +214,35 @@ module Dependabot
     sig { returns(String) }
     attr_reader :ecosystem
 
+    # The information related to the package manager (mandatory).
+    # @example
+    #  package_manager #=> VersionInformation.new("bundler", "2.1.4", Version.new("2.1.4"), nil)
+    sig { returns(VersionManager) }
+    attr_reader :package_manager
+
     # The version information of the language (optional).
     # @example
     # language #=> VersionInformation.new("ruby", "3.0.0", Version.new("3.0.0"), nil)
     sig { returns(T.nilable(VersionManager)) }
     attr_reader :language
 
-    # The version information of the package manager.
-    # @example
-    #  package_manager #=> VersionInformation.new("bundler", "2.1.4", Version.new("2.1.4"), nil)
-    sig { returns(T::Array[VersionManager]) }
-    attr_reader :package_managers
-
     # Checks if the current version is deprecated.
     # Returns true if the version is in the deprecated_versions array; false otherwise.
-    # @example
-    #   package_manager.deprecated? #=> true
     sig { returns(T::Boolean) }
     def deprecated?
-      # If there is no package manager information, return false
-      return false if package_managers.empty?
-
-      # If the version is unsupported, the unsupported error is getting raised separately.
-      return false if package_managers.any?(&:unsupported?)
-
-      package_managers.any?(&:deprecated?)
+      package_manager.deprecated?
     end
 
     # Checks if the current version is unsupported.
-    # @example
-    #   package_manager.unsupported? #=> false
     sig { returns(T::Boolean) }
     def unsupported?
-      # If there is no package manager information, return false
-      return false if package_managers.empty?
-
-      # if any of the package managers are unsupported, return unsupported true
-      package_managers.any?(&:unsupported?)
+      package_manager.unsupported?
     end
 
-    # Raises an error if the current package manager version is unsupported.
-    # If the version is unsupported, it raises a ToolVersionNotSupported error.
+    # Delegate to the package manager to raise ToolVersionNotSupported if the version is unsupported.
     sig { void }
     def raise_if_unsupported!
-      return unless unsupported?
-
-      # If any of the package managers are unsupported, raise an error
-      package_managers.each(&:raise_if_unsupported!)
+      package_manager.raise_if_unsupported!
     end
   end
 end
