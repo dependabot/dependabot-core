@@ -92,6 +92,37 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         perform_job
       end
     end
+
+    context "with update_dependency_list_only" do
+      let(:snapshot) do
+        instance_double(Dependabot::DependencySnapshot,
+                        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848")
+      end
+      let(:repo_contents_path) { "repo/path" }
+
+      let(:job_definition) do
+        JSON.parse(fixture("file_fetcher_output/update_dependency_list_only_output.json"))
+      end
+
+      before do
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
+        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
+      end
+
+      it "sends dependency metadata to the service" do
+        expect(service).to receive(:update_dependency_list)
+          .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
+
+        perform_job
+      end
+
+      it "does not delegate to Dependabot::Updater" do
+        expect(Dependabot::Updater)
+          .not_to receive(:new)
+
+        perform_job
+      end
+    end
   end
 
   describe "#perform_job when there is an error parsing the dependency files" do
