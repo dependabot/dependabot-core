@@ -12,6 +12,6 @@
     <CommonTargetFramework>net9.0</CommonTargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseArtifactsOutput>true</UseArtifactsOutput>
-    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts\$(OS)</ArtifactsPath>
   </PropertyGroup>
 </Project>

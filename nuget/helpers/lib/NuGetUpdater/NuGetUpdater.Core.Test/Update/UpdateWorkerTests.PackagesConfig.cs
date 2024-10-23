@@ -309,6 +309,83 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdatePackageWithTargetsFileWhereProjectUsesBackslashes()
+        {
+            // The bug that caused this test to be written did not repro on Windows.  The reason is that the packages
+            // directory is determined to be `..\packages`, but the backslash was retained.  Later when packages were
+            // restored to that location, a directory with a name like `..?packages` would be created which didn't
+            // match the <Import> element's path of "..\packages\..." that had no `Condition="Exists(path)"` attribute.
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
+                    new MockNuGetPackage("Package.With.Targets", "1.0.0", Files: [("build/SomeFile.targets", Encoding.UTF8.GetBytes("<Project />"))]),
+                ],
+                // existing
+                projectFile: ("src/project.csproj", """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package">
+                          <HintPath>..\packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="..\packages\Package.With.Targets.1.0.0\build\SomeFile.targets" />
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                additionalFiles:
+                [
+                    ("src/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Package.With.Targets" version="1.0.0" targetFramework="net45" />
+                          <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                        </packages>
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package">
+                          <HintPath>..\packages\Some.Package.2.0.0\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="..\packages\Package.With.Targets.1.0.0\build\SomeFile.targets" />
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("src/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="Package.With.Targets" version="1.0.0" targetFramework="net45" />
+                          <package id="Some.Package" version="2.0.0" targetFramework="net45" />
+                        </packages>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
         public async Task UpdateSingleDependencyInPackagesConfigButNotToLatest()
         {
             // update Some.Package from 7.0.1 to 9.0.1, purposefully not updating all the way to the newest
