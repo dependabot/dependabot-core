@@ -14,8 +14,8 @@ module Dependabot
       abstract!
       # Initialize version information with optional requirement
       # @param name [String] the name of the package manager or language (e.g., "bundler", "ruby").
-      # @param raw_current_version [String] the raw current version of the package manager or language.
-      # @param current_version [Dependabot::Version] the parsed current version.
+      # @param raw_version [String] the raw current version of the package manager or language.
+      # @param version [Dependabot::Version] the parsed current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
       # @param requirement [T.nilable(Requirement)] the version requirements, optional.
@@ -24,8 +24,8 @@ module Dependabot
       sig do
         params(
           name: String,
-          raw_current_version: String,
-          current_version: Dependabot::Version,
+          raw_version: String,
+          version: Dependabot::Version,
           deprecated_versions: T::Array[Dependabot::Version],
           supported_versions: T::Array[Dependabot::Version],
           requirement: T.nilable(Requirement)
@@ -33,15 +33,15 @@ module Dependabot
       end
       def initialize( # rubocop:disable Metrics/ParameterLists
         name,
-        raw_current_version,
-        current_version,
+        raw_version,
+        version,
         deprecated_versions = [],
         supported_versions = [],
         requirement = nil
       )
         @name = T.let(name, String)
-        @raw_current_version = T.let(raw_current_version, String)
-        @current_version = T.let(current_version, Dependabot::Version)
+        @raw_version = T.let(raw_version, String)
+        @version = T.let(version, Dependabot::Version)
         @requirement = T.let(requirement, T.nilable(Requirement))
 
         @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
@@ -56,15 +56,15 @@ module Dependabot
 
       # The current version of the package manager or language.
       # @example
-      #   version_information.current_version #=> Dependabot::Version.new("2.1.4")
+      #   version_information.version #=> Dependabot::Version.new("2.1.4")
       sig { returns(Dependabot::Version) }
-      attr_reader :current_version
+      attr_reader :version
 
       # The raw current version of the package manager or language as a string.
       # @example
-      #   version_information.raw_current_version #=> "2.1.4"
+      #   version_information.raw_version #=> "2.1.4"
       sig { returns(String) }
-      attr_reader :raw_current_version
+      attr_reader :raw_version
 
       # The version requirements (optional).
       # @example
@@ -91,7 +91,7 @@ module Dependabot
         # If the version is unsupported, the unsupported error is getting raised separately.
         return false if unsupported?
 
-        deprecated_versions.include?(current_version)
+        deprecated_versions.include?(version)
       end
 
       # Checks if the current version is unsupported.
@@ -99,7 +99,7 @@ module Dependabot
       #   package_manager.unsupported? #=> false
       sig { returns(T::Boolean) }
       def unsupported?
-        supported_versions.empty? || supported_versions.all? { |v| v > current_version }
+        supported_versions.empty? || supported_versions.all? { |v| v > version }
       end
 
       # Raises an error if the current package manager or language version is unsupported.
@@ -113,7 +113,7 @@ module Dependabot
 
         raise ToolVersionNotSupported.new(
           name,
-          current_version.to_s,
+          version.to_s,
           supported_versions_message
         )
       end
@@ -190,8 +190,8 @@ module Dependabot
 
     # Initialize with mandatory ecosystem and optional language information.
     # @param ecosystem [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
-    # @param package_managers [PackageManagerBase] the package manager
-    # @param language [T.nilable(Ecosystem::VersionInformation)] optional language version information.
+    # @param package_managers [VersionManager] the package manager
+    # @param language [T.nilable(VersionManager)] optional language version information.
     sig do
       params(
         ecosystem: String,

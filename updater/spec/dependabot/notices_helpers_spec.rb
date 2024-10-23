@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/updater"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/notices_helpers"
 
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::NoticesHelpers do
   let(:dummy_instance) { dummy_class.new }
 
   let(:package_manager) do
-    Class.new(Dependabot::PackageManagerBase) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
       def name
         "bundler"
       end
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::NoticesHelpers do
 
     context "when package manager is not deprecated" do
       let(:package_manager) do
-        Class.new(Dependabot::PackageManagerBase) do
+        Class.new(Dependabot::Ecosystem::VersionManager) do
           def name
             "bundler"
           end

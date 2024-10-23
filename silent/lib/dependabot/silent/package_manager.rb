@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/silent/version"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
 module Dependabot
   module Silent
@@ -12,7 +12,7 @@ module Dependabot
     SUPPORTED_SILENT_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
     DEPRECATED_SILENT_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
 
-    class PackageManager < PackageManagerBase
+    class PackageManager < Ecosystem::VersionManager
       extend T::Sig
 
       sig { params(version: T.any(String, Dependabot::Version)).void }

@@ -4,7 +4,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/silent/package_manager"
 require "sorbet-runtime"
 
@@ -28,7 +28,7 @@ module SilentPackageManager
       raise Dependabot::DependencyFileNotParseable, T.must(dependency_files.first).path
     end
 
-    sig { returns(Dependabot::PackageManagerBase) }
+    sig { returns(Dependabot::Ecosystem::VersionManager) }
     def package_manager
       meta_data = JSON.parse(manifest_content)["silent"]
       silent_version = if meta_data.nil?

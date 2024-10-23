@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/credential"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
 module Dependabot
   module FileParsers
@@ -54,7 +54,7 @@ module Dependabot
       sig { abstract.returns(T::Array[Dependabot::Dependency]) }
       def parse; end
 
-      sig { returns(T.nilable(PackageManagerBase)) }
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def package_manager
         nil
       end

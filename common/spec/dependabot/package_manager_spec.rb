@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
-RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
+RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
   let(:concrete_class) do
-    Class.new(Dependabot::PackageManagerBase) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
       def name
         "bundler"
       end
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
   end
 
   let(:default_concrete_class) do
-    Class.new(Dependabot::PackageManagerBase) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
       def name
         "bundler"
       end

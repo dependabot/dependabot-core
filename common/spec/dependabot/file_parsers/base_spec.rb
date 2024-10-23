@@ -46,7 +46,7 @@ RSpec.describe Dependabot::FileParsers::Base do
   let(:files) { [gemfile] }
 
   let(:concrete_package_manager_class) do
-    Class.new(Dependabot::PackageManagerBase) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
       def name
         "bundler"
       end
@@ -117,8 +117,8 @@ RSpec.describe Dependabot::FileParsers::Base do
     context "when called on a concrete class" do
       let(:package_manager_instance) { concrete_package_manager_class.new }
 
-      it "returns an instance of PackageManagerBase" do
-        expect(parser_instance.package_manager).to be_a(Dependabot::PackageManagerBase)
+      it "returns an instance of Ecosystem::VersionManager" do
+        expect(parser_instance.package_manager).to be_a(Dependabot::Ecosystem::VersionManager)
       end
 
       it "returns the correct package manager details" do

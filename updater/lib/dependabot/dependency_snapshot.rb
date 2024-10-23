@@ -67,7 +67,7 @@ module Dependabot
       T.must(@dependencies[@current_directory])
     end
 
-    sig { returns(T.nilable(Dependabot::PackageManagerBase)) }
+    sig { returns(T.nilable(Dependabot::Ecosystem::VersionManager)) }
     def package_manager
       @package_manager[@current_directory]
     end
@@ -181,7 +181,7 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
-      @package_manager = T.let({}, T::Hash[String, T.nilable(Dependabot::PackageManagerBase)])
+      @package_manager = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem::VersionManager)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
 
       directories.each do |dir|

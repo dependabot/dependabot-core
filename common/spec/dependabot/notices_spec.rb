@@ -3,11 +3,11 @@
 
 require "dependabot/version"
 require "dependabot/experiments"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 
 # A stub package manager for testing purposes.
-class StubPackageManager < Dependabot::PackageManagerBase
+class StubPackageManager < Dependabot::Ecosystem::VersionManager
   def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [],
                  support_later_versions: false)
     @name = name

@@ -32,7 +32,7 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(PackageManagerBase) }
+      sig { returns(Ecosystem::VersionManager) }
       def package_manager
         PackageManager.new(bundler_version)
       end
