@@ -111,7 +111,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
       it "sends dependency metadata to the service" do
         expect(service).to receive(:update_dependency_list)
-          .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
+          .with(dependency_snapshot: snapshot)
 
         perform_job
       end
