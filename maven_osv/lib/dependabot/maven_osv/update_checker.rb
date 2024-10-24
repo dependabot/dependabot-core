@@ -11,6 +11,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_finder"
       require_relative "update_checker/property_updater"
+      require_relative "utils/osv_scanner"
 
       def latest_version
         latest_version_details&.fetch(:version)
@@ -75,6 +76,16 @@ module Dependabot
 
       private
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pomfiles
+        @pomfiles ||= T.let(
+          dependency_files.select do |f|
+            f.name.end_with?(".xml") && !f.name.end_with?("extensions.xml")
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
       def latest_version_resolvable_with_full_unlock?
         return false unless version_comes_from_multi_dependency_property?
 
@@ -104,12 +115,49 @@ module Dependabot
       end
 
       def latest_version_details
-        @latest_version_details ||= version_finder.latest_version_details
+        return @latest_version_details if defined?(@latest_version_details)
+
+        @latest_version_details = version_finder.versions.find { |v| v.fetch(:version) == osv_updated_version }
       end
 
       def lowest_security_fix_version_details
-        @lowest_security_fix_version_details ||=
-          version_finder.lowest_security_fix_version_details
+        return @lowest_security_fix_version_details if defined?(@lowest_security_fix_version_details)
+
+        @lowest_security_fix_version_details =
+          version_finder.versions.find { |v| v.fetch(:version) == osv_updated_version }
+      end
+
+      def osv_updated_version
+        return @osv_updated_version if defined?(@osv_updated_version)
+
+        @osv_updated_version = begin
+          pomfile = pomfiles.find do |f|
+            File.dirname(File.join(repo_contents_path, f.realpath)) == dependency.directory
+          end
+          return unless pomfile
+
+          pomfile_path = File.join(repo_contents_path, pomfile.realpath)
+          Utils::OSVScanner.fix(pomfile_path:)
+
+          source = Utils::SourceFinder.from_repo(repo_contents_path:)
+          updated_dependency_files = MavenOSV::FileFetcher.new(
+            source:,
+            credentials:,
+            repo_contents_path:
+          ).files
+          dependencies = MavenOSV::FileParser.new(
+            dependency_files: updated_dependency_files,
+            repo_contents_path:,
+            source:
+          ).parse
+
+          updated_dependency = dependencies.find do |d|
+            d.name == dependency.name && d.directory == dependency.directory
+          end
+          return unless updated_dependency && version_class.correct?(updated_dependency.version)
+
+          version_class.new(updated_dependency.version)
+        end
       end
 
       def version_finder

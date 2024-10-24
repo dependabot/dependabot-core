@@ -130,6 +130,7 @@ module Dependabot
           name: name,
           version: dependency_version(pom, dependency_node),
           package_manager: "maven_osv",
+          directory: File.dirname(File.join(repo_contents_path, pom.realpath)),
           requirements: [{
             requirement: dependency_requirement(pom, dependency_node),
             file: pom.name,

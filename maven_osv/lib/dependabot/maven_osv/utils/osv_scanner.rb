@@ -7,26 +7,28 @@ module Dependabot
   module MavenOSV
     module Utils
       module OSVScanner
+        extend T::Sig
+        extend T::Helpers
+
+        Package = Struct.new(:source_file, :name, :version)
+
+        sig { params(pomfile_path: String).returns(T::Array[Package]) }
         def self.scan(pomfile_path:)
-          JSON.parse(cached_osv_scan(pomfile_path:)).fetch("results").flat_map do |results|
-            results.fetch("packages").map do |package|
-              Dependency.new(
+          JSON.parse(cached_osv_scan(pomfile_path:)).fetch("results").flat_map do |result|
+            result.fetch("packages").map do |package|
+              Package.new(
+                source_file: result.dig("source", "path"),
                 name: package.dig("package", "name"),
-                package_manager: "maven_osv",
-                version: package.dig("package", "version"),
-                directory: File.dirname(pomfile_path),
-                requirements: [{
-                  requirement: package.dig("package", "version"),
-                  file: File.basename(pomfile_path),
-                  source: nil,
-                  groups: []
-                }]
+                version: package.dig("package", "version")
               )
             end
           end
         end
 
+        sig { params(pomfile_path: String).void }
         def self.fix(pomfile_path:)
+          return if File.exist?(osv_scanner_resolution_file_path(pomfile_path:))
+
           command_args = %W(fix
                             --non-interactive --maven-fix-management
                             --experimental-offline --data-source native
@@ -34,9 +36,15 @@ module Dependabot
           run(args: command_args)
 
           # after applying a fix, remove any cached scan information
-          File.unlink(cached_osv_scan_location(pomfile_path:))
+          # File.unlink(cached_osv_scan_location(pomfile_path:)) if File.exist?(cached_osv_scan_location(pomfile_path:))
         end
 
+        sig { params(pomfile_path: String).returns(String) }
+        def self.osv_scanner_resolution_file_path(pomfile_path:)
+          File.join(File.dirname(pomfile_path), "pom.xml.resolve.maven")
+        end
+
+        sig { params(pomfile_path: String).returns(String) }
         def self.cached_osv_scan(pomfile_path:)
           cached_location = cached_osv_scan_location(pomfile_path:)
           return File.read(cached_location) if File.exist?(cached_location)
@@ -46,10 +54,12 @@ module Dependabot
           run(args: command_args).tap { |output| File.write(cached_location, output) }
         end
 
+        sig { params(pomfile_path: String).returns(String) }
         def self.cached_osv_scan_location(pomfile_path:)
           File.join(File.dirname(pomfile_path), "osv_scan.json")
         end
 
+        sig { params(args: T::Array[String]).returns(String) }
         def self.run(args: [])
           start = Time.now
 
