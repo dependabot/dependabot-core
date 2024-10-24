@@ -78,7 +78,7 @@ module Dependabot
       sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
       def strategy
         if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
-          Dependabot.logger.info(
+          Dependabot.logger.debug(
             "Dependabot::PullRequestCreator::strategy : #{existing_branches}"
           )
         end

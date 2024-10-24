@@ -83,7 +83,7 @@ module Dependabot
 
         sig { params(ref: String).returns(String) }
         def dedup_existing_branches(ref)
-          Dependabot.logger.info(
+          Dependabot.logger.debug(
             "Dependabot::PullRequestCreator::dedup_existing_branches::ref : #{ref}"
           )
           return ref unless existing_branches.include?(ref)
