@@ -35,6 +35,28 @@ module Dependabot
           "unspecified"
         end
       end
+
+      sig do
+        params(
+          gemfile: T.nilable(Dependabot::DependencyFile),
+          lockfile: T.nilable(Dependabot::DependencyFile)
+        ).returns(String)
+      end
+      def self.detect_ruby_version(gemfile, lockfile)
+        definition = T.let(::Bundler::Definition.build(
+                             gemfile&.name,
+                             lockfile&.name,
+                             gems: []
+                           ), ::Bundler::Definition)
+
+        ruby_version = T.let(definition.ruby_version, T.nilable(::Bundler::RubyVersion))
+
+        gem_version = T.let(ruby_version&.gem_version, Gem::Version)
+
+        ruby_version_str = gem_version.to_s
+
+        ruby_version_str
+      end
     end
   end
 end

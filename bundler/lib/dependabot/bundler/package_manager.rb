@@ -8,6 +8,7 @@ require "dependabot/ecosystem"
 module Dependabot
   module Bundler
     ECOSYSTEM = "bundler"
+    LANGUAGE = "ruby"
     PACKAGE_MANAGER = "bundler"
 
     # Keep versions in ascending order
@@ -18,6 +19,19 @@ module Dependabot
     # Example for deprecation:
     # DEPRECATED_BUNDLER_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
     DEPRECATED_BUNDLER_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+    class Language < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
+        super(
+          LANGUAGE,
+          raw_version,
+          Version.new(raw_version)
+       )
+      end
+    end
 
     class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig

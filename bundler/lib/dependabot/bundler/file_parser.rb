@@ -37,10 +37,25 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: PackageManager.new(bundler_version)
+            package_manager: package_manager,
+            language: language
           ),
           T.nilable(Ecosystem)
         )
+      end
+
+      def package_manager
+        return @package_manager if defined?(@package_manager)
+
+        # Create the Ecosystem::Language object and memoize it
+        @package_manager = PackageManager.new(bundler_version)
+      end
+
+      def language
+        return @language if defined?(@language)
+
+        # Create the Ecosystem::Language object and memoize it
+        @language = Language.new(ruby_version)
       end
 
       private
@@ -325,6 +340,11 @@ module Dependabot
       sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
+      end
+
+      sig { returns(String) }
+      def ruby_version
+        @ruby_version ||= Helpers.detect_ruby_version(gemfile, lockfile)
       end
     end
   end
