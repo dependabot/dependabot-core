@@ -309,12 +309,14 @@ module Dependabot
                       .select { |file| file.name.end_with?(".gemspec") }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def imported_ruby_files
         dependency_files
           .select { |f| f.name.end_with?(".rb") }
           .reject { |f| f.name == "gems.rb" }
       end
 
+      sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
       end
