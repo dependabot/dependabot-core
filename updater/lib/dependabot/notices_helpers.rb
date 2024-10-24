@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/notices"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
 # This module extracts helpers for notice generations that can be used
 # for showing notices in logs, pr messages and alert ui page.
@@ -20,7 +20,7 @@ module Dependabot
     sig do
       params(
         notices: T::Array[Dependabot::Notice],
-        package_manager: T.nilable(PackageManagerBase)
+        package_manager: T.nilable(Ecosystem::VersionManager)
       )
         .void
     end
@@ -58,11 +58,11 @@ module Dependabot
 
     private
 
-    sig { params(package_manager: T.nilable(PackageManagerBase)).returns(T.nilable(Dependabot::Notice)) }
+    sig { params(package_manager: T.nilable(Ecosystem::VersionManager)).returns(T.nilable(Dependabot::Notice)) }
     def create_deprecation_notice(package_manager)
       return unless package_manager
 
-      return unless package_manager.is_a?(PackageManagerBase)
+      return unless package_manager.is_a?(Ecosystem::VersionManager)
 
       Notice.generate_pm_deprecation_notice(
         package_manager

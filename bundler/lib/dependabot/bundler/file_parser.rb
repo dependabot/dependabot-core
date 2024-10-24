@@ -32,9 +32,28 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(PackageManagerBase) }
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       def package_manager
-        PackageManager.new(bundler_version)
+        return @package_manager if defined?(@package_manager)
+
+        @package_manager = PackageManager.new(bundler_version)
+      end
+
+      def language
+        return @language if defined?(@language)
+
+        @language = Language.new(ruby_version)
       end
 
       private
@@ -309,14 +328,21 @@ module Dependabot
                       .select { |file| file.name.end_with?(".gemspec") }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def imported_ruby_files
         dependency_files
           .select { |f| f.name.end_with?(".rb") }
           .reject { |f| f.name == "gems.rb" }
       end
 
+      sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
+      end
+
+      sig { returns(String) }
+      def ruby_version
+        @ruby_version ||= Helpers.ruby_version(gemfile, lockfile)
       end
     end
   end

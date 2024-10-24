@@ -11,7 +11,7 @@ require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
 require "dependabot/dependency_change_builder"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 
 require "dependabot/bundler"
@@ -51,6 +51,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
       job_definition: job_definition_with_fetched_files
+    )
+  end
+
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
     )
   end
 
@@ -132,7 +139,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
       .and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
+    allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
   end
 
   after do

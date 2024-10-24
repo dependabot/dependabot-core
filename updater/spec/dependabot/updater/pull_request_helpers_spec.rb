@@ -3,7 +3,7 @@
 
 require "spec_helper"
 require "dependabot/updater"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/service"
 
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
   let(:service) { instance_double(Dependabot::Service) }
 
   let(:package_manager) do
-    Class.new(Dependabot::PackageManagerBase) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
       def name
         "bundler"
       end

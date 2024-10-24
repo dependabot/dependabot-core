@@ -63,6 +63,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     original_bundler_files
   end
 
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
+    )
+  end
+
   let(:package_manager) do
     DummyPkgHelpers::StubPackageManager.new(
       name: "bundler",
@@ -81,7 +88,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
   end
 
   before do
-    allow(dependency_snapshot).to receive(:package_manager).and_return(package_manager)
+    allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
     allow(job).to receive(:package_manager).and_return("bundler")
   end
 

@@ -1,7 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/dependency_file"
 
 # This module provides some shortcuts for working with our two mock RubyGems packages:
@@ -63,8 +63,8 @@ module DummyPkgHelpers
     updated_bundler_files(fixture: fixture).map(&:to_h)
   end
 
-  # Stub PackageManagerBase
-  class StubPackageManager < Dependabot::PackageManagerBase
+  # Stub Ecosystem::VersionManager
+  class StubPackageManager < Dependabot::Ecosystem::VersionManager
     def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
       @name = name
       @version = version
