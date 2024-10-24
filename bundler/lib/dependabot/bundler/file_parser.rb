@@ -47,14 +47,12 @@ module Dependabot
       def package_manager
         return @package_manager if defined?(@package_manager)
 
-        # Create the Ecosystem::Language object and memoize it
         @package_manager = PackageManager.new(bundler_version)
       end
 
       def language
         return @language if defined?(@language)
 
-        # Create the Ecosystem::Language object and memoize it
         @language = Language.new(ruby_version)
       end
 
