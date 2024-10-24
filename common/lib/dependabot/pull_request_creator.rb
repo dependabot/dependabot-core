@@ -396,6 +396,12 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::BranchNamer) }
     def branch_namer
+      if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
+        Dependabot.logger.info(
+          "Dependabot::PullRequestCreator::branch_namer : #{existing_branches}"
+        )
+      end
+
       @branch_namer ||= T.let(
         BranchNamer.new(
           dependencies: dependencies,
