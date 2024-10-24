@@ -18,20 +18,6 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
         )
       end
 
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        # If the version is unsupported, treat it as unsupported, not deprecated.
-        return false if unsupported?
-
-        deprecated_versions.include?(version)
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Determine if the version is unsupported based on supported_versions.
-        version < supported_versions.first
-      end
-
       def support_later_versions?
         true
       end
