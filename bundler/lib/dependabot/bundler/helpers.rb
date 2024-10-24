@@ -79,9 +79,9 @@ module Dependabot
         gemfile_name = gemfile&.name
         return nil unless gemfile_name
 
-        ruby_version = T.let(build_definition(gemfile, lockfile).ruby_version, ::Bundler::RubyVersion)
+        ruby_version = T.let(build_definition(gemfile, lockfile).ruby_version, T.nilable(::Bundler::RubyVersion))
 
-        gem_version = T.let(ruby_version.gem_version, T.nilable(Gem::Version))
+        gem_version = T.let(ruby_version&.gem_version, T.nilable(Gem::Version))
 
         return nil unless gem_version
 
