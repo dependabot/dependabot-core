@@ -77,6 +77,12 @@ module Dependabot
 
       sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
       def strategy
+        if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
+          Dependabot.logger.debug(
+            "Dependabot::PullRequestCreator::strategy : #{existing_branches}"
+          )
+        end
+
         @strategy ||= T.let(
           if dependency_group.nil?
             SoloStrategy.new(
