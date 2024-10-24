@@ -344,7 +344,7 @@ module Dependabot
 
       sig { returns(String) }
       def ruby_version
-        @ruby_version ||= Helpers.detect_ruby_version(gemfile, lockfile)
+        @ruby_version ||= Helpers.ruby_version(gemfile, lockfile)
       end
     end
   end
