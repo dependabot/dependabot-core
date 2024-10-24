@@ -95,7 +95,7 @@ module Dependabot
             new_ref = "#{ref}-#{i}"
           end
 
-          Dependabot.logger.info(
+          Dependabot.logger.debug(
             "Dependabot::PullRequestCreator::dedup_existing_branches::new_ref : #{new_ref}"
           )
 
