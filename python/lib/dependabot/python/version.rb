@@ -214,6 +214,38 @@ module Dependabot
         "dev0"
       end
 
+      sig { override.returns(T::Array[String]) }
+      def ignored_patch_versions
+        parts = release_segment # e.g [1,2,3] if version is 1.2.3-alpha3
+        version_parts = parts.fill(0, parts.length...2)
+        upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+        lower_bound = "> #{self}"
+        upper_bound = "< #{upper_parts.join('.')}"
+
+        ["#{lower_bound}, #{upper_bound}"]
+      end
+
+      sig { override.returns(T::Array[String]) }
+      def ignored_minor_versions
+        parts = release_segment # e.g [1,2,3] if version is 1.2.3-alpha3
+        version_parts = parts.fill(0, parts.length...2)
+        lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+        upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1] + [lowest_prerelease_suffix]
+        lower_bound = ">= #{lower_parts.join('.')}"
+        upper_bound = "< #{upper_parts.join('.')}"
+
+        ["#{lower_bound}, #{upper_bound}"]
+      end
+
+      sig { override.returns(T::Array[String]) }
+      def ignored_major_versions
+        version_parts = release_segment # e.g [1,2,3] if version is 1.2.3-alpha3
+        lower_parts = [version_parts[0].to_i + 1] + [lowest_prerelease_suffix] # earliest next major version prerelease
+        lower_bound = ">= #{lower_parts.join('.')}"
+
+        [lower_bound]
+      end
+
       private
 
       sig { params(other: Dependabot::Python::Version).returns(Integer) }
