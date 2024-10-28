@@ -27,21 +27,12 @@ RSpec.describe Dependabot::Updater::PullRequestHelpers do
 
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
-      end
+      super(
+        "bundler", # name
+        Dependabot::Version.new("1"), # version
+        [Dependabot::Version.new("1")], # deprecated_versions
+        [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+      )
     end.new
   end
 

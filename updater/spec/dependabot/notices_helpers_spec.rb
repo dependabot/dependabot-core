@@ -28,7 +28,6 @@ RSpec.describe Dependabot::NoticesHelpers do
         raw_version = "1"
         super(
           "bundler", # name
-          raw_version,
           Dependabot::Version.new(raw_version), # version
           [Dependabot::Version.new("1")], # deprecated_versions
           [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
@@ -85,7 +84,6 @@ RSpec.describe Dependabot::NoticesHelpers do
             raw_version = "2"
             super(
               "bundler", # name
-              raw_version,
               Dependabot::Version.new(raw_version), # version
               [Dependabot::Version.new("1")], # deprecated_versions
               [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions

@@ -16,7 +16,6 @@ RSpec.describe Dependabot::Ecosystem do
       def initialize(raw_version, deprecated_versions, supported_versions)
         super(
           "bundler", # name
-          raw_version,
           Dependabot::Version.new(raw_version), # version
           deprecated_versions, # deprecated_versions
           supported_versions # supported_versions

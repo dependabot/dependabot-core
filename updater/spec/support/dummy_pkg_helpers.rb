@@ -65,19 +65,14 @@ module DummyPkgHelpers
 
   # Stub Ecosystem::VersionManager
   class StubPackageManager < Dependabot::Ecosystem::VersionManager
-    def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
-      @name = name
-      @version = version
-      @deprecated_versions = deprecated_versions
-      @unsupported_versions = unsupported_versions
-      @supported_versions = supported_versions
+    def initialize(name:, version:, deprecated_versions: [], supported_versions: [])
+      super(
+        name,
+        Dependabot::Version.new(version),
+        deprecated_versions,
+        supported_versions
+      )
     end
-
-    attr_reader :name
-    attr_reader :version
-    attr_reader :deprecated_versions
-    attr_reader :unsupported_versions
-    attr_reader :supported_versions
 
     sig { override.returns(T::Boolean) }
     def deprecated?
