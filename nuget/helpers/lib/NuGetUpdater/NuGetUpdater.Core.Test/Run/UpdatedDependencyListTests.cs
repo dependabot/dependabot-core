@@ -65,7 +65,7 @@ public class UpdatedDependencyListTests
                 }
             ]
         };
-        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, path_to_contents: temp.DirectoryPath);
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, pathToContents: temp.DirectoryPath);
         var expectedDependencyList = new UpdatedDependencyList()
         {
             Dependencies =

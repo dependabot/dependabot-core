@@ -293,7 +293,7 @@ public class RunWorker
         return result;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string path_to_contents)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)
     {
         string GetFullRepoPath(string path)
         {
@@ -318,9 +318,9 @@ public class RunWorker
         foreach (var project in discoveryResult.Projects)
         {
             var projectDirectory = Path.GetDirectoryName(project.FilePath);
-            var path_to_packages_config = Path.Join(path_to_contents, "src", projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
+            var pathToPackagesConfig = Path.Join(pathToContents, "src", projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
 
-            if (File.Exists(path_to_packages_config))
+            if (File.Exists(pathToPackagesConfig))
             {
                 auxiliaryFiles.Add(GetFullRepoPath(Path.Join(projectDirectory, "packages.config")));
             }
