@@ -274,6 +274,11 @@ public class RunWorker
             {
                 // TODO: log or throw if nothing was updated, but was expected to be
             }
+        }
+        else
+        {
+            // TODO: throw if no updates performed
+        }
 
         var result = new RunResult()
         {
