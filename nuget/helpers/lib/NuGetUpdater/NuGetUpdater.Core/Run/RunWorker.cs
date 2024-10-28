@@ -122,7 +122,7 @@ public class RunWorker
         _logger.Log(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoDirectory);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
@@ -272,7 +272,7 @@ public class RunWorker
         return result;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string? path_to_contents = null)
     {
         string GetFullRepoPath(string path)
         {
@@ -292,6 +292,17 @@ public class RunWorker
         if (discoveryResult.DirectoryPackagesProps is not null)
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DirectoryPackagesProps.FilePath));
+        }
+
+        foreach (var project in discoveryResult.Projects)
+        {
+            var projectDirectory = Path.GetDirectoryName(project.FilePath);
+            var path_to_packages_config = Path.Join(path_to_contents, "src", projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
+
+            if (File.Exists(path_to_packages_config))
+            {
+                auxiliaryFiles.Add(GetFullRepoPath(Path.Join(projectDirectory, "packages.config")));
+            }
         }
 
         var updatedDependencyList = new UpdatedDependencyList()
