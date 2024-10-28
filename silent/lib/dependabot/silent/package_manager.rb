@@ -18,28 +18,12 @@ module Dependabot
 
       sig { params(version: T.any(String, Dependabot::Version)).void }
       def initialize(version)
-        @version = T.let(Version.new(version), Dependabot::Version)
-        @name = T.let(PACKAGE_MANAGER, String)
-        @deprecated_versions = T.let(DEPRECATED_SILENT_VERSIONS, T::Array[Dependabot::Version])
-        @supported_versions = T.let(SUPPORTED_SILENT_VERSIONS, T::Array[Dependabot::Version])
-      end
-
-      sig { override.returns(String) }
-      attr_reader :name
-
-      sig { override.returns(Dependabot::Version) }
-      attr_reader :version
-
-      sig { override.returns(T::Array[Dependabot::Version]) }
-      attr_reader :deprecated_versions
-
-      sig { override.returns(T::Array[Dependabot::Version]) }
-      attr_reader :supported_versions
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Check if the version is not supported
-        supported_versions.all? { |supported| supported > version }
+        super(
+          PACKAGE_MANAGER,
+          Version.new(version),
+          DEPRECATED_SILENT_VERSIONS,
+          SUPPORTED_SILENT_VERSIONS,
+       )
       end
     end
   end

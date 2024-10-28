@@ -25,8 +25,7 @@ module Dependabot
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
-          "bundler",
-          raw_version,
+          PACKAGE_MANAGER,
           Version.new(raw_version),
           DEPRECATED_BUNDLER_VERSIONS,
           SUPPORTED_BUNDLER_VERSIONS,
