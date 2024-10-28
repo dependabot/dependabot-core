@@ -293,7 +293,7 @@ public class RunWorker
         return result;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string? path_to_contents = null)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string path_to_contents)
     {
         string GetFullRepoPath(string path)
         {
