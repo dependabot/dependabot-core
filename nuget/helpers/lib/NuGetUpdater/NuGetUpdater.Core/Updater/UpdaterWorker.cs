@@ -9,7 +9,7 @@ namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
 {
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
@@ -18,55 +18,36 @@ public class UpdaterWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public UpdaterWorker(Logger logger)
+    public UpdaterWorker(ILogger logger)
     {
         _logger = logger;
     }
 
     public async Task RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive, string? resultOutputPath = null)
     {
-        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
-        UpdateOperationResult result;
-
-        if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+        if (resultOutputPath is { })
         {
-            workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
+            await WriteResultFile(result, resultOutputPath, _logger);
         }
+    }
 
+    // this is a convenient method for tests
+    internal async Task<UpdateOperationResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    {
+        UpdateOperationResult result = new(); // assumed to be ok until proven otherwise
         try
         {
-            if (!isTransitive)
-            {
-                await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-                await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
-            }
-
-            var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
-            switch (extension)
-            {
-                case ".sln":
-                    await RunForSolutionAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                    break;
-                case ".proj":
-                    await RunForProjFileAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                    break;
-                case ".csproj":
-                case ".fsproj":
-                case ".vbproj":
-                    await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
-                    break;
-                default:
-                    _logger.Log($"File extension [{extension}] is not supported.");
-                    break;
-            }
-
-            result = new(); // all ok
-            _logger.Log("Update complete.");
+            result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
         }
         catch (HttpRequestException ex)
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            // TODO: consolidate this error handling between AnalyzeWorker, DiscoveryWorker, and UpdateWorker
+            if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
+            {
+                workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
+            }
+
             result = new()
             {
                 ErrorType = ErrorType.AuthenticationFailure,
@@ -81,15 +62,67 @@ public class UpdaterWorker
                 ErrorDetails = ex.FilePath,
             };
         }
-
-        _processedProjectPaths.Clear();
-        if (resultOutputPath is { })
+        catch (UpdateNotPossibleException ex)
         {
-            await WriteResultFile(result, resultOutputPath, _logger);
+            result = new()
+            {
+                ErrorType = ErrorType.UpdateNotPossible,
+                ErrorDetails = ex.Dependencies,
+            };
         }
+        catch (Exception ex)
+        {
+            result = new()
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+            };
+        }
+
+        return result;
     }
 
-    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, Logger logger)
+    public async Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    {
+        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
+
+        if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
+        {
+            workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
+        }
+
+        if (!isTransitive)
+        {
+            await DotNetToolsJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+            await GlobalJsonUpdater.UpdateDependencyAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, _logger);
+        }
+
+        var extension = Path.GetExtension(workspacePath).ToLowerInvariant();
+        switch (extension)
+        {
+            case ".sln":
+                await RunForSolutionAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                break;
+            case ".proj":
+                await RunForProjFileAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                break;
+            case ".csproj":
+            case ".fsproj":
+            case ".vbproj":
+                await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
+                break;
+            default:
+                _logger.Log($"File extension [{extension}] is not supported.");
+                break;
+        }
+
+        _logger.Log("Update complete.");
+
+        _processedProjectPaths.Clear();
+        return new UpdateOperationResult();
+    }
+
+    internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
         logger.Log($"  Writing update result to [{resultOutputPath}].");
 
@@ -188,6 +221,12 @@ public class UpdaterWorker
         }
 
         // Some repos use a mix of packages.config and PackageReference
-        await SdkPackageUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+        await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+
+        // Update lock file if exists
+        if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
+        {
+            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
+        }
     }
 }

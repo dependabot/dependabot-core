@@ -36,5 +36,42 @@ module Dependabot
     def to_semver
       @original_version
     end
+
+    sig { overridable.returns(T::Array[String]) }
+    def ignored_patch_versions
+      parts = to_semver.split(".")
+      version_parts = parts.fill("0", parts.length...2)
+      upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1]
+      lower_bound = "> #{to_semver}"
+      upper_bound = "< #{upper_parts.join('.')}"
+
+      ["#{lower_bound}, #{upper_bound}"]
+    end
+
+    sig { overridable.returns(T::Array[String]) }
+    def ignored_minor_versions
+      parts = to_semver.split(".")
+      version_parts = parts.fill("0", parts.length...2)
+      lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+      upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1]
+      lower_bound = ">= #{lower_parts.join('.')}"
+      upper_bound = "< #{upper_parts.join('.')}"
+
+      ["#{lower_bound}, #{upper_bound}"]
+    end
+
+    sig { overridable.returns(T::Array[String]) }
+    def ignored_major_versions
+      version_parts = to_semver.split(".")
+      lower_parts = [version_parts[0].to_i + 1] + [lowest_prerelease_suffix]
+      lower_bound = ">= #{lower_parts.join('.')}"
+
+      [lower_bound]
+    end
+
+    sig { returns(String) }
+    def lowest_prerelease_suffix
+      "a"
+    end
   end
 end

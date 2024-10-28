@@ -210,6 +210,20 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
       end
     end
 
+    context "when the error message contains requirement not specified error" do
+      let(:error_message) do
+        "[YN0001]: Exception error, Detail: ➤ YN0000: ┌ Resolution step" \
+          "kubernetes-dashboard@workspace:. provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests" # rubocop:disable Layout/LineLength
+      end
+
+      it "raises a DependencyFileNotResolvable error with the correct message" do
+        expect do
+          error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+        end.to raise_error(Dependabot::DependencyFileNotResolvable,
+                           "provides @angular/core (pc7ae5) with version 16.2.1, which doesn't satisfy what codelyzer requests") # rubocop:disable Layout/LineLength
+      end
+    end
+
     context "when the error message contains YN0041 response (Invalid authentication)" do
       let(:error_message) do
         "[91m➤[39m YN0041: │ [38;5;166m@cadence-group/[39m[38;5;173mconventional-changelog-angular-" \
@@ -682,6 +696,18 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
                           " as it requires authentication " \
                           "(and any provided details were invalid or lacked " \
                           "the required permissions): npm.shopify.io")
+      end
+    end
+
+    context "when the exception message contains malformed registry error response" do
+      let(:error_message) do
+        "Received malformed response from registry for \"teste-react-jv\". The registry may be down."
+      end
+
+      it "raises the corresponding error class with the correct message" do
+        expect { error_handler.handle_group_patterns(error, usage_error_message, { yarn_lock: yarn_lock }) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable,
+                          "Received malformed response from registry for \"teste-react-jv\". The registry may be down.")
       end
     end
 

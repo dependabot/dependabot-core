@@ -234,8 +234,8 @@ module Dependabot
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
                       .map { |req_string| req_string.match(VERSION_REGEX) }
-                      .select { |version| Gem::Version.correct?(version) }
-                      .max_by { |version| Gem::Version.new(version) }
+                      .select { |version| Python::Version.correct?(version) }
+                      .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end

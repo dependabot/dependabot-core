@@ -107,6 +107,12 @@ module Dependabot
         # issue related when dependency url is not mentioned correctly
         UNRESOLVED_REFERENCE = /Unable to resolve reference (?<deps>.*)/
 
+        # npm git related error for dependencies
+        GIT_CHECKOUT_ERROR_REGEX = /Command failed: git checkout (?<sha>.*)/
+
+        # Invalid version format found for dependency in package.json file
+        INVALID_VERSION = /Invalid Version: (?<ver>.*)/
+
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
@@ -613,6 +619,15 @@ module Dependabot
 
           if (error_msg = error_message.match(UNSUPPORTED_PROTOCOL))
             msg = "Unsupported protocol \"#{error_msg.named_captures.fetch('access_method')}\" while accessing dependency." # rubocop:disable Layout/LineLength
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (error_msg = error_message.match(GIT_CHECKOUT_ERROR_REGEX))
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          if (error_msg = error_message.match(INVALID_VERSION))
+            msg = "Found invalid version \"#{error_msg.named_captures.fetch('ver')}\" while updating"
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 

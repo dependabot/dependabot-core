@@ -32,7 +32,7 @@ cd "$install_dir/lib/NuGetUpdater/NuGetUpdater.Cli"
 dotnet publish \
     --configuration Release \
     --output "$install_dir/NuGetUpdater" \
-    --framework net8.0 \
+    --framework net9.0 \
     --runtime "$os-$arch"
 dotnet clean
 

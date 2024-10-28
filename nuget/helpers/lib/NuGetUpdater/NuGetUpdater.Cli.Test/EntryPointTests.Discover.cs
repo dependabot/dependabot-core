@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Discover;
@@ -390,6 +391,11 @@ public partial class EntryPointTests
                     Console.SetOut(originalOut);
                     Console.SetError(originalErr);
                 }
+
+                var resultPath = Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
+                var resultJson = await File.ReadAllTextAsync(resultPath);
+                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                return resultObject!;
             });
 
             ValidateWorkspaceResult(expectedResult, actualResult);

@@ -23,31 +23,24 @@ module Dependabot
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
 
-        if Dependabot::Experiments.enabled?(:enable_pnpm_yarn_dynamic_engine)
+        unless @package_manager&.start_with?("#{name}@") || (@package_manager&.==name.to_s) || @package_manager.nil?
+          return
+        end
 
-          unless @package_manager&.start_with?("#{name}@") || (@package_manager&.==name.to_s) || @package_manager.nil?
-            return
-          end
+        if @engines && @package_manager.nil?
+          # if "packageManager" doesn't exists in manifest file,
+          # we check if we can extract "engines" information
+          version = check_engine_version(name)
 
-          if @engines && @package_manager.nil?
-            # if "packageManager" doesn't exists in manifest file,
-            # we check if we can extract "engines" information
-            Dependabot.logger.info("No \"packageManager\" info found for \"#{name}\"")
-            version = check_engine_version(name)
+        elsif @package_manager&.==name.to_s
+          # if "packageManager" is found but no version is specified (i.e. pnpm@1.2.3),
+          # we check if we can get "engines" info to override default version
+          version = check_engine_version(name) if @engines
 
-          elsif @package_manager&.==name.to_s
-            # if "packageManager" is found but no version is specified (i.e. pnpm@1.2.3),
-            # we check if we can get "engines" info to override default version
-            Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\"")
-            version = check_engine_version(name) if @engines
-
-          elsif @package_manager&.start_with?("#{name}@")
-            # if "packageManager" info has version specification i.e. yarn@3.3.1
-            # we go with the version in "packageManager"
-            Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\". Skipped checking \"engines\".")
-          end
-        else
-          return unless @package_manager.nil? || @package_manager&.start_with?("#{name}@")
+        elsif @package_manager&.start_with?("#{name}@")
+          # if "packageManager" info has version specification i.e. yarn@3.3.1
+          # we go with the version in "packageManager"
+          Dependabot.logger.info("Found \"packageManager\" : \"#{@package_manager}\". Skipped checking \"engines\".")
         end
 
         version ||= requested_version(name)
@@ -103,8 +96,11 @@ module Dependabot
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile
 
-        Dependabot.logger.info("Estimating version")
-        Helpers.send(:"#{name}_version_numeric", lockfile)
+        version = Helpers.send(:"#{name}_version_numeric", lockfile)
+
+        Dependabot.logger.info("Guessed version info \"#{name}\" : \"#{version}\"")
+
+        version
       end
 
       sig { params(name: T.untyped).returns(T.nilable(String)) }
@@ -112,10 +108,7 @@ module Dependabot
         version_selector = VersionSelector.new
         engine_versions = version_selector.setup(@package_json, name)
 
-        if engine_versions.empty?
-          Dependabot.logger.info("No relevant (engines) info for \"#{name}\"")
-          return
-        end
+        return if engine_versions.empty?
 
         version = engine_versions[name]
         Dependabot.logger.info("Returned (engines) info \"#{name}\" : \"#{version}\"")

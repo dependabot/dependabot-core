@@ -364,7 +364,7 @@ public partial class UpdateWorkerTests
                 await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
-                var worker = new UpdaterWorker(new Logger(verbose: true));
+                var worker = new UpdaterWorker(new TestLogger());
                 await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             });
 

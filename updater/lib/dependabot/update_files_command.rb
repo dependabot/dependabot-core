@@ -67,7 +67,7 @@ module Dependabot
       Environment.job_definition["base_commit_sha"]
     end
 
-    # rubocop:disable Metrics/AbcSize, Layout/LineLength
+    # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
     def handle_parser_error(error)
       # This happens if the repo gets removed after a job gets kicked off.
       # The service will handle the removal without any prompt from the updater,
@@ -80,6 +80,16 @@ module Dependabot
         # Check if the error is a known "run halting" state we should handle
         if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
           { "error-type": error_type }
+        elsif error.is_a?(ToolVersionNotSupported)
+          Dependabot.logger.error(error.message)
+          {
+            "error-type": "tool_version_not_supported",
+            "error-detail": {
+              "tool-name": error.tool_name,
+              "detected-version": error.detected_version,
+              "supported-versions": error.supported_versions
+            }
+          }
         else
           # If it isn't, then log all the details and let the application error
           # tracker know about it
@@ -118,6 +128,6 @@ module Dependabot
         error_details: error_details[:"error-detail"]
       )
     end
-    # rubocop:enable Metrics/AbcSize, Layout/LineLength
+    # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
   end
 end

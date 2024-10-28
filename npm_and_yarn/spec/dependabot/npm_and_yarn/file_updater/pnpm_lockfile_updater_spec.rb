@@ -93,6 +93,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when there is a lockfile with tarball urls we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "when there is a unsupported engine response from registry" do
       let(:dependency_name) { "@blocknote/core" }
       let(:version) { "0.15.4" }
@@ -132,6 +141,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "when there is a private registry we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access_with_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "when there is a private registry we don't have access to and no package name is mentioned" do
+      let(:dependency_name) { "rollup" }
+      let(:version) { "3.29.5" }
+      let(:previous_version) { "^2.79.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.29.5",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.79.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:project_name) { "pnpm/private_dep_access_with_no_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound)
       end
     end
 
@@ -328,7 +374,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
               ]
             )
         end
@@ -373,7 +419,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
               ]
             )
         end

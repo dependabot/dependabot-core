@@ -1,20 +1,20 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-bundler (0.282.0)
+      dependabot-common (= 0.282.0)
       parallel (~> 1.24)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-cargo (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.274.0)
+    dependabot-common (0.282.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -23,121 +23,122 @@ PATH
       excon (~> 0.109)
       faraday (= 2.7.11)
       faraday-retry (= 2.2.0)
-      gitlab (= 4.19.0)
+      gitlab (= 5.0.0)
       json (< 2.7)
       nokogiri (~> 1.8)
-      octokit (>= 4.6, < 7.0)
-      opentelemetry-sdk (~> 1.3)
+      octokit (>= 4.6, < 8.0)
+      opentelemetry-api (~> 1.4)
+      opentelemetry-metrics-api (~> 0.1)
       parser (>= 2.5, < 4.0)
       psych (~> 5.0)
-      sorbet-runtime (~> 0.5.11178)
+      sorbet-runtime (~> 0.5.11577)
       stackprof (~> 0.2.16)
       toml-rb (>= 1.1.2, < 4.0)
 
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-composer (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-devcontainers (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-docker (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-elm (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-git_submodules (0.282.0)
+      dependabot-common (= 0.282.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-github_actions (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-go_modules (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.274.0)
-      dependabot-common (= 0.274.0)
-      dependabot-maven (= 0.274.0)
+    dependabot-gradle (0.282.0)
+      dependabot-common (= 0.282.0)
+      dependabot-maven (= 0.282.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-hex (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-maven (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-npm_and_yarn (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-nuget (0.282.0)
+      dependabot-common (= 0.282.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-pub (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-python (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../silent
   specs:
-    dependabot-silent (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-silent (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-swift (0.282.0)
+      dependabot-common (= 0.282.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.274.0)
-      dependabot-common (= 0.274.0)
+    dependabot-terraform (0.282.0)
+      dependabot-common (= 0.282.0)
 
 GEM
   remote: https://rubygems.org/
@@ -191,15 +192,17 @@ GEM
       ffi (>= 1.0.0)
       rake
     flamegraph (0.9.5)
-    gitlab (4.19.0)
+    gitlab (5.0.0)
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
-    google-protobuf (3.24.4)
-    googleapis-common-protos-types (1.9.0)
-      google-protobuf (~> 3.18)
+    google-protobuf (4.28.2)
+      bigdecimal
+      rake (>= 13)
+    googleapis-common-protos-types (1.16.0)
+      google-protobuf (>= 3.18, < 5.a)
     gpgme (2.0.24)
       mini_portile2 (~> 2.7)
-    hashdiff (1.1.0)
+    hashdiff (1.1.1)
     http (5.1.1)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
@@ -234,17 +237,26 @@ GEM
     nokogiri (1.16.5)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    octokit (6.1.1)
+    octokit (7.2.0)
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
-    opentelemetry-api (1.2.3)
+    opentelemetry-api (1.4.0)
     opentelemetry-common (0.20.0)
       opentelemetry-api (~> 1.0)
-    opentelemetry-exporter-otlp (0.26.1)
-      google-protobuf (~> 3.14)
+    opentelemetry-exporter-otlp (0.29.0)
+      google-protobuf (>= 3.18)
       googleapis-common-protos-types (~> 1.3)
       opentelemetry-api (~> 1.1)
       opentelemetry-common (~> 0.20)
+      opentelemetry-sdk (~> 1.2)
+      opentelemetry-semantic_conventions
+    opentelemetry-exporter-otlp-metrics (0.1.0)
+      google-protobuf (>= 3.18, < 5.0)
+      googleapis-common-protos-types (~> 1.3)
+      opentelemetry-api (~> 1.1)
+      opentelemetry-common (~> 0.20)
+      opentelemetry-metrics-api (~> 0.1)
+      opentelemetry-metrics-sdk (~> 0.2)
       opentelemetry-sdk (~> 1.2)
       opentelemetry-semantic_conventions
     opentelemetry-instrumentation-base (0.22.3)
@@ -254,9 +266,8 @@ GEM
       opentelemetry-api (~> 1.0)
       opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
-    opentelemetry-instrumentation-faraday (0.23.4)
+    opentelemetry-instrumentation-faraday (0.24.6)
       opentelemetry-api (~> 1.0)
-      opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
     opentelemetry-instrumentation-http (0.23.2)
       opentelemetry-api (~> 1.0)
@@ -265,9 +276,15 @@ GEM
       opentelemetry-api (~> 1.0)
       opentelemetry-common (~> 0.20.0)
       opentelemetry-instrumentation-base (~> 0.22.1)
+    opentelemetry-metrics-api (0.1.0)
+      opentelemetry-api (~> 1.0)
+    opentelemetry-metrics-sdk (0.2.0)
+      opentelemetry-api (~> 1.1)
+      opentelemetry-metrics-api
+      opentelemetry-sdk (~> 1.2)
     opentelemetry-registry (0.3.0)
       opentelemetry-api (~> 1.1)
-    opentelemetry-sdk (1.3.1)
+    opentelemetry-sdk (1.5.0)
       opentelemetry-api (~> 1.1)
       opentelemetry-common (~> 0.20)
       opentelemetry-registry (~> 0.2)
@@ -278,12 +295,12 @@ GEM
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.4.2)
+    parser (3.3.5.0)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
       stringio
-    public_suffix (6.0.0)
+    public_suffix (6.0.1)
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.2.1)
@@ -297,8 +314,7 @@ GEM
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
-    rexml (3.3.6)
-      strscan
+    rexml (3.3.8)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -317,24 +333,23 @@ GEM
     rspec-sorbet (1.9.2)
       sorbet-runtime
     rspec-support (3.13.1)
-    rubocop (1.65.1)
+    rubocop (1.67.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.4, < 3.0)
-      rexml (>= 3.2.5, < 4.0)
-      rubocop-ast (>= 1.31.1, < 2.0)
+      rubocop-ast (>= 1.32.2, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 3.0)
-    rubocop-ast (1.32.1)
+    rubocop-ast (1.32.3)
       parser (>= 3.3.1.0)
     rubocop-capybara (2.20.0)
       rubocop (~> 1.41)
     rubocop-factory_bot (2.25.1)
       rubocop (~> 1.41)
-    rubocop-performance (1.21.1)
+    rubocop-performance (1.22.1)
       rubocop (>= 1.48.1, < 2.0)
       rubocop-ast (>= 1.31.1, < 2.0)
     rubocop-rspec (2.29.1)
@@ -344,7 +359,7 @@ GEM
       rubocop-rspec_rails (~> 2.28)
     rubocop-rspec_rails (2.28.3)
       rubocop (~> 1.40)
-    rubocop-sorbet (0.8.5)
+    rubocop-sorbet (0.8.6)
       rubocop (>= 1)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
@@ -363,10 +378,9 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet-runtime (0.5.11444)
+    sorbet-runtime (0.5.11577)
     stackprof (0.2.25)
     stringio (3.1.0)
-    strscan (3.1.0)
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     toml-rb (2.2.0)
@@ -377,14 +391,14 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8.2)
-    unicode-display_width (2.5.0)
+    unicode-display_width (2.6.0)
     vcr (6.3.1)
       base64
-    webmock (3.23.1)
+    webmock (3.24.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    webrick (1.8.1)
+    webrick (1.8.2)
 
 PLATFORMS
   ruby
@@ -414,21 +428,23 @@ DEPENDENCIES
   flamegraph (~> 0.9.5)
   gpgme (~> 2.0)
   http (~> 5.1)
-  octokit (= 6.1.1)
-  opentelemetry-exporter-otlp (~> 0.26)
+  octokit (= 7.2.0)
+  opentelemetry-exporter-otlp (~> 0.29)
+  opentelemetry-exporter-otlp-metrics (~> 0.1)
   opentelemetry-instrumentation-excon (~> 0.22)
-  opentelemetry-instrumentation-faraday (~> 0.23)
+  opentelemetry-instrumentation-faraday (~> 0.24)
   opentelemetry-instrumentation-http (~> 0.23)
   opentelemetry-instrumentation-net_http (~> 0.22)
-  opentelemetry-sdk (~> 1.3)
+  opentelemetry-metrics-sdk (~> 0.2)
+  opentelemetry-sdk (~> 1.5)
   rake (~> 13)
   rspec (~> 3.12)
   rspec-its (~> 1.3)
   rspec-sorbet (~> 1.9.2)
-  rubocop (~> 1.65.0)
-  rubocop-performance (~> 1.21.0)
+  rubocop (~> 1.67.0)
+  rubocop-performance (~> 1.22.1)
   rubocop-rspec (~> 2.29.1)
-  rubocop-sorbet (~> 0.8.1)
+  rubocop-sorbet (~> 0.8.5)
   sentry-opentelemetry (~> 5.16)
   sentry-ruby (~> 5.16)
   simplecov (~> 0.22.0)

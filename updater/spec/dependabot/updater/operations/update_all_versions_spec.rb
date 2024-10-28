@@ -18,23 +18,6 @@ require "dependabot/notices_helpers"
 
 require "dependabot/bundler"
 
-# Stub PackageManagerBase
-class StubPackageManager < Dependabot::PackageManagerBase
-  def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
-    @name = name
-    @version = version
-    @deprecated_versions = deprecated_versions
-    @unsupported_versions = unsupported_versions
-    @supported_versions = supported_versions
-  end
-
-  attr_reader :name
-  attr_reader :version
-  attr_reader :deprecated_versions
-  attr_reader :unsupported_versions
-  attr_reader :supported_versions
-end
-
 RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   include DependencyFileHelpers
   include DummyPkgHelpers
@@ -81,7 +64,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   let(:package_manager) do
-    StubPackageManager.new(
+    DummyPkgHelpers::StubPackageManager.new(
       name: "bundler",
       version: package_manager_version,
       deprecated_versions: deprecated_versions,
@@ -168,8 +151,6 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)

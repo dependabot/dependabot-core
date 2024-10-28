@@ -168,14 +168,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-  end
-
-  after do
-    Dependabot::Experiments.reset!
-  end
-
   describe "#pr_name" do
     subject(:pr_name) { builder.pr_name }
 

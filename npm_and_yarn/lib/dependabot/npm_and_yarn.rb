@@ -160,6 +160,14 @@ module Dependabot
       AUTH_ERROR: /YN0001:*.*Fatal Error: could not read Username for '(?<url>.*)': terminal prompts disabled/
     }.freeze, T::Hash[String, Regexp])
 
+    YN0001_REQ_NOT_FOUND_CODES = T.let({
+      REQUIREMENT_NOT_SATISFIED: /provides (?<dep>.*)(.*?)with version (?<ver>.*), which doesn't satisfy what (?<pkg>.*) requests/, # rubocop:disable Layout/LineLength
+      REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
+    }.freeze, T::Hash[String, Regexp])
+
+    # registry returns malformed response
+    REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
+
     class Utils
       extend T::Sig
 
@@ -212,6 +220,13 @@ module Dependabot
               return Dependabot::PrivateSourceAuthenticationFailure.new(url)
             end
           end
+
+          YN0001_REQ_NOT_FOUND_CODES.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
           Dependabot::DependabotError.new(message)
         }
       },
@@ -347,7 +362,7 @@ module Dependabot
       {
         patterns: [INVALID_NAME_IN_PACKAGE_JSON],
         handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotParseable.new(message)
+          Dependabot::DependencyFileNotResolvable.new(message)
         },
         in_usage: false,
         matchfn: nil
@@ -564,6 +579,15 @@ module Dependabot
         patterns: [INTERNAL_SERVER_ERROR],
         handler: lambda { |message, _error, _params|
           msg = message.match(INTERNAL_SERVER_ERROR)
+          Dependabot::DependencyFileNotResolvable.new(msg)
+        },
+        in_usage: false,
+        matchfn: nil
+      },
+      {
+        patterns: [REGISTRY_NOT_REACHABLE],
+        handler: lambda { |message, _error, _params|
+          msg = message.match(REGISTRY_NOT_REACHABLE)
           Dependabot::DependencyFileNotResolvable.new(msg)
         },
         in_usage: false,

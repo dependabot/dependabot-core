@@ -13,6 +13,14 @@ using Console = System.Console;
 
 namespace NuGetUpdater.Core;
 
+/// <summary>
+/// Handles package updates for projects that use packages.config.
+/// </summary>
+/// <remarks>
+/// packages.config can appear in non-SDK-style projects, but not in SDK-style projects.
+/// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
+///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+/// <remarks>
 internal static class PackagesConfigUpdater
 {
     public static async Task UpdateDependencyAsync(
@@ -22,12 +30,11 @@ internal static class PackagesConfigUpdater
         string previousDependencyVersion,
         string newDependencyVersion,
         string packagesConfigPath,
-        Logger logger
+        ILogger logger
     )
     {
-        logger.Log($"  Found {NuGetHelper.PackagesConfigFileName}; running with NuGet.exe");
-
-        // use NuGet.exe to perform update
+        // packages.config project; use NuGet.exe to perform update
+        logger.Log($"  Found '{NuGetHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
@@ -92,7 +99,7 @@ internal static class PackagesConfigUpdater
         await projectBuildFile.SaveAsync();
     }
 
-    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, Logger logger)
+    private static void RunNugetUpdate(List<string> updateArgs, List<string> restoreArgs, string projectDirectory, ILogger logger)
     {
         var outputBuilder = new StringBuilder();
         var writer = new StringWriter(outputBuilder);
@@ -126,10 +133,10 @@ internal static class PackagesConfigUpdater
                 //    and doesn't appear in the cache.  The message in this case will be "Could not install package
                 //    '<name> <version>'...the package does not contain any assembly references or content files that
                 //    are compatible with that framework.".
+                // 3. Yet another possibility is that the project explicitly imports a targets file without a condition
+                //    of `Exists(...)`.
                 // The solution in all cases is to run `restore` then try the update again.
-                if (!retryingAfterRestore &&
-                    (fullOutput.Contains("Existing packages must be restored before performing an install or update.") ||
-                    fullOutput.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")))
+                if (!retryingAfterRestore && OutputIndicatesRestoreIsRequired(fullOutput))
                 {
                     retryingAfterRestore = true;
                     logger.Log($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
@@ -139,6 +146,9 @@ internal static class PackagesConfigUpdater
 
                     if (exitCodeAgain != 0)
                     {
+                        MSBuildHelper.ThrowOnMissingFile(fullOutput);
+                        MSBuildHelper.ThrowOnMissingFile(restoreOutput);
+                        MSBuildHelper.ThrowOnMissingPackages(restoreOutput);
                         throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
                     }
 
@@ -147,6 +157,7 @@ internal static class PackagesConfigUpdater
 
                 MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
                 MSBuildHelper.ThrowOnMissingFile(fullOutput);
+                MSBuildHelper.ThrowOnMissingPackages(fullOutput);
                 throw new Exception(fullOutput);
             }
         }
@@ -170,6 +181,13 @@ internal static class PackagesConfigUpdater
                 credProvider.Kill();
             }
         }
+    }
+
+    private static bool OutputIndicatesRestoreIsRequired(string output)
+    {
+        return output.Contains("Existing packages must be restored before performing an install or update.")
+            || output.Contains("the package does not contain any assembly references or content files that are compatible with that framework.")
+            || MSBuildHelper.GetMissingFile(output) is not null;
     }
 
     private static Process[] GetLikelyNuGetSpawnedProcesses()
@@ -204,7 +222,7 @@ internal static class PackagesConfigUpdater
             {
                 // exact match was found, use it
                 var subpath = GetUpToIndexWithoutTrailingDirectorySeparator(hintPath, hintPathSubStringLocation);
-                return subpath;
+                return subpath.NormalizePathToUnix();
             }
 
             if (partialPathMatch is null)
@@ -242,7 +260,7 @@ internal static class PackagesConfigUpdater
             }
         }
 
-        return partialPathMatch;
+        return partialPathMatch?.NormalizePathToUnix();
     }
 
     private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)

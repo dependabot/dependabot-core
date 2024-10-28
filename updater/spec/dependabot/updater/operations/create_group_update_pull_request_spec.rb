@@ -135,8 +135,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
   end
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
-
     allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder)
       .to receive(:create_from)
