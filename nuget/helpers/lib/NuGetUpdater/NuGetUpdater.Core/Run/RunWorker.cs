@@ -224,7 +224,7 @@ public class RunWorker
                 var localProjectPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
                 var updatedProjectContent = await File.ReadAllTextAsync(localProjectPath);
                 var originalProjectContent = originalDependencyFileContents[projectPath];
-                
+
                 if (updatedProjectContent != originalProjectContent)
                 {
                     updatedDependencyFiles.Add(new DependencyFile()
