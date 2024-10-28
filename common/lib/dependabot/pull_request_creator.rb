@@ -223,6 +223,12 @@ module Dependabot
       @pr_message_max_length      = pr_message_max_length
       @pr_message_encoding        = pr_message_encoding
 
+      if trace_log?
+        Dependabot.logger.info(
+          "Dependabot::PullRequestCreator::initialize : #{existing_branches}"
+        )
+      end
+
       check_dependencies_have_previous_version
     end
 
@@ -240,6 +246,12 @@ module Dependabot
     # then convert to that
     sig { returns(T.untyped) }
     def create
+      if trace_log?
+        Dependabot.logger.info(
+          "Dependabot::PullRequestCreator::create"
+        )
+      end
+
       case source.provider
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
@@ -269,6 +281,12 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::Github) }
     def github_creator
+      if trace_log?
+        Dependabot.logger.info(
+          "Dependabot::PullRequestCreator::create"
+        )
+      end
+
       Github.new(
         source: source,
         branch_name: branch_namer.new_branch_name,
@@ -396,8 +414,8 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::BranchNamer) }
     def branch_namer
-      if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
-        Dependabot.logger.debug(
+      if trace_log?
+        Dependabot.logger.info(
           "Dependabot::PullRequestCreator::branch_namer : #{existing_branches}"
         )
       end
@@ -432,6 +450,14 @@ module Dependabot
         ),
         T.nilable(Dependabot::PullRequestCreator::Labeler)
       )
+
+      if trace_log?
+        Dependabot.logger.info(
+          "Dependabot::PullRequestCreator::branch_namer : #{existing_branches}"
+        )
+      end
+
+      @labeler
     end
 
     sig { returns(T::Boolean) }
@@ -442,6 +468,11 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def requirements_changed?(dependency)
       (dependency.requirements - T.must(dependency.previous_requirements)).any?
+    end
+
+    sig { returns(T::Boolean) }
+    def trace_log?
+      Dependabot::Experiments.enabled?(:dedup_branch_names)
     end
   end
 end
