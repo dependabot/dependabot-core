@@ -18,6 +18,16 @@ internal static class BindingRedirectManager
     private static readonly XName DependentAssemblyName = AssemblyBinding.GetQualifiedName("dependentAssembly");
     private static readonly XName BindingRedirectName = AssemblyBinding.GetQualifiedName("bindingRedirect");
 
+    /// <summary>
+    /// Updates assembly binding redirects for a project build file.
+    /// </summary>
+    /// <remarks>
+    /// Assembly binding redirects are only applicable to projects targeting .NET Framework.
+    /// .NET Framework targets can appear in SDK-style OR non-SDK-style project files, using either packages.config OR `<PackageReference>` MSBuild items.
+    /// See: https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions
+    ///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+    /// </remarks>
+    /// <param name="projectBuildFile">The project build file (*.xproj) to be updated</param>
     public static async ValueTask UpdateBindingRedirectsAsync(ProjectBuildFile projectBuildFile)
     {
         var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile);
@@ -33,7 +43,7 @@ internal static class BindingRedirectManager
         var bindings = BindingRedirectResolver.GetBindingRedirects(projectBuildFile.Path, references.Select(static x => x.Include));
         if (!bindings.Any())
         {
-            // no bindings to update
+            // no bindings found in the project file, nothing to update
             return;
         }
 
@@ -116,19 +126,19 @@ internal static class BindingRedirectManager
             return null;
         }
 
-        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetContent(configFile)));
+        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetValue(configFile)));
         var configFileContents = await File.ReadAllTextAsync(configFilePath);
         return new ConfigurationFile(configFilePath, configFileContents, false);
 
-        static string GetContent(IXmlElementSyntax element)
+        static string GetValue(IXmlElementSyntax element)
         {
-            var content = element.GetContentValue();
+            var content = element.GetAttributeValue("Include");
             if (!string.IsNullOrEmpty(content))
             {
                 return content;
             }
 
-            content = element.GetAttributeValue("Include");
+            content = element.GetContentValue();
             if (!string.IsNullOrEmpty(content))
             {
                 return content;
@@ -139,7 +149,7 @@ internal static class BindingRedirectManager
 
         static bool IsConfigFile(IXmlElementSyntax element)
         {
-            var content = GetContent(element);
+            var content = GetValue(element);
             if (content is null)
             {
                 return false;
@@ -304,12 +314,12 @@ internal static class BindingRedirectManager
     {
         public bool Equals(AssemblyIdentity? x, AssemblyIdentity? y) =>
             string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(x?.PublicKeyToken, y?.PublicKeyToken, StringComparison.OrdinalIgnoreCase);
+            string.Equals(x?.PublicKeyToken ?? "null", y?.PublicKeyToken ?? "null", StringComparison.OrdinalIgnoreCase);
 
         public int GetHashCode(AssemblyIdentity obj) =>
             HashCode.Combine(
                 obj.Name?.ToLowerInvariant(),
-                obj.PublicKeyToken?.ToLowerInvariant()
+                obj.PublicKeyToken?.ToLowerInvariant() ?? "null"
             );
     }
 }

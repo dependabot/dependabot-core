@@ -369,6 +369,48 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     end
   end
 
+  context "when each project has a projects.config" do
+    let(:directory) { "/src/a/" }
+
+    before do
+      GitHubHelpers.stub_requests_for_directory(
+        ->(a, b) { stub_request(a, b) },
+        File.join(__dir__, "..", "..", "fixtures", "github", "multiple_packages_config"),
+        "",
+        url,
+        "token token",
+        "gocardless",
+        "bump",
+        "main"
+      )
+
+      # these files explicitly don't exist
+      ["src/a/.config", "src/a/Directory.Packages.props"].each do |file|
+        stub_request(:get, File.join(url, "#{file}?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: "{}",
+            headers: { "content-type" => "application/json" }
+          )
+      end
+    end
+
+    it "fetches all relevant files" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(
+            ../b/projectb.csproj
+            ../b/packages.config
+            ../c/projectc.csproj
+            ../c/packages.config
+            projecta.csproj
+            packages.config
+          )
+        )
+    end
+  end
+
   context "with a dirs.proj" do
     before do
       GitHubHelpers.stub_requests_for_directory(

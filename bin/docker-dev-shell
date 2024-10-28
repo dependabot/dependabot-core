@@ -116,6 +116,7 @@ mkdir -p dry-run tmp
 docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
+  -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \

@@ -31,8 +31,15 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   let(:mock_service) do
-    instance_double(Dependabot::Service, increment_metric: nil, record_update_job_error: nil, create_pull_request: nil)
+    instance_double(
+      Dependabot::Service,
+      increment_metric: nil,
+      record_update_job_error: nil,
+      create_pull_request: nil,
+      record_update_job_warning: nil
+    )
   end
+
   let(:mock_error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
 
   let(:job_definition) do
@@ -52,6 +59,19 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
       job_definition: job_definition_with_fetched_files
     )
   end
+
+  let(:package_manager) do
+    DummyPkgHelpers::StubPackageManager.new(
+      name: "bundler",
+      version: package_manager_version,
+      deprecated_versions: deprecated_versions,
+      supported_versions: supported_versions
+    )
+  end
+
+  let(:package_manager_version) { "2" }
+  let(:supported_versions) { %w(2 3) }
+  let(:deprecated_versions) { %w(1) }
 
   let(:job_definition_with_fetched_files) do
     job_definition.merge({
@@ -157,70 +177,51 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   let(:stub_update_checker_class) do
-    Class.new do
-      define_method(:new) do |*_args|
-        stub_update_checker
-      end
-    end
+    class_double(
+      Dependabot::Bundler::UpdateChecker,
+      new: stub_update_checker
+    )
   end
 
-  let(:transitive_stub_update_checker_class) do
-    Class.new do
-      define_method(:new) do |*_args|
-        transitive_stub_update_checker
-      end
-    end
+  let(:stub_dependency_change) do
+    instance_double(
+      Dependabot::DependencyChange,
+      updated_dependencies: [dependency],
+      updated_dependency_files: dependency_files,
+      should_replace_existing_pr?: false,
+      grouped_update?: false,
+      matches_existing_pr?: false
+    )
   end
 
-  let(:concrete_package_manager_class) do
-    Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1.0.0")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0.9.0")]
-      end
-
-      def supported_versions
-        [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")]
-      end
-
-      def support_later_versions?
-        true
-      end
-    end
+  let(:warning_deprecation_notice) do
+    Dependabot::Notice.new(
+      mode: "WARN",
+      type: "bundler_deprecated_warn",
+      package_manager_name: "bundler",
+      title: "Package manager deprecation notice",
+      description: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+      show_in_pr: true,
+      show_alert: true
+    )
   end
-
-  let(:mock_package_manager_instance) { concrete_package_manager_class.new }
 
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+    allow(Dependabot::UpdateCheckers).to receive(
+      :for_package_manager
+    ).and_return(stub_update_checker_class)
 
-    # Allow for_package_manager to return the stub_update_checker_class
-    allow(Dependabot::UpdateCheckers).to receive(:for_package_manager).and_return(stub_update_checker_class)
+    allow(Dependabot::DependencyChangeBuilder).to receive(
+      :create_from
+    ).and_return(stub_dependency_change)
 
-    # Mock the DependencyChangeBuilder.create_from method
-    allow(Dependabot::DependencyChangeBuilder)
-      .to receive(:create_from)
-      .and_return(instance_double(Dependabot::DependencyChange))
-
-    # Mock the create_pull_request method
-    allow(create_security_update_pull_request)
-      .to receive(:create_pull_request)
-
-    # Mock the package_manager method in dependency_snapshot
-    allow(dependency_snapshot)
-      .to receive(:package_manager)
-      .and_return(mock_package_manager_instance)
+    allow(dependency_snapshot).to receive_messages(
+      job_dependencies: [dependency],
+      package_manager: package_manager,
+      notices: [warning_deprecation_notice]
+    )
+    allow(job).to receive(:security_fix?).and_return(true)
   end
 
   after do
@@ -228,60 +229,76 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   describe "#perform" do
-    context "when target_dependencies is empty" do
+    before do
+      allow(dependency_snapshot).to receive(
+        :dependencies
+      ).and_return([dependency])
+      allow(job).to receive(:package_manager).and_return("bundler")
+    end
+
+    context "when an error occurs" do
+      let(:error) { StandardError.new("error") }
+
       before do
-        allow(dependency_snapshot)
-          .to receive(:job_dependencies).and_return([])
+        allow(create_security_update_pull_request).to receive(
+          :check_and_create_pull_request
+        ).and_raise(error)
       end
 
-      it "records that no dependencies were found" do
-        expect(create_security_update_pull_request)
-          .to receive(:record_security_update_dependency_not_found)
+      it "handles the error with the error handler" do
+        expect(mock_error_handler).to receive(
+          :handle_dependency_error
+        ).with(error: error, dependency: dependency)
         perform
       end
     end
 
-    context "when target_dependencies is not empty" do
+    context "when no error occurs" do
       before do
-        allow(dependency_snapshot)
-          .to receive(:job_dependencies).and_return([dependency])
+        allow(create_security_update_pull_request).to receive(
+          :check_and_create_pull_request
+        )
       end
 
-      it "checks and creates pull requests for each dependency" do
+      it "does not handle any error" do
+        expect(mock_error_handler).not_to receive(
+          :handle_dependency_error
+        )
+        perform
+      end
+    end
+
+    context "when package manager version is deprecated" do
+      let(:package_manager_version) { "1" }
+
+      it "creates a pull request" do
         expect(create_security_update_pull_request)
-          .to receive(:check_and_create_pr_with_error_handling).with(dependency)
-        perform
-      end
-
-      it "calls check_and_create_pull_request with the dependency" do
-        allow(create_security_update_pull_request)
-          .to receive(:check_and_create_pr_with_error_handling).and_call_original
+          .to receive(:check_and_create_pull_request)
+          .with(dependency).and_call_original
+        expect(mock_service)
+          .to receive(:record_update_job_warning)
+          .with(
+            warn_type: warning_deprecation_notice.type,
+            warn_title: warning_deprecation_notice.title,
+            warn_description: warning_deprecation_notice.description
+          )
         expect(create_security_update_pull_request)
-          .to receive(:check_and_create_pull_request).with(dependency)
+          .to receive(:create_pull_request)
+          .with(stub_dependency_change)
         perform
       end
+    end
 
-      it "handles Dependabot::InconsistentRegistryResponse" do
-        allow(create_security_update_pull_request)
-          .to receive(:check_and_create_pull_request).and_raise(Dependabot::InconsistentRegistryResponse)
-        expect(mock_error_handler)
-          .to receive(:log_dependency_error).with(
-            dependency: dependency,
-            error: instance_of(Dependabot::InconsistentRegistryResponse),
-            error_type: "inconsistent_registry_response",
-            error_detail: anything
-          )
-        perform
-      end
+    context "when package manager version is not deprecated" do
+      let(:package_manager_version) { "2" }
 
-      it "handles StandardError" do
-        allow(create_security_update_pull_request)
-          .to receive(:check_and_create_pull_request).and_raise(StandardError)
-        expect(mock_error_handler)
-          .to receive(:handle_dependency_error).with(
-            error: instance_of(StandardError),
-            dependency: dependency
-          )
+      it "creates a pull request" do
+        expect(create_security_update_pull_request)
+          .to receive(:check_and_create_pull_request)
+          .with(dependency).and_call_original
+        expect(create_security_update_pull_request)
+          .to receive(:create_pull_request)
+          .with(stub_dependency_change)
         perform
       end
     end
@@ -290,7 +307,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   describe "#check_and_create_pull_request" do
     before do
       allow(create_security_update_pull_request)
-        .to receive(:update_checker_for).and_return(stub_update_checker)
+        .to receive(:update_checker_for)
+        .and_return(stub_update_checker)
       allow(dependency)
         .to receive(:all_versions).and_return(["4.0.0", "4.1.0", "4.2.0"])
     end
@@ -303,18 +321,26 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
       it "records that no update is needed if the version is correct" do
         allow(stub_update_checker.version_class)
-          .to receive(:correct?).with(dependency.version).and_return(true)
+          .to receive(:correct?)
+          .with(dependency.version)
+          .and_return(true)
+
         expect(create_security_update_pull_request)
-          .to receive(:record_security_update_not_needed_error).with(dependency)
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          .to receive(:record_security_update_not_needed_error)
+          .with(dependency)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, dependency)
       end
 
       it "records that the dependency file is not supported if the version is not correct" do
         allow(stub_update_checker.version_class)
-          .to receive(:correct?).with(dependency.version).and_return(false)
+          .to receive(:correct?)
+          .with(dependency.version).and_return(false)
         expect(create_security_update_pull_request)
-          .to receive(:record_dependency_file_not_supported_error).with(stub_update_checker)
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          .to receive(:record_dependency_file_not_supported_error)
+          .with(stub_update_checker)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, dependency)
       end
     end
 
@@ -342,8 +368,10 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
       it "checks if a pull request already exists" do
         expect(create_security_update_pull_request)
-          .to receive(:record_pull_request_exists_for_latest_version).with(stub_update_checker)
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          .to receive(:record_pull_request_exists_for_latest_version)
+          .with(stub_update_checker)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, dependency)
       end
 
       context "when pull request doesn't exists" do
@@ -354,32 +382,12 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
             )
         end
 
-        it "creates a pull request without pr notices" do
-          expect(create_security_update_pull_request).to receive(:create_pull_request)
+        it "creates a pull request" do
+          expect(create_security_update_pull_request)
+            .to receive(:create_pull_request)
 
-          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
-        end
-
-        it "creates a pull request with pr notices" do
-          allow(Dependabot::Notice)
-            .to receive(:generate_pm_deprecation_notice)
-            .with(mock_package_manager_instance)
-            .and_return(
-              Dependabot::Notice.new(
-                mode: "WARN",
-                type: "bundler_deprecated_warn",
-                package_manager_name: "bundler",
-                title: "Package manager deprecation notice",
-                description: "Dependabot will stop supporting `bundler v1`!\n" \
-                             "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
-                show_in_pr: true,
-                show_alert: true
-              )
-            )
-
-          expect(create_security_update_pull_request).to receive(:create_pull_request)
-
-          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          create_security_update_pull_request
+            .send(:check_and_create_pull_request, dependency)
         end
       end
     end
@@ -387,22 +395,28 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     context "when the update is not allowed" do
       before do
         allow(stub_update_checker)
-          .to receive(:requirements_unlocked_or_can_be?).and_return(false)
+          .to receive(:requirements_unlocked_or_can_be?)
+          .and_return(false)
         allow(stub_update_checker)
-          .to receive(:can_update?).with(requirements_to_unlock: :none).and_return(false)
+          .to receive(:can_update?)
+          .with(requirements_to_unlock: :none)
+          .and_return(false)
       end
 
       it "records that the update is not possible" do
         expect(create_security_update_pull_request)
-          .to receive(:record_security_update_not_possible_error).with(stub_update_checker)
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          .to receive(:record_security_update_not_possible_error)
+          .with(stub_update_checker)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, dependency)
       end
     end
 
     context "when a transitive dependency conflict occurs" do
       before do
         allow(create_security_update_pull_request)
-          .to receive(:update_checker_for).and_return(transitive_stub_update_checker)
+          .to receive(:update_checker_for)
+          .and_return(transitive_stub_update_checker)
         allow(dependency_with_transitive_dependency)
           .to receive(:all_versions).and_return(["5.51.2", "2.0.1", "2.3.0"])
         allow(job)
@@ -411,12 +425,14 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
       it "records the conflict and returns from the function" do
         transitive_stub_update_checker = instance_double(Dependabot::UpdateCheckers::Base)
-        allow(transitive_stub_update_checker).to receive(:conflicting_dependencies).and_return([{
-          "explanation" => "dummy-pkg-b@0.2.0 requires dummy-pkg-a@~2.0.1",
-          "name" => "dummy-pkg-b",
-          "version" => "0.2.0",
-          "requirement" => "~2.0.1"
-        }])
+        allow(transitive_stub_update_checker)
+          .to receive(:conflicting_dependencies)
+          .and_return([{
+            "explanation" => "dummy-pkg-b@0.2.0 requires dummy-pkg-a@~2.0.1",
+            "name" => "dummy-pkg-b",
+            "version" => "0.2.0",
+            "requirement" => "~2.0.1"
+          }])
 
         allow(create_security_update_pull_request)
           .to receive(:check_and_create_pull_request).and_call_original
@@ -426,7 +442,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         expect(create_security_update_pull_request)
           .to receive(:record_security_update_not_possible_error)
 
-        create_security_update_pull_request.send(:check_and_create_pull_request, dependency_with_transitive_dependency)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, dependency_with_transitive_dependency)
       end
 
       it "does not create a pull request if there is a conflict" do
@@ -438,7 +455,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
             "requirement" => "~2.0.1"
           }])
         expect(mock_service).not_to receive(:create_pull_request)
-        create_security_update_pull_request.send(:check_and_create_pull_request, transitive_dependency)
+        create_security_update_pull_request
+          .send(:check_and_create_pull_request, transitive_dependency)
       end
     end
 
@@ -452,7 +470,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         expect(Dependabot.logger)
           .to receive(:info).with("All updates for dummy-pkg-a were ignored")
         expect do
-          create_security_update_pull_request.send(:check_and_create_pull_request, dependency)
+          create_security_update_pull_request
+            .send(:check_and_create_pull_request, dependency)
         end.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end

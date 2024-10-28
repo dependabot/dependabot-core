@@ -12,6 +12,7 @@ module Dependabot
     module Operations
       class UpdateAllVersions
         extend T::Sig
+        include PullRequestHelpers
 
         sig { params(_job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(_job:)
@@ -167,12 +168,17 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
+            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
             notices: @notices
           )
 
           if dependency_change.updated_dependency_files.empty?
             raise "UpdateChecker found viable dependencies to be updated, but FileUpdater failed to update any files"
           end
+
+          # Send warning alerts to the API if any warning notices are present.
+          # Note that only notices with notice.show_alert set to true will be sent.
+          record_warning_notices(notices) if notices.any?
 
           create_pull_request(dependency_change)
         end

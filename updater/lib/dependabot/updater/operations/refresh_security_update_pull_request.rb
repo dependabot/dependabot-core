@@ -19,6 +19,7 @@ module Dependabot
       class RefreshSecurityUpdatePullRequest
         extend T::Sig
         include SecurityUpdateHelpers
+        include PullRequestHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -128,7 +129,28 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          lead_dep_name = job_dependencies.first&.downcase
+          # Dependabot::Experiments.register(:lead_security_dependency, true)
+
+          if Dependabot::Experiments.enabled?(:lead_security_dependency)
+            lead_dep_name = security_advisory_dependency
+
+            # telemetry data collection
+            Dependabot.logger.info(
+              "Security advisory dependency: #{lead_dep_name}\n" \
+              "First dependency in list: #{job_dependencies.first&.downcase}"
+            )
+
+            if lead_dep_name != job_dependencies.first&.downcase
+              Dependabot.logger.info(
+                "Difference found between security-advisory (#{lead_dep_name}) and " \
+                "first-dependency (#{job_dependencies.first&.downcase})"
+              )
+            end
+
+          else
+            lead_dep_name = job_dependencies.first&.downcase
+          end
+
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
@@ -158,14 +180,21 @@ module Dependabot
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
             change_source: checker.dependency,
+            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
             notices: @notices
           )
+
+          # Send warning alerts to the API if any warning notices are present.
+          # Note that only notices with notice.show_alert set to true will be sent.
+          record_warning_notices(notices) if notices.any?
 
           # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job_dependencies.map(&:downcase)
-          if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
+          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
+
+          if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
@@ -278,6 +307,11 @@ module Dependabot
                                  "#{job_dependencies.join(', ')} - #{reason_string}")
 
           service.close_pull_request(job_dependencies, reason)
+        end
+
+        sig { returns(String) }
+        def security_advisory_dependency
+          T.cast(job.security_advisories.first, T::Hash[String, String])["dependency-name"].to_s
         end
       end
     end

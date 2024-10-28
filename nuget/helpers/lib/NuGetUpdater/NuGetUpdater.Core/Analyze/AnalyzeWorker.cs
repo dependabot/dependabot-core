@@ -16,7 +16,7 @@ public partial class AnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 
-    private readonly Logger _logger;
+    private readonly ILogger _logger;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -24,15 +24,48 @@ public partial class AnalyzeWorker
         Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
     };
 
-    public AnalyzeWorker(Logger logger)
+    public AnalyzeWorker(ILogger logger)
     {
         _logger = logger;
     }
 
     public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
     {
+        var analysisResult = await RunWithErrorHandlingAsync(repoRoot, discoveryPath, dependencyPath);
+        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
+    }
+
+    internal async Task<AnalysisResult> RunWithErrorHandlingAsync(string repoRoot, string discoveryPath, string dependencyPath)
+    {
+        AnalysisResult analysisResult;
         var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
         var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+
+        try
+        {
+            analysisResult = await RunAsync(repoRoot, discovery, dependencyInfo);
+        }
+        catch (HttpRequestException ex)
+        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            var localPath = PathHelper.JoinPath(repoRoot, discovery.Path);
+            var nugetContext = new NuGetContext(localPath);
+            analysisResult = new AnalysisResult
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = "(" + string.Join("|", nugetContext.PackageSources.Select(s => s.Source)) + ")",
+                UpdatedVersion = string.Empty,
+                CanUpdate = false,
+                UpdatedDependencies = [],
+            };
+        }
+
+        return analysisResult;
+    }
+
+    public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
+    {
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
         _logger.Log($"Starting analysis of {dependencyInfo.Name}...");
@@ -61,104 +94,87 @@ public partial class AnalyzeWorker
         bool isProjectUpdateNecessary = IsUpdateNecessary(dependencyInfo, projectsWithDependency);
         var isUpdateNecessary = isProjectUpdateNecessary || dotnetToolsHasDependency || globalJsonHasDependency;
         using var nugetContext = new NuGetContext(startingDirectory);
-        AnalysisResult result;
-        try
+        AnalysisResult analysisResult;
+        if (isUpdateNecessary)
         {
-            if (isUpdateNecessary)
+            _logger.Log($"  Determining multi-dependency property.");
+            var multiDependencies = DetermineMultiDependencyDetails(
+                discovery,
+                dependencyInfo.Name,
+                propertyBasedDependencies);
+
+            usesMultiDependencyProperty = multiDependencies.Any(md => md.DependencyNames.Count > 1);
+            var dependenciesToUpdate = usesMultiDependencyProperty
+                ? multiDependencies
+                    .SelectMany(md => md.DependencyNames)
+                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+                : [dependencyInfo.Name];
+            var applicableTargetFrameworks = usesMultiDependencyProperty
+                ? multiDependencies
+                    .SelectMany(md => md.TargetFrameworks)
+                    .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+                    .Select(NuGetFramework.Parse)
+                    .ToImmutableArray()
+                : projectFrameworks;
+
+            _logger.Log($"  Finding updated version.");
+            updatedVersion = await FindUpdatedVersionAsync(
+                startingDirectory,
+                dependencyInfo,
+                dependenciesToUpdate,
+                applicableTargetFrameworks,
+                nugetContext,
+                _logger,
+                CancellationToken.None);
+
+            _logger.Log($"  Finding updated peer dependencies.");
+            if (updatedVersion is null)
             {
-                _logger.Log($"  Determining multi-dependency property.");
-                var multiDependencies = DetermineMultiDependencyDetails(
+                updatedDependencies = [];
+            }
+            else if (isProjectUpdateNecessary)
+            {
+                updatedDependencies = await FindUpdatedDependenciesAsync(
+                    repoRoot,
                     discovery,
-                    dependencyInfo.Name,
-                    propertyBasedDependencies);
-
-                usesMultiDependencyProperty = multiDependencies.Any(md => md.DependencyNames.Count > 1);
-                var dependenciesToUpdate = usesMultiDependencyProperty
-                    ? multiDependencies
-                        .SelectMany(md => md.DependencyNames)
-                        .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
-                    : [dependencyInfo.Name];
-                var applicableTargetFrameworks = usesMultiDependencyProperty
-                    ? multiDependencies
-                        .SelectMany(md => md.TargetFrameworks)
-                        .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
-                        .Select(NuGetFramework.Parse)
-                        .ToImmutableArray()
-                    : projectFrameworks;
-
-                _logger.Log($"  Finding updated version.");
-                updatedVersion = await FindUpdatedVersionAsync(
-                    startingDirectory,
-                    dependencyInfo,
                     dependenciesToUpdate,
-                    applicableTargetFrameworks,
+                    updatedVersion,
                     nugetContext,
                     _logger,
                     CancellationToken.None);
-
-                _logger.Log($"  Finding updated peer dependencies.");
-                if (updatedVersion is null)
-                {
-                    updatedDependencies = [];
-                }
-                else if (isProjectUpdateNecessary)
-                {
-                    updatedDependencies = await FindUpdatedDependenciesAsync(
-                        repoRoot,
-                        discovery,
-                        dependenciesToUpdate,
-                        updatedVersion,
-                        nugetContext,
-                        _logger,
-                        CancellationToken.None);
-                }
-                else if (dotnetToolsHasDependency)
-                {
-                    var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
-                    updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.DotNetTool, IsDirect: true, InfoUrl: infoUrl)];
-                }
-                else if (globalJsonHasDependency)
-                {
-                    var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
-                    updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.MSBuildSdk, IsDirect: true, InfoUrl: infoUrl)];
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unreachable.");
-                }
-
-                //TODO: At this point we should add the peer dependencies to a queue where
-                // we will analyze them one by one to see if they themselves are part of a
-                // multi-dependency property. Basically looping this if-body until we have
-                // emptied the queue and have a complete list of updated dependencies. We
-                // should track the dependenciesToUpdate as they have already been analyzed.
+            }
+            else if (dotnetToolsHasDependency)
+            {
+                var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
+                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.DotNetTool, IsDirect: true, InfoUrl: infoUrl)];
+            }
+            else if (globalJsonHasDependency)
+            {
+                var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependencyInfo.Name, updatedVersion.ToNormalizedString(), CancellationToken.None);
+                updatedDependencies = [new Dependency(dependencyInfo.Name, updatedVersion.ToNormalizedString(), DependencyType.MSBuildSdk, IsDirect: true, InfoUrl: infoUrl)];
+            }
+            else
+            {
+                throw new InvalidOperationException("Unreachable.");
             }
 
-            result = new AnalysisResult
-            {
-                UpdatedVersion = updatedVersion?.ToNormalizedString() ?? dependencyInfo.Version,
-                CanUpdate = updatedVersion is not null,
-                VersionComesFromMultiDependencyProperty = usesMultiDependencyProperty,
-                UpdatedDependencies = updatedDependencies,
-            };
-        }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
-        {
-            // TODO: consolidate this error handling between AnalyzeWorker, DiscoveryWorker, and UpdateWorker
-            result = new AnalysisResult
-            {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", nugetContext.PackageSources.Select(s => s.Source)) + ")",
-                UpdatedVersion = string.Empty,
-                CanUpdate = false,
-                UpdatedDependencies = [],
-            };
+            //TODO: At this point we should add the peer dependencies to a queue where
+            // we will analyze them one by one to see if they themselves are part of a
+            // multi-dependency property. Basically looping this if-body until we have
+            // emptied the queue and have a complete list of updated dependencies. We
+            // should track the dependenciesToUpdate as they have already been analyzed.
         }
 
-        await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, result, _logger);
+        analysisResult = new AnalysisResult
+        {
+            UpdatedVersion = updatedVersion?.ToNormalizedString() ?? dependencyInfo.Version,
+            CanUpdate = updatedVersion is not null,
+            VersionComesFromMultiDependencyProperty = usesMultiDependencyProperty,
+            UpdatedDependencies = updatedDependencies,
+        };
 
         _logger.Log($"Analysis complete.");
+        return analysisResult;
     }
 
     private static bool IsUpdateNecessary(DependencyInfo dependencyInfo, ImmutableArray<ProjectDiscoveryResult> projectsWithDependency)
@@ -197,7 +213,7 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
@@ -223,7 +239,7 @@ public partial class AnalyzeWorker
         NuGetVersion version,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
@@ -251,7 +267,7 @@ public partial class AnalyzeWorker
         ImmutableArray<NuGetFramework> projectFrameworks,
         bool findLowestVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versions = versionResult.GetVersions();
@@ -283,7 +299,7 @@ public partial class AnalyzeWorker
         IEnumerable<NuGetVersion> orderedVersions,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         if (NuGetVersion.TryParse(versionString, out var currentVersion))
@@ -334,7 +350,7 @@ public partial class AnalyzeWorker
         NuGetVersion currentVersion,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         foreach (var packageId in packageIds)
@@ -360,7 +376,7 @@ public partial class AnalyzeWorker
         ImmutableHashSet<string> packageIds,
         NuGetVersion updatedVersion,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         // We need to find all projects which have the given dependency. Even in cases that they
@@ -393,7 +409,7 @@ public partial class AnalyzeWorker
 
         // Create distinct list of dependencies taking the highest version of each
         var dependencyResult = await DependencyFinder.GetDependenciesAsync(
-            workspacePath,
+            repoRoot,
             projectPath,
             projectFrameworks,
             packageIds,
@@ -443,7 +459,7 @@ public partial class AnalyzeWorker
             }).ToImmutableArray();
     }
 
-    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, Logger logger)
+    internal static async Task WriteResultsAsync(string analysisDirectory, string dependencyName, AnalysisResult result, ILogger logger)
     {
         if (!Directory.Exists(analysisDirectory))
         {

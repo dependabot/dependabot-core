@@ -58,13 +58,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     files.find { |f| f.name == "package-lock.json" }
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "npm 6 specific" do
     # NOTE: This is no longer failing in npm 8
     context "with a corrupted npm lockfile (version missing)" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/version_missing") }
 
       it "raises a helpful error" do
@@ -80,6 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     # NOTE: This spec takes forever to run using npm 8
     context "when a git src dependency doesn't have a valid package.json" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/git_missing_version") }
 
       let(:dependency_name) { "raven-js" }
@@ -121,6 +134,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when dealing with git sub-dependency with invalid from that is updating from an npm5 lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm5/git_sub_dep_invalid") }
 
       it "cleans up from field and successfully updates" do
@@ -133,6 +147,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     # NOTE: This no longer raises in npm 8
     context "when there is a private git dep we don't have access to" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/github_dependency_private") }
 
       let(:dependency_name) { "strict-uri-encode" }
@@ -153,6 +168,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when there is a dep hosted in github registry and no auth token is provided" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm/simple_with_github_with_no_auth_token") }
 
       let(:dependency_name) { "@Codertocat/hello-world-npm" }
@@ -172,6 +188,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when there is a dep hosted in github registry and invalid auth token is provided" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm/simple_with_github_with_invalid_auth_token") }
 
       let(:dependency_name) { "@Codertocat/hello-world-npm" }
@@ -366,6 +383,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
+      let(:npm_fallback_version_above_v6_enabled) { false } if npm_version == "npm6"
       let(:files) { project_dependency_files("#{npm_version}/simple") }
 
       it "has details of the updated item" do
@@ -453,6 +471,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     describe "#{npm_version} errors" do
+      let(:npm_fallback_version_above_v6_enabled) { false } if npm_version == "npm6"
       context "with a sub dependency name that can't be found" do
         let(:files) { project_dependency_files("#{npm_version}/github_sub_dependency_name_missing") }
 
@@ -688,6 +707,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   context "when updating a git source dependency that is not pinned to a hash" do
     subject(:parsed_lock_file) { JSON.parse(updated_npm_lock_content) }
 
+    let(:npm_fallback_version_above_v6_enabled) { false }
     let(:files) { project_dependency_files("npm6/ghpr_no_hash_pinning") }
     let(:dependency_name) { "npm6-dependency" }
     let(:version) { "HEAD" }
@@ -938,6 +958,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with a response with EUNSUPPORTEDPROTOCOL error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code EUNSUPPORTEDPROTOCOL
+        npm ERR! Unsupported URL Type \"link:\": link:dayjs/plugin/relativeTime"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with 500 Internal Server error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code E500
+        npm ERR! 500 Internal Server Error - GET https://registry.npmjs.org/get-intrinsic"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with Unable to resolve reference error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Unable to resolve reference $eslint"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a registry with access that results in ESOCKETTIMEDOUT error" do
       let(:response) { "https://npm.pkg.github.com/@group%2ffe-release: ESOCKETTIMEDOUT" }
 
@@ -972,6 +1027,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           expect(error.message)
             .to include(
               "Object for dependency \"anymatch\" is empty"
+            )
+        end
+      end
+    end
+
+    context "with a npm error response that returns a git checkout error" do
+      let(:response) do
+        "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75
+      fatal: reference is not a tree: 8cb9036b503920679c95528fa584d3e973b64f75"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75"
+            )
+        end
+      end
+    end
+
+    context "with a npm error response that invalid version error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Invalid Version: ^8.0.1
+
+        npm ERR! A complete log of this run can be found in: " \
+        "/home/dependabot/.npm/_logs/2024-09-12T06_08_54_947Z-debug-0.log"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Found invalid version \"^8.0.1\" while updating"
             )
         end
       end
@@ -1036,8 +1126,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
     let(:previous_requirements) { requirements }
 
-    it "raises a helpful error" do
-      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    context "when npm version is 6" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when npm version is 8" do
+      let(:npm_fallback_version_above_v6_enabled) { true }
+
+      it "do not raises an error" do
+        expect(updated_npm_lock_content).not_to be_nil
+      end
     end
   end
 

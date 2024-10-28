@@ -128,8 +128,7 @@ public partial class EntryPointTests
                     "--new-version",
                     "13.0.1",
                     "--previous-version",
-                    "7.0.1",
-                    "--verbose"
+                    "7.0.1"
                 ],
                 packages:
                 [
@@ -207,8 +206,7 @@ public partial class EntryPointTests
                     "--new-version",
                     "6.6.1",
                     "--previous-version",
-                    "6.1.0",
-                    "--verbose"
+                    "6.1.0"
                 ],
                 packages:
                 [
@@ -352,8 +350,7 @@ public partial class EntryPointTests
                 </Project>
                 """);
             var executableName = Path.Join(Path.GetDirectoryName(GetType().Assembly.Location), "NuGetUpdater.Cli.dll");
-            var executableArgs = string.Join(" ",
-            [
+            IEnumerable<string> executableArgs = [
                 executableName,
                 "update",
                 "--repo-root",
@@ -365,9 +362,8 @@ public partial class EntryPointTests
                 "--new-version",
                 "13.0.1",
                 "--previous-version",
-                "7.0.1",
-                "--verbose"
-            ]);
+                "7.0.1"
+            ];
 
             // verify base run
             var workingDirectory = tempDir.DirectoryPath;

@@ -731,7 +731,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }
-          .to raise_error(described_class::RegistryError)
+          .to raise_error(Dependabot::RegistryError)
       end
     end
 
@@ -777,7 +777,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }
           .to raise_error do |err|
-            expect(err.class).to eq(described_class::RegistryError)
+            expect(err.class).to eq(Dependabot::RegistryError)
             expect(err.status).to eq(404)
           end
       end
@@ -844,7 +844,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
           it "raises an error" do
             expect { version_finder.latest_version_from_registry }
-              .to raise_error(described_class::RegistryError)
+              .to raise_error(Dependabot::RegistryError)
           end
         end
       end
@@ -909,7 +909,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }
           .to raise_error do |err|
-            expect(err.class).to eq(described_class::RegistryError)
+            expect(err.class).to eq(Dependabot::RegistryError)
             expect(err.status).to eq(404)
           end
       end
@@ -929,6 +929,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       before do
         stub_request(:get, registry_listing_url)
           .to_return(status: 500, body: '{"error":"Not found"}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+          end
+      end
+    end
+
+    context "when the npm registry uri is invalid and lookup returns a bad URI error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 500, body: '{"error":"bad URI(is not URI?): "https://registry.npmjs.org/\"/webpack""}')
 
         allow(version_finder).to receive(:sleep).and_return(true)
       end

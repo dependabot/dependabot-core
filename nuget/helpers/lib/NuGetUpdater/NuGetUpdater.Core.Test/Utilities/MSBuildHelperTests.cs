@@ -442,9 +442,9 @@ public class MSBuildHelperTests : TestBase
     }
 
     [Fact]
-    public async Task DependencyConflictsCanBeResolved()
+    public async Task DependencyConflictsCanBeResolvedWithBruteForce()
     {
-        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolved)}_");
+        var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedWithBruteForce)}_");
         MockNuGetPackage[] testPackages =
         [
             // some base packages
@@ -483,7 +483,7 @@ public class MSBuildHelperTests : TestBase
             {
                 new Dependency("Some.Other.Package", "1.2.0", DependencyType.PackageReference),
             };
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(repoRoot.FullName, projectPath, "net8.0", dependencies, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Some.Package", resolvedDependencies[0].Name);
@@ -496,6 +496,44 @@ public class MSBuildHelperTests : TestBase
             repoRoot.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void UpdateWithWorkloadsTargetFrameworks()
+    {
+        // Arrange
+        var projectContents = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="$(PackageVersion1)" />
+                </ItemGroup>
+            </Project>
+            """;
+        var propertyInfo = new Dictionary<string, Property>
+        {
+            { "PackageVersion1", new("PackageVersion1", "1.1.1", "Packages.props") },
+        };
+
+        // Act
+        var (resultType, _, evaluatedValue, _, _) = MSBuildHelper.GetEvaluatedValue(projectContents, propertyInfo);
+
+        Assert.Equal(EvaluationResultType.Success, resultType);
+
+        // Assert
+        Assert.Equal("""
+            <Project>
+                <PropertyGroup>
+                    <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;</TargetFrameworks>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Some.Package" Version="1.1.1" />
+                </ItemGroup>
+            </Project>
+            """, evaluatedValue);
+    }
+
 
     #region
     // Updating root package
@@ -533,7 +571,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("CS-Script.Core", "2.0.0", DependencyType.PackageReference),
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("CS-Script.Core", resolvedDependencies[0].Name);
@@ -578,7 +616,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.1.1", DependencyType.Unknown)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Single(resolvedDependencies);
             Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
@@ -621,7 +659,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
@@ -671,7 +709,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -723,7 +761,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(4, resolvedDependencies.Length);
             Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -779,7 +817,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(5, resolvedDependencies.Length);
             Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -838,7 +876,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(4, resolvedDependencies.Length);
             Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
@@ -895,7 +933,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(4, resolvedDependencies.Length);
             Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -952,7 +990,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(5, resolvedDependencies.Length);
             Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -1007,7 +1045,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("AutoMapper.Collection", "10.0.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("AutoMapper.Extensions.Microsoft.DependencyInjection", resolvedDependencies[0].Name);
@@ -1054,7 +1092,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.Extensions.Caching.Memory", "8.0.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[0].Name);
@@ -1104,7 +1142,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(4, resolvedDependencies.Length);
             Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
@@ -1156,7 +1194,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
@@ -1208,7 +1246,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(4, resolvedDependencies.Length);
             Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -1260,7 +1298,7 @@ public class MSBuildHelperTests : TestBase
                 new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
             };
 
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsNew(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new Logger(true));
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(repoRoot.FullName, projectPath, "net8.0", dependencies, update, new TestLogger());
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(3, resolvedDependencies.Length);
             Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);

@@ -24,6 +24,7 @@ module Dependabot
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
+      include PullRequestHelpers
 
       abstract!
 
@@ -121,6 +122,10 @@ module Dependabot
           log_missing_previous_version(dependency_change)
           return nil
         end
+
+        # Send warning alerts to the API if any warning notices are present.
+        # Note that only notices with notice.show_alert set to true will be sent.
+        record_warning_notices(notices) if notices.any?
 
         dependency_change
       ensure

@@ -23,7 +23,8 @@ RSpec.describe Dependabot::Service do
       update_pull_request: nil,
       close_pull_request: nil,
       record_update_job_error: nil,
-      record_update_job_unknown_error: nil
+      record_update_job_unknown_error: nil,
+      record_update_job_warning: nil
     })
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
@@ -302,6 +303,28 @@ RSpec.describe Dependabot::Service do
 
     it "memoizes a shorthand summary of the error" do
       expect(service.errors).to eql([["epoch_error", nil]])
+    end
+  end
+
+  describe "#record_update_job_warning" do
+    let(:warn_type) { :deprecated_dependency }
+    let(:warn_title) { "Deprecated Dependency Used" }
+    let(:warn_description) { "The dependency xyz is deprecated and should be updated or removed." }
+
+    before do
+      service.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+    end
+
+    it "delegates to @client" do
+      expect(mock_client).to have_received(:record_update_job_warning).with(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
     end
   end
 

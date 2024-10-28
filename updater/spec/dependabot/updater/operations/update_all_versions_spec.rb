@@ -18,23 +18,6 @@ require "dependabot/notices_helpers"
 
 require "dependabot/bundler"
 
-# Stub PackageManagerBase
-class StubPackageManager < Dependabot::PackageManagerBase
-  def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [])
-    @name = name
-    @version = version
-    @deprecated_versions = deprecated_versions
-    @unsupported_versions = unsupported_versions
-    @supported_versions = supported_versions
-  end
-
-  attr_reader :name
-  attr_reader :version
-  attr_reader :deprecated_versions
-  attr_reader :unsupported_versions
-  attr_reader :supported_versions
-end
-
 RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   include DependencyFileHelpers
   include DummyPkgHelpers
@@ -53,8 +36,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   let(:mock_service) do
     instance_double(
       Dependabot::Service,
+      increment_metric: nil,
       create_pull_request: nil,
-      close_pull_request: nil
+      close_pull_request: nil,
+      record_update_job_warning: nil
     )
   end
 
@@ -79,7 +64,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
   end
 
   let(:package_manager) do
-    StubPackageManager.new(
+    DummyPkgHelpers::StubPackageManager.new(
       name: "bundler",
       version: package_manager_version,
       deprecated_versions: deprecated_versions,
@@ -152,16 +137,29 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     )
   end
 
-  before do
-    allow(Dependabot::Experiments).to receive(:enabled?).with(:add_deprecation_warn_to_pr_message).and_return(true)
+  let(:warning_deprecation_notice) do
+    Dependabot::Notice.new(
+      mode: "WARN",
+      type: "bundler_deprecated_warn",
+      package_manager_name: "bundler",
+      title: "Package manager deprecation notice",
+      description: "Dependabot will stop supporting `bundler v1`!\n" \
+                   "\n\nPlease upgrade to one of the following versions: `v2`, or `v3`.\n",
+      show_in_pr: true,
+      show_alert: true
+    )
+  end
 
+  before do
     allow(Dependabot::UpdateCheckers).to receive(
       :for_package_manager
     ).and_return(stub_update_checker_class)
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [])
+    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [
+      warning_deprecation_notice
+    ])
   end
 
   after do
@@ -213,6 +211,11 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
 
       it "creates a pull request" do
         expect(update_all_versions).to receive(:check_and_create_pull_request).with(dependency).and_call_original
+        expect(mock_service).to receive(:record_update_job_warning).with(
+          warn_type: warning_deprecation_notice.type,
+          warn_title: warning_deprecation_notice.title,
+          warn_description: warning_deprecation_notice.description
+        )
         expect(update_all_versions).to receive(:create_pull_request).with(stub_dependency_change)
         perform
       end

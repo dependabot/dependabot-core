@@ -20,6 +20,7 @@ tab_width = 4
 
 # New line preferences
 insert_final_newline = true
+end_of_line = lf
 
 #### .NET Coding Conventions ####
 [*.{cs,vb}]
