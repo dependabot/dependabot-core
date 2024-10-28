@@ -25,25 +25,12 @@ RSpec.describe Dependabot::Ecosystem do
     end.new(package_manager_raw_version, deprecated_versions, supported_versions)
   end
 
-  let(:language) do
-    Class.new(Dependabot::Ecosystem::VersionManager) do
-      def initialize(raw_version)
-        super(
-          "ruby", # name
-          raw_version,
-          Dependabot::Version.new(raw_version) # version
-        )
-      end
-    end.new(language_raw_version)
-  end
-
   describe "#initialize" do
     it "sets the correct attributes" do
-      ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
+      ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
 
       expect(ecosystem.name).to eq("bundler")
       expect(ecosystem.package_manager.name).to eq("bundler")
-      expect(ecosystem.language.name).to eq("ruby")
     end
   end
 

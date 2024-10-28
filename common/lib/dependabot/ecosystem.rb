@@ -13,8 +13,8 @@ module Dependabot
 
       abstract!
       # Initialize version information with optional requirement
-      # @param name [String] the name for the package manager or language (e.g., "bundler", "ruby").
-      # @param raw_version [String] the raw current version of the package manager or language.
+      # @param name [String] the name for the package manager (e.g., "bundler", "npm").
+      # @param raw_version [String] the raw current version of the package manager.
       # @param version [Dependabot::Version] the parsed current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
@@ -44,19 +44,19 @@ module Dependabot
         @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
       end
 
-      # The name of the package manager or language (e.g., "bundler", "ruby").
+      # The name of the package manager (e.g., "bundler", "npm").
       # @example
       #   name #=> "bundler"
       sig { returns(String) }
       attr_reader :name
 
-      # The current version of the package manager or language.
+      # The current version of the package manager.
       # @example
       #   version #=> Dependabot::Version.new("2.1.4")
       sig { returns(Dependabot::Version) }
       attr_reader :version
 
-      # The raw current version of the package manager or language as a string.
+      # The raw current version of the package manager as a string.
       # @example
       #   raw_version #=> "2.1.4"
       sig { returns(String) }
