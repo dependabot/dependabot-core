@@ -220,18 +220,39 @@ public class RunWorker
             var updatedDependencyFiles = new List<DependencyFile>();
             foreach (var project in discoveryResult.Projects)
             {
-                var path = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
-                var localPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
-                var updatedContent = await File.ReadAllTextAsync(localPath);
-                var originalContent = originalDependencyFileContents[path];
-                if (updatedContent != originalContent)
+                var projectPath = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
+                var localProjectPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
+                var updatedProjectContent = await File.ReadAllTextAsync(localProjectPath);
+                var originalProjectContent = originalDependencyFileContents[projectPath];
+                
+                if (updatedProjectContent != originalProjectContent)
                 {
                     updatedDependencyFiles.Add(new DependencyFile()
                     {
                         Name = project.FilePath,
-                        Content = updatedContent,
+                        Content = updatedProjectContent,
                         Directory = discoveryResult.Path,
                     });
+                }
+
+                var projectDirectory = Path.GetDirectoryName(project.FilePath);
+                var packagesConfigPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, projectDirectory, "packages.config");
+                var normalizedPackagesConfigPath = Path.Join(discoveryResult.Path, projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
+
+                if (File.Exists(packagesConfigPath))
+                {
+                    var updatedPackagesConfigContent = await File.ReadAllTextAsync(packagesConfigPath);
+                    var originalPackagesConfigContent = originalDependencyFileContents[normalizedPackagesConfigPath];
+
+                    if (updatedPackagesConfigContent != originalPackagesConfigContent)
+                    {
+                        updatedDependencyFiles.Add(new DependencyFile()
+                        {
+                            Name = Path.Join(projectDirectory!, "packages.config"),
+                            Content = updatedPackagesConfigContent,
+                            Directory = discoveryResult.Path,
+                        });
+                    }
                 }
             }
 
@@ -253,11 +274,6 @@ public class RunWorker
             {
                 // TODO: log or throw if nothing was updated, but was expected to be
             }
-        }
-        else
-        {
-            // TODO: throw if no updates performed
-        }
 
         var result = new RunResult()
         {
