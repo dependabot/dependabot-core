@@ -18,7 +18,6 @@ module Dependabot
       # @param version [Dependabot::Version] the parsed current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
-      # @param requirement [T.nilable(Requirement)] the version requirements, optional.
       # @example
       #   VersionManager.new("bundler", "2.1.4", Dependabot::Version.new("2.1.4"), nil)
       sig do
@@ -27,22 +26,19 @@ module Dependabot
           raw_version: String,
           version: Dependabot::Version,
           deprecated_versions: T::Array[Dependabot::Version],
-          supported_versions: T::Array[Dependabot::Version],
-          requirement: T.nilable(Requirement)
+          supported_versions: T::Array[Dependabot::Version]
         ).void
       end
-      def initialize( # rubocop:disable Metrics/ParameterLists
+      def initialize(
         name,
         raw_version,
         version,
         deprecated_versions = [],
-        supported_versions = [],
-        requirement = nil
+        supported_versions = []
       )
         @name = T.let(name, String)
         @raw_version = T.let(raw_version, String)
         @version = T.let(version, Dependabot::Version)
-        @requirement = T.let(requirement, T.nilable(Requirement))
 
         @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
         @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
@@ -65,12 +61,6 @@ module Dependabot
       #   raw_version #=> "2.1.4"
       sig { returns(String) }
       attr_reader :raw_version
-
-      # The version requirements (optional).
-      # @example
-      #   requirement #=> Requirement.new(">= 2.1")
-      sig { returns(T.nilable(Requirement)) }
-      attr_reader :requirement
 
       # Returns an array of deprecated versions of the package manager.
       # @example
@@ -130,80 +120,21 @@ module Dependabot
       end
     end
 
-    class Requirement
-      extend T::Sig
-
-      # Initialize version requirements with optional raw strings and parsed versions.
-      # @param raw_constraint [T.nilable(String)] the raw version constraint (e.g., ">= 2.0").
-      # @param min_raw_version [T.nilable(String)] the raw minimum version requirement (e.g., "2.0").
-      # @param min_version [T.nilable(Dependabot::Version)] the parsed minimum version.
-      # @param max_raw_version [T.nilable(String)] the raw maximum version requirement (e.g., "3.0").
-      # @param max_version [T.nilable(Dependabot::Version)] the parsed maximum version.
-      # @example
-      #   Requirement.new(">= 2.0", "2.0", Version.new("2.0"), "3.0", Version.new("3.0"))
-      sig do
-        params(
-          raw_constraint: T.nilable(String),
-          min_raw_version: T.nilable(String),
-          min_version: T.nilable(Dependabot::Version),
-          max_raw_version: T.nilable(String),
-          max_version: T.nilable(Dependabot::Version)
-        ).void
-      end
-      def initialize(
-        raw_constraint: nil,
-        min_raw_version: nil,
-        min_version: nil,
-        max_raw_version: nil,
-        max_version: nil
-      )
-        @raw_constraint = T.let(raw_constraint, T.nilable(String))
-        @min_raw_version = T.let(min_raw_version, T.nilable(String))
-        @min_version = T.let(min_version, T.nilable(Dependabot::Version))
-        @max_raw_version = T.let(max_raw_version, T.nilable(String))
-        @max_version = T.let(max_version, T.nilable(Dependabot::Version))
-      end
-
-      # The raw version constraint (e.g., ">= 2.0").
-      sig { returns(T.nilable(String)) }
-      attr_reader :raw_constraint
-
-      # The raw minimum version requirement (e.g., "2.0").
-      sig { returns(T.nilable(String)) }
-      attr_reader :min_raw_version
-
-      # The parsed minimum version.
-      sig { returns(T.nilable(Dependabot::Version)) }
-      attr_reader :min_version
-
-      # The raw maximum version requirement (e.g., "3.0").
-      sig { returns(T.nilable(String)) }
-      attr_reader :max_raw_version
-
-      # The parsed maximum version.
-      sig { returns(T.nilable(Dependabot::Version)) }
-      attr_reader :max_version
-    end
-
     # Initialize with mandatory name and optional language information.
     # @param name [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
     # @param package_manager [VersionManager] the package manager.
-    # @param language [T.nilable(VersionManager)] optional language version information.
     sig do
       params(
         name: String,
-        package_manager: VersionManager,
-        language: T.nilable(VersionManager)
+        package_manager: VersionManager
       ).void
     end
     def initialize(
       name:,
-      package_manager:,
-      language: nil
+      package_manager:
     )
       @name = T.let(name, String)
       @package_manager = T.let(package_manager, VersionManager)
-      @language = T.let(language, T.nilable(VersionManager))
     end
 
     # The name of the ecosystem (mandatory).
@@ -217,12 +148,6 @@ module Dependabot
     #  package_manager #=> VersionManager.new("bundler", "2.1.4", Version.new("2.1.4"), nil)
     sig { returns(VersionManager) }
     attr_reader :package_manager
-
-    # The version information of the language (optional).
-    # @example
-    # language #=> VersionManager.new("ruby", "3.0.0", Version.new("3.0.0"), nil)
-    sig { returns(T.nilable(VersionManager)) }
-    attr_reader :language
 
     # Checks if the current version is deprecated.
     # Returns true if the version is in the deprecated_versions array; false otherwise.

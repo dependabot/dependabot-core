@@ -37,13 +37,18 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: PackageManager.new(bundler_version)
+            package_manager: package_manager
           ),
           T.nilable(Ecosystem)
         )
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        PackageManager.new(bundler_version)
+      end
 
       def check_external_code(dependencies)
         return unless @reject_external_code

@@ -40,13 +40,18 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: PackageManager.new(composer_version)
+            package_manager: package_manager
           ),
           T.nilable(Ecosystem)
         )
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        PackageManager.new(composer_version)
+      end
 
       sig { returns(DependencySet) }
       def manifest_dependencies # rubocop:disable Metrics/PerceivedComplexity
