@@ -110,6 +110,12 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def create
+        if trace_log?
+          Dependabot.logger.info(
+            "Dependabot::PullRequestCreator::Github:create. var branch_name: #{branch_name}"
+          )
+        end
+
         if branch_exists?(branch_name) && unmerged_pull_request_exists?
           raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
         end
@@ -132,6 +138,13 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
+        if trace_log?
+          Dependabot.logger.info(
+            "Dependabot::PullRequestCreator::Github:branch_exists?. " \
+            "Name : #{name}. IsDuplicate: #{git_metadata_fetcher.ref_names.include?(name)}"
+          )
+        end
+
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
         raise T.must(e.cause) if e.cause&.message&.include?("is disabled")
@@ -310,7 +323,16 @@ module Dependabot
       sig { params(commit: T.untyped).returns(T.untyped) }
       def create_or_update_branch(commit)
         if branch_exists?(branch_name)
-          update_branch(commit)
+
+          if trace_log?
+            Dependabot.logger.info(
+              "Found an existing branch. Attempting to create a new branch."
+            )
+            create_incremental_branch(commit)
+          else
+            update_branch(commit)
+          end
+
         else
           create_branch(commit)
         end
@@ -346,6 +368,37 @@ module Dependabot
           # Branch creation will fail if a branch called `dependabot` already
           # exists, since git won't be able to create a dir with the same name
           ref = "refs/heads/#{T.must(SecureRandom.hex[0..3]) + branch_name}"
+          retry
+        end
+      end
+
+      sig { params(commit: T.untyped).returns(T.untyped) }
+      def create_incremental_branch(commit)
+        ref = "refs/heads/#{branch_name}"
+
+        i = 1
+        new_ref = "#{ref}-#{i}"
+        while git_metadata_fetcher.ref_names.any? { |w| w.end_with?(new_ref) }
+          i += 1
+          new_ref = "#{ref}-#{i}"
+        end
+
+        begin
+          branch =
+            T.unsafe(github_client_for_source).create_ref(source.repo, new_ref, commit.sha)
+          @branch_name = new_ref.gsub(%r{^refs/heads/}, "")
+          branch
+        rescue Octokit::UnprocessableEntity => e
+          raise if e.message.match?(/Reference already exists/i)
+
+          retrying_branch_creation ||= T.let(false, T::Boolean)
+          raise if retrying_branch_creation
+
+          retrying_branch_creation = true
+
+          # Branch creation will fail if a branch called `dependabot` already
+          # exists, since git won't be able to create a dir with the same name
+          new_ref = "refs/heads/#{T.must(SecureRandom.hex[0..3]) + branch_name}"
           retry
         end
       end
@@ -579,6 +632,12 @@ module Dependabot
         else
           raise type, message
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def trace_log?
+        Dependabot::Experiments.enabled?(:dedup_branch_names)
+        true
       end
     end
     # rubocop:enable Metrics/ClassLength

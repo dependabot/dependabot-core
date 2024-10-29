@@ -6,6 +6,7 @@ require "dependabot/metadata_finders"
 require "dependabot/credential"
 
 module Dependabot
+  # rubocop:disable Metrics/ClassLength
   class PullRequestCreator
     extend T::Sig
 
@@ -225,7 +226,7 @@ module Dependabot
 
       if trace_log?
         Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::initialize : #{existing_branches}"
+          "Dependabot::PullRequestCreator::initialize => var existing_branches : #{existing_branches}"
         )
       end
 
@@ -248,7 +249,7 @@ module Dependabot
     def create
       if trace_log?
         Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::create"
+          "Dependabot::PullRequestCreator::create => var source.provider : #{source.provider}"
         )
       end
 
@@ -283,7 +284,7 @@ module Dependabot
     def github_creator
       if trace_log?
         Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::create"
+          "Dependabot::PullRequestCreator::create::github_creator"
         )
       end
 
@@ -453,7 +454,7 @@ module Dependabot
 
       if trace_log?
         Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::branch_namer : #{existing_branches}"
+          "Dependabot::PullRequestCreator::labeler => var existing_branches : #{existing_branches}"
         )
       end
 
@@ -473,6 +474,8 @@ module Dependabot
     sig { returns(T::Boolean) }
     def trace_log?
       Dependabot::Experiments.enabled?(:dedup_branch_names)
+      true
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
