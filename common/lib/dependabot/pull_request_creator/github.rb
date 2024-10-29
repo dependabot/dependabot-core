@@ -637,7 +637,6 @@ module Dependabot
       sig { returns(T::Boolean) }
       def trace_log?
         Dependabot::Experiments.enabled?(:dedup_branch_names)
-        true
       end
     end
     # rubocop:enable Metrics/ClassLength

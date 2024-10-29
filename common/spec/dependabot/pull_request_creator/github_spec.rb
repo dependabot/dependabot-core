@@ -610,6 +610,94 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           end
         end
       end
+
+      context "when a branch already exists and we want to create a new branch instead for new PR" do
+        before do
+          url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
+                "&state=all"
+          stub_request(:get, url)
+            .to_return(status: 200, body: "[{\"number\": 1347}]", headers: json_header)
+
+          Dependabot::Experiments.register(:dedup_branch_names, true)
+        end
+
+        after do
+          Dependabot::Experiments.register(:dedup_branch_names, false)
+        end
+
+        it "raises a helpful error" do
+          expect { creator.create }
+            .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists, /1347/)
+          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
+        end
+
+        context "when the PR is merged" do
+          before do
+            url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
+                  "&state=all"
+            stub_request(:get, url).to_return(
+              status: 200,
+              body: "[{ \"merged\": true }]",
+              headers: json_header
+            )
+            stub_request(
+              :patch,
+              "#{repo_api_url}/git/refs/heads/#{branch_name}"
+            ).to_return(
+              status: 200,
+              body: fixture("github", "update_ref.json"),
+              headers: json_header
+            )
+          end
+
+          let(:base_commit) { "basecommitsha" }
+
+          it "creates a PR" do
+            creator.create
+
+            expect(WebMock)
+              .to have_requested(:post, "#{repo_api_url}/pulls")
+              .with(
+                body: {
+                  base: "master",
+                  head: "dependabot/bundler/business-1.5.0-1",
+                  title: "PR name",
+                  body: "PR msg"
+                }
+              )
+          end
+
+          context "when `require_up_to_date_base` is true" do
+            let(:require_up_to_date_base) { true }
+
+            it "raises a helpful error" do
+              expect { creator.create }
+                .to raise_error(Dependabot::PullRequestCreator::BaseCommitNotUpToDate)
+              expect(WebMock)
+                .not_to have_requested(:post, "#{repo_api_url}/pulls")
+            end
+
+            context "when the commit we're branching off of is up-to-date" do
+              let(:base_commit) { "7bb4e41ce5164074a0920d5b5770d196b4d90104" }
+
+              it "creates a PR" do
+                creator.create
+
+                expect(WebMock)
+                  .to have_requested(:post, "#{repo_api_url}/pulls")
+                  .with(
+                    body: {
+                      base: "master",
+                      head: "dependabot/bundler/business-1.5.0-1",
+                      title: "PR name",
+                      body: "PR msg"
+                    }
+                  )
+              end
+            end
+          end
+        end
+      end
     end
 
     context "when the PR doesn't have history in common with the base branch" do
