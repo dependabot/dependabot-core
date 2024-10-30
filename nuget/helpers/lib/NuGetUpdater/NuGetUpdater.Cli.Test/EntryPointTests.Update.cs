@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 
 using NuGetUpdater.Core;
@@ -18,6 +19,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -119,6 +122,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -197,6 +202,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--solution-or-project",
@@ -325,6 +332,7 @@ public partial class EntryPointTests
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
             ];
             await MockNuGetPackagesInDirectory(testPackages, tempDir.DirectoryPath);
+            await MockJobFileInDirectory(tempDir.DirectoryPath);
 
             var globalJsonPath = Path.Join(tempDir.DirectoryPath, "global.json");
             var srcGlobalJsonPath = Path.Join(tempDir.DirectoryPath, "src", "global.json");
@@ -353,6 +361,8 @@ public partial class EntryPointTests
             IEnumerable<string> executableArgs = [
                 executableName,
                 "update",
+                "--job-path",
+                Path.Combine(tempDir.DirectoryPath, "job.json"),
                 "--repo-root",
                 tempDir.DirectoryPath,
                 "--solution-or-project",
@@ -402,6 +412,7 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await MockJobFileInDirectory(path);
                     await MockNuGetPackagesInDirectory(packages, path);
 
                     var args = getArgs(path);

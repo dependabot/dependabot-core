@@ -56,11 +56,12 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceIncludeTheory(bool useDependencySolver)
+        public async Task UpdateVersionChildElement_InProjectFile_ForPackageReferenceIncludeTheory(bool useLegacyDependencySolver)
         {
             // update Some.Package from 9.0.1 to 13.0.1
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
             await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
@@ -98,10 +99,11 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task PeerDependenciesAreUpdatedEvenWhenNotExplicit(bool useDependencySolver)
+        public async Task PeerDependenciesAreUpdatedEvenWhenNotExplicit(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
             await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [(null, [("Transitive.Package", "[1.0.0]")])]),
@@ -160,7 +162,6 @@ public partial class UpdateWorkerTests
         public async Task CallingResolveDependencyConflictsNew()
         {
             // update Microsoft.CodeAnalysis.Common from 4.9.2 to 4.10.0
-            using var _ = new DependencySolverEnvironment();
             await TestUpdateForProject("Microsoft.CodeAnalysis.Common", "4.9.2", "4.10.0",
                 // initial
                 projectContents: $"""
@@ -515,7 +516,7 @@ public partial class UpdateWorkerTests
             //
             // do the update
             //
-            UpdaterWorker worker = new(new TestLogger());
+            UpdaterWorker worker = new(new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(tempDirectory.DirectoryPath, projectPath, "Some.Package", "1.0.0", "1.1.0", isTransitive: false);
 
             //
@@ -598,11 +599,12 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task AddPackageReference_InProjectFile_ForTransientDependency(bool useDependencySolver)
+        public async Task AddPackageReference_InProjectFile_ForTransientDependency(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
             // add transient package Some.Transient.Dependency from 5.0.1 to 5.0.2
             await TestUpdateForProject("Some.Transient.Dependency", "5.0.1", "5.0.2", isTransitive: true,
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "3.1.3", "net8.0", [(null, [("Some.Transient.Dependency", "5.0.1")])]),
@@ -2979,7 +2981,6 @@ public partial class UpdateWorkerTests
         public async Task UpdatingTransitiveDependencyWithNewSolverCanUpdateJustTheTopLevelPackage()
         {
             // we've been asked to explicitly update a transitive dependency, but we can solve it by updating the top-level package instead
-            using var _ = new DependencySolverEnvironment();
             await TestUpdateForProject("Transitive.Package", "1.0.0", "2.0.0",
                 isTransitive: true,
                 packages:
@@ -3017,13 +3018,14 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task NoChange_IfThereAreIncoherentVersions(bool useDependencySolver)
+        public async Task NoChange_IfThereAreIncoherentVersions(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
 
             // trying to update `Transitive.Dependency` to 1.1.0 would normally pull `Some.Package` from 1.0.0 to 1.1.0,
             // but the TFM doesn't allow it
             await TestNoChangeforProject("Transitive.Dependency", "1.0.0", "1.1.0",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net7.0", [(null, [("Transitive.Dependency", "[1.0.0]")])]),
@@ -3143,12 +3145,13 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(bool useDependencySolver)
+        public async Task UnresolvablePropertyDoesNotStopOtherUpdates(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
 
             // the property `$(SomeUnresolvableProperty)` cannot be resolved
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
@@ -3184,12 +3187,13 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ProjectWithWorkloadsShouldNotFail(bool useDependencySolver)
+        public async Task ProjectWithWorkloadsShouldNotFail(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
 
             // the property `$(SomeUnresolvableProperty)` cannot be resolved
             await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net8.0"),
@@ -3224,12 +3228,13 @@ public partial class UpdateWorkerTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage(bool useDependencySolver)
+        public async Task UpdatingPackageAlsoUpdatesAnythingWithADependencyOnTheUpdatedPackage(bool useLegacyDependencySolver)
         {
-            using var _ = new DependencySolverEnvironment(useDependencySolver);
+            var experimentsManager = new ExperimentsManager() { UseLegacyDependencySolver = useLegacyDependencySolver };
 
             // updating Some.Package from 3.3.30 requires that Some.Package.Extensions also be updated
             await TestUpdateForProject("Some.Package", "3.3.30", "3.4.3",
+                experimentsManager: experimentsManager,
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "3.3.30", "net8.0"),

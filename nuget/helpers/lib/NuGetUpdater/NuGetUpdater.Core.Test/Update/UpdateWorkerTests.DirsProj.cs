@@ -350,7 +350,8 @@ public partial class UpdateWorkerTests
             bool isTransitive = false,
             (string Path, string Content)[]? additionalFiles = null,
             (string Path, string Content)[]? additionalFilesExpected = null,
-            MockNuGetPackage[]? packages = null)
+            MockNuGetPackage[]? packages = null,
+            ExperimentsManager? experimentsManager = null)
         {
             additionalFiles ??= [];
             additionalFilesExpected ??= [];
@@ -363,8 +364,9 @@ public partial class UpdateWorkerTests
             {
                 await MockNuGetPackagesInDirectory(packages, temporaryDirectory);
 
+                experimentsManager ??= new ExperimentsManager();
                 var projectPath = Path.Combine(temporaryDirectory, projectFileName);
-                var worker = new UpdaterWorker(new TestLogger());
+                var worker = new UpdaterWorker(experimentsManager, new TestLogger());
                 await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
             });
 

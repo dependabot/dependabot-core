@@ -173,7 +173,29 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   describe "#updated_dependency_files" do
+    # the minimum job object required by the updater
+    let(:job) do
+      {
+        job: {
+          "allowed-updates": [
+            { "update-type": "all" }
+          ],
+          "package-manager": "nuget",
+          source: {
+            provider: "github",
+            repo: "gocardless/bump",
+            directory: "/",
+            branch: "main"
+          }
+        }
+      }
+    end
+
     before do
+      file = Tempfile.new
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -209,6 +231,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           DotNetToolsJson: nil
         }
       )
+    end
+
+    after do
+      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(job_path)
     end
 
     context "with a dirs.proj" do
@@ -254,7 +281,29 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_version) { "1.1.1" }
     let(:dependency_previous_version) { "1.0.0" }
 
+    # the minimum job object required by the updater
+    let(:job) do
+      {
+        job: {
+          "allowed-updates": [
+            { "update-type": "all" }
+          ],
+          "package-manager": "nuget",
+          source: {
+            provider: "github",
+            repo: "gocardless/bump",
+            directory: "/",
+            branch: "main"
+          }
+        }
+      }
+    end
+
     before do
+      file = Tempfile.new
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -313,6 +362,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           DotNetToolsJson: nil
         }
       )
+    end
+
+    after do
+      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(job_path)
     end
 
     it "updates the wildcard project" do
