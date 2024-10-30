@@ -324,15 +324,18 @@ module Dependabot
       def create_or_update_branch(commit)
         if branch_exists?(branch_name)
 
-          if trace_log?
+          # To fix issue related with using an exploit branch to push unwanted changes, if we find an existing branch
+          # with same name (without PR) as current resulting new pull request branch name, we avoid pushing changes to
+          # such branch, instead we create an incremental number branch name and use the same to create new PR
+
+          if trace_log? && pull_requests_for_branch.none?
             Dependabot.logger.info(
-              "Found an existing branch. Attempting to create a new branch."
+              "Found an existing branch without PR request. Attempting to create a new branch"
             )
             create_incremental_branch(commit)
           else
             update_branch(commit)
           end
-
         else
           create_branch(commit)
         end
@@ -387,6 +390,13 @@ module Dependabot
           branch =
             T.unsafe(github_client_for_source).create_ref(source.repo, new_ref, commit.sha)
           @branch_name = new_ref.gsub(%r{^refs/heads/}, "")
+
+          if trace_log?
+            Dependabot.logger.info(
+              "create_incremental_branch::Creating a new branch #{@branch_name}."
+            )
+          end
+
           branch
         rescue Octokit::UnprocessableEntity => e
           raise if e.message.match?(/Reference already exists/i)
