@@ -171,6 +171,11 @@ module Dependabot
         pull_requests_for_branch.reject(&:merged)
       end
 
+      sig { returns(T::Boolean) }
+      def any_pull_request_exists?
+        pull_requests_for_branch.any?
+      end
+
       sig { returns(T::Array[T.untyped]) }
       def pull_requests_for_branch
         @pull_requests_for_branch ||=
@@ -328,7 +333,7 @@ module Dependabot
           # with same name (without PR) as current resulting new pull request branch name, we avoid pushing changes to
           # such branch, instead we create an incremental number branch name and use the same to create new PR
 
-          if trace_log? && pull_requests_for_branch.none?
+          if trace_log? && !unmerged_pull_request_exists?
             Dependabot.logger.info(
               "Found an existing branch without PR request. Attempting to create a new branch"
             )
