@@ -127,7 +127,7 @@ module Dependabot
 
       sig { params(memo: T.nilable(String)).returns(String) }
       def commit(memo = nil)
-        run_shell_command("git add #{path}")
+        run_shell_command(%(git add "#{path}"), allow_unsafe_shell_command: true)
 
         msg = memo || "workspace change"
         run_shell_command(
