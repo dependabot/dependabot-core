@@ -190,9 +190,15 @@ public class RunWorker
                     // TODO: log analysisResult
                     if (analysisResult.CanUpdate)
                     {
+                        var dependencyLocation = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
+                        if (dependency.Type == DependencyType.PackagesConfig)
+                        {
+                            dependencyLocation = GetPackagesConfigFromCsprojLocation(dependencyLocation);
+                        }
+
                         // TODO: this is inefficient, but not likely causing a bottleneck
                         var previousDependency = discoveredUpdatedDependencies.Dependencies
-                            .Single(d => d.Name == dependency.Name);
+                            .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == dependencyLocation);
                         var updatedDependency = new ReportedDependency()
                         {
                             Name = dependency.Name,
@@ -201,7 +207,7 @@ public class RunWorker
                             [
                                 new ReportedRequirement()
                                 {
-                                    File = dependency.Type == DependencyType.PackagesConfig ? GetPackagesConfigFromCsprojLocation(Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/")) : Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"),
+                                    File = dependencyLocation,
                                     Requirement = analysisResult.UpdatedVersion,
                                     Groups = previousDependency.Requirements.Single().Groups,
                                     Source = new RequirementSource()
