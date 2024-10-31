@@ -76,31 +76,19 @@ public class RunWorker
         catch (HttpRequestException ex)
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            error = new PrivateSourceAuthenticationFailure()
-            {
-                Details = $"({string.Join("|", lastUsedPackageSourceUrls)})",
-            };
+            error = new PrivateSourceAuthenticationFailure(lastUsedPackageSourceUrls);
         }
         catch (MissingFileException ex)
         {
-            error = new DependencyFileNotFound()
-            {
-                Details = ex.FilePath,
-            };
+            error = new DependencyFileNotFound(ex.FilePath);
         }
         catch (UpdateNotPossibleException ex)
         {
-            error = new UpdateNotPossible()
-            {
-                Details = ex.Dependencies,
-            };
+            error = new UpdateNotPossible(ex.Dependencies);
         }
         catch (Exception ex)
         {
-            error = new UnknownError()
-            {
-                Details = ex.ToString(),
-            };
+            error = new UnknownError(ex.ToString());
         }
 
         if (error is not null)
@@ -108,7 +96,7 @@ public class RunWorker
             await _apiHandler.RecordUpdateJobError(error);
         }
 
-        await _apiHandler.MarkAsProcessed(new() { BaseCommitSha = baseCommitSha });
+        await _apiHandler.MarkAsProcessed(new(baseCommitSha));
 
         return runResult;
     }

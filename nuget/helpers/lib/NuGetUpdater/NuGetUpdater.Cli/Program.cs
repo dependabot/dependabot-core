@@ -13,6 +13,7 @@ internal sealed class Program
 
         var command = new RootCommand
         {
+            CloneCommand.GetCommand(setExitCode),
             FrameworkCheckCommand.GetCommand(setExitCode),
             DiscoverCommand.GetCommand(setExitCode),
             AnalyzeCommand.GetCommand(setExitCode),

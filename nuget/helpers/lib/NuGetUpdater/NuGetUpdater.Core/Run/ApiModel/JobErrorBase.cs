@@ -4,8 +4,15 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public abstract record JobErrorBase
 {
+    public JobErrorBase(string type)
+    {
+        Type = type;
+    }
+
     [JsonPropertyName("error-type")]
-    public abstract string Type { get; }
+    public string Type { get; }
+
     [JsonPropertyName("error-details")]
-    public required object Details { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Details { get; init; } = null;
 }
