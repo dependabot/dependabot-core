@@ -41,7 +41,6 @@ public partial class EntryPointTests
                 ],
                 job: new Job()
                 {
-                    PackageManager = "nuget",
                     AllowedUpdates = [
                         new()
                         {

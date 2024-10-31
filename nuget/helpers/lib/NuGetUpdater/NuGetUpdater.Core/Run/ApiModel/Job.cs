@@ -2,7 +2,7 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public sealed record Job
 {
-    public required string PackageManager { get; init; }
+    public string PackageManager { get; init; } = "nuget";
     public AllowedUpdate[]? AllowedUpdates { get; init; } = null;
     public bool Debug { get; init; } = false;
     public object[]? DependencyGroups { get; init; } = null;

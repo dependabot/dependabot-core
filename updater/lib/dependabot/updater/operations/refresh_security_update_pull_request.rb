@@ -132,7 +132,7 @@ module Dependabot
           # Dependabot::Experiments.register(:lead_security_dependency, true)
 
           if Dependabot::Experiments.enabled?(:lead_security_dependency)
-            lead_dep_name = security_advisory_dependency
+            lead_dep_name = security_advisory_dependency.downcase
 
             # telemetry data collection
             Dependabot.logger.info(
