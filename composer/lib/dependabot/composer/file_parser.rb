@@ -35,12 +35,23 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(PackageManagerBase) }
-      def package_manager
-        PackageManager.new(composer_version)
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        PackageManager.new(composer_version)
+      end
 
       sig { returns(DependencySet) }
       def manifest_dependencies # rubocop:disable Metrics/PerceivedComplexity

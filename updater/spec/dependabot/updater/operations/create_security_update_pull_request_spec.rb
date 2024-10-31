@@ -60,6 +60,13 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
     )
   end
 
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
+    )
+  end
+
   let(:package_manager) do
     DummyPkgHelpers::StubPackageManager.new(
       name: "bundler",
@@ -218,7 +225,7 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
 
     allow(dependency_snapshot).to receive_messages(
       job_dependencies: [dependency],
-      package_manager: package_manager,
+      ecosystem: ecosystem,
       notices: [warning_deprecation_notice]
     )
     allow(job).to receive(:security_fix?).and_return(true)
