@@ -310,5 +310,51 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
                                                   [dependency])
       end
     end
+
+    context "when the dependency name has upper-case characters" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(true)
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          requirements_unlocked_or_can_be?: true
+        )
+        allow(job).to receive_messages(allowed_update?: true,
+                                       security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }])
+      end
+
+      after do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:lead_security_dependency).and_return(false)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Dummy-Pkg-A",
+          version: "4.0.0",
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 4.0.0",
+            groups: ["default"],
+            source: nil
+          }],
+          package_manager: "bundler",
+          metadata: { all_versions: ["4.0.0"] }
+        )
+      end
+
+      it "checks if a pull request already exists" do
+        allow(job).to receive(:dependencies).and_return(%w(dummy-pkg-a))
+        allow(refresh_security_update_pull_request).to receive(:existing_pull_request).and_return(true)
+        allow(Dependabot.logger).to receive(:info).and_call_original
+
+        expect(refresh_security_update_pull_request).to receive(:update_pull_request)
+
+        expect(Dependabot.logger)
+          .to receive(:info)
+          .with matching(/Security advisory dependency: dummy-pkg-a/)
+
+        refresh_security_update_pull_request.send(:check_and_update_pull_request,
+                                                  [dependency])
+      end
+    end
   end
 end
