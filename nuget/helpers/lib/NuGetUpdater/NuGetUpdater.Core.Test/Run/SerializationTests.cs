@@ -1,4 +1,5 @@
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -56,5 +57,14 @@ public class SerializationTests
         Assert.Equal("github", jobWrapper.Job.Source.Provider);
         Assert.Equal("some-org/some-repo", jobWrapper.Job.Source.Repo);
         Assert.Equal("specific-sdk", jobWrapper.Job.Source.Directory);
+    }
+
+    [Fact]
+    public void SerializeError()
+    {
+        var error = new JobRepoNotFound("some message");
+        var actual = HttpApiHandler.Serialize(error);
+        var expected = """{"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}""";
+        Assert.Equal(expected, actual);
     }
 }
