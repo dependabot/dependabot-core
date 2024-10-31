@@ -19,7 +19,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    class FileParser < Dependabot::FileParsers::Base
+    class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
@@ -78,7 +78,81 @@ module Dependabot
         end
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager_helper.package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(PackageManagerHelper) }
+      def package_manager_helper
+        @package_manager_helper ||= T.let(
+          PackageManagerHelper.new(
+            parsed_package_json,
+            lockfiles: lockfiles
+          ), T.nilable(PackageManagerHelper)
+        )
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def lockfiles
+        {
+          npm: package_lock || shrinkwrap,
+          yarn: yarn_lock,
+          pnpm: pnpm_lock
+        }
+      end
+
+      sig { returns(T.untyped) }
+      def parsed_package_json
+        JSON.parse(T.must(package_json.content))
+      rescue JSON::ParserError
+        raise Dependabot::DependencyFileNotParseable, package_json.path
+      end
+
+      sig { returns(Dependabot::DependencyFile) }
+      def package_json
+        # Declare the instance variable with T.let and the correct type
+        @package_json ||= T.let(
+          T.must(dependency_files.find { |f| f.name == "package.json" }),
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def shrinkwrap
+        @shrinkwrap ||= T.let(dependency_files.find do |f|
+          f.name == "npm-shrinkwrap.json"
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def package_lock
+        @package_lock ||= T.let(dependency_files.find do |f|
+          f.name == "package-lock.json"
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def yarn_lock
+        @yarn_lock ||= T.let(dependency_files.find do |f|
+          f.name == "yarn.lock"
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pnpm_lock
+        @pnpm_lock ||= T.let(dependency_files.find do |f|
+          f.name == "pnpm-lock.yaml"
+        end, T.nilable(Dependabot::DependencyFile))
+      end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def manifest_dependencies
