@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/bundler/package_manager"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Bundler::PackageManager do
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is a Dependabot::Bundler::Version" do
-      let(:version) { Dependabot::Bundler::Version.new("2") }
+      let(:version) { "2" }
 
       it "sets the version correctly" do
         expect(package_manager.version).to eq(version)

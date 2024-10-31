@@ -12,7 +12,7 @@ require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/update_all_versions"
 require "dependabot/dependency_change_builder"
 require "dependabot/environment"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/notices_helpers"
 
@@ -60,6 +60,13 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     Dependabot::DependencySnapshot.create_from_job_definition(
       job: job,
       job_definition: job_definition_with_fetched_files
+    )
+  end
+
+  let(:ecosystem) do
+    Dependabot::Ecosystem.new(
+      name: "bundler",
+      package_manager: package_manager
     )
   end
 
@@ -157,7 +164,7 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     allow(Dependabot::DependencyChangeBuilder).to receive(
       :create_from
     ).and_return(stub_dependency_change)
-    allow(dependency_snapshot).to receive_messages(package_manager: package_manager, notices: [
+    allow(dependency_snapshot).to receive_messages(ecosystem: ecosystem, notices: [
       warning_deprecation_notice
     ])
   end
