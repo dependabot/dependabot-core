@@ -37,7 +37,8 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: package_manager
+            package_manager: package_manager,
+            language: language
           ),
           T.nilable(Ecosystem)
         )
@@ -48,6 +49,11 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         PackageManager.new(bundler_version)
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def language
+        Language.new(bundler_version)
       end
 
       def check_external_code(dependencies)
@@ -330,6 +336,11 @@ module Dependabot
       sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
+      end
+
+      sig { returns(String) }
+      def ruby_version
+        @ruby_version ||= Helpers.ruby_version(gemfile, lockfile)
       end
     end
   end

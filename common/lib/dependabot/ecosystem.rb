@@ -12,13 +12,13 @@ module Dependabot
       extend T::Helpers
 
       abstract!
-      # Initialize version information with optional requirement
-      # @param name [String] the name for the package manager (e.g., "bundler", "npm").
+      # Initialize version information for a package manager or language.
+      # @param name [String] the name of the package manager or language (e.g., "bundler", "ruby").
       # @param version [Dependabot::Version] the parsed current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
       # @example
-      #   VersionManager.new("bundler", "2.1.4", Dependabot::Version.new("2.1.4"), nil)
+      #   VersionManager.new("bundler", "2.1.4", nil)
       sig do
         params(
           name: String,
@@ -46,7 +46,7 @@ module Dependabot
       sig { returns(String) }
       attr_reader :name
 
-      # The current version of the package manager.
+      # The current version of the package manager or language.
       # @example
       #   version #=> Dependabot::Version.new("2.1.4")
       sig { returns(Dependabot::Version) }
@@ -68,6 +68,7 @@ module Dependabot
       #   deprecated? #=> true
       sig { returns(T::Boolean) }
       def deprecated?
+        # If the version is unsupported, the unsupported error is getting raised separately.
         return false if unsupported?
 
         deprecated_versions.include?(version)
@@ -113,18 +114,22 @@ module Dependabot
     # Initialize with mandatory name and optional language information.
     # @param name [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
     # @param package_manager [VersionManager] the package manager.
+    # @param language [VersionManager] the language.
     sig do
       params(
         name: String,
-        package_manager: VersionManager
+        package_manager: VersionManager,
+        language: T.nilable(VersionManager)
       ).void
     end
     def initialize(
       name:,
-      package_manager:
+      package_manager:,
+      language: nil
     )
       @name = T.let(name, String)
       @package_manager = T.let(package_manager, VersionManager)
+      @language = T.let(language, T.nilable(VersionManager))
     end
 
     # The name of the ecosystem (mandatory).
@@ -135,9 +140,15 @@ module Dependabot
 
     # The information related to the package manager (mandatory).
     # @example
-    #  package_manager #=> VersionManager.new("bundler", "2.1.4", Version.new("2.1.4"), nil)
+    #  package_manager #=> VersionManager.new("bundler", "2.1.4", deprecated_versions, supported_versions)
     sig { returns(VersionManager) }
     attr_reader :package_manager
+
+    # The information related to the language (optional).
+    # @example
+    #  language #=> VersionManager.new("ruby", "3.9", deprecated_versions, supported_versions)
+    sig { returns(T.nilable(VersionManager)) }
+    attr_reader :language
 
     # Checks if the current version is deprecated.
     # Returns true if the version is in the deprecated_versions array; false otherwise.
