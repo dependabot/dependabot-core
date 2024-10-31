@@ -275,7 +275,7 @@ GEM
     rspec-sorbet (1.9.2)
       sorbet-runtime
     rspec-support (3.12.1)
-    rubocop (1.67.0)
+    rubocop (1.68.0)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
       parallel (~> 1.10)
@@ -395,7 +395,7 @@ DEPENDENCIES
   rake (~> 13)
   rspec-its (~> 1.3)
   rspec-sorbet (~> 1.9.2)
-  rubocop (~> 1.67.0)
+  rubocop (~> 1.68.0)
   rubocop-performance (~> 1.22.1)
   rubocop-rspec (~> 2.29.1)
   rubocop-sorbet (~> 0.8.5)
