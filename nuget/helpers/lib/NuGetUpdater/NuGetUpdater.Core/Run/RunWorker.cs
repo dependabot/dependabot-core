@@ -146,6 +146,16 @@ public class RunWorker
                 var localPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
                 var content = await File.ReadAllTextAsync(localPath);
                 originalDependencyFileContents[path] = content;
+                
+                // track packages.config if it exists
+                var projectDirectory = Path.GetDirectoryName(project.FilePath);
+                var packagesConfigPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, projectDirectory, "packages.config");
+                var normalizedPackagesConfigPath = Path.Join(discoveryResult.Path, projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
+                if (File.Exists(packagesConfigPath))
+                {
+                    var packagesConfigContent = await File.ReadAllTextAsync(packagesConfigPath);
+                    originalDependencyFileContents[normalizedPackagesConfigPath] = packagesConfigContent;
+                }
             }
 
             // do update
@@ -182,7 +192,7 @@ public class RunWorker
                     {
                         // TODO: this is inefficient, but not likely causing a bottleneck
                         var previousDependency = discoveredUpdatedDependencies.Dependencies
-                            .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"));
+                            .Single(d => d.Name == dependency.Name);
                         var updatedDependency = new ReportedDependency()
                         {
                             Name = dependency.Name,
@@ -191,7 +201,7 @@ public class RunWorker
                             [
                                 new ReportedRequirement()
                                 {
-                                    File = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"),
+                                    File = dependency.Type == DependencyType.PackagesConfig ? GetPackagesConfigFromCsprojLocation(Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/")) : Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"),
                                     Requirement = analysisResult.UpdatedVersion,
                                     Groups = previousDependency.Requirements.Single().Groups,
                                     Source = new RequirementSource()
@@ -318,7 +328,7 @@ public class RunWorker
         foreach (var project in discoveryResult.Projects)
         {
             var projectDirectory = Path.GetDirectoryName(project.FilePath);
-            var pathToPackagesConfig = Path.Join(pathToContents, "src", projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
+            var pathToPackagesConfig = Path.Join(pathToContents, discoveryResult.Path, projectDirectory, "packages.config").NormalizePathToUnix().EnsurePrefix("/");
 
             if (File.Exists(pathToPackagesConfig))
             {
@@ -336,7 +346,7 @@ public class RunWorker
                         Name = d.Name,
                         Requirements = d.IsTransitive ? [] : [new ReportedRequirement()
                         {
-                            File = GetFullRepoPath(p.FilePath),
+                            File = d.Type == DependencyType.PackagesConfig ? GetPackagesConfigFromCsprojLocation(GetFullRepoPath(p.FilePath)) : GetFullRepoPath(p.FilePath),
                             Requirement = d.Version!,
                             Groups = ["dependencies"],
                         }],
@@ -347,6 +357,16 @@ public class RunWorker
             DependencyFiles = discoveryResult.Projects.Select(p => GetFullRepoPath(p.FilePath)).Concat(auxiliaryFiles).ToArray(),
         };
         return updatedDependencyList;
+    }
+
+    private static string GetPackagesConfigFromCsprojLocation(string fullRepoPath)
+    {
+        int lastSlash;
+        fullRepoPath = Path.GetFullPath(fullRepoPath).NormalizePathToUnix().EnsurePrefix("/");
+
+        lastSlash = fullRepoPath.LastIndexOf('/');
+    
+        return fullRepoPath.Substring(0, lastSlash + 1) + "packages.config";
     }
 
     public static JobFile Deserialize(string json)
