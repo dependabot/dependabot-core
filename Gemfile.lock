@@ -56,8 +56,8 @@ PATH
 PATH
   remote: dotnet_sdk
   specs:
-    dependabot-dotnet_sdk (0.281.0)
-      dependabot-common (= 0.281.0)
+    dependabot-dotnet_sdk (0.283.0)
+      dependabot-common (= 0.283.0)
 
 PATH
   remote: elm
