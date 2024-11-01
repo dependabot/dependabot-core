@@ -110,6 +110,13 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def create
+        if trace_log? && branch_exists?(branch_name)
+          Dependabot.logger.info(
+            "Existing branch \"#{branch_name}\" found: raising DuplicateBranchExists exception."
+          )
+          raise DuplicateBranchExists, "Duplicate branch #{branch_name} already exists"
+        end
+
         if branch_exists?(branch_name) && unmerged_pull_request_exists?
           raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
         end
@@ -132,6 +139,13 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
+        if trace_log?
+          Dependabot.logger.info(
+            "Dependabot::PullRequestCreator::Github:branch_exists?. " \
+            "Name : #{name}. IsDuplicate: #{git_metadata_fetcher.ref_names.include?(name)}"
+          )
+        end
+
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
         raise T.must(e.cause) if e.cause&.message&.include?("is disabled")
@@ -579,6 +593,11 @@ module Dependabot
         else
           raise type, message
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def trace_log?
+        Dependabot::Experiments.enabled?(:dedup_branch_names)
       end
     end
     # rubocop:enable Metrics/ClassLength

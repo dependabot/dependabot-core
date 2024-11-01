@@ -612,6 +612,41 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       end
     end
 
+    context "when the branch already exists" do
+      before do
+        service_pack_response.gsub!("heads/rubocop", "heads/#{branch_name}")
+        Dependabot::Experiments.register(:dedup_branch_names, true)
+      end
+
+      after do
+        Dependabot::Experiments.register(:dedup_branch_names, false)
+      end
+
+      context "when a PR to this branch doesn't exist" do
+        before do
+          url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
+                "&state=all"
+          stub_request(:get, url)
+            .to_return(status: 200, body: "[]", headers: json_header)
+          stub_request(
+            :patch,
+            "#{repo_api_url}/git/refs/heads/#{branch_name}"
+          ).to_return(
+            status: 200,
+            body: fixture("github", "update_ref.json"),
+            headers: json_header
+          )
+        end
+
+        it "returns a suitable exception" do
+          expect { creator.create }
+            .to raise_error(Dependabot::PullRequestCreator::DuplicateBranchExists,
+                            "Duplicate branch #{branch_name} already exists")
+          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
+        end
+      end
+    end
+
     context "when the PR doesn't have history in common with the base branch" do
       before do
         stub_request(:post, "#{repo_api_url}/pulls")
