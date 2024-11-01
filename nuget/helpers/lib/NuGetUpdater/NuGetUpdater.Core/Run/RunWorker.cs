@@ -135,7 +135,7 @@ public class RunWorker
                 var localPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
                 var content = await File.ReadAllTextAsync(localPath);
                 originalDependencyFileContents[path] = content;
-                
+
                 // track packages.config if it exists
                 var projectDirectory = Path.GetDirectoryName(project.FilePath);
                 var packagesConfigPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, projectDirectory, "packages.config");
@@ -219,7 +219,7 @@ public class RunWorker
                             {
                                 updatedDependency.Requirements.All(r => r.File == dependencyFilePath);
                             }
-                            
+
                             actualUpdatedDependencies.Add(updatedDependency);
                         }
                     }
@@ -365,7 +365,7 @@ public class RunWorker
         fullRepoPath = Path.GetFullPath(fullRepoPath).NormalizePathToUnix().EnsurePrefix("/");
 
         lastSlash = fullRepoPath.LastIndexOf('/');
-    
+
         return fullRepoPath.Substring(0, lastSlash + 1) + "packages.config";
     }
 
