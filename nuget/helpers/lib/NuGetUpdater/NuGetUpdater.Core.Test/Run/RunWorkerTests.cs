@@ -26,7 +26,6 @@ public class RunWorkerTests
             ],
             job: new Job()
             {
-                PackageManager = "nuget",
                 Source = new()
                 {
                     Provider = "github",
@@ -161,10 +160,7 @@ public class RunWorkerTests
                     PrTitle = "TODO: title",
                     PrBody = "TODO: body",
                 },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
@@ -209,7 +205,6 @@ public class RunWorkerTests
             ],
             job: new Job()
             {
-                PackageManager = "nuget",
                 Source = new()
                 {
                     Provider = "github",
@@ -249,14 +244,8 @@ public class RunWorkerTests
             },
             expectedApiMessages:
             [
-                new PrivateSourceAuthenticationFailure()
-                {
-                    Details = $"({http.BaseUrl.TrimEnd('/')}/index.json)"
-                },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
@@ -948,7 +937,7 @@ public class RunWorkerTests
         }
     }
 
-    private static string SerializeObjectAndType(object obj)
+    internal static string SerializeObjectAndType(object obj)
     {
         return $"{obj.GetType().Name}:{JsonSerializer.Serialize(obj)}";
     }

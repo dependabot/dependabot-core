@@ -2,43 +2,19 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
-RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
+RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/FilePath,RSpec/SpecFilePathFormat
   let(:concrete_class) do
-    Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        @version ||= Dependabot::Version.new("1.0.0")
-      end
-
-      def deprecated_versions
-        [Dependabot::Version.new("1")]
-      end
-
-      def unsupported_versions
-        [Dependabot::Version.new("0")]
-      end
-
-      def supported_versions
-        @supported_versions ||= [Dependabot::Version.new("1"), Dependabot::Version.new("2")]
-      end
-
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        # If the version is unsupported, treat it as unsupported, not deprecated.
-        return false if unsupported?
-
-        deprecated_versions.include?(version)
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Determine if the version is unsupported based on supported_versions.
-        version < supported_versions.first
+    Class.new(Dependabot::Ecosystem::VersionManager) do
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          "bundler", # name
+          Dependabot::Version.new(raw_version), # version
+          [Dependabot::Version.new("1")], # deprecated_versions
+          [Dependabot::Version.new("1"), Dependabot::Version.new("2")] # supported_versions
+        )
       end
 
       def support_later_versions?
@@ -48,13 +24,13 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
   end
 
   let(:default_concrete_class) do
-    Class.new(Dependabot::PackageManagerBase) do
-      def name
-        "bundler"
-      end
-
-      def version
-        Dependabot::Version.new("1.0.0")
+    Class.new(Dependabot::Ecosystem::VersionManager) do
+      def initialize
+        raw_version = "1.0.0"
+        super(
+          "bundler", # name
+          Dependabot::Version.new(raw_version)
+        )
       end
     end
   end
@@ -81,16 +57,6 @@ RSpec.describe Dependabot::PackageManagerBase do # rubocop:disable RSpec/FilePat
 
     it "returns an empty array by default" do
       expect(default_package_manager.deprecated_versions).to eq([])
-    end
-  end
-
-  describe "#unsupported_versions" do
-    it "returns an array of unsupported versions" do
-      expect(package_manager.unsupported_versions).to eq([Dependabot::Version.new("0")])
-    end
-
-    it "returns an empty array by default" do
-      expect(default_package_manager.unsupported_versions).to eq([])
     end
   end
 

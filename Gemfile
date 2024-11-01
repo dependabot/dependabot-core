@@ -8,6 +8,7 @@ gem "dependabot-common", path: "common"
 gem "dependabot-composer", path: "composer"
 gem "dependabot-devcontainers", path: "devcontainers"
 gem "dependabot-docker", path: "docker"
+gem "dependabot-dotnet_sdk", path: "dotnet_sdk"
 gem "dependabot-elm", path: "elm"
 gem "dependabot-github_actions", path: "github_actions"
 gem "dependabot-git_submodules", path: "git_submodules"
@@ -24,8 +25,8 @@ gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
 
 # Sorbet
-gem "sorbet", "0.5.11577", group: :development
-gem "tapioca", "0.16.2", require: false, group: :development
+gem "sorbet", "0.5.11630", group: :development
+gem "tapioca", "0.16.3", require: false, group: :development
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 

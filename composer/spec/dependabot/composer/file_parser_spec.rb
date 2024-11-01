@@ -412,7 +412,7 @@ RSpec.describe Dependabot::Composer::FileParser do
 
   describe "#package_manager" do
     it "returns the correct package manager" do
-      expect(parser.package_manager).to be_a(Dependabot::Composer::PackageManager)
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
     end
   end
 end

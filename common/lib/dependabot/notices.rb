@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 
 module Dependabot
   class Notice
@@ -95,11 +95,11 @@ module Dependabot
     end
 
     # Generates a deprecation notice for the given package manager.
-    # @param package_manager [PackageManagerBase] The package manager object.
+    # @param package_manager [VersionManager] The package manager object.
     # @return [Notice, nil] The generated deprecation notice or nil if the package manager is not deprecated.
     sig do
       params(
-        package_manager: PackageManagerBase
+        package_manager: Ecosystem::VersionManager
       ).returns(T.nilable(Notice))
     end
     def self.generate_pm_deprecation_notice(package_manager)
