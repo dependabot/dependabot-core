@@ -63,6 +63,7 @@ module Dependabot
         "composer" => "composer",
         "devcontainer" => "devcontainers",
         "docker" => "docker",
+        "dotnet-sdk" => "dotnet_sdk",
         "elm" => "elm",
         "github-actions" => "github_actions",
         "gitsubmodule" => "submodules",

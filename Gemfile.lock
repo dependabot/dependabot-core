@@ -54,6 +54,12 @@ PATH
       dependabot-common (= 0.283.0)
 
 PATH
+  remote: dotnet_sdk
+  specs:
+    dependabot-dotnet_sdk (0.283.0)
+      dependabot-common (= 0.283.0)
+
+PATH
   remote: elm
   specs:
     dependabot-elm (0.283.0)
@@ -377,6 +383,7 @@ DEPENDENCIES
   dependabot-composer!
   dependabot-devcontainers!
   dependabot-docker!
+  dependabot-dotnet_sdk!
   dependabot-elm!
   dependabot-git_submodules!
   dependabot-github_actions!
