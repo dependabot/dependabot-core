@@ -99,7 +99,7 @@ public class UpdatedDependencyListTests
                         new ReportedRequirement()
                         {
                             Requirement = "13.0.1",
-                            File = "/src/c/project.csproj",
+                            File = "/src/c/packages.config",
                             Groups = ["dependencies"],
                         },
                     ]

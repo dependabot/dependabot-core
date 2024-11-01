@@ -63,7 +63,8 @@ public class RunWorker
                 var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
-                    allDependencyFiles[dependencyFile.Name] = dependencyFile;
+                    var uniqueKey = Path.GetFullPath(Path.Join(dependencyFile.Directory, dependencyFile.Name)).NormalizePathToUnix().EnsurePrefix("/");
+                    allDependencyFiles[uniqueKey] = dependencyFile;
                 }
             }
 
@@ -190,7 +191,7 @@ public class RunWorker
                     // TODO: log analysisResult
                     if (analysisResult.CanUpdate)
                     {
-                        var dependencyLocation = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
+                        var dependencyLocation = Path.GetFullPath(Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"));
                         if (dependency.Type == DependencyType.PackagesConfig)
                         {
                             dependencyLocation = GetPackagesConfigFromCsprojLocation(dependencyLocation);
@@ -226,6 +227,11 @@ public class RunWorker
                         // TODO: need to report if anything was actually updated
                         if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
                         {
+                            if (dependencyLocation != dependencyFilePath)
+                            {
+                                updatedDependency.Requirements.All(r => r.File == dependencyFilePath);
+                            }
+                            
                             actualUpdatedDependencies.Add(updatedDependency);
                         }
                     }
@@ -247,7 +253,7 @@ public class RunWorker
                     {
                         Name = project.FilePath,
                         Content = updatedProjectContent,
-                        Directory = discoveryResult.Path,
+                        Directory = Path.GetDirectoryName(projectPath)!.NormalizeUnixPathParts(),
                     });
                 }
 
@@ -266,7 +272,7 @@ public class RunWorker
                         {
                             Name = Path.Join(projectDirectory!, "packages.config"),
                             Content = updatedPackagesConfigContent,
-                            Directory = discoveryResult.Path,
+                            Directory = Path.GetDirectoryName(normalizedPackagesConfigPath)!.NormalizeUnixPathParts(),
                         });
                     }
                 }
@@ -302,7 +308,7 @@ public class RunWorker
             {
                 Name = Path.GetFileName(kvp.Key),
                 Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(kvp.Value)),
-                Directory = Path.GetDirectoryName(kvp.Key)!.NormalizePathToUnix(),
+                Directory = Path.GetFullPath(Path.GetDirectoryName(kvp.Key)!).NormalizePathToUnix(),
             }).ToArray(),
             BaseCommitSha = baseCommitSha,
         };
