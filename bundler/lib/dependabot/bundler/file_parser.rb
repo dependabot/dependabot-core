@@ -32,12 +32,23 @@ module Dependabot
         dependency_set.dependencies
       end
 
-      sig { returns(PackageManagerBase) }
-      def package_manager
-        PackageManager.new(bundler_version)
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
       end
 
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        PackageManager.new(bundler_version)
+      end
 
       def check_external_code(dependencies)
         return unless @reject_external_code
@@ -309,12 +320,14 @@ module Dependabot
                       .select { |file| file.name.end_with?(".gemspec") }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def imported_ruby_files
         dependency_files
           .select { |f| f.name.end_with?(".rb") }
           .reject { |f| f.name == "gems.rb" }
       end
 
+      sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
       end

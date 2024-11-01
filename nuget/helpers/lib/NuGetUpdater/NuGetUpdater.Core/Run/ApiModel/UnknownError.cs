@@ -2,5 +2,9 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public record UnknownError : JobErrorBase
 {
-    public override string Type => "unknown_error";
+    public UnknownError(string details)
+        : base("unknown_error")
+    {
+        Details = details;
+    }
 }
