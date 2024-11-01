@@ -88,9 +88,9 @@ module Dependabot
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
-      sig { params(yarn_lock: DependencyFile).returns(Integer) }
+      sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
-        lockfile_content = yarn_lock.content
+        lockfile_content = yarn_lock&.content
 
         return YARN_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
 
@@ -104,8 +104,12 @@ module Dependabot
       # Mapping from lockfile versions to PNPM versions is at
       # https://github.com/pnpm/spec/tree/274ff02de23376ad59773a9f25ecfedd03a41f64/lockfile, but simplify it for now.
 
-      sig { params(pnpm_lock: DependencyFile).returns(Integer) }
+      sig { params(pnpm_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.pnpm_version_numeric(pnpm_lock)
+        lockfile_content = pnpm_lock&.content
+
+        return PNPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
+
         pnpm_lockfile_version = pnpm_lockfile_version(pnpm_lock).to_f
         return PNPM_V9 if pnpm_lockfile_version >= 9.0
         return PNPM_V8 if pnpm_lockfile_version >= 6.0
