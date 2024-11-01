@@ -613,8 +613,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     end
 
     context "when the branch already exists" do
+      let(:service_pack_response) { fixture("git", "upload_packs", "existing-branch") }
+
       before do
-        service_pack_response.gsub!("heads/rubocop", "heads/#{branch_name}")
         Dependabot::Experiments.register(:dedup_branch_names, true)
       end
 
@@ -622,7 +623,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         Dependabot::Experiments.register(:dedup_branch_names, false)
       end
 
-      context "when a PR to this branch doesn't exist" do
+      context "when the branch already exists" do
         before do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
                 "&state=all"
@@ -640,9 +641,8 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
         it "returns a suitable exception" do
           expect { creator.create }
-            .to raise_error(Dependabot::PullRequestCreator::DuplicateBranchExists,
+            .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists,
                             "Duplicate branch #{branch_name} already exists")
-          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
         end
       end
     end

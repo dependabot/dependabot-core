@@ -6,7 +6,6 @@ require "dependabot/metadata_finders"
 require "dependabot/credential"
 
 module Dependabot
-  # rubocop:disable Metrics/ClassLength
   class PullRequestCreator
     extend T::Sig
 
@@ -41,7 +40,7 @@ module Dependabot
 
     class UnmergedPRExists < StandardError; end
 
-    class DuplicateBranchExists < StandardError; end
+    class BranchAlreadyExists < StandardError; end
 
     class BaseCommitNotUpToDate < StandardError; end
 
@@ -243,12 +242,6 @@ module Dependabot
     # then convert to that
     sig { returns(T.untyped) }
     def create
-      if trace_log?
-        Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::create => var source.provider : #{source.provider}"
-        )
-      end
-
       case source.provider
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
@@ -278,12 +271,6 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::Github) }
     def github_creator
-      if trace_log?
-        Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::create::github_creator"
-        )
-      end
-
       Github.new(
         source: source,
         branch_name: branch_namer.new_branch_name,
@@ -411,12 +398,6 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::BranchNamer) }
     def branch_namer
-      if trace_log?
-        Dependabot.logger.info(
-          "Dependabot::PullRequestCreator::branch_namer"
-        )
-      end
-
       @branch_namer ||= T.let(
         BranchNamer.new(
           dependencies: dependencies,
@@ -458,11 +439,5 @@ module Dependabot
     def requirements_changed?(dependency)
       (dependency.requirements - T.must(dependency.previous_requirements)).any?
     end
-
-    sig { returns(T::Boolean) }
-    def trace_log?
-      Dependabot::Experiments.enabled?(:dedup_branch_names)
-    end
   end
 end
-# rubocop:enable Metrics/ClassLength
