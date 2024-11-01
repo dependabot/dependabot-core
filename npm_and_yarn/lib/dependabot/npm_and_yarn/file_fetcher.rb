@@ -283,7 +283,7 @@ module Dependabot
       def yarnrc
         return @yarnrc if defined?(@yarnrc)
 
-        @yarnrc ||= T.let(fetch_support_file(YarnPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
+        @yarnrc ||= T.let(fetch_support_file(YarnPackageManager::RC_FILENAME), T.nilable(DependencyFile))
 
         return @yarnrc if @yarnrc || directory == "/"
 
@@ -309,10 +309,10 @@ module Dependabot
       def pnpm_workspace_yaml
         return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
 
-        @pnpm_workspace_yaml = T.let(fetch_support_file(
-                                       PNPMPackageManager::PNPM_WS_YML_FILENAME
-                                     ),
-                                     T.nilable(DependencyFile))
+        @pnpm_workspace_yaml = T.let(
+          fetch_support_file(PNPMPackageManager::PNPM_WS_YML_FILENAME),
+          T.nilable(DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
