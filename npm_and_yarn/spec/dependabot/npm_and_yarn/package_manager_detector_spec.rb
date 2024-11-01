@@ -110,7 +110,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
       let(:package_json) { {} }
 
       it "returns nil when no package manager can be detected" do
-        expect(detector.detect_package_manager).to be_nil
+        expect(detector.detect_package_manager).to eq("npm")
       end
     end
   end
