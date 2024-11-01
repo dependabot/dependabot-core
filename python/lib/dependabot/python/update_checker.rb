@@ -233,7 +233,7 @@ module Dependabot
           requirements.filter_map { |r| r[:requirement] }
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX) }
+                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
                       .select { |version| Python::Version.correct?(version) }
                       .max_by { |version| Python::Version.new(version) }
 
