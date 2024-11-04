@@ -121,7 +121,7 @@ module Dependabot
       def package_json
         # Declare the instance variable with T.let and the correct type
         @package_json ||= T.let(
-          T.must(dependency_files.find { |f| f.name == "package.json" }),
+          T.must(dependency_files.find { |f| f.name == MANIFEST_FILENAME }),
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -129,28 +129,28 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shrinkwrap
         @shrinkwrap ||= T.let(dependency_files.find do |f|
-          f.name == "npm-shrinkwrap.json"
+          f.name == NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def package_lock
         @package_lock ||= T.let(dependency_files.find do |f|
-          f.name == "package-lock.json"
+          f.name == NpmPackageManager::LOCKFILE_NAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def yarn_lock
         @yarn_lock ||= T.let(dependency_files.find do |f|
-          f.name == "yarn.lock"
+          f.name == YarnPackageManager::LOCKFILE_NAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pnpm_lock
         @pnpm_lock ||= T.let(dependency_files.find do |f|
-          f.name == "pnpm-lock.yaml"
+          f.name == PNPMPackageManager::LOCKFILE_NAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 
@@ -228,7 +228,7 @@ module Dependabot
         Dependency.new(
           name: name,
           version: converted_version,
-          package_manager: "npm_and_yarn",
+          package_manager: ECOSYSTEM,
           requirements: [{
             requirement: requirement_for(requirement),
             file: file.name,
@@ -240,7 +240,10 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
+        return if get_original_file(MANIFEST_FILENAME)
+
+        raise DependencyFileNotFound.new(nil,
+                                         "#{MANIFEST_FILENAME} not found.")
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
@@ -260,7 +263,7 @@ module Dependabot
 
       sig { params(requirement: String).returns(T::Boolean) }
       def alias_package?(requirement)
-        requirement.start_with?("npm:")
+        requirement.start_with?("#{NpmPackageManager::NAME}:")
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
@@ -282,7 +285,7 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def aliased_package_name?(name)
-        name.include?("@npm:")
+        name.include?("@#{NpmPackageManager::NAME}:")
       end
 
       sig { returns(T::Array[String]) }
@@ -444,8 +447,8 @@ module Dependabot
       def sub_package_files
         return T.must(@sub_package_files) if defined?(@sub_package_files)
 
-        files = dependency_files.select { |f| f.name.end_with?("package.json") }
-                                .reject { |f| f.name == "package.json" }
+        files = dependency_files.select { |f| f.name.end_with?(MANIFEST_FILENAME) }
+                                .reject { |f| f.name == MANIFEST_FILENAME }
                                 .reject { |f| f.name.include?("node_modules/") }
         @sub_package_files ||= T.let(files, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
@@ -454,7 +457,7 @@ module Dependabot
       def package_files
         @package_files ||= T.let(
           [
-            dependency_files.find { |f| f.name == "package.json" },
+            dependency_files.find { |f| f.name == MANIFEST_FILENAME },
             *sub_package_files
           ].compact, T.nilable(T::Array[DependencyFile])
         )
