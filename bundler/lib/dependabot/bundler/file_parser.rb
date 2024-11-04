@@ -50,12 +50,12 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        PackageManager.new(bundler_version)
+        PackageManager.new(bundler_raw_version)
       end
 
       sig { returns(Ecosystem::VersionManager) }
       def language
-        Language.new(ruby_version)
+        Language.new(ruby_raw_version)
       end
 
       def check_external_code(dependencies)
@@ -336,13 +336,42 @@ module Dependabot
       end
 
       sig { returns(String) }
-      def bundler_version
-        @bundler_version ||= Helpers.bundler_version(lockfile)
+      def bundler_raw_version
+        bundler_raw_version ||= SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "bundler_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        bundler_raw_version || ::Bundler::VERSION
       end
 
       sig { returns(String) }
-      def ruby_version
-        @ruby_version ||= Helpers.ruby_version(gemfile, lockfile)
+      def ruby_raw_version
+        ruby_raw_version ||= SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "ruby_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        ruby_raw_version || RUBY_VERSION
+      end
+
+      sig { returns(String) }
+      def bundler_version
+        @bundler_version ||= Helpers.bundler_version(lockfile)
       end
     end
   end
