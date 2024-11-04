@@ -337,7 +337,16 @@ module Dependabot
 
       sig { returns(String) }
       def bundler_raw_version
-        bundler_raw_version ||= SharedHelpers.in_a_temporary_repo_directory(
+        return bundler_raw_version if defined?(@bundler_raw_version)
+
+        package_manager = PackageManager.new(bundler_version)
+
+        # If selected version is unsupported, we are going to throw unsupported error
+        # So we shoudn't try to get the raw version
+        return bundler_version if package_manager.unsupported?
+
+        # read raw version directly from the ecosystem environment
+        bundler_raw_version = SharedHelpers.in_a_temporary_repo_directory(
           base_directory,
           repo_contents_path
         ) do
@@ -354,7 +363,9 @@ module Dependabot
 
       sig { returns(String) }
       def ruby_raw_version
-        ruby_raw_version ||= SharedHelpers.in_a_temporary_repo_directory(
+        return @ruby_raw_version if defined?(@ruby_raw_version)
+
+        ruby_raw_version = SharedHelpers.in_a_temporary_repo_directory(
           base_directory,
           repo_contents_path
         ) do
