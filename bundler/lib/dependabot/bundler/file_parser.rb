@@ -345,8 +345,8 @@ module Dependabot
 
         package_manager = PackageManager.new(bundler_version)
 
-        # If selected version is unsupported, we are going to throw unsupported error
-        # So we shoudn't try to get the raw version
+        # If the selected version is unsupported, an unsupported error will be raised,
+        # so there’s no need to attempt retrieving the raw version.
         return bundler_version if package_manager.unsupported?
 
         # read raw version directly from the ecosystem environment
