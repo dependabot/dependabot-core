@@ -477,10 +477,7 @@ public class RunWorkerTests
                     PrTitle = "TODO: title",
                     PrBody = "TODO: body",
                 },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
@@ -881,10 +878,7 @@ public class RunWorkerTests
                     PrTitle = "TODO: title",
                     PrBody = "TODO: body",
                 },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
