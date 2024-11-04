@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
   spec.add_dependency "dependabot-devcontainers", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
+  spec.add_dependency "dependabot-dotnet_sdk", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
   spec.add_dependency "dependabot-github_actions", Dependabot::VERSION
   spec.add_dependency "dependabot-git_submodules", Dependabot::VERSION
