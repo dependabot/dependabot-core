@@ -47,13 +47,10 @@ module Dependabot
         ruby_version = ruby_version_from_ruby_version_file
 
         ruby_version = ruby_version_from_lockfile(lockfile) if ruby_version.nil?
+        ruby_version = ruby_version_from_gemfile(gemfile) if ruby_version.nil?
 
-        ruby_version = ruby_version_from_definition(gemfile, lockfile) if ruby_version.nil?
-
-        # If we still don't have a Ruby version, the version dependabot is running on is used
-        ruby_version = RUBY_VERSION if ruby_version.nil?
-
-        ruby_version
+        # If we still don't have a Ruby version, the version Dependabot is running on is used
+        ruby_version || RUBY_VERSION
       end
 
       sig do
@@ -64,67 +61,35 @@ module Dependabot
       def self.ruby_version_from_lockfile(lockfile)
         return nil unless lockfile
 
-        # Updated regex to capture just the version number
-        ruby_version = lockfile.content&.match(RUBY_VERSION_REGEX)&.captures&.first
-        ruby_version
+        # Use the updated regex to capture the Ruby version
+        lockfile.content&.match(RUBY_VERSION_REGEX)&.captures&.first
       end
 
       sig do
         params(
-          gemfile: T.nilable(Dependabot::DependencyFile),
-          lockfile: T.nilable(Dependabot::DependencyFile)
-        )
-          .returns(T.nilable(String))
+          gemfile: T.nilable(Dependabot::DependencyFile)
+        ).returns(T.nilable(String))
       end
-      def self.ruby_version_from_definition(gemfile, lockfile)
-        gemfile_name = gemfile&.name
-        return nil unless gemfile_name
+      def self.ruby_version_from_gemfile(gemfile)
+        gemfile_content = gemfile&.content
+        return nil unless gemfile_content
 
-        ruby_version = T.let(build_definition(gemfile, lockfile).ruby_version, T.nilable(::Bundler::RubyVersion))
-
-        gem_version = T.let(ruby_version&.gem_version, T.nilable(Gem::Version))
-
-        return nil unless gem_version
-
-        gem_version.to_s
-      end
-
-      sig do
-        params(
-          gemfile: T.nilable(Dependabot::DependencyFile),
-          lockfile: T.nilable(Dependabot::DependencyFile)
-        ).returns(::Bundler::Definition)
-      end
-      def self.build_definition(gemfile, lockfile)
-        gemfile_name = gemfile&.name
-        lockfile_name = lockfile&.name
-        T.let(
-          ::Bundler::Definition.build(
-            gemfile_name,
-            lockfile_name,
-            gems: []
-          ), ::Bundler::Definition
-        )
+        # Capture the version as a String explicitly
+        ruby_version = gemfile_content[/ruby\s+['"]([\d.]+)['"]/, 1]
+        T.let(ruby_version, T.nilable(String))
       end
 
       sig { returns(T.nilable(String)) }
       def self.ruby_version_from_ruby_version_file
-        # Ensure file_content is either a String or nil
-        file_content = T.let(::Bundler.read_file(".ruby-version"), T.nilable(String))
+        begin
+          file_content = File.read(".ruby-version").strip
+        rescue SystemCallError
+          # Handle .ruby-version file not existing, return nil
+          return nil
+        end
 
-        return nil unless file_content.is_a?(String)
-
-        # Regex match to extract the Ruby version
-        ruby_version = if /^ruby(-|\s+)?([^\s#]+)/ =~ file_content
-                         T.let(::Regexp.last_match(2), T.nilable(String))
-                       else
-                         T.let(file_content.strip, T.nilable(String))
-                       end
-
-        ruby_version
-      rescue SystemCallError
-        # Handle .ruby-version file not existing, return nil
-        nil
+        # Regex to extract the Ruby version
+        file_content[/^ruby(-|\s+)?([^\s#]+)/, 2] || file_content
       end
     end
   end

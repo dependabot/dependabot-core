@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "parallel"
+require "dependabot/bundler/language"
+require "dependabot/bundler/package_manager"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -53,7 +55,7 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def language
-        Language.new(bundler_version)
+        Language.new(ruby_version)
       end
 
       def check_external_code(dependencies)

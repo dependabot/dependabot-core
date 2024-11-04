@@ -17,7 +17,7 @@ module Dependabot
         super(
           LANGUAGE,
           Version.new(raw_version)
-       )
+        )
       end
     end
   end
