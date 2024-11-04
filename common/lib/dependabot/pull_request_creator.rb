@@ -40,6 +40,8 @@ module Dependabot
 
     class UnmergedPRExists < StandardError; end
 
+    class BranchAlreadyExists < StandardError; end
+
     class BaseCommitNotUpToDate < StandardError; end
 
     class UnexpectedError < StandardError; end
@@ -396,12 +398,6 @@ module Dependabot
 
     sig { returns(Dependabot::PullRequestCreator::BranchNamer) }
     def branch_namer
-      if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
-        Dependabot.logger.debug(
-          "Dependabot::PullRequestCreator::branch_namer : #{existing_branches}"
-        )
-      end
-
       @branch_namer ||= T.let(
         BranchNamer.new(
           dependencies: dependencies,
