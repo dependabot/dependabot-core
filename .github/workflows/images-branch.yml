@@ -1,7 +1,7 @@
 name: Branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   pull_request:
     branches:
       - main
@@ -24,7 +24,7 @@ jobs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
@@ -55,6 +55,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
           - { name: github_actions, ecosystem: github-actions }
@@ -77,7 +78,7 @@ jobs:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 

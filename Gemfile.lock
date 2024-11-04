@@ -19,7 +19,7 @@ PATH
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
       commonmarker (>= 0.20.1, < 0.24.0)
-      docker_registry2 (~> 1.18.0)
+      docker_registry2 (~> 1.18.2)
       excon (~> 0.109)
       faraday (= 2.7.11)
       faraday-retry (= 2.2.0)
@@ -51,6 +51,12 @@ PATH
   remote: docker
   specs:
     dependabot-docker (0.283.0)
+      dependabot-common (= 0.283.0)
+
+PATH
+  remote: dotnet_sdk
+  specs:
+    dependabot-dotnet_sdk (0.283.0)
       dependabot-common (= 0.283.0)
 
 PATH
@@ -174,7 +180,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.5.0)
     docile (1.4.0)
-    docker_registry2 (1.18.0)
+    docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
     domain_name (0.6.20231109)
     erubi (1.13.0)
@@ -377,6 +383,7 @@ DEPENDENCIES
   dependabot-composer!
   dependabot-devcontainers!
   dependabot-docker!
+  dependabot-dotnet_sdk!
   dependabot-elm!
   dependabot-git_submodules!
   dependabot-github_actions!
