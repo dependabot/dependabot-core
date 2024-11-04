@@ -13,7 +13,6 @@ module Dependabot
       # newest version we support
       DEFAULT = V2
       BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
-      RUBY_VERSION_REGEX = /RUBY VERSION\s+ruby\s+([^\s]+)/
 
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.bundler_version(lockfile)

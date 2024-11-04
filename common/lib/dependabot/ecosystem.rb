@@ -113,8 +113,8 @@ module Dependabot
 
     # Initialize with mandatory name and optional language information.
     # @param name [String] the name of the ecosystem (e.g., "bundler", "npm_and_yarn").
-    # @param package_manager [VersionManager] the package manager.
-    # @param language [VersionManager] the language.
+    # @param package_manager [VersionManager] the package manager (mandatory).
+    # @param language [VersionManager] the language (optional).
     sig do
       params(
         name: String,

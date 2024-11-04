@@ -50,11 +50,15 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        PackageManager.new(bundler_raw_version)
+        @package_manager ||= PackageManager.new(bundler_raw_version)
       end
 
-      sig { returns(Ecosystem::VersionManager) }
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
+        return @language if defined?(@language)
+
+        return nil unless package_manager.unsupported?
+
         Language.new(ruby_raw_version)
       end
 
