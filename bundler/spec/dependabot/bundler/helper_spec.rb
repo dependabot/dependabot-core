@@ -2,48 +2,17 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-
 require "dependabot/bundler/helpers"
 
 RSpec.describe Dependabot::Bundler::Helpers do
   let(:no_lockfile) { nil }
+  let(:no_gemfile) { nil }
+  let(:no_ruby_version_file) { nil }
 
-  let(:lockfile_bundled_with_missing) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-    LOCKFILE
-  end
-
-  let(:lockfile_bundled_with_v1) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
-      BUNDLED WITH
-        1.17.3
-    LOCKFILE
-  end
-
-  let(:lockfile_bundled_with_v2) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
-      BUNDLED WITH
-        2.2.11
-    LOCKFILE
-  end
-
-  let(:lockfile_bundled_with_future_version) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
-      BUNDLED WITH
-        3.9.99
-    LOCKFILE
-  end
-
-  let(:gemfile) do
+  let(:gemfile_with_ruby_version) do
     Dependabot::DependencyFile.new(name: "Gemfile", content: <<~GEMFILE)
       source 'https://rubygems.org'
+      ruby '3.0.0'
       gem 'rails'
     GEMFILE
   end
@@ -55,7 +24,32 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:no_ruby_version_file) { nil }
+  let(:lockfile_bundled_with_v1) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      BUNDLED WITH
+        1.17.3
+    LOCKFILE
+  end
+
+  let(:lockfile_bundled_with_v2) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      BUNDLED WITH
+        2.2.11
+    LOCKFILE
+  end
+
+  let(:lockfile_bundled_with_future_version) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      BUNDLED WITH
+        3.9.99
+    LOCKFILE
+  end
+
+  let(:lockfile_bundled_with_missing) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      Mock Gemfile.lock Content Goes Here
+    LOCKFILE
+  end
 
   let(:ruby_version_file) do
     Dependabot::DependencyFile.new(name: ".ruby-version", content: "ruby-2.7.1")
@@ -114,25 +108,58 @@ RSpec.describe Dependabot::Bundler::Helpers do
   end
 
   describe "#ruby_version" do
-    before do
-      bundler_definition = instance_double(::Bundler::Definition)
-      ruby_version = instance_double(::Bundler::RubyVersion, gem_version: Gem::Version.new(RUBY_VERSION))
-      allow(bundler_definition).to receive(:ruby_version).and_return(ruby_version)
-      allow(described_class).to receive(:build_definition).and_return(bundler_definition)
+    context "when there is lockfile, no gemfile, and no ruby version file" do
+      it "returns the Ruby version from the lockfile" do
+        expect(described_class.ruby_version(no_gemfile, lockfile_with_ruby_version)).to eq("2.7.2")
+      end
     end
 
-    it "returns the Ruby version from the lockfile if available" do
-      expect(described_class.ruby_version(gemfile, lockfile_with_ruby_version)).to eq("2.7.2")
+    context "when there is lockfile, gemfile, and no ruby version file" do
+      it "returns the Ruby version from the lockfile" do
+        expect(described_class.ruby_version(gemfile_with_ruby_version, lockfile_with_ruby_version)).to eq("2.7.2")
+      end
     end
 
-    it "returns the Ruby version from the .ruby-version file if no lockfile Ruby version is available" do
-      allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return("2.7.1")
-      expect(described_class.ruby_version(gemfile, no_lockfile)).to eq("2.7.1")
+    context "when there is lockfile, no gemfile, and a ruby version file" do
+      it "returns the Ruby version from the .ruby-version file" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return("2.7.1")
+        expect(described_class.ruby_version(no_gemfile, lockfile_with_ruby_version)).to eq("2.7.1")
+      end
     end
 
-    it "falls back to the current Ruby version if no other version is found" do
-      allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return(nil)
-      expect(described_class.ruby_version(gemfile, no_lockfile)).to eq(RUBY_VERSION)
+    context "when there is lockfile, gemfile, and a ruby version file" do
+      it "returns the Ruby version from the .ruby-version file" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return("2.7.1")
+        expect(described_class.ruby_version(gemfile_with_ruby_version, lockfile_with_ruby_version)).to eq("2.7.1")
+      end
+    end
+
+    context "when there is no lockfile, but gemfile and a ruby version file" do
+      it "returns the Ruby version from the .ruby-version file" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return("2.7.1")
+        expect(described_class.ruby_version(gemfile_with_ruby_version, no_lockfile)).to eq("2.7.1")
+      end
+    end
+
+    context "when there is no lockfile, no gemfile, and a ruby version file" do
+      it "returns the Ruby version from the .ruby-version file" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return("2.7.1")
+        expect(described_class.ruby_version(no_gemfile, no_lockfile)).to eq("2.7.1")
+      end
+    end
+
+    context "when there is no lockfile, gemfile with ruby version, and no ruby version file" do
+      it "returns the Ruby version from the Gemfile" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return(nil)
+        expect(described_class.ruby_version(gemfile_with_ruby_version, no_lockfile)).to eq("3.0.0")
+      end
+    end
+
+    context "when there is no lockfile, no gemfile, and no ruby version file" do
+      it "falls back to the current Ruby version" do
+        allow(described_class).to receive(:ruby_version_from_ruby_version_file).and_return(nil)
+        expect(described_class.ruby_version(no_gemfile, no_lockfile)).to eq(RUBY_VERSION)
+      end
     end
   end
 end
