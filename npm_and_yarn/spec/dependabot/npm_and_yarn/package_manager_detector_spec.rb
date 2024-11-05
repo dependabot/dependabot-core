@@ -98,10 +98,59 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
 
     context "when no lockfile and packageManager attribute, but engines field exists" do
       let(:lockfiles) { {} }
-      let(:package_json) { { "engines" => { "yarn" => "1" } } }
 
-      it "returns yarn from engines field" do
-        expect(detector.detect_package_manager).to eq("yarn")
+      context "when there is single package manager in engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "yarn" => "1" } } }
+
+        it "returns yarn from engines field" do
+          expect(detector.detect_package_manager).to eq("yarn")
+        end
+      end
+
+      context "when there are multiple package managers (npm, yarn, pnpm) in engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "npm" => "1", "yarn" => "1", "pnpm" => "1", "node" => "2" } } }
+
+        it "returns first (npm) found valid package manager in order of (npm, yarn, pnpm)" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when there are multiple package managers (npm, yarn, pnpm) in engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "node" => "2", "yarn" => "1", "pnpm" => "1" } } }
+
+        it "returns first (yarn) found valid package manager in order of (npm, yarn, pnpm)" do
+          expect(detector.detect_package_manager).to eq("yarn")
+        end
+      end
+
+      context "when there are multiple package managers in engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "npm" => "1", "yarn" => "1", "pnpm" => "1", "unknown" => "2" } } }
+
+        it "returns npm from engines field" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when there is zero package manager in engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => {} } }
+
+        it "returns default (npm) when no package manager can be detected" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
+      end
+
+      context "when there are unknown keys in the engines" do
+        let(:lockfiles) { {} }
+        let(:package_json) { { "engines" => { "node" => "1" } } }
+
+        it "returns default (npm)" do
+          expect(detector.detect_package_manager).to eq("npm")
+        end
       end
     end
 
@@ -109,7 +158,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
 
-      it "returns nil when no package manager can be detected" do
+      it "returns default (npm)" do
         expect(detector.detect_package_manager).to eq("npm")
       end
     end
