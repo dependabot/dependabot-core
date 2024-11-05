@@ -74,32 +74,7 @@ module Dependabot
             sanitized_name[[T.must(max_length) - sha.size, 0].max..] = sha
           end
 
-          if Dependabot::Experiments.enabled?(:dedup_branch_names)
-            dedup_existing_branches(sanitized_name)
-          else
-            sanitized_name
-          end
-        end
-
-        sig { params(ref: String).returns(String) }
-        def dedup_existing_branches(ref)
-          Dependabot.logger.debug(
-            "Dependabot::PullRequestCreator::dedup_existing_branches::ref : #{ref}"
-          )
-          return ref unless existing_branches.include?(ref)
-
-          i = 1
-          new_ref = "#{ref}-#{i}"
-          while existing_branches.include?(new_ref)
-            i += 1
-            new_ref = "#{ref}-#{i}"
-          end
-
-          Dependabot.logger.debug(
-            "Dependabot::PullRequestCreator::dedup_existing_branches::new_ref : #{new_ref}"
-          )
-
-          new_ref
+          sanitized_name
         end
 
         sig { params(ref: String).returns(String) }
