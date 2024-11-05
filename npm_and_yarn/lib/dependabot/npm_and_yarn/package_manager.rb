@@ -191,9 +191,10 @@ module Dependabot
       def name_from_engines
         return unless @engines.is_a?(Hash)
 
-        PACKAGE_MANAGER_CLASSES.each_key do |manager_name| # iterates keys in order as defined in the hash
-          return manager_name.to_s if @engines[manager_name.to_s]
+        PACKAGE_MANAGER_CLASSES.each_key do |manager_name|
+          return manager_name if @engines[manager_name]
         end
+        nil
       end
     end
 
