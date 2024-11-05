@@ -44,11 +44,11 @@ module Dependabot
       def self.bundler_version_requirement(files)
         bundler_version_constraints = bundler_version_constraints(files)
 
-        return nil if bundler_version_constraints.empty?
+        return nil if bundler_version_constraints.none?
 
         combined_constraint = bundler_version_constraints.join(", ")
 
-        Requirement.new(requirement: combined_constraint)
+        Requirement.new(combined_constraint)
       end
 
       # Extracts all version constraints for `bundler` from the given files
