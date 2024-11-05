@@ -1,4 +1,4 @@
-# typed: strong
+# typed: strict
 # frozen_string_literal: true
 
 module Dependabot
@@ -9,15 +9,13 @@ module Dependabot
 
       V1 = "1"
       V2 = "2"
-      # If we are updating a project with no Gemfile.lock, we default to the
-      # newest version we support
       DEFAULT = V2
       BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
 
       GEMFILE = "Gemfile"
       GEMSPEC_EXTENSION = ".gemspec"
       BUNDLER_GEM_NAME = "bundler"
-      BUNDLER_REQUIREMENT_REGEX = /gem\s+['"]#{BUNDLER_GEM_NAME}['"],\s*['"](.+?)['"]/
+      BUNDLER_REQUIREMENT_REGEX = /gem\s+['"]#{BUNDLER_GEM_NAME}['"],\s*((['"].+?['"],\s*)*['"].+?['"])/
 
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.bundler_version(lockfile)
@@ -41,19 +39,36 @@ module Dependabot
         end
       end
 
-      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
-      def self.bundler_requirement(files)
-        # Search through provided files for an explicit Bundler requirement
+      # Combines all version constraints for `bundler` in the given files into a single requirement
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Requirement)) }
+      def self.bundler_version_requirement(files)
+        bundler_version_constraints = bundler_version_constraints(files)
+
+        return nil if bundler_version_constraints.empty?
+
+        combined_constraint = bundler_version_constraints.join(", ")
+
+        Requirement.new(requirement: combined_constraint)
+      end
+
+      # Extracts all version constraints for `bundler` from the given files
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
+      def self.bundler_version_constraints(files)
         files.each do |file|
-          # Only check relevant files (Gemfile or .gemspec files)
           next unless file.name.end_with?(GEMFILE, GEMSPEC_EXTENSION)
 
-          # Check for a Bundler version requirement in the file content
-          if T.let(file.content, T.nilable(String))&.match(BUNDLER_REQUIREMENT_REGEX)
-            return Regexp.last_match(1) # Return the matched requirement (e.g., "~> 2.0")
-          end
+          next unless (match = T.let(file.content, T.nilable(String))&.match(BUNDLER_REQUIREMENT_REGEX))
+
+          constraints_string = match[1]
+
+          return [] unless constraints_string
+
+          scanned_constraints = constraints_string.scan(/['"][^'"]+['"]/)
+          constraints = T.let(scanned_constraints.flatten, T::Array[String])
+
+          return constraints.map { |req| req.tr('"\'', "") }
         end
-        nil
+        []
       end
     end
   end

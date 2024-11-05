@@ -50,9 +50,11 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        requirement = bundler_requirement&.then { |constraint| Requirement.new(requirement: constraint) }
+        @package_manager ||= PackageManager.new(bundler_raw_version, package_manager_requirement)
+      end
 
-        @package_manager ||= PackageManager.new(bundler_raw_version, requirement)
+      def package_manager_requirement
+        @package_manager_requirement ||= Helpers.bundler_version_requirement(dependency_files)
       end
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
@@ -389,11 +391,6 @@ module Dependabot
       sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
-      end
-
-      sig { returns(T.nilable(String)) }
-      def bundler_requirement
-        @bundler_requirement ||= Helpers.bundler_requirement(dependency_files)
       end
     end
   end
