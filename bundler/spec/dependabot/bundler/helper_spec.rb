@@ -2,22 +2,30 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-
 require "dependabot/bundler/helpers"
 
 RSpec.describe Dependabot::Bundler::Helpers do
   let(:no_lockfile) { nil }
+  let(:no_gemfile) { nil }
+  let(:no_ruby_version_file) { nil }
 
-  let(:lockfile_bundled_with_missing) do
+  let(:gemfile_with_ruby_version) do
+    Dependabot::DependencyFile.new(name: "Gemfile", content: <<~GEMFILE)
+      source 'https://rubygems.org'
+      ruby '3.0.0'
+      gem 'rails'
+    GEMFILE
+  end
+
+  let(:lockfile_with_ruby_version) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
+      RUBY VERSION
+         ruby 2.7.2
     LOCKFILE
   end
 
   let(:lockfile_bundled_with_v1) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
       BUNDLED WITH
         1.17.3
     LOCKFILE
@@ -25,8 +33,6 @@ RSpec.describe Dependabot::Bundler::Helpers do
 
   let(:lockfile_bundled_with_v2) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
       BUNDLED WITH
         2.2.11
     LOCKFILE
@@ -34,11 +40,19 @@ RSpec.describe Dependabot::Bundler::Helpers do
 
   let(:lockfile_bundled_with_future_version) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
-      Mock Gemfile.lock Content Goes Here
-
       BUNDLED WITH
         3.9.99
     LOCKFILE
+  end
+
+  let(:lockfile_bundled_with_missing) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      Mock Gemfile.lock Content Goes Here
+    LOCKFILE
+  end
+
+  let(:ruby_version_file) do
+    Dependabot::DependencyFile.new(name: ".ruby-version", content: "ruby-2.7.1")
   end
 
   describe "#bundler_version" do

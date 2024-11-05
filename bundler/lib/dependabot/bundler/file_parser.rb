@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require "parallel"
+require "dependabot/bundler/language"
+require "dependabot/bundler/package_manager"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -37,7 +39,8 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: package_manager
+            package_manager: package_manager,
+            language: language
           ),
           T.nilable(Ecosystem)
         )
@@ -47,7 +50,16 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        PackageManager.new(bundler_version)
+        @package_manager ||= PackageManager.new(bundler_raw_version)
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        return @language if defined?(@language)
+
+        return nil if package_manager.unsupported?
+
+        Language.new(ruby_raw_version)
       end
 
       def check_external_code(dependencies)
@@ -325,6 +337,51 @@ module Dependabot
         dependency_files
           .select { |f| f.name.end_with?(".rb") }
           .reject { |f| f.name == "gems.rb" }
+      end
+
+      sig { returns(String) }
+      def bundler_raw_version
+        return bundler_raw_version if defined?(@bundler_raw_version)
+
+        package_manager = PackageManager.new(bundler_version)
+
+        # If the selected version is unsupported, an unsupported error will be raised,
+        # so there’s no need to attempt retrieving the raw version.
+        return bundler_version if package_manager.unsupported?
+
+        # read raw version directly from the ecosystem environment
+        bundler_raw_version = SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "bundler_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        bundler_raw_version || ::Bundler::VERSION
+      end
+
+      sig { returns(String) }
+      def ruby_raw_version
+        return @ruby_raw_version if defined?(@ruby_raw_version)
+
+        ruby_raw_version = SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "ruby_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        ruby_raw_version || RUBY_VERSION
       end
 
       sig { returns(String) }
