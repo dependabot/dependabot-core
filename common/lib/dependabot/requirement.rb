@@ -31,19 +31,29 @@ module Dependabot
     # Returns the minimum version based on the requirement constraints
     sig { returns(T.nilable(Gem::Version)) }
     def min_version
+      # Select constraints with minimum operators
       min_constraints = requirements.select { |op, _| MINIMUM_OPERATORS.include?(op) }
-      min_constraint = min_constraints.min_by { |_, version| version }
-      min_constraint&.last
+
+      # Choose the maximum version among the minimum constraints
+      max_min_constraint = min_constraints.max_by { |_, version| version }
+
+      # Return the version part of the max constraint, if it exists
+      max_min_constraint&.last
     end
 
     # Returns the maximum version based on the requirement constraints
     sig { returns(T.nilable(Gem::Version)) }
     def max_version
+      # Select constraints with maximum operators
       max_constraints = requirements.select { |op, _| MAXIMUM_OPERATORS.include?(op) }
-      max_versions = max_constraints.map do |op, version|
+
+      # Map each constraint to its effective upper bound, calculating for `~>`
+      min_max_constraint = max_constraints.min_by do |op, version|
         op == "~>" ? version.bump : version
       end
-      max_versions.max
+
+      # Return the smallest maximum constraint, if it exists
+      min_max_constraint&.last
     end
   end
 end
