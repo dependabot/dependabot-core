@@ -182,7 +182,7 @@ public class RunWorker
                         var dependencyLocation = Path.GetFullPath(Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"));
                         if (dependency.Type == DependencyType.PackagesConfig)
                         {
-                            dependencyLocation = GetPackagesConfigFromCsprojLocation(dependencyLocation);
+                            dependencyLocation = Path.Combine(Path.GetDirectoryName(dependencyLocation) ?? "/", "packages.config");
                         }
 
                         // TODO: this is inefficient, but not likely causing a bottleneck
@@ -346,7 +346,7 @@ public class RunWorker
                         Name = d.Name,
                         Requirements = d.IsTransitive ? [] : [new ReportedRequirement()
                         {
-                            File = d.Type == DependencyType.PackagesConfig ? GetPackagesConfigFromCsprojLocation(GetFullRepoPath(p.FilePath)) : GetFullRepoPath(p.FilePath),
+                            File = d.Type == DependencyType.PackagesConfig ? Path.Combine(Path.GetDirectoryName(p.FilePath) ?? "/", "packages.config") : GetFullRepoPath(p.FilePath),
                             Requirement = d.Version!,
                             Groups = ["dependencies"],
                         }],
@@ -357,16 +357,6 @@ public class RunWorker
             DependencyFiles = discoveryResult.Projects.Select(p => GetFullRepoPath(p.FilePath)).Concat(auxiliaryFiles).ToArray(),
         };
         return updatedDependencyList;
-    }
-
-    private static string GetPackagesConfigFromCsprojLocation(string fullRepoPath)
-    {
-        int lastSlash;
-        fullRepoPath = Path.GetFullPath(fullRepoPath).NormalizePathToUnix().EnsurePrefix("/");
-
-        lastSlash = fullRepoPath.LastIndexOf('/');
-
-        return fullRepoPath.Substring(0, lastSlash + 1) + "packages.config";
     }
 
     public static JobFile Deserialize(string json)
