@@ -750,11 +750,11 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             name: "requests",
             version: "1.2.3",
             requirements: [{
-                             file: "pyproject.toml",
-                             requirement: "~=1.0.0",
-                             groups: [],
-                             source: nil
-                           }],
+              file: "pyproject.toml",
+              requirement: "~=1.0.0",
+              groups: [],
+              source: nil
+            }],
             package_manager: "pip"
           )
         end
