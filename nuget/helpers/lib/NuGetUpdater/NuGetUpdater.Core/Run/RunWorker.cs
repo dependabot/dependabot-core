@@ -182,7 +182,7 @@ public class RunWorker
                         var dependencyLocation = Path.GetFullPath(Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"));
                         if (dependency.Type == DependencyType.PackagesConfig)
                         {
-                            dependencyLocation = Path.Combine(Path.GetDirectoryName(dependencyLocation) ?? "/", "packages.config");
+                            dependencyLocation = Path.Combine(Path.GetDirectoryName(dependencyLocation)!, "packages.config");
                         }
 
                         // TODO: this is inefficient, but not likely causing a bottleneck
@@ -346,7 +346,7 @@ public class RunWorker
                         Name = d.Name,
                         Requirements = d.IsTransitive ? [] : [new ReportedRequirement()
                         {
-                            File = d.Type == DependencyType.PackagesConfig ? Path.Combine(Path.GetDirectoryName(p.FilePath) ?? "/", "packages.config") : GetFullRepoPath(p.FilePath),
+                            File = d.Type == DependencyType.PackagesConfig ? Path.Combine(Path.GetDirectoryName(GetFullRepoPath(p.FilePath))!, "packages.config"): GetFullRepoPath(p.FilePath),
                             Requirement = d.Version!,
                             Groups = ["dependencies"],
                         }],
