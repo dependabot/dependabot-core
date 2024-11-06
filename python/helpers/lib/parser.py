@@ -24,7 +24,7 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    project_toml = toml.load(pyproject_path)['project']
+    project_toml = toml.load(pyproject_path)
 
     def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
         requirement_packages = []
@@ -54,26 +54,34 @@ def parse_pep621_dependencies(pyproject_path):
 
     dependencies = []
 
-    if 'dependencies' in project_toml:
-        dependencies_toml = project_toml['dependencies']
+    if 'project' in project_toml:
+        project_section = project_toml['project']
 
-        runtime_dependencies = parse_toml_section_pep621_dependencies(
-            pyproject_path,
-            dependencies_toml
-        )
-
-        dependencies.extend(runtime_dependencies)
-
-    if 'optional-dependencies' in project_toml:
-        optional_dependencies_toml = project_toml['optional-dependencies']
-
-        for group in optional_dependencies_toml:
-            group_dependencies = parse_toml_section_pep621_dependencies(
+        if 'dependencies' in project_section:
+            dependencies_toml = project_section['dependencies']
+            runtime_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
-                optional_dependencies_toml[group]
+                dependencies_toml
             )
+            dependencies.extend(runtime_dependencies)
 
-            dependencies.extend(group_dependencies)
+        if 'optional-dependencies' in project_section:
+            optional_dependencies_toml = project_section['optional-dependencies']
+            for group in optional_dependencies_toml:
+                group_dependencies = parse_toml_section_pep621_dependencies(
+                    pyproject_path,
+                    optional_dependencies_toml[group]
+                )
+                dependencies.extend(group_dependencies)
+
+    if 'build-system' in project_toml:
+        build_system_section = project_toml['build-system']
+        if 'requires' in build_system_section:
+            build_system_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                build_system_section['requires']
+            )
+            dependencies.extend(build_system_dependencies)
 
     return json.dumps({"result": dependencies})
 
