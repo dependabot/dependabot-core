@@ -51,6 +51,14 @@ RSpec.describe Dependabot::Requirement do
 
       it { is_expected.to be_nil }
     end
+
+    context "when a constraint uses the '~>' operator with a minor version" do
+      let(:constraint_string) { "~> 2.3.0" }
+
+      it "returns the starting version as the minimum version" do
+        expect(min_version).to eq(Gem::Version.new("2.3.0"))
+      end
+    end
   end
 
   describe "#max_version" do

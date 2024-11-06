@@ -9,7 +9,7 @@ module Dependabot
     extend T::Helpers
 
     # Constants for operator groups
-    MINIMUM_OPERATORS = %w(>= >).freeze
+    MINIMUM_OPERATORS = %w(>= > ~>).freeze
     MAXIMUM_OPERATORS = %w(<= < ~>).freeze
 
     abstract!

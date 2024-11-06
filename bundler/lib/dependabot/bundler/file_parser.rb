@@ -54,7 +54,7 @@ module Dependabot
       end
 
       def package_manager_requirement
-        @package_manager_requirement ||= Helpers.bundler_version_requirement(dependency_files)
+        @package_manager_requirement ||= Helpers.bundler_dependency_requirement(dependency_files)
       end
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }

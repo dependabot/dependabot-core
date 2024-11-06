@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/bundler/requirement"
+
 module Dependabot
   module Bundler
     module Helpers
@@ -15,7 +17,6 @@ module Dependabot
       GEMFILE = "Gemfile"
       GEMSPEC_EXTENSION = ".gemspec"
       BUNDLER_GEM_NAME = "bundler"
-      BUNDLER_REQUIREMENT_REGEX = /gem\s+['"]#{BUNDLER_GEM_NAME}['"],\s*((['"].+?['"],\s*)*['"].+?['"])/
 
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.bundler_version(lockfile)
@@ -39,36 +40,67 @@ module Dependabot
         end
       end
 
-      # Combines all version constraints for `bundler` in the given files into a single requirement
-      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Requirement)) }
-      def self.bundler_version_requirement(files)
-        bundler_version_constraints = bundler_version_constraints(files)
+      # Method to get the Requirement object for the 'bundler' dependency
+      sig do
+        params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Dependabot::Bundler::Requirement))
+      end
+      def self.bundler_dependency_requirement(files)
+        constraints = combined_dependency_constraints(files, BUNDLER_GEM_NAME)
+        return nil if constraints.empty?
 
-        return nil if bundler_version_constraints.none?
+        combined_constraint = constraints.join(", ")
 
-        combined_constraint = bundler_version_constraints.join(", ")
-
-        Requirement.new(combined_constraint)
+        Dependabot::Bundler::Requirement.new(combined_constraint)
+      rescue StandardError => e
+        Dependabot.logger.error(
+          "Failed to create Requirement with constraints '#{constraints&.join(', ')}': #{e.message}"
+        )
+        nil
       end
 
-      # Extracts all version constraints for `bundler` from the given files
-      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
-      def self.bundler_version_constraints(files)
-        files.each do |file|
-          next unless file.name.end_with?(GEMFILE, GEMSPEC_EXTENSION)
+      # Method to gather and combine constraints for a specified dependency from multiple files
+      sig do
+        params(files: T::Array[Dependabot::DependencyFile], dependency_name: String).returns(T::Array[String])
+      end
+      def self.combined_dependency_constraints(files, dependency_name)
+        files.each_with_object([]) do |file, result|
+          content = file.content
+          next unless content
 
-          next unless (match = T.let(file.content, T.nilable(String))&.match(BUNDLER_REQUIREMENT_REGEX))
+          # Select the appropriate regex based on file type
+          regex = if file.name.end_with?(GEMFILE)
+                    gemfile_dependency_regex(dependency_name)
+                  elsif file.name.end_with?(GEMSPEC_EXTENSION)
+                    gemspec_dependency_regex(dependency_name)
+                  else
+                    next # Skip unsupported file types
+                  end
 
-          constraints_string = match[1]
+          # Extract constraints using the chosen regex
+          result.concat(extract_constraints_from_file(content, regex))
+        end.uniq
+      end
 
-          return [] unless constraints_string
+      # Method to generate the regex pattern for a dependency in a Gemfile
+      sig { params(dependency_name: String).returns(Regexp) }
+      def self.gemfile_dependency_regex(dependency_name)
+        /gem\s+['"]#{Regexp.escape(dependency_name)}['"](?:,\s*['"]([^'"]+)['"])?/
+      end
 
-          scanned_constraints = constraints_string.scan(/['"][^'"]+['"]/)
-          constraints = T.let(scanned_constraints.flatten, T::Array[String])
+      # Method to generate the regex pattern for a dependency in a gemspec file
+      sig { params(dependency_name: String).returns(Regexp) }
+      def self.gemspec_dependency_regex(dependency_name)
+        /add_(?:runtime_)?dependency\s+['"]#{Regexp.escape(dependency_name)}['"],\s*['"]([^'"]+)['"]/
+      end
 
-          return constraints.map { |req| req.tr('"\'', "") }
+      # Extracts constraints from file content based on a dependency regex
+      sig { params(content: String, regex: Regexp).returns(T::Array[String]) }
+      def self.extract_constraints_from_file(content, regex)
+        if content.match(regex)
+          content.scan(regex).flatten
+        else
+          []
         end
-        []
       end
     end
   end
