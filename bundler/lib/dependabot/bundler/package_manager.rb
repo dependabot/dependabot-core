@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/bundler/version"
 require "dependabot/ecosystem"
+require "dependabot/bundler/requirement"
 
 module Dependabot
   module Bundler

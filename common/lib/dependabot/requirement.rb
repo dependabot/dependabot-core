@@ -28,7 +28,7 @@ module Dependabot
       requirements.map { |op, version| "#{op} #{version}" }
     end
 
-    # Returns the minimum version based on the requirement constraints
+    # Returns the highest lower limit among all minimum constraints.
     sig { returns(T.nilable(Gem::Version)) }
     def min_version
       # Select constraints with minimum operators
@@ -41,6 +41,7 @@ module Dependabot
       Dependabot::Version.new(max_min_constraint&.last) if max_min_constraint&.last
     end
 
+    # Returns the lowest upper limit among all maximum constraints.
     sig { returns(T.nilable(Dependabot::Version)) }
     def max_version
       # Select constraints with maximum operators
