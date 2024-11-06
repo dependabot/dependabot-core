@@ -7,11 +7,6 @@ require "dependabot/version"
 
 # Define an anonymous subclass of Dependabot::Requirement for testing purposes
 TestRequirement = Class.new(Dependabot::Requirement) do
-  sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Dependabot::Requirement]) }
-  def self.requirements_array(requirement_string)
-    [new(requirement_string)]
-  end
-
   # Initialize with comma-separated requirement constraints
   def initialize(constraint_string)
     requirements = constraint_string.split(",").map(&:strip)
