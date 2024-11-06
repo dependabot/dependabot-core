@@ -24,12 +24,26 @@ RSpec.describe Dependabot::Ecosystem do
     end.new(package_manager_raw_version, deprecated_versions, supported_versions)
   end
 
+  let(:language) do
+    Class.new(Dependabot::Ecosystem::VersionManager) do
+      def initialize(raw_version)
+        super(
+          "ruby", # name
+          Dependabot::Version.new(raw_version), # version
+          [], # deprecated_versions
+          []  # supported_versions
+        )
+      end
+    end.new(language_raw_version)
+  end
+
   describe "#initialize" do
     it "sets the correct attributes" do
-      ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+      ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
 
       expect(ecosystem.name).to eq("bundler")
       expect(ecosystem.package_manager.name).to eq("bundler")
+      expect(ecosystem.language.name).to eq("ruby")
     end
   end
 
@@ -38,7 +52,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "1" }
 
       it "returns true" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect(ecosystem.deprecated?).to be true
       end
     end
@@ -47,7 +61,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "returns false" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect(ecosystem.deprecated?).to be false
       end
     end
@@ -58,7 +72,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "0.8.0" }
 
       it "returns true" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect(ecosystem.unsupported?).to be true
       end
     end
@@ -67,7 +81,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "returns false" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect(ecosystem.unsupported?).to be false
       end
     end
@@ -78,7 +92,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "0.8.0" }
 
       it "raises a ToolVersionNotSupported error" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect { ecosystem.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
@@ -87,7 +101,7 @@ RSpec.describe Dependabot::Ecosystem do
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "does not raise an error" do
-        ecosystem = described_class.new(name: "bundler", package_manager: package_manager)
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect { ecosystem.raise_if_unsupported! }.not_to raise_error
       end
     end
