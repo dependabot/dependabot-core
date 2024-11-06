@@ -355,15 +355,21 @@ public partial class AnalyzeWorker
     {
         foreach (var packageId in packageIds)
         {
-            var isCompatible = await CompatibilityChecker.CheckAsync(
-                new(packageId, currentVersion),
-                projectFrameworks,
-                nugetContext,
-                logger,
-                cancellationToken);
-            if (!isCompatible)
+            // if the packageId contains a semi-colon, split it and run the logic on both parts.
+            var packageIdParts = packageId.Contains(';') ? packageId.Split(';') : new[] { packageId }; // get rid of contains and just select and trim
+
+            foreach (var id in packageIdParts)
             {
-                return false;
+                var isCompatible = await CompatibilityChecker.CheckAsync(
+                    new(id, currentVersion),
+                    projectFrameworks,
+                    nugetContext,
+                    logger,
+                    cancellationToken);
+                if (!isCompatible)
+                {
+                    return false;
+                }
             }
         }
 

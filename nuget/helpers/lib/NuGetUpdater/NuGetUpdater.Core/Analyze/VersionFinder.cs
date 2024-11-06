@@ -23,7 +23,7 @@ internal static class VersionFinder
         return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
     }
 
-    public static Task<VersionResult> GetVersionsAsync(
+    public static async Task<VersionResult> GetVersionsAsync(
         DependencyInfo dependencyInfo,
         NuGetContext nugetContext,
         ILogger logger,
@@ -32,10 +32,37 @@ internal static class VersionFinder
         var packageId = dependencyInfo.Name;
         var versionRange = VersionRange.Parse(dependencyInfo.Version);
         var currentVersion = versionRange.MinVersion!;
-        var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
+        var mergedResult = new VersionResult(currentVersion);
 
-        return GetVersionsAsync(packageId, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+        // If packageId contains a semi-colon, split it and run the logic on both parts.
+        var packageIds = packageId.Contains(';') ? packageId.Split(';') : new[] { packageId };
+
+        foreach (var id in packageIds)
+        {
+            var versionFilter = CreateVersionFilter(dependencyInfo, versionRange);
+
+            // Retrieve versions for each package ID.
+            var result = await GetVersionsAsync(id, currentVersion, versionFilter, nugetContext, logger, cancellationToken);
+
+            // Add current version sources.
+            foreach (var source in result.GetPackageSources(currentVersion))
+            {
+                mergedResult.AddCurrentVersionSource(source);
+            }
+
+            // Add all other versions and their sources.
+            foreach (var version in result.GetVersions())
+            {
+                foreach (var source in result.GetPackageSources(version))
+                {
+                    mergedResult.AddRange(source, new[] { version });
+                }
+            }
+        }
+
+        return mergedResult;
     }
+
 
     public static async Task<VersionResult> GetVersionsAsync(
         string packageId,
@@ -133,11 +160,17 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        foreach (var packageId in packageIds)
+        foreach (var id in packageIds)
         {
-            if (!await DoesVersionExistAsync(packageId, version, nugetContext, logger, cancellationToken))
+            // Split package IDs by semicolon and check each individually.
+            var individualIds = id.Contains(';') ? id.Split(';') : new[] { id };
+
+            foreach (var individualId in individualIds)
             {
-                return false;
+                if (!await DoesVersionExistAsync(individualId, version, nugetContext, logger, cancellationToken))
+                {
+                    return false;
+                }
             }
         }
 
