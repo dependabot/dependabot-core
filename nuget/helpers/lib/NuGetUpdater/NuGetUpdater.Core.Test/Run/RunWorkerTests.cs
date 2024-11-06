@@ -169,13 +169,14 @@ public class RunWorkerTests
     public async Task HandleSemiColon()
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
         await RunAsync(
             packages:
             [
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
                 MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0", additionalMetadata: [repoMetadata]),
-                MockNuGetPackage.CreateSimplePackage("Some.Package2", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
-                MockNuGetPackage.CreateSimplePackage("Some.Package2", "1.0.1", "net8.0", additionalMetadata: [repoMetadata]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "1.0.0", "net8.0", additionalMetadata: [repoMetadata2]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "1.0.1", "net8.0", additionalMetadata: [repoMetadata2]),
             ],
             job: new Job()
             {
