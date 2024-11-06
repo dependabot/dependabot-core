@@ -30,6 +30,26 @@ RSpec.describe Dependabot::Bundler::PackageManager do
       end
     end
 
+    context "when version is a Dependabot::Bundler::Version" do
+      let(:version) { "2" }
+
+      it "sets the version correctly" do
+        expect(package_manager.version).to eq(version)
+      end
+
+      it "sets the name correctly" do
+        expect(package_manager.name).to eq(Dependabot::Bundler::PACKAGE_MANAGER)
+      end
+
+      it "sets the deprecated_versions correctly" do
+        expect(package_manager.deprecated_versions).to eq(Dependabot::Bundler::DEPRECATED_BUNDLER_VERSIONS)
+      end
+
+      it "sets the supported_versions correctly" do
+        expect(package_manager.supported_versions).to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS)
+      end
+    end
+
     context "when a requirement is provided" do
       let(:version) { "2.1" }
       let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.12.0, ~> 2.3.0") }
