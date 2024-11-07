@@ -65,7 +65,7 @@ internal static class SdkProjectDiscovery
                     // Get the complete set of dependencies including transitive dependencies.
                     var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
 
-                    // // Initalize a new list to hold the new dependencies after splitting the ones with semicolons
+                    // // Initialize a new list to hold the new dependencies after splitting the ones with semicolons
                     var processedDependencies = new List<Dependency>();
 
                     // add all the dependencies that do not contain a semicolon to the new list
