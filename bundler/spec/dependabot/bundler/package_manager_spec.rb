@@ -6,7 +6,8 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Bundler::PackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(version, requirement) }
+  let(:requirement) { nil }
 
   describe "#initialize" do
     context "when version is a String" do
@@ -46,6 +47,57 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
       it "sets the supported_versions correctly" do
         expect(package_manager.supported_versions).to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS)
+      end
+    end
+
+    context "when a requirement is provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.12.0, ~> 2.3.0") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq(">= 1.12.0, ~> 2.3.0")
+      end
+
+      it "calculates the correct min_version" do
+        expect(package_manager.requirement.min_version).to eq(Dependabot::Version.new("2.3.0"))
+      end
+
+      it "calculates the correct max_version" do
+        expect(package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.4.0"))
+      end
+    end
+
+    context "when a single minimum constraint is provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.5") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq(">= 1.5")
+      end
+
+      it "calculates the correct min_version" do
+        expect(package_manager.requirement.min_version).to eq(Dependabot::Version.new("1.5"))
+      end
+
+      it "returns nil for max_version" do
+        expect(package_manager.requirement.max_version).to be_nil
+      end
+    end
+
+    context "when multiple maximum constraints are provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new("<= 2.5, < 3.0") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq("<= 2.5, < 3.0")
+      end
+
+      it "calculates the correct max_version" do
+        expect(package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.5"))
+      end
+
+      it "returns nil for min_version" do
+        expect(package_manager.requirement.min_version).to be_nil
       end
     end
   end

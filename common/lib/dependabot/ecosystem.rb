@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/requirement"
 
 module Dependabot
   class Ecosystem
@@ -17,6 +18,7 @@ module Dependabot
       # @param version [Dependabot::Version] the parsed current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
+      # @param requirement [Dependabot::Requirement] an array of requirements.
       # @example
       #   VersionManager.new("bundler", "2.1.4", nil)
       sig do
@@ -24,20 +26,22 @@ module Dependabot
           name: String,
           version: Dependabot::Version,
           deprecated_versions: T::Array[Dependabot::Version],
-          supported_versions: T::Array[Dependabot::Version]
+          supported_versions: T::Array[Dependabot::Version],
+          requirement: T.nilable(Dependabot::Requirement)
         ).void
       end
       def initialize(
         name,
         version,
         deprecated_versions = [],
-        supported_versions = []
+        supported_versions = [],
+        requirement = nil
       )
         @name = T.let(name, String)
         @version = T.let(version, Dependabot::Version)
-
         @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
         @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
+        @requirement = T.let(requirement, T.nilable(Dependabot::Requirement))
       end
 
       # The name of the package manager (e.g., "bundler", "npm").
@@ -61,6 +65,14 @@ module Dependabot
       # Returns an array of supported versions of the package manager.
       sig { returns(T::Array[Dependabot::Version]) }
       attr_reader :supported_versions
+
+      # The current requirement of the package manager or language.
+      # @example
+      #  requirement #=> nil
+      #  requirement #=> Dependabot::Requirement.new(">= 2.1.4")
+      #  requirement #=> Dependabot::Requirement.new(">= 2.1.4, < 3.0")
+      sig { returns(T.nilable(Dependabot::Requirement)) }
+      attr_reader :requirement
 
       # Checks if the current version is deprecated.
       # Returns true if the version is in the deprecated_versions array; false otherwise.

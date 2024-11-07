@@ -3,25 +3,31 @@
 
 require "spec_helper"
 require "dependabot/ecosystem"
+require "dependabot/requirement"
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestRequirement = Class.new(Dependabot::Requirement)
 
 RSpec.describe Dependabot::Ecosystem do
   let(:supported_versions) { [Dependabot::Version.new("1"), Dependabot::Version.new("2")] }
   let(:deprecated_versions) { [Dependabot::Version.new("1")] }
+  let(:requirement) { TestRequirement.new(">= 1.0") }
 
   let(:package_manager_raw_version) { "1.0.0" }
   let(:language_raw_version) { "3.0.0" }
 
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def initialize(raw_version, deprecated_versions, supported_versions)
+      def initialize(raw_version, deprecated_versions, supported_versions, requirement)
         super(
           "bundler", # name
           Dependabot::Version.new(raw_version), # version
           deprecated_versions, # deprecated_versions
-          supported_versions # supported_versions
+          supported_versions, # supported_versions
+          requirement # requirement
         )
       end
-    end.new(package_manager_raw_version, deprecated_versions, supported_versions)
+    end.new(package_manager_raw_version, deprecated_versions, supported_versions, requirement)
   end
 
   let(:language) do
@@ -31,7 +37,8 @@ RSpec.describe Dependabot::Ecosystem do
           "ruby", # name
           Dependabot::Version.new(raw_version), # version
           [], # deprecated_versions
-          []  # supported_versions
+          [], # supported_versions
+          nil # requirement
         )
       end
     end.new(language_raw_version)
@@ -103,6 +110,24 @@ RSpec.describe Dependabot::Ecosystem do
       it "does not raise an error" do
         ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
         expect { ecosystem.raise_if_unsupported! }.not_to raise_error
+      end
+    end
+  end
+
+  describe "#requirement" do
+    context "when a requirement is provided" do
+      it "sets the requirement correctly" do
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
+        expect(ecosystem.package_manager.requirement).to eq(requirement)
+      end
+    end
+
+    context "when no requirement is provided" do
+      let(:requirement) { nil }
+
+      it "returns nil for the requirement" do
+        ecosystem = described_class.new(name: "bundler", package_manager: package_manager, language: language)
+        expect(ecosystem.package_manager.requirement).to be_nil
       end
     end
   end

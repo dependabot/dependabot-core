@@ -50,7 +50,11 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        @package_manager ||= PackageManager.new(bundler_raw_version)
+        @package_manager ||= PackageManager.new(bundler_raw_version, package_manager_requirement)
+      end
+
+      def package_manager_requirement
+        @package_manager_requirement ||= Helpers.bundler_dependency_requirement(dependency_files)
       end
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
