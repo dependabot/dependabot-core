@@ -353,7 +353,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        foreach (var packageId in packageIds)
+        foreach (var packageId in packageIds.SelectMany(id => id.Split(';').Select(part => part.Trim())))
         {
             var isCompatible = await CompatibilityChecker.CheckAsync(
                 new(packageId, currentVersion),
@@ -361,6 +361,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 nugetContext,
                 logger,
                 cancellationToken);
+
             if (!isCompatible)
             {
                 return false;

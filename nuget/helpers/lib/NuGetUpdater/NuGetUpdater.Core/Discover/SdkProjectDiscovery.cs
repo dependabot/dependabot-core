@@ -64,7 +64,28 @@ internal static class SdkProjectDiscovery
 
                     // Get the complete set of dependencies including transitive dependencies.
                     var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
-                    dependencies = dependencies
+
+                    // // Initalize a new list to hold the new dependencies after splitting the ones with semicolons
+                    var processedDependencies = new List<Dependency>();
+
+                    // add all the dependencies that do not contain a semicolon to the new list
+                    processedDependencies.AddRange(dependencies.Where(d => !d.Name.Contains(";")));
+
+                    // loop through the dependencies and if any of the names contain a semicolon, we need to split them into multiple dependencies with all other properties the same
+                    foreach (var dependency in dependencies)
+                    {
+                        if (dependency.Name.Contains(";"))
+                        {
+                            var names = dependency.Name.Split(";");
+                            foreach (var name in names)
+                            {
+                                var newDependency = dependency with { Name = name };
+                                processedDependencies.Add(newDependency);
+                            }
+                        }
+                    }
+
+                    dependencies = processedDependencies
                         .Select(d => d with { TargetFrameworks = tfms })
                         .ToImmutableArray();
                     var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);

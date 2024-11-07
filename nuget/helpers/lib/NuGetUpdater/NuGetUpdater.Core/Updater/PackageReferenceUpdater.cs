@@ -37,6 +37,28 @@ internal static class PackageReferenceUpdater
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
 
+        // if the name contains a semicolon, split it into two identical dependencies except with different names
+        foreach (var dependency in topLevelDependencies)
+        {
+            if (dependency.Name.Contains(';'))
+            {
+                var names = dependency.Name.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var name in names)
+                {
+                    if (name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var newDependency = dependency with
+                    {
+                        Name = name
+                    };
+                    topLevelDependencies = topLevelDependencies.Append(newDependency).ToArray();
+                }
+            }
+        }
+
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;
@@ -674,11 +696,18 @@ internal static class PackageReferenceUpdater
         ProjectBuildFile buildFile,
         string packageName)
         => buildFile.PackageItemNodes.Where(e =>
-            string.Equals(
-                (e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase))?.Trim(),
-                packageName,
-                StringComparison.OrdinalIgnoreCase) &&
-            (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null);
+        {
+            // Attempt to get "Include" or "Update" attribute values
+            var includeOrUpdateValue = e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)
+                                    ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+            // Trim and split if there's a valid value
+            var packageNames = includeOrUpdateValue?.Trim().Split(';')
+                                .Where(t => t.Equals(packageName, StringComparison.OrdinalIgnoreCase));
+            // Check if there's a matching package name and a non-null version attribute
+            return packageNames?.Any() == true &&
+                (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase)
+                    ?? e.GetAttributeOrSubElementValue("VersionOverride", StringComparison.OrdinalIgnoreCase)) is not null;
+        });
 
     private static async Task<bool> AreDependenciesCoherentAsync(string repoRootPath, string projectPath, string dependencyName, ILogger logger, ImmutableArray<ProjectBuildFile> buildFiles, string[] tfms)
     {
