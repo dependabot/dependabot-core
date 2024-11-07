@@ -29,13 +29,12 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var packageId = dependencyInfo.Name;
         var versionRange = VersionRange.Parse(dependencyInfo.Version);
         var currentVersion = versionRange.MinVersion!;
         var mergedResult = new VersionResult(currentVersion);
 
-        // If packageId contains a semi-colon, split it and run the logic on both parts.
-        var packageIds = packageId.Contains(';') ? packageId.Split(';') : new[] { packageId };
+        // Always split packageId by semicolons and trim each part
+        var packageIds = dependencyInfo.Name.Split(';').Select(id => id.Trim());
 
         foreach (var id in packageIds)
         {
