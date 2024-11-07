@@ -110,6 +110,10 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def create
+        Dependabot.logger.info(
+          "Initiating Github pull request."
+        )
+
         if experiment_duplicate_branch? && branch_exists?(branch_name)
           Dependabot.logger.info(
             "Existing branch \"#{branch_name}\" found. Pull request not created."
@@ -139,9 +143,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
-        Dependabot.logger.debug(
-          "Dependabot::PullRequestCreator::Github:branch_exists?. " \
-          "Name : #{name}. IsDuplicate: #{git_metadata_fetcher.ref_names.include?(name)}"
+        Dependabot.logger.info(
+          "Checking if branch #{name} already exists."
         )
 
         git_metadata_fetcher.ref_names.include?(name)
