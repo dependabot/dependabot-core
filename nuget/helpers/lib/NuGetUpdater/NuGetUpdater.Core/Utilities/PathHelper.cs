@@ -163,4 +163,19 @@ internal static class PathHelper
 
         return false;
     }
+
+    public static bool IsFileUnderDirectory(DirectoryInfo directory, FileInfo candidateFile)
+    {
+        // n.b., using `DirectoryInfo` and `FileInfo` here to ensure that the callsite doesn't get confused with just strings
+        // the paths are then normalized to make the comparison easier.
+        var directoryPath = directory.FullName.NormalizePathToUnix();
+        if (!directoryPath.EndsWith("/"))
+        {
+            // ensuring a trailing slash means we can do a simple string check later on
+            directoryPath += "/";
+        }
+        var candidateFilePath = candidateFile.FullName.NormalizePathToUnix();
+
+        return candidateFilePath.StartsWith(directoryPath);
+    }
 }

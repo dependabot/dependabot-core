@@ -1,0 +1,11 @@
+<Project>
+  <Target Name="ReportTargetFramework">
+    <!-- this property is for non-SDK projects, commonly with `packages.config -->
+    <!-- e.g., returns ".NETFramework,Version=v4.5" -->
+    <Message Text="ProjectData::TargetFrameworkVersion=$(TargetFrameworkIdentifier),Version=$(TargetFrameworkVersion)" Importance="High" Condition="'$(TargetFrameworkIdentifier)' != '' AND '' != '$(TargetFrameworkVersion)'" />
+
+    <!-- these properties are for SDK projects -->
+    <Message Text="ProjectData::TargetFramework=$(TargetFramework)" Importance="High" Condition="'$(TargetFramework)' != ''" />
+    <Message Text="ProjectData::TargetFrameworks=$(TargetFrameworks)" Importance="High" Condition="'$(TargetFrameworks)' != ''" />
+  </Target>
+</Project>

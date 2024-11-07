@@ -4,18 +4,25 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <MSBuildPackageVersion>17.5.0</MSBuildPackageVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageVersion Include="DiffPlex" Version="1.7.1" />
 
     <PackageVersion Include="GuiLabs.Language.Xml" Version="1.2.93" />
 
-    <PackageVersion Include="Microsoft.Build.Locator" Version="1.6.1" />
-    <PackageVersion Include="Microsoft.Build" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
+    <PackageVersion Include="Microsoft.Build" Version="$(MSBuildPackageVersion)" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="$(MSBuildPackageVersion)" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.7.8" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="$(MSBuildPackageVersion)" />
 
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
 
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+
+    <PackageVersion Include="MSBuild.StructuredLogger" Version="2.2.386" />
 
     <PackageVersion Include="NuGet.Core" Version="2.14.0-rtm-832" Aliases="CoreV2" />
 

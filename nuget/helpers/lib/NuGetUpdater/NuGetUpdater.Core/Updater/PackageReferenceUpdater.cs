@@ -311,6 +311,8 @@ internal static class PackageReferenceUpdater
             {
                 logger.Log($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
+
+            return exitCode;
         }, logger, retainMSBuildSdks: true);
     }
 

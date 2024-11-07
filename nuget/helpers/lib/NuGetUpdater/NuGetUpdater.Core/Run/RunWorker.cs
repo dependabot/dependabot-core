@@ -335,10 +335,6 @@ public class RunWorker
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DotNetToolsJson.FilePath));
         }
-        if (discoveryResult.DirectoryPackagesProps is not null)
-        {
-            auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DirectoryPackagesProps.FilePath));
-        }
 
         foreach (var project in discoveryResult.Projects)
         {

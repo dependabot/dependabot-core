@@ -25,7 +25,7 @@ public partial class DiscoveryWorkerTests
                         </packages>
                         """),
                     ("myproj.csproj", """
-                        <Project>
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net46</TargetFramework>
                           </PropertyGroup>
@@ -39,12 +39,9 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "myproj.csproj",
-                            Properties = [
-                                new("TargetFramework", "net46", "myproj.csproj"),
-                            ],
+                            Properties = [], // project contains no SDK packages, so its properties are irrelevant
                             TargetFrameworks = ["net46"],
                             Dependencies = [
-                                new("Microsoft.NETFramework.ReferenceAssemblies", "1.0.3", DependencyType.Unknown, TargetFrameworks: ["net46"], IsTransitive: true),
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
                                 new("Package.B", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
                             ],

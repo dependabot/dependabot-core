@@ -30,11 +30,14 @@ public partial class EntryPointTests
                     "--output",
                     Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                packages: [],
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
+                ],
                 initialFiles:
                 [
                     ("path/to/some directory with spaces/project.csproj", """
-                        <Project Sdk="Microsoft.NETSdk">
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
@@ -52,8 +55,6 @@ public partial class EntryPointTests
                         {
                             FilePath = "project.csproj",
                             TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
@@ -141,14 +142,10 @@ public partial class EntryPointTests
                         {
                             FilePath = "path/to/my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                            ],
+                            Properties = [],
                         }
                     ]
                 }
@@ -207,14 +204,10 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                            ],
+                            Properties = [],
                         }
                     ]
                 }
@@ -274,14 +267,10 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
-                            ],
+                            Properties = [],
                         }
                     ]
                 }
@@ -304,27 +293,32 @@ public partial class EntryPointTests
                 new[]
                 {
                     ("path/to/my.csproj", """
-                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                           </PropertyGroup>
                           <ItemGroup>
-                            <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
+                            <PackageReference Include="Package.A" Version="1.2.3" />
                           </ItemGroup>
-                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
                         """),
                     ("path/Directory.Build.props", """
                         <Project>
-                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
-                              <GlobalPackageReference Include="System.Text.Json" Version="8.0.3" />
-                            </ItemGroup>
                             <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' != 'true'">
-                              <PackageReference Include="System.Text.Json" Version="8.0.3" />
+                              <PackageReference Include="Package.B" Version="4.5.6" />
+                            </ItemGroup>
+                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+                              <GlobalPackageReference Include="Package.B" Version="7.8.9" />
                             </ItemGroup>
                         </Project>
                         """)
                 },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                ],
                 expectedResult: new()
                 {
                     Path = "path/to",
@@ -333,28 +327,19 @@ public partial class EntryPointTests
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
                             ExpectedDependencyCount = 2,
                             Dependencies = [
-                                new("Newtonsoft.Json", "7.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                // $(ManagePackageVersionsCentrally) evaluates false by default, we only get a PackageReference
-                                new("System.Text.Json", "8.0.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
                             Properties = [
+                                new("ManagePackageVersionsCentrally", "false", "path/to/my.csproj"),
                                 new("TargetFramework", "net8.0", "path/to/my.csproj"),
                             ],
-                        },
-                        new()
-                        {
-                            FilePath = "../Directory.Build.props",
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
-                            Dependencies = [
-                                new("System.Text.Json", "8.0.3", DependencyType.PackageReference, IsDirect: true),
-                                new("System.Text.Json", "8.0.3", DependencyType.GlobalPackageReference, IsDirect: true)
-                            ],
-                            Properties = [],
                         }
+                    ],
+                    ImportedFiles = [
+                        "Directory.Build.props"
                     ]
                 }
             );

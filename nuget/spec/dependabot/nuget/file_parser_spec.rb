@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["net462"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["net462"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["netstandard2.0"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -347,7 +347,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
                 TargetFrameworks: ["netstandard2.0"],
                 ReferencedProjectPaths: []
               }],
-              DirectoryPackagesProps: nil,
+              ImportedFiles: [],
               GlobalJson: nil,
               DotNetToolsJson: nil
             }
@@ -388,7 +388,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             Path: "",
             IsSuccess: true,
             Projects: [], # not relevant for this test
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: {
               FilePath: "global.json",
               IsSuccess: true,
@@ -444,7 +444,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             Path: "",
             IsSuccess: true,
             Projects: [], # not relevant for this test
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: {
               FilePath: ".config/dotnet-tools.json",
@@ -553,7 +553,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["netstandard1.6"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -654,7 +654,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: [],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -740,24 +740,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["netstandard1.6"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: {
-              FilePath: "Directory.Packages.props",
-              IsSuccess: true,
-              IsTransitivePinningEnabled: false,
-              Dependencies: [{
-                Name: "System.WebCrawler",
-                Version: "1.1.1",
-                Type: "PackageVersion",
-                EvaluationResult: nil,
-                TargetFrameworks: nil,
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }]
-            },
+            ImportedFiles: ["Directory.Packages.props"],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -777,11 +760,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
               [{
                 requirement: "1.1.1",
                 file: "/my.csproj",
-                groups: ["dependencies"],
-                source: nil
-              }, {
-                requirement: "1.1.1",
-                file: "/Directory.Packages.props",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -835,7 +813,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             Path: "",
             IsSuccess: true,
             Projects: [],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -847,103 +825,9 @@ RSpec.describe Dependabot::Nuget::FileParser do
           _dependencies = parser.parse # the result doesn't matter, but it forces discovery to run
           expect(Dependabot.logger).to have_received(:info).with(
             <<~INFO
-              Discovery JSON content: {"Path":"","IsSuccess":true,"Projects":[],"DirectoryPackagesProps":null,"GlobalJson":null,"DotNetToolsJson":null}
+              Discovery JSON content: {"Path":"","IsSuccess":true,"Projects":[],"ImportedFiles":[],"GlobalJson":null,"DotNetToolsJson":null}
             INFO
             .chomp
-          )
-        end
-      end
-    end
-
-    context "with unparsable dependency versions" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Package.A" Version="1.2.3" />
-                  <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        allow(Dependabot.logger).to receive(:warn)
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [{
-              FilePath: "my.csproj",
-              Dependencies: [{
-                Name: "Package.A",
-                Version: "1.2.3",
-                Type: "PackageReference",
-                EvaluationResult: {
-                  ResultType: "Success",
-                  OriginalValue: "1.2.3",
-                  EvaluatedValue: "1.2.3",
-                  RootPropertyName: nil,
-                  ErrorMessage: nil
-                },
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }, {
-                Name: "Package.B",
-                Version: "$(ThisPropertyCannotBeResolved)",
-                Type: "PackageReference",
-                EvaluationResult: {
-                  ResultType: "PropertyNotFound",
-                  OriginalValue: "$(ThisPropertyCannotBeResolved)",
-                  EvaluatedValue: "$(ThisPropertyCannotBeResolved)",
-                  RootPropertyName: "ThisPropertyCannotBeResolved",
-                  ErrorMessage: "Property 'ThisPropertyCannotBeResolved' was not found."
-                },
-                TargetFrameworks: ["net8.0"],
-                IsDevDependency: false,
-                IsDirect: true,
-                IsTransitive: false,
-                IsOverride: false,
-                IsUpdate: false,
-                InfoUrl: nil
-              }],
-              IsSuccess: true,
-              Properties: [{
-                Name: "TargetFramework",
-                Value: "net8.0",
-                SourceFilePath: "my.csproj"
-              }],
-              TargetFrameworks: ["net8.0"],
-              ReferencedProjectPaths: []
-            }],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          }
-        )
-      end
-
-      it "has the right details" do
-        run_parser_test do |parser|
-          dependencies = parser.parse
-          expect(dependencies.length).to eq(1)
-          dependency = dependencies[0]
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.version).to eq("1.2.3")
-          expect(Dependabot.logger).to have_received(:warn).with(
-            "Dependency 'Package.B' excluded due to unparsable version: $(ThisPropertyCannotBeResolved)"
           )
         end
       end
@@ -1041,7 +925,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["net8.0"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -1153,7 +1037,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["net8.0"],
               ReferencedProjectPaths: []
             }],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           }
@@ -1193,7 +1077,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             Path: "",
             IsSuccess: false,
             Projects: [],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil,
             ErrorType: "AuthenticationFailure",

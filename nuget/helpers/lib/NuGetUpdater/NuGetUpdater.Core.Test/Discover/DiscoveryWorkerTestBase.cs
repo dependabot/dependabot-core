@@ -5,6 +5,7 @@ using System.Text.Json;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Update;
 using NuGetUpdater.Core.Test.Utilities;
+using NuGetUpdater.Core.Utilities;
 
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace NuGetUpdater.Core.Test.Discover;
 
 using TestFile = (string Path, string Content);
 
-public class DiscoveryWorkerTestBase
+public class DiscoveryWorkerTestBase : TestBase
 {
     protected static async Task TestDiscoveryAsync(
         string workspacePath,
@@ -36,17 +37,17 @@ public class DiscoveryWorkerTestBase
     {
         Assert.NotNull(actualResult);
         Assert.Equal(expectedResult.Path.NormalizePathToUnix(), actualResult.Path.NormalizePathToUnix());
-        ValidateDirectoryPackagesProps(expectedResult.DirectoryPackagesProps, actualResult.DirectoryPackagesProps);
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
+        AssertEx.Equal(expectedResult.ImportedFiles, actualResult.ImportedFiles, PathComparer.Instance);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
         Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
         Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
 
         return;
 
-        void ValidateResultWithDependencies(ExpectedDependencyDiscoveryResult? expectedResult, IDiscoveryResultWithDependencies? actualResult)
+        static void ValidateResultWithDependencies(ExpectedDependencyDiscoveryResult? expectedResult, IDiscoveryResultWithDependencies? actualResult)
         {
             if (expectedResult is null)
             {
@@ -62,50 +63,61 @@ public class DiscoveryWorkerTestBase
             ValidateDependencies(expectedResult.Dependencies, actualResult.Dependencies);
             Assert.Equal(expectedResult.ExpectedDependencyCount ?? expectedResult.Dependencies.Length, actualResult.Dependencies.Length);
         }
+    }
 
-        void ValidateProjectResults(ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, ImmutableArray<ProjectDiscoveryResult> actualProjects)
+    internal static void ValidateProjectResults(ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects, ImmutableArray<ProjectDiscoveryResult> actualProjects)
+    {
+        if (expectedProjects.IsDefaultOrEmpty)
         {
-            if (expectedProjects.IsDefaultOrEmpty)
-            {
-                return;
-            }
-
-            foreach (var expectedProject in expectedProjects)
-            {
-                var actualProject = actualProjects.Single(p => p.FilePath.NormalizePathToUnix() == expectedProject.FilePath.NormalizePathToUnix());
-
-                Assert.Equal(expectedProject.FilePath.NormalizePathToUnix(), actualProject.FilePath.NormalizePathToUnix());
-                AssertEx.Equal(expectedProject.Properties, actualProject.Properties, PropertyComparer.Instance);
-                AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
-                AssertEx.Equal(expectedProject.ReferencedProjectPaths.Select(PathHelper.NormalizePathToUnix), actualProject.ReferencedProjectPaths.Select(PathHelper.NormalizePathToUnix));
-                ValidateDependencies(expectedProject.Dependencies, actualProject.Dependencies);
-                Assert.Equal(expectedProject.ExpectedDependencyCount ?? expectedProject.Dependencies.Length, actualProject.Dependencies.Length);
-            }
+            return;
         }
 
-        void ValidateDirectoryPackagesProps(ExpectedDirectoryPackagesPropsDiscovertyResult? expected, DirectoryPackagesPropsDiscoveryResult? actual)
+        foreach (var expectedProject in expectedProjects)
         {
-            ValidateResultWithDependencies(expected, actual);
-            Assert.Equal(expected?.IsTransitivePinningEnabled, actual?.IsTransitivePinningEnabled);
+            var actualProject = actualProjects.SingleOrDefault(p => p.FilePath.NormalizePathToUnix() == expectedProject.FilePath.NormalizePathToUnix());
+            Assert.True(actualProject is not null, $"Unable to find project with path `{expectedProject.FilePath.NormalizePathToUnix()}` in collection [{string.Join(", ", actualProjects.Select(p => p.FilePath))}]");
+            Assert.Equal(expectedProject.FilePath.NormalizePathToUnix(), actualProject.FilePath.NormalizePathToUnix());
+            AssertEx.Equal(expectedProject.Properties, actualProject.Properties, PropertyComparer.Instance);
+            AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
+            AssertEx.Equal(expectedProject.ReferencedProjectPaths, actualProject.ReferencedProjectPaths);
+            if (expectedProject.ImportedFiles is not null)
+            {
+                AssertEx.Equal(expectedProject.ImportedFiles.Value.Select(PathHelper.NormalizePathToUnix), actualProject.ImportedFiles.Select(PathHelper.NormalizePathToUnix));
+            }
+
+            ValidateDependencies(expectedProject.Dependencies, actualProject.Dependencies);
+            Assert.Equal(expectedProject.ExpectedDependencyCount ?? expectedProject.Dependencies.Length, actualProject.Dependencies.Length);
+        }
+    }
+
+    internal static void ValidateDependencies(ImmutableArray<Dependency> expectedDependencies, ImmutableArray<Dependency> actualDependencies)
+    {
+        if (expectedDependencies.IsDefault)
+        {
+            return;
         }
 
-        void ValidateDependencies(ImmutableArray<Dependency> expectedDependencies, ImmutableArray<Dependency> actualDependencies)
+        foreach (var expectedDependency in expectedDependencies)
         {
-            if (expectedDependencies.IsDefault)
+            var matchingDependencies = actualDependencies.Where(d =>
             {
-                return;
-            }
-
-            foreach (var expectedDependency in expectedDependencies)
-            {
-                var actualDependency = actualDependencies.Single(d => d.Name == expectedDependency.Name && d.Type == expectedDependency.Type);
-                Assert.Equal(expectedDependency.Name, actualDependency.Name);
-                Assert.Equal(expectedDependency.Version, actualDependency.Version);
-                Assert.Equal(expectedDependency.Type, actualDependency.Type);
-                AssertEx.Equal(expectedDependency.TargetFrameworks, actualDependency.TargetFrameworks);
-                Assert.Equal(expectedDependency.IsDirect, actualDependency.IsDirect);
-                Assert.Equal(expectedDependency.IsTransitive, actualDependency.IsTransitive);
-            }
+                return d.Name == expectedDependency.Name
+                    && d.Type == expectedDependency.Type
+                    && d.Version == expectedDependency.Version
+                    && d.IsDirect == expectedDependency.IsDirect
+                    && d.IsTransitive == expectedDependency.IsTransitive
+                    && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks);
+            }).ToArray();
+            Assert.True(matchingDependencies.Length == 1, $"""
+                Unable to find 1 dependency matching; found {matchingDependencies.Length}:
+                    Name: {expectedDependency.Name}
+                    Type: {expectedDependency.Type}
+                    Version: {expectedDependency.Version}
+                    IsDirect: {expectedDependency.IsDirect}
+                    IsTransitive: {expectedDependency.IsTransitive}
+                    TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
+                Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}
+                """);
         }
     }
 
