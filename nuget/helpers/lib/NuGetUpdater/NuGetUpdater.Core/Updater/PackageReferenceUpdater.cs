@@ -26,6 +26,7 @@ internal static class PackageReferenceUpdater
         string previousDependencyVersion,
         string newDependencyVersion,
         bool isTransitive,
+        ExperimentsManager experimentsManager,
         ILogger logger)
     {
         // PackageReference project; modify the XML directly
@@ -42,11 +43,7 @@ internal static class PackageReferenceUpdater
         }
 
         var peerDependencies = await GetUpdatedPeerDependenciesAsync(repoRootPath, projectPath, tfms, dependencyName, newDependencyVersion, logger);
-        if (MSBuildHelper.UseNewDependencySolver())
-        {
-            await UpdateDependencyWithConflictResolution(repoRootPath, buildFiles, tfms, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, peerDependencies, logger);
-        }
-        else
+        if (experimentsManager.UseLegacyDependencySolver)
         {
             if (isTransitive)
             {
@@ -61,6 +58,10 @@ internal static class PackageReferenceUpdater
 
                 await UpdateTopLevelDepdendency(repoRootPath, buildFiles, tfms, dependencyName, previousDependencyVersion, newDependencyVersion, peerDependencies, logger);
             }
+        }
+        else
+        {
+            await UpdateDependencyWithConflictResolution(repoRootPath, buildFiles, tfms, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, peerDependencies, logger);
         }
 
         if (!await AreDependenciesCoherentAsync(repoRootPath, projectPath, dependencyName, logger, buildFiles, tfms))

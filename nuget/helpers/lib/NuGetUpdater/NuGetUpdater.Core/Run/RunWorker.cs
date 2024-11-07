@@ -55,12 +55,13 @@ public class RunWorker
         {
             MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
 
+            var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
             var allDependencyFiles = new Dictionary<string, DependencyFile>();
             foreach (var directory in job.GetAllDirectories())
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
                 lastUsedPackageSourceUrls = NuGetContext.GetPackageSourceUrls(localPath);
-                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha);
+                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
                     var uniqueKey = Path.GetFullPath(Path.Join(dependencyFile.Directory, dependencyFile.Name)).NormalizePathToUnix().EnsurePrefix("/");
@@ -102,7 +103,7 @@ public class RunWorker
         return runResult;
     }
 
-    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha)
+    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
     {
         var discoveryWorker = new DiscoveryWorker(_logger);
         var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
@@ -209,7 +210,7 @@ public class RunWorker
                             PreviousRequirements = previousDependency.Requirements,
                         };
 
-                        var updateWorker = new UpdaterWorker(_logger);
+                        var updateWorker = new UpdaterWorker(experimentsManager, _logger);
                         var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix();
                         var updateResult = await updateWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
                         // TODO: need to report if anything was actually updated

@@ -335,11 +335,6 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static bool UseNewDependencySolver()
-    {
-        return Environment.GetEnvironmentVariable("UseNewNugetPackageResolver") == "true";
-    }
-
     internal static async Task<Dependency[]?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, Dependency[] packages, Dependency[] update, ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");

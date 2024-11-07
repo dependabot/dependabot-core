@@ -9,6 +9,7 @@ namespace NuGetUpdater.Core;
 
 public class UpdaterWorker
 {
+    private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
 
@@ -18,8 +19,9 @@ public class UpdaterWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public UpdaterWorker(ILogger logger)
+    public UpdaterWorker(ExperimentsManager experimentsManager, ILogger logger)
     {
+        _experimentsManager = experimentsManager;
         _logger = logger;
     }
 
@@ -221,7 +223,7 @@ public class UpdaterWorker
         }
 
         // Some repos use a mix of packages.config and PackageReference
-        await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _logger);
+        await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _experimentsManager, _logger);
 
         // Update lock file if exists
         if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
