@@ -41,7 +41,7 @@ public record ExperimentsManager
 
         if (experiments.TryGetValue(experimentName, out var value))
         {
-            if ((value?.ToString()?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+            if ((value?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -7,7 +7,7 @@ using NuGetUpdater.Core.Updater;
 
 namespace NuGetUpdater.Core;
 
-public class UpdaterWorker
+public class UpdaterWorker : IUpdaterWorker
 {
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;

@@ -138,93 +138,93 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
     end
   end
 
-  # describe "#native_csharp_tests" do
-  #   subject(:dotnet_test) do
-  #     Dependabot::SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, cwd: cwd)
-  #   end
+  describe "#native_csharp_tests" do
+    subject(:dotnet_test) do
+      Dependabot::SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, cwd: cwd)
+    end
 
-  #   let(:command) do
-  #     [
-  #       "dotnet",
-  #       "test",
-  #       "--configuration",
-  #       "Release",
-  #       "--tl:off",
-  #       "--logger",
-  #       "\"console;verbosity=normal\"",
-  #       project_path
-  #     ].join(" ")
-  #   end
+    let(:command) do
+      [
+        "dotnet",
+        "test",
+        "--configuration",
+        "Release",
+        "--tl:off",
+        "--logger",
+        "\"console;verbosity=normal\"",
+        project_path
+      ].join(" ")
+    end
 
-  #   let(:cwd) do
-  #     File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater")
-  #   end
+    let(:cwd) do
+      File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater")
+    end
 
-  #   context "when the output is from `dotnet test NuGetUpdater.Core.Test` output" do
-  #     let(:project_path) do
-  #       File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater",
-  #                 "NuGetUpdater.Core.Test", "NuGetUpdater.Core.Test.csproj")
-  #     end
+    context "when the output is from `dotnet test NuGetUpdater.Core.Test` output" do
+      let(:project_path) do
+        File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater",
+                  "NuGetUpdater.Core.Test", "NuGetUpdater.Core.Test.csproj")
+      end
 
-  #     it "contains the expected output" do
-  #       # In CI when the terminal logger is disabled by default in .NET 9 there is no
-  #       # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
-  #       # Instead we have to rely on the cmd invocation failing with a non-zero exit code
-  #       # if any tests fail. Locally when the terminal logger is enabled we can check
-  #       # there is an absence of any evidence of test failures in the output.
-  #       # expect(dotnet_test).to include("Passed!")
-  #       expect(dotnet_test).not_to include("Build failed")
-  #     end
-  #   end
+      it "contains the expected output" do
+        # In CI when the terminal logger is disabled by default in .NET 9 there is no
+        # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
+        # Instead we have to rely on the cmd invocation failing with a non-zero exit code
+        # if any tests fail. Locally when the terminal logger is enabled we can check
+        # there is an absence of any evidence of test failures in the output.
+        # expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).not_to include("Build failed")
+      end
+    end
 
-  #   context "when the output is from `dotnet test NuGetUpdater.Cli.Test`" do
-  #     let(:project_path) do
-  #       File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater",
-  #                 "NuGetUpdater.Cli.Test", "NuGetUpdater.Cli.Test.csproj")
-  #     end
+    context "when the output is from `dotnet test NuGetUpdater.Cli.Test`" do
+      let(:project_path) do
+        File.join(dependabot_home, "nuget", "helpers", "lib", "NuGetUpdater",
+                  "NuGetUpdater.Cli.Test", "NuGetUpdater.Cli.Test.csproj")
+      end
 
-  #     it "contains the expected output" do
-  #       # In CI when the terminal logger is disabled by default in .NET 9 there is no
-  #       # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
-  #       # Instead we have to rely on the cmd invocation failing with a non-zero exit code
-  #       # if any tests fail. Locally when the terminal logger is enabled we can check
-  #       # there is an absence of any evidence of test failures in the output.
-  #       # expect(dotnet_test).to include("Passed!")
-  #       expect(dotnet_test).not_to include("Build failed")
-  #     end
-  #   end
-  # end
+      it "contains the expected output" do
+        # In CI when the terminal logger is disabled by default in .NET 9 there is no
+        # output from the test runner: https://github.com/dotnet/msbuild/issues/10682.
+        # Instead we have to rely on the cmd invocation failing with a non-zero exit code
+        # if any tests fail. Locally when the terminal logger is enabled we can check
+        # there is an absence of any evidence of test failures in the output.
+        # expect(dotnet_test).to include("Passed!")
+        expect(dotnet_test).not_to include("Build failed")
+      end
+    end
+  end
 
-  # describe "#native_csharp_format" do
-  #   subject(:dotnet_test) do
-  #     Dependabot::SharedHelpers.run_shell_command(command)
-  #   end
+  describe "#native_csharp_format" do
+    subject(:dotnet_test) do
+      Dependabot::SharedHelpers.run_shell_command(command)
+    end
 
-  #   let(:command) do
-  #     [
-  #       "dotnet",
-  #       "format",
-  #       lib_path,
-  #       "--exclude",
-  #       except_path,
-  #       "--verify-no-changes",
-  #       "-v",
-  #       "diag"
-  #     ].join(" ")
-  #   end
+    let(:command) do
+      [
+        "dotnet",
+        "format",
+        lib_path,
+        "--exclude",
+        except_path,
+        "--verify-no-changes",
+        "-v",
+        "diag"
+      ].join(" ")
+    end
 
-  #   context "when output is from `dotnet format NuGetUpdater` output" do
-  #     let(:lib_path) do
-  #       File.absolute_path(File.join("helpers", "lib", "NuGetUpdater"))
-  #     end
+    context "when output is from `dotnet format NuGetUpdater` output" do
+      let(:lib_path) do
+        File.absolute_path(File.join("helpers", "lib", "NuGetUpdater"))
+      end
 
-  #     let(:except_path) { "helpers/lib/NuGet.Client" }
+      let(:except_path) { "helpers/lib/NuGet.Client" }
 
-  #     it "contains the expected output" do
-  #       expect(dotnet_test).to include("Format complete")
-  #     end
-  #   end
-  # end
+      it "contains the expected output" do
+        expect(dotnet_test).to include("Format complete")
+      end
+    end
+  end
 
   describe "#ensure_no_errors" do
     subject(:error_message) do

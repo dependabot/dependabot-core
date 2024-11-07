@@ -63,6 +63,8 @@ internal static class PathHelper
         return result;
     }
 
+    public static string FullyNormalizedRootedPath(this string path) => path.NormalizePathToUnix().NormalizeUnixPathParts().EnsurePrefix("/");
+
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));
 
