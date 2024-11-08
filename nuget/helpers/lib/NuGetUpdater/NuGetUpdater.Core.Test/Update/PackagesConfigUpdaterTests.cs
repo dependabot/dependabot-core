@@ -103,7 +103,7 @@ public class PackagesConfigUpdaterTests : TestBase
             <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
                 <Reference Include="Some.Other.Package, Version=1.2.3.4, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
-                  <HintPath>..\..\..\packages\Some.Other.Package.1.2.3\lib\net45\Some.Other.Package.dll</HintPath>
+                  <HintPath>..\..\..\still-a-usable-path\Some.Other.Package.1.2.3\lib\net45\Some.Other.Package.dll</HintPath>
                   <Private>True</Private>
                 </Reference>
               </ItemGroup>
@@ -120,7 +120,7 @@ public class PackagesConfigUpdaterTests : TestBase
             // dependency version
             "7.0.1",
             // expected packages directory path
-            "../../../packages"
+            "../../../still-a-usable-path"
         ];
 
         // project without expected package, but exists in packages.config, default is returned

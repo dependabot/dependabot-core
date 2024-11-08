@@ -256,24 +256,20 @@ internal static class PackagesConfigUpdater
             if (hasPackage)
             {
                 // the dependency exists in the packages.config file, so it must be the second case
-                // at this point there's no good way to determine what the packages path is, but there's a really good chance that it looks
-                // something like one of these:
-                //   ..\packages
-                //   ..\..\packages
-                //   etc.
-                // so first we'll see if we can find "packages\" somewhere in there
+                // at this point there's no perfect way to determine what the packages path is, but there's a really good chance that
+                // for any given package it looks something like this:
+                //   ..\..\packages\Package.Name.[version]\lib\Tfm\Package.Name.dll
                 var genericHintPathNodes = projectBuildFile.Contents.Descendants().Where(IsHintPathNode).ToArray();
                 if (genericHintPathNodes.Length > 0)
                 {
                     foreach (var hintPathNode in genericHintPathNodes)
                     {
-                        // find the string "packages" followed by a directory separator...
                         var hintPath = hintPathNode.GetContentValue();
-                        var match = Regex.Match(hintPath, @"^(.*?packages[/\\])");
+                        var match = Regex.Match(hintPath, @"^(?<PackagesPath>.*)[/\\](?<PackageNameAndVersion>[^/\\]+)[/\\]lib[/\\](?<Tfm>[^/\\]+)[/\\](?<AssemblyName>[^/\\]+)$");
+                        // e.g.,                              ..\..\packages     \    Some.Package.1.2.3              \    lib\     net45          \   Some.Package.dll
                         if (match.Success)
                         {
-                            // ...but remove the directory separator
-                            partialPathMatch = match.Value[..^1];
+                            partialPathMatch = match.Groups["PackagesPath"].Value;
                             break;
                         }
                     }
