@@ -325,7 +325,7 @@ module Dependabot
       end
 
       def library_details
-        @library_details ||= poetry_details || standard_details
+        @library_details ||= poetry_details || standard_details || build_system_details
       end
 
       def poetry_details
@@ -334,6 +334,10 @@ module Dependabot
 
       def standard_details
         @standard_details ||= toml_content["project"]
+      end
+
+      def build_system_details
+        @build_system_details ||= toml_content["build-system"]
       end
 
       def toml_content
