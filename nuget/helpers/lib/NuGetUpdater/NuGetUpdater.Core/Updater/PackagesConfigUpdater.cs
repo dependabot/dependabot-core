@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -213,8 +214,8 @@ internal static class PackagesConfigUpdater
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
         string? partialPathMatch = null;
-        var hintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName));
-        foreach (var hintPathNode in hintPathNodes)
+        var specificHintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName)).ToArray();
+        foreach (var hintPathNode in specificHintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
             var hintPathSubStringLocation = hintPath.IndexOf(hintPathSubString, StringComparison.OrdinalIgnoreCase);
@@ -255,18 +256,49 @@ internal static class PackagesConfigUpdater
             if (hasPackage)
             {
                 // the dependency exists in the packages.config file, so it must be the second case
-                // the vast majority of projects found in the wild use this, and since we have nothing to look for, we'll just have to hope
-                partialPathMatch = "../packages";
+                // at this point there's no perfect way to determine what the packages path is, but there's a really good chance that
+                // for any given package it looks something like this:
+                //   ..\..\packages\Package.Name.[version]\lib\Tfm\Package.Name.dll
+                var genericHintPathNodes = projectBuildFile.Contents.Descendants().Where(IsHintPathNode).ToArray();
+                if (genericHintPathNodes.Length > 0)
+                {
+                    foreach (var hintPathNode in genericHintPathNodes)
+                    {
+                        var hintPath = hintPathNode.GetContentValue();
+                        var match = Regex.Match(hintPath, @"^(?<PackagesPath>.*)[/\\](?<PackageNameAndVersion>[^/\\]+)[/\\]lib[/\\](?<Tfm>[^/\\]+)[/\\](?<AssemblyName>[^/\\]+)$");
+                        // e.g.,                              ..\..\packages     \    Some.Package.1.2.3              \    lib\     net45          \   Some.Package.dll
+                        if (match.Success)
+                        {
+                            partialPathMatch = match.Groups["PackagesPath"].Value;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // we know the dependency is used, but we have absolutely no idea where the packages path is, so we'll default to something reasonable
+                    partialPathMatch = "../packages";
+                }
             }
         }
 
         return partialPathMatch?.NormalizePathToUnix();
     }
 
-    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    private static bool IsHintPathNode(this IXmlElementSyntax element)
     {
         if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
             element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    {
+        if (element.IsHintPathNode())
         {
             // the include attribute will look like one of the following:
             //   <Reference Include="Some.Dependency, Version=1.0.0.0, Culture=neutral, PublicKeyToken=abcd">
