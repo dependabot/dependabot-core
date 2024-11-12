@@ -276,7 +276,7 @@ module Dependabot
       end
     end
 
-    sig { params(ecosystem: Ecosystem).void }
+    sig { params(ecosystem: T.nilable(Ecosystem)).void }
     def record_ecosystem_meta(ecosystem)
       return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
 
