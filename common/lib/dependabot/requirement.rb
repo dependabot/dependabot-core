@@ -29,7 +29,7 @@ module Dependabot
     end
 
     # Returns the highest lower limit among all minimum constraints.
-    sig { returns(T.nilable(Gem::Version)) }
+    sig { returns(T.nilable(Dependabot::Version)) }
     def min_version
       # Select constraints with minimum operators
       min_constraints = requirements.select { |op, _| MINIMUM_OPERATORS.include?(op) }
