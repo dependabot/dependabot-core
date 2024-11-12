@@ -8,6 +8,8 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/maven/version"
+require "dependabot/maven/language"
+require "dependabot/maven/package_manager"
 require "dependabot/errors"
 
 # The best Maven documentation is at:
@@ -44,7 +46,46 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(maven_version),
+          T.nilable(Dependabot::Maven::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          return if package_manager.unsupported?
+
+          Language.new(ruby_version)
+        end, T.nilable(Dependabot::Maven::Language))
+      end
+
+      sig { returns(String) }
+      def ruby_version
+        @ruby_version ||= T.let(RUBY_VERSION, T.nilable(String))
+      end
+
+      sig { returns(String) }
+      def maven_version
+        ""
+      end
 
       sig { params(pom: Dependabot::DependencyFile).returns(DependencySet) }
       def pomfile_dependencies(pom)
