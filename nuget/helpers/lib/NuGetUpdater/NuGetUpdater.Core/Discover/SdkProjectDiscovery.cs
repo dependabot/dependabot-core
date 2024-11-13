@@ -68,20 +68,14 @@ internal static class SdkProjectDiscovery
                     // // Initialize a new list to hold the new dependencies after splitting the ones with semicolons
                     var processedDependencies = new List<Dependency>();
 
-                    // add all the dependencies that do not contain a semicolon to the new list
-                    processedDependencies.AddRange(dependencies.Where(d => !d.Name.Contains(";")));
-
-                    // loop through the dependencies and if any of the names contain a semicolon, we need to split them into multiple dependencies with all other properties the same
+                    // Process each dependency, splitting on semicolons and adding each part to the list
                     foreach (var dependency in dependencies)
                     {
-                        if (dependency.Name.Contains(";"))
+                        var names = dependency.Name.Split(";");
+                        foreach (var name in names)
                         {
-                            var names = dependency.Name.Split(";");
-                            foreach (var name in names)
-                            {
-                                var newDependency = dependency with { Name = name };
-                                processedDependencies.Add(newDependency);
-                            }
+                            var newDependency = dependency with { Name = name };
+                            processedDependencies.Add(newDependency);
                         }
                     }
 

@@ -361,7 +361,6 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 nugetContext,
                 logger,
                 cancellationToken);
-
             if (!isCompatible)
             {
                 return false;
