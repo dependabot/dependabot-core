@@ -266,7 +266,7 @@ internal static partial class MSBuildHelper
             {
                 foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
                 {
-                    yield return new Dependency(splitName, packageVersion, dependencyType, EvaluationResult: evaluationResult);
+                    yield return new Dependency(splitName.Trim(), packageVersion, dependencyType, EvaluationResult: evaluationResult);
                 }
 
                 continue;

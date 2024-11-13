@@ -679,8 +679,11 @@ internal static class PackageReferenceUpdater
             var includeOrUpdateValue = e.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)
                                     ?? e.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
             // Trim and split if there's a valid value
-            var packageNames = includeOrUpdateValue?.Trim().Split(';', StringSplitOptions.RemoveEmptyEntries)
-                                .Where(t => t.Equals(packageName, StringComparison.OrdinalIgnoreCase));
+            var packageNames = includeOrUpdateValue?
+                                .Trim()
+                                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(t => t.Trim())
+                                .Where(t => t.Equals(packageName.Trim(), StringComparison.OrdinalIgnoreCase));
             // Check if there's a matching package name and a non-null version attribute
             return packageNames?.Any() == true &&
                 (e.GetAttributeOrSubElementValue("Version", StringComparison.OrdinalIgnoreCase)

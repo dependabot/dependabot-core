@@ -65,21 +65,7 @@ internal static class SdkProjectDiscovery
                     // Get the complete set of dependencies including transitive dependencies.
                     var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
 
-                    // // Initialize a new list to hold the new dependencies after splitting the ones with semicolons
-                    var processedDependencies = new List<Dependency>();
-
-                    // Process each dependency, splitting on semicolons and adding each part to the list
-                    foreach (var dependency in dependencies)
-                    {
-                        var names = dependency.Name.Split(";");
-                        foreach (var name in names)
-                        {
-                            var newDependency = dependency with { Name = name };
-                            processedDependencies.Add(newDependency);
-                        }
-                    }
-
-                    dependencies = processedDependencies
+                    dependencies = dependencies
                         .Select(d => d with { TargetFrameworks = tfms })
                         .ToImmutableArray();
                     var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);
