@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -262,10 +261,18 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            foreach (var splitName in name.Trim().Split(';', StringSplitOptions.RemoveEmptyEntries))
+            // If at this point we have a semicolon in the name then split it and yield multiple dependencies.
+            if (name.Contains(';'))
             {
-                yield return new Dependency(splitName, packageVersion, dependencyType, EvaluationResult: evaluationResult);
+                foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    yield return new Dependency(splitName, packageVersion, dependencyType, EvaluationResult: evaluationResult);
+                }
+
+                continue;
             }
+
+            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 

@@ -144,8 +144,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ExpectedDependencyCount = 3,
                         Dependencies = [
                             new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
-                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            new("Some.Package2", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                         ],
                         Properties = [
                             new("SomePackageVersion", "9.0.1", "src/project.csproj"),
