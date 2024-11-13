@@ -1,6 +1,8 @@
 using System.CommandLine;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 
 namespace NuGetUpdater.Cli.Commands;
@@ -31,7 +33,12 @@ internal static class RunCommand
         command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId, outputPath, baseCommitSha) =>
         {
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
-            var worker = new RunWorker(apiHandler, new ConsoleLogger());
+            var logger = new ConsoleLogger();
+            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
+            var discoverWorker = new DiscoveryWorker(logger);
+            var analyzeWorker = new AnalyzeWorker(logger);
+            var updateWorker = new UpdaterWorker(experimentsManager, logger);
+            var worker = new RunWorker(apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
             await worker.RunAsync(jobPath, repoContentsPath, baseCommitSha, outputPath);
         }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption, OutputPathOption, BaseCommitShaOption);
 

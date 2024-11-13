@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/composer/package_manager"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Composer::PackageManager do
@@ -30,7 +30,7 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is a Dependabot::Version" do
-      let(:version) { Dependabot::Version.new("2") }
+      let(:version) { "2" }
 
       it "sets the version correctly" do
         expect(package_manager.version).to eq(version)

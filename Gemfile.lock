@@ -1,25 +1,25 @@
 PATH
   remote: bundler
   specs:
-    dependabot-bundler (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-bundler (0.285.0)
+      dependabot-common (= 0.285.0)
       parallel (~> 1.24)
 
 PATH
   remote: cargo
   specs:
-    dependabot-cargo (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-cargo (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: common
   specs:
-    dependabot-common (0.282.0)
+    dependabot-common (0.285.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
       commonmarker (>= 0.20.1, < 0.24.0)
-      docker_registry2 (~> 1.18.0)
+      docker_registry2 (~> 1.18.2)
       excon (~> 0.109)
       faraday (= 2.7.11)
       faraday-retry (= 2.2.0)
@@ -38,107 +38,113 @@ PATH
 PATH
   remote: composer
   specs:
-    dependabot-composer (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-composer (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: devcontainers
   specs:
-    dependabot-devcontainers (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-devcontainers (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: docker
   specs:
-    dependabot-docker (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-docker (0.285.0)
+      dependabot-common (= 0.285.0)
+
+PATH
+  remote: dotnet_sdk
+  specs:
+    dependabot-dotnet_sdk (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: elm
   specs:
-    dependabot-elm (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-elm (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: git_submodules
   specs:
-    dependabot-git_submodules (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-git_submodules (0.285.0)
+      dependabot-common (= 0.285.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: github_actions
   specs:
-    dependabot-github_actions (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-github_actions (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: go_modules
   specs:
-    dependabot-go_modules (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-go_modules (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: gradle
   specs:
-    dependabot-gradle (0.282.0)
-      dependabot-common (= 0.282.0)
-      dependabot-maven (= 0.282.0)
+    dependabot-gradle (0.285.0)
+      dependabot-common (= 0.285.0)
+      dependabot-maven (= 0.285.0)
 
 PATH
   remote: hex
   specs:
-    dependabot-hex (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-hex (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: maven
   specs:
-    dependabot-maven (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-maven (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-npm_and_yarn (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: nuget
   specs:
-    dependabot-nuget (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-nuget (0.285.0)
+      dependabot-common (= 0.285.0)
       rubyzip (>= 2.3.2, < 3.0)
 
 PATH
   remote: pub
   specs:
-    dependabot-pub (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-pub (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: python
   specs:
-    dependabot-python (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-python (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: silent
   specs:
-    dependabot-silent (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-silent (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: swift
   specs:
-    dependabot-swift (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-swift (0.285.0)
+      dependabot-common (= 0.285.0)
 
 PATH
   remote: terraform
   specs:
-    dependabot-terraform (0.282.0)
-      dependabot-common (= 0.282.0)
+    dependabot-terraform (0.285.0)
+      dependabot-common (= 0.285.0)
 
 GEM
   remote: https://rubygems.org/
@@ -174,7 +180,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.5.0)
     docile (1.4.0)
-    docker_registry2 (1.18.0)
+    docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
     domain_name (0.6.20231109)
     erubi (1.13.0)
@@ -235,14 +241,14 @@ GEM
     parser (3.3.1.0)
       ast (~> 2.4.1)
       racc
-    prism (1.0.0)
+    prism (1.2.0)
     psych (5.1.2)
       stringio
     public_suffix (5.0.4)
     racc (1.7.3)
     rainbow (3.1.1)
     rake (13.1.0)
-    rbi (0.2.0)
+    rbi (0.2.1)
       prism (~> 1.0)
       sorbet-runtime (>= 0.5.9204)
     rdoc (6.6.3.1)
@@ -315,16 +321,16 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet (0.5.11577)
-      sorbet-static (= 0.5.11577)
-    sorbet-runtime (0.5.11577)
-    sorbet-static (0.5.11577-aarch64-linux)
-    sorbet-static (0.5.11577-universal-darwin)
-    sorbet-static (0.5.11577-x86_64-linux)
-    sorbet-static-and-runtime (0.5.11577)
-      sorbet (= 0.5.11577)
-      sorbet-runtime (= 0.5.11577)
-    spoom (1.4.2)
+    sorbet (0.5.11630)
+      sorbet-static (= 0.5.11630)
+    sorbet-runtime (0.5.11630)
+    sorbet-static (0.5.11630-aarch64-linux)
+    sorbet-static (0.5.11630-universal-darwin)
+    sorbet-static (0.5.11630-x86_64-linux)
+    sorbet-static-and-runtime (0.5.11630)
+      sorbet (= 0.5.11630)
+      sorbet-runtime (= 0.5.11630)
+    spoom (1.5.0)
       erubi (>= 1.10.0)
       prism (>= 0.28.0)
       sorbet-static-and-runtime (>= 0.5.10187)
@@ -332,7 +338,7 @@ GEM
     stackprof (0.2.25)
     stringio (3.1.0)
     strscan (3.1.0)
-    tapioca (0.16.2)
+    tapioca (0.16.3)
       bundler (>= 2.2.25)
       netrc (>= 0.11.0)
       parallel (>= 1.21.0)
@@ -377,6 +383,7 @@ DEPENDENCIES
   dependabot-composer!
   dependabot-devcontainers!
   dependabot-docker!
+  dependabot-dotnet_sdk!
   dependabot-elm!
   dependabot-git_submodules!
   dependabot-github_actions!
@@ -400,8 +407,8 @@ DEPENDENCIES
   rubocop-rspec (~> 2.29.1)
   rubocop-sorbet (~> 0.8.5)
   simplecov (~> 0.22.0)
-  sorbet (= 0.5.11577)
-  tapioca (= 0.16.2)
+  sorbet (= 0.5.11630)
+  tapioca (= 0.16.3)
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
   webmock (~> 3.18)

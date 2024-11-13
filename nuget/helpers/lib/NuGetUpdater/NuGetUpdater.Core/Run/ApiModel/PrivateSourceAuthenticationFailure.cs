@@ -2,5 +2,9 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 
 public record PrivateSourceAuthenticationFailure : JobErrorBase
 {
-    public override string Type => "private_source_authentication_failure";
+    public PrivateSourceAuthenticationFailure(string[] urls)
+        : base("private_source_authentication_failure")
+    {
+        Details = $"({string.Join("|", urls)})";
+    }
 }

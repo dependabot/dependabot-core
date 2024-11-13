@@ -594,6 +594,7 @@ public partial class UpdateWorkerTests
                 [
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
                     MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
+                    MockNuGetPackage.CreatePackageWithAssembly("Unrelated.Package", "1.2.3", "net45","1.2.0.0"),
                 ],
                 projectContents: """
                     <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -610,6 +611,10 @@ public partial class UpdateWorkerTests
                       <ItemGroup>
                         <Reference Include="Some.Package, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null">
                           <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Unrelated.Package.1.2.3\lib\net45\Unrelated.Package.dll</HintPath>
                           <Private>True</Private>
                         </Reference>
                       </ItemGroup>
@@ -651,6 +656,107 @@ public partial class UpdateWorkerTests
                       <ItemGroup>
                         <Reference Include="Some.Package, Version=13.0.0.0, Culture=neutral, PublicKeyToken=null">
                           <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Unrelated.Package.1.2.3\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                expectedPackagesConfigContents: """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package" version="13.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime>
+                            <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+                              <dependentAssembly>
+                                <assemblyIdentity name="Some.Package" publicKeyToken="null" culture="neutral" />
+                                <bindingRedirect oldVersion="0.0.0.0-13.0.0.0" newVersion="13.0.0.0" />
+                              </dependentAssembly>
+                            </assemblyBinding>
+                          </runtime>
+                        </configuration>
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task BindingRedirectIsAddedForUpdatedPackage()
+        {
+            await TestUpdateForProject("Some.Package", "7.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "7.0.1", "net45", "7.0.0.0"),
+                    MockNuGetPackage.CreatePackageWithAssembly("Some.Package", "13.0.1", "net45", "13.0.0.0"),
+                    MockNuGetPackage.CreatePackageWithAssembly("Unrelated.Package", "1.2.3", "net45","1.2.0.0"),
+                ],
+                projectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=7.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.7.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Unrelated.Package.1.2.3\lib\net45\Unrelated.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """,
+                packagesConfigContents: """
+                    <packages>
+                      <package id="Some.Package" version="7.0.1" targetFramework="net45" />
+                    </packages>
+                    """,
+                additionalFiles:
+                [
+                    ("app.config", """
+                        <configuration>
+                          <runtime />
+                        </configuration>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <None Include="app.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <Reference Include="Some.Package, Version=13.0.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Some.Package.13.0.1\lib\net45\Some.Package.dll</HintPath>
+                          <Private>True</Private>
+                        </Reference>
+                        <Reference Include="Unrelated.Package, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null">
+                          <HintPath>packages\Unrelated.Package.1.2.3\lib\net45\Unrelated.Package.dll</HintPath>
                           <Private>True</Private>
                         </Reference>
                       </ItemGroup>
@@ -2182,7 +2288,7 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new TestLogger());
+            var worker = new UpdaterWorker(new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);

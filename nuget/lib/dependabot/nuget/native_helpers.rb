@@ -165,14 +165,17 @@ module Dependabot
 
       # rubocop:disable Metrics/MethodLength
       sig do
-        params(repo_root: String, proj_path: String, dependency: Dependency,
+        params(job_path: String, repo_root: String, proj_path: String, dependency: Dependency,
                is_transitive: T::Boolean, result_output_path: String).returns([String, String])
       end
-      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:, result_output_path:)
+      def self.get_nuget_updater_tool_command(job_path:, repo_root:, proj_path:, dependency:, is_transitive:,
+                                              result_output_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "update",
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--solution-or-project",
@@ -219,6 +222,7 @@ module Dependabot
 
       sig do
         params(
+          job_path: String,
           repo_root: String,
           proj_path: String,
           dependency: Dependency,
@@ -226,23 +230,18 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
-        (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
-                                                                dependency: dependency, is_transitive: is_transitive,
+      def self.run_nuget_updater_tool(job_path:, repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+        (command, fingerprint) = get_nuget_updater_tool_command(job_path: job_path, repo_root: repo_root,
+                                                                proj_path: proj_path, dependency: dependency,
+                                                                is_transitive: is_transitive,
                                                                 result_output_path: update_result_file_path)
 
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          # default to UseNewNugetPackageResolved _unless_ nuget_legacy_dependency_solver is enabled
-          env = {}
-          unless Dependabot::Experiments.enabled?(:nuget_legacy_dependency_solver)
-            env["UseNewNugetPackageResolver"] = "true"
-          end
           output = SharedHelpers.run_shell_command(command,
                                                    allow_unsafe_shell_command: true,
-                                                   fingerprint: fingerprint,
-                                                   env: env)
+                                                   fingerprint: fingerprint)
           puts output
 
           result_contents = File.read(update_result_file_path)

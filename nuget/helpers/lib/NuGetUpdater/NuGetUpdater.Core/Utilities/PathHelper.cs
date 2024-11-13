@@ -27,6 +27,8 @@ internal static class PathHelper
 
     public static string EnsurePrefix(this string s, string prefix) => s.StartsWith(prefix) ? s : prefix + s;
 
+    public static string EnsureSuffix(this string s, string suffix) => s.EndsWith(suffix) ? s : s + suffix;
+
     public static string NormalizePathToUnix(this string path) => path.Replace("\\", "/");
 
     public static string NormalizeUnixPathParts(this string path)
@@ -60,6 +62,8 @@ internal static class PathHelper
 
         return result;
     }
+
+    public static string FullyNormalizedRootedPath(this string path) => path.NormalizePathToUnix().NormalizeUnixPathParts().EnsurePrefix("/");
 
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));

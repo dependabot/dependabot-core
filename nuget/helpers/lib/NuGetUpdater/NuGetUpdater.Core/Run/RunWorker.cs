@@ -13,6 +13,9 @@ public class RunWorker
 {
     private readonly IApiHandler _apiHandler;
     private readonly ILogger _logger;
+    private readonly IDiscoveryWorker _discoveryWorker;
+    private readonly IAnalyzeWorker _analyzeWorker;
+    private readonly IUpdaterWorker _updaterWorker;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -21,10 +24,13 @@ public class RunWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public RunWorker(IApiHandler apiHandler, ILogger logger)
+    public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
     {
         _apiHandler = apiHandler;
         _logger = logger;
+        _discoveryWorker = discoverWorker;
+        _analyzeWorker = analyzeWorker;
+        _updaterWorker = updateWorker;
     }
 
     public async Task RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, string baseCommitSha, FileInfo outputFilePath)
@@ -55,15 +61,17 @@ public class RunWorker
         {
             MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName);
 
+            var experimentsManager = ExperimentsManager.GetExperimentsManager(job.Experiments);
             var allDependencyFiles = new Dictionary<string, DependencyFile>();
             foreach (var directory in job.GetAllDirectories())
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
                 lastUsedPackageSourceUrls = NuGetContext.GetPackageSourceUrls(localPath);
-                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha);
+                var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
-                    allDependencyFiles[dependencyFile.Name] = dependencyFile;
+                    var uniqueKey = Path.GetFullPath(Path.Join(dependencyFile.Directory, dependencyFile.Name)).NormalizePathToUnix().EnsurePrefix("/");
+                    allDependencyFiles[uniqueKey] = dependencyFile;
                 }
             }
 
@@ -76,31 +84,19 @@ public class RunWorker
         catch (HttpRequestException ex)
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            error = new PrivateSourceAuthenticationFailure()
-            {
-                Details = $"({string.Join("|", lastUsedPackageSourceUrls)})",
-            };
+            error = new PrivateSourceAuthenticationFailure(lastUsedPackageSourceUrls);
         }
         catch (MissingFileException ex)
         {
-            error = new DependencyFileNotFound()
-            {
-                Details = ex.FilePath,
-            };
+            error = new DependencyFileNotFound(ex.FilePath);
         }
         catch (UpdateNotPossibleException ex)
         {
-            error = new UpdateNotPossible()
-            {
-                Details = ex.Dependencies,
-            };
+            error = new UpdateNotPossible(ex.Dependencies);
         }
         catch (Exception ex)
         {
-            error = new UnknownError()
-            {
-                Details = ex.ToString(),
-            };
+            error = new UnknownError(ex.ToString());
         }
 
         if (error is not null)
@@ -108,21 +104,20 @@ public class RunWorker
             await _apiHandler.RecordUpdateJobError(error);
         }
 
-        await _apiHandler.MarkAsProcessed(new() { BaseCommitSha = baseCommitSha });
+        await _apiHandler.MarkAsProcessed(new(baseCommitSha));
 
         return runResult;
     }
 
-    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha)
+    private async Task<RunResult> RunForDirectory(Job job, DirectoryInfo repoContentsPath, string repoDirectory, string baseCommitSha, ExperimentsManager experimentsManager)
     {
-        var discoveryWorker = new DiscoveryWorker(_logger);
-        var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
+        var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
 
         _logger.Log("Discovery JSON content:");
         _logger.Log(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
 
         // report dependencies
-        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult);
+        var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
@@ -139,13 +134,31 @@ public class RunWorker
             });
 
             // track original contents for later handling
+            async Task TrackOriginalContentsAsync(string directory, string fileName, string? replacementFileName = null)
+            {
+                var repoFullPath = Path.Join(directory, fileName);
+                if (replacementFileName is not null)
+                {
+                    repoFullPath = Path.Join(Path.GetDirectoryName(repoFullPath)!, replacementFileName);
+                }
+
+                repoFullPath = repoFullPath.FullyNormalizedRootedPath();
+                var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
+
+                if (!File.Exists(localFullPath))
+                {
+                    return;
+                }
+
+                var content = await File.ReadAllTextAsync(localFullPath);
+                originalDependencyFileContents[repoFullPath] = content;
+            }
+
             foreach (var project in discoveryResult.Projects)
             {
+                await TrackOriginalContentsAsync(discoveryResult.Path, project.FilePath);
+                await TrackOriginalContentsAsync(discoveryResult.Path, project.FilePath, replacementFileName: "packages.config");
                 // TODO: include global.json, etc.
-                var path = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
-                var localPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
-                var content = await File.ReadAllTextAsync(localPath);
-                originalDependencyFileContents[path] = content;
             }
 
             // do update
@@ -167,7 +180,6 @@ public class RunWorker
                         continue;
                     }
 
-                    var analyzeWorker = new AnalyzeWorker(_logger);
                     var dependencyInfo = new DependencyInfo()
                     {
                         Name = dependency.Name,
@@ -176,13 +188,21 @@ public class RunWorker
                         IgnoredVersions = [],
                         Vulnerabilities = [],
                     };
-                    var analysisResult = await analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
+                    var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     // TODO: log analysisResult
                     if (analysisResult.CanUpdate)
                     {
+                        var dependencyLocation = Path.Join(discoveryResult.Path, project.FilePath);
+                        if (dependency.Type == DependencyType.PackagesConfig)
+                        {
+                            dependencyLocation = Path.Join(Path.GetDirectoryName(dependencyLocation)!, "packages.config");
+                        }
+
+                        dependencyLocation = dependencyLocation.FullyNormalizedRootedPath();
+
                         // TODO: this is inefficient, but not likely causing a bottleneck
                         var previousDependency = discoveredUpdatedDependencies.Dependencies
-                            .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"));
+                            .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == dependencyLocation);
                         var updatedDependency = new ReportedDependency()
                         {
                             Name = dependency.Name,
@@ -191,12 +211,12 @@ public class RunWorker
                             [
                                 new ReportedRequirement()
                                 {
-                                    File = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/"),
+                                    File = dependencyLocation,
                                     Requirement = analysisResult.UpdatedVersion,
                                     Groups = previousDependency.Requirements.Single().Groups,
                                     Source = new RequirementSource()
                                     {
-                                        SourceUrl = analysisResult.UpdatedDependencies.Single(d => d.Name == dependency.Name).InfoUrl,
+                                        SourceUrl = analysisResult.UpdatedDependencies.FirstOrDefault(d => d.Name == dependency.Name)?.InfoUrl,
                                     },
                                 }
                             ],
@@ -204,12 +224,16 @@ public class RunWorker
                             PreviousRequirements = previousDependency.Requirements,
                         };
 
-                        var updateWorker = new UpdaterWorker(_logger);
-                        var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix();
-                        var updateResult = await updateWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
+                        var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).FullyNormalizedRootedPath();
+                        var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
                         // TODO: need to report if anything was actually updated
                         if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
                         {
+                            if (dependencyLocation != dependencyFilePath)
+                            {
+                                updatedDependency.Requirements.All(r => r.File == dependencyFilePath);
+                            }
+
                             actualUpdatedDependencies.Add(updatedDependency);
                         }
                     }
@@ -218,21 +242,39 @@ public class RunWorker
 
             // create PR - we need to manually check file contents; we can't easily use `git status` in tests
             var updatedDependencyFiles = new List<DependencyFile>();
-            foreach (var project in discoveryResult.Projects)
+            async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName, string? replacementFileName = null)
             {
-                var path = Path.Join(discoveryResult.Path, project.FilePath).NormalizePathToUnix().EnsurePrefix("/");
-                var localPath = Path.Join(repoContentsPath.FullName, discoveryResult.Path, project.FilePath);
-                var updatedContent = await File.ReadAllTextAsync(localPath);
-                var originalContent = originalDependencyFileContents[path];
+                var repoFullPath = Path.Join(directory, fileName);
+                if (replacementFileName is not null)
+                {
+                    repoFullPath = Path.Join(Path.GetDirectoryName(repoFullPath)!, replacementFileName);
+                }
+
+                repoFullPath = repoFullPath.FullyNormalizedRootedPath();
+                var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
+
+                if (!File.Exists(localFullPath))
+                {
+                    return;
+                }
+
+                var originalContent = originalDependencyFileContents[repoFullPath];
+                var updatedContent = await File.ReadAllTextAsync(localFullPath);
                 if (updatedContent != originalContent)
                 {
                     updatedDependencyFiles.Add(new DependencyFile()
                     {
-                        Name = project.FilePath,
+                        Name = Path.GetFileName(repoFullPath),
+                        Directory = Path.GetDirectoryName(repoFullPath)!.NormalizePathToUnix(),
                         Content = updatedContent,
-                        Directory = discoveryResult.Path,
                     });
                 }
+            }
+
+            foreach (var project in discoveryResult.Projects)
+            {
+                await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, project.FilePath);
+                await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, project.FilePath, replacementFileName: "packages.config");
             }
 
             if (updatedDependencyFiles.Count > 0)
@@ -261,23 +303,27 @@ public class RunWorker
 
         var result = new RunResult()
         {
-            Base64DependencyFiles = originalDependencyFileContents.Select(kvp => new DependencyFile()
+            Base64DependencyFiles = originalDependencyFileContents.Select(kvp =>
             {
-                Name = Path.GetFileName(kvp.Key),
-                Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(kvp.Value)),
-                Directory = Path.GetDirectoryName(kvp.Key)!.NormalizePathToUnix(),
+                var fullPath = kvp.Key.FullyNormalizedRootedPath();
+                return new DependencyFile()
+                {
+                    Name = Path.GetFileName(fullPath),
+                    Content = Convert.ToBase64String(Encoding.UTF8.GetBytes(kvp.Value)),
+                    Directory = Path.GetDirectoryName(fullPath)!.NormalizePathToUnix(),
+                };
             }).ToArray(),
             BaseCommitSha = baseCommitSha,
         };
         return result;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)
     {
         string GetFullRepoPath(string path)
         {
             // ensures `path\to\file` is `/path/to/file`
-            return Path.Join(discoveryResult.Path, path).NormalizePathToUnix().NormalizeUnixPathParts().EnsurePrefix("/");
+            return Path.Join(discoveryResult.Path, path).FullyNormalizedRootedPath();
         }
 
         var auxiliaryFiles = new List<string>();
@@ -294,6 +340,17 @@ public class RunWorker
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DirectoryPackagesProps.FilePath));
         }
 
+        foreach (var project in discoveryResult.Projects)
+        {
+            var projectDirectory = Path.GetDirectoryName(project.FilePath);
+            var pathToPackagesConfig = Path.Join(pathToContents, discoveryResult.Path, projectDirectory, "packages.config");
+
+            if (File.Exists(pathToPackagesConfig))
+            {
+                auxiliaryFiles.Add(GetFullRepoPath(Path.Join(projectDirectory, "packages.config")));
+            }
+        }
+
         var updatedDependencyList = new UpdatedDependencyList()
         {
             Dependencies = discoveryResult.Projects.SelectMany(p =>
@@ -304,7 +361,9 @@ public class RunWorker
                         Name = d.Name,
                         Requirements = d.IsTransitive ? [] : [new ReportedRequirement()
                         {
-                            File = GetFullRepoPath(p.FilePath),
+                            File = d.Type == DependencyType.PackagesConfig
+                                ? Path.Join(Path.GetDirectoryName(GetFullRepoPath(p.FilePath))!, "packages.config").FullyNormalizedRootedPath()
+                                : GetFullRepoPath(p.FilePath),
                             Requirement = d.Version!,
                             Groups = ["dependencies"],
                         }],

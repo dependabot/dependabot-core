@@ -18,6 +18,10 @@
 - changed-files:
   - any-glob-to-any-file: docker/**
 
+"L: dotnet-sdk":
+- changed-files:
+  - any-glob-to-any-file: dotnet_sdk/**
+
 "L: elm":
 - changed-files:
   - any-glob-to-any-file: elm/**

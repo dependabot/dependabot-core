@@ -12,7 +12,7 @@ using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
 
-public partial class DiscoveryWorker
+public partial class DiscoveryWorker : IDiscoveryWorker
 {
     public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
@@ -58,7 +58,7 @@ public partial class DiscoveryWorker
         return result;
     }
 
-    internal async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
+    public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
         MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
 

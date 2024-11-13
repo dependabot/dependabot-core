@@ -12,7 +12,7 @@ namespace NuGetUpdater.Core.Analyze;
 
 using MultiDependency = (string PropertyName, ImmutableArray<string> TargetFrameworks, ImmutableHashSet<string> DependencyNames);
 
-public partial class AnalyzeWorker
+public partial class AnalyzeWorker : IAnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 

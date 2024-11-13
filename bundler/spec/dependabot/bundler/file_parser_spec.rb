@@ -733,8 +733,35 @@ RSpec.describe Dependabot::Bundler::FileParser do
   end
 
   describe "#package_manager" do
-    it "returns the correct package manager" do
-      expect(parser.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+    context "when there are no constraints" do
+      it "returns the correct package manager with no requirement" do
+        expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+        expect(parser.ecosystem.package_manager.requirement).to be_nil
+      end
+    end
+
+    context "when there are constraints" do
+      context "when bundler requirement specified in the Gemfile" do
+        let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
+
+        it "returns the correct package manager with requirement" do
+          expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+          expect(parser.ecosystem.package_manager.requirement).to be_a(Dependabot::Bundler::Requirement)
+          expect(parser.ecosystem.package_manager.requirement.min_version).to eq(Dependabot::Version.new("2.3.0"))
+          expect(parser.ecosystem.package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.4.0"))
+        end
+      end
+
+      context "when bundler requirement specified in .gemspec" do
+        let(:dependency_files) { bundler_project_dependency_files("gemfile_example") }
+
+        it "returns the correct package manager with requirement" do
+          expect(parser.ecosystem.package_manager).to be_a(Dependabot::Bundler::PackageManager)
+          expect(parser.ecosystem.package_manager.requirement).to be_a(Dependabot::Bundler::Requirement)
+          expect(parser.ecosystem.package_manager.requirement.min_version).to eq(Dependabot::Version.new("1.12.0"))
+          expect(parser.ecosystem.package_manager.requirement.max_version).to be_nil
+        end
+      end
     end
   end
 end

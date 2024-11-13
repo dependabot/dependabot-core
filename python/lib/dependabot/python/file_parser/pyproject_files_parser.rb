@@ -167,7 +167,8 @@ module Dependabot
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
-            !parsed_pyproject.dig("project", "optional-dependencies").nil?
+            !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
+            !parsed_pyproject.dig("build-system", "requires").nil?
         end
 
         def poetry_root

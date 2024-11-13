@@ -79,6 +79,11 @@ module Dependabot
 
       private
 
+      sig { returns(String) }
+      def job_file_path
+        ENV.fetch("DEPENDABOT_JOB_PATH")
+      end
+
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_projects(dependency)
         update_ran = T.let(false, T::Boolean)
@@ -127,9 +132,9 @@ module Dependabot
 
       sig { params(dependency: Dependency, proj_path: String).void }
       def call_nuget_updater_tool(dependency, proj_path)
-        NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
-                                             dependency: dependency, is_transitive: !dependency.top_level?,
-                                             credentials: credentials)
+        NativeHelpers.run_nuget_updater_tool(job_path: job_file_path, repo_root: T.must(repo_contents_path),
+                                             proj_path: proj_path, dependency: dependency,
+                                             is_transitive: !dependency.top_level?, credentials: credentials)
 
         # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
         # Ideally we should find a way to not run this code in prod

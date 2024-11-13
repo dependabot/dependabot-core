@@ -1,10 +1,14 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 
+using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
+using NuGetUpdater.Core.Updater;
 
 using Xunit;
 
@@ -17,16 +21,10 @@ public class RunWorkerTests
     [Fact]
     public async Task UpdateSinglePackageProducedExpectedAPIMessages()
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
         await RunAsync(
-            packages:
-            [
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
-                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0", additionalMetadata: [repoMetadata]),
-            ],
+            packages: [],
             job: new Job()
             {
-                PackageManager = "nuget",
                 Source = new()
                 {
                     Provider = "github",
@@ -51,6 +49,55 @@ public class RunWorkerTests
                     </Project>
                     """)
             ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "some-dir",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            Dependencies =
+                            [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            ]
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                return Task.FromResult(new AnalysisResult()
+                {
+                    UpdatedVersion = "1.0.1",
+                    CanUpdate = true,
+                    UpdatedDependencies =
+                    [
+                        new("Some.Package", "1.0.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                    ]
+                });
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                Assert.Equal("Some.Package", input.Item3);
+                Assert.Equal("1.0.0", input.Item4);
+                Assert.Equal("1.0.1", input.Item5);
+                var projectPath = input.Item1 + input.Item2;
+                await File.WriteAllTextAsync(projectPath, """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """);
+                return new UpdateOperationResult();
+            }),
             expectedResult: new RunResult()
             {
                 Base64DependencyFiles =
@@ -143,7 +190,7 @@ public class RunWorkerTests
                         new DependencyFile()
                         {
                             Name = "project.csproj",
-                            Directory = "some-dir",
+                            Directory = "/some-dir",
                             Content = """
                                 <Project Sdk="Microsoft.NET.Sdk">
                                   <PropertyGroup>
@@ -161,10 +208,7 @@ public class RunWorkerTests
                     PrTitle = "TODO: title",
                     PrBody = "TODO: body",
                 },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
@@ -172,44 +216,12 @@ public class RunWorkerTests
     [Fact]
     public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
     {
-        static (int, string) TestHttpHandler(string uriString)
-        {
-            var uri = new Uri(uriString, UriKind.Absolute);
-            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
-            return uri.PathAndQuery switch
-            {
-                // initial request is good
-                "/index.json" => (200, $$"""
-                    {
-                        "version": "3.0.0",
-                        "resources": [
-                            {
-                                "@id": "{{baseUrl}}/download",
-                                "@type": "PackageBaseAddress/3.0.0"
-                            },
-                            {
-                                "@id": "{{baseUrl}}/query",
-                                "@type": "SearchQueryService"
-                            },
-                            {
-                                "@id": "{{baseUrl}}/registrations",
-                                "@type": "RegistrationsBaseUrl"
-                            }
-                        ]
-                    }
-                    """),
-                // all other requests are unauthorized
-                _ => (401, "{}"),
-            };
-        }
-        using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
         await RunAsync(
             packages:
             [
             ],
             job: new Job()
             {
-                PackageManager = "nuget",
                 Source = new()
                 {
                     Provider = "github",
@@ -223,11 +235,11 @@ public class RunWorkerTests
             },
             files:
             [
-                ("NuGet.Config", $"""
+                ("NuGet.Config", """
                     <configuration>
                       <packageSources>
                         <clear />
-                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                        <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
                       </packageSources>
                     </configuration>
                     """),
@@ -242,6 +254,12 @@ public class RunWorkerTests
                     </Project>
                     """)
             ],
+            discoveryWorker: new TestDiscoveryWorker((_input) =>
+            {
+                throw new HttpRequestException(message: null, inner: null, statusCode: HttpStatusCode.Unauthorized);
+            }),
+            analyzeWorker: TestAnalyzeWorker.FromResults(),
+            updaterWorker: TestUpdaterWorker.FromResults(),
             expectedResult: new RunResult()
             {
                 Base64DependencyFiles = [],
@@ -249,36 +267,925 @@ public class RunWorkerTests
             },
             expectedApiMessages:
             [
-                new PrivateSourceAuthenticationFailure()
-                {
-                    Details = $"({http.BaseUrl.TrimEnd('/')}/index.json)"
-                },
-                new MarkAsProcessed()
-                {
-                    BaseCommitSha = "TEST-COMMIT-SHA",
-                }
+                new PrivateSourceAuthenticationFailure(["http://example.com/nuget/index.json"]),
+                new MarkAsProcessed("TEST-COMMIT-SHA")
             ]
         );
     }
 
-    private static async Task RunAsync(Job job, TestFile[] files, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null)
+    [Fact]
+    public async Task UpdateHandlesPackagesConfigFiles()
+    {
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        await RunAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0", additionalMetadata: [repoMetadata]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "2.0.0", "net8.0", additionalMetadata: [repoMetadata2]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "2.0.1", "net8.0", additionalMetadata: [repoMetadata2]),
+            ],
+            job: new Job()
+            {
+                PackageManager = "nuget",
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "some-dir",
+                },
+                AllowedUpdates =
+                [
+                    new() { UpdateType = "all" }
+                ]
+            },
+            files:
+            [
+                ("some-dir/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("some-dir/packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                    </packages>
+                    """),
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "some-dir",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            Dependencies =
+                            [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
+                            ]
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var result = input.Item3.Name switch
+                {
+                    "Some.Package" => new AnalysisResult()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "1.0.1",
+                        UpdatedDependencies =
+                            [
+                                new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                            ]
+                    },
+                    "Some.Package2" => new AnalysisResult()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "2.0.1",
+                        UpdatedDependencies =
+                                [
+                                    new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
+                                ]
+                    },
+                    _ => throw new NotSupportedException(),
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRootPath = input.Item1;
+                var filePath = input.Item2;
+                var packageName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var _isTransitive = input.Item6;
+
+                var projectPath = Path.Join(repoRootPath, filePath);
+                switch (packageName)
+                {
+                    case "Some.Package":
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                             </Project>
+                            """);
+                        break;
+                    case "Some.Package2":
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <Reference Include="Some.Package2">
+                                  <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                  <Private>True</Private>
+                                </Reference>
+                              </ItemGroup>
+                            </Project>
+                            """);
+                        var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
+                        await File.WriteAllTextAsync(packagesConfigPath, """
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                            </packages>
+                            """);
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+
+                return new UpdateOperationResult();
+            }),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles =
+                [
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir",
+                        Name = "project.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.0" />
+                              </ItemGroup>
+                            </Project>
+                            """))
+                    },
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir",
+                        Name = "packages.config",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                            </packages>
+                            """))
+                    }
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        }
+                    ],
+                    DependencyFiles = ["/some-dir/project.csproj", "/some-dir/packages.config"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/some-dir/project.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/project.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/some-dir/packages.config",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package2",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        new DependencyFile()
+                        {
+                            Name = "project.csproj",
+                            Directory = "/some-dir",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net8.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="1.0.1" />
+                                  </ItemGroup>
+                                  <ItemGroup>
+                                    <Reference Include="Some.Package2">
+                                      <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                      <Private>True</Private>
+                                    </Reference>
+                                  </ItemGroup>
+                                </Project>
+                                """,
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "packages.config",
+                            Directory = "/some-dir",
+                            Content = """
+                                <?xml version="1.0" encoding="utf-8"?>
+                                <packages>
+                                  <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                                </packages>
+                                """,
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = "TODO: message",
+                    PrTitle = "TODO: title",
+                    PrBody = "TODO: body",
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles()
+    {
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        await RunAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repoMetadata]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.1", "net8.0", additionalMetadata: [repoMetadata]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "2.0.0", "net8.0", additionalMetadata: [repoMetadata2]),
+                MockNuGetPackage.CreateSimplePackage("Some.Package2", "2.0.1", "net8.0", additionalMetadata: [repoMetadata2]),
+            ],
+            job: new Job()
+            {
+                PackageManager = "nuget",
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "test/repo",
+                    Directory = "some-dir/ProjectA",
+                },
+                AllowedUpdates =
+                [
+                    new() { UpdateType = "all" }
+                ]
+            },
+            files:
+            [
+                ("some-dir/ProjectA/ProjectA.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <ProjectReference Include="../ProjectB/ProjectB.csproj" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("some-dir/ProjectA/packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                    </packages>
+                    """),
+                ("some-dir/ProjectB/ProjectB.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("some-dir/ProjectB/packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                      <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                    </packages>
+                    """),
+            ],
+            discoveryWorker: new TestDiscoveryWorker(_input =>
+            {
+                return Task.FromResult(new WorkspaceDiscoveryResult()
+                {
+                    Path = "some-dir/ProjectA",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "../ProjectB/ProjectB.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            Dependencies =
+                            [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
+                            ]
+                        },
+                        new()
+                        {
+                            FilePath = "ProjectA.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            Dependencies =
+                            [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
+                            ]
+                        }
+                    ]
+                });
+            }),
+            analyzeWorker: new TestAnalyzeWorker(input =>
+            {
+                var result = input.Item3.Name switch
+                {
+                    "Some.Package" => new AnalysisResult()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "1.0.1",
+                        UpdatedDependencies =
+                            [
+                                new("Some.Package", "1.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package"),
+                            ]
+                    },
+                    "Some.Package2" => new AnalysisResult()
+                    {
+                        CanUpdate = true,
+                        UpdatedVersion = "2.0.1",
+                        UpdatedDependencies =
+                                [
+                                    new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
+                                ]
+                    },
+                    _ => throw new NotSupportedException(),
+                };
+                return Task.FromResult(result);
+            }),
+            updaterWorker: new TestUpdaterWorker(async input =>
+            {
+                var repoRootPath = input.Item1;
+                var filePath = input.Item2;
+                var packageName = input.Item3;
+                var previousVersion = input.Item4;
+                var newVersion = input.Item5;
+                var _isTransitive = input.Item6;
+
+                var projectPath = Path.Join(repoRootPath, filePath);
+                var projectName = Path.GetFileName(projectPath);
+                var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
+                switch ((projectName, packageName))
+                {
+                    case ("ProjectA.csproj", "Some.Package"):
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <ProjectReference Include="../ProjectB/ProjectB.csproj" />
+                              </ItemGroup>
+                            </Project>
+                            """);
+                        break;
+                    case ("ProjectA.csproj", "Some.Package2"):
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <ProjectReference Include="../ProjectB/ProjectB.csproj" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <Reference Include="Some.Package2">
+                                  <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                  <Private>True</Private>
+                                </Reference>
+                              </ItemGroup>
+                            </Project>
+                            """);
+                        await File.WriteAllTextAsync(packagesConfigPath, """
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                            </packages>
+                            """);
+                        break;
+                    case ("ProjectB.csproj", "Some.Package"):
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                            </Project>
+                            """);
+                        break;
+                    case ("ProjectB.csproj", "Some.Package2"):
+                        await File.WriteAllTextAsync(projectPath, """
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.1" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <Reference Include="Some.Package2">
+                                  <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                  <Private>True</Private>
+                                </Reference>
+                              </ItemGroup>
+                            </Project>
+                            """);
+                        await File.WriteAllTextAsync(packagesConfigPath, """
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                            </packages>
+                            """);
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+
+                return new UpdateOperationResult();
+            }),
+            expectedResult: new RunResult()
+            {
+                Base64DependencyFiles =
+                [
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir/ProjectB",
+                        Name = "ProjectB.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.0" />
+                              </ItemGroup>
+                            </Project>
+                            """))
+                    },
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir/ProjectB",
+                        Name = "packages.config",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                            </packages>
+                            """))
+                    },
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir/ProjectA",
+                        Name = "ProjectA.csproj",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <Project Sdk="Microsoft.NET.Sdk">
+                              <PropertyGroup>
+                                <TargetFramework>net8.0</TargetFramework>
+                              </PropertyGroup>
+                              <ItemGroup>
+                                <PackageReference Include="Some.Package" Version="1.0.0" />
+                              </ItemGroup>
+                              <ItemGroup>
+                                <ProjectReference Include="../ProjectB/ProjectB.csproj" />
+                              </ItemGroup>
+                            </Project>
+                            """))
+                    },
+                    new DependencyFile()
+                    {
+                        Directory = "/some-dir/ProjectA",
+                        Name = "packages.config",
+                        Content = Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                            <?xml version="1.0" encoding="utf-8"?>
+                            <packages>
+                              <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
+                            </packages>
+                            """))
+                    },
+                ],
+                BaseCommitSha = "TEST-COMMIT-SHA",
+            },
+            expectedApiMessages:
+            [
+                new UpdatedDependencyList()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/ProjectB/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.0",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/ProjectA/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ]
+                        },
+                    ],
+                    DependencyFiles = ["/some-dir/ProjectB/ProjectB.csproj", "/some-dir/ProjectA/ProjectA.csproj", "/some-dir/ProjectB/packages.config", "/some-dir/ProjectA/packages.config"],
+                },
+                new IncrementMetric()
+                {
+                    Metric = "updater.started",
+                    Tags = new()
+                    {
+                        ["operation"] = "group_update_all_versions"
+                    }
+                },
+                new CreatePullRequest()
+                {
+                    Dependencies =
+                    [
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/some-dir/ProjectB/packages.config",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package2",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/ProjectB/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package",
+                            Version = "1.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.1",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "1.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "1.0.0",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/some-dir/ProjectA/packages.config",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package2",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/ProjectA/packages.config",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                    ],
+                    UpdatedDependencyFiles =
+                    [
+                        new DependencyFile()
+                        {
+                            Name = "ProjectB.csproj",
+                            Directory = "/some-dir/ProjectB",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net8.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="1.0.1" />
+                                  </ItemGroup>
+                                  <ItemGroup>
+                                    <Reference Include="Some.Package2">
+                                      <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                      <Private>True</Private>
+                                    </Reference>
+                                  </ItemGroup>
+                                </Project>
+                                """,
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "packages.config",
+                            Directory = "/some-dir/ProjectB",
+                            Content = """
+                                <?xml version="1.0" encoding="utf-8"?>
+                                <packages>
+                                  <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                                </packages>
+                                """,
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "ProjectA.csproj",
+                            Directory = "/some-dir/ProjectA",
+                            Content = """
+                                <Project Sdk="Microsoft.NET.Sdk">
+                                  <PropertyGroup>
+                                    <TargetFramework>net8.0</TargetFramework>
+                                  </PropertyGroup>
+                                  <ItemGroup>
+                                    <PackageReference Include="Some.Package" Version="1.0.1" />
+                                  </ItemGroup>
+                                  <ItemGroup>
+                                    <ProjectReference Include="../ProjectB/ProjectB.csproj" />
+                                  </ItemGroup>
+                                  <ItemGroup>
+                                    <Reference Include="Some.Package2">
+                                      <HintPath>..\packages\Some.Package2.2.0.1\lib\net8.0\Some.Package2.dll</HintPath>
+                                      <Private>True</Private>
+                                    </Reference>
+                                  </ItemGroup>
+                                </Project>
+                                """,
+                        },
+                        new DependencyFile()
+                        {
+                            Name = "packages.config",
+                            Directory = "/some-dir/ProjectA",
+                            Content = """
+                                <?xml version="1.0" encoding="utf-8"?>
+                                <packages>
+                                  <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
+                                </packages>
+                                """,
+                        },
+                    ],
+                    BaseCommitSha = "TEST-COMMIT-SHA",
+                    CommitMessage = "TODO: message",
+                    PrTitle = "TODO: title",
+                    PrBody = "TODO: body",
+                },
+                new MarkAsProcessed("TEST-COMMIT-SHA")
+            ]
+        );
+    }
+
+    private static async Task RunAsync(Job job, TestFile[] files, IDiscoveryWorker? discoveryWorker, IAnalyzeWorker? analyzeWorker, IUpdaterWorker? updaterWorker, RunResult expectedResult, object[] expectedApiMessages, MockNuGetPackage[]? packages = null, ExperimentsManager? experimentsManager = null, string? repoContentsPath = null)
     {
         // arrange
         using var tempDirectory = new TemporaryDirectory();
-        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, tempDirectory.DirectoryPath);
+        repoContentsPath ??= tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, repoContentsPath);
         foreach (var (path, content) in files)
         {
-            var fullPath = Path.Combine(tempDirectory.DirectoryPath, path);
+            var fullPath = Path.Combine(repoContentsPath, path);
             var directory = Path.GetDirectoryName(fullPath)!;
             Directory.CreateDirectory(directory);
             await File.WriteAllTextAsync(fullPath, content);
         }
 
         // act
+        experimentsManager ??= new ExperimentsManager();
         var testApiHandler = new TestApiHandler();
-        var worker = new RunWorker(testApiHandler, new TestLogger());
-        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
-        var actualResult = await worker.RunAsync(job, repoContentsPath, "TEST-COMMIT-SHA");
+        var logger = new TestLogger();
+        discoveryWorker ??= new DiscoveryWorker(logger);
+        analyzeWorker ??= new AnalyzeWorker(logger);
+        updaterWorker ??= new UpdaterWorker(experimentsManager, logger);
+
+        var worker = new RunWorker(testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
         var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
 
         // assert
@@ -308,7 +1215,7 @@ public class RunWorkerTests
         }
     }
 
-    private static string SerializeObjectAndType(object obj)
+    internal static string SerializeObjectAndType(object obj)
     {
         return $"{obj.GetType().Name}:{JsonSerializer.Serialize(obj)}";
     }
