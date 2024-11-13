@@ -262,17 +262,10 @@ internal static partial class MSBuildHelper
                 : evaluationResult.EvaluatedValue;
 
             // If at this point we have a semicolon in the name then split it and yield multiple dependencies.
-            if (name.Contains(';'))
+            foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
-                foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
-                {
-                    yield return new Dependency(splitName.Trim(), packageVersion, dependencyType, EvaluationResult: evaluationResult);
-                }
-
-                continue;
+                yield return new Dependency(splitName.Trim(), packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
             }
-
-            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
         }
     }
 
