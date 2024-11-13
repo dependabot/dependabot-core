@@ -64,7 +64,6 @@ internal static class SdkProjectDiscovery
 
                     // Get the complete set of dependencies including transitive dependencies.
                     var dependencies = indirectDependencies.Concat(directDependencies).ToImmutableArray();
-
                     dependencies = dependencies
                         .Select(d => d with { TargetFrameworks = tfms })
                         .ToImmutableArray();
