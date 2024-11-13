@@ -213,7 +213,7 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
+        [Fact]
     public async Task UpdateHandlesSemicolonsInPackageReference()
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
@@ -228,6 +228,7 @@ public class RunWorkerTests
             ],
             job: new Job()
             {
+                PackageManager = "nuget",
                 Source = new()
                 {
                     Provider = "github",
@@ -245,14 +246,16 @@ public class RunWorkerTests
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>net8.0</TargetFramework>
-                        <SomePropertyName>1.0.0</SomePropertyName>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="Some.Package;Some.Package2" Version="$(SomePropertyName)" />
+                        <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
                     """)
             ],
+            discoveryWorker: null,
+            analyzeWorker: null,
+            updaterWorker: null,
             expectedResult: new RunResult()
             {
                 Base64DependencyFiles =
@@ -265,10 +268,9 @@ public class RunWorkerTests
                             <Project Sdk="Microsoft.NET.Sdk">
                               <PropertyGroup>
                                 <TargetFramework>net8.0</TargetFramework>
-                                <SomePropertyName>1.0.0</SomePropertyName>
                               </PropertyGroup>
                               <ItemGroup>
-                                <PackageReference Include="Some.Package;Some.Package2" Version="$(SomePropertyName)" />
+                                <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
                             """))
@@ -394,14 +396,14 @@ public class RunWorkerTests
                                 <Project Sdk="Microsoft.NET.Sdk">
                                   <PropertyGroup>
                                     <TargetFramework>net8.0</TargetFramework>
-                                    <SomePropertyName>1.0.1</SomePropertyName>
                                   </PropertyGroup>
                                   <ItemGroup>
-                                    <PackageReference Include="Some.Package;Some.Package2" Version="$(SomePropertyName)" />
+                                    <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
                                 """,
-                        },
+                        }
+
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
                     CommitMessage = "TODO: message",

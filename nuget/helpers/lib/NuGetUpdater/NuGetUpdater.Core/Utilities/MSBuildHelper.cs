@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -261,7 +262,10 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            foreach (var splitName in name.Trim().Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                yield return new Dependency(splitName, packageVersion, dependencyType, EvaluationResult: evaluationResult);
+            }
         }
     }
 

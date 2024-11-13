@@ -36,29 +36,7 @@ internal static class PackageReferenceUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
-
-        // if the name contains a semicolon, split it into two identical dependencies except with different names
-        foreach (var dependency in topLevelDependencies)
-        {
-            if (dependency.Name.Contains(';'))
-            {
-                var names = dependency.Name.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var name in names)
-                {
-                    if (name.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var newDependency = dependency with
-                    {
-                        Name = name
-                    };
-                    topLevelDependencies = topLevelDependencies.Append(newDependency).ToArray();
-                }
-            }
-        }
-
+        
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;

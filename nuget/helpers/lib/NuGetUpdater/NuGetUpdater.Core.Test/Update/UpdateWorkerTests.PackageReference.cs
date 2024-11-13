@@ -890,6 +890,45 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceUpdateWithSemicolon()
+        {
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package2", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package2", "13.0.1", "net8.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package;Some.Package2" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package;Some.Package2" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
         public async Task UpdateVersionAttribute_InDirectoryPackages_ForPackageVersion()
         {
             // update Some.Package from 9.0.1 to 13.0.1
