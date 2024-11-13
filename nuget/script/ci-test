@@ -2,5 +2,13 @@
 
 set -e
 
+pushd ./helpers/lib/NuGetUpdater
+dotnet restore
+dotnet format --no-restore --exclude ../NuGet.Client --verify-no-changes -v diag
+dotnet build --configuration Release
+dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj
+dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
+popd
+
 bundle install
-bundle exec turbo_tests --verbose
+bundle exec rspec spec
