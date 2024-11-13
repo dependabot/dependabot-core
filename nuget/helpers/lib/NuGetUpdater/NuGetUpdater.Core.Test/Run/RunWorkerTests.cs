@@ -213,7 +213,7 @@ public class RunWorkerTests
         );
     }
 
-        [Fact]
+    [Fact]
     public async Task UpdateHandlesSemicolonsInPackageReference()
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");

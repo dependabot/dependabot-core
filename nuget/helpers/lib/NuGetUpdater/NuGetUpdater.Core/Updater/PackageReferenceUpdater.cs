@@ -36,7 +36,7 @@ internal static class PackageReferenceUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
-        
+
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, logger))
         {
             return;
