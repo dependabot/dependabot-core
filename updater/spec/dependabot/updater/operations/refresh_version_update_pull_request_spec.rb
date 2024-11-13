@@ -32,7 +32,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
   end
 
   let(:mock_service) do
-    instance_double(Dependabot::Service, create_pull_request: nil, update_pull_request: nil, close_pull_request: nil)
+    instance_double(
+      Dependabot::Service,
+      create_pull_request: nil,
+      update_pull_request: nil,
+      close_pull_request: nil,
+      record_ecosystem_meta: nil
+    )
   end
   let(:mock_error_handler) { instance_double(Dependabot::Updater::ErrorHandler) }
 

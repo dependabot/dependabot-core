@@ -37,9 +37,10 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
     instance_double(
       Dependabot::Service,
       increment_metric: nil,
+      record_update_job_error: nil,
       create_pull_request: nil,
-      close_pull_request: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      record_ecosystem_meta: nil
     )
   end
 

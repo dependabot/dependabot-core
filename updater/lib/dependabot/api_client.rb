@@ -21,6 +21,8 @@ module Dependabot
   class ApiClient
     extend T::Sig
 
+    MAX_REQUEST_RETRIES = 3
+
     sig { params(base_url: String, job_id: T.any(String, Integer), job_token: String).void }
     def initialize(base_url, job_id, job_token)
       @base_url = base_url
@@ -43,7 +45,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -72,7 +74,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -92,7 +94,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -119,7 +121,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -154,7 +156,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -180,7 +182,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -200,7 +202,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -224,7 +226,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -243,7 +245,7 @@ module Dependabot
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
-        raise if retry_count > 3
+        raise if retry_count > MAX_REQUEST_RETRIES
 
         sleep(rand(3.0..10.0))
         retry
@@ -274,7 +276,85 @@ module Dependabot
       end
     end
 
+    sig { params(ecosystem: T.nilable(Ecosystem)).void }
+    def record_ecosystem_meta(ecosystem)
+      return unless Dependabot::Experiments.enabled?(:enable_record_ecosystem_meta)
+
+      return if ecosystem.nil?
+
+      begin
+        ::Dependabot::OpenTelemetry.tracer.in_span("record_ecosystem_meta", kind: :internal) do |_span|
+          api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_meta"
+
+          body = {
+            data: [
+              {
+                ecosystem: {
+                  name: ecosystem.name,
+                  package_manager: version_manager_json(ecosystem.package_manager),
+                  language: version_manager_json(ecosystem.language)
+                }
+              }
+            ]
+          }
+
+          retry_count = 0
+
+          begin
+            response = http_client.post(api_url, json: body)
+            raise ApiError, response.body if response.code >= 400
+          rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError, ApiError => e
+            retry_count += 1
+            if retry_count <= MAX_REQUEST_RETRIES
+              sleep(rand(3.0..10.0))
+              retry
+            else
+              Dependabot.logger.error(
+                "Failed to record ecosystem meta after #{MAX_REQUEST_RETRIES} retries: #{e.message}"
+              )
+            end
+          end
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to record ecosystem meta: #{e.message}")
+      end
+    end
+
     private
+
+    # Update return type to allow returning a Hash or nil
+    sig do
+      params(version_manager: T.nilable(Dependabot::Ecosystem::VersionManager))
+        .returns(T.nilable(T::Hash[String, T.untyped]))
+    end
+    def version_manager_json(version_manager)
+      return nil unless version_manager
+
+      {
+        name: version_manager.name,
+        raw_version: version_manager.version.to_semver.to_s,
+        version: version_manager.version.to_s,
+        requirement: version_manager_requirement_json(version_manager)
+      }
+    end
+
+    # Update return type to allow returning a Hash or nil
+    sig do
+      params(version_manager: Dependabot::Ecosystem::VersionManager)
+        .returns(T.nilable(T::Hash[String, T.untyped]))
+    end
+    def version_manager_requirement_json(version_manager)
+      requirement = version_manager.requirement
+      return nil unless requirement
+
+      {
+        raw_constraint: requirement.constraints.join(", "),
+        min_raw_version: requirement.min_version&.to_semver.to_s,
+        min_version: requirement.min_version&.to_s,
+        max_raw_version: requirement.max_version&.to_semver.to_s,
+        max_version: requirement.max_version&.to_s
+      }
+    end
 
     sig { returns(String) }
     attr_reader :base_url
