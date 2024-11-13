@@ -574,6 +574,13 @@ RSpec.describe Dependabot::ApiClient do
       end)
     end
 
+    context "when ecosystem is nil" do
+      it "does not send a request" do
+        client.record_ecosystem_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
+      end
+    end
+
     context "when feature flag is disabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(false)
