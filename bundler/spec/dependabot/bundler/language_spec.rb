@@ -2,19 +2,26 @@
 # frozen_string_literal: true
 
 require "dependabot/bundler/language"
+require "dependabot/bundler/requirement"
 require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Bundler::Language do
-  let(:language) { described_class.new(version) }
+  let(:language) { described_class.new(version, requirement) }
   let(:version) { "3.0.0" }
+  let(:requirement) { Dependabot::Bundler::Requirement.new(">= 2.5.0") }
 
   describe "#initialize" do
-    context "when version is a String" do
+    context "when version and requirement are both strings initially" do
       let(:version) { "3.0.0" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 2.5.0") }
 
-      it "sets the version correctly" do
-        expect(language.version).to eq(Dependabot::Bundler::Version.new(version))
+      it "sets the version correctly as a string" do
+        expect(language.version).to eq(version)
+      end
+
+      it "sets the requirement correctly as a Dependabot::Bundler::Requirement" do
+        expect(language.requirement).to eq(requirement)
       end
 
       it "sets the name correctly" do
@@ -22,15 +29,28 @@ RSpec.describe Dependabot::Bundler::Language do
       end
     end
 
-    context "when version is a Dependabot::Bundler::Version" do
+    context "when version is a string and requirement is a Dependabot::Bundler::Requirement" do
       let(:version) { "3.0.0" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 2.5.0") }
 
       it "sets the version correctly" do
         expect(language.version).to eq(version)
       end
 
+      it "sets the requirement correctly" do
+        expect(language.requirement).to eq(requirement)
+      end
+
       it "sets the name correctly" do
         expect(language.name).to eq(Dependabot::Bundler::LANGUAGE)
+      end
+    end
+
+    context "when requirement is nil" do
+      let(:requirement) { nil }
+
+      it "sets requirement to nil" do
+        expect(language.requirement).to be_nil
       end
     end
   end
