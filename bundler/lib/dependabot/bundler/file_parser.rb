@@ -59,12 +59,6 @@ module Dependabot
         )
       end
 
-      def language_requirement
-        @language_requirement ||= Helpers.dependency_requirement(
-          Helpers::LANGUAGE, dependency_files
-        )
-      end
-
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         return @language if defined?(@language)
@@ -72,6 +66,12 @@ module Dependabot
         return nil if package_manager.unsupported?
 
         Language.new(ruby_raw_version, language_requirement)
+      end
+
+      def language_requirement
+        @language_requirement ||= Helpers.dependency_requirement(
+          Helpers::LANGUAGE, dependency_files
+        )
       end
 
       def check_external_code(dependencies)
