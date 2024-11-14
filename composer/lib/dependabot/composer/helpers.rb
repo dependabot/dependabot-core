@@ -47,7 +47,9 @@ module Dependabot
         # based on the major version of the lockfile.
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
           version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
-          return version.canonical_segments.first == 1 ? V1 : V2
+          major_version = version.canonical_segments.first
+
+          return major_version.nil? || major_version > 1 ? V2 : V1
         end
 
         # Check if the composer name does not follow the Composer V2 naming conventions.

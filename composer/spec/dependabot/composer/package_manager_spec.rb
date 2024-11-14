@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Composer::PackageManager do
   end
 
   describe "#deprecated?" do
-    context "when version is deprecated" do
+    context "when there is no deprecated version defined" do
       let(:version) { "1" }
 
       it "returns false" do
