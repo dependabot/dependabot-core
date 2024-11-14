@@ -43,13 +43,13 @@ module Dependabot
           .returns(String)
       end
       def self.composer_version(composer_json, parsed_lockfile = nil)
-        v1_unsupported = Dependabot::Experiments.enabled?(:composer_v1_unsupported_error)
-
         # If the parsed lockfile has a plugin API version, we return either V1 or V2
         # based on the major version of the lockfile.
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
           version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
-          return version.canonical_segments.first == 1 ? V1 : V2
+          major_version = version.canonical_segments.first
+
+          return major_version.nil? || major_version > 1 ? V2 : V1
         end
 
         # Check if the composer name does not follow the Composer V2 naming conventions.
@@ -57,18 +57,14 @@ module Dependabot
         composer_name_invalid = composer_json["name"] && composer_json["name"] !~ COMPOSER_V2_NAME_REGEX
 
         # If the name is invalid returns the fallback version.
-        if composer_name_invalid
-          return v1_unsupported ? V2 : V1
-        end
+        return V2 if composer_name_invalid
 
         # Check if the composer.json file contains "require" entries that don't follow
         # either the platform package naming conventions or the Composer V2 name conventions.
         invalid_v2 = invalid_v2_requirement?(composer_json)
 
         # If there are invalid requirements returns fallback version.
-        if invalid_v2
-          return v1_unsupported ? V2 : V1
-        end
+        return V2 if invalid_v2
 
         # If no conditions are met return V2 by default.
         V2
