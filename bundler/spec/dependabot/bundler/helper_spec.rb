@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
     end
   end
 
-  describe "#bundler_dependency_requirement" do
+  describe "#dependency_requirement" do
     let(:gemfile_with_bundler) do
       Dependabot::DependencyFile.new(name: "Gemfile", content: <<~GEMFILE)
         source 'https://rubygems.org'
@@ -152,13 +152,34 @@ RSpec.describe Dependabot::Bundler::Helpers do
       GEMSPEC
     end
 
+    let(:gemfile_with_ruby) do
+      Dependabot::DependencyFile.new(name: "Gemfile", content: <<~GEMFILE)
+        source 'https://rubygems.org'
+        ruby ">= 2.5.0"
+        gem "rails"
+      GEMFILE
+    end
+
+    let(:gemspec_with_ruby) do
+      Dependabot::DependencyFile.new(name: "example.gemspec", content: <<~GEMSPEC)
+        Gem::Specification.new do |spec|
+          spec.required_ruby_version = ">= 2.5.0"
+        end
+      GEMSPEC
+    end
+
     it "returns a combined requirement for bundler from multiple files" do
-      requirement = described_class.bundler_dependency_requirement([gemfile_with_bundler, gemspec_with_bundler])
+      requirement = described_class.dependency_requirement("bundler", [gemfile_with_bundler, gemspec_with_bundler])
       expect(requirement.constraints).to eq(["~> 2.3.0", ">= 1.12.0"])
     end
 
+    it "returns a combined requirement for ruby from multiple files" do
+      requirement = described_class.dependency_requirement("ruby", [gemfile_with_ruby, gemspec_with_ruby])
+      expect(requirement.constraints).to eq([">= 2.5.0"])
+    end
+
     it "returns nil if no constraints are found" do
-      requirement = described_class.bundler_dependency_requirement([])
+      requirement = described_class.dependency_requirement("ruby", [])
       expect(requirement).to be_nil
     end
   end

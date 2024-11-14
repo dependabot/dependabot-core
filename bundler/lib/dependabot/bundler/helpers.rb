@@ -13,10 +13,13 @@ module Dependabot
       V2 = "2"
       DEFAULT = V2
       BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
+      RUBY_GEMFILE_REGEX = /^ruby\s+['"]([^'"]+)['"]/
+      RUBY_GEMSPEC_REGEX = /required_ruby_version\s+=\s+['"]([^'"]+)['"]/
 
       GEMFILE = "Gemfile"
       GEMSPEC_EXTENSION = ".gemspec"
       BUNDLER_GEM_NAME = "bundler"
+      LANGUAGE = "ruby"
 
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.bundler_version(lockfile)
@@ -42,10 +45,13 @@ module Dependabot
 
       # Method to get the Requirement object for the 'bundler' dependency
       sig do
-        params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Dependabot::Bundler::Requirement))
+        params(
+          dependency_name: String,
+          files: T::Array[Dependabot::DependencyFile]
+        ).returns(T.nilable(Dependabot::Bundler::Requirement))
       end
-      def self.bundler_dependency_requirement(files)
-        constraints = combined_dependency_constraints(files, BUNDLER_GEM_NAME)
+      def self.dependency_requirement(dependency_name, files)
+        constraints = combined_dependency_constraints(files, dependency_name)
         return nil if constraints.empty?
 
         combined_constraint = constraints.join(", ")
@@ -67,18 +73,33 @@ module Dependabot
           content = file.content
           next unless content
 
-          # Select the appropriate regex based on file type
-          regex = if file.name.end_with?(GEMFILE)
+          # Select the appropriate regex based on file type and dependency name
+          regex = if dependency_name == LANGUAGE
+                    ruby_version_regex(file.name)
+                  elsif file.name.end_with?(GEMFILE)
                     gemfile_dependency_regex(dependency_name)
                   elsif file.name.end_with?(GEMSPEC_EXTENSION)
                     gemspec_dependency_regex(dependency_name)
                   else
-                    next # Skip unsupported file types
+                    next # Skip unsupported file types, including .ruby-version
                   end
+
+          # If regex is nil (unsupported for this file type), skip to the next file
+          next unless regex
 
           # Extract constraints using the chosen regex
           result.concat(extract_constraints_from_file(content, regex))
         end.uniq
+      end
+
+      # Method to generate the regex pattern for Ruby version in Gemfile or gemspec
+      sig { params(file_name: String).returns(T.nilable(Regexp)) }
+      def self.ruby_version_regex(file_name)
+        if file_name.end_with?(GEMFILE)
+          RUBY_GEMFILE_REGEX
+        elsif file_name.end_with?(GEMSPEC_EXTENSION)
+          RUBY_GEMSPEC_REGEX
+        end
       end
 
       # Method to generate the regex pattern for a dependency in a Gemfile
