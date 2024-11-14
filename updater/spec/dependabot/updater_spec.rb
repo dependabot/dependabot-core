@@ -2702,7 +2702,8 @@ RSpec.describe Dependabot::Updater do
       mark_job_as_processed: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
-      increment_metric: nil
+      increment_metric: nil,
+      record_ecosystem_meta: nil
     )
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 

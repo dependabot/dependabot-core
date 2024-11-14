@@ -41,6 +41,9 @@ module Dependabot
         end
       rescue StandardError => e
         error_handler.handle_job_error(error: e, dependency_group: dependency_snapshot.job_group)
+      ensure
+        # record metrics for the ecosystem
+        service.record_ecosystem_meta(dependency_snapshot.ecosystem)
       end
 
       # Having created the dependency_change, we need to determine the right strategy to apply it to the project:

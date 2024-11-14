@@ -54,7 +54,9 @@ module Dependabot
       end
 
       def package_manager_requirement
-        @package_manager_requirement ||= Helpers.bundler_dependency_requirement(dependency_files)
+        @package_manager_requirement ||= Helpers.dependency_requirement(
+          Helpers::BUNDLER_GEM_NAME, dependency_files
+        )
       end
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
@@ -63,7 +65,13 @@ module Dependabot
 
         return nil if package_manager.unsupported?
 
-        Language.new(ruby_raw_version)
+        Language.new(ruby_raw_version, language_requirement)
+      end
+
+      def language_requirement
+        @language_requirement ||= Helpers.dependency_requirement(
+          Helpers::LANGUAGE, dependency_files
+        )
       end
 
       def check_external_code(dependencies)

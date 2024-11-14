@@ -61,6 +61,9 @@ module Dependabot
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
+        ensure
+          # Record ecosystem metrics for the update job
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         private
