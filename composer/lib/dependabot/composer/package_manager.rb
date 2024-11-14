@@ -29,24 +29,6 @@ module Dependabot
           SUPPORTED_COMPOSER_VERSIONS,
        )
       end
-
-      sig { override.returns(T::Boolean) }
-      def deprecated?
-        return false if unsupported?
-
-        # Check if the feature flag for Composer v1 deprecation warning is enabled.
-        return false unless Dependabot::Experiments.enabled?(:composer_v1_deprecation_warning)
-
-        super
-      end
-
-      sig { override.returns(T::Boolean) }
-      def unsupported?
-        # Check if the feature flag for Composer v1 unsupported error is enabled.
-        return false unless Dependabot::Experiments.enabled?(:composer_v1_unsupported_error)
-
-        super
-      end
     end
   end
 end
