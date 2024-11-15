@@ -12,7 +12,7 @@ module Dependabot
     PACKAGE_MANAGER = "maven"
 
     # Supported versions specified here: https://maven.apache.org/docs/history.html
-    SUPPORTED_MAVEN_VERSIONS = T.let([Version.new("3.6.3")].freeze, T::Array[Dependabot::Version])
+    SUPPORTED_MAVEN_VERSIONS = T.let([Version.new("3")].freeze, T::Array[Dependabot::Version])
 
     # When a version is going to be unsupported, it will be added here
     DEPRECATED_MAVEN_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
@@ -34,6 +34,16 @@ module Dependabot
           SUPPORTED_MAVEN_VERSIONS,
           requirement,
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { returns(T::Boolean) }
+      def unsupported?
+        false
       end
     end
   end

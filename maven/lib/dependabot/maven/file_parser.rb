@@ -63,7 +63,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new(maven_version),
+          PackageManager.new("NOT-AVAILABLE"),
           T.nilable(Dependabot::Maven::PackageManager)
         )
       end
@@ -71,20 +71,8 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(begin
-          return if package_manager.unsupported?
-
-          Language.new(ruby_version)
+          Language.new("NOT-AVAILABLE")
         end, T.nilable(Dependabot::Maven::Language))
-      end
-
-      sig { returns(String) }
-      def ruby_version
-        @ruby_version ||= T.let(RUBY_VERSION, T.nilable(String))
-      end
-
-      sig { returns(String) }
-      def maven_version
-        ""
       end
 
       sig { params(pom: Dependabot::DependencyFile).returns(DependencySet) }
