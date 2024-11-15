@@ -151,46 +151,17 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var includePrerelease = version.IsPrerelease;
-
-        var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
-        var packageSources = sourceMapping.GetConfiguredPackageSources(packageId).ToHashSet();
-        var sources = packageSources.Count == 0
-            ? nugetContext.PackageSources
-            : nugetContext.PackageSources
-                .Where(p => packageSources.Contains(p.Name))
-                .ToImmutableArray();
-
-        foreach (var source in sources)
+        // if it can be downloaded, it exists
+        var downloader = await CompatibilityChecker.DownloadPackageAsync(new PackageIdentity(packageId, version), nugetContext, cancellationToken);
+        var packageAndVersionExists = downloader is not null;
+        if (packageAndVersionExists)
         {
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
-            var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
-            if (feed is null)
-            {
-                logger.Log($"Failed to get MetadataResource for [{source.Source}]");
-                continue;
-            }
-
-            try
-            {
-                // a non-compliant v2 API returning 404 can cause this to throw
-                var existsInFeed = await feed.Exists(
-                    new PackageIdentity(packageId, version),
-                    includeUnlisted: false,
-                    nugetContext.SourceCacheContext,
-                    NullLogger.Instance,
-                    cancellationToken);
-                if (existsInFeed)
-                {
-                    return true;
-                }
-            }
-            catch (FatalProtocolException)
-            {
-                // if anything goes wrong here, the package source obviously doesn't contain the requested package
-            }
+            // release the handles
+            var readers = downloader.GetValueOrDefault();
+            (readers.CoreReader as IDisposable)?.Dispose();
+            (readers.ContentReader as IDisposable)?.Dispose();
         }
 
-        return false;
+        return packageAndVersionExists;
     }
 }
