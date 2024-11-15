@@ -50,7 +50,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
             var localPath = PathHelper.JoinPath(repoRoot, discovery.Path);
-            var nugetContext = new NuGetContext(localPath);
+            using var nugetContext = new NuGetContext(localPath);
             analysisResult = new AnalysisResult
             {
                 ErrorType = ErrorType.AuthenticationFailure,
