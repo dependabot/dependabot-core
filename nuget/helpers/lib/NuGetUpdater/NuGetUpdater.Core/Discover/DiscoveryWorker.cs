@@ -275,22 +275,24 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         foreach (var projectPath in projectPaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (!File.Exists(projectPath))
+            // Ensure file existence is checked case-insensitively
+            var actualProjectPath = ResolveCaseInsensitivePath(projectPath);
+            if (actualProjectPath == null)
             {
                 continue;
             }
 
-            if (_processedProjectPaths.Contains(projectPath))
+            if (_processedProjectPaths.Contains(actualProjectPath))
             {
                 continue;
             }
-            _processedProjectPaths.Add(projectPath);
+            _processedProjectPaths.Add(actualProjectPath);
 
-            var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath);
+            var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath);
             var packagesConfigDependencies = PackagesConfigDiscovery.Discover(workspacePath, projectPath, _logger)
                     ?.Dependencies;
 
-            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
+            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _logger);
 
             // Determine if there were unrestored MSBuildSdks
             var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
@@ -299,7 +301,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
                 if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
                 {
-                    projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
+                    projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _logger);
                 }
             }
 
@@ -331,6 +333,31 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         return [.. results.Values];
     }
+
+    private static string? ResolveCaseInsensitivePath(string filePath)
+    {
+        // Get directory and file name
+        var directory = Path.GetDirectoryName(filePath);
+        var fileName = Path.GetFileName(filePath);
+
+        if (directory == null || fileName == null || !Directory.Exists(directory))
+        {
+            return null; // Invalid path or directory does not exist
+        }
+
+        try
+        {
+            // Enumerate files in the directory and find a case-insensitive match
+            return Directory
+                .EnumerateFiles(directory)
+                .FirstOrDefault(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)
     {
