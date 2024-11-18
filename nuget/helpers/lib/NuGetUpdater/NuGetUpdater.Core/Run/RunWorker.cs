@@ -229,7 +229,7 @@ public class RunWorker
                         // TODO: need to report if anything was actually updated
                         if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
                         {
-                            if (dependencyLocation != dependencyFilePath.EnsurePrefix("/"))
+                            if (dependencyLocation != dependencyFilePath)
                             {
                                 updatedDependency.Requirements.All(r => r.File == dependencyFilePath);
                             }
