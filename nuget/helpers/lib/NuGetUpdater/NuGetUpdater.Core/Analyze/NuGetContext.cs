@@ -142,11 +142,22 @@ internal record NuGetContext : IDisposable
             }
 
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-            var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
-            var url = metadata.ProjectUrl ?? metadata.LicenseUrl;
-            if (url is not null)
+            if (metadataResource is not null)
             {
-                return url.ToString();
+                try
+                {
+                    var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
+                    var url = metadata.ProjectUrl ?? metadata.LicenseUrl;
+                    if (url is not null)
+                    {
+                        return url.ToString();
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // there was an issue deserializing the package metadata; this doesn't necessarily mean the package
+                    // is unavailable, just that we can't return a URL
+                }
             }
         }
 
