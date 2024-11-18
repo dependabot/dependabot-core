@@ -835,4 +835,121 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task AnalysisFailsWhenNewerPackageDownloadIsDenied()
+    {
+        static (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                // request for package index is good
+                "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.1.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            }
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.1.0"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """)),
+                // request for versions is good
+                "/download/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "versions": [
+                            "1.0.0",
+                            "1.1.0"
+                        ]
+                    }
+                    """)),
+                // download of old package is good
+                "/download/some.package/1.0.0/some.package.1.0.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0").GetZipStream().ReadAllBytes()),
+                // download of new package is denied
+                "/download/some.package/1.1.0/some.package.1.1.0.nupkg" => (401, Array.Empty<byte>()),
+                // all other requests are not found
+                _ => (404, Encoding.UTF8.GetBytes("{}")),
+            };
+        }
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
 }

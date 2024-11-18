@@ -24,11 +24,16 @@ internal static class CompatibilityChecker
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var (isDevDependency, packageFrameworks) = await GetPackageInfoAsync(
+        var packageInfo = await GetPackageInfoAsync(
             package,
             nugetContext,
             cancellationToken);
+        if (packageInfo is null)
+        {
+            return false;
+        }
 
+        var (isDevDependency, packageFrameworks) = packageInfo.GetValueOrDefault();
         return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
     }
 
@@ -70,7 +75,7 @@ internal static class CompatibilityChecker
         return true;
     }
 
-    internal static async Task<PackageInfo> GetPackageInfoAsync(
+    internal static async Task<PackageReaders?> GetPackageReadersAsync(
         PackageIdentity package,
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
@@ -79,7 +84,21 @@ internal static class CompatibilityChecker
         var readers = File.Exists(tempPackagePath)
             ? ReadPackage(tempPackagePath)
             : await DownloadPackageAsync(package, nugetContext, cancellationToken);
+        return readers;
+    }
 
+    internal static async Task<PackageInfo?> GetPackageInfoAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        CancellationToken cancellationToken)
+    {
+        var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        if (readersOption is null)
+        {
+            return null;
+        }
+
+        var readers = readersOption.GetValueOrDefault();
         var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
         var reader = new NuspecReader(nuspecStream);
 
@@ -127,7 +146,7 @@ internal static class CompatibilityChecker
         return (archiveReader, archiveReader);
     }
 
-    internal static async Task<PackageReaders> DownloadPackageAsync(
+    internal static async Task<PackageReaders?> DownloadPackageAsync(
         PackageIdentity package,
         NuGetContext context,
         CancellationToken cancellationToken)
@@ -179,13 +198,13 @@ internal static class CompatibilityChecker
             var isDownloaded = await downloader.CopyNupkgFileToAsync(tempPackagePath, cancellationToken);
             if (!isDownloaded)
             {
-                throw new Exception($"Failed to download package [{package.Id}/{package.Version}] from [${source.SourceUri}]");
+                continue;
             }
 
             return (downloader.CoreReader, downloader.ContentReader);
         }
 
-        throw new Exception($"Package [{package.Id}/{package.Version}] does not exist in any of the configured sources.");
+        return null;
     }
 
     internal static string GetTempPackagePath(PackageIdentity package, NuGetContext context)

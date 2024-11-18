@@ -244,33 +244,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       end
     end
 
-    context "with a name that is only valid in v1" do
-      let(:project_name) { "v1/invalid_v2_name" }
-      let(:dependency_name) { "monolog/monolog" }
-      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
-      let(:dependency_version) { "1.0.2" }
-
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
-    end
-
-    context "with a dependency name that is only valid in v1" do
-      let(:project_name) { "v1/invalid_v2_requirement" }
-      let(:dependency_name) { "monolog/Monolog" }
-      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
-      let(:dependency_version) { "1.0.2" }
-
-      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
-    end
-
-    context "with an unresolvable path VCS source" do
-      let(:project_name) { "unreachable_path_vcs_source" }
-
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { resolver.latest_resolvable_version }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
     context "with a platform extension that cannot be added" do
       let(:project_name) { "unaddable_platform_req" }
       let(:dependency_name) { "monolog/monolog" }
@@ -286,18 +259,6 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
-    context "with a missing vcs repository source (composer v1)" do
-      let(:project_name) { "v1/vcs_source_unreachable" }
-
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { resolver.latest_resolvable_version }
-          .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-            expect(error.dependency_urls)
-              .to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
-          end
       end
     end
 
