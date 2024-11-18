@@ -300,8 +300,7 @@ module Dependabot
 
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          Helpers.install(name, version.to_s)
-          return
+          return Helpers.install(name, version.to_s)
         end
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
