@@ -152,8 +152,6 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
         "--tl:off",
         "--logger",
         "\"console;verbosity=normal\"",
-        "--blame-hang-timeout",
-        "5m",
         project_path
       ].join(" ")
     end
