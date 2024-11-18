@@ -299,6 +299,11 @@ module Dependabot
       end
 
       def install(name, version)
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          Helpers.install(name, version.to_s)
+          return
+        end
+
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         SharedHelpers.run_shell_command(

@@ -145,7 +145,7 @@ module Dependabot
         false
       end
 
-      sig { returns(Integer) }
+      sig { returns(T.any(Integer, T.noreturn)) }
       def self.yarn_major_version
         retries = 0
         output = run_single_yarn_command("--version")
@@ -171,6 +171,7 @@ module Dependabot
         handle_subprocess_failure(e)
       end
 
+      sig { params(error: StandardError).returns(T.noreturn) }
       def self.handle_subprocess_failure(error)
         message = error.message
         if YARN_PATH_NOT_FOUND.match?(message)
@@ -224,6 +225,7 @@ module Dependabot
         yarn_major_version >= 4
       end
 
+      sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         run_single_yarn_command("config set enableImmutableInstalls false")
@@ -260,24 +262,92 @@ module Dependabot
       # NOTE: Needs to be explicitly run through corepack to respect the
       # `packageManager` setting in `package.json`, because corepack does not
       # add shims for NPM.
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_npm_command(command, fingerprint: command)
-        SharedHelpers.run_shell_command("corepack npm #{command}", fingerprint: "corepack npm #{fingerprint}")
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
+        else
+          SharedHelpers.run_shell_command("corepack npm #{command}", fingerprint: "corepack npm #{fingerprint}")
+        end
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
         run_single_yarn_command(command, fingerprint: fingerprint)
       end
 
       # Run single pnpm command returning stdout/stderr
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_pnpm_command(command, fingerprint: nil)
-        SharedHelpers.run_shell_command("pnpm #{command}", fingerprint: "pnpm #{fingerprint || command}")
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
+        else
+          SharedHelpers.run_shell_command("pnpm #{command}", fingerprint: "pnpm #{fingerprint || command}")
+        end
       end
 
       # Run single yarn command returning stdout/stderr
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_single_yarn_command(command, fingerprint: nil)
-        SharedHelpers.run_shell_command("yarn #{command}", fingerprint: "yarn #{fingerprint || command}")
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
+        else
+          SharedHelpers.run_shell_command("yarn #{command}", fingerprint: "yarn #{fingerprint || command}")
+        end
+      end
+
+      # Install the package manager for specified version by using corepack
+      # and prepare it for use by using corepack
+      sig { params(name: String, version: String).void }
+      def self.install(name, version)
+        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+
+        package_manager_install(name, version)
+        package_manager_activate(name, version)
+        installed_version = package_manager_version(name)
+
+        Dependabot.logger.info("Installed version of #{name}: #{installed_version}")
+      end
+
+      # Install the package manager for specified version by using corepack
+      sig { params(name: String, version: String).void }
+      def self.package_manager_install(name, version)
+        SharedHelpers.run_shell_command(
+          "corepack install #{name}@#{version} --global --cache-only",
+          fingerprint: "corepack install <name>@<version> --global --cache-only"
+        )
+      end
+
+      # Prepare the package manager for use by using corepack
+      sig { params(name: String, version: String).void }
+      def self.package_manager_activate(name, version)
+        SharedHelpers.run_shell_command(
+          "corepack prepare #{name}@#{version} --activate",
+          fingerprint: "corepack prepare --activate"
+        )
+      end
+
+      # Get the version of the package manager by using corepack
+      sig { params(name: String).returns(String) }
+      def self.package_manager_version(name)
+        package_manager_run_command(name, "-v")
+      end
+
+      # Run single command on package manager returning stdout/stderr
+      sig do
+        params(
+          name: String,
+          command: String,
+          fingerprint: T.nilable(String)
+        ).returns(String)
+      end
+      def self.package_manager_run_command(name, command, fingerprint: nil)
+        SharedHelpers.run_shell_command(
+          "corepack #{name} #{command}",
+          fingerprint: "corepack #{name} #{fingerprint || command}"
+        )
       end
       private_class_method :run_single_yarn_command
 
