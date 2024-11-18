@@ -92,6 +92,20 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
   end
 
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
+
   def intercept_native_tools(discovery_content_hash:)
     return unless stub_native_tools
 
@@ -192,10 +206,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     end
 
     before do
-      file = Tempfile.new
-      File.write(file.path, job.to_json)
-      ENV["DEPENDABOT_JOB_PATH"] = file.path
-
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -233,21 +243,18 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       )
     end
 
-    after do
-      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
-      FileUtils.rm_f(job_path)
-    end
-
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         run_update_test do |updater|
-          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
+          ensure_job_file do
+            expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
-          expect(updater.send(:testonly_update_tooling_calls)).to eq(
-            {
-              "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1
-            }
-          )
+            expect(updater.send(:testonly_update_tooling_calls)).to eq(
+              {
+                "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1
+              }
+            )
+          end
         end
       end
     end
@@ -266,9 +273,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
       it "raises the expected error" do
         run_update_test do |updater|
-          expect do
-            updater.updated_dependency_files
-          end.to raise_error(Dependabot::UpdateNotPossible)
+          ensure_job_file do
+            expect do
+              updater.updated_dependency_files
+            end.to raise_error(Dependabot::UpdateNotPossible)
+          end
         end
       end
     end
@@ -300,10 +309,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     end
 
     before do
-      file = Tempfile.new
-      File.write(file.path, job.to_json)
-      ENV["DEPENDABOT_JOB_PATH"] = file.path
-
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -364,22 +369,19 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       )
     end
 
-    after do
-      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
-      FileUtils.rm_f(job_path)
-    end
-
     it "updates the wildcard project" do
       run_update_test do |updater|
-        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
-                                                                                "Proj2/Proj2.csproj")
+        ensure_job_file do
+          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
+                                                                                  "Proj2/Proj2.csproj")
 
-        expect(updater.send(:testonly_update_tooling_calls)).to eq(
-          {
-            "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1,
-            "/Proj2/Proj2.csproj+Microsoft.Extensions.DependencyModel" => 1
-          }
-        )
+          expect(updater.send(:testonly_update_tooling_calls)).to eq(
+            {
+              "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1,
+              "/Proj2/Proj2.csproj+Microsoft.Extensions.DependencyModel" => 1
+            }
+          )
+        end
       end
     end
   end
