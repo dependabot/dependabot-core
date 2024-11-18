@@ -63,6 +63,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   # Variable to control the npm fallback version feature flag
   let(:npm_fallback_version_above_v6_enabled) { true }
 
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
@@ -79,7 +82,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
   end
 
   after do

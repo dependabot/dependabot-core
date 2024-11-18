@@ -172,18 +172,15 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def name_from_lockfiles
-        PACKAGE_MANAGER_CLASSES.each_key do |manager_name| # iterates keys in order as defined in the hash
-          return manager_name.to_s if @lockfiles[manager_name.to_sym]
-        end
-        nil
+        PACKAGE_MANAGER_CLASSES.keys.map(&:to_s).find { |manager_name| @lockfiles[manager_name.to_sym] }
       end
 
       sig { returns(T.nilable(String)) }
       def name_from_package_manager_attr
         return unless @manifest_package_manager
 
-        PACKAGE_MANAGER_CLASSES.each_key do |manager_name| # iterates keys in order as defined in the hash
-          return manager_name.to_s if @manifest_package_manager.start_with?("#{manager_name}@")
+        PACKAGE_MANAGER_CLASSES.keys.map(&:to_s).find do |manager_name|
+          @manifest_package_manager.start_with?("#{manager_name}@")
         end
       end
 
@@ -255,22 +252,30 @@ module Dependabot
           )
         end
 
-        version ||= requested_version(name)
-
-        if version
-          raise_if_unsupported!(name, version)
-
-          install(name, version)
-        else
-          version = guessed_version(name)
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          version ||= requested_version(name) || guessed_version(name)
 
           if version
             raise_if_unsupported!(name, version.to_s)
+            install(name, version)
+          end
+        else
+          version ||= requested_version(name)
 
-            install(name, version) if name == PNPMPackageManager::NAME
+          if version
+            raise_if_unsupported!(name, version)
+
+            install(name, version)
+          else
+            version = guessed_version(name)
+
+            if version
+              raise_if_unsupported!(name, version.to_s)
+
+              install(name, version) if name == PNPMPackageManager::NAME
+            end
           end
         end
-
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
@@ -299,6 +304,10 @@ module Dependabot
       end
 
       def install(name, version)
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          return Helpers.install(name, version.to_s)
+        end
+
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         SharedHelpers.run_shell_command(
