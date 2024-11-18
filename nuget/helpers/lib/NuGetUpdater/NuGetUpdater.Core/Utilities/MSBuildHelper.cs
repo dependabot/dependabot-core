@@ -261,7 +261,11 @@ internal static partial class MSBuildHelper
                 ? evaluationResult.EvaluatedValue.TrimStart('[', '(').TrimEnd(']', ')')
                 : evaluationResult.EvaluatedValue;
 
-            yield return new Dependency(name, packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            // If at this point we have a semicolon in the name then split it and yield multiple dependencies.
+            foreach (var splitName in name.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                yield return new Dependency(splitName.Trim(), packageVersion, dependencyType, EvaluationResult: evaluationResult, IsUpdate: isUpdate);
+            }
         }
     }
 
