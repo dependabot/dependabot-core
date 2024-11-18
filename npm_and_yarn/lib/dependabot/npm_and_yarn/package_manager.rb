@@ -252,7 +252,6 @@ module Dependabot
           )
         end
 
-        version = nil
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           version ||= requested_version(name) || guessed_version(name)
 
