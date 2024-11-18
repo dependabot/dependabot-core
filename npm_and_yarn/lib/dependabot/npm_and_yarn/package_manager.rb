@@ -253,11 +253,19 @@ module Dependabot
         end
 
         version ||= requested_version(name)
-        version ||= guessed_version(name).to_s
 
         if version
           raise_if_unsupported!(name, version)
+
           install(name, version)
+        else
+          version = guessed_version(name)
+
+          if version
+            raise_if_unsupported!(name, version.to_s)
+
+            install(name, version)
+          end
         end
         version
       end
