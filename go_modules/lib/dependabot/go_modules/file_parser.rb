@@ -12,6 +12,8 @@ require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/go_modules/version"
+require "dependabot/go_modules/language"
+require "dependabot/go_modules/package_manager"
 
 module Dependabot
   module GoModules
@@ -29,6 +31,33 @@ module Dependabot
         end
 
         dependency_set.dependencies
+      end
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new("NOT-AVAILABLE"),
+          T.nilable(Dependabot::GoModules::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          Language.new("NOT-AVAILABLE")
+        end, T.nilable(Dependabot::GoModules::Language))
       end
 
       private
