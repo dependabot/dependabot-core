@@ -252,19 +252,29 @@ module Dependabot
           )
         end
 
-        version ||= requested_version(name)
-
-        if version
-          raise_if_unsupported!(name, version)
-
-          install(name, version)
-        else
-          version = guessed_version(name)
+        version = nil
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          version ||= requested_version(name) || guessed_version(name)
 
           if version
             raise_if_unsupported!(name, version.to_s)
+            install(name, version)
+          end
+        else
+          version ||= requested_version(name)
+
+          if version
+            raise_if_unsupported!(name, version)
 
             install(name, version)
+          else
+            version = guessed_version(name)
+
+            if version
+              raise_if_unsupported!(name, version.to_s)
+
+              install(name, version) if name == PNPMPackageManager::NAME
+            end
           end
         end
         version
