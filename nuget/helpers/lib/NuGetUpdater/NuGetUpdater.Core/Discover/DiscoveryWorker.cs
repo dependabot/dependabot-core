@@ -276,7 +276,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
             // Ensure file existence is checked case-insensitively
-            var actualProjectPath = ResolveCaseInsensitivePath(projectPath);
+            var actualProjectPath = PathHelper.ResolveCaseInsensitivePathInsideRepoRoot(projectPath, repoRootPath);
             if (actualProjectPath == null)
             {
                 continue;
@@ -333,31 +333,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         return [.. results.Values];
     }
-
-    private static string? ResolveCaseInsensitivePath(string filePath)
-    {
-        // Get directory and file name
-        var directory = Path.GetDirectoryName(filePath);
-        var fileName = Path.GetFileName(filePath);
-
-        if (directory == null || fileName == null || !Directory.Exists(directory))
-        {
-            return null; // Invalid path or directory does not exist
-        }
-
-        try
-        {
-            // Enumerate files in the directory and find a case-insensitive match
-            return Directory
-                .EnumerateFiles(directory)
-                .FirstOrDefault(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase));
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)
     {

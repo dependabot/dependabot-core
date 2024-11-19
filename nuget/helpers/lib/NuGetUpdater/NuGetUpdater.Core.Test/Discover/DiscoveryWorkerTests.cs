@@ -476,7 +476,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
-    public async Task TestRepo_SolutionFileCasingIsDifferent()
+    public async Task TestRepo_SolutionFileCasingMismatchIsResolved()
     {
         var solutionPath = "solution.sln";
         await TestDiscoveryAsync(
@@ -534,38 +534,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       EndGlobalSection
                     EndGlobal
                     """),
-                ("global.json", """
-                    {
-                      "sdk": {
-                        "version": "6.0.405",
-                        "rollForward": "latestPatch"
-                      },
-                      "msbuild-sdks": {
-                        "My.Custom.Sdk": "5.0.0",
-                        "My.Other.Sdk": "1.0.0-beta"
-                      }
-                    }
-                    """),
-                (".config/dotnet-tools.json", """
-                    {
-                      "version": 1,
-                      "isRoot": true,
-                      "tools": {
-                        "microsoft.botsay": {
-                          "version": "1.0.0",
-                          "commands": [
-                            "botsay"
-                          ]
-                        },
-                        "dotnetsay": {
-                          "version": "2.1.3",
-                          "commands": [
-                            "dotnetsay"
-                          ]
-                        }
-                      }
-                    }
-                    """),
             },
             expectedResult: new()
             {
@@ -595,23 +563,83 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         new("Some.Package", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
                     ],
                 },
-                GlobalJson = new()
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestDirsProj_CasingMismatchIsResolved()
+    {
+        var dirsProjPath = "dirs.proj";
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "",
+            files: new[]
+            {
+            ("src/project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("Directory.Build.props", "<Project />"),
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <SomePackageVersion>9.0.1</SomePackageVersion>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="$(SomePackageVersion)" />
+                  </ItemGroup>
+                </Project>
+                """),
+            // Introduce a casing difference in the project reference
+            (dirsProjPath, """
+                <Project>
+                  <ItemGroup>
+                    <ProjectReference Include="SRC/PROJECT.CSPROJ" />
+                  </ItemGroup>
+                </Project>
+                """)
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                ExpectedProjectCount = 2,
+                Projects = [
+                    new()
                 {
-                    FilePath = "global.json",
+                    FilePath = "src/project.csproj",
+                    TargetFrameworks = ["net7.0", "net8.0"],
+                    ExpectedDependencyCount = 2,
                     Dependencies = [
-                        new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
-                        new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
-                        new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk),
-                    ]
-                },
-                DotNetToolsJson = new()
-                {
-                    FilePath = ".config/dotnet-tools.json",
-                    Dependencies = [
-                        new("microsoft.botsay", "1.0.0", DependencyType.DotNetTool),
-                        new("dotnetsay", "2.1.3", DependencyType.DotNetTool),
+                        new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
+                        new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
+                    ],
+                    Properties = [
+                        new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                        new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
+                        new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
                     ]
                 }
+                ],
+                DirectoryPackagesProps = new()
+                {
+                    FilePath = "Directory.Packages.props",
+                    Dependencies = [
+                        new("Some.Package", "9.0.1", DependencyType.PackageVersion, IsDirect: true)
+                    ],
+                },
             }
         );
     }
