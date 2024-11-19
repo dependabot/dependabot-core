@@ -224,6 +224,7 @@ module Dependabot
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
@@ -283,6 +284,7 @@ module Dependabot
       end
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
       # Retrieve the installed version of the package manager by executing
       # the "corepack <name> -v" command and using the output.
       # If the output does not match the expected version format (PACKAGE_MANAGER_VERSION_REGEX),
