@@ -549,7 +549,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   "&state=all"
             stub_request(:get, url).to_return(
               status: 200,
-              body: "[{ \"merged\": true }]",
+              body: "[{ \"closed\": true }]",
               headers: json_header
             )
             stub_request(
@@ -613,7 +613,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     end
 
     context "when the branch already exists" do
-      let(:service_pack_response) { fixture("git", "upload_packs", "existing-branch") }
+      let(:service_pack_response) { fixture("git", "upload_packs", "existing-branch-with-no-pr") }
 
       before do
         Dependabot::Experiments.register(:dedup_branch_names, true)
