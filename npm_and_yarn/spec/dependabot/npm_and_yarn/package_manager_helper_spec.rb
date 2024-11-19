@@ -69,7 +69,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   describe "#package_manager" do
     context "when npm lockfile exists" do
       it "returns an NpmPackageManager instance" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version_numeric).and_return("7")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_version_numeric).and_return(7)
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
       end
     end
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       let(:lockfiles) { { yarn: yarn_lockfile } }
 
       it "returns a YarnPackageManager instance" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric).and_return("1")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric).and_return(1)
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::YarnPackageManager)
       end
     end
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       let(:lockfiles) { { pnpm: pnpm_lockfile } }
 
       it "returns a PNPMPackageManager instance" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version_numeric).and_return("7")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version_numeric).and_return(7)
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
       end
     end
@@ -115,6 +115,58 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns default package manager" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+      end
+    end
+  end
+
+  describe "#installed_version" do
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive_messages(
+        npm_version_numeric: 7,
+        yarn_version_numeric: 1,
+        pnpm_version_numeric: 7
+      )
+    end
+
+    context "when the installed version matches the expected format" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("npm --version", fingerprint: "<name> --version").and_return("7.5.2")
+      end
+
+      it "returns the raw installed version" do
+        expect(helper.installed_version("npm")).to eq("7.5.2")
+      end
+    end
+
+    context "when the installed version does not match the expected format" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("yarn --version", fingerprint: "<name> --version")
+          .and_return("invalid_version")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric)
+          .and_return(1)
+      end
+
+      it "falls back to the lockfile version" do
+        expect(helper.installed_version("yarn")).to eq("1")
+        # Check that the fallback version is memoized
+        expect(helper.instance_variable_get(:@installed_versions)["yarn"]).to eq("1")
+      end
+    end
+
+    context "when memoization is in effect" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("pnpm --version", fingerprint: "<name> --version").and_return("7.1.0")
+        # Pre-cache the result
+        helper.installed_version("pnpm")
+      end
+
+      it "does not re-run the shell command and uses the cached version" do
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
+          .with("pnpm --version", fingerprint: "<name> --version")
+        expect(helper.installed_version("pnpm")).to eq("7.1.0")
       end
     end
   end
