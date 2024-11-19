@@ -45,10 +45,12 @@ module Dependabot
         )
       end
 
+      private
+
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new("NOT-AVAILABLE"),
+          PackageManager.new(go_version),
           T.nilable(Dependabot::GoModules::PackageManager)
         )
       end
@@ -56,11 +58,14 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(begin
-          Language.new("NOT-AVAILABLE")
+          Language.new(go_version)
         end, T.nilable(Dependabot::GoModules::Language))
       end
 
-      private
+      sig { returns(String) }
+      def go_version
+        @go_version ||= T.let(T.must(go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first), T.nilable(String))
+      end
 
       # set GOTOOLCHAIN=local+auto if go version >= 1.21
       sig { void }
