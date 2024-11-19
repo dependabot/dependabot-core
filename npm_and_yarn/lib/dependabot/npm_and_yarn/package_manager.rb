@@ -283,8 +283,6 @@ module Dependabot
         version
       end
 
-      private
-
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
       def package_manager_by_name(name)
         name = ensure_valid_package_manager(name)
@@ -327,6 +325,8 @@ module Dependabot
 
         @installed_versions[name]
       end
+
+      private
 
       def raise_if_unsupported!(name, version)
         return unless name == PNPMPackageManager::NAME

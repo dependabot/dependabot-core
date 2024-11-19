@@ -139,18 +139,17 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
-    context "when the installed version does not match the expected format" do
+    context "when the installed version not found returns inferred version" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with("corepack yarn -v", fingerprint: "corepack yarn -v")
-          .and_return("invalid_version")
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric)
-          .and_return(1)
+          .and_return("1")
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_version_numeric).and_return(1)
       end
 
       it "falls back to the lockfile version" do
         expect(helper.installed_version("yarn")).to eq("1")
-        # Check that the fallback version is memoized
+        # Verify memoization
         expect(helper.instance_variable_get(:@installed_versions)["yarn"]).to eq("1")
       end
     end

@@ -344,7 +344,7 @@ module Dependabot
       # Get the version of the package manager by using corepack
       sig { params(name: String).returns(String) }
       def self.package_manager_version(name)
-        package_manager_run_command(name, "--version")
+        package_manager_run_command(name, "-v")
       end
 
       # Run single command on package manager returning stdout/stderr
