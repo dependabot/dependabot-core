@@ -307,19 +307,17 @@ module Dependabot
         # Return the memoized version if it has already been computed
         return @installed_versions[name] if @installed_versions.key?(name)
 
-        # Attempt to get the installed version
+        # Attempt to get the installed version through the package manager version command
         @installed_versions[name] = Helpers.package_manager_version(name)
 
-        # If we can't get the installed version, we need to install it
-        # to get the version
+        # If we can't get the installed version, we need to install the package manager and get the version
         unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
           @installed_versions[name] = Helpers.package_manager_version(name)
         end
 
-        # If we still can't get the installed version, we need to fallback
-        # to the version inferred from the dependency files
-        unless @installed_versions[name]
+        # If we can't get the installed version or the version is invalid, we need to get infered version
+        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
           @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
         end
 
