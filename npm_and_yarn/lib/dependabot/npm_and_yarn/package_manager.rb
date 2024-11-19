@@ -370,14 +370,14 @@ module Dependabot
         version
       end
 
-      sig { params(name: String).returns(T.nilable(String)) }
+      sig { params(name: T.untyped).returns(T.nilable(String)) }
       def check_engine_version(name)
         version_selector = VersionSelector.new
         engine_versions = version_selector.setup(@package_json, name)
 
         return if engine_versions.empty?
 
-        version = engine_versions[name.to_sym]
+        version = engine_versions[name]
         Dependabot.logger.info("Returned (#{MANIFEST_ENGINES_KEY}) info \"#{name}\" : \"#{version}\"")
         version
       end
