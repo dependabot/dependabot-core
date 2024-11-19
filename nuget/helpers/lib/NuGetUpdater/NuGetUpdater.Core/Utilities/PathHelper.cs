@@ -104,7 +104,7 @@ internal static class PathHelper
         var normalizedRepoRoot = repoRootPath.FullyNormalizedRootedPath();
 
         // Ensure the file path starts with the repo root path
-        if (!normalizedFilePath.StartsWith(normalizedRepoRoot, StringComparison.OrdinalIgnoreCase))
+        if (!normalizedFilePath.StartsWith(normalizedRepoRoot + "/", StringComparison.OrdinalIgnoreCase))
         {
             return null; // filePath is outside of repoRootPath
         }
