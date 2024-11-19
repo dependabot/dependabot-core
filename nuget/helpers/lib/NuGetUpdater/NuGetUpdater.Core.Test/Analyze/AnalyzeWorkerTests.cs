@@ -730,6 +730,191 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task AnalysisCanContineWhenRegistrationJSONIsMalformed()
+    {
+        // from a case seen in the wild; a transitive dependency's registration JSON has an invalid `range` property
+        // analysis should continue
+        var aspNetCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0");
+        var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
+        var netCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.NETCore.App", "net8.0",
+            [
+                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
+                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="8.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
+                    </FileList>
+                    """))
+            ]);
+        (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            switch (uri.PathAndQuery)
+            {
+                // initial request is good
+                case "/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "version": "3.0.0",
+                            "resources": [
+                                {
+                                    "@id": "{{baseUrl}}/download",
+                                    "@type": "PackageBaseAddress/3.0.0"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/query",
+                                    "@type": "SearchQueryService"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/registrations",
+                                    "@type": "RegistrationsBaseUrl"
+                                }
+                            ]
+                        }
+                        """));
+                case "/registrations/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.1.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            }
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.1.0",
+                                                "dependencyGroups": [
+                                                    {
+                                                        "dependencies": [
+                                                            {
+                                                                "id": "Some.Transitive.Dependency",
+                                                                "range": "",
+                                                                "comment": "The above range is invalid and fails the JSON parse"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """));
+                case "/download/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "versions": [
+                                "1.0.0",
+                                "1.1.0"
+                            ]
+                        }
+                        """));
+                case "/download/some.package/1.0.0/some.package.1.0.0.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/download/some.package/1.1.0/some.package.1.1.0.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/download/microsoft.aspnetcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{aspNetCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.netcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{netCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.windowsdesktop.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{desktopAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                default:
+                    if (uri.PathAndQuery == $"/download/microsoft.aspnetcore.app.ref/{aspNetCoreAppRefPackage.Version}/microsoft.aspnetcore.app.ref.{aspNetCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, aspNetCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    if (uri.PathAndQuery == $"/download/microsoft.netcore.app.ref/{netCoreAppRefPackage.Version}/microsoft.netcore.app.ref.{netCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, netCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    if (uri.PathAndQuery == $"/download/microsoft.windowsdesktop.app.ref/{desktopAppRefPackage.Version}/microsoft.windowsdesktop.app.ref.{desktopAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    // nothing else is found
+                    return (404, Encoding.UTF8.GetBytes("{}"));
+            };
+        }
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="package_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ]
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                CanUpdate = true,
+                UpdatedVersion = "1.1.0",
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies =
+                [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
     {
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
