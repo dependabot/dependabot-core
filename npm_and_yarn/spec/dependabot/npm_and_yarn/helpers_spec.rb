@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
   describe "::dependencies_with_all_versions_metadata" do
@@ -151,6 +152,54 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           )
         ])
       end
+    end
+  end
+
+  describe "::package_manager_install" do
+    it "runs the correct corepack install command" do
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@7.0.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only"
+      )
+      described_class.package_manager_install("npm", "7.0.0")
+    end
+  end
+
+  describe "::package_manager_activate" do
+    it "runs the correct corepack prepare command" do
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@7.0.0 --activate",
+        fingerprint: "corepack prepare --activate"
+      )
+      described_class.package_manager_activate("npm", "7.0.0")
+    end
+  end
+
+  describe "::package_manager_version" do
+    it "retrieves the correct package manager version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0")
+      expect(described_class.package_manager_version("npm")).to eq("7.0.0")
+    end
+  end
+
+  describe "::package_manager_run_command" do
+    it "executes the correct command for the package manager" do
+      expect(described_class).to receive(:package_manager_run_command).with("npm", "install")
+
+      described_class.package_manager_run_command("npm", "install")
+    end
+  end
+
+  describe "::install" do
+    it "installs, activates, and retrieves the version of the package manager" do
+      expect(described_class).to receive(:package_manager_install).with("npm", "7.0.0")
+      expect(described_class).to receive(:package_manager_activate).with("npm", "7.0.0")
+      allow(described_class).to receive(:package_manager_version).with("npm").and_return("7.0.0")
+
+      expect(Dependabot.logger).to receive(:info).with("Installing \"npm@7.0.0\"")
+      expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 7.0.0")
+
+      described_class.install("npm", "7.0.0")
     end
   end
 end

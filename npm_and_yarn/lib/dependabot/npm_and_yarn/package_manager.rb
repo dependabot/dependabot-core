@@ -282,6 +282,18 @@ module Dependabot
         end
         version
       end
+
+      private
+
+      sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
+      def package_manager_by_name(name)
+        name = ensure_valid_package_manager(name)
+
+        package_manager_class = PACKAGE_MANAGER_CLASSES[name]
+
+        package_manager_class.new(installed_version(name))
+      end
+
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
@@ -298,28 +310,22 @@ module Dependabot
         return @installed_versions[name] if @installed_versions.key?(name)
 
         # Attempt to get the installed version
-        installed_version = Helpers.package_manager_version(name)
+        @installed_versions[name] = Helpers.package_manager_version(name)
 
-        if installed_version.match?(PACKAGE_MANAGER_VERSION_REGEX)
-          @installed_versions[name] = installed_version
-          return @installed_versions[name]
+        # If we can't get the installed version, we need to install it
+        # to get the version
+        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
+          setup(name)
+          @installed_versions[name] = Helpers.package_manager_version(name)
         end
 
-        @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
+        # If we still can't get the installed version, we need to fallback
+        # to the version inferred from the dependency files
+        unless @installed_versions[name]
+          @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
+        end
+
         @installed_versions[name]
-      end
-
-      private
-
-      sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
-      def package_manager_by_name(name)
-        name = ensure_valid_package_manager(name)
-
-        package_manager_class = PACKAGE_MANAGER_CLASSES[name]
-
-        version = installed_version(name)
-
-        package_manager_class.new(version)
       end
 
       def raise_if_unsupported!(name, version)
