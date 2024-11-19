@@ -316,7 +316,7 @@ module Dependabot
           @installed_versions[name] = Helpers.package_manager_version(name)
         end
 
-        # If we can't get the installed version or the version is invalid, we need to get infered version
+        # If we can't get the installed version or the version is invalid, we need to get inferred version
         unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
           @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
         end
