@@ -125,6 +125,7 @@ public class SerializationTests
                 },
                 "experiments": {
                   "nuget_legacy_dependency_solver": true,
+                  "nuget_use_direct_discovery": true,
                   "unexpected_bool": true,
                   "unexpected_number": 42,
                   "unexpected_null": null,
@@ -140,6 +141,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.True(experimentsManager.UseLegacyDependencySolver);
+        Assert.True(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -166,6 +168,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.UseLegacyDependencySolver);
+        Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -190,6 +193,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.UseLegacyDependencySolver);
+        Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -212,6 +216,7 @@ public class SerializationTests
 
         // assert
         Assert.False(experimentsManager.UseLegacyDependencySolver);
+        Assert.False(experimentsManager.UseDirectDiscovery);
         Assert.Single(capturingTestLogger.Messages.Where(m => m.Contains("Error deserializing job file")));
     }
 

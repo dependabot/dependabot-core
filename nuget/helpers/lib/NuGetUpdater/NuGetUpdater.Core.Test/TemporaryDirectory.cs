@@ -50,14 +50,15 @@ public sealed class TemporaryDirectory : IDisposable
         var parentDirectory = Path.GetDirectoryName(temporaryDirectory.DirectoryPath)!;
 
         // prevent directory crawling
-        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.props"), """
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.targets"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Packages.props"), """
             <Project>
               <PropertyGroup>
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
               </PropertyGroup>
             </Project>
             """);
-        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.targets"), "<Project />");
 
         foreach (var (path, contents) in fileContents)
         {

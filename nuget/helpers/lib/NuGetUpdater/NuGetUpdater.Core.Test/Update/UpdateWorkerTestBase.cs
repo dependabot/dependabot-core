@@ -263,8 +263,9 @@ public abstract class UpdateWorkerTestBase : TestBase
         AssertContainsFiles(expectedResult, actualResult);
     }
 
-    public static async Task MockJobFileInDirectory(string temporaryDirectory)
+    public static async Task MockJobFileInDirectory(string temporaryDirectory, ExperimentsManager? experimentsManager = null)
     {
+        experimentsManager ??= new ExperimentsManager();
         var jobFile = new JobFile()
         {
             Job = new()
@@ -278,7 +279,8 @@ public abstract class UpdateWorkerTestBase : TestBase
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "/",
-                }
+                },
+                Experiments = experimentsManager.ToDictionary(),
             }
         };
         await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "job.json"), JsonSerializer.Serialize(jobFile, RunWorker.SerializerOptions));
