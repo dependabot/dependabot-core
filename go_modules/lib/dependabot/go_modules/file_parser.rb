@@ -35,14 +35,14 @@ module Dependabot
 
       sig { returns(Ecosystem) }
       def ecosystem
-        @ecosystem ||= T.let(
+        @ecosystem ||= T.let(begin
+          set_gotoolchain_env
           Ecosystem.new(
             name: ECOSYSTEM,
             package_manager: package_manager,
             language: language
-          ),
-          T.nilable(Ecosystem)
-        )
+          )
+        end, T.nilable(Dependabot::Ecosystem))
       end
 
       private
@@ -50,7 +50,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new(go_version),
+          PackageManager.new(T.must(go_toolchain_version)),
           T.nilable(Dependabot::GoModules::PackageManager)
         )
       end
@@ -64,7 +64,17 @@ module Dependabot
 
       sig { returns(String) }
       def go_version
-        @go_version ||= T.let(T.must(go_mod&.content&.match(/^go\s(\d+\.\d+)/)&.captures&.first), T.nilable(String))
+        @go_version ||= T.let(T.must(go_mod&.content&.match(/^go\s(\d+\.\d+(.\d+)*)/)&.captures&.first),
+                              T.nilable(String))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def go_toolchain_version
+        @go_toolchain_version ||= T.let(begin
+          # Checks version based on the GOTOOLCHAIN in ENV
+          version = SharedHelpers.run_shell_command("go version")
+          version.match(/go\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+        end, T.nilable(String))
       end
 
       # set GOTOOLCHAIN=local+auto if go version >= 1.21

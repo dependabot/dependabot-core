@@ -359,6 +359,10 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
+    before do
+      ENV["GO_LEGACY"] = "go1.20.10"
+    end
+
     it "has the correct name" do
       expect(ecosystem.name).to eq "go"
     end
@@ -369,7 +373,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "go_modules"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "1.12"
+        expect(package_manager.version.to_s).to eq "1.20.10"
       end
     end
 
