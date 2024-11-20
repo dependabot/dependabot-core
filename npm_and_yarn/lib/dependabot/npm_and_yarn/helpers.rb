@@ -329,7 +329,7 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only"
-        )
+        ).strip
       end
 
       # Prepare the package manager for use by using corepack
@@ -338,7 +338,7 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare --activate"
-        )
+        ).strip
       end
 
       # Get the version of the package manager by using corepack
