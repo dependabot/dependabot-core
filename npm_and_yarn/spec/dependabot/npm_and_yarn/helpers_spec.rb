@@ -179,7 +179,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::package_manager_version" do
     it "retrieves the correct package manager version" do
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0-alpha/n")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0-alpha\n")
       expect(described_class.package_manager_version("npm")).to eq("7.0.0-alpha")
     end
   end
