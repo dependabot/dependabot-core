@@ -34,7 +34,8 @@ module Dependabot
           discovery_json_path = NativeDiscoveryJsonReader.create_discovery_file_path_from_dependency_files(
             dependency_files
           )
-          NativeHelpers.run_nuget_discover_tool(repo_root: T.must(repo_contents_path),
+          NativeHelpers.run_nuget_discover_tool(job_path: job_file_path,
+                                                repo_root: T.must(repo_contents_path),
                                                 workspace_path: workspace_path,
                                                 output_path: discovery_json_path,
                                                 credentials: credentials)
@@ -57,6 +58,11 @@ module Dependabot
       end
 
       private
+
+      sig { returns(String) }
+      def job_file_path
+        ENV.fetch("DEPENDABOT_JOB_PATH")
+      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def proj_files

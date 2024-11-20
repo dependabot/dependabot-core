@@ -55,11 +55,43 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
 
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          branch: "main"
+        }
+      }
+    }
+  end
+
   before do
     Dependabot::Experiments.register(:nuget_native_analysis, true)
   end
 
   it_behaves_like "an update checker"
+
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
 
   def run_analyze_test(&_block)
     # caching is explicitly required for these tests
@@ -68,23 +100,25 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     # don't allow a previous test to pollute the file parser cache
     Dependabot::Nuget::FileParser.file_dependency_cache.clear
 
-    # calling `#parse` is necessary to force `discover` which is stubbed below
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
+    ensure_job_file do
+      # calling `#parse` is necessary to force `discover` which is stubbed below
+      Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                        source: source,
+                                        repo_contents_path: repo_contents_path).parse
 
-    # create the checker...
-    checker = described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: repo_contents_path,
-      ignored_versions: ignored_versions,
-      security_advisories: security_advisories
-    )
+      # create the checker...
+      checker = described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        repo_contents_path: repo_contents_path,
+        ignored_versions: ignored_versions,
+        security_advisories: security_advisories
+      )
 
-    # ...and invoke the actual test
-    yield checker
+      # ...and invoke the actual test
+      yield checker
+    end
   ensure
     Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
@@ -162,7 +196,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -171,10 +205,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             UpdatedVersion: "$(NukeVersion)",
             CanUpdate: false,
             VersionComesFromMultiDependencyProperty: false,
-            UpdatedDependencies: [],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
+            UpdatedDependencies: []
           }
         )
       end
@@ -212,7 +243,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -271,7 +302,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -315,7 +346,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             Path: "",
             IsSuccess: false,
             Projects: [],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -374,7 +405,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -443,7 +474,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -524,7 +555,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -605,7 +636,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -684,7 +715,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -765,7 +796,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                 ReferencedProjectPaths: []
               }
             ],
-            DirectoryPackagesProps: nil,
+            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
