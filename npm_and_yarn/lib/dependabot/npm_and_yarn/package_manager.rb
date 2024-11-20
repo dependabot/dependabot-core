@@ -299,11 +299,8 @@ module Dependabot
       # the "corepack <name> -v" command and using the output.
       # If the output does not match the expected version format (PACKAGE_MANAGER_VERSION_REGEX),
       # fall back to the version inferred from the dependency files.
-      sig { params(name: T.nilable(String)).returns(String) }
+      sig { params(name: String).returns(String) }
       def installed_version(name)
-        # Ensure the package manager is valid or fallback to default
-        name = ensure_valid_package_manager(name)
-
         # Return the memoized version if it has already been computed
         return @installed_versions[name] if @installed_versions.key?(name)
 
