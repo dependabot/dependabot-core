@@ -11,7 +11,6 @@ require "dependabot/pull_request_creator/commit_signer"
 
 module Dependabot
   class PullRequestCreator
-    # rubocop:disable Metrics/ClassLength
     class Github
       extend T::Sig
 
@@ -114,7 +113,7 @@ module Dependabot
           "Initiating Github pull request."
         )
 
-        if experiment_duplicate_branch? && branch_exists?(branch_name) && no_pull_request_exists?
+        if branch_exists?(branch_name) && no_pull_request_exists?
           Dependabot.logger.info(
             "Existing branch \"#{branch_name}\" found. Pull request not created."
           )
@@ -600,12 +599,6 @@ module Dependabot
           raise type, message
         end
       end
-
-      sig { returns(T::Boolean) }
-      def experiment_duplicate_branch?
-        Dependabot::Experiments.enabled?(:dedup_branch_names)
-      end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end

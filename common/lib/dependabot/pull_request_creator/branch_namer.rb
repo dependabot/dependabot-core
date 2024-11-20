@@ -23,9 +23,6 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :target_branch
 
-      sig { returns(T::Array[String]) }
-      attr_reader :existing_branches
-
       sig { returns(String) }
       attr_reader :separator
 
@@ -47,7 +44,6 @@ module Dependabot
           files: T::Array[Dependabot::DependencyFile],
           target_branch: T.nilable(String),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
-          existing_branches: T::Array[String],
           separator: String,
           prefix: String,
           max_length: T.nilable(Integer),
@@ -55,13 +51,12 @@ module Dependabot
         )
           .void
       end
-      def initialize(dependencies:, files:, target_branch:, dependency_group: nil, existing_branches: [],
-                     separator: "/", prefix: "dependabot", max_length: nil, includes_security_fixes: false)
+      def initialize(dependencies:, files:, target_branch:, dependency_group: nil, separator: "/", 
+                     prefix: "dependabot", max_length: nil, includes_security_fixes: false)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
         @dependency_group = dependency_group
-        @existing_branches = existing_branches
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
@@ -77,19 +72,12 @@ module Dependabot
 
       sig { returns(Dependabot::PullRequestCreator::BranchNamer::Base) }
       def strategy
-        if Dependabot::Experiments.enabled?(:dedup_branch_names) && existing_branches
-          Dependabot.logger.debug(
-            "Dependabot::PullRequestCreator::strategy : #{existing_branches}"
-          )
-        end
-
         @strategy ||= T.let(
           if dependency_group.nil?
             SoloStrategy.new(
               dependencies: dependencies,
               files: files,
               target_branch: target_branch,
-              existing_branches: existing_branches,
               separator: separator,
               prefix: prefix,
               max_length: max_length
@@ -101,7 +89,6 @@ module Dependabot
               target_branch: target_branch,
               dependency_group: T.must(dependency_group),
               includes_security_fixes: includes_security_fixes,
-              existing_branches: existing_branches,
               separator: separator,
               prefix: prefix,
               max_length: max_length

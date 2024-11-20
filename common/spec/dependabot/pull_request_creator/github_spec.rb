@@ -615,14 +615,6 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
     context "when the branch already exists" do
       let(:service_pack_response) { fixture("git", "upload_packs", "existing-branch-with-no-pr") }
 
-      before do
-        Dependabot::Experiments.register(:dedup_branch_names, true)
-      end
-
-      after do
-        Dependabot::Experiments.register(:dedup_branch_names, false)
-      end
-
       context "when the branch already exists" do
         before do
           url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
