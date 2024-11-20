@@ -23,7 +23,7 @@ public class PathHelperTests
     [Fact]
     public void VerifyResolveCaseInsensitivePath()
     {
-        var temp = new TemporaryDirectory();
+        using var temp = new TemporaryDirectory();
         Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "src", "a"));
         File.WriteAllText(Path.Combine(temp.DirectoryPath, "src", "a", "packages.config"), "");
 
@@ -31,6 +31,7 @@ public class PathHelperTests
 
         var resolvedPath = PathHelper.ResolveCaseInsensitivePathInsideRepoRoot(Path.Combine(repoRootPath, "A", "PACKAGES.CONFIG"), repoRootPath);
 
-        Assert.Equal(Path.Combine(temp.DirectoryPath, "src", "a", "packages.config"), resolvedPath);
+        var expected = Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix();
+        Assert.Equal(expected, resolvedPath);
     }
 }

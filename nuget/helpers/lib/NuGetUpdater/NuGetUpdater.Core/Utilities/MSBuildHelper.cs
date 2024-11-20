@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -13,7 +14,6 @@ using Microsoft.Build.Exceptions;
 using Microsoft.Build.Locator;
 using Microsoft.Extensions.FileSystemGlobbing;
 
-using NuGet;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.Versioning;
@@ -39,12 +39,12 @@ internal static partial class MSBuildHelper
                 var defaultInstance = MSBuildLocator.QueryVisualStudioInstances().First();
                 MSBuildPath = defaultInstance.MSBuildPath;
                 MSBuildLocator.RegisterInstance(defaultInstance);
-                return Task.CompletedTask;
+                return Task.FromResult(0);
             }).Wait();
         }
     }
 
-    public static async Task SidelineGlobalJsonAsync(string currentDirectory, string rootDirectory, Func<Task> action, ILogger? logger = null, bool retainMSBuildSdks = false)
+    public static async Task<T> SidelineGlobalJsonAsync<T>(string currentDirectory, string rootDirectory, Func<Task<T>> action, ILogger? logger = null, bool retainMSBuildSdks = false)
     {
         logger ??= new ConsoleLogger();
         var candidateDirectories = PathHelper.GetAllDirectoriesToRoot(currentDirectory, rootDirectory);
@@ -73,7 +73,8 @@ internal static partial class MSBuildHelper
 
         try
         {
-            await action();
+            var result = await action();
+            return result;
         }
         finally
         {
@@ -745,6 +746,58 @@ internal static partial class MSBuildHelper
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
 
         return tempProjectPath;
+    }
+
+    internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
+    {
+        // TODO: once the updater image has all relevant SDKs installed, we won't have to sideline global.json anymore
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
+        var (exitCode, stdOut, stdErr) = await SidelineGlobalJsonAsync(projectDirectory, repoRoot, async () =>
+        {
+            var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["build", projectPath, "/t:ReportTargetFramework", $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath};CustomAfterMicrosoftCommonTargets={targetsHelperPath}"], workingDirectory: Path.GetDirectoryName(projectPath));
+            return (exitCode, stdOut, stdErr);
+        });
+        ThrowOnUnauthenticatedFeed(stdOut);
+        if (exitCode != 0)
+        {
+            logger.Log($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        }
+
+        // There are 3 return values, all uses slightly differently.  Only one will be set, the others will be blank
+        //   ProjectData::TargetFrameworkVersion=.NETFramework,Version=v4.5     // non-SDK projects, commonly with `packages.config`
+        //   ProjectData::TargetFramework=net7.0                                // SDK-style projects
+        //   ProjectData::TargetFrameworks=net7.0;net8.0
+        var tfmPatterns = new Regex[]
+        {
+            new Regex("ProjectData::TargetFrameworkVersion=(?<Value>.*)$", RegexOptions.Multiline),
+            new Regex("ProjectData::TargetFramework=(?<Value>.*)$", RegexOptions.Multiline),
+            new Regex("ProjectData::TargetFrameworks=(?<Value>.*)$", RegexOptions.Multiline),
+        };
+        var tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tfmPattern in tfmPatterns)
+        {
+            var candidateTfms = tfmPattern.Matches(stdOut)
+                .Select(m => m.Groups["Value"].Value)
+                .SelectMany(v => v.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v =>
+                {
+                    try
+                    {
+                        var framework = NuGetFramework.Parse(v);
+                        return framework.GetShortFolderName();
+                    }
+                    catch
+                    {
+                        return string.Empty;
+                    }
+                })
+                .Where(tfm => !string.IsNullOrEmpty(tfm));
+            tfms.AddRange(candidateTfms);
+        }
+
+        return tfms.ToImmutableArray();
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(

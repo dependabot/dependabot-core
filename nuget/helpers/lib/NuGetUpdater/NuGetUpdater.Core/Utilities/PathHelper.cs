@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+
 namespace NuGetUpdater.Core;
 
 internal static class PathHelper
@@ -63,7 +66,17 @@ internal static class PathHelper
         return result;
     }
 
-    public static string FullyNormalizedRootedPath(this string path) => path.NormalizePathToUnix().NormalizeUnixPathParts().EnsurePrefix("/");
+    public static string FullyNormalizedRootedPath(this string path)
+    {
+        var normalizedPath = path.NormalizePathToUnix().NormalizeUnixPathParts();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Regex.IsMatch(normalizedPath, @"^[a-z]:", RegexOptions.IgnoreCase))
+        {
+            // Windows path is ready to go
+            return normalizedPath;
+        }
+
+        return normalizedPath.EnsurePrefix("/");
+    }
 
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));
@@ -133,7 +146,7 @@ internal static class PathHelper
             currentPath = nextPath;
         }
 
-        return currentPath; // Fully resolved path with correct casing
+        return currentPath.NormalizePathToUnix(); // Fully resolved path with correct casing
     }
 
     /// <summary>
@@ -211,5 +224,20 @@ internal static class PathHelper
         }
 
         return false;
+    }
+
+    public static bool IsFileUnderDirectory(DirectoryInfo directory, FileInfo candidateFile)
+    {
+        // n.b., using `DirectoryInfo` and `FileInfo` here to ensure that the callsite doesn't get confused with just strings
+        // the paths are then normalized to make the comparison easier.
+        var directoryPath = directory.FullName.NormalizePathToUnix();
+        if (!directoryPath.EndsWith("/"))
+        {
+            // ensuring a trailing slash means we can do a simple string check later on
+            directoryPath += "/";
+        }
+        var candidateFilePath = candidateFile.FullName.NormalizePathToUnix();
+
+        return candidateFilePath.StartsWith(directoryPath);
     }
 }

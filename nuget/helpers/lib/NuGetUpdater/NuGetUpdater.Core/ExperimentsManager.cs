@@ -7,12 +7,23 @@ namespace NuGetUpdater.Core;
 public record ExperimentsManager
 {
     public bool UseLegacyDependencySolver { get; init; } = false;
+    public bool UseDirectDiscovery { get; init; } = false;
+
+    public Dictionary<string, object> ToDictionary()
+    {
+        return new()
+        {
+            ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
+            ["nuget_use_direct_discovery"] = UseDirectDiscovery,
+        };
+    }
 
     public static ExperimentsManager GetExperimentsManager(Dictionary<string, object>? experiments)
     {
         return new ExperimentsManager()
         {
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
+            UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
         };
     }
 

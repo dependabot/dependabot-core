@@ -23,6 +23,7 @@ internal static class LockFileUpdater
             {
                 logger.Log($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
+            return (exitCode, stdout, stderr);
         }, logger, retainMSBuildSdks: true);
     }
 }

@@ -52,6 +52,24 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
 
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          branch: "main"
+        }
+      }
+    }
+  end
+
   before do
     stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
@@ -61,36 +79,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   it_behaves_like "a dependency file updater"
-
-  def run_update_test(&_block)
-    # caching is explicitly required for these tests
-    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
-
-    # don't allow a previous test to pollute the file parser cache
-    Dependabot::Nuget::FileParser.file_dependency_cache.clear
-
-    # calling `#parse` is necessary to force `discover` which is stubbed below
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
-
-    # create the file updater...
-    updater = described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com"
-      }],
-      repo_contents_path: repo_contents_path
-    )
-
-    # ...and invoke the actual test
-    yield updater
-  ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
-    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
-  end
 
   def ensure_job_file(&_block)
     file = Tempfile.new
@@ -104,6 +92,38 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       FileUtils.rm_f(file.path)
       puts "deleted temp job file at [#{file.path}]"
     end
+  end
+
+  def run_update_test(&_block)
+    # caching is explicitly required for these tests
+    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+
+    # don't allow a previous test to pollute the file parser cache
+    Dependabot::Nuget::FileParser.file_dependency_cache.clear
+
+    ensure_job_file do
+      # calling `#parse` is necessary to force `discover` which is stubbed below
+      Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                        source: source,
+                                        repo_contents_path: repo_contents_path).parse
+
+      # create the file updater...
+      updater = described_class.new(
+        dependency_files: dependency_files,
+        dependencies: dependencies,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }],
+        repo_contents_path: repo_contents_path
+      )
+
+      # ...and invoke the actual test
+      yield updater
+    end
+  ensure
+    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
   end
 
   def intercept_native_tools(discovery_content_hash:)
@@ -187,24 +207,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   describe "#updated_dependency_files" do
-    # the minimum job object required by the updater
-    let(:job) do
-      {
-        job: {
-          "allowed-updates": [
-            { "update-type": "all" }
-          ],
-          "package-manager": "nuget",
-          source: {
-            provider: "github",
-            repo: "gocardless/bump",
-            directory: "/",
-            branch: "main"
-          }
-        }
-      }
-    end
-
     before do
       intercept_native_tools(
         discovery_content_hash: {
@@ -236,7 +238,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
               ReferencedProjectPaths: []
             }
           ],
-          DirectoryPackagesProps: nil,
+          ImportedFiles: [],
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
@@ -246,15 +248,13 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     context "with a dirs.proj" do
       it "does not repeatedly update the same project" do
         run_update_test do |updater|
-          ensure_job_file do
-            expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
+          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj")
 
-            expect(updater.send(:testonly_update_tooling_calls)).to eq(
-              {
-                "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1
-              }
-            )
-          end
+          expect(updater.send(:testonly_update_tooling_calls)).to eq(
+            {
+              "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1
+            }
+          )
         end
       end
     end
@@ -273,11 +273,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
       it "raises the expected error" do
         run_update_test do |updater|
-          ensure_job_file do
-            expect do
-              updater.updated_dependency_files
-            end.to raise_error(Dependabot::UpdateNotPossible)
-          end
+          expect do
+            updater.updated_dependency_files
+          end.to raise_error(Dependabot::UpdateNotPossible)
         end
       end
     end
@@ -289,24 +287,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
     let(:dependency_version) { "1.1.1" }
     let(:dependency_previous_version) { "1.0.0" }
-
-    # the minimum job object required by the updater
-    let(:job) do
-      {
-        job: {
-          "allowed-updates": [
-            { "update-type": "all" }
-          ],
-          "package-manager": "nuget",
-          source: {
-            provider: "github",
-            repo: "gocardless/bump",
-            directory: "/",
-            branch: "main"
-          }
-        }
-      }
-    end
 
     before do
       intercept_native_tools(
@@ -362,7 +342,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
               ReferencedProjectPaths: []
             }
           ],
-          DirectoryPackagesProps: nil,
+          ImportedFiles: [],
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
@@ -371,17 +351,15 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
     it "updates the wildcard project" do
       run_update_test do |updater|
-        ensure_job_file do
-          expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
-                                                                                  "Proj2/Proj2.csproj")
+        expect(updater.updated_dependency_files.map(&:name)).to contain_exactly("Proj1/Proj1/Proj1.csproj",
+                                                                                "Proj2/Proj2.csproj")
 
-          expect(updater.send(:testonly_update_tooling_calls)).to eq(
-            {
-              "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1,
-              "/Proj2/Proj2.csproj+Microsoft.Extensions.DependencyModel" => 1
-            }
-          )
-        end
+        expect(updater.send(:testonly_update_tooling_calls)).to eq(
+          {
+            "/Proj1/Proj1/Proj1.csproj+Microsoft.Extensions.DependencyModel" => 1,
+            "/Proj2/Proj2.csproj+Microsoft.Extensions.DependencyModel" => 1
+          }
+        )
       end
     end
   end

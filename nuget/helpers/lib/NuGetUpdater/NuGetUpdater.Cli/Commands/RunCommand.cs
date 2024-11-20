@@ -35,7 +35,7 @@ internal static class RunCommand
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
             var logger = new ConsoleLogger();
             var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
-            var discoverWorker = new DiscoveryWorker(logger);
+            var discoverWorker = new DiscoveryWorker(experimentsManager, logger);
             var analyzeWorker = new AnalyzeWorker(logger);
             var updateWorker = new UpdaterWorker(experimentsManager, logger);
             var worker = new RunWorker(apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
