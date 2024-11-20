@@ -10,6 +10,7 @@ module Dependabot
     ECOSYSTEM = "npm_and_yarn"
     MANIFEST_FILENAME = "package.json"
     LERNA_JSON_FILENAME = "lerna.json"
+    PACKAGE_MANAGER_VERSION_REGEX = /^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<pre_release>[a-zA-Z0-9.]+))?(?:\+(?<build>[a-zA-Z0-9.]+))?$/ # rubocop:disable Layout/LineLength
 
     MANIFEST_PACKAGE_MANAGER_KEY = "packageManager"
     MANIFEST_ENGINES_KEY = "engines"
@@ -211,6 +212,7 @@ module Dependabot
         @manifest_package_manager = package_json[MANIFEST_PACKAGE_MANAGER_KEY]
         @engines = package_json.fetch(MANIFEST_ENGINES_KEY, nil)
         @package_manager_detector = PackageManagerDetector.new(@lockfiles, @package_json)
+        @installed_versions = {}
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -222,6 +224,8 @@ module Dependabot
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
+      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
@@ -257,13 +261,13 @@ module Dependabot
 
           if version
             raise_if_unsupported!(name, version.to_s)
-            install(name, version)
+            install(name, version.to_s)
           end
         else
           version ||= requested_version(name)
 
           if version
-            raise_if_unsupported!(name, version)
+            raise_if_unsupported!(name, version.to_s)
 
             install(name, version)
           else
@@ -272,29 +276,52 @@ module Dependabot
             if version
               raise_if_unsupported!(name, version.to_s)
 
-              install(name, version) if name == PNPMPackageManager::NAME
+              install(name, version.to_s) if name == PNPMPackageManager::NAME
             end
           end
         end
         version
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
-
-      private
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
       def package_manager_by_name(name)
-        name = DEFAULT_PACKAGE_MANAGER if name.nil? || PACKAGE_MANAGER_CLASSES[name].nil?
+        name = ensure_valid_package_manager(name)
 
         package_manager_class = PACKAGE_MANAGER_CLASSES[name]
 
-        package_manager_class ||= PACKAGE_MANAGER_CLASSES[DEFAULT_PACKAGE_MANAGER]
-
-        version = Helpers.send(:"#{name}_version_numeric", @lockfiles[name.to_sym])
-
-        package_manager_class.new(version.to_s)
+        package_manager_class.new(installed_version(name))
       end
+
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/AbcSize
+      # Retrieve the installed version of the package manager by executing
+      # the "corepack <name> -v" command and using the output.
+      # If the output does not match the expected version format (PACKAGE_MANAGER_VERSION_REGEX),
+      # fall back to the version inferred from the dependency files.
+      sig { params(name: String).returns(String) }
+      def installed_version(name)
+        # Return the memoized version if it has already been computed
+        return @installed_versions[name] if @installed_versions.key?(name)
+
+        # Attempt to get the installed version through the package manager version command
+        @installed_versions[name] = Helpers.package_manager_version(name)
+
+        # If we can't get the installed version, we need to install the package manager and get the version
+        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
+          setup(name)
+          @installed_versions[name] = Helpers.package_manager_version(name)
+        end
+
+        # If we can't get the installed version or the version is invalid, we need to get inferred version
+        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
+          @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
+        end
+
+        @installed_versions[name]
+      end
+
+      private
 
       def raise_if_unsupported!(name, version)
         return unless name == PNPMPackageManager::NAME
@@ -303,6 +330,7 @@ module Dependabot
         raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*")
       end
 
+      sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           return Helpers.install(name, version.to_s)
@@ -316,6 +344,13 @@ module Dependabot
         )
       end
 
+      sig { params(name: T.nilable(String)).returns(String) }
+      def ensure_valid_package_manager(name)
+        name = DEFAULT_PACKAGE_MANAGER if name.nil? || PACKAGE_MANAGER_CLASSES[name].nil?
+        name
+      end
+
+      sig { params(name: String).returns(T.nilable(String)) }
       def requested_version(name)
         return unless @manifest_package_manager
 
@@ -326,6 +361,7 @@ module Dependabot
         match["version"]
       end
 
+      sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def guessed_version(name)
         lockfile = @lockfiles[name.to_sym]
         return unless lockfile

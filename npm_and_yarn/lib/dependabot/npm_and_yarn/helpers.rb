@@ -4,6 +4,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
 module Dependabot
@@ -267,7 +268,10 @@ module Dependabot
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
         else
-          SharedHelpers.run_shell_command("corepack npm #{command}", fingerprint: "corepack npm #{fingerprint}")
+          Dependabot::SharedHelpers.run_shell_command(
+            "corepack npm #{command}",
+            fingerprint: "corepack npm #{fingerprint}"
+          )
         end
       end
 
@@ -284,7 +288,10 @@ module Dependabot
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
         else
-          SharedHelpers.run_shell_command("pnpm #{command}", fingerprint: "pnpm #{fingerprint || command}")
+          Dependabot::SharedHelpers.run_shell_command(
+            "pnpm #{command}",
+            fingerprint: "pnpm #{fingerprint || command}"
+          )
         end
       end
 
@@ -294,13 +301,16 @@ module Dependabot
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
         else
-          SharedHelpers.run_shell_command("yarn #{command}", fingerprint: "yarn #{fingerprint || command}")
+          Dependabot::SharedHelpers.run_shell_command(
+            "yarn #{command}",
+            fingerprint: "yarn #{fingerprint || command}"
+          )
         end
       end
 
       # Install the package manager for specified version by using corepack
       # and prepare it for use by using corepack
-      sig { params(name: String, version: String).void }
+      sig { params(name: String, version: String).returns(String) }
       def self.install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
@@ -309,24 +319,26 @@ module Dependabot
         installed_version = package_manager_version(name)
 
         Dependabot.logger.info("Installed version of #{name}: #{installed_version}")
+
+        installed_version
       end
 
       # Install the package manager for specified version by using corepack
       sig { params(name: String, version: String).void }
       def self.package_manager_install(name, version)
-        SharedHelpers.run_shell_command(
+        Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only"
-        )
+        ).strip
       end
 
       # Prepare the package manager for use by using corepack
       sig { params(name: String, version: String).void }
       def self.package_manager_activate(name, version)
-        SharedHelpers.run_shell_command(
+        Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare --activate"
-        )
+        ).strip
       end
 
       # Get the version of the package manager by using corepack
@@ -344,10 +356,10 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
-        SharedHelpers.run_shell_command(
+        Dependabot::SharedHelpers.run_shell_command(
           "corepack #{name} #{command}",
           fingerprint: "corepack #{name} #{fingerprint || command}"
-        )
+        ).strip
       end
       private_class_method :run_single_yarn_command
 
