@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -139,11 +139,20 @@ module Dependabot
 
     DEFAULT_PACKAGE_MANAGER = NpmPackageManager::NAME
 
-    PACKAGE_MANAGER_CLASSES = {
+    # Define a type alias for the expected class interface
+    NpmAndYarnPackageManagerClassType = T.type_alias do
+      T.any(
+        T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
+        T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
+      )
+    end
+
+    PACKAGE_MANAGER_CLASSES = T.let({
       NpmPackageManager::NAME => NpmPackageManager,
       YarnPackageManager::NAME => YarnPackageManager,
       PNPMPackageManager::NAME => PNPMPackageManager
-    }.freeze
+    }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
 
     class PackageManagerDetector
       extend T::Sig
@@ -152,14 +161,14 @@ module Dependabot
       sig do
         params(
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          package_json: T::Hash[String, T.untyped]
+          package_json: T.nilable(T::Hash[String, T.untyped])
         ).void
       end
       def initialize(lockfiles, package_json)
         @lockfiles = lockfiles
         @package_json = package_json
-        @manifest_package_manager = package_json["packageManager"]
-        @engines = package_json.fetch(MANIFEST_ENGINES_KEY, nil)
+        @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
+        @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, {}), T::Hash[String, T.untyped])
       end
 
       # Returns npm, yarn, or pnpm based on the lockfiles, package.json, and engines
@@ -202,17 +211,18 @@ module Dependabot
 
       sig do
         params(
-          package_json: T::Hash[String, T.untyped],
+          package_json: T.nilable(T::Hash[String, T.untyped]),
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
         ).void
       end
       def initialize(package_json, lockfiles:)
         @package_json = package_json
         @lockfiles = lockfiles
-        @manifest_package_manager = package_json[MANIFEST_PACKAGE_MANAGER_KEY]
-        @engines = package_json.fetch(MANIFEST_ENGINES_KEY, nil)
-        @package_manager_detector = PackageManagerDetector.new(@lockfiles, @package_json)
-        @installed_versions = {}
+        @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
+        @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
+        @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
+
+        @installed_versions = T.let({}, T::Hash[String, String])
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -287,9 +297,11 @@ module Dependabot
       def package_manager_by_name(name)
         name = ensure_valid_package_manager(name)
 
-        package_manager_class = PACKAGE_MANAGER_CLASSES[name]
+        package_manager_class = T.must(PACKAGE_MANAGER_CLASSES[name])
 
-        package_manager_class.new(installed_version(name))
+        installed_version = installed_version(name)
+
+        package_manager_class.new(installed_version)
       end
 
       # rubocop:enable Metrics/CyclomaticComplexity
@@ -302,27 +314,28 @@ module Dependabot
       sig { params(name: String).returns(String) }
       def installed_version(name)
         # Return the memoized version if it has already been computed
-        return @installed_versions[name] if @installed_versions.key?(name)
+        return T.must(@installed_versions[name]) if @installed_versions.key?(name)
 
         # Attempt to get the installed version through the package manager version command
         @installed_versions[name] = Helpers.package_manager_version(name)
 
         # If we can't get the installed version, we need to install the package manager and get the version
-        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
+        unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           setup(name)
           @installed_versions[name] = Helpers.package_manager_version(name)
         end
 
         # If we can't get the installed version or the version is invalid, we need to get inferred version
-        unless @installed_versions[name].match?(PACKAGE_MANAGER_VERSION_REGEX)
+        unless @installed_versions[name]&.match?(PACKAGE_MANAGER_VERSION_REGEX)
           @installed_versions[name] = Helpers.public_send(:"#{name}_version_numeric", @lockfiles[name.to_sym]).to_s
         end
 
-        @installed_versions[name]
+        T.must(@installed_versions[name])
       end
 
       private
 
+      sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
         return unless name == PNPMPackageManager::NAME
         return unless Version.new(version) < Version.new("7")
@@ -375,6 +388,8 @@ module Dependabot
 
       sig { params(name: T.untyped).returns(T.nilable(String)) }
       def check_engine_version(name)
+        return if @package_json.nil?
+
         version_selector = VersionSelector.new
         engine_versions = version_selector.setup(@package_json, name)
 

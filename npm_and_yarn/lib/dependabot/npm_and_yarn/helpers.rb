@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -111,9 +111,14 @@ module Dependabot
       def self.pnpm_version_numeric(pnpm_lock)
         lockfile_content = pnpm_lock&.content
 
-        return PNPM_DEFAULT_VERSION if lockfile_content.nil? || lockfile_content.strip.empty?
+        return PNPM_DEFAULT_VERSION if !lockfile_content || lockfile_content.strip.empty?
 
-        pnpm_lockfile_version = pnpm_lockfile_version(pnpm_lock).to_f
+        pnpm_lockfile_version_str = pnpm_lockfile_version(pnpm_lock)
+
+        return PNPM_FALLBACK_VERSION unless pnpm_lockfile_version_str
+
+        pnpm_lockfile_version = pnpm_lockfile_version_str.to_f
+
         return PNPM_V9 if pnpm_lockfile_version >= 9.0
         return PNPM_V8 if pnpm_lockfile_version >= 6.0
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
@@ -121,6 +126,7 @@ module Dependabot
         PNPM_FALLBACK_VERSION
       end
 
+      sig { params(key: String, default_value: String).returns(T.untyped) }
       def self.fetch_yarnrc_yml_value(key, default_value)
         if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
           yarnrc.fetch(key, default_value)
@@ -253,9 +259,12 @@ module Dependabot
       # set to false. Yarn commands should _not_ be ran outside of this helper
       # to ensure that postinstall scripts are never executed, as they could
       # contain malicious code.
+      sig { params(commands: T::Array[String]).void }
       def self.run_yarn_commands(*commands)
         setup_yarn_berry
-        commands.each { |cmd, fingerprint| run_single_yarn_command(cmd, fingerprint: fingerprint) }
+        commands.each do |cmd, fingerprint|
+          run_single_yarn_command(cmd, fingerprint: fingerprint) if cmd
+        end
       end
 
       # Run single npm command returning stdout/stderr.
@@ -363,8 +372,12 @@ module Dependabot
       end
       private_class_method :run_single_yarn_command
 
+      sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
       def self.pnpm_lockfile_version(pnpm_lock)
-        pnpm_lock.content.match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)[:version]
+        match = T.must(pnpm_lock.content).match(/^lockfileVersion: ['"]?(?<version>[\d.]+)/)
+        return match[:version] if match
+
+        nil
       end
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
