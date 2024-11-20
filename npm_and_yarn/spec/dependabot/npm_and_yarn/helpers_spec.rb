@@ -157,6 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::package_manager_install" do
     it "runs the correct corepack install command" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0")
       expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack install npm@7.0.0 --global --cache-only",
         fingerprint: "corepack install <name>@<version> --global --cache-only"
@@ -167,6 +168,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
   describe "::package_manager_activate" do
     it "runs the correct corepack prepare command" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0")
       expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack prepare npm@7.0.0 --activate",
         fingerprint: "corepack prepare --activate"
