@@ -18,19 +18,13 @@ module Dependabot
     class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      sig do
-        params(
-          raw_version: String,
-          requirement: T.nilable(Requirement)
-        ).void
-      end
-      def initialize(raw_version, requirement = nil)
+      sig { params(raw_version: String).void }
+      def initialize(raw_version)
         super(
           PACKAGE_MANAGER,
           Version.new(raw_version),
           DEPRECATED_GO_VERSIONS,
-          SUPPORTED_GO_VERSIONS,
-          requirement,
+          SUPPORTED_GO_VERSIONS
         )
       end
 
