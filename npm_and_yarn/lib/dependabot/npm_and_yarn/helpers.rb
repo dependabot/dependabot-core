@@ -359,7 +359,7 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "corepack #{name} #{command}",
           fingerprint: "corepack #{name} #{fingerprint || command}"
-        )
+        ).strip
       end
       private_class_method :run_single_yarn_command
 
