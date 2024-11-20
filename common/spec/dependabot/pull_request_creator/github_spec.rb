@@ -485,19 +485,10 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           )
         end
 
-        it "creates a PR with the right details" do
-          creator.create
-
-          expect(WebMock)
-            .to have_requested(:post, "#{repo_api_url}/pulls")
-            .with(
-              body: {
-                base: "master",
-                head: "dependabot/bundler/business-1.5.0",
-                title: "PR name",
-                body: "PR msg"
-              }
-            )
+        it "raises a helpful error" do
+          expect { creator.create }
+            .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists, /business-1.5.0 already exists/)
+          expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
         end
       end
 
@@ -537,9 +528,10 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
               )
           end
 
-          it "raises the error" do
+          it "raises a helpful error" do
             expect { creator.create }
-              .to raise_error(Octokit::UnprocessableEntity)
+              .to raise_error(Dependabot::PullRequestCreator::BranchAlreadyExists, /business-1.5.0 already exists/)
+            expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
           end
         end
 

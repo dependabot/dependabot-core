@@ -51,7 +51,7 @@ module Dependabot
         )
           .void
       end
-      def initialize(dependencies:, files:, target_branch:, dependency_group: nil, separator: "/", 
+      def initialize(dependencies:, files:, target_branch:, dependency_group: nil, separator: "/",
                      prefix: "dependabot", max_length: nil, includes_security_fixes: false)
         @dependencies  = dependencies
         @files         = files
