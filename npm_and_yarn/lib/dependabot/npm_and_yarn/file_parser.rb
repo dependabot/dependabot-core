@@ -234,7 +234,8 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
-          }]
+          }],
+          directory: source&.directory,
         )
       end
 

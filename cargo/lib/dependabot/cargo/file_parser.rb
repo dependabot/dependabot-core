@@ -111,7 +111,8 @@ module Dependabot
             file: file.name,
             groups: [type],
             source: source_from_declaration(requirement)
-          }]
+          }],
+          directory: source&.directory,
         )
       end
 

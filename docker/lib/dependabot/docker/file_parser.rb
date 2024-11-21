@@ -65,7 +65,8 @@ module Dependabot
                 groups: [],
                 file: dockerfile.name,
                 source: source_from(parsed_from_line)
-              ]
+              ],
+              directory: source&.directory,
             )
           end
         end

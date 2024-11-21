@@ -109,6 +109,7 @@ module Dependabot
                   source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name
                 }],
+                directory: source&.directory,
                 package_manager: "bundler"
               )
           end
@@ -144,6 +145,7 @@ module Dependabot
                   source: dependency.fetch("source")&.transform_keys(&:to_sym),
                   file: gemspec.name
                 }],
+                directory: source&.directory,
                 package_manager: "bundler"
               )
             end
@@ -171,6 +173,7 @@ module Dependabot
               name: dependency.name,
               version: dependency_version(dependency.name)&.to_s,
               requirements: [],
+              directory: source&.directory,
               package_manager: "bundler",
               subdependency_metadata: [{
                 production: production_dep_names.include?(dependency.name)
