@@ -63,7 +63,10 @@ public class RunWorkerTests
                             Dependencies =
                             [
                                 new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                            ]
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 });
@@ -268,7 +271,10 @@ public class RunWorkerTests
                             [
                                 new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                                 new("Some.Package2", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
-                            ]
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 });
@@ -584,7 +590,10 @@ public class RunWorkerTests
                             [
                                 new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                                 new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
-                            ]
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 });
@@ -936,7 +945,10 @@ public class RunWorkerTests
                             [
                                 new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                                 new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
-                            ]
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         },
                         new()
                         {
@@ -946,7 +958,10 @@ public class RunWorkerTests
                             [
                                 new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                                 new("Some.Package2", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net8.0"]),
-                            ]
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 });

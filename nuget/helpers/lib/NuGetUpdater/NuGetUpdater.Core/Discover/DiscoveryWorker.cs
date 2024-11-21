@@ -54,7 +54,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(PathHelper.JoinPath(repoRootPath, workspacePath))) + ")",
                 Path = workspacePath,
                 Projects = [],
-                ImportedFiles = [],
             };
         }
 
@@ -101,24 +100,12 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             _logger.Log($"Workspace path [{workspacePath}] does not exist.");
         }
 
-        var importedFiles = new HashSet<string>(PathComparer.Instance);
-        foreach (var project in projectResults)
-        {
-            // imported files are relative to the project and need to be converted to be relative to the repo root
-            var repoRootRelativeImportedFiles = project.ImportedFiles
-                .Select(p => Path.Join(Path.GetDirectoryName(project.FilePath) ?? "", p))
-                .Select(p => p.NormalizePathToUnix().NormalizeUnixPathParts())
-                .ToArray();
-            importedFiles.AddRange(repoRootRelativeImportedFiles);
-        }
-
         result = new WorkspaceDiscoveryResult
         {
             Path = initialWorkspacePath,
             DotNetToolsJson = dotNetToolsJsonDiscovery,
             GlobalJson = globalJsonDiscovery,
             Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
-            ImportedFiles = importedFiles.ToImmutableArray(),
         };
 
         _logger.Log("Discovery complete.");
@@ -344,6 +331,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     FilePath = relativeProjectPath,
                     Dependencies = packagesConfigResult.Dependencies,
                     TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                    ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                    AdditionalFiles = packagesConfigResult.AdditionalFiles,
                 };
             }
         }

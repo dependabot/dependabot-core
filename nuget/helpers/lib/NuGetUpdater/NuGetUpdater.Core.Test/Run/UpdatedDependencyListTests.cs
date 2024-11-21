@@ -40,6 +40,8 @@ public class UpdatedDependencyListTests
                     Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
                 },
                 new()
                 {
@@ -50,6 +52,8 @@ public class UpdatedDependencyListTests
                     Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
                 },
                 new()
                 {
@@ -62,6 +66,8 @@ public class UpdatedDependencyListTests
                     Properties = [],
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
                 }
             ]
         };

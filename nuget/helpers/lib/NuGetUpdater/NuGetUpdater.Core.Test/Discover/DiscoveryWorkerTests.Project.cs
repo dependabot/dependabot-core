@@ -57,11 +57,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0"], // net8.0 has no packages and is not reported
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Packages.props",
+                            ],
+                            AdditionalFiles = [],
                         },
-                    ],
-                    ImportedFiles = [
-                        "Directory.Build.props",
-                        "Directory.Packages.props",
                     ],
                 }
             );
@@ -119,11 +121,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Packages.props",
+                            ],
+                            AdditionalFiles = [],
                         },
-                    ],
-                    ImportedFiles = [
-                        "Directory.Build.props",
-                        "Directory.Packages.props",
                     ],
                 }
             );
@@ -187,11 +191,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Build.targets",
+                            ],
+                            AdditionalFiles = [],
                         }
-                    ],
-                    ImportedFiles = [
-                        "Directory.Build.props",
-                        "Directory.Build.targets"
                     ],
                 }
             );
@@ -255,11 +261,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Build.targets"
+                            ],
+                            AdditionalFiles = [],
                         }
-                    ],
-                    ImportedFiles = [
-                        "Directory.Build.props",
-                        "Directory.Build.targets"
                     ],
                 }
             );
@@ -308,11 +316,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
                         },
                     ],
-                    ImportedFiles = [
-                        "Directory.Packages.props",
-                    ]
                 }
             );
         }
@@ -360,11 +370,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
                         },
                     ],
-                    ImportedFiles = [
-                        "Directory.Packages.props",
-                    ]
                 }
             );
         }
@@ -426,14 +438,16 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net7.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.targets",
+                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
+                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
+                                "Packages.props",
+                            ],
+                            AdditionalFiles = [],
                         },
                     ],
-                    ImportedFiles = [
-                        "Directory.Build.targets",
-                        "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
-                        "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
-                        "Packages.props",
-                    ]
                 }
             );
         }
@@ -496,14 +510,16 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net7.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.targets",
+                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
+                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
+                                "Packages.props",
+                            ],
+                            AdditionalFiles = [],
                         },
                     ],
-                    ImportedFiles = [
-                        "Directory.Build.targets",
-                        "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
-                        "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
-                        "Packages.props",
-                    ]
                 }
             );
         }
@@ -547,6 +563,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ],
                 }
@@ -592,6 +611,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ],
                 }
@@ -641,9 +663,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props"
+                            ],
+                            AdditionalFiles = [],
                         }
                     ],
-                    ImportedFiles = ["Directory.Build.props"],
                 }
             );
         }
@@ -692,9 +718,13 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "$(SomeTfm)", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props"
+                            ],
+                            AdditionalFiles = [],
                         }
                     ],
-                    ImportedFiles = ["Directory.Build.props"],
                 }
             );
         }
@@ -765,6 +795,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -812,6 +845,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ],
                 }
@@ -857,6 +893,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ],
                 }
@@ -918,6 +957,8 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", @"test/unit-tests.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         },
                         new()
                         {
@@ -929,6 +970,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", @"src/helpers.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -989,6 +1033,8 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", @"test/unit-tests.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         },
                         new()
                         {
@@ -1000,6 +1046,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", @"src/helpers.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -1062,6 +1111,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", @"projects/library.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -1108,6 +1160,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst", @"src/project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -1151,6 +1206,62 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst", @"src/project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PackageLockJsonFileIsReported(bool useDirectDiscovery)
+        {
+            await TestDiscoveryAsync(
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
+                ],
+                workspacePath: "src",
+                files:
+                [
+                    ("src/project.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("src/packages.lock.json", """
+                        {}
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", "src/project.csproj"),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.lock.json"
+                            ],
                         }
                     ]
                 }

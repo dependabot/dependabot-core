@@ -11,8 +11,6 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     public ImmutableArray<Property> Properties { get; init; } = [];
     public ImmutableArray<string> TargetFrameworks { get; init; } = [];
     public ImmutableArray<string> ReferencedProjectPaths { get; init; } = [];
-
-    // this is purely for internal record keeping and should not be serialized
-    [JsonIgnore]
-    public ImmutableArray<string> ImportedFiles { get; init; } = [];
+    public required ImmutableArray<string> ImportedFiles { get; init; }
+    public required ImmutableArray<string> AdditionalFiles { get; init; }
 }

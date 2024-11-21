@@ -43,7 +43,6 @@ public class DiscoveryWorkerTestBase : TestBase
         ValidateResultWithDependencies(expectedResult.GlobalJson, actualResult.GlobalJson);
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects, experimentsManager);
-        AssertEx.Equal(expectedResult.ImportedFiles, actualResult.ImportedFiles, PathComparer.Instance);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
         Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
         Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
@@ -92,10 +91,8 @@ public class DiscoveryWorkerTestBase : TestBase
             AssertEx.Equal(expectedProject.Properties, actualProperties, PropertyComparer.Instance);
             AssertEx.Equal(expectedProject.TargetFrameworks, actualProject.TargetFrameworks);
             AssertEx.Equal(expectedProject.ReferencedProjectPaths, actualProject.ReferencedProjectPaths);
-            if (expectedProject.ImportedFiles is not null)
-            {
-                AssertEx.Equal(expectedProject.ImportedFiles.Value.Select(PathHelper.NormalizePathToUnix), actualProject.ImportedFiles.Select(PathHelper.NormalizePathToUnix));
-            }
+            AssertEx.Equal(expectedProject.ImportedFiles, actualProject.ImportedFiles);
+            AssertEx.Equal(expectedProject.AdditionalFiles, actualProject.AdditionalFiles);
 
             // some dependencies are byproducts of the older temporary project discovery process and shouldn't be returned
             var actualDependencies = actualProject.Dependencies;
