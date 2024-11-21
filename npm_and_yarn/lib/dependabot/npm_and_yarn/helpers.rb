@@ -101,26 +101,28 @@ module Dependabot
       def self.npm_version_numeric_latest(lockfile)
         lockfile_content = lockfile&.content
 
-        # Return the default NPM version if there's no lockfile or it's empty
+        # Return npm 10 as the default if the lockfile is missing or empty
         return NPM_V10 if lockfile_content.nil? || lockfile_content.strip.empty?
 
+        # Parse the lockfile content to extract the `lockfileVersion`
         parsed_lockfile = JSON.parse(lockfile_content)
         lockfile_version = parsed_lockfile["lockfileVersion"]&.to_i
 
-        # Determine npm version based on lockfileVersion
+        # Determine the appropriate npm version based on `lockfileVersion`
         if lockfile_version.nil?
-          NPM_V10 # Default if lockfileVersion is missing or nil
+          NPM_V10 # Use npm 10 if `lockfileVersion` is missing or nil
         elsif lockfile_version >= 3
-          NPM_V10
+          NPM_V10 # Use npm 10 for lockfileVersion 3 or higher
         elsif lockfile_version >= 2
-          NPM_V8
+          NPM_V8 # Use npm 8 for lockfileVersion 2
         elsif lockfile_version >= 1
+          # Use npm 8 if the fallback version flag is enabled, otherwise use npm 6
           Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6) ? NPM_V8 : NPM_V6
         else
-          NPM_V10 # Fallback to npm 10 for unsupported or unexpected versions
+          NPM_V10 # Default to npm 10 for unexpected or unsupported versions
         end
       rescue JSON::ParserError
-        NPM_V8 # Fallback to default npm version if parsing fails
+        NPM_V8 # Fallback to npm 8 if the lockfile content cannot be parsed
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
