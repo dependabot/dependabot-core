@@ -1,9 +1,14 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace NuGetUpdater.Core.Run.ApiModel;
 
 public sealed record Job
 {
     public string PackageManager { get; init; } = "nuget";
     public AllowedUpdate[]? AllowedUpdates { get; init; } = null;
+
+    [JsonConverter(typeof(NullAsBoolConverter))]
     public bool Debug { get; init; } = false;
     public object[]? DependencyGroups { get; init; } = null;
     public object[]? Dependencies { get; init; } = null;
@@ -45,5 +50,23 @@ public sealed record Job
         {
             yield return "/";
         }
+    }
+}
+
+public class NullAsBoolConverter : JsonConverter<bool>
+{
+    public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return false;
+        }
+
+        return reader.GetBoolean();
+    }
+
+    public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
+    {
+        writer.WriteBooleanValue(value);
     }
 }
