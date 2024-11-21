@@ -105,7 +105,7 @@ internal static class PathHelper
     /// </summary>
     /// <param name="filePath">The file path to resolve.</param>
     /// <param name="repoRootPath">The root path of the repository.</param>
-    public static string? ResolveCaseInsensitivePathInsideRepoRoot(string filePath, string repoRootPath)
+    public static List<string>? ResolveCaseInsensitivePathsInsideRepoRoot(string filePath, string repoRootPath)
     {
         if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(repoRootPath))
         {
@@ -123,7 +123,7 @@ internal static class PathHelper
         }
 
         // Start resolving from the root path
-        var currentPath = normalizedRepoRoot;
+        var currentPaths = new List<string> { normalizedRepoRoot };
         var relativePath = normalizedFilePath.Substring(normalizedRepoRoot.Length).TrimStart('/');
 
         foreach (var part in relativePath.Split('/'))
@@ -133,20 +133,28 @@ internal static class PathHelper
                 continue;
             }
 
-            // Enumerate the current directory to find a case-insensitive match
-            var nextPath = Directory
-                .EnumerateFileSystemEntries(currentPath)
-                .FirstOrDefault(entry => string.Equals(Path.GetFileName(entry), part, StringComparison.OrdinalIgnoreCase));
+            var nextPaths = new List<string>();
 
-            if (nextPath == null)
+            // Iterate through all current paths to find matches for the current part
+            foreach (var currentPath in currentPaths)
+            {
+                var matches = Directory
+                    .EnumerateFileSystemEntries(currentPath)
+                    .Where(entry => string.Equals(Path.GetFileName(entry), part, StringComparison.OrdinalIgnoreCase));
+
+                nextPaths.AddRange(matches);
+            }
+
+            if (!nextPaths.Any())
             {
                 return null; // Part of the path does not exist
             }
 
-            currentPath = nextPath;
+            currentPaths = nextPaths;
         }
 
-        return currentPath.NormalizePathToUnix(); // Fully resolved path with correct casing
+        // Normalize all resulting paths to Unix format
+        return currentPaths.Select(path => path.NormalizePathToUnix()).ToList();
     }
 
     /// <summary>

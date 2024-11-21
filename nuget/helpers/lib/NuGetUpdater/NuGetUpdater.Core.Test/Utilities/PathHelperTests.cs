@@ -29,9 +29,35 @@ public class PathHelperTests
 
         var repoRootPath = Path.Combine(temp.DirectoryPath, "src");
 
-        var resolvedPath = PathHelper.ResolveCaseInsensitivePathInsideRepoRoot(Path.Combine(repoRootPath, "A", "PACKAGES.CONFIG"), repoRootPath);
+        var resolvedPath = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(Path.Combine(repoRootPath, "A", "PACKAGES.CONFIG"), repoRootPath);
 
         var expected = Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix();
-        Assert.Equal(expected, resolvedPath);
+        Assert.Equal(expected, resolvedPath!.First());
+    }
+
+    [Fact]
+    public void VerifyMultipleMatchingPathsReturnsAllPaths()
+    {
+        using var temp = new TemporaryDirectory();
+        Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "src", "a"));
+        Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "src", "A"));
+        Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "SRC", "a"));
+
+        File.WriteAllText(Path.Combine(temp.DirectoryPath, "src", "a", "packages.config"), "");
+        File.WriteAllText(Path.Combine(temp.DirectoryPath, "src", "A", "packages.config"), "");
+        File.WriteAllText(Path.Combine(temp.DirectoryPath, "SRC", "a", "packages.config"), "");
+
+        var repoRootPath = Path.Combine(temp.DirectoryPath, "src");
+
+        var resolvedPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(Path.Combine(repoRootPath, "A", "PACKAGES.CONFIG"), repoRootPath);
+
+        var expected = new[]
+        {
+            Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix(),
+            Path.Combine(temp.DirectoryPath, "src", "A", "packages.config").NormalizePathToUnix(),
+            Path.Combine(temp.DirectoryPath, "SRC", "a", "packages.config").NormalizePathToUnix(),
+        };
+
+        Assert.Equal(expected, resolvedPaths!);
     }
 }
