@@ -16,6 +16,7 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
       NPM_DEFAULT_VERSION = NPM_V8
@@ -40,6 +41,10 @@ module Dependabot
       # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          return npm_version_numeric_latest(lockfile)
+        end
+
         fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
 
         return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
@@ -90,6 +95,36 @@ module Dependabot
       rescue JSON::ParserError
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
+      def self.npm_version_numeric_latest(lockfile)
+        lockfile_content = lockfile&.content
+
+        # Return npm 10 as the default if the lockfile is missing or empty
+        return NPM_V10 if lockfile_content.nil? || lockfile_content.strip.empty?
+
+        # Parse the lockfile content to extract the `lockfileVersion`
+        parsed_lockfile = JSON.parse(lockfile_content)
+        lockfile_version = parsed_lockfile["lockfileVersion"]&.to_i
+
+        # Determine the appropriate npm version based on `lockfileVersion`
+        if lockfile_version.nil?
+          NPM_V10 # Use npm 10 if `lockfileVersion` is missing or nil
+        elsif lockfile_version >= 3
+          NPM_V10 # Use npm 10 for lockfileVersion 3 or higher
+        elsif lockfile_version >= 2
+          NPM_V8 # Use npm 8 for lockfileVersion 2
+        elsif lockfile_version >= 1
+          # Use npm 8 if the fallback version flag is enabled, otherwise use npm 6
+          Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6) ? NPM_V8 : NPM_V6
+        else
+          NPM_V10 # Default to npm 10 for unexpected or unsupported versions
+        end
+      rescue JSON::ParserError
+        NPM_V8 # Fallback to npm 8 if the lockfile content cannot be parsed
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
