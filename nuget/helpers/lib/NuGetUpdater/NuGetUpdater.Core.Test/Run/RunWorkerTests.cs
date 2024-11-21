@@ -593,7 +593,7 @@ public class RunWorkerTests
                             ],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
-                            AdditionalFiles = [],
+                            AdditionalFiles = ["packages.config"],
                         }
                     ]
                 });
@@ -616,9 +616,9 @@ public class RunWorkerTests
                         CanUpdate = true,
                         UpdatedVersion = "2.0.1",
                         UpdatedDependencies =
-                                [
-                                    new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
-                                ]
+                            [
+                                new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
+                            ]
                     },
                     _ => throw new NotSupportedException(),
                 };
@@ -741,7 +741,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/packages.config",
+                                    File = "/some-dir/project.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -799,7 +799,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.1",
-                                    File = "/some-dir/packages.config",
+                                    File = "/some-dir/project.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
                                     {
@@ -814,7 +814,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/packages.config",
+                                    File = "/some-dir/project.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],
@@ -948,7 +948,7 @@ public class RunWorkerTests
                             ],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
-                            AdditionalFiles = [],
+                            AdditionalFiles = ["packages.config"],
                         },
                         new()
                         {
@@ -961,7 +961,7 @@ public class RunWorkerTests
                             ],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
-                            AdditionalFiles = [],
+                            AdditionalFiles = ["packages.config"],
                         }
                     ]
                 });
@@ -984,9 +984,9 @@ public class RunWorkerTests
                         CanUpdate = true,
                         UpdatedVersion = "2.0.1",
                         UpdatedDependencies =
-                                [
-                                    new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
-                                ]
+                            [
+                                new("Some.Package2", "2.0.1", DependencyType.Unknown, TargetFrameworks: ["net8.0"], InfoUrl: "https://nuget.example.com/some-package2"),
+                            ]
                     },
                     _ => throw new NotSupportedException(),
                 };
@@ -1181,7 +1181,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectB/packages.config",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1209,7 +1209,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectA/packages.config",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1267,7 +1267,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.1",
-                                    File = "/some-dir/ProjectB/packages.config",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
                                     {
@@ -1282,7 +1282,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectB/packages.config",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],
@@ -1325,7 +1325,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.1",
-                                    File = "/some-dir/ProjectA/packages.config",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
                                     {
@@ -1340,7 +1340,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectA/packages.config",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],

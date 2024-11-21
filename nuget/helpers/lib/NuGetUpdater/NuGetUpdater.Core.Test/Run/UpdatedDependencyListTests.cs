@@ -41,7 +41,7 @@ public class UpdatedDependencyListTests
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
-                    AdditionalFiles = [],
+                    AdditionalFiles = ["packages.config"],
                 },
                 new()
                 {
@@ -53,7 +53,7 @@ public class UpdatedDependencyListTests
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
-                    AdditionalFiles = [],
+                    AdditionalFiles = ["packages.config"],
                 },
                 new()
                 {
@@ -67,7 +67,7 @@ public class UpdatedDependencyListTests
                     TargetFrameworks = ["net8.0"],
                     ReferencedProjectPaths = [],
                     ImportedFiles = [],
-                    AdditionalFiles = [],
+                    AdditionalFiles = ["packages.config"],
                 }
             ]
         };
@@ -105,7 +105,7 @@ public class UpdatedDependencyListTests
                         new ReportedRequirement()
                         {
                             Requirement = "13.0.1",
-                            File = "/src/c/packages.config",
+                            File = "/src/c/project.csproj",
                             Groups = ["dependencies"],
                         },
                     ]
