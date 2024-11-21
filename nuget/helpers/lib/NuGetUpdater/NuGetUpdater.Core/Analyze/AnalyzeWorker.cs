@@ -391,8 +391,8 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 
         var projectFrameworks = projectsWithDependency
             .SelectMany(p => p.TargetFrameworks)
-            .Distinct()
             .Select(NuGetFramework.Parse)
+            .Distinct()
             .ToImmutableArray();
 
         // When updating peer dependencies, we only need to consider top-level dependencies.
