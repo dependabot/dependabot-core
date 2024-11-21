@@ -120,7 +120,7 @@ module Dependabot
           NPM_V10 # Fallback to npm 10 for unsupported or unexpected versions
         end
       rescue JSON::ParserError
-        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
+        NPM_V8 # Fallback to default npm version if parsing fails
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
