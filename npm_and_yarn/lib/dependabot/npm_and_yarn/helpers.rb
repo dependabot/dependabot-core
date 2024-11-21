@@ -101,32 +101,23 @@ module Dependabot
       def self.npm_version_numeric_latest(lockfile)
         lockfile_content = lockfile&.content
 
-        # Return default NPM version if there's no lockfile or it's empty
+        # Return the default NPM version if there's no lockfile or it's empty
         return NPM_V10 if lockfile_content.nil? || lockfile_content.strip.empty?
 
         parsed_lockfile = JSON.parse(lockfile_content)
+        lockfile_version = parsed_lockfile["lockfileVersion"]&.to_i
 
-        lockfile_version_str = parsed_lockfile["lockfileVersion"]
-
-        # Default to npm default version if lockfileVersion is missing or empty
-        return NPM_V10 if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
-
-        lockfile_version = lockfile_version_str.to_i
-
-        # Using npm 10 as the default for lockfile_version >= 3 and npm 8 for lockfile_version >= 1.
-        # For other cases, default to npm 10.
-        if lockfile_version >= 3
+        # Determine npm version based on lockfileVersion
+        if lockfile_version.nil?
+          NPM_V10 # Default if lockfileVersion is missing or nil
+        elsif lockfile_version >= 3
           NPM_V10
         elsif lockfile_version >= 2
           NPM_V8
         elsif lockfile_version >= 1
-          if Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
-            NPM_V8
-          else
-            NPM_V6
-          end
+          Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6) ? NPM_V8 : NPM_V6
         else
-          NPM_V10
+          NPM_V10 # Fallback to npm 10 for unsupported or unexpected versions
         end
       rescue JSON::ParserError
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
