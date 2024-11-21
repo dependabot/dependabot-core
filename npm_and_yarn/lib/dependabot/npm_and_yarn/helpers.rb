@@ -96,6 +96,7 @@ module Dependabot
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric_latest(lockfile)
         lockfile_content = lockfile&.content
@@ -112,18 +113,25 @@ module Dependabot
 
         lockfile_version = lockfile_version_str.to_i
 
-        # Using npm 10 as the default for lockfile_version >= 1.
-        # Update needed to support npm 9+ based on lockfile version.
+        # Using npm 10 as the default for lockfile_version >= 3 and npm 8 for lockfile_version >= 1.
+        # For other cases, default to npm 10.
         if lockfile_version >= 3
           NPM_V10
         elsif lockfile_version >= 2
           NPM_V8
+        elsif lockfile_version >= 1
+          if Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
+            NPM_V8
+          else
+            NPM_V6
+          end
         else
           NPM_V10
         end
       rescue JSON::ParserError
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(yarn_lock: T.nilable(DependencyFile)).returns(Integer) }
       def self.yarn_version_numeric(yarn_lock)
