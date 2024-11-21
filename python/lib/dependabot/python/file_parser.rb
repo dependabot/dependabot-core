@@ -8,9 +8,12 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
 require "dependabot/python/requirement"
 require "dependabot/errors"
+require "dependabot/python/language"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
+require "dependabot/python/language_version_manager"
+require "dependabot/python/package_manager"
 
 module Dependabot
   module Python
@@ -48,7 +51,61 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      def language_version_manager
+        @language_version_manager ||=
+          LanguageVersionManager.new(
+            python_requirement_parser: python_requirement_parser
+          )
+      end
+
+      def python_requirement_parser
+        @python_requirement_parser ||=
+          FileParser::PythonRequirementParser.new(
+            dependency_files: dependency_files
+          )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= PackageManager.new(python_raw_version, package_manager_requirement)
+      end
+
+      def package_manager_requirement
+        nil
+      end
+
+      sig { returns(String) }
+      def python_raw_version
+        language_version_manager.python_version
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        return @language if defined?(@language)
+
+        return nil if package_manager.unsupported?
+
+        Language.new(python_raw_version, language_requirement)
+      end
+
+      def language_requirement
+        # will be implemented in subsequent PRs as this needs more work
+        nil
+      end
 
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
