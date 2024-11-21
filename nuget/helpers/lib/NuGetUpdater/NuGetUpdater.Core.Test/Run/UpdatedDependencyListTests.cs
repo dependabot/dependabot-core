@@ -111,7 +111,59 @@ public class UpdatedDependencyListTests
                     ]
                 },
             ],
-            DependencyFiles = ["/src/a/project.csproj", "/src/b/project.csproj", "/src/c/project.csproj", "/src/a/packages.config", "/src/b/packages.config", "/src/c/packages.config"],
+            DependencyFiles = ["/src/a/packages.config", "/src/a/project.csproj", "/src/b/packages.config", "/src/b/project.csproj", "/src/c/packages.config", "/src/c/project.csproj"],
+        };
+
+        // doing JSON comparison makes this easier; we don't have to define custom record equality and we get an easy diff
+        var actualJson = JsonSerializer.Serialize(updatedDependencyList);
+        var expectedJson = JsonSerializer.Serialize(expectedDependencyList);
+        Assert.Equal(expectedJson, actualJson);
+    }
+
+    [Fact]
+    public async Task UpdatedDependencyListDeduplicatesFiles()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var testFiles = new[]
+        {
+            "Directory.Packages.props",
+            "project1/project1.csproj",
+            "project2/project2.csproj",
+        };
+        foreach (var testFile in testFiles)
+        {
+            var fullFilePath = Path.Join(tempDir.DirectoryPath, testFile);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath)!);
+            await File.WriteAllTextAsync(fullFilePath, "");
+        }
+        var discovery = new WorkspaceDiscoveryResult()
+        {
+            Path = "",
+            Projects = [
+                new()
+                {
+                    FilePath = "project1/project1.csproj",
+                    Dependencies = [],
+                    ImportedFiles = ["../Directory.Packages.props"],
+                    AdditionalFiles = [],
+                },
+                new()
+                {
+                    FilePath = "project2/project2.csproj",
+                    Dependencies = [],
+                    ImportedFiles = ["../Directory.Packages.props"],
+                    AdditionalFiles = [],
+                }
+            ]
+        };
+
+        // act
+        var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discovery, pathToContents: tempDir.DirectoryPath);
+        var expectedDependencyList = new UpdatedDependencyList()
+        {
+            Dependencies = [],
+            DependencyFiles = ["/Directory.Packages.props", "/project1/project1.csproj", "/project2/project2.csproj"],
         };
 
         // doing JSON comparison makes this easier; we don't have to define custom record equality and we get an easy diff
