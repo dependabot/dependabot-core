@@ -16,6 +16,7 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
       NPM_DEFAULT_VERSION = NPM_V8
@@ -40,6 +41,10 @@ module Dependabot
       # Otherwise, we are going to use old versionining npm 6
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          return npm_version_numeric_latest(lockfile)
+        end
+
         fallback_version_npm8 = Dependabot::Experiments.enabled?(:npm_fallback_version_above_v6)
 
         return npm_version_numeric_npm8_or_higher(lockfile) if fallback_version_npm8
@@ -87,6 +92,35 @@ module Dependabot
         return NPM_V8 if lockfile_version >= 2
 
         NPM_DEFAULT_VERSION
+      rescue JSON::ParserError
+        NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
+      end
+
+      sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
+      def self.npm_version_numeric_latest(lockfile)
+        lockfile_content = lockfile&.content
+
+        # Return default NPM version if there's no lockfile or it's empty
+        return NPM_V10 if lockfile_content.nil? || lockfile_content.strip.empty?
+
+        parsed_lockfile = JSON.parse(lockfile_content)
+
+        lockfile_version_str = parsed_lockfile["lockfileVersion"]
+
+        # Default to npm default version if lockfileVersion is missing or empty
+        return NPM_V10 if lockfile_version_str.nil? || lockfile_version_str.to_s.strip.empty?
+
+        lockfile_version = lockfile_version_str.to_i
+
+        # Using npm 10 as the default for lockfile_version >= 1.
+        # Update needed to support npm 9+ based on lockfile version.
+        if lockfile_version >= 3
+          NPM_V10
+        elsif lockfile_version >= 2
+          NPM_V8
+        else
+          NPM_V10
+        end
       rescue JSON::ParserError
         NPM_DEFAULT_VERSION # Fallback to default npm version if parsing fails
       end
