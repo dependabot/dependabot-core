@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MSBuildPackageVersion>17.5.0</MSBuildPackageVersion>
+    <MSBuildPackageVersion>17.12.6</MSBuildPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
