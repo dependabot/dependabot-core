@@ -102,7 +102,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
+      # NOTE: The latest version is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
@@ -120,7 +120,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
-      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
+      # NOTE: The latest version is 6.0.2, but we can't reach it as other
       # dependencies constrain us
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
@@ -138,9 +138,19 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
       let(:latest_allowable_version) { "6.0.2" }
 
+      it "calls run_npm_updater when npm8? is true" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm8?).and_return(true)
+        expect(resolver).to receive(:run_npm_updater).and_call_original
+        expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+      end
+
       # NOTE: The latest vision is 6.0.2, but we can't reach it as other
       # dependencies constrain us
-      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+      it "calls run_npm6_updater when npm8? is false" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm8?).and_return(false)
+        expect(resolver).to receive(:run_npm6_updater).and_call_original
+        expect(latest_resolvable_version).to eq(Gem::Version.new("5.7.4"))
+      end
     end
 
     context "with a npm6 package-lock.json" do
@@ -228,7 +238,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       end
     end
 
-    context "when updating a sub dep across both yarn and npm lockfiles" do
+    context "when updating a sub-dependency across both yarn and npm lockfiles" do
       let(:dependency_files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update") }
 
       let(:latest_allowable_version) { "2.0.2" }
