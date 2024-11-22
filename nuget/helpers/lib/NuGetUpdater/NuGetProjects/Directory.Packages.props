@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.Web.Xdt" Version="$(MicrosoftWebXdtPackageVersion)" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="NuGet.Core" Version="2.14.0" />
-    <PackageVersion Include="System.ComponentModel.Composition" Version="7.0.0" />
+    <PackageVersion Include="System.ComponentModel.Composition" Version="9.0.0" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(CryptographyPackagesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="$(CryptographyPackagesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
