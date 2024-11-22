@@ -15,7 +15,7 @@
     <PackageVersion Include="Microsoft.CSharp" Version="$(SystemPackagesVersion)" />
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Abstractions" Version="$(MicrosoftExtensionsFileProvidersAbstractionsPackageVersion)" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="$(MicrosoftExtensionsFileSystemGlobbingPackageVersion)" />
-    <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.4.2244" />
+    <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.12.2149" />
     <PackageVersion Include="Microsoft.Web.Xdt" Version="$(MicrosoftWebXdtPackageVersion)" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageVersion Include="NuGet.Core" Version="2.14.0-rtm-832" />
