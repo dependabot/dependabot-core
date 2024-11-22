@@ -217,6 +217,105 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task TestDependenciesMultiplePaths_WithSameName()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+            ],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "src",
+            files: new[]
+            {
+                ("src/test/project1/project1.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/TEST/project2/project2.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                // Add solution files
+                ("src/solution.sln", """
+                    Microsoft Visual Studio Solution File, Format Version 12.00
+                    # Visual Studio 14
+                    VisualStudioVersion = 14.0.22705.0
+                    MinimumVisualStudioVersion = 10.0.40219.1
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "project1", "test\project1\project1.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20C}"
+                    EndProject
+                    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "project2", "test\project2\project2.csproj", "{782E0C0A-10D3-444D-9640-263D03D2B20D}"
+                    EndProject
+                    Global
+                      GlobalSection(SolutionConfigurationPlatforms) = preSolution
+                        Debug|Any CPU = Debug|Any CPU
+                        Release|Any CPU = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(ProjectConfigurationPlatforms) = postSolution
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20C}.Release|Any CPU.Build.0 = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+                        {782E0C0A-10D3-444D-9640-263D03D2B20D}.Release|Any CPU.Build.0 = Release|Any CPU
+                      EndGlobalSection
+                      GlobalSection(SolutionProperties) = preSolution
+                        HideSolutionNode = FALSE
+                      EndGlobalSection
+                    EndGlobal
+                    """)
+                     
+            },
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "test/project1/project1.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        Dependencies = [
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/test/project1/project1.csproj"),
+                        ]
+                    },
+                    new()
+                    {
+                        FilePath = "TEST/project2/project2.csproj", 
+                        TargetFrameworks = ["net8.0"],
+                        ReferencedProjectPaths = [],
+                        Dependencies = [
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                        ],
+                        Properties = [
+                            new("TargetFramework", "net8.0", "src/TEST/project2/project2.csproj"),
+                        ]
+                    }
+                ]
+            }
+        );
+    }
+    
+    [Fact]
     public async Task TestDependenciesSeparatedBySemicolonWithWhitespace()
     {
         await TestDiscoveryAsync(

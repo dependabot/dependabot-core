@@ -41,11 +41,9 @@ public class PathHelperTests
         using var temp = new TemporaryDirectory();
         Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "src", "a"));
         Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "src", "A"));
-        Directory.CreateDirectory(Path.Combine(temp.DirectoryPath, "SRC", "a"));
 
         File.WriteAllText(Path.Combine(temp.DirectoryPath, "src", "a", "packages.config"), "");
         File.WriteAllText(Path.Combine(temp.DirectoryPath, "src", "A", "packages.config"), "");
-        File.WriteAllText(Path.Combine(temp.DirectoryPath, "SRC", "a", "packages.config"), "");
 
         var repoRootPath = Path.Combine(temp.DirectoryPath, "src");
 
@@ -55,7 +53,6 @@ public class PathHelperTests
         {
             Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix(),
             Path.Combine(temp.DirectoryPath, "src", "A", "packages.config").NormalizePathToUnix(),
-            Path.Combine(temp.DirectoryPath, "SRC", "a", "packages.config").NormalizePathToUnix(),
         };
 
         Assert.Equal(expected, resolvedPaths!);

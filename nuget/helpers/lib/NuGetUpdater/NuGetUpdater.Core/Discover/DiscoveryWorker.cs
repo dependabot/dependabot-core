@@ -18,7 +18,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
-    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -277,7 +277,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
-        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
+        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
         foreach (var projectPath in projectPaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
@@ -295,6 +295,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 {
                     continue;
                 }
+                
                 _processedProjectPaths.Add(actualProjectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
