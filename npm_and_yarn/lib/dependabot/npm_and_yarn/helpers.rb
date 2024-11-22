@@ -174,6 +174,10 @@ module Dependabot
       def self.npm8?(package_lock)
         return true unless package_lock&.content
 
+        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          return npm_version_numeric_latest(package_lock) >= NPM_V8
+        end
+
         npm_version_numeric(package_lock) == NPM_V8
       end
 

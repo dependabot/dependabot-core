@@ -1089,7 +1089,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     let(:previous_requirements) { requirements }
 
     it "raises a helpful error" do
-      expect { updated_npm_lock_content }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
     end
   end
 
