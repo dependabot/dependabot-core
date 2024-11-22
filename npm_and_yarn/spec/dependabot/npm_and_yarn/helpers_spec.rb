@@ -204,4 +204,93 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       described_class.install("npm", "7.0.0")
     end
   end
+
+  describe "::npm8?" do
+    let(:lockfile_with_v3) do
+      Dependabot::DependencyFile.new(name: "package-lock.json", content: { lockfileVersion: 3 }.to_json)
+    end
+    let(:lockfile_with_v2) do
+      Dependabot::DependencyFile.new(name: "package-lock.json", content: { lockfileVersion: 2 }.to_json)
+    end
+    let(:empty_lockfile) { Dependabot::DependencyFile.new(name: "package-lock.json", content: "") }
+    let(:nil_lockfile) { nil }
+
+    context "when the feature flag :enable_corepack_for_npm_and_yarn is enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      end
+
+      it "returns true if lockfileVersion is 3 or higher" do
+        expect(described_class.npm8?(lockfile_with_v3)).to be true
+      end
+
+      it "returns true if lockfileVersion is 2" do
+        expect(described_class.npm8?(lockfile_with_v2)).to be true
+      end
+
+      it "returns true if lockfile is empty" do
+        expect(described_class.npm8?(empty_lockfile)).to be true
+      end
+
+      it "returns true if lockfile is nil" do
+        expect(described_class.npm8?(nil_lockfile)).to be true
+      end
+    end
+
+    context "when the feature flag :enable_corepack_for_npm_and_yarn is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(false)
+      end
+
+      context "when :npm_fallback_version_above_v6 is enabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_fallback_version_above_v6).and_return(true)
+        end
+
+        it "returns true if lockfileVersion is 2 or higher" do
+          expect(described_class.npm8?(lockfile_with_v2)).to be true
+        end
+
+        it "returns true if lockfileVersion is 3 or higher" do
+          expect(described_class.npm8?(lockfile_with_v3)).to be true
+        end
+
+        it "returns true if lockfile is empty" do
+          expect(described_class.npm8?(empty_lockfile)).to be true
+        end
+
+        it "returns true if lockfile is nil" do
+          expect(described_class.npm8?(nil_lockfile)).to be true
+        end
+      end
+
+      context "when :npm_fallback_version_above_v6 is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_fallback_version_above_v6).and_return(false)
+        end
+
+        it "returns false for lockfileVersion < 2" do
+          lockfile_with_v1 = Dependabot::DependencyFile.new(name: "package-lock.json",
+                                                            content: { lockfileVersion: 1 }.to_json)
+          expect(described_class.npm8?(lockfile_with_v1)).to be false
+        end
+
+        it "returns true for lockfileVersion 2 or higher" do
+          expect(described_class.npm8?(lockfile_with_v2)).to be true
+        end
+
+        it "returns true for lockfileVersion 3 or higher" do
+          expect(described_class.npm8?(lockfile_with_v3)).to be true
+        end
+
+        it "returns true if lockfile is empty" do
+          expect(described_class.npm8?(empty_lockfile)).to be true
+        end
+
+        it "returns false if lockfile is nil" do
+          expect(described_class.npm8?(nil_lockfile)).to be true
+        end
+      end
+    end
+  end
 end
