@@ -37,6 +37,9 @@ module Dependabot
         InvalidRequirement ValueError RecursionError
       ).freeze
 
+      DEFAULT_PACKAGE_MANAGER = "pip"
+      DEFAULT_PACKAGE_MANAGER_VERSION = "24.0"
+
       def parse
         # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
         raise Dependabot::UnexpectedExternalCode if @reject_external_code
@@ -81,10 +84,28 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        @package_manager ||= PackageManager.new(python_raw_version, package_manager_requirement)
+        Dependabot.logger.info("Package manager #{detected_package_manager}, detected version #{detected_raw_version}")
+
+        @package_manager ||= PackageManager.new(detected_package_manager, detected_raw_version)
       end
 
-      def package_manager_requirement
+      def detected_package_manager
+        return "poetry" if poetry_lock
+
+        DEFAULT_PACKAGE_MANAGER
+      end
+
+      sig { returns(String) }
+      def detected_raw_version
+        detect_poetry_version || DEFAULT_PACKAGE_MANAGER_VERSION
+      end
+
+      def detect_poetry_version
+        if poetry_lock
+          output = SharedHelpers.run_shell_command("pyenv exec poetry --version").to_s
+          output.split("version ").last&.split(")")&.first
+        end
+      rescue StandardError
         nil
       end
 
@@ -95,16 +116,7 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        return @language if defined?(@language)
-
-        return nil if package_manager.unsupported?
-
-        Language.new(python_raw_version, language_requirement)
-      end
-
-      def language_requirement
-        # will be implemented in subsequent PRs as this needs more work
-        nil
+        Language.new(python_raw_version)
       end
 
       def requirement_files

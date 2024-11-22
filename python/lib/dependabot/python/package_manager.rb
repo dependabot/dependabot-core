@@ -9,7 +9,6 @@ require "dependabot/python/requirement"
 module Dependabot
   module Python
     ECOSYSTEM = "Python"
-    PACKAGE_MANAGER = "Python"
 
     # Keep versions in ascending order
     SUPPORTED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
@@ -21,13 +20,14 @@ module Dependabot
 
       sig do
         params(
+          package_manager: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(package_manager, raw_version, requirement = nil)
         super(
-          PACKAGE_MANAGER,
+          package_manager,
           Version.new(raw_version),
           DEPRECATED_PYTHON_VERSIONS,
           SUPPORTED_PYTHON_VERSIONS,
