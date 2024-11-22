@@ -193,10 +193,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -240,10 +241,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -299,10 +301,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -346,7 +349,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             Path: "",
             IsSuccess: false,
             Projects: [],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -402,10 +404,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -471,10 +474,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -552,10 +556,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -633,10 +638,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -712,10 +718,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -793,10 +800,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            ImportedFiles: [],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },

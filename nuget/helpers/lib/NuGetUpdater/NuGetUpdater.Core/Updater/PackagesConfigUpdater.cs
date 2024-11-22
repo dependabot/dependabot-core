@@ -9,6 +9,7 @@ using Microsoft.Language.Xml;
 using NuGet.CommandLine;
 
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Utilities;
 
 using Console = System.Console;
 
@@ -35,7 +36,7 @@ internal static class PackagesConfigUpdater
     )
     {
         // packages.config project; use NuGet.exe to perform update
-        logger.Log($"  Found '{NuGetHelper.PackagesConfigFileName}' project; running NuGet.exe update");
+        logger.Log($"  Found '{ProjectHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);

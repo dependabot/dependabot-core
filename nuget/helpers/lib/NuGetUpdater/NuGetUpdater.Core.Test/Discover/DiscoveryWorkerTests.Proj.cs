@@ -73,6 +73,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "src/project1/project1.csproj")
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         },
                         new()
                         {
@@ -86,6 +89,9 @@ public partial class DiscoveryWorkerTests
                                 new("TargetFramework", "net8.0", "src/project2/project2.csproj")
                             ],
                             TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }

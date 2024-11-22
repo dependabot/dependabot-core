@@ -8,6 +8,8 @@ using Microsoft.Language.Xml;
 
 using NuGet.ProjectManagement;
 
+using NuGetUpdater.Core.Utilities;
+
 using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
@@ -32,7 +34,7 @@ internal static class BindingRedirectManager
     /// <param name="updatedPackageVersion">The version of the package that was updated</param>
     public static async ValueTask UpdateBindingRedirectsAsync(ProjectBuildFile projectBuildFile, string updatedPackageName, string updatedPackageVersion)
     {
-        var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile);
+        var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile.Path);
         if (configFile is null)
         {
             // no runtime config file so no need to add binding redirects
@@ -124,56 +126,24 @@ internal static class BindingRedirectManager
         }
     }
 
-    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(ProjectBuildFile projectBuildFile)
+    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(string fullProjectPath)
     {
-        var directoryPath = Path.GetDirectoryName(projectBuildFile.Path);
-        if (directoryPath is null)
+        var additionalFiles = ProjectHelper.GetAdditionalFilesFromProjectContent(fullProjectPath, ProjectHelper.PathFormat.Full);
+        var configFilePath = additionalFiles
+            .FirstOrDefault(p =>
+            {
+                var fileName = Path.GetFileName(p);
+                return fileName.Equals(ProjectHelper.AppConfigFileName, StringComparison.OrdinalIgnoreCase)
+                    || fileName.Equals(ProjectHelper.WebConfigFileName, StringComparison.OrdinalIgnoreCase);
+            });
+
+        if (configFilePath is null)
         {
             return null;
         }
 
-        var configFile = projectBuildFile.ItemNodes
-            .Where(IsConfigFile)
-            .FirstOrDefault();
-
-        if (configFile is null)
-        {
-            return null;
-        }
-
-        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetValue(configFile)));
         var configFileContents = await File.ReadAllTextAsync(configFilePath);
         return new ConfigurationFile(configFilePath, configFileContents, false);
-
-        static string GetValue(IXmlElementSyntax element)
-        {
-            var content = element.GetAttributeValue("Include");
-            if (!string.IsNullOrEmpty(content))
-            {
-                return content;
-            }
-
-            content = element.GetContentValue();
-            if (!string.IsNullOrEmpty(content))
-            {
-                return content;
-            }
-
-            return string.Empty;
-        }
-
-        static bool IsConfigFile(IXmlElementSyntax element)
-        {
-            var content = GetValue(element);
-            if (content is null)
-            {
-                return false;
-            }
-
-            var path = Path.GetFileName(content);
-            return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
-                   || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
-        }
     }
 
     private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<(Runtime_AssemblyBinding Binding, string AssemblyPath)> bindingRedirectsAndAssemblyPaths, string assemblyPathPrefix)
