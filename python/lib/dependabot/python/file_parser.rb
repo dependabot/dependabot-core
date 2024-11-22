@@ -84,29 +84,47 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        Dependabot.logger.info("Package manager #{detected_package_manager}, detected version #{detected_raw_version}")
+        Dependabot.logger.info(
+          "Package manager #{detected_package_manager.name}, detected version #{detected_package_manager_version}"
+        )
 
-        @package_manager ||= PackageManager.new(detected_package_manager, detected_raw_version)
+        @package_manager ||= detected_package_manager
       end
 
+      sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        return "poetry" if poetry_lock
+        return PeotryPackageManager.new(detect_poetry_version) if poetry_lock && detect_poetry_version
 
-        DEFAULT_PACKAGE_MANAGER
+        PipPackageManager.new(DEFAULT_PACKAGE_MANAGER_VERSION)
       end
 
       sig { returns(String) }
-      def detected_raw_version
+      def detected_package_manager_version
         detect_poetry_version || DEFAULT_PACKAGE_MANAGER_VERSION
       end
 
       def detect_poetry_version
         if poetry_lock
-          output = SharedHelpers.run_shell_command("pyenv exec poetry --version").to_s
-          output.split("version ").last&.split(")")&.first
+          version = SharedHelpers.run_shell_command("pyenv exec poetry --version")
+                                 .to_s.split("version ").last&.split(")")&.first
+
+          log_if_version_malformed(PeotryPackageManager.name, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+
         end
       rescue StandardError
         nil
+      end
+
+      def log_if_version_malformed(package_manager, version)
+        # logs warning if malformed version is found
+        return true if version&.match?(/^\d+(?:\.\d+)*$/)
+
+        Dependabot.logger.warn(
+          "Detected #{package_manager} with malformed version #{version}"
+        )
       end
 
       sig { returns(String) }
