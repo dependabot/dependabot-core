@@ -61,6 +61,11 @@ internal static class PackageReferenceUpdater
         }
         else
         {
+            if (peerDependencies is null)
+            {
+                return;
+            }
+
             await UpdateDependencyWithConflictResolution(repoRootPath, buildFiles, tfms, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, peerDependencies, logger);
         }
 

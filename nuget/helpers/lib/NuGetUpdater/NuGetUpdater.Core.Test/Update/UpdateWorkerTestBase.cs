@@ -77,7 +77,8 @@ public abstract class UpdateWorkerTestBase : TestBase
         TestFile[]? additionalFiles = null,
         MockNuGetPackage[]? packages = null,
         ExperimentsManager? experimentsManager = null,
-        string projectFilePath = "test-project.csproj")
+        string projectFilePath = "test-project.csproj",
+        ExpectedUpdateOperationResult? expectedResult = null)
         => TestUpdateForProject(
             dependencyName,
             oldVersion,
@@ -88,7 +89,8 @@ public abstract class UpdateWorkerTestBase : TestBase
             additionalFiles,
             additionalFilesExpected: additionalFiles,
             packages: packages,
-            experimentsManager: experimentsManager);
+            experimentsManager: experimentsManager,
+            expectedResult: expectedResult);
 
     protected static Task TestUpdateForProject(
         string dependencyName,
