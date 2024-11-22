@@ -280,7 +280,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                       EndGlobalSection
                     EndGlobal
                     """)
-                     
+
             },
             expectedResult: new()
             {
@@ -300,7 +300,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                     },
                     new()
                     {
-                        FilePath = "TEST/project2/project2.csproj", 
+                        FilePath = "TEST/project2/project2.csproj",
                         TargetFrameworks = ["net8.0"],
                         ReferencedProjectPaths = [],
                         Dependencies = [
@@ -314,7 +314,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
-    
+
     [Fact]
     public async Task TestDependenciesSeparatedBySemicolonWithWhitespace()
     {

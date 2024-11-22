@@ -295,7 +295,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 {
                     continue;
                 }
-                
+
                 _processedProjectPaths.Add(actualProjectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
