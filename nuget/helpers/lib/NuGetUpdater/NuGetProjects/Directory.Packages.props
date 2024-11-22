@@ -22,7 +22,7 @@
     <PackageVersion Include="System.ComponentModel.Composition" Version="9.0.0" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(CryptographyPackagesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="$(CryptographyPackagesVersion)" />
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="6.0.0" />
   </ItemGroup>
 
