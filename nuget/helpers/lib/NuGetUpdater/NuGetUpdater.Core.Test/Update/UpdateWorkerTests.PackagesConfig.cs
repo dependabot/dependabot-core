@@ -2294,7 +2294,7 @@ public partial class UpdateWorkerTests
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
             var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
             Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails?.ToString());
+            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails!.ToString());
         }
 
         [Fact]
