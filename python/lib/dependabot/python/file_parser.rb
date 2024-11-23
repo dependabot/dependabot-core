@@ -37,8 +37,10 @@ module Dependabot
         InvalidRequirement ValueError RecursionError
       ).freeze
 
-      DEFAULT_PACKAGE_MANAGER = "pip"
-      DEFAULT_PACKAGE_MANAGER_VERSION = "24.0"
+      # we use this placeholder version in case we are not able to detect any
+      # PIP version from shell, we are ensuring that the actual update is not blocked
+      # in any way if any metric collection exception start happening
+      UNDETECTED_PACKAGE_MANAGER_VERSION = "0.0"
 
       def parse
         # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
@@ -84,10 +86,6 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        Dependabot.logger.info(
-          "Package manager #{detected_package_manager.name}, detected version #{detected_package_manager_version}"
-        )
-
         @package_manager ||= detected_package_manager
       end
 
@@ -95,12 +93,7 @@ module Dependabot
       def detected_package_manager
         return PeotryPackageManager.new(detect_poetry_version) if poetry_lock && detect_poetry_version
 
-        PipPackageManager.new(DEFAULT_PACKAGE_MANAGER_VERSION)
-      end
-
-      sig { returns(String) }
-      def detected_package_manager_version
-        detect_poetry_version || DEFAULT_PACKAGE_MANAGER_VERSION
+        PipPackageManager.new(detect_pip_version)
       end
 
       def detect_poetry_version
@@ -114,6 +107,18 @@ module Dependabot
           version if version&.match?(/^\d+(?:\.\d+)*$/)
 
         end
+      rescue StandardError
+        nil
+      end
+
+      def detect_pip_version
+        # extracts pip version from current python via executing shell command
+        version = SharedHelpers.run_shell_command("pyenv exec pip -V")
+                               .split("from").first&.split("pip")&.last&.strip
+
+        log_if_version_malformed(PipPackageManager.name, version)
+
+        version&.match?(/^\d+(?:\.\d+)*$/) ? version : UNDETECTED_PACKAGE_MANAGER_VERSION
       rescue StandardError
         nil
       end

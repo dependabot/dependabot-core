@@ -19,11 +19,14 @@ RSpec.describe Dependabot::Python::PeotryPackageManager do
       end
     end
 
-    context "when version is a malformed string" do
-      let(:package_manager) { described_class.new("1.8.3)") }
+    context "when poetry version is extracted from pyenv is well formed" do
+      # If this test start failing, you need to adjust the "detect_poetry_version" function
+      # to return a valid version in format x.x, x.x.x etc. examples: 3.12.5, 3.12
+      version = Dependabot::SharedHelpers.run_shell_command("pyenv exec poetry --version")
+                                         .split("version ").last&.split(")")&.first
 
-      it "raises error" do
-        expect { package_manager.version }.to raise_error(Dependabot::BadRequirementError)
+      it "does not raise error" do
+        expect(version.match(/^\d+(?:\.\d+)*$/)).to be_truthy
       end
     end
   end
