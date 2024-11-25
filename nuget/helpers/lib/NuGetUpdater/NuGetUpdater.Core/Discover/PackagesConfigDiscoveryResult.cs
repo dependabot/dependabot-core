@@ -8,4 +8,5 @@ public sealed record PackagesConfigDiscoveryResult : IDiscoveryResultWithDepende
     public bool IsSuccess { get; init; } = true;
     public required ImmutableArray<Dependency> Dependencies { get; init; }
     public required ImmutableArray<string> TargetFrameworks { get; init; }
+    public required ImmutableArray<string> AdditionalFiles { get; init; }
 }

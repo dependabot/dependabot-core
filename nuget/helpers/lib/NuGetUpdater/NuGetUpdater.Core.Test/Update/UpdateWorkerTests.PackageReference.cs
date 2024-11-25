@@ -3110,6 +3110,46 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task NoChange_IfPeerDependenciesCannotBeEvaluated()
+        {
+            // make sure we don't throw if we find conflicting peer dependencies; this can happen in multi-tfm projects if the dependencies are too complicated to resolve
+            // eventually this should be able to be resolved, but currently we can't branch on the different packages for different TFMs
+            await TestNoChangeforProject("Some.Package", "1.0.0", "1.1.0",
+                packages:
+                [
+                    // initial packages
+                    new MockNuGetPackage("Some.Package", "1.0.0",
+                        DependencyGroups: [
+                            ("net8.0", [("Transitive.Dependency", "8.0.0")]),
+                            ("net9.0", [("Transitive.Dependency", "9.0.0")])
+                        ]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "8.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "9.0.0", "net9.0"),
+
+                    // what we're trying to update to, but will fail
+                    new MockNuGetPackage("Some.Package", "1.1.0",
+                        DependencyGroups: [
+                            ("net8.0", [("Transitive.Dependency", "8.1.0")]),
+                            ("net9.0", [("Transitive.Dependency", "9.1.0")])
+                        ]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "8.1.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "9.1.0", "net9.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedResult: new() // success
+            );
+        }
+
+        [Fact]
         public async Task ProcessingProjectWithWorkloadReferencesDoesNotFail()
         {
             // enumerating the build files will fail if the Aspire workload is not installed; this test ensures we can

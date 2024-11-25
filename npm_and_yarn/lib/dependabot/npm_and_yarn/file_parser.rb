@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
@@ -477,4 +478,4 @@ module Dependabot
 end
 
 Dependabot::FileParsers
-  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileParser)
+  .register(Dependabot::NpmAndYarn::ECOSYSTEM, Dependabot::NpmAndYarn::FileParser)

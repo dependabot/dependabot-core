@@ -66,6 +66,9 @@ public partial class EntryPointTests
                             Properties = [
                                 new("TargetFramework", "net8.0", "path/to/some directory with spaces/project.csproj"),
                             ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
@@ -156,6 +159,11 @@ public partial class EntryPointTests
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                             ],
                             Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
                         }
                     ]
                 }
@@ -223,6 +231,11 @@ public partial class EntryPointTests
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
                             Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
                         }
                     ]
                 }
@@ -291,6 +304,11 @@ public partial class EntryPointTests
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
                             Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
                         }
                     ]
                 }
@@ -359,11 +377,13 @@ public partial class EntryPointTests
                                 new("ManagePackageVersionsCentrally", "false", "path/to/my.csproj"),
                                 new("TargetFramework", "net8.0", "path/to/my.csproj"),
                             ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "../Directory.Build.props"
+                            ],
+                            AdditionalFiles = [],
                         }
                     ],
-                    ImportedFiles = [
-                        "Directory.Build.props"
-                    ]
                 }
             );
         }

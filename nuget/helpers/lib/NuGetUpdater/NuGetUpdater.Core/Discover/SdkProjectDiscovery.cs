@@ -36,6 +36,14 @@ internal static class SdkProjectDiscovery
         "NETStandard.Library"
     };
 
+    // these are additional files that are relevant to the project and need to be reported
+    private static readonly HashSet<string> AdditionalFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "packages.config",
+        "app.config",
+        "web.config",
+    };
+
     public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         if (experimentsManager.UseDirectDiscovery)
@@ -72,6 +80,9 @@ internal static class SdkProjectDiscovery
 
         Dictionary<string, HashSet<string>> referencedProjects = new(PathComparer.Instance);
         //         projectPath, referencedProjects
+
+        Dictionary<string, HashSet<string>> additionalFiles = new(PathComparer.Instance);
+        //         projectPath, additionalFiles
 
         var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
         foreach (var tfm in tfms)
@@ -154,17 +165,39 @@ internal static class SdkProjectDiscovery
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
                             ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject);
 
-                            // maintain list of project references
-                            if (namedNode is AddItem addItem && addItem.Name == "ProjectReference")
+                            if (namedNode is AddItem addItem)
                             {
-                                var projectEvaluation = GetNearestProjectEvaluation(addItem);
-                                if (projectEvaluation is not null)
+                                // maintain list of project references
+                                if (addItem.Name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    foreach (var referencedProject in addItem.Children.OfType<Item>())
+                                    var projectEvaluation = GetNearestProjectEvaluation(addItem);
+                                    if (projectEvaluation is not null)
                                     {
-                                        var referencedProjectPaths = referencedProjects.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                        var referencedProjectPath = new FileInfo(Path.Combine(Path.GetDirectoryName(projectEvaluation.ProjectFile)!, referencedProject.Name)).FullName;
-                                        referencedProjectPaths.Add(referencedProjectPath);
+                                        foreach (var referencedProject in addItem.Children.OfType<Item>())
+                                        {
+                                            var referencedProjectPaths = referencedProjects.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                            var referencedProjectPath = new FileInfo(Path.Combine(Path.GetDirectoryName(projectEvaluation.ProjectFile)!, referencedProject.Name)).FullName;
+                                            referencedProjectPaths.Add(referencedProjectPath);
+                                        }
+                                    }
+                                }
+
+                                // maintain list of additional files
+                                if (addItem.Name.Equals("None", StringComparison.OrdinalIgnoreCase) ||
+                                    addItem.Name.Equals("Content", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var projectEvaluation = GetNearestProjectEvaluation(addItem);
+                                    if (projectEvaluation is not null)
+                                    {
+                                        foreach (var additionalItem in addItem.Children.OfType<Item>())
+                                        {
+                                            if (AdditionalFileNames.Contains(additionalItem.Name))
+                                            {
+                                                var additionalFilesForProject = additionalFiles.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                                var additionalFilePath = new FileInfo(Path.Combine(Path.GetDirectoryName(projectEvaluation.ProjectFile)!, additionalItem.Name)).FullName;
+                                                additionalFilesForProject.Add(additionalFilePath);
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -220,11 +253,18 @@ internal static class SdkProjectDiscovery
                 .Select(pkvp => new Property(pkvp.Key, pkvp.Value, Path.GetRelativePath(repoRootPath, projectPath).NormalizePathToUnix()))
                 .OrderBy(p => p.Name)
                 .ToImmutableArray();
-            var referenced = referencedProjects.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase))
+            var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p).NormalizePathToUnix())
                 .OrderBy(p => p)
                 .ToImmutableArray();
-            var imported = importedFiles.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase))
+            var imported = importedFiles.GetOrAdd(projectPath, () => new(PathComparer.Instance))
+                .Select(p => Path.GetRelativePath(projectFullDirectory, p))
+                .Select(p => p.NormalizePathToUnix())
+                .OrderBy(p => p)
+                .ToImmutableArray();
+            var additionalFromLocation = ProjectHelper.GetAdditionalFilesFromProjectLocation(projectPath, ProjectHelper.PathFormat.Full);
+            var additional = additionalFiles.GetOrAdd(projectPath, () => new(PathComparer.Instance))
+                .Concat(additionalFromLocation)
                 .Select(p => Path.GetRelativePath(projectFullDirectory, p))
                 .Select(p => p.NormalizePathToUnix())
                 .OrderBy(p => p)
@@ -238,6 +278,7 @@ internal static class SdkProjectDiscovery
                 Properties = properties,
                 ReferencedProjectPaths = referenced,
                 ImportedFiles = imported,
+                AdditionalFiles = additional,
             };
         }).ToImmutableArray();
         return projectDiscoveryResults;
@@ -448,6 +489,7 @@ internal static class SdkProjectDiscovery
                         Path.Join(Path.GetDirectoryName(buildFile.Path), "obj"),
                     };
                     var projectDirectory = Path.GetDirectoryName(buildFile.Path)!;
+                    var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(buildFile.Path, ProjectHelper.PathFormat.Relative);
                     results.Add(new()
                     {
                         FilePath = Path.GetRelativePath(workspacePath, buildFile.Path).NormalizePathToUnix(),
@@ -463,6 +505,7 @@ internal static class SdkProjectDiscovery
                             .Where(b => !intermediateDirectories.Any(i => PathHelper.IsFileUnderDirectory(new DirectoryInfo(i), new FileInfo(b.Path))))
                             .Select(b => Path.GetRelativePath(projectDirectory, b.Path).NormalizePathToUnix())
                             .ToImmutableArray(),
+                        AdditionalFiles = additionalFiles,
                     });
                 }
             }

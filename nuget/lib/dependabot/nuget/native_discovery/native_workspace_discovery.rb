@@ -20,7 +20,6 @@ module Dependabot
         projects = T.let(json.fetch("Projects"), T::Array[T::Hash[String, T.untyped]]).filter_map do |project|
           NativeProjectDiscovery.from_json(project, path)
         end
-        imported_files = T.let(json.fetch("ImportedFiles"), T::Array[String])
         global_json = NativeDependencyFileDiscovery
                       .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])), path)
         dotnet_tools_json = NativeDependencyFileDiscovery
@@ -29,7 +28,6 @@ module Dependabot
 
         NativeWorkspaceDiscovery.new(path: path,
                                      projects: projects,
-                                     imported_files: imported_files,
                                      global_json: global_json,
                                      dotnet_tools_json: dotnet_tools_json)
       end
@@ -37,14 +35,12 @@ module Dependabot
       sig do
         params(path: String,
                projects: T::Array[NativeProjectDiscovery],
-               imported_files: T::Array[String],
                global_json: T.nilable(NativeDependencyFileDiscovery),
                dotnet_tools_json: T.nilable(NativeDependencyFileDiscovery)).void
       end
-      def initialize(path:, projects:, imported_files:, global_json:, dotnet_tools_json:)
+      def initialize(path:, projects:, global_json:, dotnet_tools_json:)
         @path = path
         @projects = projects
-        @imported_files = imported_files
         @global_json = global_json
         @dotnet_tools_json = dotnet_tools_json
       end
@@ -54,9 +50,6 @@ module Dependabot
 
       sig { returns(T::Array[NativeProjectDiscovery]) }
       attr_reader :projects
-
-      sig { returns(T::Array[String]) }
-      attr_reader :imported_files
 
       sig { returns(T.nilable(NativeDependencyFileDiscovery)) }
       attr_reader :global_json

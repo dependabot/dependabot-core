@@ -30,6 +30,9 @@ public partial class DiscoveryWorkerTests
                           <PropertyGroup>
                             <TargetFramework>net46</TargetFramework>
                           </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
                         </Project>
                         """)
                 ],
@@ -47,6 +50,11 @@ public partial class DiscoveryWorkerTests
                             Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
                                 new("Package.B", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ],
@@ -78,6 +86,9 @@ public partial class DiscoveryWorkerTests
                           <PropertyGroup>
                             <TargetFramework>net46</TargetFramework>
                           </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
                         </Project>
                         """)
                 ],
@@ -93,6 +104,11 @@ public partial class DiscoveryWorkerTests
                             Dependencies = [
                                 new("Package.A", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
                                 new("Package.B", "2.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net46"]),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ],

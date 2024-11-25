@@ -235,10 +235,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          ImportedFiles: [],
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
@@ -316,7 +317,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }, {
               FilePath: "Proj2/Proj2.csproj",
               Dependencies: [{
@@ -339,10 +342,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj2/Proj2.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          ImportedFiles: [],
           GlobalJson: nil,
           DotNetToolsJson: nil
         }

@@ -32,6 +32,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -80,6 +83,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                             new("Some.Package", "4.0.1", DependencyType.PackageReference),
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -129,6 +135,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                     new()
                     {
@@ -137,6 +146,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -187,6 +199,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Package.A", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                     new()
                     {
@@ -195,6 +210,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Package.B", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -241,6 +259,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "$(MissingPackageVersion)", DependencyType.PackageReference, EvaluationResult: new EvaluationResult(EvaluationResultType.PropertyNotFound, "$(MissingPackageVersion)", "$(MissingPackageVersion)", "$(MissingPackageVersion)", ErrorMessage: null)),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -281,6 +302,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference), // this was found in the source, but doesn't exist in any feed
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -326,6 +350,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -343,6 +370,62 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = false,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task DuplicateTargetFrameworksWithCasingDifferencesAreCombined()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "projecta/projecta.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "projectb/projectb.csproj",
+                        TargetFrameworks = ["NET8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.1.0",
+                CanUpdate = true,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
             }
         );
     }
@@ -368,6 +451,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -535,7 +621,10 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies =
                         [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -704,7 +793,10 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies =
                         [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -889,7 +981,10 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies =
                         [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -999,6 +1094,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.2.3", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -1117,6 +1215,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
