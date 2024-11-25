@@ -307,7 +307,9 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFramework", "net8.0", "src/test/project1/project1.csproj"),
-                        ]
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                     new()
                     {
@@ -319,7 +321,9 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFramework", "net8.0", "src/TEST/project2/project2.csproj"),
-                        ]
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
