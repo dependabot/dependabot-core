@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "timeout"
 require "sorbet-runtime"
 require "dependabot/experiments"
 require "dependabot/logger"
@@ -101,12 +102,21 @@ module Dependabot
         fetched_npm_files
       end
 
+      def run_yarn_install
+        Dir.chdir("repo") do
+          # --refresh-lockfile    Refresh the package metadata stored in the lockfile
+          # --immutable           without modifying the lockfile itself
+          system('yarn install --immutable --refresh-lockfile > /dev/null 2>&1')
+        end
+      end
+
       sig { returns(T::Array[DependencyFile]) }
       def yarn_files
         fetched_yarn_files = []
         fetched_yarn_files << yarn_lock if yarn_lock
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        run_yarn_install
         fetched_yarn_files
       end
 
