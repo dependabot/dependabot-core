@@ -8,9 +8,12 @@ require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
 require "dependabot/python/requirement"
 require "dependabot/errors"
+require "dependabot/python/language"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
+require "dependabot/python/language_version_manager"
+require "dependabot/python/package_manager"
 
 module Dependabot
   module Python
@@ -34,6 +37,11 @@ module Dependabot
         InvalidRequirement ValueError RecursionError
       ).freeze
 
+      # we use this placeholder version in case we are not able to detect any
+      # PIP version from shell, we are ensuring that the actual update is not blocked
+      # in any way if any metric collection exception start happening
+      UNDETECTED_PACKAGE_MANAGER_VERSION = "0.0"
+
       def parse
         # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
         raise Dependabot::UnexpectedExternalCode if @reject_external_code
@@ -48,7 +56,91 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      def language_version_manager
+        @language_version_manager ||=
+          LanguageVersionManager.new(
+            python_requirement_parser: python_requirement_parser
+          )
+      end
+
+      def python_requirement_parser
+        @python_requirement_parser ||=
+          FileParser::PythonRequirementParser.new(
+            dependency_files: dependency_files
+          )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= detected_package_manager
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def detected_package_manager
+        return PeotryPackageManager.new(detect_poetry_version) if poetry_lock && detect_poetry_version
+
+        PipPackageManager.new(detect_pip_version)
+      end
+
+      def detect_poetry_version
+        if poetry_lock
+          version = SharedHelpers.run_shell_command("pyenv exec poetry --version")
+                                 .to_s.split("version ").last&.split(")")&.first
+
+          log_if_version_malformed(PeotryPackageManager.name, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+
+        end
+      rescue StandardError
+        nil
+      end
+
+      def detect_pip_version
+        # extracts pip version from current python via executing shell command
+        version = SharedHelpers.run_shell_command("pyenv exec pip -V")
+                               .split("from").first&.split("pip")&.last&.strip
+
+        log_if_version_malformed(PipPackageManager.name, version)
+
+        version&.match?(/^\d+(?:\.\d+)*$/) ? version : UNDETECTED_PACKAGE_MANAGER_VERSION
+      rescue StandardError
+        nil
+      end
+
+      def log_if_version_malformed(package_manager, version)
+        # logs warning if malformed version is found
+        return true if version&.match?(/^\d+(?:\.\d+)*$/)
+
+        Dependabot.logger.warn(
+          "Detected #{package_manager} with malformed version #{version}"
+        )
+      end
+
+      sig { returns(String) }
+      def python_raw_version
+        language_version_manager.python_version
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        Language.new(python_raw_version)
+      end
 
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
