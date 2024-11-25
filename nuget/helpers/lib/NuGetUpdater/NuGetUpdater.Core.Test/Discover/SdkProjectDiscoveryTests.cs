@@ -50,7 +50,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 }
             ]
         );
@@ -99,7 +101,12 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    ImportedFiles = [
+                        "../Directory.Build.targets"
+                    ],
+                    AdditionalFiles = [],
                 }
             ]
         );
@@ -160,7 +167,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library1/library1.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    AdditionalFiles = [],
                 },
                 new()
                 {
@@ -173,7 +181,10 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library2/library2.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
                 }
             ]
         );
@@ -232,7 +243,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library1/library1.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    AdditionalFiles = [],
                 },
                 new()
                 {
@@ -247,7 +259,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "net8.0", "src/library2/library2.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 }
             ]
         );
@@ -291,7 +305,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFrameworks", "net7.0;net8.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net7.0", "net8.0"]
+                    TargetFrameworks = ["net7.0", "net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 },
             ]
         );
@@ -334,7 +350,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                     [
                         new("TargetFramework", "netstandard2.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["netstandard2.0"]
+                    TargetFrameworks = ["netstandard2.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 },
             ]
         );
@@ -386,7 +404,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                         new("ManagePackageVersionsCentrally", "true", "src/library.csproj"),
                         new("TargetFramework", "net8.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 },
             ]
         );
@@ -451,7 +471,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
                         new("ManagePackageVersionsCentrally", "true", "src/library.csproj"),
                         new("TargetFramework", "net8.0", "src/library.csproj"),
                     ],
-                    TargetFrameworks = ["net8.0"]
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
                 },
             ]
         );

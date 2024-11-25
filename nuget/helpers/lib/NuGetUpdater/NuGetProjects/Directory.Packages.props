@@ -1,9 +1,9 @@
 <Project>
 
   <PropertyGroup>
-    <MicrosoftBuildVersion>17.5.0</MicrosoftBuildVersion>
+    <MicrosoftBuildVersion>17.12.6</MicrosoftBuildVersion>
     <MicrosoftExtensionsFileProvidersAbstractionsPackageVersion>6.0.0</MicrosoftExtensionsFileProvidersAbstractionsPackageVersion>
-    <MicrosoftExtensionsFileSystemGlobbingPackageVersion>6.0.0</MicrosoftExtensionsFileSystemGlobbingPackageVersion>
+    <MicrosoftExtensionsFileSystemGlobbingPackageVersion>9.0.0</MicrosoftExtensionsFileSystemGlobbingPackageVersion>
     <MicrosoftWebXdtPackageVersion>3.0.0</MicrosoftWebXdtPackageVersion>
     <SystemPackagesVersion>4.3.0</SystemPackagesVersion>
     <CryptographyPackagesVersion>5.0.0</CryptographyPackagesVersion>
@@ -15,14 +15,14 @@
     <PackageVersion Include="Microsoft.CSharp" Version="$(SystemPackagesVersion)" />
     <PackageVersion Include="Microsoft.Extensions.FileProviders.Abstractions" Version="$(MicrosoftExtensionsFileProvidersAbstractionsPackageVersion)" />
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="$(MicrosoftExtensionsFileSystemGlobbingPackageVersion)" />
-    <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.4.2244" />
+    <PackageVersion Include="Microsoft.VisualStudio.Setup.Configuration.Interop" Version="3.12.2149" />
     <PackageVersion Include="Microsoft.Web.Xdt" Version="$(MicrosoftWebXdtPackageVersion)" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageVersion Include="NuGet.Core" Version="2.14.0-rtm-832" />
-    <PackageVersion Include="System.ComponentModel.Composition" Version="7.0.0" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="NuGet.Core" Version="2.14.0" />
+    <PackageVersion Include="System.ComponentModel.Composition" Version="9.0.0" />
     <PackageVersion Include="System.Security.Cryptography.Cng" Version="$(CryptographyPackagesVersion)" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="$(CryptographyPackagesVersion)" />
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="4.4.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="6.0.0" />
   </ItemGroup>
 

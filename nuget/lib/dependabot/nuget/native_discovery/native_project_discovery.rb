@@ -10,6 +10,7 @@ module Dependabot
     class NativeProjectDiscovery < NativeDependencyFileDiscovery
       extend T::Sig
 
+      # rubocop:disable Metrics/AbcSize
       sig do
         override.params(json: T.nilable(T::Hash[String, T.untyped]),
                         directory: String).returns(T.nilable(NativeProjectDiscovery))
@@ -36,26 +37,41 @@ module Dependabot
 
           details
         end
+        imported_files = T.let(json.fetch("ImportedFiles"), T::Array[String])
+        additional_files = T.let(json.fetch("AdditionalFiles"), T::Array[String])
 
         NativeProjectDiscovery.new(file_path: file_path,
                                    properties: properties,
                                    target_frameworks: target_frameworks,
                                    referenced_project_paths: referenced_project_paths,
-                                   dependencies: dependencies)
+                                   dependencies: dependencies,
+                                   imported_files: imported_files,
+                                   additional_files: additional_files)
       end
+      # rubocop:enable Metrics/AbcSize
 
       sig do
         params(file_path: String,
                properties: T::Array[NativePropertyDetails],
                target_frameworks: T::Array[String],
                referenced_project_paths: T::Array[String],
-               dependencies: T::Array[NativeDependencyDetails]).void
+               dependencies: T::Array[NativeDependencyDetails],
+               imported_files: T::Array[String],
+               additional_files: T::Array[String]).void
       end
-      def initialize(file_path:, properties:, target_frameworks:, referenced_project_paths:, dependencies:)
+      def initialize(file_path:,
+                     properties:,
+                     target_frameworks:,
+                     referenced_project_paths:,
+                     dependencies:,
+                     imported_files:,
+                     additional_files:)
         super(file_path: file_path, dependencies: dependencies)
         @properties = properties
         @target_frameworks = target_frameworks
         @referenced_project_paths = referenced_project_paths
+        @imported_files = imported_files
+        @additional_files = additional_files
       end
 
       sig { returns(T::Array[NativePropertyDetails]) }
@@ -66,6 +82,12 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       attr_reader :referenced_project_paths
+
+      sig { returns(T::Array[String]) }
+      attr_reader :imported_files
+
+      sig { returns(T::Array[String]) }
+      attr_reader :additional_files
 
       sig { override.returns(Dependabot::FileParsers::Base::DependencySet) }
       def dependency_set

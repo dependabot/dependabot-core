@@ -26,13 +26,15 @@ module Dependabot
       NPM_V7 = "7"
       NPM_V8 = "8"
       NPM_V9 = "9"
+      NPM_V10 = "10"
 
       # Keep versions in ascending order
       SUPPORTED_VERSIONS = T.let([
         Version.new(NPM_V6),
         Version.new(NPM_V7),
         Version.new(NPM_V8),
-        Version.new(NPM_V9)
+        Version.new(NPM_V9),
+        Version.new(NPM_V10)
       ].freeze, T::Array[Dependabot::Version])
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])

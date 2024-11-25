@@ -65,7 +65,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", projectPath),
                             new("TargetFramework", "net8.0", projectPath),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
@@ -111,7 +114,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFramework", "net472", "src/project.csproj"),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
@@ -160,7 +166,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", "src/project.csproj"),
                             new("TargetFramework", "net8.0", "src/project.csproj"),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
@@ -209,7 +218,9 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", "src/project.csproj"),
                             new("TargetFramework", "net8.0", "src/project.csproj"),
-                        ]
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
@@ -357,7 +368,9 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Properties = [
                             new("SomePackageVersion", "9.0.1", "src/project.csproj"),
                             new("TargetFramework", "net8.0", "src/project.csproj"),
-                        ]
+                        ],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }
@@ -414,7 +427,12 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                         ],
-                        Properties = []
+                        Properties = [],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [
+                            "packages.config",
+                        ],
                     }
                 ]
             }
@@ -471,13 +489,15 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFramework", "net8.0", "src/project.csproj")
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
                     }
                 ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props",
-                ]
             }
         );
     }
@@ -534,13 +554,15 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
                             new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
                             new("TargetFramework", "net8.0", "src/project.csproj")
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
                     }
                 ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props",
-                ]
             }
         );
     }
@@ -652,12 +674,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
                     }
-                ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props",
                 ],
                 GlobalJson = new()
                 {
@@ -755,13 +779,15 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
                             new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
                             new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
                     }
                 ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props"
-                ]
             }
         );
     }
@@ -816,23 +842,25 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 Path = "",
                 Projects = [
                     new()
-                {
-                    FilePath = "src/project.csproj",
-                    TargetFrameworks = ["net7.0", "net8.0"],
-                    Dependencies = [
-                        new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
-                    ],
-                    Properties = [
-                        new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
-                        new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
-                        new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
-                    ]
-                }
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net7.0", "net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true)
+                        ],
+                        Properties = [
+                            new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
+                            new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
+                            new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj"),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
+                    }
                 ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props"
-                ]
             }
         );
     }
@@ -945,12 +973,14 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                             new("ManagePackageVersionsCentrally", "true", "Directory.Packages.props"),
                             new("SomePackageVersion", "9.0.1", "Directory.Packages.props"),
                             new("TargetFrameworks", "net7.0;net8.0", "src/project.csproj")
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [
+                            "../Directory.Build.props",
+                            "../Directory.Packages.props",
+                        ],
+                        AdditionalFiles = [],
                     }
-                ],
-                ImportedFiles = [
-                    "Directory.Build.props",
-                    "Directory.Packages.props",
                 ],
                 GlobalJson = new()
                 {
@@ -1050,7 +1080,10 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         ],
                         Properties = [
                             new("TargetFramework", "net8.0", @"src/supported.csproj"),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             }

@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Updater;
+using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core;
 
@@ -217,16 +218,19 @@ public class UpdaterWorker : IUpdaterWorker
 
         _logger.Log($"Updating project [{projectPath}]");
 
-        if (NuGetHelper.TryGetPackagesConfigFile(projectPath, out var packagesConfigPath))
+        var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath, ProjectHelper.PathFormat.Full);
+        var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        if (packagesConfigFullPath is not null)
         {
-            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, packagesConfigPath, _logger);
+            await PackagesConfigUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, packagesConfigFullPath, _logger);
         }
 
         // Some repos use a mix of packages.config and PackageReference
         await PackageReferenceUpdater.UpdateDependencyAsync(repoRootPath, projectPath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive, _experimentsManager, _logger);
 
         // Update lock file if exists
-        if (File.Exists(Path.Combine(Path.GetDirectoryName(projectPath), "packages.lock.json")))
+        var packagesLockFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        if (packagesLockFullPath is not null)
         {
             await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
         }
