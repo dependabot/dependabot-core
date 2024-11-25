@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "json"
-require "timeout"
 require "sorbet-runtime"
 require "dependabot/experiments"
 require "dependabot/logger"
@@ -106,7 +105,7 @@ module Dependabot
         Dir.chdir("repo") do
           # --refresh-lockfile    Refresh the package metadata stored in the lockfile
           # --immutable           without modifying the lockfile itself
-          system('yarn install --immutable --refresh-lockfile > /dev/null 2>&1')
+          system("yarn install --immutable --refresh-lockfile > /dev/null 2>&1")
         end
       end
 
