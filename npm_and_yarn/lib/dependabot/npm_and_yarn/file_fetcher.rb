@@ -101,6 +101,7 @@ module Dependabot
         fetched_npm_files
       end
 
+      sig { returns(T.nilable(T::Boolean)) }
       def run_yarn_install
         Dir.chdir("repo") do
           # --refresh-lockfile    Refresh the package metadata stored in the lockfile
