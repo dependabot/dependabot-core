@@ -11,6 +11,8 @@ require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
 require "dependabot/errors"
 require "dependabot/cargo/registry_fetcher"
+require "dependabot/cargo/language"
+require "dependabot/cargo/package_manager"
 
 # Relevant Cargo docs can be found at:
 # - https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -42,7 +44,49 @@ module Dependabot
         end
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          )
+        end, T.nilable(Dependabot::Ecosystem))
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(cargo_version)),
+          T.nilable(Dependabot::Cargo::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          Language.new(T.must(rust_version))
+        end, T.nilable(Dependabot::Cargo::Language))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def rust_version
+        @rust_version ||= T.let(begin
+          version = SharedHelpers.run_shell_command("rustc --version")
+          version.match(/rustc\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+        end, T.nilable(String))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def cargo_version
+        @cargo_version ||= T.let(begin
+          version = SharedHelpers.run_shell_command("cargo --version")
+          version.match(/cargo\s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+        end, T.nilable(String))
+      end
 
       def check_rust_workspace_root
         cargo_toml = dependency_files.find { |f| f.name == "Cargo.toml" }
