@@ -66,7 +66,7 @@ public class PathHelperTests
         var testFile1 = "src/project1/project1.csproj";
         var testFile2 = "SRC/project2/project2.csproj";
         var testFiles = new[] { testFile1, testFile2 };
-        foreach (var testFile in testFiles) 
+        foreach (var testFile in testFiles)
         {
             var fullPath = Path.Join(temp.DirectoryPath, testFile); Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             await File.WriteAllTextAsync(fullPath, "");
