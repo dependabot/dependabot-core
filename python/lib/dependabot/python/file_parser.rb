@@ -91,15 +91,22 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        return PeotryPackageManager.new(detect_poetry_version) if poetry_lock && detect_poetry_version
+        Dependabot::Experiments.register(:enable_file_parser_python_local, true)
+        setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+
+        return PeotryPackageManager.new(detect_poetry_version) if potery_files && detect_poetry_version
+
+        return PipCompilePackageManager.new(detect_pipcompile_version) if pip_compile_files && detect_pipcompile_version
+
+        return PipenvPackageManager.new(detect_pipenv_version) if pipenv_files && detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
 
       def detect_poetry_version
-        if poetry_lock
-          version = SharedHelpers.run_shell_command("pyenv exec poetry --version")
-                                 .to_s.split("version ").last&.split(")")&.first
+        if potery_files
+          version = package_manager_version("potery")
+                    .to_s.split("version ").last&.split(")")&.first
 
           log_if_version_malformed(PeotryPackageManager.name, version)
 
@@ -111,15 +118,63 @@ module Dependabot
         nil
       end
 
+      def detect_pipcompile_version
+        if pip_compile_files
+          version = package_manager_version("pip-compile")
+                    .to_s.split("version ").last&.split(")")&.first
+
+          log_if_version_malformed(PipCompilePackageManager.name, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+
+        end
+      rescue StandardError
+        nil
+      end
+
+      def detect_pipenv_version
+        if pipcompile_in_file
+          version = package_manager_version("pipenv")
+                    .to_s.split("version ").last&.strip
+
+          log_if_version_malformed(PipCompilePackageManager.name, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+
+        end
+      rescue StandardError
+        nil
+      end
+
       def detect_pip_version
         # extracts pip version from current python via executing shell command
-        version = SharedHelpers.run_shell_command("pyenv exec pip -V")
-                               .split("from").first&.split("pip")&.last&.strip
+        version = package_manager_version("pip")
+                  .split("from").first&.split("pip")&.last&.strip
 
         log_if_version_malformed(PipPackageManager.name, version)
 
         version&.match?(/^\d+(?:\.\d+)*$/) ? version : UNDETECTED_PACKAGE_MANAGER_VERSION
       rescue StandardError
+        nil
+      end
+
+      def package_manager_version(package_manager)
+        version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
+
+        Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
+
+        version_info
+      end
+
+      # setup python local setup on file parser stage
+      def setup_python_environment
+        language_version_manager.install_required_python
+
+        SharedHelpers.run_shell_command("pyenv local #{language_version_manager.python_major_minor}")
+      rescue StandardError => e
+        Dependabot.logger.error(e.message)
         nil
       end
 
@@ -256,6 +311,14 @@ module Dependabot
         end
       end
 
+      def pipcompile_in_file
+        requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def pipenv_files
+        requirement_files.any?("Pipfile")
+      end
+
       def write_temporary_dependency_files
         dependency_files
           .reject { |f| f.name == ".python-version" }
@@ -302,8 +365,8 @@ module Dependabot
         @pyproject ||= get_original_file("pyproject.toml")
       end
 
-      def poetry_lock
-        @poetry_lock ||= get_original_file("poetry.lock")
+      def potery_files
+        @potery_files ||= get_original_file("poetry.lock")
       end
 
       def setup_file
