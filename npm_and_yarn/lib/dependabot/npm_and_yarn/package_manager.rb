@@ -3,6 +3,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/ecosystem"
+require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version_selector"
 
 module Dependabot
@@ -10,7 +11,37 @@ module Dependabot
     ECOSYSTEM = "npm_and_yarn"
     MANIFEST_FILENAME = "package.json"
     LERNA_JSON_FILENAME = "lerna.json"
-    PACKAGE_MANAGER_VERSION_REGEX = /^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<pre_release>[a-zA-Z0-9.]+))?(?:\+(?<build>[a-zA-Z0-9.]+))?$/ # rubocop:disable Layout/LineLength
+    PACKAGE_MANAGER_VERSION_REGEX = /
+      ^                        # Start of string
+      (?<major>\d+)            # Major version (required, numeric)
+      \.                       # Separator between major and minor versions
+      (?<minor>\d+)            # Minor version (required, numeric)
+      \.                       # Separator between minor and patch versions
+      (?<patch>\d+)            # Patch version (required, numeric)
+      (                        # Start pre-release section
+        -(?<pre_release>[a-zA-Z0-9.]+) # Pre-release label (optional, alphanumeric or dot-separated)
+      )?
+      (                        # Start build metadata section
+        \+(?<build>[a-zA-Z0-9.]+) # Build metadata (optional, alphanumeric or dot-separated)
+      )?
+      $                        # End of string
+    /x # Extended mode for readability
+
+    VALID_REQUIREMENT_CONSTRAINT = /
+      ^                        # Start of string
+      (?<operator>=|>|>=|<|<=|~>|\\^) # Allowed operators
+      \s*                      # Optional whitespace
+      (?<major>\d+)            # Major version (required)
+      (\.(?<minor>\d+))?       # Minor version (optional)
+      (\.(?<patch>\d+))?       # Patch version (optional)
+      (                        # Start pre-release section
+        -(?<pre_release>[a-zA-Z0-9.]+) # Pre-release label (optional)
+      )?
+      (                        # Start build metadata section
+        \+(?<build>[a-zA-Z0-9.]+) # Build metadata (optional)
+      )?
+      $                        # End of string
+    /x # Extended mode for readability
 
     MANIFEST_PACKAGE_MANAGER_KEY = "packageManager"
     MANIFEST_ENGINES_KEY = "engines"
@@ -39,13 +70,19 @@ module Dependabot
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement: nil)
         super(
           NAME,
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
-          SUPPORTED_VERSIONS
+          SUPPORTED_VERSIONS,
+          requirement
         )
       end
 
@@ -79,13 +116,19 @@ module Dependabot
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement: nil)
         super(
           NAME,
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
-          SUPPORTED_VERSIONS
+          SUPPORTED_VERSIONS,
+          requirement
         )
       end
 
@@ -118,13 +161,19 @@ module Dependabot
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement: nil)
         super(
           NAME,
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
-          SUPPORTED_VERSIONS
+          SUPPORTED_VERSIONS,
+          requirement
         )
       end
 
@@ -234,6 +283,34 @@ module Dependabot
         )
       end
 
+      sig { params(name: String).returns(T.nilable(Requirement)) }
+      def find_engine_constraints_as_requirement(name)
+        return nil unless @engines.is_a?(Hash) && @engines[name]
+
+        raw_constraint = @engines[name].to_s.strip
+
+        return nil if raw_constraint.empty?
+
+        raw_constraints = raw_constraint.split
+
+        constraints = raw_constraints.map do |constraint|
+          if constraint.match?(/^\d+$/)
+            ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
+          elsif constraint.match?(/^\d+\.\d+$/)
+            ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
+          elsif constraint.match?(/^\d+\.\d+\.\d+$/)
+            "=#{constraint}"
+          else
+            constraint
+          end
+        end
+
+        Requirement.new(constraints)
+      rescue StandardError => e
+        Dependabot.logger.error("Failed to parse engines constraint for #{name}: #{e.message}")
+        nil
+      end
+
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
@@ -303,7 +380,12 @@ module Dependabot
 
         installed_version = installed_version(name)
 
-        package_manager_class.new(installed_version)
+        package_manager_requirement = find_engine_constraints_as_requirement(name)
+
+        package_manager_class.new(
+          installed_version,
+          requirement: package_manager_requirement
+        )
       end
 
       # rubocop:enable Metrics/CyclomaticComplexity
