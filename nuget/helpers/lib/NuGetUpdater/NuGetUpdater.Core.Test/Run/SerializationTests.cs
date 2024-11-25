@@ -245,7 +245,7 @@ public class SerializationTests
         // assert
         Assert.False(experimentsManager.UseLegacyDependencySolver);
         Assert.False(experimentsManager.UseDirectDiscovery);
-        Assert.Single(capturingTestLogger.Messages.Where(m => m.Contains("Error deserializing job file")));
+        Assert.Single(capturingTestLogger.Messages, m => m.Contains("Error deserializing job file"));
     }
 
     [Fact]
