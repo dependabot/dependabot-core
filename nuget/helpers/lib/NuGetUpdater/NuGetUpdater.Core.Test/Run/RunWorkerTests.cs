@@ -294,7 +294,7 @@ public class RunWorkerTests
             }),
             updaterWorker: new TestUpdaterWorker(async input =>
             {
-                Assert.Contains(input.Item3, ["Some.Package", "Some.Package2"]);
+                Assert.Contains(input.Item3, new List<string> { "Some.Package", "Some.Package2" });
                 Assert.Equal("1.0.0", input.Item4);
                 Assert.Equal("1.0.1", input.Item5);
                 var projectPath = input.Item1 + input.Item2;

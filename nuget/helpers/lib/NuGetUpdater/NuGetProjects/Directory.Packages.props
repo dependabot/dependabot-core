@@ -5,7 +5,7 @@
     <MicrosoftExtensionsFileProvidersAbstractionsPackageVersion>6.0.0</MicrosoftExtensionsFileProvidersAbstractionsPackageVersion>
     <MicrosoftExtensionsFileSystemGlobbingPackageVersion>9.0.0</MicrosoftExtensionsFileSystemGlobbingPackageVersion>
     <MicrosoftWebXdtPackageVersion>3.0.0</MicrosoftWebXdtPackageVersion>
-    <SystemPackagesVersion>4.3.0</SystemPackagesVersion>
+    <SystemPackagesVersion>4.7.0</SystemPackagesVersion>
     <CryptographyPackagesVersion>5.0.0</CryptographyPackagesVersion>
   </PropertyGroup>
 
