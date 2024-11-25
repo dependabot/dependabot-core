@@ -227,8 +227,8 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
-    [Fact]
-    public async Task TestDependenciesMultiplePaths_WithSameName()
+    [LinuxOnlyFact]
+    public async Task TestDependenciesCaseSensitiveProjectPaths()
     {
         await TestDiscoveryAsync(
             packages:

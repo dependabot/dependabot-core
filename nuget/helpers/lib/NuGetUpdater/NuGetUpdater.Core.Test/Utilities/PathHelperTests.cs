@@ -35,7 +35,7 @@ public class PathHelperTests
         Assert.Equal(expected, resolvedPath!.First());
     }
 
-    [Fact]
+    [LinuxOnlyFact]
     public void VerifyMultipleMatchingPathsReturnsAllPaths()
     {
         using var temp = new TemporaryDirectory();
@@ -58,7 +58,7 @@ public class PathHelperTests
         Assert.Equal(expected, resolvedPaths!);
     }
 
-    [Fact]
+    [LinuxOnlyFact]
     public async void FilesWithDifferentlyCasedDirectoriesCanBeResolved()
     {
         // arrange
