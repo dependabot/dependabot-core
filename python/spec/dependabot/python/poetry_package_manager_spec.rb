@@ -5,7 +5,7 @@ require "dependabot/python/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"
 
-RSpec.describe Dependabot::Python::PeotryPackageManager do
+RSpec.describe Dependabot::Python::PoetryPackageManager do
   let(:package_manager) { described_class.new("1.8.3") }
 
   describe "#initialize" do

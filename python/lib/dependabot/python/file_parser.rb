@@ -93,7 +93,7 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
-        return PeotryPackageManager.new(detect_poetry_version) if potery_files && detect_poetry_version
+        return PoetryPackageManager.new(detect_poetry_version) if poetry_files && detect_poetry_version
 
         return PipCompilePackageManager.new(detect_pipcompile_version) if pip_compile_files && detect_pipcompile_version
 
@@ -104,8 +104,8 @@ module Dependabot
 
       sig { returns(T.any(String, T.untyped)) }
       def detect_poetry_version
-        if potery_files
-          package_manager = PeotryPackageManager::NAME
+        if poetry_files
+          package_manager = PoetryPackageManager::NAME
 
           version = package_manager_version(package_manager)
                     .to_s.split("version ").last&.split(")")&.first
@@ -332,7 +332,7 @@ module Dependabot
         requirement_files.any?("Pipfile")
       end
 
-      def potery_files
+      def poetry_files
         true if get_original_file("poetry.lock")
       end
 

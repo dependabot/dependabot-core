@@ -51,7 +51,7 @@ module Dependabot
       end
     end
 
-    class PeotryPackageManager < Dependabot::Ecosystem::VersionManager
+    class PoetryPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
       NAME = "poetry"
