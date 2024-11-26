@@ -91,7 +91,6 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        Dependabot::Experiments.register(:enable_file_parser_python_local, true)
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
         return PeotryPackageManager.new(detect_poetry_version) if potery_files && detect_poetry_version
@@ -103,9 +102,10 @@ module Dependabot
         PipPackageManager.new(detect_pip_version)
       end
 
+      sig { returns(T.any(String, T.untyped)) }
       def detect_poetry_version
         if potery_files
-          package_manager = "poetry"
+          package_manager = PeotryPackageManager::NAME
 
           version = package_manager_version(package_manager)
                     .to_s.split("version ").last&.split(")")&.first
@@ -114,16 +114,15 @@ module Dependabot
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
-
         end
       rescue StandardError
         nil
       end
 
+      sig { returns(T.any(String, T.untyped)) }
       def detect_pipcompile_version
         if pip_compile_files
-
-          package_manager = "pip-compile"
+          package_manager = PipCompilePackageManager::NAME
 
           version = package_manager_version(package_manager)
                     .to_s.split("version ").last&.split(")")&.first
@@ -132,15 +131,15 @@ module Dependabot
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
-
         end
       rescue StandardError
         nil
       end
 
+      sig { returns(T.any(String, T.untyped)) }
       def detect_pipenv_version
         if pipenv_files
-          package_manager = "pipenv"
+          package_manager = PipenvPackageManager::NAME
 
           version = package_manager_version(package_manager)
                     .to_s.split("versions ").last&.strip
@@ -149,15 +148,14 @@ module Dependabot
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
-
         end
       rescue StandardError
         nil
       end
 
+      sig { returns(T.any(String, T.untyped)) }
       def detect_pip_version
-        # extracts pip version from current python via executing shell command
-        package_manager = "pip"
+        package_manager = PipPackageManager::NAME
 
         version = package_manager_version(package_manager)
                   .split("from").first&.split("pip")&.last&.strip
@@ -169,6 +167,7 @@ module Dependabot
         nil
       end
 
+      sig { params(package_manager: String).returns(T.any(String, T.untyped)) }
       def package_manager_version(package_manager)
         version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
 
@@ -181,6 +180,7 @@ module Dependabot
       end
 
       # setup python local setup on file parser stage
+      sig { void }
       def setup_python_environment
         language_version_manager.install_required_python
 
@@ -190,9 +190,10 @@ module Dependabot
         nil
       end
 
+      sig { params(package_manager: String, version: String).void }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
-        return true if version&.match?(/^\d+(?:\.\d+)*$/)
+        return true if version.match?(/^\d+(?:\.\d+)*$/)
 
         Dependabot.logger.warn(
           "Detected #{package_manager} with malformed version #{version}"
