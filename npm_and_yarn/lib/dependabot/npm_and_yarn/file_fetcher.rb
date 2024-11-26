@@ -101,12 +101,15 @@ module Dependabot
         fetched_npm_files
       end
 
-      sig { returns(T.nilable(T::Boolean)) }
-      def run_yarn_install
-        Dir.chdir("repo") do
-          # --refresh-lockfile    Refresh the package metadata stored in the lockfile
-          # --immutable           without modifying the lockfile itself
-          system("yarn install --immutable --refresh-lockfile > /dev/null 2>&1")
+      def create_yarn_cache
+        if repo_contents_path.nil?
+          Dependabot.logger.info("Repository contents path is nil")
+        elsif Dir.exist?(repo_contents_path)
+          Dir.chdir(repo_contents_path) do
+            FileUtils.mkdir_p(".yarn/cache")
+          end
+        else
+          Dependabot.logger.info("Repository contents path does not exist")
         end
       end
 
@@ -116,7 +119,7 @@ module Dependabot
         fetched_yarn_files << yarn_lock if yarn_lock
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
-        run_yarn_install
+        create_yarn_cache
         fetched_yarn_files
       end
 
