@@ -84,7 +84,8 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: package_manager_helper.package_manager
+            package_manager: package_manager_helper.package_manager,
+            language: package_manager_helper.language
           ),
           T.nilable(Ecosystem)
         )

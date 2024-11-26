@@ -323,6 +323,19 @@ module Dependabot
         end
       end
 
+      sig { returns(String) }
+      def self.node_version
+        run_node_command("-v", fingerprint: "-v")
+      end
+
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.run_node_command(command, fingerprint: nil)
+        Dependabot::SharedHelpers.run_shell_command(
+          "node #{command}",
+          fingerprint: "node #{fingerprint}"
+        )
+      end
+
       # Setup yarn and run a single yarn command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_yarn_command(command, fingerprint: nil)

@@ -256,6 +256,41 @@ module Dependabot
       end
     end
 
+    class Language < Ecosystem::VersionManager
+      extend T::Sig
+      NAME = "node"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement: nil)
+        super(
+          NAME,
+          Version.new(raw_version),
+          DEPRECATED_VERSIONS,
+          SUPPORTED_VERSIONS,
+          requirement
+        )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+
     class PackageManagerHelper
       extend T::Sig
       extend T::Helpers
@@ -274,6 +309,9 @@ module Dependabot
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
 
         @installed_versions = T.let({}, T::Hash[String, String])
+
+        @language = T.let(nil, T.nilable(Ecosystem::VersionManager))
+        @language_requirement = T.let(nil, T.nilable(Requirement))
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -281,6 +319,19 @@ module Dependabot
         package_manager_by_name(
           @package_manager_detector.detect_package_manager
         )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def language
+        @language ||= Language.new(
+          Helpers.node_version,
+          requirement: language_requirement
+        )
+      end
+
+      sig { returns(T.nilable(Requirement)) }
+      def language_requirement
+        @language_requirement ||= find_engine_constraints_as_requirement(Language::NAME)
       end
 
       sig { params(name: String).returns(T.nilable(Requirement)) }

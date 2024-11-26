@@ -293,4 +293,80 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
   end
+
+  describe "::run_node_command" do
+    it "executes the correct node command and returns the output" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "node --version",
+        fingerprint: "node --version"
+      ).and_return("v16.13.1")
+
+      expect(described_class.run_node_command("--version", fingerprint: "--version")).to eq("v16.13.1")
+    end
+
+    it "executes the node command with a custom fingerprint" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "node -e 'console.log(\"Hello World\")'",
+        fingerprint: "node custom_fingerprint"
+      ).and_return("Hello World")
+
+      expect(
+        described_class.run_node_command(
+          "-e 'console.log(\"Hello World\")'",
+          fingerprint: "custom_fingerprint"
+        )
+      ).to eq("Hello World")
+    end
+
+    it "raises an error if the node command fails" do
+      error_context = {
+        command: "node invalid_command",
+        fingerprint: "node invalid_command"
+      }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "node invalid_command",
+        fingerprint: "node invalid_command"
+      ).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Command failed",
+          error_context: error_context
+        )
+      )
+
+      expect { described_class.run_node_command("invalid_command", fingerprint: "invalid_command") }
+        .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Command failed/)
+    end
+  end
+
+  describe "::node_version" do
+    it "returns the correct Node.js version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "node -v",
+        fingerprint: "node -v"
+      ).and_return("v16.13.1")
+
+      expect(described_class.node_version).to eq("v16.13.1")
+    end
+
+    it "raises an error if the Node.js version command fails" do
+      error_context = {
+        command: "node -v",
+        fingerprint: "node -v"
+      }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "node -v",
+        fingerprint: "node -v"
+      ).and_raise(
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Error running node command",
+          error_context: error_context
+        )
+      )
+
+      expect { described_class.node_version }
+        .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Error running node command/)
+    end
+  end
 end
