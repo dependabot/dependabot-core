@@ -62,9 +62,9 @@ module Dependabot
     sig { params(operator: String, version: Dependabot::Version).returns(T.nilable(Dependabot::Version)) }
     def handle_min_operator(operator, version)
       case operator
-      when ">=" then handle_gte_min(version)
-      when ">"  then handle_gt_min(version)
-      when "~>" then handle_tilde_pessimistic_min(version)
+      when ">=" then handle_greater_than_or_equal_for_min(version)
+      when ">"  then handle_greater_than_for_min(version)
+      when "~>" then handle_tilde_pessimistic_for_min(version)
       end
     end
 
@@ -72,36 +72,36 @@ module Dependabot
     sig { params(operator: String, version: Dependabot::Version).returns(T.nilable(Dependabot::Version)) }
     def handle_max_operator(operator, version)
       case operator
-      when "<=" then handle_lte_max(version)
-      when "<"  then handle_lt_max(version)
+      when "<=" then handle_less_than_or_equal_for_max(version)
+      when "<"  then handle_less_than_max(version)
       when "~>" then handle_tilde_pessimistic_max(version)
       end
     end
 
     # Methods for handling minimum constraints
     sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
-    def handle_gte_min(version)
+    def handle_greater_than_or_equal_for_min(version)
       version
     end
 
     sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
-    def handle_gt_min(version)
+    def handle_greater_than_for_min(version)
       version
     end
 
     sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
-    def handle_tilde_pessimistic_min(version)
+    def handle_tilde_pessimistic_for_min(version)
       version
     end
 
     # Methods for handling maximum constraints
     sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
-    def handle_lte_max(version)
+    def handle_less_than_or_equal_for_max(version)
       version
     end
 
     sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
-    def handle_lt_max(version)
+    def handle_less_than_max(version)
       version
     end
 
