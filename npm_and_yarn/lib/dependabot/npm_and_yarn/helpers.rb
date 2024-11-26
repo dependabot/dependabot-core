@@ -331,7 +331,6 @@ module Dependabot
           version.strip.delete_prefix("v") # Remove the "v" prefix if present
         end
       rescue StandardError => e
-        # Log the error if necessary and return "invalid"
         puts "Error retrieving Node.js version: #{e.message}"
         nil
       end
@@ -339,13 +338,12 @@ module Dependabot
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_node_command(command, fingerprint: nil)
         full_command = "node #{command}"
-        log_fingerprint = fingerprint || command
 
         Dependabot.logger.info("Running node command: #{full_command}")
 
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
-          fingerprint: "node #{log_fingerprint}"
+          fingerprint: "node #{fingerprint || command}"
         )
 
         Dependabot.logger.info("Command executed successfully: #{full_command}")
@@ -445,13 +443,12 @@ module Dependabot
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
         full_command = "corepack #{name} #{command}"
-        log_fingerprint = fingerprint || command
 
         Dependabot.logger.info("Running package manager command: #{full_command}")
 
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
-          fingerprint: "corepack #{name} #{log_fingerprint}"
+          fingerprint: "corepack #{name} #{fingerprint || command}"
         ).strip
 
         Dependabot.logger.info("Command executed successfully: #{full_command}")
