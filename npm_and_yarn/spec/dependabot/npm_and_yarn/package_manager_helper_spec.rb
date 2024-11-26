@@ -231,7 +231,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
 
       it "logs an error and returns nil" do
-        expect(Dependabot.logger).to receive(:error).with(/Failed to parse engines constraint/)
+        expect(Dependabot.logger).to receive(:warn).with(/Unrecognized constraint format for npm: invalid/)
         requirement = helper.find_engine_constraints_as_requirement("npm")
         expect(requirement).to be_nil
       end
