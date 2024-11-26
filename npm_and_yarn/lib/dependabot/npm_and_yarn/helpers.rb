@@ -326,6 +326,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def self.node_version
         version = run_node_command("-v", fingerprint: "-v").strip
+
         # Validate the output format (e.g., "v20.18.1" or "20.18.1")
         if version.match?(/^v?\d+(\.\d+){2}$/)
           version.strip.delete_prefix("v") # Remove the "v" prefix if present

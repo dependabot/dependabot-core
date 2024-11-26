@@ -346,7 +346,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         fingerprint: "node -v"
       ).and_return("v16.13.1")
 
-      expect(described_class.node_version).to eq("v16.13.1")
+      expect(described_class.node_version).to eq("16.13.1")
     end
 
     it "raises an error if the Node.js version command fails" do
@@ -365,8 +365,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         )
       )
 
-      expect { described_class.node_version }
-        .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /Error running node command/)
+      expect(described_class.node_version).to be_nil
     end
   end
 end
