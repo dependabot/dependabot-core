@@ -101,19 +101,6 @@ module Dependabot
         fetched_npm_files
       end
 
-      sig { void }
-      def create_yarn_cache
-        if repo_contents_path.nil?
-          Dependabot.logger.info("Repository contents path is nil")
-        elsif Dir.exist?(T.must(repo_contents_path))
-          Dir.chdir(T.must(repo_contents_path)) do
-            FileUtils.mkdir_p(".yarn/cache")
-          end
-        else
-          Dependabot.logger.info("Repository contents path does not exist")
-        end
-      end
-
       sig { returns(T::Array[DependencyFile]) }
       def yarn_files
         fetched_yarn_files = []
@@ -668,6 +655,30 @@ module Dependabot
         JSON.parse(T.must(T.must(lerna_json).content))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, T.must(lerna_json).path
+      end
+
+      sig { void }
+      def create_yarn_cache
+        if repo_contents_path.nil?
+          Dependabot.logger.info("Repository contents path is nil")
+        elsif Dir.exist?(T.must(repo_contents_path))
+          Dir.chdir(T.must(repo_contents_path)) do
+            if monorepo?
+              FileUtils.mkdir_p(".yarn/cache")
+            else
+              Dependabot.logger.info("Repository is not a monorepo")
+            end
+          end
+        else
+          Dependabot.logger.info("Repository contents path does not exist")
+        end
+      end
+
+      sig { returns(T::Boolean) }
+      def monorepo?
+        package_json_files = Dir.glob(File.join(T.must(repo_contents_path), "**", "package.json"))
+        lerna_json_file = File.join(T.must(repo_contents_path), "lerna.json")
+        package_json_files.size > 1 || File.exist?(lerna_json_file)
       end
     end
   end
