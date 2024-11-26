@@ -226,7 +226,18 @@ module Dependabot
       # Defaults to npm if no package manager is detected
       sig { returns(String) }
       def detect_package_manager
-        name_from_lockfiles || name_from_package_manager_attr || name_from_engines || DEFAULT_PACKAGE_MANAGER
+        package_manager = name_from_lockfiles || name_from_package_manager_attr || name_from_engines || DEFAULT_PACKAGE_MANAGER
+
+        if package_manager == DEFAULT_PACKAGE_MANAGER
+          Dependabot.logger.info("Default package manager used: #{DEFAULT_PACKAGE_MANAGER}")
+        else
+          Dependabot.logger.info("Detected package manager: #{package_manager}")
+        end
+
+        package_manager
+      rescue StandardError => e
+        Dependabot.logger.error("Error detecting package manager: #{e.message}")
+        DEFAULT_PACKAGE_MANAGER
       end
 
       private
@@ -266,7 +277,7 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
+          raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
       end
@@ -336,29 +347,32 @@ module Dependabot
 
       sig { params(name: String).returns(T.nilable(Requirement)) }
       def find_engine_constraints_as_requirement(name)
+        Dependabot.logger.info("Processing engine constraints for #{name}")
+
         return nil unless @engines.is_a?(Hash) && @engines[name]
 
         raw_constraint = @engines[name].to_s.strip
-
         return nil if raw_constraint.empty?
 
         raw_constraints = raw_constraint.split
-
         constraints = raw_constraints.map do |constraint|
-          if constraint.match?(/^\d+$/)
+          case constraint
+          when /^\d+$/
             ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
-          elsif constraint.match?(/^\d+\.\d+$/)
+          when /^\d+\.\d+$/
             ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
-          elsif constraint.match?(/^\d+\.\d+\.\d+$/)
+          when /^\d+\.\d+\.\d+$/
             "=#{constraint}"
           else
+            Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
             constraint
           end
         end
 
+        Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
         Requirement.new(constraints)
       rescue StandardError => e
-        Dependabot.logger.error("Failed to parse engines constraint for #{name}: #{e.message}")
+        Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
       end
 
@@ -425,18 +439,31 @@ module Dependabot
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
       def package_manager_by_name(name)
-        name = ensure_valid_package_manager(name)
+        Dependabot.logger.info("Resolving package manager for: #{name || 'default'}")
 
+        name = ensure_valid_package_manager(name)
         package_manager_class = T.must(PACKAGE_MANAGER_CLASSES[name])
 
         installed_version = installed_version(name)
+        Dependabot.logger.info("Installed version for #{name}: #{installed_version}")
 
         package_manager_requirement = find_engine_constraints_as_requirement(name)
+        if package_manager_requirement
+          Dependabot.logger.info("Version requirement for #{name}: #{package_manager_requirement}")
+        else
+          Dependabot.logger.info("No version requirement found for #{name}")
+        end
 
-        package_manager_class.new(
+        package_manager_instance = package_manager_class.new(
           installed_version,
           requirement: package_manager_requirement
         )
+
+        Dependabot.logger.info("Package manager resolved for #{name}: #{package_manager_instance}")
+        package_manager_instance
+      rescue StandardError => e
+        Dependabot.logger.error("Error resolving package manager for #{name || 'default'}: #{e.message}")
+        raise
       end
 
       # rubocop:enable Metrics/CyclomaticComplexity

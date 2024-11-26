@@ -323,17 +323,36 @@ module Dependabot
         end
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def self.node_version
-        run_node_command("-v", fingerprint: "-v")
+        version = run_node_command("-v", fingerprint: "-v").strip
+        # Validate the output format (e.g., "v20.18.1" or "20.18.1")
+        if version.match?(/^v?\d+(\.\d+){2}$/)
+          version.strip.delete_prefix("v") # Remove the "v" prefix if present
+        end
+      rescue StandardError => e
+        # Log the error if necessary and return "invalid"
+        puts "Error retrieving Node.js version: #{e.message}"
+        nil
       end
 
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_node_command(command, fingerprint: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "node #{command}",
-          fingerprint: "node #{fingerprint}"
+        full_command = "node #{command}"
+        log_fingerprint = fingerprint || command
+
+        Dependabot.logger.info("Running node command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "node #{log_fingerprint}"
         )
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running node command: #{full_command}, Error: #{e.message}")
+        raise
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
@@ -405,7 +424,15 @@ module Dependabot
       # Get the version of the package manager by using corepack
       sig { params(name: String).returns(String) }
       def self.package_manager_version(name)
-        package_manager_run_command(name, "-v")
+        Dependabot.logger.info("Fetching version for package manager: #{name}")
+
+        version = package_manager_run_command(name, "-v").strip
+
+        Dependabot.logger.info("Version for #{name}: #{version}")
+        version
+      rescue StandardError => e
+        Dependabot.logger.error("Error fetching version for package manager #{name}: #{e.message}")
+        raise
       end
 
       # Run single command on package manager returning stdout/stderr
@@ -417,11 +444,23 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
-        Dependabot::SharedHelpers.run_shell_command(
-          "corepack #{name} #{command}",
-          fingerprint: "corepack #{name} #{fingerprint || command}"
+        full_command = "corepack #{name} #{command}"
+        log_fingerprint = fingerprint || command
+
+        Dependabot.logger.info("Running package manager command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "corepack #{name} #{log_fingerprint}"
         ).strip
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
+        raise
       end
+
       private_class_method :run_single_yarn_command
 
       sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
