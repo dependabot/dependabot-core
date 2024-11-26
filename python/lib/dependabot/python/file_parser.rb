@@ -105,10 +105,12 @@ module Dependabot
 
       def detect_poetry_version
         if potery_files
-          version = package_manager_version("potery")
+          package_manager = "poetry"
+
+          version = package_manager_version(package_manager)
                     .to_s.split("version ").last&.split(")")&.first
 
-          log_if_version_malformed(PeotryPackageManager.name, version)
+          log_if_version_malformed(package_manager, version)
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
@@ -120,10 +122,13 @@ module Dependabot
 
       def detect_pipcompile_version
         if pip_compile_files
-          version = package_manager_version("pip-compile")
+
+          package_manager = "pip-compile"
+
+          version = package_manager_version(package_manager)
                     .to_s.split("version ").last&.split(")")&.first
 
-          log_if_version_malformed(PipCompilePackageManager.name, version)
+          log_if_version_malformed(package_manager, version)
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
@@ -134,11 +139,13 @@ module Dependabot
       end
 
       def detect_pipenv_version
-        if pipcompile_in_file
-          version = package_manager_version("pipenv")
-                    .to_s.split("version ").last&.strip
+        if pipenv_files
+          package_manager = "pipenv"
 
-          log_if_version_malformed(PipCompilePackageManager.name, version)
+          version = package_manager_version(package_manager)
+                    .to_s.split("versions ").last&.strip
+
+          log_if_version_malformed(package_manager, version)
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
@@ -150,10 +157,12 @@ module Dependabot
 
       def detect_pip_version
         # extracts pip version from current python via executing shell command
-        version = package_manager_version("pip")
+        package_manager = "pip"
+
+        version = package_manager_version(package_manager)
                   .split("from").first&.split("pip")&.last&.strip
 
-        log_if_version_malformed(PipPackageManager.name, version)
+        log_if_version_malformed(package_manager, version)
 
         version&.match?(/^\d+(?:\.\d+)*$/) ? version : UNDETECTED_PACKAGE_MANAGER_VERSION
       rescue StandardError
@@ -166,6 +175,9 @@ module Dependabot
         Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
 
         version_info
+      rescue StandardError => e
+        Dependabot.logger.error(e.message)
+        nil
       end
 
       # setup python local setup on file parser stage
@@ -319,6 +331,10 @@ module Dependabot
         requirement_files.any?("Pipfile")
       end
 
+      def potery_files
+        true if get_original_file("poetry.lock")
+      end
+
       def write_temporary_dependency_files
         dependency_files
           .reject { |f| f.name == ".python-version" }
@@ -365,8 +381,8 @@ module Dependabot
         @pyproject ||= get_original_file("pyproject.toml")
       end
 
-      def potery_files
-        @potery_files ||= get_original_file("poetry.lock")
+      def poetry_lock
+        @poetry_lock ||= get_original_file("poetry.lock")
       end
 
       def setup_file
