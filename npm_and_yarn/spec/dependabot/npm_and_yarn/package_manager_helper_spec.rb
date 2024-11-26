@@ -169,4 +169,72 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
   end
+
+  describe "#find_engine_constraints_as_requirement" do
+    context "when the engines field contains valid constraints" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "npm" => ">=6.0.0 <8.0.0",
+            "yarn" => ">=1.22.0 <2.0.0",
+            "pnpm" => "7.5.0"
+          }
+        }
+      end
+
+      it "returns a requirement for npm with the correct constraints" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 6.0.0", "< 8.0.0"])
+      end
+
+      it "returns a requirement for yarn with the correct constraints" do
+        requirement = helper.find_engine_constraints_as_requirement("yarn")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 1.22.0", "< 2.0.0"])
+      end
+
+      it "returns a requirement for pnpm with the correct fixed version" do
+        requirement = helper.find_engine_constraints_as_requirement("pnpm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq(["= 7.5.0"])
+      end
+    end
+
+    context "when the engines field does not contain the specified package manager" do
+      it "returns nil" do
+        requirement = helper.find_engine_constraints_as_requirement("nonexistent")
+        expect(requirement).to be_nil
+      end
+    end
+
+    context "when the engines field is empty" do
+      let(:package_json) { { "name" => "example", "version" => "1.0.0" } }
+
+      it "returns nil" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_nil
+      end
+    end
+
+    context "when the engines field contains an invalid constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "npm" => "invalid"
+          }
+        }
+      end
+
+      it "logs an error and returns nil" do
+        expect(Dependabot.logger).to receive(:error).with(/Failed to parse engines constraint/)
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_nil
+      end
+    end
+  end
 end
