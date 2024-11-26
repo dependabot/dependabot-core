@@ -226,14 +226,16 @@ module Dependabot
       # Defaults to npm if no package manager is detected
       sig { returns(String) }
       def detect_package_manager
-        package_manager = name_from_lockfiles || name_from_package_manager_attr || name_from_engines || DEFAULT_PACKAGE_MANAGER
+        package_manager = name_from_lockfiles ||
+                          name_from_package_manager_attr ||
+                          name_from_engines
 
-        if package_manager == DEFAULT_PACKAGE_MANAGER
-          Dependabot.logger.info("Default package manager used: #{DEFAULT_PACKAGE_MANAGER}")
-        else
+        if package_manager
           Dependabot.logger.info("Detected package manager: #{package_manager}")
+        else
+          package_manager = DEFAULT_PACKAGE_MANAGER
+          Dependabot.logger.info("Default package manager used: #{package_manager}")
         end
-
         package_manager
       rescue StandardError => e
         Dependabot.logger.error("Error detecting package manager: #{e.message}")
