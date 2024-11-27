@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="DiffPlex" Version="1.7.1" />
+    <PackageVersion Include="DiffPlex" Version="1.7.2" />
 
     <PackageVersion Include="GuiLabs.Language.Xml" Version="1.2.93" />
 
@@ -20,7 +20,7 @@
 
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
 
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
 
     <PackageVersion Include="MSBuild.StructuredLogger" Version="2.2.386" />
 
