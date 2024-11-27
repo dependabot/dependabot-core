@@ -410,9 +410,19 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
   end
 
-  describe "#package_manager" do
-    it "returns the correct package manager" do
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
+      expect(parser.ecosystem.package_manager.version).to eq("2.7.7")
+    end
+
+    it "returns language with version" do
+      expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
+      expect(parser.ecosystem.language.version).to eq("7.4.33")
     end
   end
 end

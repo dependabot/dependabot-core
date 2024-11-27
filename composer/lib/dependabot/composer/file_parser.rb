@@ -40,7 +40,8 @@ module Dependabot
         @ecosystem ||= T.let(
           Ecosystem.new(
             name: ECOSYSTEM,
-            package_manager: package_manager
+            package_manager: package_manager,
+            language: language
           ),
           T.nilable(Ecosystem)
         )
@@ -50,7 +51,40 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        PackageManager.new(composer_version)
+        raw_composer_version = env_versions[:composer] || composer_version
+        PackageManager.new(
+          raw_composer_version
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        php_version = env_versions[:php]
+
+        return unless php_version
+
+        Language.new(
+          php_version,
+          requirement: php_requirement
+        )
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+      def env_versions
+        @env_versions ||= T.let(
+          Helpers.fetch_composer_and_php_versions,
+          T.nilable(T::Hash[Symbol, T.nilable(String)])
+        )
+      end
+
+      # Capture PHP requirement from the composer.json
+      sig { returns(T.nilable(Requirement)) }
+      def php_requirement
+        requirement_string = Helpers.php_constraint(parsed_composer_json)
+
+        return nil unless requirement_string
+
+        Requirement.new(requirement_string.strip.split(Requirement::OR_SEPARATOR))
       end
 
       sig { returns(DependencySet) }
