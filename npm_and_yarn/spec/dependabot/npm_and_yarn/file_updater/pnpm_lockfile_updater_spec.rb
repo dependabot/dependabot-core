@@ -63,7 +63,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "errors" do
     context "with a dependency version that can't be found" do

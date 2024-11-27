@@ -60,6 +60,34 @@ public class SerializationTests
     }
 
     [Fact]
+    public void DeserializeJob_DebugIsNull()
+    {
+        // the `debug` field is defined as a `bool`, but can appear as `null` in the wild
+        var jobContent = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "allowed-updates": [
+                  {
+                    "update-type": "all"
+                  }
+                ],
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "specific-sdk",
+                  "hostname": null,
+                  "api-endpoint": null
+                },
+                "debug": null
+              }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jobContent);
+        Assert.False(jobWrapper.Job.Debug);
+    }
+
+    [Fact]
     public void DeserializeJob_FieldsNotYetSupported()
     {
         // the `source` field is required in the C# model; the remaining fields might exist in the JSON file, but are
@@ -125,6 +153,7 @@ public class SerializationTests
                 },
                 "experiments": {
                   "nuget_legacy_dependency_solver": true,
+                  "nuget_use_direct_discovery": true,
                   "unexpected_bool": true,
                   "unexpected_number": 42,
                   "unexpected_null": null,
@@ -140,6 +169,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.True(experimentsManager.UseLegacyDependencySolver);
+        Assert.True(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -166,6 +196,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.UseLegacyDependencySolver);
+        Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -190,6 +221,7 @@ public class SerializationTests
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.UseLegacyDependencySolver);
+        Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
     [Fact]
@@ -212,7 +244,8 @@ public class SerializationTests
 
         // assert
         Assert.False(experimentsManager.UseLegacyDependencySolver);
-        Assert.Single(capturingTestLogger.Messages.Where(m => m.Contains("Error deserializing job file")));
+        Assert.False(experimentsManager.UseDirectDiscovery);
+        Assert.Single(capturingTestLogger.Messages, m => m.Contains("Error deserializing job file"));
     }
 
     [Fact]

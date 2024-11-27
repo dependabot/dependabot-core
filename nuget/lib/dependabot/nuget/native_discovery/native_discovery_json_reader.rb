@@ -159,9 +159,6 @@ module Dependabot
         workspace_result.projects.each do |project|
           dependency_set += project.dependency_set
         end
-        if workspace_result.directory_packages_props
-          dependency_set += T.must(workspace_result.directory_packages_props).dependency_set
-        end
         if workspace_result.dotnet_tools_json
           dependency_set += T.must(workspace_result.dotnet_tools_json).dependency_set
         end

@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+
 namespace NuGetUpdater.Core;
 
 internal static class PathHelper
@@ -63,7 +66,17 @@ internal static class PathHelper
         return result;
     }
 
-    public static string FullyNormalizedRootedPath(this string path) => path.NormalizePathToUnix().NormalizeUnixPathParts().EnsurePrefix("/");
+    public static string FullyNormalizedRootedPath(this string path)
+    {
+        var normalizedPath = path.NormalizePathToUnix().NormalizeUnixPathParts();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Regex.IsMatch(normalizedPath, @"^[a-z]:", RegexOptions.IgnoreCase))
+        {
+            // Windows path is ready to go
+            return normalizedPath;
+        }
+
+        return normalizedPath.EnsurePrefix("/");
+    }
 
     public static string GetFullPathFromRelative(string rootPath, string relativePath)
         => Path.GetFullPath(JoinPath(rootPath, relativePath.NormalizePathToUnix()));
@@ -85,6 +98,63 @@ internal static class PathHelper
 
         candidatePaths.Add(rootDirectoryPath);
         return candidatePaths.ToArray();
+    }
+
+    /// <summary>
+    /// Resolves the case of the file path in a case-insensitive manner. Returns null if the file path is not found. file path must be a full path inside the repoRootPath.
+    /// </summary>
+    /// <param name="filePath">The file path to resolve.</param>
+    /// <param name="repoRootPath">The root path of the repository.</param>
+    public static List<string>? ResolveCaseInsensitivePathsInsideRepoRoot(string filePath, string repoRootPath)
+    {
+        if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(repoRootPath))
+        {
+            return null; // Invalid input
+        }
+
+        // Normalize paths
+        var normalizedFilePath = filePath.FullyNormalizedRootedPath();
+        var normalizedRepoRoot = repoRootPath.FullyNormalizedRootedPath();
+
+        // Ensure the file path starts with the repo root path
+        if (!normalizedFilePath.StartsWith(normalizedRepoRoot + "/", StringComparison.OrdinalIgnoreCase))
+        {
+            return null; // filePath is outside of repoRootPath
+        }
+
+        // Start resolving from the root path
+        var currentPaths = new List<string> { normalizedRepoRoot };
+        var relativePath = normalizedFilePath.Substring(normalizedRepoRoot.Length).TrimStart('/');
+
+        foreach (var part in relativePath.Split('/'))
+        {
+            if (string.IsNullOrEmpty(part))
+            {
+                continue;
+            }
+
+            var nextPaths = new List<string>();
+
+            // Iterate through all current paths to find matches for the current part
+            foreach (var currentPath in currentPaths)
+            {
+                var matches = Directory
+                    .EnumerateFileSystemEntries(currentPath)
+                    .Where(entry => string.Equals(Path.GetFileName(entry), part, StringComparison.OrdinalIgnoreCase));
+
+                nextPaths.AddRange(matches);
+            }
+
+            if (!nextPaths.Any())
+            {
+                return null; // Part of the path does not exist
+            }
+
+            currentPaths = nextPaths;
+        }
+
+        // Normalize all resulting paths to Unix format
+        return currentPaths.Select(path => path.NormalizePathToUnix()).ToList();
     }
 
     /// <summary>
@@ -162,5 +232,20 @@ internal static class PathHelper
         }
 
         return false;
+    }
+
+    public static bool IsFileUnderDirectory(DirectoryInfo directory, FileInfo candidateFile)
+    {
+        // n.b., using `DirectoryInfo` and `FileInfo` here to ensure that the callsite doesn't get confused with just strings
+        // the paths are then normalized to make the comparison easier.
+        var directoryPath = directory.FullName.NormalizePathToUnix();
+        if (!directoryPath.EndsWith("/"))
+        {
+            // ensuring a trailing slash means we can do a simple string check later on
+            directoryPath += "/";
+        }
+        var candidateFilePath = candidateFile.FullName.NormalizePathToUnix();
+
+        return candidateFilePath.StartsWith(directoryPath);
     }
 }

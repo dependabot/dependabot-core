@@ -34,11 +34,13 @@ module Dependabot
       # Select constraints with minimum operators
       min_constraints = requirements.select { |op, _| MINIMUM_OPERATORS.include?(op) }
 
-      # Choose the maximum version among the minimum constraints
-      max_min_constraint = min_constraints.max_by { |_, version| version }
+      # Process each minimum constraint using the respective handler
+      effective_min_versions = min_constraints.filter_map do |op, version|
+        handle_min_operator(op, version.is_a?(Dependabot::Version) ? version : Dependabot::Version.new(version))
+      end
 
-      # Return the version part of the max constraint, if it exists
-      Dependabot::Version.new(max_min_constraint&.last) if max_min_constraint&.last
+      # Return the maximum among the effective minimum constraints
+      Dependabot::Version.new(effective_min_versions.max) if effective_min_versions.any?
     end
 
     # Returns the lowest upper limit among all maximum constraints.
@@ -47,28 +49,89 @@ module Dependabot
       # Select constraints with maximum operators
       max_constraints = requirements.select { |op, _| MAXIMUM_OPERATORS.include?(op) }
 
-      # Process each maximum constraint, handling "~>" constraints based on length
-      effective_max_versions = max_constraints.map do |op, version|
-        if op == "~>"
-          # If "~>" constraint, bump based on the specificity of the version
-          case version.segments.length
-          when 1
-            # Bump major version (e.g., 2 -> 3.0.0)
-            Dependabot::Version.new((version.segments[0].to_i + 1).to_s + ".0.0")
-          when 2
-            # Bump minor version (e.g., 2.5 -> 2.6.0)
-            Dependabot::Version.new("#{version.segments[0]}.#{version.segments[1] + 1}.0")
-          else
-            # For three or more segments, use version.bump
-            version.bump # e.g., "~> 2.9.9" becomes upper bound 3.0.0
-          end
-        else
-          version
-        end
+      # Process each maximum constraint using the respective handler
+      effective_max_versions = max_constraints.filter_map do |op, version|
+        handle_max_operator(op, version.is_a?(Dependabot::Version) ? version : Dependabot::Version.new(version))
       end
 
-      # Return the smallest among the effective maximum constraints
-      Dependabot::Version.new(effective_max_versions.min) if effective_max_versions.min
+      # Return the minimum among the effective maximum constraints
+      Dependabot::Version.new(effective_max_versions.min) if effective_max_versions.any?
+    end
+
+    # Dynamically handles minimum operators
+    sig { params(operator: String, version: Dependabot::Version).returns(T.nilable(Dependabot::Version)) }
+    def handle_min_operator(operator, version)
+      case operator
+      when ">=" then handle_greater_than_or_equal_for_min(version)
+      when ">"  then handle_greater_than_for_min(version)
+      when "~>" then handle_tilde_pessimistic_for_min(version)
+      end
+    end
+
+    # Dynamically handles maximum operators
+    sig { params(operator: String, version: Dependabot::Version).returns(T.nilable(Dependabot::Version)) }
+    def handle_max_operator(operator, version)
+      case operator
+      when "<=" then handle_less_than_or_equal_for_max(version)
+      when "<"  then handle_less_than_max(version)
+      when "~>" then handle_tilde_pessimistic_max(version)
+      end
+    end
+
+    # Methods for handling minimum constraints
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_greater_than_or_equal_for_min(version)
+      version
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_greater_than_for_min(version)
+      version
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_tilde_pessimistic_for_min(version)
+      version
+    end
+
+    # Methods for handling maximum constraints
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_less_than_or_equal_for_max(version)
+      version
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_less_than_max(version)
+      version
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def handle_tilde_pessimistic_max(version)
+      case version.segments.length
+      when 1
+        bump_major_segment(version)
+      when 2
+        bump_minor_segment(version)
+      else
+        bump_version(version)
+      end
+    end
+
+    private
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def bump_major_segment(version)
+      Dependabot::Version.new("#{version.segments[0].to_i + 1}.0.0")
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def bump_minor_segment(version)
+      Dependabot::Version.new("#{version.segments[0]}.#{version.segments[1].to_i + 1}.0")
+    end
+
+    sig { params(version: Dependabot::Version).returns(Dependabot::Version) }
+    def bump_version(version)
+      Dependabot::Version.new(version.bump)
     end
   end
 end

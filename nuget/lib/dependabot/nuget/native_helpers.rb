@@ -54,13 +54,20 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, workspace_path: String, output_path: String).returns([String, String])
+        params(
+          job_path: String,
+          repo_root: String,
+          workspace_path: String,
+          output_path: String
+        ).returns([String, String])
       end
-      def self.get_nuget_discover_tool_command(repo_root:, workspace_path:, output_path:)
+      def self.get_nuget_discover_tool_command(job_path:, repo_root:, workspace_path:, output_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "discover",
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--workspace",
@@ -87,14 +94,16 @@ module Dependabot
 
       sig do
         params(
+          job_path: String,
           repo_root: String,
           workspace_path: String,
           output_path: String,
           credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_discover_tool(repo_root:, workspace_path:, output_path:, credentials:)
-        (command, fingerprint) = get_nuget_discover_tool_command(repo_root: repo_root,
+      def self.run_nuget_discover_tool(job_path:, repo_root:, workspace_path:, output_path:, credentials:)
+        (command, fingerprint) = get_nuget_discover_tool_command(job_path: job_path,
+                                                                 repo_root: repo_root,
                                                                  workspace_path: workspace_path,
                                                                  output_path: output_path)
 

@@ -7,15 +7,7 @@ internal static class LockFileUpdater
         string projectPath,
         ILogger logger)
     {
-        var projectDirectory = Path.GetDirectoryName(projectPath);
-        var lockPath = Path.Combine(projectDirectory, "packages.lock.json");
-        logger.Log($"    Updating lock file");
-        if (!File.Exists(lockPath))
-        {
-            logger.Log($"      File [{Path.GetRelativePath(repoRootPath, lockPath)}] does not exist.");
-            return;
-        }
-
+        var projectDirectory = Path.GetDirectoryName(projectPath)!;
         await MSBuildHelper.SidelineGlobalJsonAsync(projectDirectory, repoRootPath, async () =>
         {
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", ["restore", "--force-evaluate", projectPath], workingDirectory: projectDirectory);
@@ -23,6 +15,7 @@ internal static class LockFileUpdater
             {
                 logger.Log($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
+            return (exitCode, stdout, stderr);
         }, logger, retainMSBuildSdks: true);
     }
 }

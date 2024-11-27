@@ -890,6 +890,45 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceUpdateWithSemicolon()
+        {
+            // update Some.Package from 9.0.1 to 13.0.1
+            await TestUpdateForProject("Some.Package", "9.0.1", "13.0.1",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package2", "9.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package2", "13.0.1", "net8.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package;Some.Package2" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package;Some.Package2" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
         public async Task UpdateVersionAttribute_InDirectoryPackages_ForPackageVersion()
         {
             // update Some.Package from 9.0.1 to 13.0.1
@@ -3067,6 +3106,46 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """
+            );
+        }
+
+        [Fact]
+        public async Task NoChange_IfPeerDependenciesCannotBeEvaluated()
+        {
+            // make sure we don't throw if we find conflicting peer dependencies; this can happen in multi-tfm projects if the dependencies are too complicated to resolve
+            // eventually this should be able to be resolved, but currently we can't branch on the different packages for different TFMs
+            await TestNoChangeforProject("Some.Package", "1.0.0", "1.1.0",
+                packages:
+                [
+                    // initial packages
+                    new MockNuGetPackage("Some.Package", "1.0.0",
+                        DependencyGroups: [
+                            ("net8.0", [("Transitive.Dependency", "8.0.0")]),
+                            ("net9.0", [("Transitive.Dependency", "9.0.0")])
+                        ]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "8.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "9.0.0", "net9.0"),
+
+                    // what we're trying to update to, but will fail
+                    new MockNuGetPackage("Some.Package", "1.1.0",
+                        DependencyGroups: [
+                            ("net8.0", [("Transitive.Dependency", "8.1.0")]),
+                            ("net9.0", [("Transitive.Dependency", "9.1.0")])
+                        ]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "8.1.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "9.1.0", "net9.0"),
+                ],
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                expectedResult: new() // success
             );
         }
 

@@ -16,8 +16,9 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 {
     public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
+    private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
-    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -25,8 +26,9 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public DiscoveryWorker(ILogger logger)
+    public DiscoveryWorker(ExperimentsManager experimentsManager, ILogger logger)
     {
+        _experimentsManager = experimentsManager;
         _logger = logger;
     }
 
@@ -60,7 +62,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
-        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
+        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath);
 
         // the `workspacePath` variable is relative to a repository root, so a rooted path actually isn't rooted; the
         // easy way to deal with this is to just trim the leading "/" if it exists
@@ -74,7 +76,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         DotNetToolsJsonDiscoveryResult? dotNetToolsJsonDiscovery = null;
         GlobalJsonDiscoveryResult? globalJsonDiscovery = null;
-        DirectoryPackagesPropsDiscoveryResult? directoryPackagesPropsDiscovery = null;
 
         ImmutableArray<ProjectDiscoveryResult> projectResults = [];
         WorkspaceDiscoveryResult result;
@@ -93,13 +94,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
             // this next line should throw or something
             projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
-
-            directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
-
-            if (directoryPackagesPropsDiscovery is not null)
-            {
-                projectResults = projectResults.Remove(projectResults.First(p => p.FilePath.Equals(directoryPackagesPropsDiscovery.FilePath, StringComparison.OrdinalIgnoreCase)));
-            }
         }
         else
         {
@@ -111,7 +105,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             Path = initialWorkspacePath,
             DotNetToolsJson = dotNetToolsJsonDiscovery,
             GlobalJson = globalJsonDiscovery,
-            DirectoryPackagesProps = directoryPackagesPropsDiscovery,
             Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
         };
 
@@ -271,60 +264,80 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
-        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
+        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
         foreach (var projectPath in projectPaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (!File.Exists(projectPath))
+            // Ensure file existence is checked case-insensitively
+            var actualProjectPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(projectPath, repoRootPath);
+
+            if (actualProjectPaths == null)
             {
                 continue;
             }
 
-            if (_processedProjectPaths.Contains(projectPath))
+            foreach (var actualProjectPath in actualProjectPaths)
             {
-                continue;
-            }
-            _processedProjectPaths.Add(projectPath);
-
-            var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath);
-            var packagesConfigDependencies = PackagesConfigDiscovery.Discover(workspacePath, projectPath, _logger)
-                    ?.Dependencies;
-
-            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
-
-            // Determine if there were unrestored MSBuildSdks
-            var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
-            if (msbuildSdks.Length > 0)
-            {
-                // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
-                if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
-                {
-                    projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
-                }
-            }
-
-            foreach (var projectResult in projectResults)
-            {
-                if (results.ContainsKey(projectResult.FilePath))
+                if (_processedProjectPaths.Contains(actualProjectPath))
                 {
                     continue;
                 }
 
-                // If we had packages.config dependencies, merge them with the project dependencies
-                if (projectResult.FilePath == relativeProjectPath && packagesConfigDependencies is not null)
-                {
-                    packagesConfigDependencies = packagesConfigDependencies.Value
-                        .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
-                        .ToImmutableArray();
+                _processedProjectPaths.Add(actualProjectPath);
 
-                    results[projectResult.FilePath] = projectResult with
-                    {
-                        Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
-                    };
-                }
-                else
+                var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+
+                // Determine if there were unrestored MSBuildSdks
+                var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
+                if (msbuildSdks.Length > 0)
                 {
-                    results[projectResult.FilePath] = projectResult;
+                    // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
+                    if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
+                    {
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+                    }
+                }
+
+                foreach (var projectResult in projectResults)
+                {
+                    if (results.ContainsKey(projectResult.FilePath))
+                    {
+                        continue;
+                    }
+
+                    // If we had packages.config dependencies, merge them with the project dependencies
+                    if (projectResult.FilePath == relativeProjectPath && packagesConfigResult is not null)
+                    {
+                        var packagesConfigDependencies = packagesConfigResult.Dependencies
+                            .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
+                            .ToImmutableArray();
+
+                        results[projectResult.FilePath] = projectResult with
+                        {
+                            Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
+                        };
+                    }
+                    else
+                    {
+                        results[projectResult.FilePath] = projectResult;
+                    }
+                }
+
+                if (!results.ContainsKey(relativeProjectPath) &&
+                    packagesConfigResult is not null &&
+                    packagesConfigResult.Dependencies.Length > 0)
+                {
+                    // project contained only packages.config dependencies
+                    results[relativeProjectPath] = new ProjectDiscoveryResult()
+                    {
+                        FilePath = relativeProjectPath,
+                        Dependencies = packagesConfigResult.Dependencies,
+                        TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                        ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                        AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                    };
                 }
             }
         }

@@ -52,6 +52,24 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
 
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          branch: "main"
+        }
+      }
+    }
+  end
+
   before do
     stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
     stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
@@ -62,6 +80,20 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
+
   def run_update_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
@@ -69,24 +101,26 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     # don't allow a previous test to pollute the file parser cache
     Dependabot::Nuget::FileParser.file_dependency_cache.clear
 
-    # calling `#parse` is necessary to force `discover` which is stubbed below
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
+    ensure_job_file do
+      # calling `#parse` is necessary to force `discover` which is stubbed below
+      Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                        source: source,
+                                        repo_contents_path: repo_contents_path).parse
 
-    # create the file updater...
-    updater = described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com"
-      }],
-      repo_contents_path: repo_contents_path
-    )
+      # create the file updater...
+      updater = described_class.new(
+        dependency_files: dependency_files,
+        dependencies: dependencies,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }],
+        repo_contents_path: repo_contents_path
+      )
 
-    # ...and invoke the actual test
-    yield updater
+      # ...and invoke the actual test
+      yield updater
+    end
   ensure
     Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
@@ -173,29 +207,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   describe "#updated_dependency_files" do
-    # the minimum job object required by the updater
-    let(:job) do
-      {
-        job: {
-          "allowed-updates": [
-            { "update-type": "all" }
-          ],
-          "package-manager": "nuget",
-          source: {
-            provider: "github",
-            repo: "gocardless/bump",
-            directory: "/",
-            branch: "main"
-          }
-        }
-      }
-    end
-
     before do
-      file = Tempfile.new
-      File.write(file.path, job.to_json)
-      ENV["DEPENDABOT_JOB_PATH"] = file.path
-
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -223,19 +235,15 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          DirectoryPackagesProps: nil,
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
       )
-    end
-
-    after do
-      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
-      FileUtils.rm_f(job_path)
     end
 
     context "with a dirs.proj" do
@@ -281,29 +289,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     let(:dependency_version) { "1.1.1" }
     let(:dependency_previous_version) { "1.0.0" }
 
-    # the minimum job object required by the updater
-    let(:job) do
-      {
-        job: {
-          "allowed-updates": [
-            { "update-type": "all" }
-          ],
-          "package-manager": "nuget",
-          source: {
-            provider: "github",
-            repo: "gocardless/bump",
-            directory: "/",
-            branch: "main"
-          }
-        }
-      }
-    end
-
     before do
-      file = Tempfile.new
-      File.write(file.path, job.to_json)
-      ENV["DEPENDABOT_JOB_PATH"] = file.path
-
       intercept_native_tools(
         discovery_content_hash: {
           Path: "",
@@ -331,7 +317,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }, {
               FilePath: "Proj2/Proj2.csproj",
               Dependencies: [{
@@ -354,19 +342,15 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj2/Proj2.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          DirectoryPackagesProps: nil,
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
       )
-    end
-
-    after do
-      job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
-      FileUtils.rm_f(job_path)
     end
 
     it "updates the wildcard project" do

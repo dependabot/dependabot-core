@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "dependabot/nuget/native_discovery/native_dependency_file_discovery"
-require "dependabot/nuget/native_discovery/native_directory_packages_props_discovery"
 require "dependabot/nuget/native_discovery/native_project_discovery"
 require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
@@ -21,9 +20,6 @@ module Dependabot
         projects = T.let(json.fetch("Projects"), T::Array[T::Hash[String, T.untyped]]).filter_map do |project|
           NativeProjectDiscovery.from_json(project, path)
         end
-        directory_packages_props = NativeDirectoryPackagesPropsDiscovery
-                                   .from_json(T.let(json.fetch("DirectoryPackagesProps"),
-                                                    T.nilable(T::Hash[String, T.untyped])), path)
         global_json = NativeDependencyFileDiscovery
                       .from_json(T.let(json.fetch("GlobalJson"), T.nilable(T::Hash[String, T.untyped])), path)
         dotnet_tools_json = NativeDependencyFileDiscovery
@@ -32,7 +28,6 @@ module Dependabot
 
         NativeWorkspaceDiscovery.new(path: path,
                                      projects: projects,
-                                     directory_packages_props: directory_packages_props,
                                      global_json: global_json,
                                      dotnet_tools_json: dotnet_tools_json)
       end
@@ -40,14 +35,12 @@ module Dependabot
       sig do
         params(path: String,
                projects: T::Array[NativeProjectDiscovery],
-               directory_packages_props: T.nilable(NativeDirectoryPackagesPropsDiscovery),
                global_json: T.nilable(NativeDependencyFileDiscovery),
                dotnet_tools_json: T.nilable(NativeDependencyFileDiscovery)).void
       end
-      def initialize(path:, projects:, directory_packages_props:, global_json:, dotnet_tools_json:)
+      def initialize(path:, projects:, global_json:, dotnet_tools_json:)
         @path = path
         @projects = projects
-        @directory_packages_props = directory_packages_props
         @global_json = global_json
         @dotnet_tools_json = dotnet_tools_json
       end
@@ -57,9 +50,6 @@ module Dependabot
 
       sig { returns(T::Array[NativeProjectDiscovery]) }
       attr_reader :projects
-
-      sig { returns(T.nilable(NativeDirectoryPackagesPropsDiscovery)) }
-      attr_reader :directory_packages_props
 
       sig { returns(T.nilable(NativeDependencyFileDiscovery)) }
       attr_reader :global_json

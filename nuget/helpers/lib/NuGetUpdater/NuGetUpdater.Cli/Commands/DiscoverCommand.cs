@@ -7,6 +7,7 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class DiscoverCommand
 {
+    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { IsRequired = true };
     internal static readonly Option<DirectoryInfo> RepoRootOption = new("--repo-root") { IsRequired = true };
     internal static readonly Option<string> WorkspaceOption = new("--workspace") { IsRequired = true };
     internal static readonly Option<FileInfo> OutputOption = new("--output") { IsRequired = true };
@@ -15,6 +16,7 @@ internal static class DiscoverCommand
     {
         Command command = new("discover", "Generates a report of the workspace dependencies and where they are located.")
         {
+            JobPathOption,
             RepoRootOption,
             WorkspaceOption,
             OutputOption
@@ -22,11 +24,13 @@ internal static class DiscoverCommand
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (repoRoot, workspace, outputPath) =>
+        command.SetHandler(async (jobPath, repoRoot, workspace, outputPath) =>
         {
-            var worker = new DiscoveryWorker(new ConsoleLogger());
+            var logger = new ConsoleLogger();
+            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
+            var worker = new DiscoveryWorker(experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, workspace, outputPath.FullName);
-        }, RepoRootOption, WorkspaceOption, OutputOption);
+        }, JobPathOption, RepoRootOption, WorkspaceOption, OutputOption);
 
         return command;
     }

@@ -94,7 +94,9 @@ public partial class EntryPointTests
                               "TargetFrameworks": [
                                 "net8.0"
                               ],
-                              "ReferencedProjectPaths": []
+                              "ReferencedProjectPaths": [],
+                              "ImportedFiles": [],
+                              "AdditionalFiles": []
                             }
                           ],
                           "DirectoryPackagesProps": null,

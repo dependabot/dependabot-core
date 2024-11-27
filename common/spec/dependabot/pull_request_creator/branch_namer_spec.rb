@@ -38,7 +38,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   let(:previous_version) { "1.4.0" }
   let(:files) { [gemfile] }
   let(:target_branch) { nil }
-  let(:existing_branches) { [] }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
