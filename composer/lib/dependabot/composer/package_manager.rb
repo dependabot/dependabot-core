@@ -27,9 +27,11 @@ module Dependabot
       # Keep versions in ascending order
       SUPPORTED_COMPOSER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
 
-      DEPRECATED_COMPOSER_VERSIONS = T.let([
-        Version.new("1")
-      ].freeze, T::Array[Dependabot::Version])
+      # Currently, we don't support any deprecated versions of Composer
+      # When a version is going to be unsupported, it will be added here for a while to give users time to upgrade
+      # Example for deprecation:
+      # DEPRECATED_COMPOSER_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
+      DEPRECATED_COMPOSER_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
       sig { params(raw_version: String).void }
       def initialize(raw_version)
