@@ -45,8 +45,8 @@ module Dependabot
       def self.composer_version(composer_json, parsed_lockfile = nil)
         # If the parsed lockfile has a plugin API version, we return either V1 or V2
         # based on the major version of the lockfile.
-        if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_KEY]
-          version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_KEY])
+        if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
+          version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
           major_version = version.canonical_segments.first
 
           return major_version.nil? || major_version > 1 ? V2 : V1

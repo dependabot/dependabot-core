@@ -21,7 +21,7 @@ module Dependabot
       REQUIRE_KEY = "require"
       CONFIG_KEY = "config"
       PLATFORM_KEY = "platform"
-      PLUGIN_API_KEY = "composer-plugin-api"
+      PLUGIN_API_VERSION_KEY = "plugin-api-version"
 
       # Keep versions in ascending order
       SUPPORTED_COMPOSER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
