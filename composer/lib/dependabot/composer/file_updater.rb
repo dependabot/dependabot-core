@@ -70,7 +70,7 @@ module Dependabot
       end
 
       def lockfile
-        @lockfile ||= get_original_file("composer.lock")
+        @lockfile ||= get_original_file(PackageManager::LOCKFILE_FILENAME)
       end
     end
   end

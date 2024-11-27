@@ -68,7 +68,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
-            updated_content = run_update_helper.fetch("composer.lock")
+            updated_content = run_update_helper.fetch(PackageManager::LOCKFILE_FILENAME)
 
             updated_content = post_process_lockfile(updated_content)
             raise "Expected content to change!" if lockfile.content == updated_content
@@ -466,7 +466,7 @@ module Dependabot
 
         def registry_credentials
           credentials
-            .select { |cred| cred.fetch("type") == "composer_repository" }
+            .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
         end
 

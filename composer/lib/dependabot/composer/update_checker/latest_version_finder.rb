@@ -170,7 +170,7 @@ module Dependabot
         end
 
         def registry_credentials
-          credentials.select { |cred| cred["type"] == "composer_repository" } +
+          credentials.select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY } +
             auth_json_credentials
         end
 

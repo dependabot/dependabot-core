@@ -341,7 +341,7 @@ module Dependabot
             msg = "Composer failed to parse your #{PackageManager::MANIFEST_FILENAME}" \
                   "as it does not match the expected JSON schema.\n" \
                   "Run `composer validate` to check your #{PackageManager::MANIFEST_FILENAME} " \
-                  "and composer.lock files.\n\n" \
+                  "and #{PackageManager::LOCKFILE_FILENAME} files.\n\n" \
                   "See https://getcomposer.org/doc/04-schema.md for details on the schema."
             raise Dependabot::DependencyFileNotParseable, msg
           else
@@ -520,7 +520,7 @@ module Dependabot
 
         def registry_credentials
           credentials
-            .select { |cred| cred["type"] == "composer_repository" }
+            .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
         end
       end
