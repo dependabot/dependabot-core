@@ -93,16 +93,17 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
-        return PoetryPackageManager.new(detect_poetry_version) if detect_poetry_version
+        return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
 
-        return PipCompilePackageManager.new(detect_pipcompile_version) if detect_pipcompile_version
+        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
 
-        return PipenvPackageManager.new(detect_pipenv_version) if detect_pipenv_version
+        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
 
-      sig { returns(T.any(String, T.untyped)) }
+      # Detects the version of poetry. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
       def detect_poetry_version
         if poetry_files
           package_manager = PoetryPackageManager::NAME
@@ -119,7 +120,8 @@ module Dependabot
         nil
       end
 
-      sig { returns(T.any(String, T.untyped)) }
+      # Detects the version of pip-compile. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
       def detect_pipcompile_version
         if pip_compile_files
           package_manager = PipCompilePackageManager::NAME
@@ -136,7 +138,8 @@ module Dependabot
         nil
       end
 
-      sig { returns(T.any(String, T.untyped)) }
+      # Detects the version of pipenv. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
       def detect_pipenv_version
         if pipenv_files
           package_manager = PipenvPackageManager::NAME
@@ -153,7 +156,8 @@ module Dependabot
         nil
       end
 
-      sig { returns(T.any(String, T.untyped)) }
+      # Detects the version of pip. If the version cannot be detected, it returns 0.0
+      sig { returns(String) }
       def detect_pip_version
         package_manager = PipPackageManager::NAME
 
