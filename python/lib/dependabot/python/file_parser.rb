@@ -93,11 +93,11 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
-        return PoetryPackageManager.new(detect_poetry_version) if poetry_files && detect_poetry_version
+        return PoetryPackageManager.new(detect_poetry_version) if detect_poetry_version
 
-        return PipCompilePackageManager.new(detect_pipcompile_version) if pip_compile_files && detect_pipcompile_version
+        return PipCompilePackageManager.new(detect_pipcompile_version) if detect_pipcompile_version
 
-        return PipenvPackageManager.new(detect_pipenv_version) if pipenv_files && detect_pipenv_version
+        return PipenvPackageManager.new(detect_pipenv_version) if detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
@@ -329,11 +329,11 @@ module Dependabot
       end
 
       def pipenv_files
-        requirement_files.any?("Pipfile")
+        requirement_files.any?(PipenvPackageManager::MANIFEST_FILENAME)
       end
 
       def poetry_files
-        true if get_original_file("poetry.lock")
+        true if get_original_file(PoetryPackageManager::LOCKFILE_NAME)
       end
 
       def write_temporary_dependency_files
