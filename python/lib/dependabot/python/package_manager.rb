@@ -10,7 +10,6 @@ module Dependabot
   module Python
     ECOSYSTEM = "Python"
 
-    # Keep versions in ascending order
     SUPPORTED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     DEPRECATED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
@@ -51,10 +50,12 @@ module Dependabot
       end
     end
 
-    class PeotryPackageManager < Dependabot::Ecosystem::VersionManager
+    class PoetryPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
       NAME = "poetry"
+
+      LOCKFILE_NAME = "poetry.lock"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
@@ -70,8 +71,82 @@ module Dependabot
         super(
           NAME,
           Version.new(raw_version),
-          DEPRECATED_PYTHON_VERSIONS,
-          SUPPORTED_PYTHON_VERSIONS,
+          SUPPORTED_VERSIONS,
+          DEPRECATED_VERSIONS,
+          requirement,
+       )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+
+    class PipCompilePackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      NAME = "pip-compile"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement = nil)
+        super(
+          NAME,
+          Version.new(raw_version),
+          SUPPORTED_VERSIONS,
+          DEPRECATED_VERSIONS,
+          requirement,
+       )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+
+    class PipenvPackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      NAME = "pipenv"
+
+      MANIFEST_FILENAME = "Pipfile"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement = nil)
+        super(
+          NAME,
+          Version.new(raw_version),
+          SUPPORTED_VERSIONS,
+          DEPRECATED_VERSIONS,
           requirement,
        )
       end
