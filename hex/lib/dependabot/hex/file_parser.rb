@@ -7,12 +7,16 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/native_helpers"
+require "dependabot/hex/language"
+require "dependabot/hex/package_manager"
+require "dependabot/hex/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
 # For docs, see https://hexdocs.pm/mix/Mix.Tasks.Deps.html
 module Dependabot
   module Hex
+    extend T::Sig
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
@@ -42,6 +46,17 @@ module Dependabot
         end
 
         dependency_set.dependencies.sort_by(&:name)
+      end
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          )
+        end, T.nilable(Dependabot::Ecosystem))
       end
 
       private
@@ -136,6 +151,52 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
         @lockfile ||= T.let(get_original_file("mix.lock"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(hex_version),
+          T.nilable(Dependabot::Hex::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(
+          Language.new(elixir_version, language_requirement),
+          T.nilable(Dependabot::Hex::Language)
+        )
+      end
+
+      sig { returns(String) }
+      def hex_version
+        T.must(T.must(hex_info).fetch(:hex_version))
+      end
+
+      sig { returns(String) }
+      def elixir_version
+        T.must(T.must(hex_info).fetch(:elixir_version))
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
+      def hex_info
+        @hex_info ||= T.let(begin
+          version = SharedHelpers.run_shell_command("mix hex.info")
+          {
+            hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
+            elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
+          }
+        end, T.nilable(T::Hash[Symbol, T.nilable(String)]))
+      end
+
+      sig { returns(T.nilable(Dependabot::Hex::Requirement)) }
+      def language_requirement
+        command = "mix run --eval 'Mix.Project.config()[:elixir] |> IO.puts()'"
+        requirement = SharedHelpers.run_shell_command(command)
+        return if requirement.empty? || requirement.nil?
+
+        Dependabot::Hex::Requirement.new(requirement)
       end
     end
   end
