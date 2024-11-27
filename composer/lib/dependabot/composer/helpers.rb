@@ -107,6 +107,7 @@ module Dependabot
         dependency_constraint(parsed_composer_json, Language::NAME)
       end
 
+      # Capture extension version constraint from composer.json
       sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
       def self.dependency_constraint(parsed_composer_json, name)
         parsed_composer_json.dig(PackageManager::REQUIRE_KEY, name)
