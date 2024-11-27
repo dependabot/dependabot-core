@@ -45,8 +45,8 @@ module Dependabot
       def self.composer_version(composer_json, parsed_lockfile = nil)
         # If the parsed lockfile has a plugin API version, we return either V1 or V2
         # based on the major version of the lockfile.
-        if parsed_lockfile && parsed_lockfile["plugin-api-version"]
-          version = Composer::Version.new(parsed_lockfile["plugin-api-version"])
+        if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_KEY]
+          version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_KEY])
           major_version = version.canonical_segments.first
 
           return major_version.nil? || major_version > 1 ? V2 : V1
@@ -89,11 +89,34 @@ module Dependabot
         nil
       end
 
+      # Capture the platform PHP version from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def self.capture_platform_php(parsed_composer_json)
+        capture_platform(parsed_composer_json, Language::NAME)
+      end
+
+      # Capture the platform extension from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      def self.capture_platform(parsed_composer_json, name)
+        parsed_composer_json.dig(PackageManager::CONFIG_KEY, PackageManager::PLATFORM_KEY, name)
+      end
+
+      # Capture PHP version constraint from composer.json
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def self.php_constraint(parsed_composer_json)
+        dependency_constraint(parsed_composer_json, Language::NAME)
+      end
+
+      sig { params(parsed_composer_json: T::Hash[String, T.untyped], name: String).returns(T.nilable(String)) }
+      def self.dependency_constraint(parsed_composer_json, name)
+        parsed_composer_json.dig(PackageManager::REQUIRE_KEY, name)
+      end
+
       sig { params(composer_json: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def self.invalid_v2_requirement?(composer_json)
-        return false unless composer_json.key?("require")
+        return false unless composer_json.key?(PackageManager::REQUIRE_KEY)
 
-        composer_json["require"].keys.any? do |key|
+        composer_json[PackageManager::REQUIRE_KEY].keys.any? do |key|
           key !~ PLATFORM_PACKAGE_REGEX && key !~ COMPOSER_V2_NAME_REGEX
         end
       end

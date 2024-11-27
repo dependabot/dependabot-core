@@ -16,17 +16,17 @@ module Dependabot
       require_relative "helpers"
 
       def self.required_files_in?(filenames)
-        filenames.include?("composer.json")
+        filenames.include?(PackageManager::MANIFEST_FILENAME)
       end
 
       def self.required_files_message
-        "Repo must contain a composer.json."
+        "Repo must contain a #{PackageManager::MANIFEST_FILENAME}."
       end
 
       def ecosystem_versions
         {
           package_managers: {
-            "composer" => Helpers.composer_version(parsed_composer_json, parsed_lockfile)
+            PackageManager::NAME => Helpers.composer_version(parsed_composer_json, parsed_lockfile)
           }
         }
       end
@@ -45,20 +45,20 @@ module Dependabot
       private
 
       def composer_json
-        @composer_json ||= fetch_file_from_host("composer.json")
+        @composer_json ||= fetch_file_from_host(PackageManager::MANIFEST_FILENAME)
       end
 
       def composer_lock
         return @composer_lock if defined?(@composer_lock)
 
-        @composer_lock = fetch_file_if_present("composer.lock")
+        @composer_lock = fetch_file_if_present(PackageManager::LOCKFILE_FILENAME)
       end
 
       # NOTE: This is fetched but currently unused
       def auth_json
         return @auth_json if defined?(@auth_json)
 
-        @auth_json = fetch_support_file("auth.json")
+        @auth_json = fetch_support_file(PackageManager::AUTH_FILENAME)
       end
 
       def artifact_dependencies
@@ -106,7 +106,7 @@ module Dependabot
               directories = path.end_with?("*") ? expand_path(path) : [path]
 
               directories.each do |dir|
-                file = File.join(dir, "composer.json")
+                file = File.join(dir, PackageManager::MANIFEST_FILENAME)
 
                 begin
                   composer_json_files << fetch_file_with_root_fallback(file)
