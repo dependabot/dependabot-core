@@ -5,6 +5,8 @@ require "dependabot/composer/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"
 
+ComposerPackageManager = Dependabot::Composer::PackageManager
+
 RSpec.describe Dependabot::Composer::PackageManager do
   let(:package_manager) { described_class.new(version) }
 
@@ -17,15 +19,15 @@ RSpec.describe Dependabot::Composer::PackageManager do
       end
 
       it "sets the name correctly" do
-        expect(package_manager.name).to eq(Dependabot::Composer::PACKAGE_MANAGER)
+        expect(package_manager.name).to eq(ComposerPackageManager::NAME)
       end
 
       it "sets the deprecated_versions correctly" do
-        expect(package_manager.deprecated_versions).to eq(Dependabot::Composer::DEPRECATED_COMPOSER_VERSIONS)
+        expect(package_manager.deprecated_versions).to eq(ComposerPackageManager::DEPRECATED_COMPOSER_VERSIONS)
       end
 
       it "sets the supported_versions correctly" do
-        expect(package_manager.supported_versions).to eq(Dependabot::Composer::SUPPORTED_COMPOSER_VERSIONS)
+        expect(package_manager.supported_versions).to eq(ComposerPackageManager::SUPPORTED_COMPOSER_VERSIONS)
       end
     end
 
@@ -37,23 +39,23 @@ RSpec.describe Dependabot::Composer::PackageManager do
       end
 
       it "sets the name correctly" do
-        expect(package_manager.name).to eq(Dependabot::Composer::PACKAGE_MANAGER)
+        expect(package_manager.name).to eq(ComposerPackageManager::NAME)
       end
 
       it "sets the deprecated_versions correctly" do
-        expect(package_manager.deprecated_versions).to eq(Dependabot::Composer::DEPRECATED_COMPOSER_VERSIONS)
+        expect(package_manager.deprecated_versions).to eq(ComposerPackageManager::DEPRECATED_COMPOSER_VERSIONS)
       end
 
       it "sets the supported_versions correctly" do
-        expect(package_manager.supported_versions).to eq(Dependabot::Composer::SUPPORTED_COMPOSER_VERSIONS)
+        expect(package_manager.supported_versions).to eq(ComposerPackageManager::SUPPORTED_COMPOSER_VERSIONS)
       end
     end
   end
 
   describe "SUPPORTED_COMPOSER_VERSIONS" do
     it "is in ascending order" do
-      expect(Dependabot::Composer::SUPPORTED_COMPOSER_VERSIONS)
-        .to eq(Dependabot::Composer::SUPPORTED_COMPOSER_VERSIONS.sort)
+      expect(ComposerPackageManager::SUPPORTED_COMPOSER_VERSIONS)
+        .to eq(ComposerPackageManager::SUPPORTED_COMPOSER_VERSIONS.sort)
     end
   end
 

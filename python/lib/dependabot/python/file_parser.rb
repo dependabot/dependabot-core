@@ -91,41 +91,113 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def detected_package_manager
-        return PeotryPackageManager.new(detect_poetry_version) if poetry_lock && detect_poetry_version
+        setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+
+        return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
+
+        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
+
+        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
 
+      # Detects the version of poetry. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
       def detect_poetry_version
-        if poetry_lock
-          version = SharedHelpers.run_shell_command("pyenv exec poetry --version")
-                                 .to_s.split("version ").last&.split(")")&.first
+        if poetry_files
+          package_manager = PoetryPackageManager::NAME
 
-          log_if_version_malformed(PeotryPackageManager.name, version)
+          version = package_manager_version(package_manager)
+                    .to_s.split("version ").last&.split(")")&.first
+
+          log_if_version_malformed(package_manager, version)
 
           # makes sure we have correct version format returned
           version if version&.match?(/^\d+(?:\.\d+)*$/)
-
         end
       rescue StandardError
         nil
       end
 
-      def detect_pip_version
-        # extracts pip version from current python via executing shell command
-        version = SharedHelpers.run_shell_command("pyenv exec pip -V")
-                               .split("from").first&.split("pip")&.last&.strip
+      # Detects the version of pip-compile. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
+      def detect_pipcompile_version
+        if pip_compile_files
+          package_manager = PipCompilePackageManager::NAME
 
-        log_if_version_malformed(PipPackageManager.name, version)
+          version = package_manager_version(package_manager)
+                    .to_s.split("version ").last&.split(")")&.first
+
+          log_if_version_malformed(package_manager, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+        end
+      rescue StandardError
+        nil
+      end
+
+      # Detects the version of pipenv. If the version cannot be detected, it returns nil
+      sig { returns(T.nilable(String)) }
+      def detect_pipenv_version
+        if pipenv_files
+          package_manager = PipenvPackageManager::NAME
+
+          version = package_manager_version(package_manager)
+                    .to_s.split("versions ").last&.strip
+
+          log_if_version_malformed(package_manager, version)
+
+          # makes sure we have correct version format returned
+          version if version&.match?(/^\d+(?:\.\d+)*$/)
+        end
+      rescue StandardError
+        nil
+      end
+
+      # Detects the version of pip. If the version cannot be detected, it returns 0.0
+      sig { returns(String) }
+      def detect_pip_version
+        package_manager = PipPackageManager::NAME
+
+        version = package_manager_version(package_manager)
+                  .split("from").first&.split("pip")&.last&.strip
+
+        log_if_version_malformed(package_manager, version)
 
         version&.match?(/^\d+(?:\.\d+)*$/) ? version : UNDETECTED_PACKAGE_MANAGER_VERSION
       rescue StandardError
         nil
       end
 
+      sig { params(package_manager: String).returns(T.any(String, T.untyped)) }
+      def package_manager_version(package_manager)
+        version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
+
+        Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
+
+        version_info
+      rescue StandardError => e
+        Dependabot.logger.error(e.message)
+        nil
+      end
+
+      # setup python local setup on file parser stage
+      sig { void }
+      def setup_python_environment
+        language_version_manager.install_required_python
+
+        SharedHelpers.run_shell_command("pyenv local #{language_version_manager.python_major_minor}")
+      rescue StandardError => e
+        Dependabot.logger.error(e.message)
+        nil
+      end
+
+      sig { params(package_manager: String, version: String).void }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
-        return true if version&.match?(/^\d+(?:\.\d+)*$/)
+        return true if version.match?(/^\d+(?:\.\d+)*$/)
 
         Dependabot.logger.warn(
           "Detected #{package_manager} with malformed version #{version}"
@@ -254,6 +326,18 @@ module Dependabot
         rescue Gem::Requirement::BadRequirementError => e
           raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
+      end
+
+      def pipcompile_in_file
+        requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def pipenv_files
+        requirement_files.any?(PipenvPackageManager::MANIFEST_FILENAME)
+      end
+
+      def poetry_files
+        true if get_original_file(PoetryPackageManager::LOCKFILE_NAME)
       end
 
       def write_temporary_dependency_files

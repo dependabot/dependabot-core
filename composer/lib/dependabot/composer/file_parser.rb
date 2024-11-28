@@ -95,7 +95,7 @@ module Dependabot
           version: dependency_version(name: name, type: group),
           requirements: [{
             requirement: req,
-            file: "composer.json",
+            file: PackageManager::MANIFEST_FILENAME,
             source: dependency_source(
               name: name,
               type: group,
@@ -103,7 +103,7 @@ module Dependabot
             ),
             groups: [group]
           }],
-          package_manager: "composer"
+          package_manager: PackageManager::NAME
         )
       end
 
@@ -141,7 +141,7 @@ module Dependabot
           name: name,
           version: version,
           requirements: [],
-          package_manager: "composer",
+          package_manager: PackageManager::NAME,
           subdependency_metadata: [{
             production: keys.fetch(:group) != "development"
           }]
@@ -223,7 +223,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        raise "No composer.json!" unless get_original_file("composer.json")
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
       sig { returns(T.nilable(T::Hash[String, T.untyped])) }
@@ -252,12 +252,18 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def composer_json
-        @composer_json ||= T.let(get_original_file("composer.json"), T.nilable(Dependabot::DependencyFile))
+        @composer_json ||= T.let(
+          get_original_file(PackageManager::MANIFEST_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
-        @lockfile ||= T.let(get_original_file("composer.lock"), T.nilable(Dependabot::DependencyFile))
+        @lockfile ||= T.let(
+          get_original_file(PackageManager::LOCKFILE_FILENAME),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
 
       sig { returns(String) }

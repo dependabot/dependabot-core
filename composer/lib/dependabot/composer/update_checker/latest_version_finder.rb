@@ -107,7 +107,7 @@ module Dependabot
                 .select { |r| r.is_a?(Hash) }
 
           urls = repositories
-                 .select { |h| h["type"] == "composer" }
+                 .select { |h| h["type"] == PackageManager::NAME }
                  .filter_map { |h| h["url"] }
                  .map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
@@ -170,7 +170,7 @@ module Dependabot
         end
 
         def registry_credentials
-          credentials.select { |cred| cred["type"] == "composer_repository" } +
+          credentials.select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY } +
             auth_json_credentials
         end
 
@@ -191,14 +191,16 @@ module Dependabot
 
         def composer_file
           composer_file =
-            dependency_files.find { |f| f.name == "composer.json" }
-          raise "No composer.json!" unless composer_file
+            dependency_files.find do |f|
+              f.name == PackageManager::MANIFEST_FILENAME
+            end
+          raise "No #{PackageManager::MANIFEST_FILENAME}!" unless composer_file
 
           composer_file
         end
 
         def auth_json
-          dependency_files.find { |f| f.name == "auth.json" }
+          dependency_files.find { |f| f.name == PackageManager::AUTH_FILENAME }
         end
 
         def ignore_requirements

@@ -107,6 +107,7 @@ module Dependabot
         fetched_yarn_files << yarn_lock if yarn_lock
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        create_yarn_cache
         fetched_yarn_files
       end
 
@@ -668,6 +669,19 @@ module Dependabot
         JSON.parse(T.must(T.must(lerna_json).content))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, T.must(lerna_json).path
+      end
+
+      sig { void }
+      def create_yarn_cache
+        if repo_contents_path.nil?
+          Dependabot.logger.info("Repository contents path is nil")
+        elsif Dir.exist?(T.must(repo_contents_path))
+          Dir.chdir(T.must(repo_contents_path)) do
+            FileUtils.mkdir_p(".yarn/cache")
+          end
+        else
+          Dependabot.logger.info("Repository contents path does not exist")
+        end
       end
     end
   end

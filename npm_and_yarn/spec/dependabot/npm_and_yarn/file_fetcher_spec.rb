@@ -90,6 +90,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           File.join(repo_contents_path, ".pnp.cjs")
         )
       ).to start_with("version https://git-lfs.github.com/spec/v1")
+
+      # Ensure .yarn directory contains .cache directory
+      expect(Dir.exist?(File.join(repo_contents_path, ".yarn", "cache"))).to be true
     end
   end
 
