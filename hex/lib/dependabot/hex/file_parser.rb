@@ -164,7 +164,7 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(
-          Language.new(elixir_version, nil),
+          Language.new(elixir_version),
           T.nilable(Dependabot::Hex::Language)
         )
       end
@@ -188,15 +188,6 @@ module Dependabot
             elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
           }
         end, T.nilable(T::Hash[Symbol, T.nilable(String)]))
-      end
-
-      sig { returns(T.nilable(Dependabot::Hex::Requirement)) }
-      def language_requirement
-        command = "mix run --eval 'Mix.Project.config()[:elixir] |> IO.puts()'"
-        requirement = SharedHelpers.run_shell_command(command)
-        return if requirement.empty? || requirement.nil?
-
-        Dependabot::Hex::Requirement.new(requirement)
       end
     end
   end

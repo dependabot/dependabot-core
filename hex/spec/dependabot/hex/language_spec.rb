@@ -1,16 +1,14 @@
 # typed: false
 # frozen_string_literal: true
 
-require "dependabot/hex/requirement"
 require "dependabot/hex/language"
 require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Hex::Language do
-  subject(:language) { described_class.new(version, requirement) }
+  subject(:language) { described_class.new(version) }
 
   let(:version) { "1.17.3" }
-  let(:requirement) { Dependabot::Hex::Requirement.new("~> 1.5") }
 
   describe "#version" do
     it "returns the version" do
@@ -21,12 +19,6 @@ RSpec.describe Dependabot::Hex::Language do
   describe "#name" do
     it "returns the name" do
       expect(language.name).to eq(Dependabot::Hex::LANGUAGE)
-    end
-  end
-
-  describe "#requirement" do
-    it "returns the requirement" do
-      expect(language.requirement).to eq(requirement)
     end
   end
 
