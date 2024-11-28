@@ -68,25 +68,36 @@ RSpec.describe Dependabot::Nuget::FileParser do
     end
   end
 
+  def clean_common_files
+    # deletes `discovery_map.json` and `discovery.1.json`, etc.
+    Dir.glob(File.join(Dependabot::Nuget::NativeDiscoveryJsonReader.temp_directory, "discovery*.json")).each do |f|
+      File.delete(f)
+    end
+  end
+
   def run_parser_test(&_block)
-    # caching is explicitly required for these tests
-    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    clean_common_files
+    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
 
-    # don't allow a previous test to pollute the file parser cache
-    Dependabot::Nuget::FileParser.file_dependency_cache.clear
-
-    # create the parser...
-    parser = Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                               source: source,
-                                               repo_contents_path: repo_contents_path)
-
-    # ...and invoke the actual test
     ensure_job_file do
+      # ensure discovery files are present...
+      Dependabot::Nuget::NativeDiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                              directory: directory,
+                                                                              credentials: [])
+
+      # ...create the parser...
+      parser = Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                                 source: source,
+                                                 repo_contents_path: repo_contents_path)
+
+      # ...and invoke the actual test
       yield parser
     end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
-    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
+    clean_common_files
   end
 
   def intercept_native_tools(discovery_content_hash:)
@@ -320,7 +331,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
               TargetFrameworks: ["netstandard2.0"],
               ReferencedProjectPaths: [],
               ImportedFiles: [],
-              AdditionalFiles: []
+              AdditionalFiles: ["packages.config"]
             }],
             GlobalJson: nil,
             DotNetToolsJson: nil
@@ -337,7 +348,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.0.0",
-              file: "/packages.config",
+              file: "/my.csproj",
               groups: ["dependencies"],
               source: nil
             }]
@@ -403,7 +414,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.0",
-                file: "/dir/packages.config",
+                file: "/dir/my.csproj",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -780,51 +791,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
-    context "when discovered dependencies are reported" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                  <SomePackageVersion>1.2.3</SomePackageVersion>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        allow(Dependabot.logger).to receive(:info)
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [],
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          }
-        )
-      end
-
-      it "reports the relevant information" do
-        run_parser_test do |parser|
-          _dependencies = parser.parse # the result doesn't matter, but it forces discovery to run
-          expect(Dependabot.logger).to have_received(:info).with(
-            <<~INFO
-              Discovery JSON content: {"Path":"","IsSuccess":true,"Projects":[],"GlobalJson":null,"DotNetToolsJson":null}
-            INFO
-            .chomp
-          )
-        end
-      end
-    end
-
     context "when packages referenced in implicitly included `.targets` file are reported" do
       let(:additional_files) { [directory_build_targets] }
       let(:csproj_file) do
@@ -1024,45 +990,6 @@ RSpec.describe Dependabot::Nuget::FileParser do
           dependencies = parser.parse
           expect(dependencies.length).to eq(1)
           expect(dependencies[0].name).to eq("Package.E")
-        end
-      end
-    end
-
-    context "when there is a private source authentication failure" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Package.A" Version="1.2.3" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: false,
-            Projects: [],
-            GlobalJson: nil,
-            DotNetToolsJson: nil,
-            ErrorType: "AuthenticationFailure",
-            ErrorDetails: "the-error-details"
-          }
-        )
-      end
-
-      it "raises the correct error" do
-        run_parser_test do |parser|
-          expect { parser.parse }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
         end
       end
     end

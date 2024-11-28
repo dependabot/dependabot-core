@@ -41,7 +41,7 @@ module Dependabot
       attr_reader :dependencies
 
       sig { overridable.returns(Dependabot::FileParsers::Base::DependencySet) }
-      def dependency_set # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity,Metrics/AbcSize
+      def dependency_set # rubocop:disable Metrics/PerceivedComplexity
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         file_name = Pathname.new(file_path).cleanpath.to_path
@@ -65,14 +65,7 @@ module Dependabot
           # Exclude any dependencies which reference an item type
           next if dependency.name.include?("@(")
 
-          dependency_file_name = file_name
-          if dependency.type == "PackagesConfig"
-            dir_name = File.dirname(file_name)
-            dependency_file_name = "packages.config"
-            dependency_file_name = File.join(dir_name, "packages.config") unless dir_name == "."
-          end
-
-          dependency_set << build_dependency(dependency_file_name, dependency)
+          dependency_set << build_dependency(file_name, dependency)
         end
 
         dependency_set

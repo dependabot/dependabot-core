@@ -30,7 +30,12 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:project_name) { "file_updater_dirsproj" }
   let(:directory) { "/" }
   # project_dependency files comes back with directory files first, we need the closest project at the top
-  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+  let(:dependency_files) do
+    nuget_project_dependency_files(project_name, directory: directory).reverse.select do |f|
+      # intermediate `dirs.proj` aren't dependency files
+      f.name.match?(/\.csproj$/)
+    end
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -94,14 +99,25 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     end
   end
 
+  def clean_common_files
+    # deletes `discovery_map.json` and `discovery.1.json`, etc.
+    Dir.glob(File.join(Dependabot::Nuget::NativeDiscoveryJsonReader.temp_directory, "discovery*.json")).each do |f|
+      File.delete(f)
+    end
+  end
+
   def run_update_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
-
-    # don't allow a previous test to pollute the file parser cache
-    Dependabot::Nuget::FileParser.file_dependency_cache.clear
+    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    clean_common_files
 
     ensure_job_file do
+      # ensure discovery files are present
+      Dependabot::Nuget::NativeDiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                              directory: directory,
+                                                                              credentials: [])
+
       # calling `#parse` is necessary to force `discover` which is stubbed below
       Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
                                         source: source,
@@ -122,8 +138,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       yield updater
     end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    clean_common_files
   end
 
   def intercept_native_tools(discovery_content_hash:)
@@ -284,7 +301,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
 
   describe "#updated_dependency_files_with_wildcard" do
     let(:project_name) { "file_updater_dirsproj_wildcards" }
-    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
     let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
     let(:dependency_version) { "1.1.1" }
     let(:dependency_previous_version) { "1.0.0" }
