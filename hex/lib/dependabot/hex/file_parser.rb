@@ -164,7 +164,7 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(
-          Language.new(elixir_version, language_requirement),
+          Language.new(elixir_version, nil),
           T.nilable(Dependabot::Hex::Language)
         )
       end
