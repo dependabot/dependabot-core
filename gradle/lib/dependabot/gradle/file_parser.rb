@@ -9,6 +9,8 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/gradle/version"
+require "dependabot/gradle/language"
+require "dependabot/gradle/package_manager"
 
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
@@ -71,7 +73,34 @@ module Dependabot
                   .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new("NOT-AVAILABLE"),
+          T.nilable(Dependabot::Gradle::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          Language.new("NOT-AVAILABLE")
+        end, T.nilable(Dependabot::Gradle::Language))
+      end
 
       def version_catalog_dependencies(toml_file)
         dependency_set = DependencySet.new
