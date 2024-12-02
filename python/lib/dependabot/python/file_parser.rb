@@ -93,11 +93,11 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
+        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
+
         return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
 
         return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
-
-        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
@@ -206,6 +206,11 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
+          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
+        end
+
         language_version_manager.python_version
       end
 
