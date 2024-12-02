@@ -129,7 +129,7 @@ module Dependabot
         { composer: composer_version, php: php_version }
       rescue StandardError => e
         Dependabot.logger.error("Error fetching versions for package manager and language #{name}: #{e.message}")
-        raise
+        {}
       end
 
       sig { params(output: String, regex: Regexp).returns(T.nilable(String)) }
