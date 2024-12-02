@@ -86,6 +86,10 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
+        end
+
         @package_manager ||= detected_package_manager
       end
 
@@ -174,7 +178,6 @@ module Dependabot
       sig { params(package_manager: String).returns(T.any(String, T.untyped)) }
       def package_manager_version(package_manager)
         version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
-
         Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
 
         version_info
