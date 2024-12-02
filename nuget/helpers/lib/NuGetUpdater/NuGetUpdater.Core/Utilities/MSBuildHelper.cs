@@ -51,7 +51,7 @@ internal static partial class MSBuildHelper
         var globalJsonPaths = candidateDirectories.Select(d => Path.Combine(d, "global.json")).Where(File.Exists).Select(p => (p, p + Guid.NewGuid().ToString())).ToArray();
         foreach (var (globalJsonPath, tempGlobalJsonPath) in globalJsonPaths)
         {
-            logger.Log($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
+            logger.Info($"Temporarily removing `global.json` from `{Path.GetDirectoryName(globalJsonPath)}`{(retainMSBuildSdks ? " and retaining MSBuild SDK declarations" : string.Empty)}.");
             File.Move(globalJsonPath, tempGlobalJsonPath);
             if (retainMSBuildSdks)
             {
@@ -80,7 +80,7 @@ internal static partial class MSBuildHelper
         {
             foreach (var (globalJsonpath, tempGlobalJsonPath) in globalJsonPaths)
             {
-                logger.Log($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
+                logger.Info($"Restoring `global.json` to `{Path.GetDirectoryName(globalJsonpath)}`.");
                 File.Move(tempGlobalJsonPath, globalJsonpath, overwrite: retainMSBuildSdks);
             }
         }
@@ -638,8 +638,8 @@ internal static partial class MSBuildHelper
         }
         catch (NuGetConfigurationException ex)
         {
-            logger.Log("Error while parsing NuGet.config");
-            logger.Log(ex.Message);
+            logger.Warn("Error while parsing NuGet.config");
+            logger.Warn(ex.Message);
 
             // Nuget.config is invalid. Won't be able to do anything with specific sources.
             return null;
@@ -762,7 +762,7 @@ internal static partial class MSBuildHelper
         ThrowOnUnauthenticatedFeed(stdOut);
         if (exitCode != 0)
         {
-            logger.Log($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+            logger.Warn($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
         }
 
         // There are 3 return values, all uses slightly differently.  Only one will be set, the others will be blank
@@ -806,7 +806,7 @@ internal static partial class MSBuildHelper
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
-        ILogger? logger = null)
+        ILogger logger)
     {
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
         try
@@ -837,7 +837,7 @@ internal static partial class MSBuildHelper
             }
             else
             {
-                logger?.Log($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
+                logger?.Warn($"dotnet build in {nameof(GetAllPackageDependenciesAsync)} failed. STDOUT: {stdout} STDERR: {stderr}");
                 return [];
             }
         }

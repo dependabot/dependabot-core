@@ -14,13 +14,13 @@ internal static class PackagesConfigDiscovery
 
         if (packagesConfigPath is null)
         {
-            logger.Log("  No packages.config file found.");
+            logger.Info("  No packages.config file found.");
             return null;
         }
 
         var packagesConfigFile = PackagesConfigBuildFile.Open(workspacePath, packagesConfigPath);
 
-        logger.Log($"  Discovered [{packagesConfigFile.RelativePath}] file.");
+        logger.Info($"  Discovered [{packagesConfigFile.RelativePath}] file.");
 
         var dependencies = BuildFile.GetDependencies(packagesConfigFile)
             .OrderBy(d => d.Name)

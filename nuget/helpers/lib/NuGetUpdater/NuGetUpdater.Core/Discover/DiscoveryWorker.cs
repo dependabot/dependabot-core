@@ -82,7 +82,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         if (Directory.Exists(workspacePath))
         {
-            _logger.Log($"Discovering build files in workspace [{workspacePath}].");
+            _logger.Info($"Discovering build files in workspace [{workspacePath}].");
 
             dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
             globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
@@ -97,7 +97,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
         else
         {
-            _logger.Log($"Workspace path [{workspacePath}] does not exist.");
+            _logger.Info($"Workspace path [{workspacePath}] does not exist.");
         }
 
         result = new WorkspaceDiscoveryResult
@@ -108,7 +108,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
         };
 
-        _logger.Log("Discovery complete.");
+        _logger.Info("Discovery complete.");
         _processedProjectPaths.Clear();
 
         return result;
@@ -135,19 +135,19 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         _restoredMSBuildSdks.AddRange(keys);
 
-        _logger.Log($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
+        _logger.Info($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
 
         return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
     {
-        _logger.Log($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
+        _logger.Info($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
         var entryPoints = FindEntryPoints(workspacePath);
         var projects = ExpandEntryPointsIntoProjects(entryPoints);
         if (projects.IsEmpty)
         {
-            _logger.Log("  No project files found.");
+            _logger.Info("  No project files found.");
             return [];
         }
 

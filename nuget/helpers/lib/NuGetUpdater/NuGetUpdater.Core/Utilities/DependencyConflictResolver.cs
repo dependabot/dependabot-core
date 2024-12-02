@@ -235,24 +235,24 @@ public class PackageManager
             }
             else
             {
-                logger.Log("No compatible framework found.");
+                logger.Info("No compatible framework found.");
             }
         }
         catch (HttpRequestException ex)
         {
-            logger.Log($"HTTP error occurred: {ex.Message}");
+            logger.Error($"HTTP error occurred: {ex.Message}");
         }
         catch (ArgumentNullException ex)
         {
-            logger.Log($"Argument is null error: {ex.ParamName}, {ex.Message}");
+            logger.Error($"Argument is null error: {ex.ParamName}, {ex.Message}");
         }
         catch (InvalidOperationException ex)
         {
-            logger.Log($"Invalid operation exception: {ex.Message}");
+            logger.Error($"Invalid operation exception: {ex.Message}");
         }
         catch (Exception ex)
         {
-            logger.Log($"An error occurred: {ex.Message}");
+            logger.Error($"An error occurred: {ex.Message}");
         }
 
         return dependencyList;
@@ -499,7 +499,7 @@ public class PackageManager
 
             else
             {
-                logger.Log("Current version is >= latest version");
+                logger.Info("Current version is >= latest version");
             }
         }
         catch
@@ -680,7 +680,7 @@ public class PackageManager
             }
             else
             {
-                logger.Log($"Package {packageToUpdate.PackageName} not found in existing packages");
+                logger.Info($"Package {packageToUpdate.PackageName} not found in existing packages");
             }
         }
     }

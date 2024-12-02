@@ -13,7 +13,7 @@ internal static class LockFileUpdater
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", ["restore", "--force-evaluate", projectPath], workingDirectory: projectDirectory);
             if (exitCode != 0)
             {
-                logger.Log($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+                logger.Error($"      Lock file update failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
             }
             return (exitCode, stdout, stderr);
         }, logger, retainMSBuildSdks: true);
