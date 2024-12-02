@@ -11,6 +11,17 @@ require "dependabot/errors"
 
 module Dependabot
   module Composer
+    # Define components of the regex
+    ALPHANUMERIC_OR_ASTERISK = /[a-zA-Z0-9*]/ # Matches alphanumeric characters or '*'
+    WHITESPACE_OR_COMMA = /[ \t,]*/                # Matches zero or more spaces, tabs, or commas
+    PIPE_SEPARATOR = /\|\|?/                       # Matches '||' or '|'
+
+    # Combine the components into the full regex
+    REQUIREMENT_SEPARATOR = /
+      (?<=#{ALPHANUMERIC_OR_ASTERISK}) # Positive lookbehind for alphanumeric or '*'
+      (?:#{WHITESPACE_OR_COMMA}#{PIPE_SEPARATOR}#{WHITESPACE_OR_COMMA}) # Non-capturing group for whitespace and pipe
+    /x # Enables free-spacing mode for readability
+
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
@@ -84,7 +95,7 @@ module Dependabot
 
         return nil unless requirement_string
 
-        Requirement.new(requirement_string.strip.split(Requirement::OR_SEPARATOR))
+        Requirement.new(requirement_string.strip.split(REQUIREMENT_SEPARATOR))
       end
 
       sig { returns(DependencySet) }
@@ -196,7 +207,8 @@ module Dependabot
       end
 
       sig do
-        params(name: String, type: String, requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+        params(name: String, type: String,
+               requirement: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
       end
       def dependency_source(name:, type:, requirement:)
         return unless lockfile
@@ -277,7 +289,10 @@ module Dependabot
       def parsed_composer_json
         content = composer_json&.content
 
-        raise Dependabot::DependencyFileNotParseable, composer_json&.path || "" if content.nil? || content.strip.empty?
+        if content.nil? || content.strip.empty?
+          raise Dependabot::DependencyFileNotParseable,
+                composer_json&.path || ""
+        end
 
         @parsed_composer_json ||= T.let(JSON.parse(content), T.nilable(T::Hash[String, T.untyped]))
       rescue JSON::ParserError
@@ -302,7 +317,8 @@ module Dependabot
 
       sig { returns(String) }
       def composer_version
-        @composer_version ||= T.let(Helpers.composer_version(parsed_composer_json, parsed_lockfile), T.nilable(String))
+        @composer_version ||= T.let(Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+                                    T.nilable(String))
       end
     end
   end
