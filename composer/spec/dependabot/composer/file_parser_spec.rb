@@ -425,4 +425,23 @@ RSpec.describe Dependabot::Composer::FileParser do
       expect(parser.ecosystem.language.version).to eq("7.4.33")
     end
   end
+
+  describe "REQUIREMENT_SEPARATOR" do
+    let(:requirements) do
+      [
+        "php >=7.4 || php >=8.0",
+        "php >=7.4, || php >=8.0",
+        "php >=7.4 |||| php >=8.0"
+      ]
+    end
+
+    it "splits requirements correctly" do
+      results = requirements.map { |req| req.split(Dependabot::Composer::REQUIREMENT_SEPARATOR) }
+      expect(results).to eq([
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "", "php >=8.0"]
+      ])
+    end
+  end
 end

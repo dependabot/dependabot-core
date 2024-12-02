@@ -11,16 +11,11 @@ require "dependabot/errors"
 
 module Dependabot
   module Composer
-    # Define components of the regex
-    ALPHANUMERIC_OR_ASTERISK = /[a-zA-Z0-9*]/ # Matches alphanumeric characters or '*'
-    WHITESPACE_OR_COMMA = /[ \t,]*/                # Matches zero or more spaces, tabs, or commas
-    PIPE_SEPARATOR = /\|\|?/                       # Matches '||' or '|'
-
-    # Combine the components into the full regex
     REQUIREMENT_SEPARATOR = /
-      (?<=#{ALPHANUMERIC_OR_ASTERISK}) # Positive lookbehind for alphanumeric or '*'
-      (?:#{WHITESPACE_OR_COMMA}#{PIPE_SEPARATOR}#{WHITESPACE_OR_COMMA}) # Non-capturing group for whitespace and pipe
-    /x # Enables free-spacing mode for readability
+      (?<=\S|^)          # Positive lookbehind for a non-whitespace character or start of string
+      (?:[ \t,]*\|\|?[ \t]*) # Match optional whitespace, a pipe (|| or |), and optional whitespace
+      (?=\S|$)           # Positive lookahead for a non-whitespace character or end of string
+    /x
 
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
@@ -95,7 +90,7 @@ module Dependabot
 
         return nil unless requirement_string
 
-        Requirement.new(requirement_string.strip.split(REQUIREMENT_SEPARATOR))
+        Requirement.new(requirement_string.strip.split(REQUIREMENT_SEPARATOR).reject(&:blank?))
       end
 
       sig { returns(DependencySet) }
