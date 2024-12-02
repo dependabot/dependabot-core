@@ -136,7 +136,7 @@ public class PackageManager
     }
 
     // Method to get the dependencies of a package
-    public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework, string projectDirectory)
+    public async Task<List<PackageToUpdate>> GetDependenciesAsync(PackageToUpdate package, string targetFramework, string projectDirectory, ILogger logger)
     {
         if (!NuGetVersion.TryParse(package.NewVersion, out var otherVersion))
         {
@@ -235,24 +235,24 @@ public class PackageManager
             }
             else
             {
-                Console.WriteLine("No compatible framework found.");
+                logger.Log("No compatible framework found.");
             }
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"HTTP error occurred: {ex.Message}");
+            logger.Log($"HTTP error occurred: {ex.Message}");
         }
         catch (ArgumentNullException ex)
         {
-            Console.WriteLine($"Argument is null error: {ex.ParamName}, {ex.Message}");
+            logger.Log($"Argument is null error: {ex.ParamName}, {ex.Message}");
         }
         catch (InvalidOperationException ex)
         {
-            Console.WriteLine($"Invalid operation exception: {ex.Message}");
+            logger.Log($"Invalid operation exception: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            logger.Log($"An error occurred: {ex.Message}");
         }
 
         return dependencyList;
@@ -287,12 +287,12 @@ public class PackageManager
     }
 
     // Method to get the dependencies of a package and add them as a dependency
-    public async Task PopulatePackageDependenciesAsync(List<PackageToUpdate> packages, string targetFramework, string projectDirectory)
+    public async Task PopulatePackageDependenciesAsync(List<PackageToUpdate> packages, string targetFramework, string projectDirectory, ILogger logger)
     {
         // Loop through each package and get their dependencies
         foreach (PackageToUpdate package in packages)
         {
-            List<PackageToUpdate> dependencies = await GetDependenciesAsync(package, targetFramework, projectDirectory);
+            List<PackageToUpdate> dependencies = await GetDependenciesAsync(package, targetFramework, projectDirectory, logger);
 
             if (dependencies == null)
             {
@@ -366,7 +366,7 @@ public class PackageManager
                 package.CurrentVersion = package.NewVersion;
 
                 // Check if the current package has dependencies 
-                List<PackageToUpdate> dependencyList = await GetDependenciesAsync(package, targetFramework, projectDirectory);
+                List<PackageToUpdate> dependencyList = await GetDependenciesAsync(package, targetFramework, projectDirectory, logger);
 
                 // If there are dependencies
                 if (dependencyList != null)
@@ -426,7 +426,7 @@ public class PackageManager
 
                 foreach (PackageToUpdate parent in parentPackages)
                 {
-                    bool isCompatible = await IsCompatibleAsync(parent, package, targetFramework, projectDirectory);
+                    bool isCompatible = await IsCompatibleAsync(parent, package, targetFramework, projectDirectory, logger);
 
                     // If the parent and package are not compatible
                     if (!isCompatible)
@@ -446,7 +446,7 @@ public class PackageManager
                     // If it's compatible and the package you updated wasn't in the existing package, check if the parent's dependencies version is the same as the current version
                     else if (isCompatible == true && inExisting == false)
                     {
-                        List<PackageToUpdate> dependencyListParent = await GetDependenciesAsync(parent, targetFramework, projectDirectory);
+                        List<PackageToUpdate> dependencyListParent = await GetDependenciesAsync(parent, targetFramework, projectDirectory, logger);
 
                         PackageToUpdate parentDependency = dependencyListParent.FirstOrDefault(p => string.Compare(p.PackageName, package.PackageName, StringComparison.OrdinalIgnoreCase) == 0);
 
@@ -478,7 +478,7 @@ public class PackageManager
                                 parent.NewVersion = parentVersion;
 
                                 // Check if the parent needs to be updated since the child isn't in the existing package list  and the parent can update to a newer version to remove the dependency
-                                List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parent, targetFramework, projectDirectory);
+                                List<PackageToUpdate> dependencyListParentTemp = await GetDependenciesAsync(parent, targetFramework, projectDirectory, logger);
                                 PackageToUpdate parentDependencyTemp = dependencyListParentTemp.FirstOrDefault(p => string.Compare(p.PackageName, package.PackageName, StringComparison.OrdinalIgnoreCase) == 0);
 
                                 // If the newer package version of the parent has the same version as the parent's previous dependency, update
@@ -499,7 +499,7 @@ public class PackageManager
 
             else
             {
-                Console.WriteLine("Current version is >= latest version");
+                logger.Log("Current version is >= latest version");
             }
         }
         catch
@@ -511,10 +511,10 @@ public class PackageManager
     }
 
     // Method to determine if a parent and child are compatible with their versions
-    public async Task<bool> IsCompatibleAsync(PackageToUpdate parent, PackageToUpdate child, string targetFramework, string projectDirectory)
+    public async Task<bool> IsCompatibleAsync(PackageToUpdate parent, PackageToUpdate child, string targetFramework, string projectDirectory, ILogger logger)
     {
         // Get the dependencies of the parent
-        List<PackageToUpdate> dependencies = await GetDependenciesAsync(parent, targetFramework, projectDirectory);
+        List<PackageToUpdate> dependencies = await GetDependenciesAsync(parent, targetFramework, projectDirectory, logger);
 
         foreach (PackageToUpdate dependency in dependencies)
         {
@@ -613,7 +613,7 @@ public class PackageManager
             }
 
             // Check if there's compatibility with parent and dependency
-            if (await IsCompatibleAsync(possibleParent, possibleDependency, targetFramework, nugetContext.CurrentDirectory))
+            if (await IsCompatibleAsync(possibleParent, possibleDependency, targetFramework, nugetContext.CurrentDirectory, logger))
             {
                 // Check if parents are compatible, recursively
                 if (await AreAllParentsCompatibleAsync(existingPackages, possibleParent, targetFramework, nugetContext.CurrentDirectory, logger))
@@ -641,7 +641,7 @@ public class PackageManager
         foreach (PackageToUpdate parent in parentPackages)
         {
             // Check compatibility between the possibleParent and current parent
-            bool isCompatible = await IsCompatibleAsync(parent, possibleParent, targetFramework, projectDirectory);
+            bool isCompatible = await IsCompatibleAsync(parent, possibleParent, targetFramework, projectDirectory, logger);
 
             // If the possibleParent and parent are not compatible
             if (!isCompatible)
@@ -668,7 +668,7 @@ public class PackageManager
     }
 
     // Method to update the existing packages with new version of the desired packages to update
-    public void UpdateExistingPackagesWithNewVersions(List<PackageToUpdate> existingPackages, List<PackageToUpdate> packagesToUpdate)
+    public void UpdateExistingPackagesWithNewVersions(List<PackageToUpdate> existingPackages, List<PackageToUpdate> packagesToUpdate, ILogger logger)
     {
         foreach (PackageToUpdate packageToUpdate in packagesToUpdate)
         {
@@ -680,7 +680,7 @@ public class PackageManager
             }
             else
             {
-                Console.WriteLine($"Package {packageToUpdate.PackageName} not found in existing packages");
+                logger.Log($"Package {packageToUpdate.PackageName} not found in existing packages");
             }
         }
     }

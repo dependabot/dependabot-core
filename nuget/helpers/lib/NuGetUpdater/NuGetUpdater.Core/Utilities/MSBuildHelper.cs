@@ -327,7 +327,7 @@ internal static partial class MSBuildHelper
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
 
             // NU1608: Detected package version outside of dependency constraint
@@ -347,7 +347,7 @@ internal static partial class MSBuildHelper
 
         try
         {
-            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
 
             // Add Dependency[] packages to List<PackageToUpdate> existingPackages
@@ -398,10 +398,10 @@ internal static partial class MSBuildHelper
             if (added == true)
             {
                 // Add existing versions to existing list
-                packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate);
+                packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath));
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath), logger);
 
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
@@ -414,10 +414,10 @@ internal static partial class MSBuildHelper
             else
             {
                 // Add existing versions to existing list
-                packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate);
+                packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath));
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath), logger);
 
                 // Update all to new versions
                 foreach (var package in existingPackages)
@@ -503,7 +503,7 @@ internal static partial class MSBuildHelper
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         try
         {
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", ["restore", tempProjectPath], workingDirectory: tempDirectory.FullName);
             ThrowOnUnauthenticatedFeed(stdOut);
 
@@ -627,7 +627,7 @@ internal static partial class MSBuildHelper
         return projectRoot;
     }
 
-    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath)
+    private static IEnumerable<PackageSource>? LoadPackageSources(string nugetConfigPath, ILogger logger)
     {
         try
         {
@@ -638,8 +638,8 @@ internal static partial class MSBuildHelper
         }
         catch (NuGetConfigurationException ex)
         {
-            Console.WriteLine("Error while parsing NuGet.config");
-            Console.WriteLine(ex.Message);
+            logger.Log("Error while parsing NuGet.config");
+            logger.Log(ex.Message);
 
             // Nuget.config is invalid. Won't be able to do anything with specific sources.
             return null;
@@ -652,6 +652,7 @@ internal static partial class MSBuildHelper
         string projectPath,
         string targetFramework,
         IReadOnlyCollection<Dependency> packages,
+        ILogger logger,
         bool usePackageDownload = false)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath);
@@ -664,7 +665,7 @@ internal static partial class MSBuildHelper
             File.Copy(nugetConfigPath, Path.Combine(tempDir.FullName, "NuGet.Config"));
             var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
 
-            var packageSources = LoadPackageSources(nugetConfigPath);
+            var packageSources = LoadPackageSources(nugetConfigPath, logger);
             if (packageSources is not null)
             {
                 // We need to copy local package sources from the NuGet.Config file to the temp directory
@@ -811,7 +812,7 @@ internal static partial class MSBuildHelper
         try
         {
             var topLevelPackagesNames = packages.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages);
+            var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
 
             var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", ["build", tempProjectPath, "/t:_ReportDependencies"], workingDirectory: tempDirectory.FullName);
             ThrowOnUnauthenticatedFeed(stdout);
