@@ -21,7 +21,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
+        Converters = { new JsonStringEnumConverter(), new RequirementArrayConverter() },
     };
 
     public AnalyzeWorker(ILogger logger)
@@ -32,15 +32,15 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     public async Task RunAsync(string repoRoot, string discoveryPath, string dependencyPath, string analysisDirectory)
     {
         var analysisResult = await RunWithErrorHandlingAsync(repoRoot, discoveryPath, dependencyPath);
-        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        var dependencyInfo = await DeserializeDependencyInfoFileAsync(dependencyPath);
         await WriteResultsAsync(analysisDirectory, dependencyInfo.Name, analysisResult, _logger);
     }
 
     internal async Task<AnalysisResult> RunWithErrorHandlingAsync(string repoRoot, string discoveryPath, string dependencyPath)
     {
         AnalysisResult analysisResult;
-        var discovery = await DeserializeJsonFileAsync<WorkspaceDiscoveryResult>(discoveryPath, nameof(WorkspaceDiscoveryResult));
-        var dependencyInfo = await DeserializeJsonFileAsync<DependencyInfo>(dependencyPath, nameof(DependencyInfo));
+        var discovery = await DeserializeWorkspaceDiscoveryResultFileAsync(discoveryPath);
+        var dependencyInfo = await DeserializeDependencyInfoFileAsync(dependencyPath);
 
         try
         {
@@ -197,13 +197,28 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 !d.IsTransitive));
     }
 
-    internal static async Task<T> DeserializeJsonFileAsync<T>(string path, string fileType)
+    private static Task<WorkspaceDiscoveryResult> DeserializeWorkspaceDiscoveryResultFileAsync(string path)
     {
-        var json = File.Exists(path)
-            ? await File.ReadAllTextAsync(path)
-            : throw new FileNotFoundException($"{fileType} file not found.", path);
+        return DeserializeJsonFileAsync(path, nameof(WorkspaceDiscoveryResult), json => JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(json, SerializerOptions));
+    }
 
-        return JsonSerializer.Deserialize<T>(json, SerializerOptions)
+    private static Task<DependencyInfo> DeserializeDependencyInfoFileAsync(string path)
+    {
+        return DeserializeJsonFileAsync(path, nameof(DependencyInfo), DeserializeDependencyInfo);
+    }
+
+    internal static DependencyInfo? DeserializeDependencyInfo(string content)
+    {
+        return JsonSerializer.Deserialize<DependencyInfo>(content, SerializerOptions);
+    }
+
+    private static async Task<T> DeserializeJsonFileAsync<T>(string filePath, string fileType, Func<string, T?> deserializer)
+    {
+        var json = File.Exists(filePath)
+            ? await File.ReadAllTextAsync(filePath)
+            : throw new FileNotFoundException($"{fileType} file not found.", filePath);
+
+        return deserializer(json)
             ?? throw new InvalidOperationException($"{fileType} file is empty.");
     }
 
