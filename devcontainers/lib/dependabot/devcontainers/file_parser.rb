@@ -6,6 +6,8 @@ require "sorbet-runtime"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/devcontainers/version"
+require "dependabot/devcontainers/language"
+require "dependabot/devcontainers/package_manager"
 require "dependabot/devcontainers/file_parser/feature_dependency_parser"
 
 module Dependabot
@@ -26,6 +28,17 @@ module Dependabot
         end
 
         dependency_set.dependencies
+      end
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          )
+        end, T.nilable(Dependabot::Ecosystem))
       end
 
       private
@@ -53,6 +66,44 @@ module Dependabot
             f.name.end_with?("devcontainer.json")
           end,
           T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(devcontainer_version)),
+          T.nilable(Dependabot::Devcontainers::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(
+          Language.new(T.must(node_version)),
+          T.nilable(Dependabot::Devcontainers::Language)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def devcontainer_version
+        @devcontainer_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("devcontainer --version")
+            version.match(/(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def node_version
+        @node_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("node --version")
+            version.match(/(\d+\.\d+(.\d+)*)/)&.captures&.first
+          end,
+          T.nilable(String)
         )
       end
     end
