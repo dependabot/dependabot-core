@@ -11,7 +11,6 @@ RSpec.describe Dependabot::RegistryClient do
   end
   let(:dependabot_defaults) do
     Dependabot::SharedHelpers.excon_defaults.merge(
-        retry_limit: 3,
         retry_interval: 5
     )
   end
