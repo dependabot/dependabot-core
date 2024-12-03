@@ -86,6 +86,10 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Detected package manager : #{detected_package_manager.name}")
+        end
+
         @package_manager ||= detected_package_manager
       end
 
@@ -93,11 +97,11 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
+        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
+
         return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
 
         return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
-
-        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         PipPackageManager.new(detect_pip_version)
       end
@@ -123,7 +127,7 @@ module Dependabot
       # Detects the version of pip-compile. If the version cannot be detected, it returns nil
       sig { returns(T.nilable(String)) }
       def detect_pipcompile_version
-        if pip_compile_files
+        if pipcompile_in_file
           package_manager = PipCompilePackageManager::NAME
 
           version = package_manager_version(package_manager)
@@ -145,7 +149,7 @@ module Dependabot
           package_manager = PipenvPackageManager::NAME
 
           version = package_manager_version(package_manager)
-                    .to_s.split("versions ").last&.strip
+                    .to_s.split("version ").last&.strip
 
           log_if_version_malformed(package_manager, version)
 
@@ -174,7 +178,6 @@ module Dependabot
       sig { params(package_manager: String).returns(T.any(String, T.untyped)) }
       def package_manager_version(package_manager)
         version_info = SharedHelpers.run_shell_command("pyenv exec #{package_manager} --version")
-
         Dependabot.logger.info("Package manager #{package_manager}, Info : #{version_info}")
 
         version_info
@@ -206,6 +209,11 @@ module Dependabot
 
       sig { returns(String) }
       def python_raw_version
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Detected python version: #{language_version_manager.python_version}")
+          Dependabot.logger.info("Detected python major minor version: #{language_version_manager.python_major_minor}")
+        end
+
         language_version_manager.python_version
       end
 
@@ -333,7 +341,7 @@ module Dependabot
       end
 
       def pipenv_files
-        requirement_files.any?(PipenvPackageManager::MANIFEST_FILENAME)
+        dependency_files.any? { |f| f.name == PipenvPackageManager::LOCKFILE_FILENAME }
       end
 
       def poetry_files
