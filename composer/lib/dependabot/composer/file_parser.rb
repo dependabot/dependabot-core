@@ -90,7 +90,15 @@ module Dependabot
 
         return nil unless requirement_string
 
-        Requirement.new(requirement_string.strip.split(REQUIREMENT_SEPARATOR).reject(&:blank?))
+        requirements = requirement_string
+                       .strip
+                       .split(REQUIREMENT_SEPARATOR)
+                       .map(&:strip)
+                       .reject(&:empty?)
+
+        return nil unless requirements.any?
+
+        Requirement.new(requirements)
       end
 
       sig { returns(DependencySet) }
