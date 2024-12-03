@@ -12,7 +12,7 @@ module Dependabot
     PACKAGE_MANAGER = "elm"
     ELM_VERSION_KEY = "elm-version"
     MANIFEST_FILE = "elm.json"
-    DEFAULT_ELM_VERSION = "0.19.1"
+    DEFAULT_ELM_VERSION = "0.19.0"
 
     # Keep versions in ascending order
     SUPPORTED_ELM_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
