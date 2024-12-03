@@ -12,6 +12,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      DEFAULT_VERSION_PATTERN = /(\d+\.\d+(.\d+)*)/
+
       abstract!
       # Initialize version information for a package manager or language.
       # @param name [String] the name of the package manager or language (e.g., "bundler", "ruby").
