@@ -89,6 +89,55 @@ module Dependabot
         nil
       end
 
+      # Run single composer command returning stdout/stderr
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.package_manager_run_command(command, fingerprint: nil)
+        full_command = "composer #{command}"
+
+        Dependabot.logger.info("Running composer command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "composer #{fingerprint || command}"
+        ).strip
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running composer command: #{full_command}, Error: #{e.message}")
+        raise
+      end
+
+      # Example output:
+      # [dependabot] ~ $ composer --version
+      # Composer version 2.7.7 2024-06-10 22:11:12
+      # PHP version 7.4.33 (/usr/bin/php7.4)
+      # Run the "diagnose" command to get more detailed diagnostics output.
+      # Get the version of the composer and php form the command output
+      # @return [Hash] with the composer and php version
+      # => { composer: "2.7.7", php: "7.4.33" }
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+      def self.fetch_composer_and_php_versions
+        output = package_manager_run_command("--version").strip
+
+        composer_version = capture_version(output, /Composer version (?<version>\d+\.\d+\.\d+)/)
+        php_version = capture_version(output, /PHP version (?<version>\d+\.\d+\.\d+)/)
+
+        Dependabot.logger.info("Dependabot running with Composer version: #{composer_version}")
+        Dependabot.logger.info("Dependabot running with PHP version: #{php_version}")
+
+        { composer: composer_version, php: php_version }
+      rescue StandardError => e
+        Dependabot.logger.error("Error fetching versions for package manager and language #{name}: #{e.message}")
+        {}
+      end
+
+      sig { params(output: String, regex: Regexp).returns(T.nilable(String)) }
+      def self.capture_version(output, regex)
+        match = output.match(regex)
+        match&.named_captures&.fetch("version", nil)
+      end
+
       # Capture the platform PHP version from composer.json
       sig { params(parsed_composer_json: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def self.capture_platform_php(parsed_composer_json)
