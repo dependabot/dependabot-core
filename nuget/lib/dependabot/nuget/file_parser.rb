@@ -16,79 +16,36 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
-      require_relative "cache_manager"
-
-      sig { returns(T::Hash[String, T::Array[Dependabot::Dependency]]) }
-      def self.file_dependency_cache
-        T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
-      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        return [] unless repo_contents_path
-
-        key = NativeDiscoveryJsonReader.create_cache_key(dependency_files)
-        workspace_path = source&.directory || "/"
-        self.class.file_dependency_cache[key] ||= begin
-          # run discovery for the repo
-          discovery_json_path = NativeDiscoveryJsonReader.create_discovery_file_path_from_dependency_files(
-            dependency_files
-          )
-          NativeHelpers.run_nuget_discover_tool(job_path: job_file_path,
-                                                repo_root: T.must(repo_contents_path),
-                                                workspace_path: workspace_path,
-                                                output_path: discovery_json_path,
-                                                credentials: credentials)
-
-          discovery_json = NativeDiscoveryJsonReader.discovery_json_from_path(discovery_json_path)
-          return [] unless discovery_json
-
-          Dependabot.logger.info("Discovery JSON content: #{discovery_json.content}")
-          discovery_json_reader = NativeDiscoveryJsonReader.new(
-            discovery_json: discovery_json
-          )
-
-          # cache discovery results
-          NativeDiscoveryJsonReader.set_discovery_from_dependency_files(dependency_files: dependency_files,
-                                                                        discovery: discovery_json_reader)
-          discovery_json_reader.dependency_set.dependencies
-        end
-
-        T.must(self.class.file_dependency_cache[key])
+        dependencies
       end
 
       private
 
-      sig { returns(String) }
-      def job_file_path
-        ENV.fetch("DEPENDABOT_JOB_PATH")
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def proj_files
-        projfile = /\.proj$/
-
-        dependency_files.select do |df|
-          df.name.match?(projfile)
-        end
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def project_files
-        projectfile = /\.(cs|vb|fs)proj$/
-
-        dependency_files.select do |df|
-          df.name.match?(projectfile)
-        end
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def dependencies
+        @dependencies ||= T.let(NativeDiscoveryJsonReader.load_discovery_for_directory(
+          repo_contents_path: T.must(repo_contents_path),
+          directory: source&.directory || "/"
+        ).dependency_set.dependencies, T.nilable(T::Array[Dependabot::Dependency]))
       end
 
       sig { override.void }
       def check_required_files
-        return if project_files.any? || proj_files.any?
+        requirement_files = dependencies.flat_map do |dep|
+          dep.requirements.map { |r| T.let(r.fetch(:file), String) }
+        end.uniq
+
+        project_files = requirement_files.select { |f| File.basename(f).match?(/\.(cs|vb|fs)proj$/) }
+        global_json_file = requirement_files.select { |f| File.basename(f) == "global.json" }
+        dotnet_tools_json_file = requirement_files.select { |f| File.basename(f) == "dotnet-tools.json" }
+        return if project_files.any? || global_json_file.any? || dotnet_tools_json_file.any?
 
         raise Dependabot::DependencyFileNotFound.new(
-          "*.(cs|vb|fs)proj, *.proj",
-          "No project file or *.proj!"
+          "*.(cs|vb|fs)proj",
+          "No project file."
         )
       end
     end

@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/ecosystem"
+require "dependabot/composer/requirement"
 require "dependabot/composer/version"
 
 module Dependabot
@@ -12,11 +13,14 @@ module Dependabot
 
       NAME = "php"
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig { params(raw_version: String, requirement: T.nilable(Requirement)).void }
+      def initialize(raw_version, requirement: nil)
         super(
           NAME,
           Version.new(raw_version),
+          [],
+          [],
+          requirement
        )
       end
 

@@ -57,7 +57,12 @@ module Dependabot
             try_update_projects(dependency) || try_update_json(dependency)
           end
           updated_files = dependency_files.filter_map do |f|
-            updated_content = File.read(dependency_file_path(f))
+            dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+              repo_contents_path: T.must(repo_contents_path),
+              dependency_file: f
+            )
+            dependency_file_path = File.join(repo_contents_path, dependency_file_path)
+            updated_content = File.read(dependency_file_path)
             next if updated_content == f.content
 
             normalized_content = normalize_content(f, updated_content)
@@ -92,7 +97,11 @@ module Dependabot
         # run update for each project file
         project_files.each do |project_file|
           project_dependencies = project_dependencies(project_file)
-          proj_path = dependency_file_path(project_file)
+          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: project_file
+          )
+          proj_path = dependency_file_path
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
 
@@ -119,7 +128,11 @@ module Dependabot
 
           # We just need to feed the updater a project file, grab the first
           project_file = T.must(project_files.first)
-          proj_path = dependency_file_path(project_file)
+          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: project_file
+          )
+          proj_path = dependency_file_path
 
           return false unless repo_contents_path
 
@@ -157,8 +170,11 @@ module Dependabot
 
       sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
       def workspace
-        discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
-        discovery_json_reader.workspace_discovery
+        dependency_file_paths = dependency_files.map do |f|
+          NativeDiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
+                                                         dependency_file: f)
+        end
+        NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -214,17 +230,6 @@ module Dependabot
         updated_content
       end
       # rubocop:enable Metrics/PerceivedComplexity
-
-      sig { params(dependency_file: Dependabot::DependencyFile).returns(String) }
-      def dependency_file_path(dependency_file)
-        if dependency_file.directory.start_with?(T.must(repo_contents_path))
-          File.join(dependency_file.directory, dependency_file.name)
-        else
-          file_directory = dependency_file.directory
-          file_directory = file_directory[1..-1] if file_directory.start_with?("/")
-          File.join(repo_contents_path || "", file_directory, dependency_file.name)
-        end
-      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files

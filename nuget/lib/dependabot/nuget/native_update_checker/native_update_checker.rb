@@ -92,9 +92,21 @@ module Dependabot
         File.join(NativeDiscoveryJsonReader.temp_directory, "dependency", "#{dependency.name}.json")
       end
 
+      sig { returns(T::Array[String]) }
+      def dependency_file_paths
+        dependency_files.map do |file|
+          NativeDiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: file
+          )
+        end
+      end
+
       sig { returns(AnalysisJsonReader) }
       def request_analysis
-        discovery_file_path = NativeDiscoveryJsonReader.get_discovery_file_path_from_dependency_files(dependency_files)
+        discovery_file_path = NativeDiscoveryJsonReader.get_discovery_json_path_for_dependency_file_paths(
+          dependency_file_paths
+        )
         analysis_folder_path = AnalysisJsonReader.temp_directory
 
         write_dependency_info
@@ -140,8 +152,7 @@ module Dependabot
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def discovered_dependencies
-        discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
-        discovery_json_reader.dependency_set
+        NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).dependency_set
       end
 
       sig { override.returns(T::Boolean) }
