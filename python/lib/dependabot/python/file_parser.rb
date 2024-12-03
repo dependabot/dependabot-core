@@ -127,7 +127,7 @@ module Dependabot
       # Detects the version of pip-compile. If the version cannot be detected, it returns nil
       sig { returns(T.nilable(String)) }
       def detect_pipcompile_version
-        if pip_compile_files
+        if pipcompile_in_file
           package_manager = PipCompilePackageManager::NAME
 
           version = package_manager_version(package_manager)
@@ -149,7 +149,7 @@ module Dependabot
           package_manager = PipenvPackageManager::NAME
 
           version = package_manager_version(package_manager)
-                    .to_s.split("versions ").last&.strip
+                    .to_s.split("version ").last&.strip
 
           log_if_version_malformed(package_manager, version)
 
@@ -341,7 +341,7 @@ module Dependabot
       end
 
       def pipenv_files
-        requirement_files.any?(PipenvPackageManager::MANIFEST_FILENAME)
+        dependency_files.any? { |f| f.name == PipenvPackageManager::LOCKFILE_FILENAME }
       end
 
       def poetry_files
