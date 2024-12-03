@@ -90,7 +90,7 @@ module Dependabot
         @devcontainer_version ||= T.let(
           begin
             version = SharedHelpers.run_shell_command("devcontainer --version")
-            version.match(/(\d+\.\d+(.\d+)*)/)&.captures&.first
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
           end,
           T.nilable(String)
         )
@@ -101,7 +101,7 @@ module Dependabot
         @node_version ||= T.let(
           begin
             version = SharedHelpers.run_shell_command("node --version")
-            version.match(/(\d+\.\d+(.\d+)*)/)&.captures&.first
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
           end,
           T.nilable(String)
         )
