@@ -3,7 +3,6 @@ import io
 import json
 import os.path
 import re
-
 import configparser
 import setuptools
 import pip._internal.req.req_file
@@ -14,9 +13,12 @@ from pip._internal.req.constructors import (
 )
 
 from packaging.requirements import InvalidRequirement, Requirement
-# TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop
-# support for Python 3.10.
-import toml
+
+# Import tomllib for Python 3.11+ and fall back to toml for earlier versions
+try:
+    import tomllib  # Python 3.11+ standard library
+except ImportError:
+    import toml as tomllib  # Backward compatibility for Python 3.10 and below
 
 # Inspired by pips internal check:
 # https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
@@ -24,7 +26,7 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    project_toml = toml.load(pyproject_path)
+    project_toml = tomllib.load(pyproject_path)
 
     def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
         requirement_packages = []
@@ -176,7 +178,6 @@ def parse_setup(directory):
     setup_packages = []
 
     if os.path.isfile(setup_py_path):
-
         def setup(*args, **kwargs):
             for arg in ["setup_requires", "install_requires", "tests_require"]:
                 requires = kwargs.get(arg, [])
@@ -184,7 +185,7 @@ def parse_setup(directory):
             extras_require_dict = kwargs.get("extras_require", {})
             for key, value in extras_require_dict.items():
                 parse_requirements(
-                    value, "extras_require:{}".format(key), setup_py
+                    value, f"extras_require:{key}", setup_py
                 )
 
         setuptools.setup = setup
@@ -246,8 +247,7 @@ def parse_setup(directory):
                 "tests_require",
             ]:
                 requires = config.get(
-                    'options',
-                    req_type, fallback='').splitlines()
+                    'options', req_type, fallback='').splitlines()
                 requires = [req for req in requires if req.strip()]
                 parse_requirements(requires, req_type, setup_cfg)
 
@@ -257,9 +257,7 @@ def parse_setup(directory):
                     requires = value.splitlines()
                     requires = [req for req in requires if req.strip()]
                     parse_requirements(
-                        requires,
-                        f"extras_require:{key}",
-                        setup_cfg
+                        requires, f"extras_require:{key}", setup_cfg
                     )
 
         except Exception as e:
