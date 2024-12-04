@@ -7,5 +7,19 @@ echo "NuGet native updater experiment value: $nuget_experiment_value"
 if echo "$nuget_experiment_value" | grep -q 'true'; then
     pwsh "$DEPENDABOT_HOME/dependabot-updater/bin/main.ps1" $*
 else
+    operation=$1
+    dot_dependabot_directory="$DEPENDABOT_HOME/.dependabot"
+    discovery_map_path="$dot_dependabot_directory/discovery_map.json"
+
+    # ensure discovery file exists before running update
+    if [[ "$operation" == "update_files" && ! -f $discovery_map_path ]]; then
+        echo "ERROR running update_files without discovery_map.json"
+    fi
+
     "$DEPENDABOT_HOME/dependabot-updater/bin/run-original" $*
+
+    # ensure discovery file exists after running fetch
+    if [[ "$operation" == "fetch_files" && ! -f $discovery_map_path ]]; then
+        echo "ERROR ran fetch_files without producing discovery_map.json"
+    fi
 fi

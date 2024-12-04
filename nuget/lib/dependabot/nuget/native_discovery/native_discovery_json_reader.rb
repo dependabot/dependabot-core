@@ -41,6 +41,17 @@ module Dependabot
         FileUtils.rm_rf(discovery_directory)
       end
 
+      sig { params(error_if_missing: T::Boolean).void }
+      def self.debug_report_discovery_files(error_if_missing:)
+        if File.exist?(discovery_map_file_path)
+          Dependabot.logger.info("Discovery map file (#{discovery_map_file_path}) contents: " \
+                                 "#{File.read(discovery_map_file_path)}")
+          Dependabot.logger.info("Discovery files: #{Dir.glob(File.join(discovery_directory, '*'))}")
+        elsif error_if_missing
+          Dependabot.logger.error("discovery map file missing")
+        end
+      end
+
       # Runs NuGet dependency discovery in the given directory and returns a new instance of NativeDiscoveryJsonReader.
       # The location of the resultant JSON file is saved.
       sig do

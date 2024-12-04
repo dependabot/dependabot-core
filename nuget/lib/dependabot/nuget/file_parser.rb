@@ -26,10 +26,16 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Dependency]) }
       def dependencies
-        @dependencies ||= T.let(NativeDiscoveryJsonReader.load_discovery_for_directory(
-          repo_contents_path: T.must(repo_contents_path),
-          directory: source&.directory || "/"
-        ).dependency_set.dependencies, T.nilable(T::Array[Dependabot::Dependency]))
+        @dependencies ||= T.let(begin
+          NativeDiscoveryJsonReader.debug_report_discovery_files(error_if_missing: true)
+          directory = source&.directory || "/"
+          discovery_json_reader = NativeDiscoveryJsonReader.run_discovery_in_directory(
+            repo_contents_path: T.must(repo_contents_path),
+            directory: directory,
+            credentials: credentials
+          )
+          discovery_json_reader.dependency_set.dependencies
+        end, T.nilable(T::Array[Dependabot::Dependency]))
       end
 
       sig { override.void }
