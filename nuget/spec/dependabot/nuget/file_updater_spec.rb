@@ -100,10 +100,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   def clean_common_files
-    # deletes `discovery_map.json` and `discovery.1.json`, etc.
-    Dir.glob(File.join(Dependabot::Nuget::NativeDiscoveryJsonReader.temp_directory, "discovery*.json")).each do |f|
-      File.delete(f)
-    end
+    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_discovery_files
   end
 
   def run_update_test(&_block)
