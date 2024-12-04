@@ -14,7 +14,9 @@ module Dependabot
 
       sig { returns(String) }
       def self.temp_directory
-        File.join(NativeDiscoveryJsonReader.temp_directory, "analysis")
+        d = File.join(Dir.tmpdir, "analysis")
+        FileUtils.mkdir_p(d)
+        d
       end
 
       sig { params(dependency_name: String).returns(String) }

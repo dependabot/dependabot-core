@@ -35,6 +35,12 @@ module Dependabot
         cache_dependency_file_paths_to_discovery_json_path.clear
       end
 
+      sig { void }
+      def self.testonly_clear_discovery_files
+        # this will get recreated when necessary
+        FileUtils.rm_rf(discovery_directory)
+      end
+
       # Runs NuGet dependency discovery in the given directory and returns a new instance of NativeDiscoveryJsonReader.
       # The location of the resultant JSON file is saved.
       sig do
@@ -99,7 +105,7 @@ module Dependabot
 
       sig { returns(String) }
       def self.discovery_map_file_path
-        File.join(temp_directory, "discovery_map.json")
+        File.join(discovery_directory, "discovery_map.json")
       end
 
       sig { params(workspace_path: String).returns(String) }
@@ -124,7 +130,7 @@ module Dependabot
         discovery_json_counter = 1
         new_discovery_json_path = ""
         loop do
-          new_discovery_json_path = File.join(temp_directory, "discovery.#{discovery_json_counter}.json")
+          new_discovery_json_path = File.join(discovery_directory, "discovery.#{discovery_json_counter}.json")
           break unless File.exist?(new_discovery_json_path)
 
           discovery_json_counter += 1
@@ -144,8 +150,8 @@ module Dependabot
       end
 
       sig { returns(String) }
-      def self.temp_directory
-        t = File.join(Dir.tmpdir, ".dependabot")
+      def self.discovery_directory
+        t = File.join(Dir.home, ".dependabot")
         FileUtils.mkdir_p(t)
         t
       end
@@ -155,7 +161,7 @@ module Dependabot
         discovery_file_path = discovery_file_path_from_workspace_path(workspace_path)
         discovery_json = DependencyFile.new(
           name: Pathname.new(discovery_file_path).cleanpath.to_path,
-          directory: temp_directory,
+          directory: discovery_directory,
           type: "file",
           content: File.read(discovery_file_path)
         )

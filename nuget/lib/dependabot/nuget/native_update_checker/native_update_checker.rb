@@ -89,7 +89,9 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_file_path
-        File.join(NativeDiscoveryJsonReader.temp_directory, "dependency", "#{dependency.name}.json")
+        d = File.join(Dir.tmpdir, "dependency")
+        FileUtils.mkdir_p(d)
+        File.join(d, "#{dependency.name}.json")
       end
 
       sig { returns(T::Array[String]) }
