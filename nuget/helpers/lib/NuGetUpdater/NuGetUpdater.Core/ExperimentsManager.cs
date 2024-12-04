@@ -37,8 +37,7 @@ public record ExperimentsManager
         }
         catch (JsonException ex)
         {
-            // the following message has been specifically designed to match the format of `Dependabot.logger.info(...)` from Ruby
-            logger.Log($"{DateTime.UtcNow:yyyy/MM/dd HH:mm:ss} INFO Error deserializing job file: {ex.ToString()}: {jobFileContent}");
+            logger.Info($"Error deserializing job file: {ex.ToString()}: {jobFileContent}");
             return new ExperimentsManager();
         }
     }

@@ -36,18 +36,18 @@ internal static class PackagesConfigUpdater
     )
     {
         // packages.config project; use NuGet.exe to perform update
-        logger.Log($"  Found '{ProjectHelper.PackagesConfigFileName}' project; running NuGet.exe update");
+        logger.Info($"  Found '{ProjectHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
         var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion, packagesConfigPath);
         if (packagesSubDirectory is null)
         {
-            logger.Log($"    Project [{projectPath}] does not reference this dependency.");
+            logger.Info($"    Project [{projectPath}] does not reference this dependency.");
             return;
         }
 
-        logger.Log($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
+        logger.Info($"    Using packages directory [{packagesSubDirectory}] for project [{projectPath}].");
 
         var projectDirectory = Path.GetDirectoryName(projectPath);
         var packagesDirectory = PathHelper.JoinPath(projectDirectory, packagesSubDirectory);
@@ -75,7 +75,7 @@ internal static class PackagesConfigUpdater
             "-NonInteractive",
         };
 
-        logger.Log("    Finding MSBuild...");
+        logger.Info("    Finding MSBuild...");
         var msbuildDirectory = MSBuildHelper.MSBuildPath;
         if (msbuildDirectory is not null)
         {
@@ -97,7 +97,7 @@ internal static class PackagesConfigUpdater
         // Update binding redirects
         await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
 
-        logger.Log("    Writing project file back to disk");
+        logger.Info("    Writing project file back to disk");
         await projectBuildFile.SaveAsync();
     }
 
@@ -119,12 +119,12 @@ internal static class PackagesConfigUpdater
             var retryingAfterRestore = false;
 
         doRestore:
-            logger.Log($"    Running NuGet.exe with args: {string.Join(" ", updateArgs)}");
+            logger.Info($"    Running NuGet.exe with args: {string.Join(" ", updateArgs)}");
             outputBuilder.Clear();
             var result = Program.Main(updateArgs.ToArray());
             var fullOutput = outputBuilder.ToString();
-            logger.Log($"    Result: {result}");
-            logger.Log($"    Output:\n{fullOutput}");
+            logger.Info($"    Result: {result}");
+            logger.Info($"    Output:\n{fullOutput}");
             if (result != 0)
             {
                 // The initial `update` command can fail for several reasons:
@@ -141,7 +141,7 @@ internal static class PackagesConfigUpdater
                 if (!retryingAfterRestore && OutputIndicatesRestoreIsRequired(fullOutput))
                 {
                     retryingAfterRestore = true;
-                    logger.Log($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
+                    logger.Info($"    Running NuGet.exe with args: {string.Join(" ", restoreArgs)}");
                     outputBuilder.Clear();
                     var exitCodeAgain = Program.Main(restoreArgs.ToArray());
                     var restoreOutput = outputBuilder.ToString();
@@ -165,7 +165,7 @@ internal static class PackagesConfigUpdater
         }
         catch (Exception e)
         {
-            logger.Log($"Error: {e}");
+            logger.Info($"Error: {e}");
             throw;
         }
         finally
@@ -179,7 +179,7 @@ internal static class PackagesConfigUpdater
             var deltaSpawnedProcesses = currentSpawnedProcesses.Except(existingSpawnedProcesses).ToArray();
             foreach (var credProvider in deltaSpawnedProcesses)
             {
-                logger.Log($"Ending spawned credential provider process");
+                logger.Info($"Ending spawned credential provider process");
                 credProvider.Kill();
             }
         }

@@ -13,7 +13,7 @@ public class ShellGitCommandHandler : IGitCommandHandler
 
     public async Task RunGitCommandAsync(IReadOnlyCollection<string> args, string? workingDirectory = null)
     {
-        _logger.Log($"Running command: git {string.Join(" ", args)}{(workingDirectory is null ? "" : $" in directory {workingDirectory}")}");
+        _logger.Info($"Running command: git {string.Join(" ", args)}{(workingDirectory is null ? "" : $" in directory {workingDirectory}")}");
         var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("git", args, workingDirectory);
         HandleErrorsFromOutput(stdout, stderr);
     }

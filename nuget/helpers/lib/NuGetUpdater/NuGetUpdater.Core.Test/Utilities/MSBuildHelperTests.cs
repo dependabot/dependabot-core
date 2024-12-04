@@ -172,7 +172,8 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             temp.DirectoryPath,
             "netstandard2.0",
-            [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)]
+            [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
+            new TestLogger()
         );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
@@ -300,7 +301,7 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Package.2A", "1.0.0", DependencyType.Unknown),
             new Dependency("Package.2R", "18.0.0", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages);
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages, new TestLogger());
         for (int i = 0; i < actualDependencies.Length; i++)
         {
             var ad = actualDependencies[i];
@@ -334,7 +335,7 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
             new Dependency("Package.C", "3.0.0", DependencyType.Unknown, IsUpdate: true)
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages);
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages, new TestLogger());
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
@@ -371,7 +372,8 @@ public class MSBuildHelperTests : TestBase
                 temp.DirectoryPath,
                 temp.DirectoryPath,
                 "net8.0",
-                [new Dependency("Some.Package", "4.5.11", DependencyType.Unknown)]
+                [new Dependency("Some.Package", "4.5.11", DependencyType.Unknown)],
+                new TestLogger()
             );
         }
         finally
@@ -428,7 +430,8 @@ public class MSBuildHelperTests : TestBase
                 temp.DirectoryPath,
                 temp.DirectoryPath,
                 "net8.0",
-                [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)]
+                [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
+                new TestLogger()
             );
 
             AssertEx.Equal(expectedDependencies, actualDependencies);

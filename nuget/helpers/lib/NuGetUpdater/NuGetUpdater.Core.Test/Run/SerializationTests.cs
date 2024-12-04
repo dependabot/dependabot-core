@@ -263,7 +263,7 @@ public class SerializationTests
 
         public IReadOnlyList<string> Messages => _messages;
 
-        public void Log(string message)
+        public void LogRaw(string message)
         {
             _messages.Add(message);
         }

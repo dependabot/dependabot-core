@@ -68,7 +68,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
     {
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
-        _logger.Log($"Starting analysis of {dependencyInfo.Name}...");
+        _logger.Info($"Starting analysis of {dependencyInfo.Name}...");
 
         // We need to find all projects which have the given dependency. Even in cases that they
         // have it transitively may require that peer dependencies be updated in the project.
@@ -97,7 +97,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         AnalysisResult analysisResult;
         if (isUpdateNecessary)
         {
-            _logger.Log($"  Determining multi-dependency property.");
+            _logger.Info($"  Determining multi-dependency property.");
             var multiDependencies = DetermineMultiDependencyDetails(
                 discovery,
                 dependencyInfo.Name,
@@ -117,7 +117,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                     .ToImmutableArray()
                 : projectFrameworks;
 
-            _logger.Log($"  Finding updated version.");
+            _logger.Info($"  Finding updated version.");
             updatedVersion = await FindUpdatedVersionAsync(
                 startingDirectory,
                 dependencyInfo,
@@ -127,7 +127,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 _logger,
                 CancellationToken.None);
 
-            _logger.Log($"  Finding updated peer dependencies.");
+            _logger.Info($"  Finding updated peer dependencies.");
             if (updatedVersion is null)
             {
                 updatedDependencies = [];
@@ -173,7 +173,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             UpdatedDependencies = updatedDependencies,
         };
 
-        _logger.Log($"Analysis complete.");
+        _logger.Info($"Analysis complete.");
         return analysisResult;
     }
 
@@ -468,7 +468,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 
         var resultPath = Path.Combine(analysisDirectory, $"{dependencyName}.json");
 
-        logger.Log($"  Writing analysis result to [{resultPath}].");
+        logger.Info($"  Writing analysis result to [{resultPath}].");
 
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
         await File.WriteAllTextAsync(path: resultPath, resultJson);

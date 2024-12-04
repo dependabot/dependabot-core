@@ -113,8 +113,8 @@ public class RunWorker
     {
         var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
 
-        _logger.Log("Discovery JSON content:");
-        _logger.Log(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
+        _logger.Info("Discovery JSON content:");
+        _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
 
         // report dependencies
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
@@ -155,7 +155,7 @@ public class RunWorker
             }
 
             // do update
-            _logger.Log($"Running update in directory {repoDirectory}");
+            _logger.Info($"Running update in directory {repoDirectory}");
             foreach (var project in discoveryResult.Projects)
             {
                 foreach (var dependency in project.Dependencies.Where(d => !d.IsTransitive))

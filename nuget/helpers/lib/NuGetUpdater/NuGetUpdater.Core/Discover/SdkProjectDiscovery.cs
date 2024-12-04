@@ -117,7 +117,7 @@ internal static class SdkProjectDiscovery
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
-                    logger.Log($"  Error determining dependencies from `{startingProjectPath}`:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                    logger.Warn($"  Error determining dependencies from `{startingProjectPath}`:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
                 }
 
                 var buildRoot = BinaryLog.ReadBuild(binLogPath);
