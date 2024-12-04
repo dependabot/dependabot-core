@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/git_submodules/package_manager"
 
 module Dependabot
   module GitSubmodules
@@ -40,6 +41,16 @@ module Dependabot
             )
           end
         end
+      end
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(begin
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          )
+        end, T.nilable(Dependabot::Ecosystem))
       end
 
       private
@@ -76,6 +87,25 @@ module Dependabot
         %w(.gitmodules).each do |filename|
           raise "No #{filename}!" unless get_original_file(filename)
         end
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(T.must(git_version)),
+          T.nilable(Dependabot::GitSubmodules::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def git_version
+        @git_version ||= T.let(
+          begin
+            version = SharedHelpers.run_shell_command("git --version")
+            version.match(Dependabot::Ecosystem::VersionManager::DEFAULT_VERSION_PATTERN)&.captures&.first
+          end,
+          T.nilable(String)
+        )
       end
     end
   end
