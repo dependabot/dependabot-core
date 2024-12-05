@@ -4,19 +4,32 @@ using TestFile = (string Path, string Contents);
 
 public sealed class TemporaryDirectory : IDisposable
 {
+    private readonly TemporaryEnvironment _environment;
+    private readonly string _rootDirectory;
+
     public string DirectoryPath { get; }
 
     public TemporaryDirectory()
     {
         var parentDir = Path.GetDirectoryName(GetType().Assembly.Location)!;
         var tempDirName = $"nuget-updater-{Guid.NewGuid():d}";
-        DirectoryPath = Path.Combine(parentDir, "test-data", tempDirName);
+        _rootDirectory = Path.Combine(parentDir, "test-data", tempDirName);
+        _environment = new TemporaryEnvironment(
+            [
+                ("NUGET_PACKAGES", Path.Combine(_rootDirectory, "NUGET_PACKAGES")),
+                ("NUGET_HTTP_CACHE_PATH", Path.Combine(_rootDirectory, "NUGET_HTTP_CACHE_PATH")),
+                ("NUGET_SCRATCH", Path.Combine(_rootDirectory, "NUGET_SCRATCH")),
+                ("NUGET_PLUGINS_CACHE_PATH", Path.Combine(_rootDirectory, "NUGET_PLUGINS_CACHE_PATH")),
+            ]);
+
+        DirectoryPath = Path.Combine(_rootDirectory, "repo-root");
         Directory.CreateDirectory(DirectoryPath);
     }
 
     public void Dispose()
     {
-        Directory.Delete(DirectoryPath, true);
+        _environment.Dispose();
+        Directory.Delete(_rootDirectory, true);
     }
 
     public async Task<TestFile[]> ReadFileContentsAsync(HashSet<string> filePaths)
@@ -47,12 +60,10 @@ public sealed class TemporaryDirectory : IDisposable
     {
         var temporaryDirectory = new TemporaryDirectory();
 
-        var parentDirectory = Path.GetDirectoryName(temporaryDirectory.DirectoryPath)!;
-
         // prevent directory crawling
-        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.props"), "<Project />");
-        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Build.targets"), "<Project />");
-        await File.WriteAllTextAsync(Path.Combine(parentDirectory, "Directory.Packages.props"), """
+        await File.WriteAllTextAsync(Path.Combine(temporaryDirectory._rootDirectory, "Directory.Build.props"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(temporaryDirectory._rootDirectory, "Directory.Build.targets"), "<Project />");
+        await File.WriteAllTextAsync(Path.Combine(temporaryDirectory._rootDirectory, "Directory.Packages.props"), """
             <Project>
               <PropertyGroup>
                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
