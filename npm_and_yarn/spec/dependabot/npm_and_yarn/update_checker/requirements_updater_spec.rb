@@ -467,7 +467,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "^1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("^1.2.3") }
+            its([:requirement]) { is_expected.to eq("^1.5.0") }
           end
 
           context "when the latest version does not satisfy" do
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "~>2.5.1" }
 
-            its([:requirement]) { is_expected.to eq("~>2.5.1") }
+            its([:requirement]) { is_expected.to eq("~>2.5.3") }
           end
 
           context "when the latest version does not satisfy" do
@@ -550,7 +550,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "~2.5.1" }
 
-            its([:requirement]) { is_expected.to eq("~2.5.1") }
+            its([:requirement]) { is_expected.to eq("~2.5.3") }
           end
 
           context "when the latest version does not satisfy" do
@@ -619,7 +619,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           it "updates the requirement that needs to be updated" do
             expect(updater.updated_requirements).to contain_exactly({
               file: "package.json",
-              requirement: "^1.2.3",
+              requirement: "^1.5.0",
               groups: [],
               source: nil
             }, {

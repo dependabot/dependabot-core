@@ -119,7 +119,13 @@ module Dependabot
           return req if current_requirement.strip == ""
 
           ruby_reqs = ruby_requirements(current_requirement)
-          return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
+          updated_req = req.dup
+
+          if (prefix = check_pattern_and_get_prefix(current_requirement))
+            updated_req[:requirement] = "#{prefix}#{version}"
+          end
+
+          return updated_req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
 
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
@@ -138,6 +144,15 @@ module Dependabot
         def ruby_requirements(requirement_string)
           NpmAndYarn::Requirement
             .requirements_array(requirement_string)
+        end
+
+        def check_pattern_and_get_prefix(version_string)
+          pattern = /^[~^><=]{0,2}\d+\.\d+\.\d+$/
+          return nil unless pattern.match?(version_string)
+
+          prefix_pattern = /[~^><=]{0,2}/
+          match = prefix_pattern.match(version_string)
+          match ? match[0] : ""
         end
 
         def update_range_requirement(req_string)
