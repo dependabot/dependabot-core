@@ -1,8 +1,7 @@
-const parse = require("@dependabot/yarn-lib/lib/lockfile/parse").default;
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
-  .default;
-const semver = require("semver");
-const { LOCKFILE_ENTRY_REGEX } = require("./helpers");
+import parseLib from "@dependabot/yarn-lib/lib/lockfile/parse";
+import stringifyLib from "@dependabot/yarn-lib/lib/lockfile/stringify";
+import semver from "semver";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers";
 
 function flattenIndirectDependencies(packages) {
   return (packages || []).reduce((acc, { pkg }) => {
@@ -15,12 +14,12 @@ function flattenIndirectDependencies(packages) {
 
 // Inspired by yarn-deduplicate. Altered to ensure the latest version is always used
 // for version ranges which allow it.
-module.exports = (data, updatedDependencyName) => {
+export default (data, updatedDependencyName) => {
   if (!updatedDependencyName) {
     throw new Error("Yarn fix duplicates: must provide dependency name");
   }
 
-  const json = parse(data).object;
+  const json = parseLib.default(data).object;
   const enableLockfileVersions = Boolean(data.match(/^# yarn v/m));
   const noHeader = !Boolean(data.match(/^# THIS IS AN AU/m));
 
@@ -76,5 +75,5 @@ module.exports = (data, updatedDependencyName) => {
       });
     });
 
-  return stringify(json, noHeader, enableLockfileVersions);
+  return stringifyLib.default(json, noHeader, enableLockfileVersions);
 };
