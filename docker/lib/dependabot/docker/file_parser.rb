@@ -7,6 +7,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "dependabot/docker/package_manager"
 require "sorbet-runtime"
 
 module Dependabot
@@ -15,8 +16,6 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
-
-      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
 
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
@@ -51,15 +50,15 @@ module Dependabot
             next unless FROM_LINE.match?(line)
 
             parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
-            parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
+            parsed_from_line[REGISTERY_KEY] = nil if parsed_from_line[REGISTERY_KEY] == REGISTERY_DOMAIN
 
             version = version_from(parsed_from_line)
             next unless version
 
             dependency_set << Dependency.new(
-              name: T.must(parsed_from_line.fetch("image")),
+              name: T.must(parsed_from_line.fetch(IMAGE_KEY)),
               version: version,
-              package_manager: "docker",
+              package_manager: PACKAGE_MANAGER,
               requirements: [
                 requirement: nil,
                 groups: [],
@@ -77,28 +76,60 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new(docker_version || "latest"),
+          T.nilable(Dependabot::Docker::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def docker_version
+        @docker_version ||= T.let(
+          begin
+            dockerfile = dockerfiles.find { |f| f.name == "Dockerfile" }
+            return unless dockerfile
+
+            dockerfile.content&.match(/FROM docker:(?<version>[0-9.]+)/)&.named_captures&.fetch(VERSION_KEY)
+          end,
+          T.nilable(String)
+        )
+      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
-        dependency_files.reject { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+        dependency_files.reject { |f| f.type == FILE_TYPE && f.name.match?(YAML_REGEXP) }
       end
 
       sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
       def version_from(parsed_from_line)
-        parsed_from_line.fetch("tag") || parsed_from_line.fetch("digest")
+        parsed_from_line.fetch(TAG_KEY) || parsed_from_line.fetch(DIGEST_KEY)
       end
 
       sig { params(parsed_from_line: T::Hash[String, T.nilable(String)]).returns(T::Hash[String, T.nilable(String)]) }
       def source_from(parsed_from_line)
         source = {}
 
-        source[:registry] = parsed_from_line.fetch("registry") if parsed_from_line.fetch("registry")
+        source[:registry] = parsed_from_line.fetch(REGISTERY_KEY) if parsed_from_line.fetch(REGISTERY_KEY)
 
-        source[:tag] = parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
+        source[:tag] = parsed_from_line.fetch(TAG_KEY) if parsed_from_line.fetch(TAG_KEY)
 
-        source[:digest] = parsed_from_line.fetch("digest") if parsed_from_line.fetch("digest")
+        source[:digest] = parsed_from_line.fetch(DIGEST_KEY) if parsed_from_line.fetch(DIGEST_KEY)
 
         source
       end
@@ -108,7 +139,7 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No #{MANIFEST_FILE}!"
       end
 
       sig { params(file: T.untyped).returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -125,7 +156,7 @@ module Dependabot
             details = string.match(IMAGE_SPEC)&.named_captures
             next if details.nil?
 
-            details["registry"] = nil if details["registry"] == "docker.io"
+            details[REGISTERY_KEY] = nil if details[REGISTERY_KEY] == REGISTERY_DOMAIN
 
             version = version_from(details)
             next unless version
@@ -145,9 +176,9 @@ module Dependabot
       end
       def build_image_dependency(file, details, version)
         Dependency.new(
-          name: details.fetch("image"),
+          name: details.fetch(IMAGE_KEY),
           version: version,
-          package_manager: "docker",
+          package_manager: PACKAGE_MANAGER,
           requirements: [
             requirement: nil,
             groups: [],
@@ -168,7 +199,7 @@ module Dependabot
 
       sig { params(json_object: T.untyped).returns(T::Array[T.untyped]) }
       def deep_fetch_images_from_hash(json_object)
-        img = json_object.fetch("image", nil)
+        img = json_object.fetch(IMAGE_KEY, nil)
 
         images =
           if !img.nil? && img.is_a?(String) && !img.empty?
@@ -185,23 +216,23 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
-        dependency_files.select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+        dependency_files.select { |f| f.type == FILE_TYPE && f.name.match?(YAML_REGEXP) }
       end
 
       sig { params(img_hash: T::Hash[String, T.nilable(String)]).returns(T::Array[String]) }
       def parse_helm(img_hash)
-        tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
+        tag_value = img_hash.key?(TAG_KEY) ? img_hash.fetch(TAG_KEY, nil) : img_hash.fetch(VERSION_KEY, nil)
         return [] unless tag_value
 
-        repo = img_hash.fetch("repository", nil)
+        repo = img_hash.fetch(REPOSITORY_KEY, nil)
         return [] unless repo
 
         tag_details = T.must(tag_value.to_s.match(TAG_WITH_DIGEST)).named_captures
-        tag = tag_details["tag"]
+        tag = tag_details[TAG_KEY]
         return [repo] unless tag
 
-        registry = img_hash.fetch("registry", nil)
-        digest = tag_details["digest"]
+        registry = img_hash.fetch(REGISTERY_KEY, nil)
+        digest = tag_details[DIGEST_KEY]
 
         image = "#{repo}:#{tag}"
         image.prepend("#{registry}/") if registry
