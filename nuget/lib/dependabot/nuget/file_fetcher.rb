@@ -32,6 +32,7 @@ module Dependabot
           credentials: credentials
         )
 
+        NativeDiscoveryJsonReader.debug_report_discovery_files(error_if_missing: false)
         discovery_json_reader.dependency_file_paths.map do |p|
           relative_path = Pathname.new(p).relative_path_from(directory).to_path
           fetch_file_from_host(relative_path)
