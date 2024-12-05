@@ -60,7 +60,8 @@ internal static class BindingRedirectManager
         // finally we pull out the assembly `HintPath` values for _all_ references relative to the project file in a unix-style value
         //    e.g., ../packages/Some.Other.Package/4.5.6/lib/net45/Some.Other.Package.dll
         // all of that is passed to `AddBindingRedirects()` so we can ensure binding redirects for the relevant assemblies
-        var packagesDirectory = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, updatedPackageName, updatedPackageVersion, packagesConfigPath: null)!;
+        var packagesConfigPath = ProjectHelper.GetPackagesConfigPathFromProject(projectBuildFile.Path, ProjectHelper.PathFormat.Full);
+        var packagesDirectory = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, updatedPackageName, updatedPackageVersion, packagesConfigPath)!;
         var assemblyPathPrefix = Path.Combine(packagesDirectory, $"{updatedPackageName}.{updatedPackageVersion}").NormalizePathToUnix().EnsureSuffix("/");
         var assemblyPaths = references.Select(static x => x.HintPath).Select(x => Path.GetRelativePath(Path.GetDirectoryName(projectBuildFile.Path)!, x).NormalizePathToUnix()).ToList();
         var bindingsAndAssemblyPaths = bindings.Zip(assemblyPaths);

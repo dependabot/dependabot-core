@@ -23,7 +23,7 @@ namespace NuGetUpdater.Core;
 /// See: https://learn.microsoft.com/en-us/nuget/reference/packages-config
 ///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
 /// <remarks>
-internal static class PackagesConfigUpdater
+internal static partial class PackagesConfigUpdater
 {
     public static async Task UpdateDependencyAsync(
         string repoRootPath,
@@ -215,7 +215,7 @@ internal static class PackagesConfigUpdater
         var hintPathSubString = $"{dependencyName}.{dependencyVersion}";
 
         string? partialPathMatch = null;
-        var specificHintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName)).ToArray();
+        var specificHintPathNodes = projectBuildFile.Contents.Descendants().Where(e => e.IsHintPathNodeForDependency(dependencyName, dependencyVersion)).ToArray();
         foreach (var hintPathNode in specificHintPathNodes)
         {
             var hintPath = hintPathNode.GetContentValue();
@@ -266,8 +266,7 @@ internal static class PackagesConfigUpdater
                     foreach (var hintPathNode in genericHintPathNodes)
                     {
                         var hintPath = hintPathNode.GetContentValue();
-                        var match = Regex.Match(hintPath, @"^(?<PackagesPath>.*)[/\\](?<PackageNameAndVersion>[^/\\]+)[/\\]lib[/\\](?<Tfm>[^/\\]+)[/\\](?<AssemblyName>[^/\\]+)$");
-                        // e.g.,                              ..\..\packages     \    Some.Package.1.2.3              \    lib\     net45          \   Some.Package.dll
+                        var match = PackageAssemblyHintPathPattern().Match(hintPath);
                         if (match.Success)
                         {
                             partialPathMatch = match.Groups["PackagesPath"].Value;
@@ -297,17 +296,15 @@ internal static class PackagesConfigUpdater
         return false;
     }
 
-    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName)
+    private static bool IsHintPathNodeForDependency(this IXmlElementSyntax element, string dependencyName, string dependencyVersion)
     {
         if (element.IsHintPathNode())
         {
-            // the include attribute will look like one of the following:
-            //   <Reference Include="Some.Dependency, Version=1.0.0.0, Culture=neutral, PublicKeyToken=abcd">
-            // or
-            //   <Reference Include="Some.Dependency">
-            string includeAttributeValue = element.Parent.GetAttributeValue("Include", StringComparison.OrdinalIgnoreCase);
-            if (includeAttributeValue.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ||
-                includeAttributeValue.StartsWith($"{dependencyName},", StringComparison.OrdinalIgnoreCase))
+            // the hint path will look similar to this:
+            //   ..\packages\Some.Package.1.2.3\lib\net45\Some.Package.dll
+            var assemblyPath = element.GetContentValue();
+            var match = PackageAssemblyHintPathPattern().Match(assemblyPath);
+            if (match.Success)
             {
                 return true;
             }
@@ -326,4 +323,8 @@ internal static class PackagesConfigUpdater
 
         return subpath;
     }
+
+    [GeneratedRegex(@"^(?<PackagesPath>.*)[/\\](?<PackageNameAndVersion>[^/\\]+)[/\\]lib[/\\](?<Tfm>[^/\\]+)[/\\](?<AssemblyName>[^/\\]+)$", RegexOptions.IgnoreCase)]
+    // e.g.,            ..\..\packages      \   Some.Package.1.2.3                \  lib  \   net45           \   Some.Package.dll
+    private static partial Regex PackageAssemblyHintPathPattern();
 }

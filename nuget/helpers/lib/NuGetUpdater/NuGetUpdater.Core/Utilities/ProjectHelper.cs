@@ -74,7 +74,7 @@ internal static class ProjectHelper
     private static string? GetItemPathWithFileName(this ProjectRootElement projectRootElement, string itemFileName)
     {
         var projectDirectory = Path.GetDirectoryName(projectRootElement.FullPath)!;
-        var packagesConfigPath = projectRootElement.Items
+        var itemPath = projectRootElement.Items
             .Where(i => i.ElementName.Equals("None", StringComparison.OrdinalIgnoreCase) ||
                         i.ElementName.Equals("Content", StringComparison.OrdinalIgnoreCase))
             .Where(i => Path.GetFileName(i.Include).Equals(itemFileName, StringComparison.OrdinalIgnoreCase))
@@ -82,7 +82,7 @@ internal static class ProjectHelper
             .Where(File.Exists)
             .FirstOrDefault()
             ?.NormalizePathToUnix();
-        return packagesConfigPath;
+        return itemPath;
     }
 
     private static string? GetPathWithRegardsToProjectFile(string fullProjectPath, string fileName)
