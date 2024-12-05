@@ -315,14 +315,6 @@ public abstract class UpdateWorkerTestBase : TestBase
                 """
             );
         }
-
-        // override various nuget locations
-        foreach (var envName in new[] { "NUGET_PACKAGES", "NUGET_HTTP_CACHE_PATH", "NUGET_SCRATCH", "NUGET_PLUGINS_CACHE_PATH" })
-        {
-            string dir = Path.Join(temporaryDirectory, envName);
-            Directory.CreateDirectory(dir);
-            Environment.SetEnvironmentVariable(envName, dir);
-        }
     }
 
     protected static async Task<TestFile[]> RunUpdate(TestFile[] files, Func<string, Task> action)

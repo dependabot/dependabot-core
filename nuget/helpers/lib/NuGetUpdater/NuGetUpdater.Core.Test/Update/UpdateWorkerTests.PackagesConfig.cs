@@ -2160,12 +2160,6 @@ public partial class UpdateWorkerTests
                 };
             }
             using var cache = new TemporaryDirectory();
-            using var env = new TemporaryEnvironment([
-                ("NUGET_PACKAGES", Path.Join(cache.DirectoryPath, "NUGET_PACKAGES")),
-                ("NUGET_HTTP_CACHE_PATH", Path.Join(cache.DirectoryPath, "NUGET_HTTP_CACHE_PATH")),
-                ("NUGET_SCRATCH", Path.Join(cache.DirectoryPath, "NUGET_SCRATCH")),
-                ("NUGET_PLUGINS_CACHE_PATH", Path.Join(cache.DirectoryPath, "NUGET_PLUGINS_CACHE_PATH")),
-            ]);
             using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
             await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
                 // existing
