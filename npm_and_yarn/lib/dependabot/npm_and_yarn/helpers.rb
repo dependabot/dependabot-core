@@ -332,7 +332,7 @@ module Dependabot
           version.strip.delete_prefix("v") # Remove the "v" prefix if present
         end
       rescue StandardError => e
-        puts "Error retrieving Node.js version: #{e.message}"
+        Dependabot.logger.info("Error retrieving Node.js version: #{e.message}")
         nil
       end
 
@@ -388,7 +388,6 @@ module Dependabot
       end
 
       # Install the package manager for specified version by using corepack
-      # and prepare it for use by using corepack
       sig { params(name: String, version: String).returns(String) }
       def self.install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
@@ -397,8 +396,8 @@ module Dependabot
           # Try to install the specified version
           output = package_manager_install(name, version)
 
-          # Check if the output indicates a successful installation
-          if output.include?("Adding #{name}@") && output.include?("to the cache")
+          # Confirm success based on the output
+          if output.match?(/Adding #{name}@.* to the cache/)
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
@@ -411,7 +410,6 @@ module Dependabot
 
         # Verify the installed version
         installed_version = package_manager_version(name)
-        Dependabot.logger.info("Installed version of #{name}: #{installed_version}")
 
         installed_version
       end
@@ -443,7 +441,7 @@ module Dependabot
       def self.package_manager_activate(name, version)
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
-          fingerprint: "corepack prepare --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate"
         ).strip
       end
 
@@ -452,8 +450,8 @@ module Dependabot
       sig { params(name: String).returns(String) }
       def self.local_package_manager_version(name)
         Dependabot::SharedHelpers.run_shell_command(
-          "#{name} --version",
-          fingerprint: "#{name} --version"
+          "#{name} -v",
+          fingerprint: "#{name} -v"
         ).strip
       end
 
@@ -464,7 +462,8 @@ module Dependabot
 
         version = package_manager_run_command(name, "-v").strip
 
-        Dependabot.logger.info("Version for #{name}: #{version}")
+        Dependabot.logger.info("Installed version of #{name}: #{version}")
+
         version
       rescue StandardError => e
         Dependabot.logger.error("Error fetching version for package manager #{name}: #{e.message}")
@@ -482,14 +481,11 @@ module Dependabot
       def self.package_manager_run_command(name, command, fingerprint: nil)
         full_command = "corepack #{name} #{command}"
 
-        Dependabot.logger.info("Running package manager command: #{full_command}")
-
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
           fingerprint: "corepack #{name} #{fingerprint || command}"
         ).strip
 
-        Dependabot.logger.info("Command executed successfully: #{full_command}")
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
