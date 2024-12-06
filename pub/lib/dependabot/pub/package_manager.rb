@@ -1,0 +1,54 @@
+# typed: strong
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+require "dependabot/pub/version"
+require "dependabot/ecosystem"
+require "dependabot/pub/requirement"
+
+module Dependabot
+  module Pub
+    ECOSYSTEM = "dart"
+
+    SUPPORTED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+    DEPRECATED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+    class PubPackageManager < Dependabot::Ecosystem::VersionManager
+      extend T::Sig
+
+      NAME = "pub"
+      VERSION = "0.0"
+
+      SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement = nil)
+        super(
+          NAME,
+          Version.new(raw_version),
+          SUPPORTED_VERSIONS,
+          DEPRECATED_VERSIONS,
+          requirement,
+       )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        false
+      end
+    end
+  end
+end
