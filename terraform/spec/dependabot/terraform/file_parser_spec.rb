@@ -1021,4 +1021,24 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
   end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:files) { project_dependency_files("registry") }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "terraform"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "terraform"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "1.10.0"
+      end
+    end
+  end
 end
