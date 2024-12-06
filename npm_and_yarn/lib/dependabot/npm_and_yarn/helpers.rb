@@ -393,10 +393,27 @@ module Dependabot
       def self.install(name, version)
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        package_manager_install(name, version)
-        package_manager_activate(name, version)
-        installed_version = package_manager_version(name)
+        begin
+          # Try to install the specified version
+          package_manager_install(name, version)
+        rescue StandardError => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
+          # Fetch the currently installed version directly from the environment
+          current_version = local_package_manager_version(name)
+          Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
+
+          # Prepare the existing version
+          package_manager_activate(name, current_version)
+          version = current_version # Update version to the fallback
+        end
+
+        # Activate the package manager for the selected version
+        package_manager_activate(name, version)
+
+        # Verify the installed version
+        installed_version = package_manager_version(name)
         Dependabot.logger.info("Installed version of #{name}: #{installed_version}")
 
         installed_version
@@ -417,6 +434,16 @@ module Dependabot
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare --activate"
+        ).strip
+      end
+
+      # Fetch the currently installed version of the package manager directly
+      # from the system without involving Corepack
+      sig { params(name: String).returns(String) }
+      def self.local_package_manager_version(name)
+        Dependabot::SharedHelpers.run_shell_command(
+          "#{name} --version",
+          fingerprint: "#{name} --version"
         ).strip
       end
 
