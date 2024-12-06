@@ -9,7 +9,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    module Helpers
+    module Helpers # rubocop:disable Metrics/ModuleLength
       extend T::Sig
 
       YARN_PATH_NOT_FOUND =
