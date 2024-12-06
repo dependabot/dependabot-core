@@ -264,7 +264,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
         expect(Dependabot.logger).to receive(:error).with("Corepack installation output unexpected: Unexpected output")
-        expect(Dependabot.logger).to receive(:info).with("Falling back to activate the currently installed version of npm.")
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of npm."
+        )
         expect(Dependabot.logger).to receive(:info).with("Activating currently installed version of npm: 10.8.2")
         expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
         expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 10.8.2")
@@ -304,7 +306,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
         expect(Dependabot.logger).to receive(:error).with("Error installing npm@8.0.0: Corepack failed")
-        expect(Dependabot.logger).to receive(:info).with("Falling back to activate the currently installed version of npm.")
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of npm."
+        )
         expect(Dependabot.logger).to receive(:info).with("Activating currently installed version of npm: 10.8.2")
         expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
         expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 10.8.2")
