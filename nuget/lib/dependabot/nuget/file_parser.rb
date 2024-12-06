@@ -27,7 +27,6 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Dependency]) }
       def dependencies
         @dependencies ||= T.let(begin
-          NativeDiscoveryJsonReader.debug_report_discovery_files(error_if_missing: true)
           directory = source&.directory || "/"
           discovery_json_reader = NativeDiscoveryJsonReader.run_discovery_in_directory(
             repo_contents_path: T.must(repo_contents_path),
