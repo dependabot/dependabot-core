@@ -16,7 +16,7 @@ public sealed record Job
     public object[]? ExistingPullRequests { get; init; } = null;
     public object[]? ExistingGroupPullRequests { get; init; } = null;
     public Dictionary<string, object>? Experiments { get; init; } = null;
-    public object[]? IgnoreConditions { get; init; } = null;
+    public Condition[] IgnoreConditions { get; init; } = [];
     public bool LockfileOnly { get; init; } = false;
     public string? RequirementsUpdateStrategy { get; init; } = null;
     public object[]? SecurityAdvisories { get; init; } = null;

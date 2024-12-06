@@ -257,6 +257,48 @@ public class SerializationTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void DeserializeJobIgnoreConditions()
+    {
+        var jobContent = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "specific-sdk"
+                },
+                "ignore-conditions": [
+                  {
+                    "dependency-name": "Package.1",
+                    "source": "some-file",
+                    "version-requirement": "> 1.2.3"
+                  },
+                  {
+                    "dependency-name": "Package.2",
+                    "updated-at": "2024-12-05T15:47:12Z"
+                  }
+                ]
+              }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jobContent)!;
+        Assert.Equal(2, jobWrapper.Job.IgnoreConditions.Length);
+
+        Assert.Equal("Package.1", jobWrapper.Job.IgnoreConditions[0].DependencyName);
+        Assert.Equal("some-file", jobWrapper.Job.IgnoreConditions[0].Source);
+        Assert.Empty(jobWrapper.Job.IgnoreConditions[0].UpdateTypes);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[0].UpdatedAt);
+        Assert.Equal("> 1.2.3", jobWrapper.Job.IgnoreConditions[0].VersionRequirement?.ToString());
+
+        Assert.Equal("Package.2", jobWrapper.Job.IgnoreConditions[1].DependencyName);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].Source);
+        Assert.Empty(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
+        Assert.Equal(new DateTime(2024, 12, 5, 15, 47, 12), jobWrapper.Job.IgnoreConditions[1].UpdatedAt);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].VersionRequirement);
+    }
+
     private class CapturingTestLogger : ILogger
     {
         private readonly List<string> _messages = new();
