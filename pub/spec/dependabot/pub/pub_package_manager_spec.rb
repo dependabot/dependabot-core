@@ -1,7 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
-require "dependabot/python/package_manager"
+require "dependabot/pub/package_manager"
 require "dependabot/ecosystem"
 require "spec_helper"
 

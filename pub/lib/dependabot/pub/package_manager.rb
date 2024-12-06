@@ -10,9 +10,9 @@ module Dependabot
   module Pub
     ECOSYSTEM = "dart"
 
-    SUPPORTED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+    SUPPORTED_DART_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    DEPRECATED_PYTHON_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+    DEPRECATED_DART_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     class PubPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
