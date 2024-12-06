@@ -332,7 +332,7 @@ module Dependabot
           version.strip.delete_prefix("v") # Remove the "v" prefix if present
         end
       rescue StandardError => e
-        Dependabot.logger.info("Error retrieving Node.js version: #{e.message}")
+        Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
         nil
       end
 
