@@ -6,14 +6,9 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/version"
-require_relative "nuget_search_stubs"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Nuget::FileParser do
-  RSpec.configure do |config|
-    config.include(NuGetSearchStubs)
-  end
-
   let(:stub_native_tools) { true } # set to `false` to allow invoking the native tools during tests
   let(:report_stub_debug_information) { false } # set to `true` to write native tool stubbing information to the screen
 
@@ -69,19 +64,19 @@ RSpec.describe Dependabot::Nuget::FileParser do
   end
 
   def clean_common_files
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_discovery_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
   end
 
   def run_parser_test(&_block)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
     clean_common_files
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
 
     ensure_job_file do
       # ensure discovery files are present...
-      Dependabot::Nuget::NativeDiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
-                                                                              directory: directory,
-                                                                              credentials: [])
+      Dependabot::Nuget::DiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                        directory: directory,
+                                                                        credentials: [])
 
       # ...create the parser...
       parser = Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
@@ -92,7 +87,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
       yield parser
     end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
     clean_common_files
   end

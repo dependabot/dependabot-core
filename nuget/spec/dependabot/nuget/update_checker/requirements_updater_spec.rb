@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/nuget/native_update_checker/native_requirements_updater"
+require "dependabot/nuget/update_checker/requirements_updater"
 
-RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater do
+RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
       requirements: requirements,
@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Nuget::NativeUpdateChecker::NativeRequirementsUpdater
   let(:latest_version) { "23.6-jre" }
   let(:info_url) { "https://nuget.example.com/some.package" }
   let(:dependency_details) do
-    Dependabot::Nuget::NativeDependencyDetails.from_json(JSON.parse({
+    Dependabot::Nuget::DependencyDetails.from_json(JSON.parse({
       Name: "unused",
       Version: latest_version,
       Type: "PackageReference",
