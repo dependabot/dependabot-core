@@ -26,17 +26,15 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
-          requirement: T.nilable(Requirement)
+          raw_version: String
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(raw_version)
         super(
           NAME,
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
-          DEPRECATED_VERSIONS,
-          requirement,
+          DEPRECATED_VERSIONS
        )
       end
 
