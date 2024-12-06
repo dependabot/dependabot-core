@@ -395,22 +395,19 @@ module Dependabot
 
         begin
           # Try to install the specified version
-          package_manager_install(name, version)
+          output = package_manager_install(name, version)
+
+          # Check if the output indicates a successful installation
+          if output.include?("Adding #{name}@") && output.include?("to the cache")
+            Dependabot.logger.info("#{name}@#{version} successfully installed.")
+          else
+            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
+            fallback_to_local_version(name)
+          end
         rescue StandardError => e
           Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
-          Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
-
-          # Fetch the currently installed version directly from the environment
-          current_version = local_package_manager_version(name)
-          Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
-
-          # Prepare the existing version
-          package_manager_activate(name, current_version)
-          version = current_version # Update version to the fallback
+          fallback_to_local_version(name)
         end
-
-        # Activate the package manager for the selected version
-        package_manager_activate(name, version)
 
         # Verify the installed version
         installed_version = package_manager_version(name)
@@ -419,8 +416,21 @@ module Dependabot
         installed_version
       end
 
+      # Attempt to activate the local version of the package manager
+      sig { params(name: String).void }
+      def self.fallback_to_local_version(name)
+        Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
+
+        # Fetch the currently installed version directly from the environment
+        current_version = local_package_manager_version(name)
+        Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
+
+        # Prepare the existing version
+        package_manager_activate(name, current_version)
+      end
+
       # Install the package manager for specified version by using corepack
-      sig { params(name: String, version: String).void }
+      sig { params(name: String, version: String).returns(String) }
       def self.package_manager_install(name, version)
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
@@ -429,7 +439,7 @@ module Dependabot
       end
 
       # Prepare the package manager for use by using corepack
-      sig { params(name: String, version: String).void }
+      sig { params(name: String, version: String).returns(String) }
       def self.package_manager_activate(name, version)
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
