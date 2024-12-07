@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/ecosystem"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version_selector"
+require "dependabot/npm_and_yarn/registry_helper"
 
 module Dependabot
   module NpmAndYarn
