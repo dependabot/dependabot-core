@@ -311,17 +311,23 @@ module Dependabot
       sig do
         params(
           package_json: T.nilable(T::Hash[String, T.untyped]),
-          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
+          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
         ).void
       end
-      def initialize(package_json, lockfiles:)
+      def initialize(package_json, lockfiles, registry_config_files)
         @package_json = package_json
         @lockfiles = lockfiles
+        @registry_helper = T.let(
+          RegistryHelper.new(lockfiles, registry_config_files),
+          Dependabot::NpmAndYarn::RegistryHelper
+        )
         @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
         @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
 
         @installed_versions = T.let({}, T::Hash[String, String])
+        @registries = T.let({}, T::Hash[String, String])
 
         @language = T.let(nil, T.nilable(Ecosystem::VersionManager))
         @language_requirement = T.let(nil, T.nilable(Requirement))
@@ -510,7 +516,9 @@ module Dependabot
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          return Helpers.install(name, version.to_s)
+          env = @registry_helper.find_corepack_env_variables
+          # Use the Helpers.install method to install the package manager
+          return Helpers.install(name, version.to_s, env: env)
         end
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
