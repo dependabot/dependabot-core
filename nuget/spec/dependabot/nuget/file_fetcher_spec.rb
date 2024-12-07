@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_fetcher"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "json"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
@@ -13,8 +13,8 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
   subject(:fetched_file_paths) do
     files = file_fetcher_instance.fetch_files
     files.map do |f|
-      Dependabot::Nuget::NativeDiscoveryJsonReader.dependency_file_path(repo_contents_path: repo_contents_path,
-                                                                        dependency_file: f)
+      Dependabot::Nuget::DiscoveryJsonReader.dependency_file_path(repo_contents_path: repo_contents_path,
+                                                                  dependency_file: f)
     end
   end
   let(:report_stub_debug_information) { false } # set to `true` to write method stubbing information to the screen
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   def clean_common_files
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_discovery_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
   end
 
   def clean_repo_files
@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
     File.write(ENV.fetch("DEPENDABOT_JOB_PATH", nil), "unused")
     begin
       # stub call to native tool
-      Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+      Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
       allow(Dependabot::Nuget::NativeHelpers)
         .to receive(:run_nuget_discover_tool)
         .and_wrap_original do |_original_method, *args, &_block|
