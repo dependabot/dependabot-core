@@ -9,6 +9,7 @@ require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/github_actions/version"
+require "dependabot/github_actions/package_manager"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
@@ -19,13 +20,6 @@ module Dependabot
       extend T::Set
 
       require "dependabot/file_parsers/base/dependency_set"
-
-      GITHUB_REPO_REFERENCE = %r{
-        ^(?<owner>[\w.-]+)/
-        (?<repo>[\w.-]+)
-        (?<path>/[^\@]+)?
-        @(?<ref>.+)
-      }x
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -38,7 +32,54 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(begin
+          # Extracts the `uses` name and `ref` (version) part from `uses` declarations in workflow files.
+          # For example, in `actions/checkout@v2.3.4`, `uses_name` is "actions/checkout" and `ref` is "v2.3.4".
+          # These pairs are collected from all `uses` keys across the workflow files.
+          uses_info = workflow_files.flat_map do |file|
+            json = YAML.safe_load(T.must(file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
+            next [] if json.nil?
+
+            # Recursively fetch all `uses` strings from the JSON structure of the workflow file.
+            uses_strings = deep_fetch_uses(json.fetch(JOBS_KEY, json.fetch(RUNS_KEY, nil))).uniq
+
+            # Extract the `uses` name and `ref` part of the declaration,
+            # if it matches the GitHub repository reference format.
+            uses_strings.filter_map do |string|
+              match = string.match(GITHUB_REPO_REFERENCE)
+              next unless match
+
+              # `match[:repo]` contains the name (e.g., "actions/checkout"), `match[:ref]`
+              # contains the version (e.g., "v2.3.4").
+              { name: match[:repo], version: match[:ref] }
+            end
+          end
+
+          # Default to a placeholder if no uses information is found.
+          default_info = { name: NO_DEPENDENCY_NAME, version: NO_VERSION }
+
+          # Use the first `uses` info as the default or fallback to default_info.
+          first_uses = uses_info.first || default_info
+
+          # Initialize the PackageManager with the extracted name and version.
+          PackageManager.new(first_uses[:name], first_uses[:version])
+        end, T.nilable(Dependabot::GithubActions::PackageManager))
+      end
 
       sig { params(file: Dependabot::DependencyFile).returns(Dependabot::FileParsers::Base::DependencySet) }
       def workfile_file_dependencies(file)
@@ -47,7 +88,7 @@ module Dependabot
         json = YAML.safe_load(T.must(file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
         return dependency_set if json.nil?
 
-        uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
+        uses_strings = deep_fetch_uses(json.fetch(JOBS_KEY, json.fetch(RUNS_KEY, nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
@@ -88,20 +129,20 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile, string: String).returns(Dependabot::Dependency) }
       def build_github_dependency(file, string)
-        unless source&.hostname == "github.com"
+        unless source&.hostname == DOTCOM
           dep = github_dependency(file, string, T.must(source).hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
 
-        github_dependency(file, string, "github.com")
+        github_dependency(file, string, DOTCOM)
       end
 
       sig { params(file: Dependabot::DependencyFile, string: String, hostname: String).returns(Dependabot::Dependency) }
       def github_dependency(file, string, hostname)
         details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
-        name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
-        ref = details.fetch("ref")
+        name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
+        ref = details.fetch(REF_KEY)
         version = version_class.new(ref).to_s if version_class.correct?(ref)
         Dependency.new(
           name: name,
@@ -118,7 +159,7 @@ module Dependabot
             file: file.name,
             metadata: { declaration_string: string }
           }],
-          package_manager: "github_actions"
+          package_manager: PACKAGE_MANAGER
         )
       end
 
@@ -133,11 +174,11 @@ module Dependabot
 
       sig { params(json_object: T::Hash[String, T.untyped], found_uses: T::Array[String]).returns(T::Array[String]) }
       def deep_fetch_uses_from_hash(json_object, found_uses)
-        if json_object.key?("uses")
-          found_uses << json_object["uses"]
-        elsif json_object.key?("steps")
+        if json_object.key?(USES_KEY)
+          found_uses << json_object[USES_KEY]
+        elsif json_object.key?(STEPS_KEY)
           # Bypass other fields as uses are under steps if they exist
-          deep_fetch_uses(json_object["steps"], found_uses)
+          deep_fetch_uses(json_object[STEPS_KEY], found_uses)
         else
           json_object.values.flat_map { |obj| deep_fetch_uses(obj, found_uses) }
         end
