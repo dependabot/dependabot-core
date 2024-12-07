@@ -24,13 +24,9 @@ module Dependabot
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
 
       sig do
-        params(
-          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
-        ).void
+        params(registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]).void
       end
-      def initialize(lockfiles, registry_config_files)
-        @lockfiles = T.let(lockfiles, T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
+      def initialize(registry_config_files)
         @registry_config_files = T.let(registry_config_files, T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
       end
 
@@ -49,21 +45,22 @@ module Dependabot
 
       sig { returns(T::Hash[Symbol, T.nilable(String)]) }
       def find_registry_and_token
-        # Check .npmrc or .yarnrc first
-        npm_or_yarn_config = @registry_config_files[:npmrc] || @registry_config_files[:yarnrc]
-        npm_yarn_result = parse_registry_file(npm_or_yarn_config)
-        return npm_yarn_result if npm_yarn_result[:registry] || npm_yarn_result[:auth_token]
+        # Step 1: Check .npmrc
+        npmrc_config = @registry_config_files[:npmrc]
+        npmrc_result = parse_registry_file(npmrc_config)
+        return npmrc_result if npmrc_result[:registry] || npmrc_result[:auth_token]
 
-        # Check yarnrc.yml next
-        yarnrc_yml_config = @registry_config_files[:yarnrc_yml]
-        yarnrc_result = parse_yarnrc_yml(yarnrc_yml_config)
+        # Step 2: Check .yarnrc
+        yarnrc_config = @registry_config_files[:yarnrc]
+        yarnrc_result = parse_registry_file(yarnrc_config)
         return yarnrc_result if yarnrc_result[:registry] || yarnrc_result[:auth_token]
 
-        # Check lockfiles last
-        lockfile_result = parse_lockfiles
-        return lockfile_result if lockfile_result[:registry] || lockfile_result[:auth_token]
+        # Step 3: Check yarnrc.yml
+        yarnrc_yml_config = @registry_config_files[:yarnrc_yml]
+        yarnrc_yml_result = parse_yarnrc_yml(yarnrc_yml_config)
+        return yarnrc_yml_result if yarnrc_yml_result[:registry] || yarnrc_yml_result[:auth_token]
 
-        # If no values are found, Corepack defaults to its own registry settings
+        # Default values if no registry is found
         {}
       end
 
@@ -78,7 +75,7 @@ module Dependabot
           next unless key && value
 
           result[:registry] = value.strip if key.strip == REGISTRY_KEY
-          result[:auth_token] = value.strip if key.strip == AUTH_KEY
+          result[:auth_token] = value.strip if key.strip == "_#{AUTH_KEY}"
         end
         result
       end
@@ -89,7 +86,7 @@ module Dependabot
         return {} unless content
 
         result = {}
-        yaml_data = YAML.safe_load(content, permitted_classes: [Symbol, String])
+        yaml_data = YAML.safe_load(content, permitted_classes: [Symbol, String]) || {}
         result[:registry] = yaml_data[NPM_REGISTER_KEY_FOR_YARN] if yaml_data.key?(NPM_REGISTER_KEY_FOR_YARN)
         result[:auth_token] = yaml_data[NPM_AUTH_TOKEN_KEY_FOR_YARN] if yaml_data.key?(NPM_AUTH_TOKEN_KEY_FOR_YARN)
 
@@ -99,26 +96,6 @@ module Dependabot
             result[:auth_token] ||= config[NPM_AUTH_TOKEN_KEY_FOR_YARN]
           end
         end
-        result
-      end
-
-      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
-      def parse_lockfiles
-        result = {}
-
-        @lockfiles.each_value do |file|
-          next unless file
-
-          content = file.content
-          next unless content
-
-          # Extract registry URL from lockfile
-          if (match = content.match(%r{"registry":\s*"(https?://[^"]+)"}))
-            result[:registry] = match.captures.first
-            break
-          end
-        end
-
         result
       end
     end

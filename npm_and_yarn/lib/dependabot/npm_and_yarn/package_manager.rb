@@ -320,7 +320,7 @@ module Dependabot
         @package_json = package_json
         @lockfiles = lockfiles
         @registry_helper = T.let(
-          RegistryHelper.new(lockfiles, registry_config_files),
+          RegistryHelper.new(registry_config_files),
           Dependabot::NpmAndYarn::RegistryHelper
         )
         @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
