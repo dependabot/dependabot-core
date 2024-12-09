@@ -160,7 +160,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("7.0.0/n")
       expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack install npm@7.0.0 --global --cache-only",
-        fingerprint: "corepack install <name>@<version> --global --cache-only"
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: {}
       )
       described_class.package_manager_install("npm", "7.0.0")
     end
@@ -202,7 +203,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_install("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: {}
         ).and_return("Adding npm@8.0.0 to the cache")
 
         # Mock for `package_manager_activate("npm", "8.0.0")`
@@ -240,7 +242,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_install("npm", "8.0.0")`
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: {}
         ).and_return("Unexpected output")
 
         # Mock for `package_manager_activate("npm", "10.8.2")`
@@ -282,7 +285,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Mock for `package_manager_install("npm", "8.0.0")` (raises an error)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack install npm@8.0.0 --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: {}
         ).and_raise(StandardError, "Corepack failed")
 
         # Mock for `package_manager_activate("npm", "10.8.2")`
