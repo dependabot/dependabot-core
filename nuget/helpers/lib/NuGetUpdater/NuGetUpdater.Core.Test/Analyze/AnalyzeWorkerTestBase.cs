@@ -19,7 +19,9 @@ public class AnalyzeWorkerTestBase
         DependencyInfo dependencyInfo,
         ExpectedAnalysisResult expectedResult,
         MockNuGetPackage[]? packages = null,
-        TestFile[]? extraFiles = null)
+        TestFile[]? extraFiles = null,
+        ExperimentsManager? experimentsManager = null
+    )
     {
         var relativeDependencyPath = $"./dependabot/dependency/{dependencyInfo.Name}.json";
 
@@ -28,6 +30,7 @@ public class AnalyzeWorkerTestBase
             (relativeDependencyPath, JsonSerializer.Serialize(dependencyInfo, AnalyzeWorker.SerializerOptions)),
         ];
 
+        experimentsManager ??= new ExperimentsManager();
         var allFiles = files.Concat(extraFiles ?? []).ToArray();
         var actualResult = await RunAnalyzerAsync(dependencyInfo.Name, allFiles, async directoryPath =>
         {
@@ -36,7 +39,7 @@ public class AnalyzeWorkerTestBase
             var discoveryPath = Path.GetFullPath(DiscoveryWorker.DiscoveryResultFileName, directoryPath);
             var dependencyPath = Path.GetFullPath(relativeDependencyPath, directoryPath);
 
-            var worker = new AnalyzeWorker(new TestLogger());
+            var worker = new AnalyzeWorker(experimentsManager, new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, discoveryPath, dependencyPath);
             return result;
         });
