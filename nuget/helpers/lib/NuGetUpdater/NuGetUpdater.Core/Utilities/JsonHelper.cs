@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
 namespace NuGetUpdater.Core.Utilities
 {
     internal static class JsonHelper
