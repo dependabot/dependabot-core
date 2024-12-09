@@ -14,7 +14,7 @@
     "@npmcli/arborist": "^8.0.0",
     "detect-indent": "^6.1.0",
     "nock": "^13.5.5",
-    "npm": "6.14.18",
+    "npm": "10.9.0",
     "@pnpm/lockfile-file": "^9.1.2",
     "@pnpm/dependency-path": "^5.1.1",
     "semver": "^7.6.3",
