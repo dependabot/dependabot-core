@@ -24,10 +24,14 @@ module Dependabot
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
 
       sig do
-        params(registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]).void
+        params(
+          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          credentials: T.nilable(T::Array[Dependabot::Credential])
+        ).void
       end
-      def initialize(registry_config_files)
+      def initialize(registry_config_files, credentials)
         @registry_config_files = T.let(registry_config_files, T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
+        @credentials = T.let(credentials, T.nilable(T::Array[Dependabot::Credential]))
       end
 
       sig { returns(T::Hash[String, String]) }
@@ -45,23 +49,46 @@ module Dependabot
 
       sig { returns(T::Hash[Symbol, T.nilable(String)]) }
       def find_registry_and_token
-        # Step 1: Check .npmrc
+        # Step 1: Check dependabot.yml configuration
+        dependabot_config = config_npm_registry_and_token
+        return dependabot_config if dependabot_config[:registry]
+
+        # Step 2: Check .npmrc
         npmrc_config = @registry_config_files[:npmrc]
         npmrc_result = parse_registry_file(npmrc_config)
-        return npmrc_result if npmrc_result[:registry] || npmrc_result[:auth_token]
 
-        # Step 2: Check .yarnrc
+        return npmrc_result if npmrc_result[:registry]
+
+        # Step 3: Check .yarnrc
         yarnrc_config = @registry_config_files[:yarnrc]
         yarnrc_result = parse_registry_file(yarnrc_config)
-        return yarnrc_result if yarnrc_result[:registry] || yarnrc_result[:auth_token]
+        return yarnrc_result if yarnrc_result[:registry]
 
-        # Step 3: Check yarnrc.yml
+        # Step 4: Check yarnrc.yml
         yarnrc_yml_config = @registry_config_files[:yarnrc_yml]
         yarnrc_yml_result = parse_yarnrc_yml(yarnrc_yml_config)
-        return yarnrc_yml_result if yarnrc_yml_result[:registry] || yarnrc_yml_result[:auth_token]
+        return yarnrc_yml_result if yarnrc_yml_result[:registry]
 
         # Default values if no registry is found
         {}
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
+      def config_npm_registry_and_token
+        registries = {}
+
+        return registries unless @credentials&.any?
+
+        @credentials.each do |cred|
+          next unless cred["type"] == "npm_registry"
+
+          # Set the registry if it's not already set
+          registries[:registry] ||= cred["registry"]
+
+          # Set the token if it's not already set
+          registries[:auth_token] ||= cred["token"]
+        end
+        registries
       end
 
       sig { params(file: T.nilable(Dependabot::DependencyFile)).returns(T::Hash[Symbol, T.nilable(String)]) }

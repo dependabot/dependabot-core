@@ -206,7 +206,10 @@ module Dependabot
       def package_manager_helper
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
-            parsed_package_json, lockfiles, registry_config_files
+            parsed_package_json,
+            lockfiles,
+            registry_config_files,
+            credentials
           ), T.nilable(PackageManagerHelper)
         )
       end

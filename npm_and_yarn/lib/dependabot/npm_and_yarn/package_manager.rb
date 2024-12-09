@@ -313,14 +313,15 @@ module Dependabot
         params(
           package_json: T.nilable(T::Hash[String, T.untyped]),
           lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
-          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
+          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          credentials: T.nilable(T::Array[Dependabot::Credential])
         ).void
       end
-      def initialize(package_json, lockfiles, registry_config_files)
+      def initialize(package_json, lockfiles, registry_config_files, credentials)
         @package_json = package_json
         @lockfiles = lockfiles
         @registry_helper = T.let(
-          RegistryHelper.new(registry_config_files),
+          RegistryHelper.new(registry_config_files, credentials),
           Dependabot::NpmAndYarn::RegistryHelper
         )
         @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
