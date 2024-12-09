@@ -30,11 +30,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "some-dir",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             files:
             [
@@ -237,11 +233,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "some-dir",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             files:
             [
@@ -483,11 +475,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "/",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             files:
             [
@@ -550,11 +538,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "some-dir",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             files:
             [
@@ -886,11 +870,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "some-dir/ProjectA",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             files:
             [
@@ -1438,11 +1418,7 @@ public class RunWorkerTests
                     Provider = "github",
                     Repo = "test/repo",
                     Directory = "/",
-                },
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ]
+                }
             },
             packages:
             [
