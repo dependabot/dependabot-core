@@ -5,17 +5,13 @@ require "dependabot/docker/utils/helpers"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
+require "dependabot/docker/package_manager"
 require "sorbet-runtime"
 
 module Dependabot
   module Docker
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
-
-      FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
-
-      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -63,7 +59,7 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No #{MANIFEST_FILE}!"
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
@@ -105,7 +101,7 @@ module Dependabot
             ""
           end
         old_declaration +=
-          if specified_with_digest?(old_source) then "@sha256:#{old_digest}"
+          if specified_with_digest?(old_source) then "@#{SHA256_KEY}:#{old_digest}"
           else
             ""
           end
@@ -116,7 +112,7 @@ module Dependabot
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec
-            .gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}")
+            .gsub("@#{SHA256_KEY}:#{old_digest}", "@#{SHA256_KEY}:#{new_digest}")
             .gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
@@ -206,7 +202,7 @@ module Dependabot
       def new_yaml_image(file)
         element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
         prefix = element&.dig(:source, :registry) ? "#{element.fetch(:source)[:registry]}/" : ""
-        digest = element&.dig(:source, :digest) ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
+        digest = element&.dig(:source, :digest) ? "@#{SHA256_KEY}:#{element.fetch(:source)[:digest]}" : ""
         tag = element&.dig(:source, :tag) ? ":#{element.fetch(:source)[:tag]}" : ""
         "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
       end
@@ -215,7 +211,7 @@ module Dependabot
       def old_yaml_images(file)
         T.must(previous_requirements(file)).map do |r|
           prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          digest = r.fetch(:source)[:digest] ? "@#{SHA256_KEY}:#{r.fetch(:source)[:digest]}" : ""
           tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
         end
@@ -225,7 +221,7 @@ module Dependabot
       def old_helm_tags(file)
         T.must(previous_requirements(file)).map do |r|
           tag = r.fetch(:source)[:tag] || ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          digest = r.fetch(:source)[:digest] ? "@#{SHA256_KEY}:#{r.fetch(:source)[:digest]}" : ""
           "#{tag}#{digest}"
         end
       end
@@ -234,7 +230,7 @@ module Dependabot
       def new_helm_tag(file)
         element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
         tag = T.must(element).dig(:source, :tag) || ""
-        digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
+        digest = T.must(element).dig(:source, :digest) ? "@#{SHA256_KEY}:#{T.must(element).dig(:source, :digest)}" : ""
         "#{tag}#{digest}"
       end
 
