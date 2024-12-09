@@ -3,7 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "set"
 require "sorbet-runtime"
@@ -26,7 +26,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        discovery_json_reader = NativeDiscoveryJsonReader.run_discovery_in_directory(
+        discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
           repo_contents_path: T.must(repo_contents_path),
           directory: directory,
           credentials: credentials

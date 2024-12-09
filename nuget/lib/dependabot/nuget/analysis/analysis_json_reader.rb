@@ -3,7 +3,7 @@
 
 require "dependabot/dependency"
 require "dependabot/nuget/analysis/dependency_analysis"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "json"
 require "sorbet-runtime"
 

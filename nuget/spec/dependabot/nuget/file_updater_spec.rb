@@ -6,16 +6,10 @@ require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/file_updater"
 require "dependabot/nuget/version"
-require_relative "github_helpers"
-require_relative "nuget_search_stubs"
 require "json"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Nuget::FileUpdater do
-  RSpec.configure do |config|
-    config.include(NuGetSearchStubs)
-  end
-
   let(:stub_native_tools) { true } # set to `false` to allow invoking the native tools during tests
   let(:report_stub_debug_information) { false } # set to `true` to write native tool stubbing information to the screen
 
@@ -75,14 +69,6 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     }
   end
 
-  before do
-    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
-                       "microsoft.extensions.dependencymodel/1.0.0/" \
-                       "microsoft.extensions.dependencymodel.nuspec")
-      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
-  end
-
   it_behaves_like "a dependency file updater"
 
   def ensure_job_file(&_block)
@@ -100,20 +86,20 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
 
   def clean_common_files
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_discovery_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
   end
 
   def run_update_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     clean_common_files
 
     ensure_job_file do
       # ensure discovery files are present
-      Dependabot::Nuget::NativeDiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
-                                                                              directory: directory,
-                                                                              credentials: [])
+      Dependabot::Nuget::DiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                        directory: directory,
+                                                                        credentials: [])
 
       # calling `#parse` is necessary to force `discover` which is stubbed below
       Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
@@ -135,7 +121,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       yield updater
     end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.testonly_clear_caches
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
     clean_common_files
   end

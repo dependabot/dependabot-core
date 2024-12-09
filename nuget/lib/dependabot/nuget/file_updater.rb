@@ -4,9 +4,9 @@
 require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/nuget/native_discovery/native_dependency_details"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
-require "dependabot/nuget/native_discovery/native_workspace_discovery"
+require "dependabot/nuget/discovery/dependency_details"
+require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/discovery/workspace_discovery"
 require "dependabot/nuget/native_helpers"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -57,7 +57,7 @@ module Dependabot
             try_update_projects(dependency) || try_update_json(dependency)
           end
           updated_files = dependency_files.filter_map do |f|
-            dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+            dependency_file_path = DiscoveryJsonReader.dependency_file_path(
               repo_contents_path: T.must(repo_contents_path),
               dependency_file: f
             )
@@ -97,7 +97,7 @@ module Dependabot
         # run update for each project file
         project_files.each do |project_file|
           project_dependencies = project_dependencies(project_file)
-          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+          dependency_file_path = DiscoveryJsonReader.dependency_file_path(
             repo_contents_path: T.must(repo_contents_path),
             dependency_file: project_file
           )
@@ -128,7 +128,7 @@ module Dependabot
 
           # We just need to feed the updater a project file, grab the first
           project_file = T.must(project_files.first)
-          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
+          dependency_file_path = DiscoveryJsonReader.dependency_file_path(
             repo_contents_path: T.must(repo_contents_path),
             dependency_file: project_file
           )
@@ -168,13 +168,13 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
+      sig { returns(T.nilable(WorkspaceDiscovery)) }
       def workspace
         dependency_file_paths = dependency_files.map do |f|
-          NativeDiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
-                                                         dependency_file: f)
+          DiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
+                                                   dependency_file: f)
         end
-        NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
+        DiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -182,7 +182,7 @@ module Dependabot
         workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[NativeDependencyDetails]) }
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
       def project_dependencies(project_file)
         workspace&.projects&.find do |p|
           full_project_file_path = File.join(project_file.directory, project_file.name)
@@ -190,12 +190,12 @@ module Dependabot
         end&.dependencies || []
       end
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def global_json_dependencies
         workspace&.global_json&.dependencies || []
       end
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def dotnet_tools_json_dependencies
         workspace&.dotnet_tools_json&.dependencies || []
       end
