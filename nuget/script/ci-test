@@ -2,6 +2,12 @@
 
 set -e
 
+# PowerShell unit tests
+pushd ./updater
+pwsh ./test.ps1
+popd
+
+# C# unit tests
 pushd ./helpers/lib/NuGetUpdater
 dotnet restore
 dotnet format --no-restore --exclude ../NuGet.Client --verify-no-changes -v diag
@@ -10,5 +16,6 @@ dotnet test --configuration Release --no-restore --no-build --logger "console;ve
 dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
 popd
 
+# Ruby unit tests
 bundle install
 bundle exec rspec spec

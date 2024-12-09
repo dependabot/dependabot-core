@@ -51,11 +51,11 @@ public class PathHelperTests
 
         var expected = new[]
         {
-            Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix(),
             Path.Combine(temp.DirectoryPath, "src", "A", "packages.config").NormalizePathToUnix(),
+            Path.Combine(temp.DirectoryPath, "src", "a", "packages.config").NormalizePathToUnix(),
         };
 
-        Assert.Equal(expected, resolvedPaths!);
+        AssertEx.Equal(expected, resolvedPaths!);
     }
 
     [LinuxOnlyFact]
