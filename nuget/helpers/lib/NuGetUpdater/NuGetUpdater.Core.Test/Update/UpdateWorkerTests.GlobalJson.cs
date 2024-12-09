@@ -226,5 +226,71 @@ public partial class UpdateWorkerTests
                 ]
             );
         }
+
+        [Fact]
+        public async Task UpdateDependencyWithTrailingComma()
+        {
+            await TestUpdateForProject("Some.MSBuild.Sdk", "3.2.0", "4.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "3.2.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "4.1.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Some.MSBuild.Sdk": "3.2.0"
+                          },
+                        }
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected file no longer has the trailing comma because the parser removes it.
+                additionalFilesExpected:
+                [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Some.MSBuild.Sdk": "4.1.0"
+                          }
+                        }
+                        """)
+                ]
+            );
+        }
     }
 }
