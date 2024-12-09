@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -21,7 +22,7 @@ public class RunWorker
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
     };
 
     public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
@@ -173,12 +174,13 @@ public class RunWorker
                         continue;
                     }
 
+                    var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
                     var dependencyInfo = new DependencyInfo()
                     {
                         Name = dependency.Name,
                         Version = dependency.Version!,
                         IsVulnerable = false,
-                        IgnoredVersions = [],
+                        IgnoredVersions = ignoredVersions,
                         Vulnerabilities = [],
                     };
                     var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
@@ -301,6 +303,25 @@ public class RunWorker
             BaseCommitSha = baseCommitSha,
         };
         return result;
+    }
+
+    internal static ImmutableArray<Requirement> GetIgnoredRequirementsForDependency(Job job, string dependencyName)
+    {
+        var ignoreConditions = job.IgnoreConditions
+            .Where(c => c.DependencyName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (ignoreConditions.Length == 1 && ignoreConditions[0].VersionRequirement is null)
+        {
+            // if only one match with no version requirement, ignore all versions
+            return [Requirement.Parse("> 0.0.0")];
+        }
+
+        var ignoredVersions = ignoreConditions
+            .Select(c => c.VersionRequirement)
+            .Where(r => r is not null)
+            .Cast<Requirement>()
+            .ToImmutableArray();
+        return ignoredVersions;
     }
 
     internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)

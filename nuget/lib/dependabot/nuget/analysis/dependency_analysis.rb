@@ -20,7 +20,7 @@ module Dependabot
                                                              T::Boolean)
         updated_dependencies = T.let(json.fetch("UpdatedDependencies"),
                                      T::Array[T::Hash[String, T.untyped]]).map do |dep|
-          NativeDependencyDetails.from_json(dep)
+          DependencyDetails.from_json(dep)
         end
 
         DependencyAnalysis.new(
@@ -35,7 +35,7 @@ module Dependabot
         params(updated_version: String,
                can_update: T::Boolean,
                version_comes_from_multi_dependency_property: T::Boolean,
-               updated_dependencies: T::Array[NativeDependencyDetails]).void
+               updated_dependencies: T::Array[DependencyDetails]).void
       end
       def initialize(updated_version:, can_update:, version_comes_from_multi_dependency_property:,
                      updated_dependencies:)
@@ -54,7 +54,7 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :version_comes_from_multi_dependency_property
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
+      sig { returns(T::Array[DependencyDetails]) }
       attr_reader :updated_dependencies
 
       sig { returns(Dependabot::Nuget::Version) }

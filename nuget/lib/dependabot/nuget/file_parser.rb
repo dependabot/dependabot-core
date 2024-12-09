@@ -4,7 +4,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
 
@@ -28,7 +28,7 @@ module Dependabot
       def dependencies
         @dependencies ||= T.let(begin
           directory = source&.directory || "/"
-          discovery_json_reader = NativeDiscoveryJsonReader.run_discovery_in_directory(
+          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
             repo_contents_path: T.must(repo_contents_path),
             directory: directory,
             credentials: credentials

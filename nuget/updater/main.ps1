@@ -1,6 +1,8 @@
 Set-StrictMode -version 2.0
 $ErrorActionPreference = "Stop"
 
+. $PSScriptRoot\common.ps1
+
 $updaterTool = "$env:DEPENDABOT_NATIVE_HELPERS_PATH/nuget/NuGetUpdater/NuGetUpdater.Cli"
 $jobString = Get-Content -Path $env:DEPENDABOT_JOB_PATH
 $job = (ConvertFrom-Json -InputObject $jobString).job
@@ -39,27 +41,18 @@ function Install-Sdks {
         $candidateDirectories += $job.source.directories
     }
 
-    foreach ($candidateDirName in $candidateDirectories) {
-        $candidateFullPath = "$rootDir/$candidateDirName"
-        if (Test-Path $candidateFullPath) {
-            $candidateDir = Convert-Path $candidateFullPath
-            while ($true) {
-                $globalJsonPath = Join-Path $candidateDir "global.json"
-                if (Test-Path $globalJsonPath) {
-                    $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
-                    $sdkVersion = $globalJson.sdk.version
-                    if (-Not ($sdkVersion -in $installedSdks)) {
-                        $installedSdks += $sdkVersion
-                        Write-Host "Installing SDK $sdkVersion as specified in $globalJsonPath"
-                        & $env:DOTNET_INSTALL_SCRIPT_PATH --version $sdkVersion --install-dir $env:DOTNET_INSTALL_DIR
-                    }
-                }
+    $globalJsonRelativePaths = Get-DirectoriesForSdkInstall `
+        -repoRoot $rootDir `
+        -updateDirectories $candidateDirectories
 
-                $candidateDir = Split-Path -Parent $candidateDir
-                if ($candidateDir -eq $rootDir) {
-                    break
-                }
-            }
+    foreach ($globalJsonRelativePath in $globalJsonRelativePaths) {
+        $globalJsonPath = "$rootDir/$globalJsonRelativePath"
+        $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
+        $sdkVersion = $globalJson.sdk.version
+        if (-Not ($sdkVersion -in $installedSdks)) {
+            $installedSdks += $sdkVersion
+            Write-Host "Installing SDK $sdkVersion as specified in $globalJsonRelativePath"
+            & $env:DOTNET_INSTALL_SCRIPT_PATH --version $sdkVersion --install-dir $env:DOTNET_INSTALL_DIR
         }
     }
 

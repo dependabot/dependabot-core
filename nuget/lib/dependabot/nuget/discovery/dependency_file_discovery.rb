@@ -9,11 +9,14 @@ module Dependabot
     class DependencyFileDiscovery
       extend T::Sig
 
-      sig { params(json: T.nilable(T::Hash[String, T.untyped])).returns(T.nilable(DependencyFileDiscovery)) }
-      def self.from_json(json)
+      sig do
+        params(json: T.nilable(T::Hash[String, T.untyped]),
+               directory: String).returns(T.nilable(DependencyFileDiscovery))
+      end
+      def self.from_json(json, directory)
         return nil if json.nil?
 
-        file_path = T.let(json.fetch("FilePath"), String)
+        file_path = File.join(directory, T.let(json.fetch("FilePath"), String))
         dependencies = T.let(json.fetch("Dependencies"), T::Array[T::Hash[String, T.untyped]]).map do |dep|
           DependencyDetails.from_json(dep)
         end
@@ -38,7 +41,7 @@ module Dependabot
       attr_reader :dependencies
 
       sig { overridable.returns(Dependabot::FileParsers::Base::DependencySet) }
-      def dependency_set # rubocop:disable Metrics/PerceivedComplexity,Metrics/CyclomaticComplexity,Metrics/AbcSize
+      def dependency_set # rubocop:disable Metrics/PerceivedComplexity
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         file_name = Pathname.new(file_path).cleanpath.to_path
@@ -62,14 +65,7 @@ module Dependabot
           # Exclude any dependencies which reference an item type
           next if dependency.name.include?("@(")
 
-          dependency_file_name = file_name
-          if dependency.type == "PackagesConfig"
-            dir_name = File.dirname(file_name)
-            dependency_file_name = "packages.config"
-            dependency_file_name = File.join(dir_name, "packages.config") unless dir_name == "."
-          end
-
-          dependency_set << build_dependency(dependency_file_name, dependency)
+          dependency_set << build_dependency(file_name, dependency)
         end
 
         dependency_set
