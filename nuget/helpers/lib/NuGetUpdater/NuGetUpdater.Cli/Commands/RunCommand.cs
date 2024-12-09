@@ -36,7 +36,7 @@ internal static class RunCommand
             var logger = new ConsoleLogger();
             var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
             var discoverWorker = new DiscoveryWorker(experimentsManager, logger);
-            var analyzeWorker = new AnalyzeWorker(logger);
+            var analyzeWorker = new AnalyzeWorker(experimentsManager, logger);
             var updateWorker = new UpdaterWorker(experimentsManager, logger);
             var worker = new RunWorker(apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
             await worker.RunAsync(jobPath, repoContentsPath, baseCommitSha, outputPath);
