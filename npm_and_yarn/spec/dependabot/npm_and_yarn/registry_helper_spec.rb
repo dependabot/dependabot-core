@@ -34,7 +34,8 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       name: ".yarnrc",
       content: <<~YARNRC
         registry "https://yarn-registry.com/"
-        _authToken yarn-token
+        "@scope:registry" "https://custom-registry.example.com/"
+        "_authToken" "your-auth-token-here"
       YARNRC
     )
   end
@@ -109,7 +110,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
-          "COREPACK_NPM_TOKEN" => "yarn-token"
+          "COREPACK_NPM_TOKEN" => "your-auth-token-here"
         )
       end
     end

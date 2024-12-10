@@ -352,18 +352,18 @@ module Dependabot
 
         # Step 2: Check .npmrc
         npmrc_config = @registry_config_files[:npmrc]
-        npmrc_result = parse_registry_file(npmrc_config, "=")
+        npmrc_result = parse_registry_from_npmrc_yarnrc(npmrc_config, "=", "npm")
 
         return npmrc_result if npmrc_result[:registry]
 
         # Step 3: Check .yarnrc
         yarnrc_config = @registry_config_files[:yarnrc]
-        yarnrc_result = parse_registry_file(yarnrc_config, " ")
+        yarnrc_result = parse_registry_from_npmrc_yarnrc(yarnrc_config, " ", "npm")
         return yarnrc_result if yarnrc_result[:registry]
 
         # Step 4: Check yarnrc.yml
         yarnrc_yml_config = @registry_config_files[:yarnrc_yml]
-        yarnrc_yml_result = parse_yarnrc_yml(yarnrc_yml_config)
+        yarnrc_yml_result = parse_npm_from_yarnrc_yml(yarnrc_yml_config)
         return yarnrc_yml_result if yarnrc_yml_result[:registry]
 
         # Default values if no registry is found
@@ -389,47 +389,95 @@ module Dependabot
         registries
       end
 
+      # Find registry and token in .npmrc or .yarnrc file
       sig do
         params(
           file: T.nilable(Dependabot::DependencyFile),
           separator: String
         ).returns(T::Hash[Symbol, T.nilable(String)])
       end
-      def parse_registry_file(file, separator = "=")
-        content = file&.content
-        return {} unless content
+      def parse_npm_from_npm_or_yarn_rc(file, separator = "=")
+        parse_registry_from_npmrc_yarnrc(file, separator, NpmPackageManager::NAME)
+      end
 
-        result = {}
+      # rubocop:disable Metrics/PerceivedComplexity
+      # Find registry and token in .npmrc or .yarnrc file
+      sig do
+        params(
+          file: T.nilable(Dependabot::DependencyFile),
+          separator: String,
+          scope: T.nilable(String)
+        ).returns(T::Hash[Symbol, T.nilable(String)])
+      end
+      def parse_registry_from_npmrc_yarnrc(file, separator = "=", scope = nil)
+        content = file&.content
+        return { registry: nil, auth_token: nil } unless content
+
+        global_registry = T.let(nil, T.nilable(String))
+        scoped_registry = T.let(nil, T.nilable(String))
+        auth_token = T.let(nil, T.nilable(String))
+
         content.split("\n").each do |line|
+          # Split using the provided separator
           key, value = line.strip.split(separator, 2)
           next unless key && value
 
-          # Remove surrounding quotes from values
+          # Remove surrounding quotes from keys and values
+          cleaned_key = key.strip.gsub(/\A["']|["']\z/, "")
           cleaned_value = value.strip.gsub(/\A["']|["']\z/, "")
 
-          result[:registry] = cleaned_value if key.strip == REGISTRY_KEY
-          result[:auth_token] = cleaned_value if key.strip == "_#{AUTH_KEY}"
+          case cleaned_key
+          when "registry"
+            # Case 1: Found a global registry
+            global_registry = cleaned_value
+          when "_authToken"
+            # Case 2: Found an auth token
+            auth_token = cleaned_value
+          else
+            # Handle scoped registry if a scope is provided
+            scoped_registry = cleaned_value if scope && cleaned_key == "@#{scope}:registry"
+          end
         end
-        result
+
+        # Determine the registry to return (global first, fallback to scoped)
+        registry = global_registry || scoped_registry
+
+        { registry: registry, auth_token: auth_token }
       end
 
       sig { params(file: T.nilable(Dependabot::DependencyFile)).returns(T::Hash[Symbol, T.nilable(String)]) }
-      def parse_yarnrc_yml(file)
+      def parse_npm_from_yarnrc_yml(file)
         content = file&.content
-        return {} unless content
+        return { registry: nil, auth_token: nil } unless content
 
         result = {}
-        yaml_data = YAML.safe_load(content, permitted_classes: [Symbol, String]) || {}
+        yaml_data = safe_load_yaml(content)
+
+        # Step 1: Extract global registry and auth token
         result[:registry] = yaml_data[NPM_REGISTER_KEY_FOR_YARN] if yaml_data.key?(NPM_REGISTER_KEY_FOR_YARN)
         result[:auth_token] = yaml_data[NPM_AUTH_TOKEN_KEY_FOR_YARN] if yaml_data.key?(NPM_AUTH_TOKEN_KEY_FOR_YARN)
 
-        if yaml_data.key?(NPM_SCOPE_KEY_FOR_YARN)
-          yaml_data[NPM_SCOPE_KEY_FOR_YARN].each do |_scope, config|
+        # Step 2: Fallback to any scoped registry and auth token if global is missing
+        if result[:registry].nil? && yaml_data.key?(NPM_SCOPE_KEY_FOR_YARN)
+          yaml_data[NPM_SCOPE_KEY_FOR_YARN].each do |_current_scope, config|
+            next unless config.is_a?(Hash)
+
             result[:registry] ||= config[NPM_REGISTER_KEY_FOR_YARN]
             result[:auth_token] ||= config[NPM_AUTH_TOKEN_KEY_FOR_YARN]
           end
         end
+
         result
+      end
+
+      # Safely loads the YAML content and logs any parsing errors
+      sig { params(content: String).returns(T::Hash[String, T.untyped]) }
+      def safe_load_yaml(content)
+        YAML.safe_load(content, permitted_classes: [Symbol, String]) || {}
+      rescue Psych::SyntaxError => e
+        # Log the error instead of raising it
+        Dependabot.logger.error("YAML parsing error: #{e.message}")
+        {}
       end
     end
 
@@ -515,7 +563,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
