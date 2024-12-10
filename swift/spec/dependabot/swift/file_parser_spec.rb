@@ -305,6 +305,26 @@ RSpec.describe Dependabot::Swift::FileParser do
       end
     end
 
+    describe "#package_manager_version" do
+      # If this test starts failing, the format of the output of `swing package --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:package_manager_version) { parser.send(:package_manager_version) }
+
+      it "has the correct format" do
+        expect(package_manager_version.match(/^\d+(?:\.\d+)*/)).to be_truthy
+      end
+    end
+
+    describe "#swift_version" do
+      # If this test starts failing, the format of the output of `swing --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:swift_version) { parser.send(:swift_version) }
+
+      it "has the correct format" do
+        expect(swift_version.match(/^\d+(?:\.\d+)*$/)).to be_truthy
+      end
+    end
+
     describe "#language" do
       subject(:language) { ecosystem.language }
 
