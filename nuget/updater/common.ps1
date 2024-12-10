@@ -24,3 +24,47 @@ function Get-DirectoriesForSdkInstall([string] $repoRoot, [string[]]$updateDirec
 
     return ,$globalJsonPaths
 }
+
+function Get-Job([string]$jobFilePath) {
+    $jobString = Get-Content -Path $jobFilePath
+    $job = (ConvertFrom-Json -InputObject $jobString).job
+    return $job
+}
+
+function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$dotnetInstallScriptPath, [string]$dotnetInstallDir) {
+    $job = Get-Job -jobFilePath $jobFilePath
+
+    $installedSdks = dotnet --list-sdks | ForEach-Object { $_.Split(' ')[0] }
+    if ($installedSdks.GetType().Name -eq "String") {
+        # if only a single value was returned (expected in the container), then force it to an array
+        $installedSdks = @($installedSdks)
+    }
+    Write-Host "Currently installed SDKs: $installedSdks"
+    $rootDir = Convert-Path $repoContentsPath
+
+    $candidateDirectories = @()
+    if ("directory" -in $job.source.PSobject.Properties.Name) {
+        $candidateDirectories += $job.source.directory
+    }
+    if ("directories" -in $job.source.PSobject.Properties.Name) {
+        $candidateDirectories += $job.source.directories
+    }
+
+    $globalJsonRelativePaths = Get-DirectoriesForSdkInstall `
+        -repoRoot $rootDir `
+        -updateDirectories $candidateDirectories
+
+    foreach ($globalJsonRelativePath in $globalJsonRelativePaths) {
+        $globalJsonPath = "$rootDir/$globalJsonRelativePath"
+        $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
+        $sdkVersion = $globalJson.sdk.version
+        if (-Not ($sdkVersion -in $installedSdks)) {
+            $installedSdks += $sdkVersion
+            Write-Host "Installing SDK $sdkVersion as specified in $globalJsonRelativePath"
+            & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
+        }
+    }
+
+    # report the final set
+    dotnet --list-sdks
+}
