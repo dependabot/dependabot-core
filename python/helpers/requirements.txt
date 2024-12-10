@@ -2,6 +2,8 @@ pip==24.0
 pip-tools==7.4.1
 flake8==7.1.0
 hashin==1.0.1
+# TODO: Remove "legacy-cgi" dependency when hashin is updated to support Python 3.13
+legacy-cgi; python_version >= "3.13"
 pipenv==2024.0.2
 plette==2.1.0
 poetry==1.8.3
