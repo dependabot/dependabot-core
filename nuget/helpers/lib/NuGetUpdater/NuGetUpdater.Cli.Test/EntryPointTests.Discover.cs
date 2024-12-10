@@ -393,7 +393,8 @@ public partial class EntryPointTests
             TestFile[] initialFiles,
             ExpectedWorkspaceDiscoveryResult expectedResult,
             MockNuGetPackage[]? packages = null,
-            ExperimentsManager? experimentsManager = null)
+            ExperimentsManager? experimentsManager = null
+        )
         {
             experimentsManager ??= new ExperimentsManager();
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
