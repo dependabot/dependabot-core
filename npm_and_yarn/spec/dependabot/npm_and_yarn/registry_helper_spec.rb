@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/npm_and_yarn/registry_helper"
+require "dependabot/npm_and_yarn/helpers"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
