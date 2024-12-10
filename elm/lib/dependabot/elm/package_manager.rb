@@ -36,6 +36,7 @@ module Dependabot
         super(
           PACKAGE_MANAGER,
           Version.new(raw_version),
+          Version.new(raw_version),
           DEPRECATED_ELM_VERSIONS,
           SUPPORTED_ELM_VERSIONS,
           requirement,

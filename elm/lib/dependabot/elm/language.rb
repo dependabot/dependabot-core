@@ -14,7 +14,7 @@ module Dependabot
 
       sig { params(raw_version: String, requirement: T.nilable(Requirement)).void }
       def initialize(raw_version, requirement = nil)
-        super(LANGUAGE, Version.new(raw_version), [], [], requirement)
+        super(LANGUAGE, Version.new(raw_version), Version.new(raw_version), [], [], requirement)
       end
 
       sig { returns(T::Boolean) }

@@ -23,6 +23,7 @@ module Dependabot
         super(
           PACKAGE_MANAGER,
           Version.new(raw_version),
+          Version.new(raw_version),
           DEPRECATED_GO_VERSIONS,
           SUPPORTED_GO_VERSIONS
         )
