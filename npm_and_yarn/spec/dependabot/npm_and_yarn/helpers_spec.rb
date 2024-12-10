@@ -228,6 +228,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
         expect(Dependabot.logger).to receive(:info).with("npm@8.0.0 successfully installed.")
+        expect(Dependabot.logger).to receive(:info).with("Activating currently installed version of npm: 8.0.0")
         expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
         expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 8.0.0")
 
