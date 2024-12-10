@@ -16,6 +16,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 
+    private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
@@ -24,8 +25,9 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         Converters = { new JsonStringEnumConverter(), new RequirementArrayConverter() },
     };
 
-    public AnalyzeWorker(ILogger logger)
+    public AnalyzeWorker(ExperimentsManager experimentsManager, ILogger logger)
     {
+        _experimentsManager = experimentsManager;
         _logger = logger;
     }
 
