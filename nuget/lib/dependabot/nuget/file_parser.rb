@@ -7,6 +7,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/nuget/native_discovery/native_discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "dependabot/nuget/package_manager"
+require "dependabot/nuget/native_discovery/native_workspace_discovery"
 require "dependabot/nuget/language"
 require "sorbet-runtime"
 
