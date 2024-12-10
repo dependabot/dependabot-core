@@ -17,7 +17,7 @@ module Dependabot
     class NugetPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      NAME = "Nuget"
+      NAME = "nuget"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
