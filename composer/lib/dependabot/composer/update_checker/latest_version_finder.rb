@@ -144,6 +144,7 @@ module Dependabot
 
           listing = JSON.parse(response.body)
           return [] if listing.nil?
+          return [] unless listing.is_a?(Hash)
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
