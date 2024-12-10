@@ -272,10 +272,6 @@ public abstract class UpdateWorkerTestBase : TestBase
         {
             Job = new()
             {
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ],
                 Source = new()
                 {
                     Provider = "github",
