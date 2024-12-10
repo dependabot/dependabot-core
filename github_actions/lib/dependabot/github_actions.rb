@@ -10,6 +10,7 @@ require "dependabot/github_actions/file_updater"
 require "dependabot/github_actions/metadata_finder"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
+require "dependabot/github_actions/package_manager"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
