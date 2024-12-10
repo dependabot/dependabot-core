@@ -36,14 +36,15 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
+          versions: T::Array[T::Hash[Symbol, T.nilable(String)]],
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(versions, requirement = nil)
+        # TODO: needs to get the first one and return it for metrics collection.
         super(
           PACKAGE_MANAGER,
-          Version.new(raw_version),
+          Version.new("latest"),
           [],
           [],
           requirement,

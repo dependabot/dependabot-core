@@ -92,22 +92,37 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new(docker_version || "latest"),
+          PackageManager.new(docker_versions),
           T.nilable(Dependabot::Docker::PackageManager)
         )
       end
 
-      sig { returns(T.nilable(String)) }
-      def docker_version
-        @docker_version ||= T.let(
-          begin
-            dockerfile = dockerfiles.find { |f| f.name == "Dockerfile" }
-            return unless dockerfile
+      sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+      def docker_versions
+        @docker_versions ||= T.let(begin
+          versions = []
 
-            dockerfile.content&.match(/FROM docker:(?<version>[0-9.]+)/)&.named_captures&.fetch(VERSION_KEY)
-          end,
-          T.nilable(String)
-        )
+          dockerfiles.each do |dockerfile|
+            T.must(dockerfile.content).each_line do |line|
+              next unless FROM_LINE.match?(line)
+
+              parsed_from_line = T.must(FROM_LINE.match(line)).named_captures
+              version = version_from(parsed_from_line)
+              name = parsed_from_line.fetch("name", nil) # Alias name, if present
+              image = parsed_from_line.fetch("image", nil)
+
+              next unless version && image
+
+              versions << {
+                image: image,
+                version: version,
+                name: name || "none"
+              }
+            end
+          end
+
+          versions
+        end, T.nilable(T::Array[T.untyped]))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
