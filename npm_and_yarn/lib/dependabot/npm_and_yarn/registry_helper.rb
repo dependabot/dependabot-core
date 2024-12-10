@@ -103,7 +103,6 @@ module Dependabot
         parse_registry_from_npmrc_yarnrc(file, separator, NpmPackageManager::NAME)
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       # Find registry and token in .npmrc or .yarnrc file
       sig do
         params(
@@ -148,6 +147,7 @@ module Dependabot
         { registry: registry, auth_token: auth_token }
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(file: T.nilable(Dependabot::DependencyFile)).returns(T::Hash[Symbol, T.nilable(String)]) }
       def parse_npm_from_yarnrc_yml(file)
         content = file&.content
@@ -172,6 +172,7 @@ module Dependabot
 
         result
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # Safely loads the YAML content and logs any parsing errors
       sig { params(content: String).returns(T::Hash[String, T.untyped]) }
