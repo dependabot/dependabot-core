@@ -352,13 +352,13 @@ module Dependabot
 
         # Step 2: Check .npmrc
         npmrc_config = @registry_config_files[:npmrc]
-        npmrc_result = parse_registry_file(npmrc_config)
+        npmrc_result = parse_registry_file(npmrc_config, "=")
 
         return npmrc_result if npmrc_result[:registry]
 
         # Step 3: Check .yarnrc
         yarnrc_config = @registry_config_files[:yarnrc]
-        yarnrc_result = parse_registry_file(yarnrc_config)
+        yarnrc_result = parse_registry_file(yarnrc_config, " ")
         return yarnrc_result if yarnrc_result[:registry]
 
         # Step 4: Check yarnrc.yml
@@ -389,18 +389,26 @@ module Dependabot
         registries
       end
 
-      sig { params(file: T.nilable(Dependabot::DependencyFile)).returns(T::Hash[Symbol, T.nilable(String)]) }
-      def parse_registry_file(file)
+      sig do
+        params(
+          file: T.nilable(Dependabot::DependencyFile),
+          separator: String
+        ).returns(T::Hash[Symbol, T.nilable(String)])
+      end
+      def parse_registry_file(file, separator = "=")
         content = file&.content
         return {} unless content
 
         result = {}
         content.split("\n").each do |line|
-          key, value = line.split("=", 2)
+          key, value = line.strip.split(separator, 2)
           next unless key && value
 
-          result[:registry] = value.strip if key.strip == REGISTRY_KEY
-          result[:auth_token] = value.strip if key.strip == "_#{AUTH_KEY}"
+          # Remove surrounding quotes from values
+          cleaned_value = value.strip.gsub(/\A["']|["']\z/, "")
+
+          result[:registry] = cleaned_value if key.strip == REGISTRY_KEY
+          result[:auth_token] = cleaned_value if key.strip == "_#{AUTH_KEY}"
         end
         result
       end

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
@@ -33,8 +33,8 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     Dependabot::DependencyFile.new(
       name: ".yarnrc",
       content: <<~YARNRC
-        registry=https://yarn-registry.com/
-        _authToken=yarn-token
+        registry "https://yarn-registry.com/"
+        _authToken yarn-token
       YARNRC
     )
   end
@@ -43,7 +43,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     Dependabot::DependencyFile.new(
       name: ".yarnrc",
       content: <<~YARNRC
-        registry=https://yarn-registry.com/
+        registry "https://yarn-registry.com/"
       YARNRC
     )
   end
