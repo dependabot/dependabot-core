@@ -22,7 +22,7 @@ public class RunWorker
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new RequirementConverter() },
+        Converters = { new JsonStringEnumConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
     public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
@@ -124,9 +124,8 @@ public class RunWorker
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         // TODO: for each top-level dependency, _or_ specific dependency (if security, use transitive)
         var originalDependencyFileContents = new Dictionary<string, string>();
-        var allowedUpdates = job.AllowedUpdates ?? [];
         var actualUpdatedDependencies = new List<ReportedDependency>();
-        if (allowedUpdates.Any(a => a.UpdateType == "all"))
+        if (job.AllowedUpdates.Any(a => a.UpdateType == UpdateType.All))
         {
             await _apiHandler.IncrementMetric(new()
             {
