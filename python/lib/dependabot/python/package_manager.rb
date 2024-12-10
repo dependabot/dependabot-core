@@ -33,6 +33,7 @@ module Dependabot
         super(
           NAME,
           Version.new(raw_version),
+          Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
           requirement,
@@ -71,6 +72,7 @@ module Dependabot
         super(
           NAME,
           Version.new(raw_version),
+          Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
           requirement,
@@ -106,6 +108,7 @@ module Dependabot
       def initialize(raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(raw_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
@@ -145,6 +148,7 @@ module Dependabot
       def initialize(raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(raw_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,

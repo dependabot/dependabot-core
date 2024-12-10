@@ -38,6 +38,7 @@ module Dependabot
         super(
           NAME,
           Version.new(raw_version),
+          Version.new(raw_version),
           DEPRECATED_COMPOSER_VERSIONS,
           SUPPORTED_COMPOSER_VERSIONS,
        )
