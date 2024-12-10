@@ -33,6 +33,7 @@ module Dependabot
         super(
           NAME,
           Version.new(raw_version),
+          Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS
        )

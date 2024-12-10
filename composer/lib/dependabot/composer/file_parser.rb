@@ -57,12 +57,8 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        if composer_version == Helpers::V1
-          return PackageManager.new(
-            composer_version
-          )
-        end
         PackageManager.new(
+          composer_version,
           env_versions[:composer] || composer_version
         )
       end

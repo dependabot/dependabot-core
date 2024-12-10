@@ -21,6 +21,7 @@ module Dependabot
         super(
           PACKAGE_MANAGER,
           Version.new(version),
+          Version.new(version),
           DEPRECATED_SILENT_VERSIONS,
           SUPPORTED_SILENT_VERSIONS,
        )
