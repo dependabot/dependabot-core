@@ -57,9 +57,13 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        raw_composer_version = env_versions[:composer] || composer_version
+        if composer_version == Helpers::V1
+          return PackageManager.new(
+            composer_version
+          )
+        end
         PackageManager.new(
-          raw_composer_version
+          env_versions[:composer] || composer_version
         )
       end
 
@@ -320,8 +324,10 @@ module Dependabot
 
       sig { returns(String) }
       def composer_version
-        @composer_version ||= T.let(Helpers.composer_version(parsed_composer_json, parsed_lockfile),
-                                    T.nilable(String))
+        @composer_version ||= T.let(
+          Helpers.composer_version(parsed_composer_json, parsed_lockfile),
+          T.nilable(String)
+        )
       end
     end
   end
