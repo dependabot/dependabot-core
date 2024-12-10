@@ -25,14 +25,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(detected_version, raw_version, requirement = nil)
         super(
           PACKAGE_MANAGER,
-          Version.new(raw_version),
+          Version.new(detected_version),
           Version.new(raw_version),
           DEPRECATED_BUNDLER_VERSIONS,
           SUPPORTED_BUNDLER_VERSIONS,
