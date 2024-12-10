@@ -57,6 +57,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Dependency]) }
       def dependencies
         @dependencies ||= T.let(begin
+          NativeHelpers.install_dotnet_sdks
           directory = source&.directory || "/"
           discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
             repo_contents_path: T.must(repo_contents_path),
