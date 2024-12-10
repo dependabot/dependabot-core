@@ -407,6 +407,7 @@ module Dependabot
           if output.match?(/Adding #{name}@.* to the cache/)
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
             package_manager_activate(name, version)
+            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
             fallback_to_local_version(name)
