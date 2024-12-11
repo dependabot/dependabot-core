@@ -5,15 +5,13 @@ require "sorbet-runtime"
 require "dependabot/docker/utils/helpers"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/docker/package_manager"
 
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
-
-      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -36,7 +34,7 @@ module Dependabot
 
         if incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
           raise Dependabot::DependencyFileNotFound.new(
-            File.join(directory, "Dockerfile"),
+            File.join(directory, MANIFEST_FILE),
             "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )
         elsif incorrectly_encoded_dockerfiles.none?
@@ -62,7 +60,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_dockerfiles
         repo_contents(raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }
+          .select { |f| f.type == FILE_TYPE && f.name.match?(DOCKER_REGEXP) }
           .map { |f| fetch_file_from_host(f.name) }
       end
 
@@ -80,7 +78,7 @@ module Dependabot
       def yamlfiles
         @yamlfiles ||= T.let(
           repo_contents(raise_errors: false)
-                  .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
+                  .select { |f| f.type == FILE_TYPE && f.name.match?(YAML_REGEXP) }
                   .map { |f| fetch_file_from_host(f.name) },
           T.nilable(T::Array[DependencyFile])
         )
@@ -89,14 +87,14 @@ module Dependabot
       sig { params(resource: Object).returns(T.nilable(T::Boolean)) }
       def likely_kubernetes_resource?(resource)
         # Heuristic for being a Kubernetes resource. We could make this tighter but this probably works well.
-        resource.is_a?(::Hash) && resource.key?("apiVersion") && resource.key?("kind")
+        resource.is_a?(::Hash) && resource.key?(API_VERSION_KEY) && resource.key?(RESOURCE_KEY)
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
         candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
         candidate_files.select do |f|
-          if f.type == "file" && Utils.likely_helm_chart?(f)
+          if f.type == FILE_TYPE && Utils.likely_helm_chart?(f)
             true
           else
             # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
