@@ -57,7 +57,7 @@ module Dependabot
             try_update_projects(dependency) || try_update_json(dependency)
           end
           updated_files = dependency_files.filter_map do |f|
-            dependency_file_path = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.dependency_file_path(
+            dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
               repo_contents_path: T.must(repo_contents_path),
               dependency_file: f
             )
@@ -97,7 +97,7 @@ module Dependabot
         # run update for each project file
         project_files.each do |project_file|
           project_dependencies = project_dependencies(project_file)
-          dependency_file_path = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.dependency_file_path(
+          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
             repo_contents_path: T.must(repo_contents_path),
             dependency_file: project_file
           )
@@ -128,7 +128,7 @@ module Dependabot
 
           # We just need to feed the updater a project file, grab the first
           project_file = T.must(project_files.first)
-          dependency_file_path = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.dependency_file_path(
+          dependency_file_path = NativeDiscoveryJsonReader.dependency_file_path(
             repo_contents_path: T.must(repo_contents_path),
             dependency_file: project_file
           )
@@ -171,10 +171,10 @@ module Dependabot
       sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
       def workspace
         dependency_file_paths = dependency_files.map do |f|
-          Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
-                                                                                             dependency_file: f)
+          NativeDiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
+                                                         dependency_file: f)
         end
-        Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
+        NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
