@@ -467,13 +467,10 @@ module Dependabot
           Dependabot.logger.info("No version requirement found for #{name}")
         end
 
-        package_manager_instance = package_manager_class.new(
+        package_manager_class.new(
           installed_version,
           requirement: package_manager_requirement
         )
-
-        Dependabot.logger.info("Package manager resolved for #{name}: #{package_manager_instance}")
-        package_manager_instance
       rescue StandardError => e
         Dependabot.logger.error("Error resolving package manager for #{name || 'default'}: #{e.message}")
         raise
@@ -519,7 +516,7 @@ module Dependabot
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           env = {}
-          if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+          if Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
             env = @registry_helper.find_corepack_env_variables
           end
           # Use the Helpers.install method to install the package manager
