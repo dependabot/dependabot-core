@@ -1140,7 +1140,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
           expect(ecosystem.name).to eq "dotnet"
           expect(package_manager.requirement).to be_nil
-          expect(language.name).to eq "fs-"
+          expect(language.name).to eq "fs"
           expect(language.requirement).to be_nil
         end
       end

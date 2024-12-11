@@ -7,7 +7,8 @@ require "dependabot/file_parsers/base"
 require "dependabot/nuget/native_discovery/native_discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "dependabot/nuget/package_manager"
-require "dependabot/nuget/native_discovery/native_workspace_discovery"
+require "dependabot/nuget/native_discovery/native_dependency_file_discovery"
+require "dependabot/nuget/native_discovery/native_project_discovery"
 require "dependabot/nuget/language"
 require "sorbet-runtime"
 
@@ -88,7 +89,7 @@ module Dependabot
         # Historically new version of language is released with incremental update of
         # .Net version, so we tie the language with framework version for metric collection
 
-        nomenclature = "#{language_type}#{framework_version&.first}".strip
+        nomenclature = "#{language_type} #{framework_version&.first}".strip.tr(" ", "-")
 
         Dependabot.logger.info("Detected language and framework #{nomenclature}")
 
@@ -116,10 +117,8 @@ module Dependabot
         project_json = T.let(workplace_json.send(:projects),
                              T::Array[NativeProjectDiscovery])
         project_json.map do |framework|
-          version = T.let(T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).first,
-                          T.nilable(String))
-
-          "-" + version if version
+          T.let(T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).first,
+                T.nilable(String))
         end
       rescue StandardError
         nil
