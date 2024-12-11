@@ -394,4 +394,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     it { is_expected.to eq(Gem::Version.new("1.12.0")) }
   end
+
+  context "when the response status is 200 && the body is an empty array" do
+    let(:url) { "https://example.com/packages.json" }
+    let(:response) { instance_double(Excon::Response, status: 200, body: '[]') }
+
+    before do
+      allow(Dependabot::RegistryClient).to receive(:get).and_return(response)
+    end
+
+    it "raises an unauthorized error" do
+      expect { finder.send(:fetch_registry_versions_from_url, url) }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
 end
