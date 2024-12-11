@@ -985,8 +985,163 @@ RSpec.describe Dependabot::Nuget::FileParser do
       it "returns the correct dependency set" do
         run_parser_test do |parser|
           dependencies = parser.parse
+          ecosystem = parser.ecosystem
+          package_manager = ecosystem.package_manager
+          language = ecosystem.language
+
           expect(dependencies.length).to eq(1)
           expect(dependencies[0].name).to eq("Package.E")
+
+          expect(ecosystem.name).to eq "dotnet"
+          expect(package_manager.requirement).to be_nil
+          expect(language.name).to eq "cs-net8.0"
+          expect(language.requirement).to be_nil
+        end
+      end
+    end
+
+    context "when a vb proj file with a concrete targeted framework is set" do
+      let(:vbproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.vbproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>dotnet472</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.vbproj",
+              Dependencies: [{
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["dotnet472"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "dotnet472",
+                SourceFilePath: "my.vbproj"
+              }],
+              TargetFrameworks: ["dotnet472"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "returns the correct ecosystem and language nomenclature set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          ecosystem = parser.ecosystem
+          package_manager = ecosystem.package_manager
+          language = ecosystem.language
+
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+
+          expect(ecosystem.name).to eq "dotnet"
+          expect(package_manager.requirement).to be_nil
+          expect(language.name).to eq "vb-dotnet472"
+          expect(language.requirement).to be_nil
+        end
+      end
+    end
+
+    context "when a fs proj file with a concrete targeted framework is set" do
+      let(:vbproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.fsproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>dotnet472</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.fsproj",
+              Dependencies: [{
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: [""],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "",
+                SourceFilePath: "my.fsproj"
+              }],
+              TargetFrameworks: [""],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "returns the correct ecosystem and language nomenclature set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          ecosystem = parser.ecosystem
+          package_manager = ecosystem.package_manager
+          language = ecosystem.language
+
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+
+          expect(ecosystem.name).to eq "dotnet"
+          expect(package_manager.requirement).to be_nil
+          expect(language.name).to eq "fs-"
+          expect(language.requirement).to be_nil
         end
       end
     end

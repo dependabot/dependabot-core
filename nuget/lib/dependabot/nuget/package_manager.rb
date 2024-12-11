@@ -10,9 +10,9 @@ module Dependabot
   module Nuget
     ECOSYSTEM = "dotnet"
 
-    SUPPORTED_DART_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+    SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    DEPRECATED_DART_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+    DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     class NugetPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
