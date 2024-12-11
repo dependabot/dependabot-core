@@ -7,6 +7,8 @@ require "dependabot/file_parsers/base"
 require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
+require "dependabot/nuget/package_manager"
+require "dependabot/nuget/language"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -22,7 +24,35 @@ module Dependabot
         dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(T.nilable(T::Array[String])) }
+      def content_json
+        @content_json ||= T.let(begin
+          directory = source&.directory || "/"
+          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
+            repo_contents_path: T.must(repo_contents_path),
+            directory: directory,
+            credentials: credentials
+          )
+
+          discovery_json_reader.workspace_discovery&.projects&.map do |framework|
+            T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).compact.join(",")
+          end
+        end, T.nilable(T::Array[String]))
+      end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
       def dependencies
@@ -52,6 +82,65 @@ module Dependabot
           "*.(cs|vb|fs)proj",
           "No project file."
         )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        # Historically new version of language is released with incremental update of
+        # .Net version, so we tie the language with framework version for metric collection
+
+        nomenclature = "#{language_type} #{framework_version&.join(',')}".strip.tr(" ", "-")
+
+        Dependabot.logger.info("Detected language and framework #{nomenclature}")
+
+        case language_type
+
+        when CSharpLanguage::TYPE
+          CSharpLanguage.new(nomenclature)
+
+        when VBLanguage::TYPE
+          VBLanguage.new(nomenclature)
+
+        when FSharpLanguage::TYPE
+          FSharpLanguage.new(nomenclature)
+
+        when DotNet::TYPE
+          DotNet.new(nomenclature)
+
+        end
+      end
+
+      sig { returns(T.nilable(T::Array[String])) }
+      def framework_version
+        content_json
+      rescue StandardError
+        nil
+      end
+
+      sig { returns(T.nilable(String)) }
+      def language_type
+        requirement_files = dependencies.flat_map do |dep|
+          dep.requirements.map { |r| T.let(r.fetch(:file), String) }
+        end.uniq
+
+        return "cs" if requirement_files.any? { |f| File.basename(f).match?(/\.csproj$/) }
+        return "vb" if requirement_files.any? { |f| File.basename(f).match?(/\.vbproj$/) }
+        return "fs" if requirement_files.any? { |f| File.basename(f).match?(/\.fsproj$/) }
+
+        # return a fallback to avoid falling to exception
+        "dotnet"
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        NugetPackageManager.new(T.must(nuget_version))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def nuget_version
+        SharedHelpers.run_shell_command("dotnet nuget --version").split("Command Line").last&.strip
+      rescue StandardError
+        nil
       end
     end
   end
