@@ -97,7 +97,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def dependency_file_paths
         dependency_files.map do |file|
-          Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.dependency_file_path(
+          NativeDiscoveryJsonReader.dependency_file_path(
             repo_contents_path: T.must(repo_contents_path),
             dependency_file: file
           )
@@ -106,7 +106,7 @@ module Dependabot
 
       sig { returns(AnalysisJsonReader) }
       def request_analysis
-        discovery_file_path = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.get_discovery_json_path_for_dependency_file_paths(
+        discovery_file_path = NativeDiscoveryJsonReader.get_discovery_json_path_for_dependency_file_paths(
           dependency_file_paths
         )
         analysis_folder_path = AnalysisJsonReader.temp_directory
@@ -154,7 +154,7 @@ module Dependabot
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def discovered_dependencies
-        Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).dependency_set
+        NativeDiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).dependency_set
       end
 
       sig { override.returns(T::Boolean) }
