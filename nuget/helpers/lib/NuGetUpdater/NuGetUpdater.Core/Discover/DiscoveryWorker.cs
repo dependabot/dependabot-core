@@ -8,6 +8,8 @@ using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
 
+using NuGet.Frameworks;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Utilities;
 
@@ -374,19 +376,62 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                     }
                 }
 
-                if (!results.ContainsKey(relativeProjectPath) &&
-                    packagesConfigResult is not null &&
-                    packagesConfigResult.Dependencies.Length > 0)
+                if (packagesConfigResult is not null)
                 {
-                    // project contained only packages.config dependencies
-                    results[relativeProjectPath] = new ProjectDiscoveryResult()
+                    // we might have to merge this dependency with some others
+                    if (results.TryGetValue(relativeProjectPath, out var existingProjectDiscovery))
                     {
-                        FilePath = relativeProjectPath,
-                        Dependencies = packagesConfigResult.Dependencies,
-                        TargetFrameworks = packagesConfigResult.TargetFrameworks,
-                        ImportedFiles = [], // no imported files resolved for packages.config scenarios
-                        AdditionalFiles = packagesConfigResult.AdditionalFiles,
-                    };
+                        // merge SDK and packages.config results
+                        var mergedDependencies = existingProjectDiscovery.Dependencies.Concat(packagesConfigResult.Dependencies)
+                            .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(d => d.Name)
+                            .ToImmutableArray();
+                        var mergedTargetFrameworks = existingProjectDiscovery.TargetFrameworks.Concat(packagesConfigResult.TargetFrameworks)
+                            .Select(t =>
+                            {
+                                try
+                                {
+                                    var tfm = NuGetFramework.Parse(t);
+                                    return tfm.GetShortFolderName();
+                                }
+                                catch
+                                {
+                                    return string.Empty;
+                                }
+                            })
+                            .Where(tfm => !string.IsNullOrEmpty(tfm))
+                            .Distinct()
+                            .OrderBy(tfm => tfm)
+                            .ToImmutableArray();
+                        var mergedProperties = existingProjectDiscovery.Properties; // packages.config discovery doesn't produce properties
+                        var mergedImportedFiles = existingProjectDiscovery.ImportedFiles; // packages.config discovery doesn't produce imported files
+                        var mergedAdditionalFiles = existingProjectDiscovery.AdditionalFiles.Concat(packagesConfigResult.AdditionalFiles)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(f => f)
+                            .ToImmutableArray();
+                        var mergedResult = new ProjectDiscoveryResult()
+                        {
+                            FilePath = existingProjectDiscovery.FilePath,
+                            Dependencies = mergedDependencies,
+                            TargetFrameworks = mergedTargetFrameworks,
+                            Properties = mergedProperties,
+                            ImportedFiles = mergedImportedFiles,
+                            AdditionalFiles = mergedAdditionalFiles,
+                        };
+                        results[relativeProjectPath] = mergedResult;
+                    }
+                    else
+                    {
+                        // add packages.config results
+                        results[relativeProjectPath] = new ProjectDiscoveryResult()
+                        {
+                            FilePath = relativeProjectPath,
+                            Dependencies = packagesConfigResult.Dependencies,
+                            TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                            ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                            AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                        };
+                    }
                 }
             }
         }
