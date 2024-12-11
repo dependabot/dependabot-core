@@ -143,8 +143,8 @@ module Dependabot
           return [] unless response.status == 200
 
           listing = JSON.parse(response.body)
-          raise Dependabot::PrivateSourceAuthenticationFailure, url if listing.is_a?(Array) && listing.empty?
           return [] if listing.nil?
+          return [] unless listing.is_a?(Hash)
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
