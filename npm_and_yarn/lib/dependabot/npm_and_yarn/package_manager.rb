@@ -518,7 +518,10 @@ module Dependabot
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          env = @registry_helper.find_corepack_env_variables
+          env = {}
+          if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+            env = @registry_helper.find_corepack_env_variables
+          end
           # Use the Helpers.install method to install the package manager
           return Helpers.install(name, version.to_s, env: env)
         end
