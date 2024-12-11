@@ -4,8 +4,6 @@ $ErrorActionPreference = "Stop"
 . $PSScriptRoot\common.ps1
 
 $updaterTool = "$env:DEPENDABOT_NATIVE_HELPERS_PATH/nuget/NuGetUpdater/NuGetUpdater.Cli"
-$jobString = Get-Content -Path $env:DEPENDABOT_JOB_PATH
-$job = (ConvertFrom-Json -InputObject $jobString).job
 
 # Function return values in PowerShell are wacky and contain all of the output produced during the function call.
 # Because of this, we need a reliable way to communicate _only_ the result of executing a single command, not its
@@ -15,6 +13,7 @@ $job = (ConvertFrom-Json -InputObject $jobString).job
 $operationExitCode = 0
 
 function Get-Files {
+    $job = Get-Job -jobFilePath $env:DEPENDABOT_JOB_PATH
     Write-Host "Job: $($job | ConvertTo-Json)"
     & $updaterTool clone `
         --job-path $env:DEPENDABOT_JOB_PATH `
@@ -24,45 +23,13 @@ function Get-Files {
     $script:operationExitCode = $LASTEXITCODE
 }
 
-function Install-Sdks {
-    $installedSdks = dotnet --list-sdks | ForEach-Object { $_.Split(' ')[0] }
-    if ($installedSdks.GetType().Name -eq "String") {
-        # if only a single value was returned (expected in the container), then force it to an array
-        $installedSdks = @($installedSdks)
-    }
-    Write-Host "Currently installed SDKs: $installedSdks"
-    $rootDir = Convert-Path $env:DEPENDABOT_REPO_CONTENTS_PATH
-
-    $candidateDirectories = @()
-    if ("directory" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directory
-    }
-    if ("directories" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directories
-    }
-
-    $globalJsonRelativePaths = Get-DirectoriesForSdkInstall `
-        -repoRoot $rootDir `
-        -updateDirectories $candidateDirectories
-
-    foreach ($globalJsonRelativePath in $globalJsonRelativePaths) {
-        $globalJsonPath = "$rootDir/$globalJsonRelativePath"
-        $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
-        $sdkVersion = $globalJson.sdk.version
-        if (-Not ($sdkVersion -in $installedSdks)) {
-            $installedSdks += $sdkVersion
-            Write-Host "Installing SDK $sdkVersion as specified in $globalJsonRelativePath"
-            & $env:DOTNET_INSTALL_SCRIPT_PATH --version $sdkVersion --install-dir $env:DOTNET_INSTALL_DIR
-        }
-    }
-
-    # report the final set
-    dotnet --list-sdks
-}
-
 function Update-Files {
     # install relevant SDKs
-    Install-Sdks
+    Install-Sdks `
+        -jobFilePath $env:DEPENDABOT_JOB_PATH `
+        -repoContentsPath $env:DEPENDABOT_REPO_CONTENTS_PATH `
+        -dotnetInstallScriptPath $env:DOTNET_INSTALL_SCRIPT_PATH `
+        -dotnetInstallDir $env:DOTNET_INSTALL_DIR
     # TODO: install workloads?
 
     Push-Location $env:DEPENDABOT_REPO_CONTENTS_PATH
