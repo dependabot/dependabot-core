@@ -148,6 +148,13 @@ module Dependabot
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
+          extract_versions(listing)
+        rescue JSON::ParserError
+          msg = "'#{url}' does not contain valid JSON"
+          raise DependencyFileNotResolvable, msg
+        end
+
+        def extract_versions(listing)
           # Packagist's Metadata API format:
           # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
           # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
@@ -165,9 +172,6 @@ module Dependabot
           else
             []
           end
-        rescue JSON::ParserError
-          msg = "'#{url}' does not contain valid JSON"
-          raise DependencyFileNotResolvable, msg
         end
 
         def registry_credentials
