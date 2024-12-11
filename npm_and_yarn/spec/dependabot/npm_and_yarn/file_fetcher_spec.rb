@@ -365,6 +365,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "package_json_content.json"),
             headers: json_header
           )
+        stub_request(:get, File.join(url, ".yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/.yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
         # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
         stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })

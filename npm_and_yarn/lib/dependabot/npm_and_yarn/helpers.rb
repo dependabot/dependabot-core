@@ -388,17 +388,28 @@ module Dependabot
       end
 
       # Install the package manager for specified version by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.install(name, version)
+      sig do
+        params(
+          name: String,
+          version: String,
+          env: T.nilable(T::Hash[String, String])
+        )
+          .returns(String)
+      end
+      def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
           # Try to install the specified version
-          output = package_manager_install(name, version)
+          output = package_manager_install(name, version, env: env)
 
           # Confirm success based on the output
           if output.match?(/Adding #{name}@.* to the cache/)
             Dependabot.logger.info("#{name}@#{version} successfully installed.")
+
+            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
+            package_manager_activate(name, version)
+
           else
             Dependabot.logger.error("Corepack installation output unexpected: #{output}")
             fallback_to_local_version(name)
@@ -428,11 +439,19 @@ module Dependabot
       end
 
       # Install the package manager for specified version by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.package_manager_install(name, version)
+      sig do
+        params(
+          name: String,
+          version: String,
+          env: T.nilable(T::Hash[String, String])
+        )
+          .returns(String)
+      end
+      def self.package_manager_install(name, version, env: {})
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: env
         ).strip
       end
 

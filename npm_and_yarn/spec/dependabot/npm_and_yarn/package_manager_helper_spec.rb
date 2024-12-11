@@ -63,8 +63,11 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   end
 
   let(:lockfiles) { { npm: npm_lockfile, yarn: yarn_lockfile, pnpm: pnpm_lockfile } }
+
+  let(:register_config_files) { {} }
+
   let(:package_json) { { "packageManager" => "npm@7" } }
-  let(:helper) { described_class.new(package_json, lockfiles: lockfiles) }
+  let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
 
   describe "#package_manager" do
     context "when npm lockfile exists" do
