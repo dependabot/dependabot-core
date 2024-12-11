@@ -53,7 +53,7 @@ module Dependabot
         end, T.nilable(T::Array[Dependabot::Dependency]))
       end
 
-      sig { returns(T.nilable(Dependabot::Nuget::NativeDiscoveryJsonReader)) }
+      sig { returns(T.nilable(T::Array[Dependabot::Nuget::NativeProjectDiscovery])) }
       def content
         @content ||= T.let(begin
           directory = source&.directory || "/"
@@ -63,8 +63,8 @@ module Dependabot
             credentials: credentials
           )
 
-          discovery_json_reader
-        end, T.nilable(Dependabot::Nuget::NativeDiscoveryJsonReader))
+          discovery_json_reader.workspace_discovery&.projects
+        end, T.nilable(T::Array[Dependabot::Nuget::NativeProjectDiscovery]))
       end
 
       sig { override.void }
@@ -112,13 +112,18 @@ module Dependabot
 
       sig { returns(T.nilable(T::Array[T.nilable(String)])) }
       def framework_version
-        workplace_json = T.let(content.send(:workspace_discovery),
-                               T.nilable(Dependabot::Nuget::NativeWorkspaceDiscovery))
-        project_json = T.let(workplace_json.send(:projects),
-                             T::Array[NativeProjectDiscovery])
-        project_json.map do |framework|
-          T.let(T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).first,
-                T.nilable(String))
+        #  x debugger
+
+        #                        T.nilable(Dependabot::Nuget::NativeWorkspaceDiscovery))
+        # workplace_json = T.let(content.send(:workspace_discovery),
+        #                        T.nilable(Dependabot::Nuget::NativeWorkspaceDiscovery))
+        # project_json = T.let(workplace_json.send(:projects),
+        #                      T::Array[NativeProjectDiscovery])
+        content&.map do |framework|
+          # T.let(T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).first,
+          #       T.nilable(String))
+          # debugger
+          T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).first
         end
       rescue StandardError
         nil
