@@ -26,7 +26,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        discovery_json_reader = NativeDiscoveryJsonReader.run_discovery_in_directory(
+        discovery_json_reader = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.run_discovery_in_directory(
           repo_contents_path: T.must(repo_contents_path),
           directory: directory,
           credentials: credentials

@@ -41,7 +41,7 @@ module Dependabot
       def content_json
         @content_json ||= T.let(begin
           directory = source&.directory || "/"
-          discovery_json_reader = Dependabot::Nuget::NativeDiscoveryJsonReader.run_discovery_in_directory(
+          discovery_json_reader = Dependabot::Nuget::NativeDiscovery::NativeDiscoveryJsonReader.run_discovery_in_directory(
             repo_contents_path: T.must(repo_contents_path),
             directory: directory,
             credentials: credentials
