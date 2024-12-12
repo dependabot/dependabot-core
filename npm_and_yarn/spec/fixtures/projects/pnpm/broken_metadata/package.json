@@ -1,0 +1,12 @@
+{
+  "name": "name",
+  "repository": "git+https://github.com/totallynotdavid/SumiBot.git",
+  "keywords": [
+      "bot",
+      "whatsapp"
+  ],
+  "packageManager": "pnpm@9.1.4",
+  "devDependencies": {
+      "prettier": "^3.3.1"
+  }
+}

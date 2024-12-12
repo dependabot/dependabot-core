@@ -15,8 +15,8 @@ module Dependabot
 
       def self.updated_files_regex
         [
-          /^Cargo\.toml$/,
-          /^Cargo\.lock$/
+          /Cargo\.toml$/, # Matches Cargo.toml in the root directory or any subdirectory
+          /Cargo\.lock$/  # Matches Cargo.lock in the root directory or any subdirectory
         ]
       end
 

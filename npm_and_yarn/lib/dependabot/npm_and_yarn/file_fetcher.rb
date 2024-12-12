@@ -107,6 +107,7 @@ module Dependabot
         fetched_yarn_files << yarn_lock if yarn_lock
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        create_yarn_cache
         fetched_yarn_files
       end
 
@@ -182,71 +183,120 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version
-        @npm_version ||= T.let(package_manager.setup("npm"), T.nilable(T.any(Integer, String)))
+        @npm_version ||= T.let(package_manager_helper.setup(NpmPackageManager::NAME), T.nilable(T.any(Integer, String)))
       end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def yarn_version
-        @yarn_version ||= T.let(package_manager.setup("yarn"), T.nilable(T.any(Integer, String)))
+        @yarn_version ||= T.let(
+          package_manager_helper.setup(YarnPackageManager::NAME),
+          T.nilable(T.any(Integer, String))
+        )
       end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def pnpm_version
-        @pnpm_version ||= T.let(package_manager.setup("pnpm"), T.nilable(T.any(Integer, String)))
+        @pnpm_version ||= T.let(
+          package_manager_helper.setup(PNPMPackageManager::NAME),
+          T.nilable(T.any(Integer, String))
+        )
       end
 
-      sig { returns(PackageManager) }
-      def package_manager
-        @package_manager ||= T.let(PackageManager.new(
-                                     parsed_package_json,
-                                     lockfiles: { npm: package_lock || shrinkwrap, yarn: yarn_lock, pnpm: pnpm_lock }
-                                   ), T.nilable(PackageManager))
+      sig { returns(PackageManagerHelper) }
+      def package_manager_helper
+        @package_manager_helper ||= T.let(
+          PackageManagerHelper.new(
+            parsed_package_json,
+            lockfiles,
+            registry_config_files,
+            credentials
+          ), T.nilable(PackageManagerHelper)
+        )
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def lockfiles
+        {
+          npm: package_lock || shrinkwrap,
+          yarn: yarn_lock,
+          pnpm: pnpm_lock
+        }
+      end
+
+      # Returns the .npmrc, and .yarnrc files for the repository.
+      # @return [Hash{Symbol => Dependabot::DependencyFile}]
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc,
+          yarnrc: yarnrc,
+          yarnrc_yml: yarnrc_yml
+        }
       end
 
       sig { returns(DependencyFile) }
       def package_json
-        @package_json ||= T.let(fetch_file_from_host("package.json"), T.nilable(DependencyFile))
+        @package_json ||= T.let(fetch_file_from_host(MANIFEST_FILENAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def package_lock
         return @package_lock if defined?(@package_lock)
 
-        @package_lock ||= T.let(fetch_file_if_present("package-lock.json"), T.nilable(DependencyFile))
+        @package_lock ||= T.let(fetch_file_if_present(NpmPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def yarn_lock
         return @yarn_lock if defined?(@yarn_lock)
 
-        @yarn_lock ||= T.let(fetch_file_if_present("yarn.lock"), T.nilable(DependencyFile))
+        @yarn_lock ||= T.let(fetch_file_if_present(YarnPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def pnpm_lock
         return @pnpm_lock if defined?(@pnpm_lock)
 
-        @pnpm_lock ||= T.let(fetch_file_if_present("pnpm-lock.yaml"), T.nilable(DependencyFile))
+        @pnpm_lock ||= T.let(fetch_file_if_present(PNPMPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
+
+        return @pnpm_lock if @pnpm_lock || directory == "/"
+
+        # Loop through parent directories looking for a pnpm-lock
+        (1..directory.split("/").count).each do |i|
+          @pnpm_lock = fetch_file_from_host(("../" * i) + PNPMPackageManager::LOCKFILE_NAME)
+                       .tap { |f| f.support_file = true }
+          break if @pnpm_lock
+        rescue Dependabot::DependencyFileNotFound
+          # Ignore errors (pnpm_lock.yaml may not be present)
+          nil
+        end
+
+        @pnpm_lock
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def shrinkwrap
         return @shrinkwrap if defined?(@shrinkwrap)
 
-        @shrinkwrap ||= T.let(fetch_file_if_present("npm-shrinkwrap.json"), T.nilable(DependencyFile))
+        @shrinkwrap ||= T.let(
+          fetch_file_if_present(
+            NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME
+          ),
+          T.nilable(DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def npmrc
         return @npmrc if defined?(@npmrc)
 
-        @npmrc ||= T.let(fetch_support_file(".npmrc"), T.nilable(DependencyFile))
+        @npmrc ||= T.let(fetch_support_file(NpmPackageManager::RC_FILENAME), T.nilable(DependencyFile))
 
         return @npmrc if @npmrc || directory == "/"
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")
+          @npmrc = fetch_file_from_host(("../" * i) + NpmPackageManager::RC_FILENAME)
                    .tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
@@ -261,13 +311,13 @@ module Dependabot
       def yarnrc
         return @yarnrc if defined?(@yarnrc)
 
-        @yarnrc ||= T.let(fetch_support_file(".yarnrc"), T.nilable(DependencyFile))
+        @yarnrc ||= T.let(fetch_support_file(YarnPackageManager::RC_FILENAME), T.nilable(DependencyFile))
 
         return @yarnrc if @yarnrc || directory == "/"
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")
+          @yarnrc = fetch_file_from_host(("../" * i) + YarnPackageManager::RC_FILENAME)
                     .tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
@@ -280,21 +330,24 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def yarnrc_yml
-        @yarnrc_yml ||= T.let(fetch_support_file(".yarnrc.yml"), T.nilable(DependencyFile))
+        @yarnrc_yml ||= T.let(fetch_support_file(YarnPackageManager::RC_YML_FILENAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def pnpm_workspace_yaml
         return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
 
-        @pnpm_workspace_yaml = T.let(fetch_support_file("pnpm-workspace.yaml"), T.nilable(DependencyFile))
+        @pnpm_workspace_yaml = T.let(
+          fetch_support_file(PNPMPackageManager::PNPM_WS_YML_FILENAME),
+          T.nilable(DependencyFile)
+        )
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def lerna_json
         return @lerna_json if defined?(@lerna_json)
 
-        @lerna_json = T.let(fetch_support_file("lerna.json"), T.nilable(DependencyFile))
+        @lerna_json = T.let(fetch_support_file(LERNA_JSON_FILENAME), T.nilable(DependencyFile))
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -329,7 +382,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar", ".tar.gz")
+          filename = File.join(filename, MANIFEST_FILENAME) unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -380,7 +433,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       sig { params(file: DependencyFile).returns(T::Array[[String, String]]) }
       def path_dependency_details_from_manifest(file)
-        return [] unless file.name.end_with?("package.json")
+        return [] unless file.name.end_with?(MANIFEST_FILENAME)
 
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
@@ -471,9 +524,9 @@ module Dependabot
         return [] unless package_json
 
         [package_json] + [
-          fetch_file_if_present(File.join(path, "package-lock.json")),
-          fetch_file_if_present(File.join(path, "yarn.lock")),
-          fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
+          fetch_file_if_present(File.join(path, NpmPackageManager::LOCKFILE_NAME)),
+          fetch_file_if_present(File.join(path, YarnPackageManager::LOCKFILE_NAME)),
+          fetch_file_if_present(File.join(path, NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME))
         ]
       end
 
@@ -542,7 +595,7 @@ module Dependabot
 
       sig { params(workspace: String).returns(T.nilable(DependencyFile)) }
       def fetch_package_json_if_present(workspace)
-        file = File.join(workspace, "package.json")
+        file = File.join(workspace, MANIFEST_FILENAME)
 
         begin
           fetch_file_from_host(file)
@@ -630,9 +683,22 @@ module Dependabot
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, T.must(lerna_json).path
       end
+
+      sig { void }
+      def create_yarn_cache
+        if repo_contents_path.nil?
+          Dependabot.logger.info("Repository contents path is nil")
+        elsif Dir.exist?(T.must(repo_contents_path))
+          Dir.chdir(T.must(repo_contents_path)) do
+            FileUtils.mkdir_p(".yarn/cache")
+          end
+        else
+          Dependabot.logger.info("Repository contents path does not exist")
+        end
+      end
     end
   end
 end
 
 Dependabot::FileFetchers
-  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileFetcher)
+  .register(Dependabot::NpmAndYarn::ECOSYSTEM, Dependabot::NpmAndYarn::FileFetcher)

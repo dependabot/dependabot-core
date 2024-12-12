@@ -75,7 +75,7 @@ module Dependabot
           releases_with_dependency_name =
             releases
             .reject { |r| r.tag_name.nil? }
-            .select { |r| r.tag_name.downcase.include?(dep_prefix) }
+            .select { |r| r.tag_name.start_with?(dep_prefix) }
 
           return releases unless releases_with_dependency_name.any?
 

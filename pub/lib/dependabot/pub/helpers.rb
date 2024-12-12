@@ -229,6 +229,7 @@ module Dependabot
               "CI" => "true",
               "PUB_ENVIRONMENT" => "dependabot",
               "FLUTTER_ROOT" => "/tmp/flutter",
+              "DART_ROOT" => "/tmp/flutter/bin/cache/dart-sdk",
               "PUB_HOSTED_URL" => options[:pub_hosted_url],
               # This variable will make the solver run assuming that Dart SDK version.
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.

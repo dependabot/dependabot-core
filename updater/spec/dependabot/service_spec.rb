@@ -23,7 +23,8 @@ RSpec.describe Dependabot::Service do
       update_pull_request: nil,
       close_pull_request: nil,
       record_update_job_error: nil,
-      record_update_job_unknown_error: nil
+      record_update_job_unknown_error: nil,
+      record_update_job_warning: nil
     })
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
     api_client
@@ -305,6 +306,28 @@ RSpec.describe Dependabot::Service do
     end
   end
 
+  describe "#record_update_job_warning" do
+    let(:warn_type) { :deprecated_dependency }
+    let(:warn_title) { "Deprecated Dependency Used" }
+    let(:warn_description) { "The dependency xyz is deprecated and should be updated or removed." }
+
+    before do
+      service.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+    end
+
+    it "delegates to @client" do
+      expect(mock_client).to have_received(:record_update_job_warning).with(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+    end
+  end
+
   describe "#capture_exception" do
     before do
       allow(Dependabot::Experiments).to receive(:enabled?).with(:record_update_job_unknown_error).and_return(true)
@@ -367,6 +390,25 @@ RSpec.describe Dependabot::Service do
             Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
             Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
             Dependabot::ErrorAttributes::DEPENDENCIES => "lodash"
+          )
+        )
+    end
+
+    it "extracts information from a security job if provided" do
+      job = OpenStruct.new(id: 1234, package_manager: "npm_and_yarn", repo_private?: false, repo_owner: "foo",
+                           security_updates_only?: true)
+      service.capture_exception(error: error, job: job)
+
+      expect(mock_client)
+        .to have_received(:record_update_job_unknown_error)
+        .with(
+          error_type: "unknown_error",
+          error_details: hash_including(
+            Dependabot::ErrorAttributes::CLASS => "Dependabot::DependabotError",
+            Dependabot::ErrorAttributes::MESSAGE => "Something went wrong",
+            Dependabot::ErrorAttributes::JOB_ID => job.id,
+            Dependabot::ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+            Dependabot::ErrorAttributes::SECURITY_UPDATE => true
           )
         )
     end

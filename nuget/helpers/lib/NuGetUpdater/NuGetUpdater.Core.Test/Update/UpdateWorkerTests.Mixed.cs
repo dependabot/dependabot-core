@@ -1,3 +1,7 @@
+using System.Text.Json;
+
+using NuGetUpdater.Core.Updater;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -6,6 +10,34 @@ public partial class UpdateWorkerTests
 {
     public class Mixed : UpdateWorkerTestBase
     {
+        [Fact]
+        public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
+        {
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
+            var result = new UpdateOperationResult()
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = "<some package feed>",
+            };
+            var resultFilePath = Path.Combine(temporaryDirectory.DirectoryPath, "update-result.json");
+            await UpdaterWorker.WriteResultFile(result, resultFilePath, new TestLogger());
+            var resultContent = await File.ReadAllTextAsync(resultFilePath);
+
+            // raw result file should look like this:
+            // {
+            //   ...
+            //   "ErrorType": "AuthenticationFailure",
+            //   "ErrorDetails": "<some package feed>",
+            //   ...
+            // }
+            var jsonDocument = JsonDocument.Parse(resultContent);
+            var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
+            var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+
+            Assert.Equal("AuthenticationFailure", errorType.GetString());
+            Assert.Equal("<some package feed>", errorDetails.GetString());
+        }
+
         [Fact]
         public async Task ForPackagesProject_UpdatePackageReference_InBuildProps()
         {

@@ -11,6 +11,7 @@ require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
 require "dependabot/requirements_update_strategy"
 require "dependabot/source"
+require "dependabot/pull_request"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -60,7 +61,7 @@ module Dependabot
     sig { returns(T.nilable(T::Array[String])) }
     attr_reader :dependencies
 
-    sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
+    sig { returns(T::Array[PullRequest]) }
     attr_reader :existing_pull_requests
 
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -139,8 +140,7 @@ module Dependabot
                                               end,
                                               T::Array[Dependabot::Credential])
       @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
-      @existing_pull_requests         = T.let(attributes.fetch(:existing_pull_requests),
-                                              T::Array[T::Array[T::Hash[String, String]]])
+      @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,

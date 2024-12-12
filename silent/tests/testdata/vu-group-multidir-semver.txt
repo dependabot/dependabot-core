@@ -3,7 +3,7 @@
 dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stdout -count=2 create_pull_request
 pr-created foo/expected-1.json bar/expected-1.json
-pr-created foo/expected-2.json
+pr-created foo/expected-2.json bar/expected-2.json
 
 # When there is the same dependency in both directories, one is a major update the other a patch,
 # and the user asked for majors in one group and minors in the other, we should create two group PRs
@@ -30,6 +30,12 @@ pr-created foo/expected-2.json
 {
   "dependency-a": { "version": "2.0.0" },
   "dependency-b": { "version": "2.0.1" }
+}
+
+-- bar/expected-2.json --
+{
+  "dependency-a": { "version": "2.0.1" },
+  "dependency-b": { "version": "1.0.0" }
 }
 
 -- foo/expected-2.json --
@@ -77,5 +83,3 @@ job:
         update-types:
           - minor
           - patch
-  experiments:
-    dependency_has_directory: true

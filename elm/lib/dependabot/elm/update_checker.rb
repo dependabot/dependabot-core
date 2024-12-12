@@ -56,8 +56,8 @@ module Dependabot
       def version_resolver
         @version_resolver ||=
           begin
-            unless dependency.requirements.any? { |r| r.fetch(:file) == "elm.json" }
-              raise Dependabot::DependencyFileNotResolvable, "No elm.json found"
+            unless dependency.requirements.any? { |r| r.fetch(:file) == MANIFEST_FILE }
+              raise Dependabot::DependencyFileNotResolvable, "No #{MANIFEST_FILE} found"
             end
 
             Elm19VersionResolver.new(

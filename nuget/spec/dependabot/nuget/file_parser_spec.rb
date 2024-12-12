@@ -6,14 +6,20 @@ require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/version"
-require_relative "nuget_search_stubs"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Nuget::FileParser do
-  RSpec.configure do |config|
-    config.include(NuGetSearchStubs)
-  end
+  let(:stub_native_tools) { true } # set to `false` to allow invoking the native tools during tests
+  let(:report_stub_debug_information) { false } # set to `true` to write native tool stubbing information to the screen
 
+  let(:dependency_files) { [csproj_file] + additional_files }
+  let(:additional_files) { [] }
+  let(:csproj_file) do
+    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
+  end
+  let(:csproj_body) { fixture("csproj", "basic.csproj") }
+  let(:repo_contents_path) { write_tmp_repo(dependency_files) }
+  let(:directory) { "/" }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -21,71 +27,154 @@ RSpec.describe Dependabot::Nuget::FileParser do
       directory: directory
     )
   end
-  let(:directory) { "/" }
-  let(:parser) do
-    described_class.new(dependency_files: files,
-                        source: source,
-                        repo_contents_path: repo_contents_path)
-  end
-  let(:repo_contents_path) { write_tmp_repo(files) }
-  let(:csproj_body) { fixture("csproj", "basic.csproj") }
-  let(:csproj_file) do
-    Dependabot::DependencyFile.new(name: "my.csproj", content: csproj_body)
-  end
-  let(:additional_files) { [] }
   let(:files) { [csproj_file] + additional_files }
+
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          branch: "main"
+        }
+      }
+    }
+  end
 
   it_behaves_like "a dependency file parser"
 
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
+
+  def clean_common_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
+  end
+
+  def run_parser_test(&_block)
+    ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    clean_common_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
+
+    ensure_job_file do
+      # ensure discovery files are present...
+      Dependabot::Nuget::DiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                        directory: directory,
+                                                                        credentials: [])
+
+      # ...create the parser...
+      parser = Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                                 source: source,
+                                                 repo_contents_path: repo_contents_path)
+
+      # ...and invoke the actual test
+      yield parser
+    end
+  ensure
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
+    ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
+    clean_common_files
+  end
+
+  def intercept_native_tools(discovery_content_hash:)
+    return unless stub_native_tools
+
+    # don't allow `FileParser#parse` to call into the native tool; just fake it
+    allow(Dependabot::Nuget::NativeHelpers)
+      .to receive(:run_nuget_discover_tool)
+      .and_wrap_original do |_original_method, *args, &_block|
+        discovery_json_path = args[0][:output_path]
+        FileUtils.mkdir_p(File.dirname(discovery_json_path))
+        if report_stub_debug_information
+          puts "stubbing call to `run_nuget_discover_tool` with args #{args}; writing prefabricated discovery " \
+               "response to discovery.json to #{discovery_json_path}"
+        end
+        discovery_json_content = discovery_content_hash.to_json
+        File.write(discovery_json_path, discovery_json_content)
+      end
+  end
+
   describe "parse" do
-    subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
-
-    let(:dependencies) { parser.parse }
-
     context "with a single project file" do
       before do
-        stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.1", "1.1.1"])
-        stub_search_results_with_versions_v3("microsoft.aspnetcore.app", [])
-        stub_search_results_with_versions_v3("microsoft.net.test.sdk", [])
-        stub_search_results_with_versions_v3("microsoft.extensions.platformabstractions", ["1.1.0"])
-        stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Microsoft.Extensions.DependencyModel",
+                Version: "1.1.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net462"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "System.Collections.Specialized",
+                Version: "4.3.0",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net462"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFrameworks",
+                Value: "net462",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net462"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
-      its(:length) { is_expected.to eq(5) }
+      it "is returns the expected set of dependencies" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies.length).to eq(2)
 
-      describe "the Microsoft.Extensions.DependencyModel dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Microsoft.Extensions.DependencyModel" } }
-
-        it "has the right details" do
+          dependency = dependencies.find { |d| d.name == "Microsoft.Extensions.DependencyModel" }
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
           expect(dependency.version).to eq("1.1.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "1.1.1",
-              file: "my.csproj",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
-        end
-      end
-
-      describe "the System.Collections.Specialized dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "System.Collections.Specialized" } }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("System.Collections.Specialized")
-          expect(dependency.version).to eq("4.3.0")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "4.3.0",
-              file: "my.csproj",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
+          expect(dependency.requirements).to eq([{
+            requirement: "1.1.1",
+            file: "/my.csproj",
+            groups: ["dependencies"],
+            source: nil
+          }])
         end
       end
     end
@@ -100,50 +189,83 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       before do
-        stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.1", "1.1.1"])
-        stub_search_results_with_versions_v3("microsoft.aspnetcore.app", [])
-        stub_search_results_with_versions_v3("microsoft.net.test.sdk", [])
-        stub_search_results_with_versions_v3("microsoft.extensions.platformabstractions", ["1.1.0"])
-        stub_search_results_with_versions_v3("system.collections.specialized", ["4.3.0"])
-        stub_search_results_with_versions_v3("serilog", ["2.3.0"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Microsoft.Extensions.DependencyModel",
+                Version: "1.1.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net462"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFrameworks",
+                Value: "net462",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net462"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }, {
+              FilePath: "my.vbproj",
+              Dependencies: [{
+                Name: "Microsoft.Extensions.DependencyModel",
+                Version: "1.0.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net462"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFrameworks",
+                Value: "net462",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net462"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
-      its(:length) { is_expected.to eq(6) }
-
-      describe "the Microsoft.Extensions.DependencyModel dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Microsoft.Extensions.DependencyModel" } }
-
-        it "has the right details" do
+      it "reports the correct dependency information" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          dependency = dependencies.find { |d| d.name == "Microsoft.Extensions.DependencyModel" }
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
           expect(dependency.version).to eq("1.0.1")
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.1.1",
-              file: "my.csproj",
+              file: "/my.csproj",
               groups: ["dependencies"],
               source: nil
             }, {
               requirement: "1.0.1",
-              file: "my.vbproj",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
-        end
-      end
-
-      describe "the Serilog dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Serilog" } }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Serilog")
-          expect(dependency.version).to eq("2.3.0")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "2.3.0",
-              file: "my.vbproj",
+              file: "/my.vbproj",
               groups: ["dependencies"],
               source: nil
             }]
@@ -172,24 +294,53 @@ RSpec.describe Dependabot::Nuget::FileParser do
         XML
       end
 
-      its(:length) { is_expected.to eq(9) }
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+                Version: "1.0.0",
+                Type: "PackagesConfig",
+                EvaluationResult: nil,
+                TargetFrameworks: ["netstandard2.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "netstandard2.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["netstandard2.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: ["packages.config"]
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
 
-      describe "the Microsoft.CodeDom.Providers.DotNetCompilerPlatform dependency" do
-        subject(:dependency) do
-          dependencies.find do |d|
-            d.name == "Microsoft.CodeDom.Providers.DotNetCompilerPlatform"
-          end
-        end
-
-        it "has the right details" do
+      it "reports the correct dependencies" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          dependency = dependencies.find { |d| d.name == "Microsoft.CodeDom.Providers.DotNetCompilerPlatform" }
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name)
-            .to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.0.0",
-              file: "packages.config",
+              file: "/my.csproj",
               groups: ["dependencies"],
               source: nil
             }]
@@ -197,26 +348,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         end
       end
 
-      describe "the Microsoft.Net.Compilers dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Microsoft.Net.Compilers" } }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name)
-            .to eq("Microsoft.Net.Compilers")
-          expect(dependency.version).to eq("1.0.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "1.0.1",
-              file: "packages.config",
-              groups: ["devDependencies"],
-              source: nil
-            }]
-          )
-        end
-      end
-
-      context "when the dependency is nested" do
+      context "when it is nested" do
         let(:directory) { "/dir" }
         let(:packages_config) do
           Dependabot::DependencyFile.new(
@@ -228,44 +360,54 @@ RSpec.describe Dependabot::Nuget::FileParser do
           Dependabot::DependencyFile.new(name: "dir/my.csproj", content: csproj_body)
         end
 
-        its(:length) { is_expected.to eq(9) }
+        before do
+          intercept_native_tools(
+            discovery_content_hash: {
+              Path: "dir",
+              IsSuccess: true,
+              Projects: [{
+                FilePath: "my.csproj",
+                Dependencies: [{
+                  Name: "Microsoft.CodeDom.Providers.DotNetCompilerPlatform",
+                  Version: "1.0.0",
+                  Type: "PackagesConfig",
+                  EvaluationResult: nil,
+                  TargetFrameworks: ["netstandard2.0"],
+                  IsDevDependency: false,
+                  IsDirect: false,
+                  IsTransitive: false,
+                  IsOverride: false,
+                  IsUpdate: false,
+                  InfoUrl: nil
+                }],
+                IsSuccess: true,
+                Properties: [{
+                  Name: "TargetFramework",
+                  Value: "netstandard2.0",
+                  SourceFilePath: "my.csproj"
+                }],
+                TargetFrameworks: ["netstandard2.0"],
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
+              }],
+              GlobalJson: nil,
+              DotNetToolsJson: nil
+            }
+          )
+        end
 
-        describe "the Microsoft.CodeDom.Providers.DotNetCompilerPlatform dependency" do
-          subject(:dependency) do
-            dependencies.find do |d|
-              d.name == "Microsoft.CodeDom.Providers.DotNetCompilerPlatform"
-            end
-          end
-
-          it "has the right details" do
+        it "reports the correct results" do
+          run_parser_test do |parser|
+            dependencies = parser.parse
+            dependency = dependencies.find { |d| d.name == "Microsoft.CodeDom.Providers.DotNetCompilerPlatform" }
             expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name)
-              .to eq("Microsoft.CodeDom.Providers.DotNetCompilerPlatform")
             expect(dependency.version).to eq("1.0.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "1.0.0",
-                file: "packages.config",
+                file: "/dir/my.csproj",
                 groups: ["dependencies"],
-                source: nil
-              }]
-            )
-          end
-        end
-
-        describe "the Microsoft.Net.Compilers dependency" do
-          subject(:dependency) { dependencies.find { |d| d.name == "Microsoft.Net.Compilers" } }
-
-          it "has the right details" do
-            expect(dependency).to be_a(Dependabot::Dependency)
-            expect(dependency.name)
-              .to eq("Microsoft.Net.Compilers")
-            expect(dependency.version).to eq("1.0.1")
-            expect(dependency.requirements).to eq(
-              [{
-                requirement: "1.0.1",
-                file: "packages.config",
-                groups: ["devDependencies"],
                 source: nil
               }]
             )
@@ -283,19 +425,44 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(6) }
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [], # not relevant for this test
+            GlobalJson: {
+              FilePath: "global.json",
+              IsSuccess: true,
+              Dependencies: [{
+                Name: "Microsoft.Build.Traversal",
+                Version: "1.0.45",
+                Type: "MSBuildSdk",
+                EvaluationResult: nil,
+                TargetFrameworks: nil,
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }]
+            },
+            DotNetToolsJson: nil
+          }
+        )
+      end
 
-      describe "the Microsoft.Build.Traversal dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Microsoft.Build.Traversal" } }
-
-        it "has the right details" do
+      it "reports the expected results" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          dependency = dependencies.find { |d| d.name == "Microsoft.Build.Traversal" }
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Microsoft.Build.Traversal")
           expect(dependency.version).to eq("1.0.45")
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.0.45",
-              file: "global.json",
+              file: "/global.json",
               groups: ["dependencies"],
               source: nil
             }]
@@ -313,19 +480,44 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(7) }
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [], # not relevant for this test
+            GlobalJson: nil,
+            DotNetToolsJson: {
+              FilePath: ".config/dotnet-tools.json",
+              IsSuccess: true,
+              Dependencies: [{
+                Name: "dotnetsay",
+                Version: "1.0.0",
+                Type: "DotNetTool",
+                EvaluationResult: nil,
+                TargetFrameworks: nil,
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }]
+            }
+          }
+        )
+      end
 
-      describe "the dotnetsay dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "dotnetsay" } }
-
-        it "has the right details" do
+      it "has the right details" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          dependency = dependencies.find { |d| d.name == "dotnetsay" }
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("dotnetsay")
           expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.0.0",
-              file: ".config/dotnet-tools.json",
+              file: "/.config/dotnet-tools.json",
               groups: ["dependencies"],
               source: nil
             }]
@@ -355,31 +547,59 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       before do
-        stub_search_results_with_versions_v3("serilog", ["2.3.0"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Serilog",
+                Version: "2.3.0",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["netstandard1.6"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "netstandard1.6",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["netstandard1.6"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: ["commonprops.props"],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
-      its(:length) { is_expected.to eq(1) }
-
       describe "the Serilog dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Serilog" } }
-
         it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Serilog")
-          expect(dependency.version).to eq("2.3.0")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "2.3.0",
-              file: "commonprops.props",
-              groups: ["dependencies"],
-              source: nil
-            }, {
-              requirement: "2.3.0",
-              file: "my.csproj",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
+          run_parser_test do |parser|
+            dependencies = parser.parse
+            dependency = dependencies.find { |d| d.name == "Serilog" }
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("Serilog")
+            expect(dependency.version).to eq("2.3.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "2.3.0",
+                file: "/my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
         end
       end
     end
@@ -405,35 +625,58 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       before do
-        stub_search_results_with_versions_v3("microsoft.sourcelink.github", ["1.0.0-beta2-19367-01"])
-        stub_search_results_with_versions_v3("system.lycos", ["3.23.3"])
-        stub_search_results_with_versions_v3("system.askjeeves", ["2.2.2"])
-        stub_search_results_with_versions_v3("system.google", ["0.1.0-beta.3"])
-        stub_search_results_with_versions_v3("system.webcrawler", ["1.1.1"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "System.WebCrawler",
+                Version: "1.1.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["netstandard1.6"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: true,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "netstandard1.6",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["netstandard1.6"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: ["packages.props"],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
-      its(:length) { is_expected.to eq(5) }
-
       describe "the System.WebCrawler dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "System.WebCrawler" } }
-
         it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("System.WebCrawler")
-          expect(dependency.version).to eq("1.1.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "1.1.1",
-              file: "my.csproj",
-              groups: ["dependencies"],
-              source: nil
-            }, {
-              requirement: "1.1.1",
-              file: "packages.props",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
+          run_parser_test do |parser|
+            dependencies = parser.parse
+            dependency = dependencies.find { |d| d.name == "System.WebCrawler" }
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.version).to eq("1.1.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.1.1",
+                file: "/my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
         end
       end
     end
@@ -464,40 +707,66 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       before do
-        stub_search_results_with_versions_v3("system.lycos", ["3.23.3"])
-        stub_search_results_with_versions_v3("system.askjeeves", ["2.2.2"])
-        stub_search_results_with_versions_v3("system.google", ["0.1.0-beta.3"])
-        stub_search_results_with_versions_v3("system.webcrawler", ["1.1.1"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "System.WebCrawler",
+                Version: "1.1.1",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["netstandard1.6"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "netstandard1.6",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["netstandard1.6"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: ["Directory.Packages.props"],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
-
-      its(:length) { is_expected.to eq(4) }
 
       describe "the System.WebCrawler dependency" do
         subject(:dependency) { dependencies.find { |d| d.name == "System.WebCrawler" } }
 
         it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("System.WebCrawler")
-          expect(dependency.version).to eq("1.1.1")
-          expect(dependency.requirements).to eq(
-            [{
-              requirement: "1.1.1",
-              file: "my.csproj",
-              groups: ["dependencies"],
-              source: nil
-            }, {
-              requirement: "1.1.1",
-              file: "Directory.Packages.props",
-              groups: ["dependencies"],
-              source: nil
-            }]
-          )
+          run_parser_test do |parser|
+            dependencies = parser.parse
+            dependency = dependencies.find { |d| d.name == "System.WebCrawler" }
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.version).to eq("1.1.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.1.1",
+                file: "/my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
         end
       end
     end
 
     context "with only directory.packages.props file" do
-      let(:files) { [packages_file] }
+      let(:dependency_files) { [packages_file] }
       let(:packages_file) do
         Dependabot::DependencyFile.new(
           name: "directory.packages.props",
@@ -505,211 +774,16 @@ RSpec.describe Dependabot::Nuget::FileParser do
         )
       end
 
-      it do
-        expect { dependencies }.to raise_error(Dependabot::DependencyFileNotFound)
+      it "fails in the initializer" do
+        expect do
+          run_parser_test do |parser|
+            _dependencies = parser.parse
+          end
+        end.to raise_error(Dependabot::DependencyFileNotFound)
       end
     end
 
-    context "when discovered dependencies are reported" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                  <SomePackageVersion>1.2.3</SomePackageVersion>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        allow(Dependabot.logger).to receive(:info)
-        stub_search_results_with_versions_v3("some.package", ["1.2.3"])
-        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/some.package/1.2.3/some.package.nuspec")
-          .to_return(
-            status: 200,
-            body:
-              <<~XML
-                <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
-                  <metadata>
-                    <id>Some.Package</id>
-                    <version>1.2.3</version>
-                    <dependencies>
-                      <group targetFramework="net8.0">
-                      </group>
-                    </dependencies>
-                  </metadata>
-                </package>
-              XML
-          )
-      end
-
-      it "reports the relevant information" do
-        expect(dependencies.length).to eq(1) # this line is really just to force evaluation so we can see the infos
-        expect(Dependabot.logger).to have_received(:info).with(
-          <<~INFO
-            Discovery JSON content: {
-              "FilePath": "",
-              "IsSuccess": true,
-              "Projects": [
-                {
-                  "FilePath": "my.csproj",
-                  "Dependencies": [
-                    {
-                      "Name": "Microsoft.NET.Sdk",
-                      "Version": null,
-                      "Type": "MSBuildSdk",
-                      "EvaluationResult": null,
-                      "TargetFrameworks": null,
-                      "IsDevDependency": false,
-                      "IsDirect": false,
-                      "IsTransitive": false,
-                      "IsOverride": false,
-                      "IsUpdate": false
-                    },
-                    {
-                      "Name": "Some.Package",
-                      "Version": "1.2.3",
-                      "Type": "PackageReference",
-                      "EvaluationResult": {
-                        "ResultType": "Success",
-                        "OriginalValue": "$(SomePackageVersion)",
-                        "EvaluatedValue": "1.2.3",
-                        "RootPropertyName": "SomePackageVersion",
-                        "ErrorMessage": null
-                      },
-                      "TargetFrameworks": [
-                        "net8.0"
-                      ],
-                      "IsDevDependency": false,
-                      "IsDirect": true,
-                      "IsTransitive": false,
-                      "IsOverride": false,
-                      "IsUpdate": false
-                    }
-                  ],
-                  "IsSuccess": true,
-                  "Properties": [
-                    {
-                      "Name": "SomePackageVersion",
-                      "Value": "1.2.3",
-                      "SourceFilePath": "my.csproj"
-                    },
-                    {
-                      "Name": "TargetFramework",
-                      "Value": "net8.0",
-                      "SourceFilePath": "my.csproj"
-                    }
-                  ],
-                  "TargetFrameworks": [
-                    "net8.0"
-                  ],
-                  "ReferencedProjectPaths": []
-                }
-              ],
-              "DirectoryPackagesProps": null,
-              "GlobalJson": null,
-              "DotNetToolsJson": null
-            }
-          INFO
-          .chomp
-        )
-      end
-    end
-
-    context "with unparsable dependency versions" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Package.A" Version="1.2.3" />
-                  <PackageReference Include="Package.B" Version="$(ThisPropertyCannotBeResolved)" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        allow(Dependabot.logger).to receive(:warn)
-        stub_search_results_with_versions_v3("package.a", ["1.2.3"])
-        stub_search_results_with_versions_v3("package.b", ["4.5.6"])
-        stub_request(:get, "https://api.nuget.org/v3-flatcontainer/package.a/1.2.3/package.a.nuspec")
-          .to_return(
-            status: 200,
-            body:
-            <<~XML
-              <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
-                <metadata>
-                  <id>Package.A</id>
-                  <version>1.2.3</version>
-                  <dependencies>
-                    <group targetFramework="net8.0">
-                    </group>
-                  </dependencies>
-                </metadata>
-              </package>
-            XML
-          )
-      end
-
-      its(:length) { is_expected.to eq(1) }
-
-      describe "the Package.A dependency" do
-        subject(:dependency) { dependencies.find { |d| d.name == "Package.A" } }
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("Package.A")
-          expect(dependency.version).to eq("1.2.3")
-          expect(Dependabot.logger).to have_received(:warn).with(
-            "Dependency 'Package.B' excluded due to unparsable version: $(ThisPropertyCannotBeResolved)"
-          )
-        end
-      end
-    end
-
-    context "with a <TargetFramework> property that can't be evaluated" do
-      let(:csproj_file) do
-        Dependabot::DependencyFile.new(
-          name: "my.csproj",
-          content:
-            <<~XML
-              <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
-                  <TargetFramework>$(SomeCommonTfmThatCannotBeResolved)</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
-                  <PackageReference Include="Some.Package" Version="1.2.3" />
-                </ItemGroup>
-              </Project>
-            XML
-        )
-      end
-
-      before do
-        allow(Dependabot.logger).to receive(:warn)
-      end
-
-      it "does not return the `.csproj` with an unresolvable TFM" do
-        expect(dependencies.length).to eq(0)
-      end
-    end
-
-    context "when packages are referenced in implicitly included `.targets` file" do
+    context "when packages referenced in implicitly included `.targets` file are reported" do
       let(:additional_files) { [directory_build_targets] }
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
@@ -742,19 +816,65 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
 
       before do
-        stub_search_results_with_versions_v3("package.a", ["1.2.3"])
-        stub_search_results_with_versions_v3("package.b", ["4.5.6"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Package.A",
+                Version: "1.2.3",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.B",
+                Version: "4.5.6",
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net8.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net8.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: ["Directory.Build.targets"],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
       it "returns the correct dependency set" do
-        expect(dependencies.length).to eq(2)
-        expect(dependencies.map(&:name)).to match_array(%w(Package.A Package.B))
-        expect(dependencies.map(&:version)).to match_array(%w(1.2.3 4.5.6))
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies.length).to eq(2)
+          expect(dependencies.map(&:name)).to match_array(%w(Package.A Package.B))
+          expect(dependencies.map(&:version)).to match_array(%w(1.2.3 4.5.6))
+        end
       end
     end
 
-    context "when the project <TargetFramework> element can be resolved from implicitly imported file" do
-      let(:additional_files) { [directory_build_props] }
+    context "when non-concrete version numbers are reported" do
       let(:csproj_file) do
         Dependabot::DependencyFile.new(
           name: "my.csproj",
@@ -762,7 +882,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
             <<~XML
               <Project Sdk="Microsoft.NET.Sdk">
                 <PropertyGroup>
-                  <TargetFramework>$(SomeTfm)</TargetFramework>
+                  <TargetFramework>net8.0</TargetFramework>
                 </PropertyGroup>
                 <ItemGroup>
                   <PackageReference Include="Package.A" Version="1.2.3" />
@@ -771,28 +891,244 @@ RSpec.describe Dependabot::Nuget::FileParser do
             XML
         )
       end
-      let(:directory_build_props) do
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Package.A",
+                Version: nil, # not reported without version
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.B",
+                Version: "", # not reported with empty version
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.C",
+                Version: "[1.0,2.0)", # not reported with range
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.D",
+                Version: "1.*", # not reported with wildcard
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }, {
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "net8.0",
+                SourceFilePath: "my.csproj"
+              }],
+              TargetFrameworks: ["net8.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "returns the correct dependency set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+        end
+      end
+    end
+
+    context "when a fs proj file with a concrete targeted framework is set" do
+      let(:vbproj_file) do
         Dependabot::DependencyFile.new(
-          name: "Directory.Build.props",
+          name: "my.fsproj",
           content:
             <<~XML
-              <Project>
+              <Project Sdk="Microsoft.NET.Sdk">
                 <PropertyGroup>
-                  <SomeTfm>net8.0</SomeTfm>
+                  <TargetFramework>dotnet472</TargetFramework>
                 </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
               </Project>
             XML
         )
       end
 
       before do
-        stub_search_results_with_versions_v3("package.a", ["1.2.3"])
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.fsproj",
+              Dependencies: [{
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: [""],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "",
+                SourceFilePath: "my.fsproj"
+              }],
+              TargetFrameworks: [""],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
       end
 
-      it "returns the correct dependency set" do
-        expect(dependencies.length).to eq(1)
-        expect(dependencies[0].name).to eq("Package.A")
-        expect(dependencies[0].version).to eq("1.2.3")
+      it "returns the correct ecosystem and language nomenclature set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          ecosystem = parser.ecosystem
+          package_manager = ecosystem.package_manager
+          language = ecosystem.language
+
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+
+          expect(ecosystem.name).to eq "dotnet"
+          expect(package_manager.requirement).to be_nil
+          expect(language.name).to eq "fs"
+          expect(language.requirement).to be_nil
+        end
+      end
+    end
+
+    context "when a vb proj file with a concrete targeted framework is set" do
+      let(:vbproj_file) do
+        Dependabot::DependencyFile.new(
+          name: "my.vbproj",
+          content:
+            <<~XML
+              <Project Sdk="Microsoft.NET.Sdk">
+                <PropertyGroup>
+                  <TargetFramework>dotnet472</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                  <PackageReference Include="Package.A" Version="1.2.3" />
+                </ItemGroup>
+              </Project>
+            XML
+        )
+      end
+
+      before do
+        intercept_native_tools(
+          discovery_content_hash: {
+            Path: "",
+            IsSuccess: true,
+            Projects: [{
+              FilePath: "my.vbproj",
+              Dependencies: [{
+                Name: "Package.E",
+                Version: "1.2.3", # regular version _is_ reported
+                Type: "PackageReference",
+                EvaluationResult: nil,
+                TargetFrameworks: ["dotnet472"],
+                IsDevDependency: false,
+                IsDirect: false,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [{
+                Name: "TargetFramework",
+                Value: "dotnet472",
+                SourceFilePath: "my.vbproj"
+              }],
+              TargetFrameworks: ["dotnet472"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
+            GlobalJson: nil,
+            DotNetToolsJson: nil
+          }
+        )
+      end
+
+      it "returns the correct ecosystem and language nomenclature set" do
+        run_parser_test do |parser|
+          dependencies = parser.parse
+          ecosystem = parser.ecosystem
+          package_manager = ecosystem.package_manager
+          language = ecosystem.language
+
+          expect(dependencies.length).to eq(1)
+          expect(dependencies[0].name).to eq("Package.E")
+
+          expect(ecosystem.name).to eq "dotnet"
+          expect(package_manager.requirement).to be_nil
+          expect(language.name).to eq "vb-dotnet472"
+          expect(language.requirement).to be_nil
+        end
       end
     end
   end

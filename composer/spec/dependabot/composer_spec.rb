@@ -21,10 +21,6 @@ RSpec.describe Dependabot::Composer do
     expect(helper_composer_version(major_version: "v2")).to eq(native_composer_version(major_version: "v2"))
   end
 
-  it "has the same binary version of composer 1 installed as specified in the native helper" do
-    expect(helper_composer_version(major_version: "v1")).to eq(native_composer_version(major_version: "v1"))
-  end
-
   private
 
   def helper_composer_version(major_version:)

@@ -62,7 +62,7 @@ It is intended as a starting point for advanced users to run a self-hosted versi
 ## Dependabot CLI
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
-While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
+While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PRs. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
 
 ## Dependabot on CI

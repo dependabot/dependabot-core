@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -15,6 +11,7 @@ namespace NuGetUpdater.Core.Utilities
         public static JsonDocumentOptions DocumentOptions { get; } = new JsonDocumentOptions
         {
             CommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
         };
 
         public static JsonNode? ParseNode(string content)
@@ -28,6 +25,7 @@ namespace NuGetUpdater.Core.Utilities
             var readerOptions = new JsonReaderOptions
             {
                 CommentHandling = JsonCommentHandling.Allow,
+                AllowTrailingCommas = true,
             };
             var bytes = Encoding.UTF8.GetBytes(json);
             var reader = new Utf8JsonReader(bytes, readerOptions);

@@ -142,7 +142,7 @@ module Dependabot
         next_page_url = base_url + pr_path
         pull_requests = paginate({ "next" => next_page_url })
 
-        pull_requests unless source_branch && target_branch
+        pull_requests unless source_branch && target_branch # rubocop:disable Lint/Void
 
         pull_requests.select do |pr|
           if source_branch.nil?

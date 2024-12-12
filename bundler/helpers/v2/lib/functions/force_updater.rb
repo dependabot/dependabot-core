@@ -3,7 +3,6 @@
 
 module Functions
   class ForceUpdater
-    class TransitiveDependencyError < StandardError; end
     class TopLevelDependencyDowngradedError < StandardError; end
 
     def initialize(dependency_name:, target_version:, gemfile_name:,
@@ -120,16 +119,28 @@ module Functions
       dep = definition.dependencies
                       .find { |d| d.name == dependency_name }
 
-      # If the dependency is not found in the Gemfile it means this is a
-      # transitive dependency that we can't force update.
-      raise TransitiveDependencyError unless dep
+      if dep
+        # Set the requirement for the gem we're forcing an update of
+        new_req = Gem::Requirement.create("= #{target_version}")
+        dep.instance_variable_set(:@requirement, new_req)
+        dep.source = nil if dep.source.is_a?(Bundler::Source::Git)
 
-      # Set the requirement for the gem we're forcing an update of
-      new_req = Gem::Requirement.create("= #{target_version}")
-      dep.instance_variable_set(:@requirement, new_req)
-      dep.source = nil if dep.source.is_a?(Bundler::Source::Git)
-
-      definition
+        definition
+      else
+        # If the dependency is not found in the Gemfile it means this is a
+        # transitive dependency. To force update it, we recreate a definition
+        # from the Gemfile, but add an extra dependency to it that pins the
+        # dependency we want to update.
+        gemfile = Pathname.new(gemfile_name).expand_path
+        builder = Bundler::Dsl.new
+        builder.eval_gemfile(gemfile)
+        builder.gem dependency_name, "= #{target_version}"
+        builder.to_definition(
+          lockfile_name,
+          gems: gems_to_unlock + subdependencies,
+          conservative: true
+        )
+      end
     end
 
     def lockfile

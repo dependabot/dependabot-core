@@ -17,8 +17,8 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          /^mix\.exs$/,
-          /^mix\.lock$/
+          /^.*mix\.exs$/,
+          /^.*mix\.lock$/
         ]
       end
 

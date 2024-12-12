@@ -13,12 +13,12 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.include?("elm.json")
+        filenames.include?(MANIFEST_FILE)
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain an elm-package.json or an elm.json"
+        "Repo must contain an elm-package.json or an #{MANIFEST_FILE}"
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -38,7 +38,10 @@ module Dependabot
       def elm_json
         return @elm_json if defined?(@elm_json)
 
-        @elm_json = T.let(fetch_file_if_present("elm.json"), T.nilable(Dependabot::DependencyFile))
+        @elm_json = T.let(
+          fetch_file_if_present(MANIFEST_FILE),
+          T.nilable(Dependabot::DependencyFile)
+        )
       end
     end
   end

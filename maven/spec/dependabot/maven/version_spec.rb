@@ -29,6 +29,24 @@ RSpec.describe Dependabot::Maven::Version do
 
       it { is_expected.to be(true) }
     end
+
+    context "with a nil version" do
+      let(:version_string) { nil }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with an empty version" do
+      let(:version_string) { "" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with a malformed version string" do
+      let(:version_string) { "-" }
+
+      it { is_expected.to be(false) }
+    end
   end
 
   describe "#to_s" do
@@ -68,6 +86,33 @@ RSpec.describe Dependabot::Maven::Version do
       let(:version_string) { "1.0.0_pre1" }
 
       it { is_expected.to eq("1.0.0_pre1") }
+    end
+
+    context "with a nil version" do
+      let(:version_string) { nil }
+      let(:err_msg) { "Malformed version string - string is nil" }
+
+      it "raises an exception" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
+      end
+    end
+
+    context "with an empty version" do
+      let(:version_string) { "" }
+      let(:err_msg) { "Malformed version string - string is empty" }
+
+      it "raises an exception" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
+      end
+    end
+
+    context "with a malformed version string" do
+      let(:version_string) { "-" }
+      let(:err_msg) { "Malformed version string - #{version_string}" }
+
+      it "raises an exception" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, err_msg)
+      end
     end
   end
 
@@ -115,18 +160,22 @@ RSpec.describe Dependabot::Maven::Version do
 
       it { is_expected.to be(false) }
     end
+  end
 
-    context "with a pre-release" do
-      let(:version_string) { "2.10.0.pr3" }
+  describe "#inspect" do
+    subject { described_class.new(version_string).inspect }
 
-      it { is_expected.to be(true) }
-    end
+    let(:version_string) { "1.0.0+build1" }
 
-    context "with a dev token" do
-      let(:version_string) { "1.2.1-dev-65" }
+    it { is_expected.to eq("#<#{described_class} #{version_string}>") }
+  end
 
-      it { is_expected.to be(true) }
-    end
+  describe "#to_semver" do
+    subject { described_class.new(version_string).to_semver }
+
+    let(:version_string) { "1.0.0+build1" }
+
+    it { is_expected.to eq version_string }
   end
 
   describe "#<=>" do
@@ -152,229 +201,370 @@ RSpec.describe Dependabot::Maven::Version do
       end
     end
 
-    context "when comparing to a Maven::Version" do
-      context "when lower" do
-        let(:other_version) { described_class.new("0.9.0") }
-
-        it { is_expected.to eq(1) }
+    context "with semantic versions" do
+      let(:versions) do
+        [
+          ["1.2.3", "1.2.2", 1],
+          ["1.2.3", "1.2.3", 0],
+          ["1.2.3", "v1.2.3", 0]
+        ]
       end
 
-      context "when equal" do
-        let(:other_version) { described_class.new("1.0.0") }
-
-        it { is_expected.to eq(0) }
-
-        context "when prefixed with a v" do
-          let(:other_version) { described_class.new("v1.0.0") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when using different date formats" do
-          let(:version_string) { "20181003" }
-          let(:other_version) { described_class.new("v2018-10-03") }
-
-          it { is_expected.to eq(0) }
-        end
-      end
-
-      context "when greater" do
-        let(:other_version) { described_class.new("1.1.0") }
-
-        it { is_expected.to eq(-1) }
-      end
-
-      context "when the version is a post-release" do
-        let(:other_version) { described_class.new("1.0.0u1") }
-
-        it { is_expected.to eq(-1) }
-      end
-
-      context "when the version is a pre-release" do
-        let(:other_version) { described_class.new("1.0.0a1") }
-
-        it { is_expected.to eq(1) }
-      end
-
-      context "when the version is non-numeric" do
-        let(:version) { described_class.new("Finchley") }
-        let(:other_version) { described_class.new("Edgware") }
-
-        it { is_expected.to eq(1) }
-      end
-
-      describe "with a + separated alphanumeric build identifier" do
-        context "when equal" do
-          let(:version_string) { "9.0.0+100" }
-          let(:other_version) { described_class.new("9.0.0+100") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when greater" do
-          let(:version_string) { "9.0.0+102" }
-          let(:other_version) { described_class.new("9.0.0+101") }
-
-          it { is_expected.to eq(1) }
-        end
-
-        context "when less than" do
-          let(:version_string) { "9.0.0+100" }
-          let(:other_version) { described_class.new("9.0.0+101") }
-
-          it { is_expected.to eq(-1) }
-        end
-      end
-
-      describe "from the spec" do
-        context "when dealing with number padding" do
-          let(:version) { described_class.new("1") }
-          let(:other_version) { described_class.new("1.1") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with qualifier padding" do
-          let(:version) { described_class.new("1-snapshot") }
-          let(:other_version) { described_class.new("1") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with qualifier padding 1" do
-          let(:version) { described_class.new("1") }
-          let(:other_version) { described_class.new("1-sp") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with switching" do
-          let(:version) { described_class.new("1-foo2") }
-          let(:other_version) { described_class.new("1-foo10") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with prefixes" do
-          let(:version) { described_class.new("1.foo") }
-          let(:other_version) { described_class.new("1-foo") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with prefixes2" do
-          let(:version) { described_class.new("1-foo") }
-          let(:other_version) { described_class.new("1-1") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with prefixes3" do
-          let(:version) { described_class.new("1-1") }
-          let(:other_version) { described_class.new("1.1") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with null values" do
-          let(:version) { described_class.new("1.ga") }
-          let(:other_version) { described_class.new("1-ga") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with null values 2" do
-          let(:version) { described_class.new("1-ga") }
-          let(:other_version) { described_class.new("1-0") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with null values 3" do
-          let(:version) { described_class.new("1-0") }
-          let(:other_version) { described_class.new("1.0") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with null values 4" do
-          let(:version) { described_class.new("1.0") }
-          let(:other_version) { described_class.new("1") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with null values 5" do
-          let(:version) { described_class.new("1.0.") }
-          let(:other_version) { described_class.new("1") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with null values 6" do
-          let(:version) { described_class.new("1.0-.2") }
-          let(:other_version) { described_class.new("1.0-0.2") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with case insensitivity" do
-          let(:version) { described_class.new("1.0.FINAL") }
-          let(:other_version) { described_class.new("1") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with case insensitivity 2" do
-          let(:version) { described_class.new("1.something") }
-          let(:other_version) { described_class.new("1.SOMETHING") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with post releases" do
-          let(:version) { described_class.new("1-sp") }
-          let(:other_version) { described_class.new("1-ga") }
-
-          it { is_expected.to eq(1) }
-        end
-
-        context "when dealing with post releases 2" do
-          let(:version) { described_class.new("1-sp.1") }
-          let(:other_version) { described_class.new("1-ga.1") }
-
-          it { is_expected.to eq(1) }
-        end
-
-        context "when dealing with null values (again)" do
-          let(:version) { described_class.new("1-sp-1") }
-          let(:other_version) { described_class.new("1-ga-1") }
-
-          it { is_expected.to eq(-1) }
-        end
-
-        context "when dealing with null values (again 2)" do
-          let(:version) { described_class.new("1-ga-1") }
-          let(:other_version) { described_class.new("1-1") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when dealing with named values" do
-          let(:version) { described_class.new("1-a1") }
-          let(:other_version) { described_class.new("1-alpha-1") }
-
-          it { is_expected.to eq(0) }
-        end
-
-        context "when comparing string versions with integer ones" do
-          let(:version) { described_class.new("181") }
-          let(:other_version) { described_class.new("dev") }
-
-          it { is_expected.to eq(1) }
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
         end
       end
     end
+
+    context "with semantic versions that have a build number" do
+      let(:versions) do
+        [
+          ["1.2.3", "1.2.3-1", -1],
+          ["1.2.3", "1.2.3-0-1", -1],
+          ["1.2.3", "1.2.3-0.1", -1],
+          ["1.2.3-2", "1.2.3-1", 1],
+          ["1.2.3-0.2", "1.2.3-1.1", -1]
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with semantic versions that have a qualifier" do
+      let(:versions) do
+        [
+          ["1.2.3", "1.2.3-a0", 1], # alpha has lower precedence
+          ["1.2.3", "1.2.3-a", -1] # 'a' without a following int is not alpha
+
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with versions that have trailing nulls" do
+      let(:versions) do
+        [
+          ["1alpha-0", "1alpha", 0],
+          ["1alpha-0", "1alpha0", 0],
+          ["1alpha-0", "1alpha.0", 0],
+          ["1alpha-0", "1alpha.z", -1],
+
+          ["1beta-0", "1beta", 0],
+          ["1beta-0", "1beta0", 0],
+          ["1beta-0", "1beta.0", 0],
+          ["1beta-0", "1beta.z", -1],
+
+          ["1rc-0", "1rc0", 0],
+          ["1rc-0", "1rc", 0],
+          ["1rc-0", "1rc.0", 0],
+          ["1rc-0", "1rc.z", -1],
+
+          ["1sp-0", "1sp0", 0],
+          ["1sp-0", "1sp", 0],
+          ["1sp-0", "1sp.0", 0],
+          ["1sp-0", "1sp.z", -1],
+
+          ["1.ga", "1-ga", 0],
+          ["1.0", "1.ga", 0],
+          ["1.0.FINAL", "1", 0],
+          ["1.0", "1.release", 0],
+
+          ["1.2.0", "1.2", 0],
+          ["1.2.3", "1.2.3-0", 0],
+          ["1.2.3-0", "1.2.3-0", 0],
+          ["1.2.3-0", "1.2.3-a0", 1],
+          ["1.2.3-0", "1.2.3-a", -1],
+          ["1.2.3-0", "1.2.3-1", -1],
+          ["1.2.3-0", "1.2.3-0-1", -1],
+
+          ["1snapshot-0", "1snapshot0", 0],
+          ["1snapshot-0", "1snapshot", 0],
+          ["1snapshot-0", "1snapshot.0", 0],
+          ["1snapshot-0", "1snapshot.z", -1],
+
+          ["1milestone-0", "1milestone", 0],
+          ["1milestone-0", "1milestone0", 0],
+          ["1milestone-0", "1milestone.0", 0],
+          ["1milestone-0", "1milestone.z", -1]
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with equivalent shortened qualifiers" do
+      let(:versions) do
+        [
+          ["1alpha-0", "1a0", 0],
+          ["1beta-0", "1b0", 0],
+          ["1milestone-0", "1m0", 0]
+        ]
+      end
+
+      it "returns 0" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with dot, hyphen and digit / qualifier transitions as separators" do
+      let(:versions) do
+        [
+          ["1alpha.z", "1alpha-z", 0],
+          ["1alpha1", "1alpha-1", 0],
+          ["1alpha-1", "1alpha.1", -1],
+          ["1beta.z", "1beta-z", 0],
+          ["1beta1", "1beta-1", 0],
+          ["1beta-1", "1beta.1", -1],
+          ["1-a", "1a", 0],
+          ["1-a", "1.a", 0],
+          ["1-b", "1-b-1", -1],
+          ["1-b-1", "1-b.1", -1],
+          ["1sp.z", "1sp-z", 0],
+          ["1sp1", "1sp-1", 0],
+          ["1sp-1", "1sp.1", -1],
+          ["1rc.z", "1rc-z", 0],
+          ["1rc1", "1rc-1", 0],
+          ["1rc-1", "1rc.1", -1],
+          ["1milestone.z", "1milestone-z", 0],
+          ["1milestone1", "1milestone-1", 0],
+          ["1milestone-1", "1milestone.1", -1],
+          ["1snapshot.z", "1snapshot-z", 0],
+          ["1snapshot1", "1snapshot-1", 0],
+          ["1snapshot-1", "1snapshot.1", -1]
+        ]
+      end
+
+      it "returns 0" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with qualifiers with different precedence" do
+      let(:versions) do
+        [
+          ["1alpha.1", "1beta.1", -1],
+          ["1beta.1", "1milestone.1", -1],
+          ["1milestone.1", "1rc.1", -1],
+          ["1rc.1", "1snapshot.1", -1],
+          ["1.sp", "1.ga", 1],
+          ["1.release", "1.ga", 0]
+        ]
+      end
+
+      it "returns the correct value" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "with equivalent qualifiers cr and rc" do
+      let(:version) { described_class.new("1.0rc-1") }
+      let(:other_version) { described_class.new("1.0-cr1") }
+
+      it "returns 0" do
+        expect(version <=> other_version).to eq(0)
+        expect(other_version <=> version).to eq(0)
+      end
+    end
+
+    context "when comparing alphanumerically" do
+      let(:versions) do
+        [
+          ["1alpha-z", "1alpha1", -1],
+          ["1beta-z", "1beta1", -1],
+          ["1milestone-z", "1milestone1", -1],
+          ["1rc-z", "1rc1", -1],
+          ["1snapshot-z", "1snapshot1", -1],
+          ["1sp-z", "1sp1", -1],
+          ["181", "DEV", 1]
+        ]
+      end
+
+      it "gives higher precedence to digits" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "when comparing alphabetically" do
+      let(:versions) do
+        [
+          ["1-a", "1-b", -1],
+          ["Finchley", "Edgware", 1],
+          ["1.something", "1.SOMETHING", 0]
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "when comparing numerically" do
+      let(:versions) do
+        [
+          ["1-b.1", "1-b.2", -1],
+          ["9.0.0+102", "9.0.0+91", 1],
+          ["1-foo2", "1-foo10", -1]
+
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "when comparing padded versions" do
+      let(:versions) do
+        [
+          ["1snapshot.1", "1", -1],
+          ["1-snapshot", "1", -1],
+          ["1", "1sp0", -1],
+          ["1sp.1", "1-a", -1],
+          ["1", "1.1", -1],
+          ["1", "1-sp", -1],
+          ["1-ga-1", "1-1", -1]
+        ]
+      end
+
+      it "returns the correct result" do
+        versions.each do |input|
+          version1, version2, result = input
+          version = described_class.new(version1)
+          other_version = described_class.new(version2)
+          expect(version <=> other_version).to eq(result)
+          expect(other_version <=> version).to eq(-result)
+        end
+      end
+    end
+
+    context "when ordering versions" do
+      let(:versions) do
+        [
+          described_class.new("NotAVersionSting"),
+          described_class.new("1.0-alpha"),
+          described_class.new("1.0a1-SNAPSHOT"),
+          described_class.new("1.0-alpha1"),
+          described_class.new("1.0beta1-SNAPSHOT"),
+          described_class.new("1.0-b2"),
+          described_class.new("1.0-beta3.SNAPSHOT"),
+          described_class.new("1.0-beta3"),
+          described_class.new("1.0-milestone1-SNAPSHOT"),
+          described_class.new("1.0-m2"),
+          described_class.new("1.0-rc1-SNAPSHOT"),
+          described_class.new("1.0-cr1"),
+          described_class.new("1.0-SNAPSHOT"),
+          described_class.new("1.0-RELEASE"),
+          described_class.new("1.0-sp"),
+          described_class.new("1.0-a"),
+          described_class.new("1.0-whatever"),
+          described_class.new("1.0.z"),
+          described_class.new("1.0.1"),
+          described_class.new("1.0.1.0.0.0.0.0.0.0.0.0.0.0.1")
+        ]
+      end
+
+      it "sorts versions correctly" do
+        expect(versions.shuffle.sort).to eq(versions)
+      end
+    end
+  end
+
+  describe "#ignored_major_versions" do
+    subject(:ignored_versions) { version.ignored_major_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 2.a0"]) }
+  end
+
+  describe "#ignored_minor_versions" do
+    subject(:ignored_versions) { version.ignored_minor_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 1.3.a0, < 2.a0"]) }
+  end
+
+  describe "#ignored_patch_versions" do
+    subject(:ignored_versions) { version.ignored_patch_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq(["> #{version_string}, < 1.3.a0"]) }
+  end
+
+  describe "#lowest_prerelease_suffix" do
+    subject(:ignored_versions) { version.lowest_prerelease_suffix }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq "a0" }
   end
 
   describe "compatibility with Gem::Requirement" do
