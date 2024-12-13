@@ -8,7 +8,7 @@ namespace DotNetPackageCorrelation;
 
 public partial class Correlator
 {
-    internal static readonly JsonSerializerOptions SerializerOptions = new()
+    public static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
         Converters = { new SemVersionConverter() },
@@ -45,41 +45,44 @@ public partial class Correlator
             }
 
             var releasesJson = await File.ReadAllTextAsync(releasesJsonPath);
-            var releasesFile = JsonSerializer.Deserialize<ReleasesFile>(releasesJson, SerializerOptions)!; // TODO
+            var releasesFile = JsonSerializer.Deserialize<ReleasesFile>(releasesJson, SerializerOptions)!;
 
             foreach (var release in releasesFile.Releases)
             {
-                if (release.Sdk.Version is null)
+                foreach (var sdk in release.GetSdks())
                 {
-                    warnings.Add($"Skipping release with missing version information from {releasesJson}");
-                    continue;
-                }
+                    if (sdk.Version is null)
+                    {
+                        warnings.Add($"Skipping release with missing version information from {releasesJson}");
+                        continue;
+                    }
 
-                if (release.Sdk.RuntimeVersion is null)
-                {
-                    warnings.Add($"Skipping release with missing runtime version information from {releasesJson}");
-                    continue;
-                }
+                    if (sdk.RuntimeVersion is null)
+                    {
+                        warnings.Add($"Skipping release with missing runtime version information from {releasesJson}");
+                        continue;
+                    }
 
-                if (!sdkPackages.Packages.TryGetValue(release.Sdk.Version, out var packagesAndVersions))
-                {
-                    packagesAndVersions = new PackageSet();
-                    sdkPackages.Packages[release.Sdk.Version] = packagesAndVersions;
-                }
+                    if (!sdkPackages.Packages.TryGetValue(sdk.Version, out var packagesAndVersions))
+                    {
+                        packagesAndVersions = new PackageSet();
+                        sdkPackages.Packages[sdk.Version] = packagesAndVersions;
+                    }
 
-                var runtimeDirectory = new DirectoryInfo(Path.Combine(_releaseNotesDirectory.FullName, version.ToString(), release.Sdk.RuntimeVersion.ToString()));
-                var runtimeMarkdownPath = Path.Combine(runtimeDirectory.FullName, $"{release.Sdk.RuntimeVersion}.md");
-                if (!File.Exists(runtimeMarkdownPath))
-                {
-                    warnings.Add($"Unable to find expected markdown file {runtimeMarkdownPath}");
-                    continue;
-                }
+                    var runtimeDirectory = new DirectoryInfo(Path.Combine(_releaseNotesDirectory.FullName, version.ToString(), sdk.RuntimeVersion.ToString()));
+                    var runtimeMarkdownPath = Path.Combine(runtimeDirectory.FullName, $"{sdk.RuntimeVersion}.md");
+                    if (!File.Exists(runtimeMarkdownPath))
+                    {
+                        warnings.Add($"Unable to find expected markdown file {runtimeMarkdownPath}");
+                        continue;
+                    }
 
-                var markdownContent = await File.ReadAllTextAsync(runtimeMarkdownPath);
-                var packages = GetPackagesFromMarkdown(runtimeMarkdownPath, markdownContent, warnings);
-                foreach (var (packageName, packageVersion) in packages)
-                {
-                    packagesAndVersions.Packages[packageName] = packageVersion;
+                    var markdownContent = await File.ReadAllTextAsync(runtimeMarkdownPath);
+                    var packages = GetPackagesFromMarkdown(runtimeMarkdownPath, markdownContent, warnings);
+                    foreach (var (packageName, packageVersion) in packages)
+                    {
+                        packagesAndVersions.Packages[packageName] = packageVersion;
+                    }
                 }
             }
         }

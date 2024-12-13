@@ -8,9 +8,10 @@
 
   <ItemGroup>
     <None Include="$(PackageCorrelationFile)" CopyToOutputDirectory="PreserveNewest" />
+    <_DotNetCoreFiles Include="$(DotNetCoreDirectory)\**\*" />
   </ItemGroup>
 
-  <Target Name="BuildDotNetPackageCorrelationFile" BeforeTargets="Build" DependsOnTargets="Restore">
+  <Target Name="BuildDotNetPackageCorrelationFile" Inputs="@(_DotNetCoreFiles)" Outputs="$(PackageCorrelationFile)" BeforeTargets="GetCopyToOutputDirectoryItems">
     <Exec Command="dotnet run --core-location &quot;$(DotNetCoreDirectory)&quot; --output &quot;$(PackageCorrelationFile)&quot;" WorkingDirectory="$(PackageCorrelationDirectory)" />
   </Target>
 
