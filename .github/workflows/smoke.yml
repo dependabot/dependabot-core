@@ -76,7 +76,7 @@ jobs:
 
       - name: Restore Smoke Test
         id: cache-smoke-test
-        uses: actions/cache/restore@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
@@ -89,7 +89,7 @@ jobs:
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
-        uses: actions/cache/save@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: smoke.yaml
           key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
