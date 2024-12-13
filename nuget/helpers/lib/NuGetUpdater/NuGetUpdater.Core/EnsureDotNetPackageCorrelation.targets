@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <PackageCorrelationDirectory>$(MSBuildThisFileDirectory)..\DotNetPackageCorrelation</PackageCorrelationDirectory>
+    <DotNetCoreDirectory>$(MSBuildThisFileDirectory)..\..\dotnet-core</DotNetCoreDirectory>
+    <PackageCorrelationFile>$(MSBuildThisFileDirectory)dotnet-package-correlation.json</PackageCorrelationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(PackageCorrelationFile)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="BuildDotNetPackageCorrelationFile" BeforeTargets="Build" DependsOnTargets="Restore">
+    <Exec Command="dotnet run --core-location &quot;$(DotNetCoreDirectory)&quot; --output &quot;$(PackageCorrelationFile)&quot;" WorkingDirectory="$(PackageCorrelationDirectory)" />
+  </Target>
+
+  <Target Name="CleanDotNetPackageCorrelationFile" BeforeTargets="Clean">
+    <Delete Files="$(PackageCorrelationFile)" Condition="Exists('$(PackageCorrelationFile)')" />
+  </Target>
+
+  <Target Name="RebuildDotNetPackageCorrelationFile" BeforeTargets="Rebuild" DependsOnTargets="CleanDotNetPackageCorrelationFile">
+  </Target>
+
+</Project>

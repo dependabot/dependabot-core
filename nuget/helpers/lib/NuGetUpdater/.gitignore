@@ -4,4 +4,5 @@ bin/
 obj/
 Properties/launchSettings.json
 NuGetUpdater.sln.DotSettings.user
+NuGetUpdater.Core/dotnet-package-correlation.json
 *.binlog
