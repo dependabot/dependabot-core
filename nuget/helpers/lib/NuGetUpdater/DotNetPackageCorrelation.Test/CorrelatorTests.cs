@@ -60,7 +60,7 @@ public class CorrelatorTests
 
     private static void AssertPackageVersion(SdkPackages packages, string sdkVersion, string packageName, string expectedPackageVersion)
     {
-        Assert.True(packages.Packages.TryGetValue(SemVersion.Parse(sdkVersion), out var packageSet), $"Unable to find SDK verison [{sdkVersion}]");
+        Assert.True(packages.Packages.TryGetValue(SemVersion.Parse(sdkVersion), out var packageSet), $"Unable to find SDK version [{sdkVersion}]");
         Assert.True(packageSet.Packages.TryGetValue(packageName, out var packageVersion), $"Unable to find package [{packageName}] under SDK version [{sdkVersion}]");
         var actualPackageVersion = packageVersion.ToString();
         Assert.Equal(expectedPackageVersion, actualPackageVersion);
