@@ -4,6 +4,7 @@
 require "cgi"
 require "excon"
 require "nokogiri"
+require "sorbet-runtime"
 
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
@@ -16,6 +17,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
+        extend T::Sig
+
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -46,8 +49,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
 
         def fetch_latest_version(python_version:)
           versions = available_versions
@@ -81,12 +87,21 @@ module Dependabot
           versions.min
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_yanked_versions(versions_array)
-          versions_array.reject { |details| details.fetch(:yanked) }
+          filtered = versions_array.reject { |details| details.fetch(:yanked) }
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} yanked versions")
+          end
+          filtered
         end
 
+        sig do
+          params(versions_array: T::Array[T.untyped], python_version: T.nilable(T.any(String, Version)))
+            .returns(T::Array[T.untyped])
+        end
         def filter_unsupported_versions(versions_array, python_version)
-          versions_array.filter_map do |details|
+          filtered = versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
             next details.fetch(:version) unless python_version
             next details.fetch(:version) unless python_requirement
@@ -94,14 +109,27 @@ module Dependabot
 
             details.fetch(:version)
           end
+          if versions_array.count > filtered.count
+            delta = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{delta} unsupported Python #{python_version} versions")
+          end
+          filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          versions_array.reject(&:prerelease?)
+          filtered = versions_array.reject(&:prerelease?)
+
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
+          end
+
+          filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array
                      .reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
@@ -109,6 +137,9 @@ module Dependabot
             raise Dependabot::AllVersionsIgnored
           end
 
+          if versions_array.count > filtered.count
+            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} ignored versions")
+          end
           filtered
         end
 
@@ -128,10 +159,7 @@ module Dependabot
         end
 
         def wants_prerelease?
-          if dependency.version
-            version = version_class.new(dependency.version.tr("+", "."))
-            return version.prerelease?
-          end
+          return version_class.new(dependency.version).prerelease? if dependency.version
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
@@ -144,6 +172,8 @@ module Dependabot
         def available_versions
           @available_versions ||=
             index_urls.flat_map do |index_url|
+              validate_index(index_url)
+
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
               index_response = registry_response_for_dependency(index_url)
@@ -251,6 +281,15 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
+        end
+
+        def validate_index(index_url)
+          sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+
+          return if index_url&.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Invalid URL: #{sanitized_url}"
         end
       end
     end

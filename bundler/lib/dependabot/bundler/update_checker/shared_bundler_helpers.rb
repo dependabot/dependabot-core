@@ -1,7 +1,8 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
+require "sorbet-runtime"
 require "uri"
 
 require "dependabot/bundler/update_checker"
@@ -15,13 +16,22 @@ module Dependabot
   module Bundler
     class UpdateChecker
       module SharedBundlerHelpers
+        include Kernel
+
+        extend T::Sig
+        extend T::Helpers
+
+        abstract!
+
+        sig { returns(T::Hash[Symbol, T.untyped]) }
+        attr_reader :options
+
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
 
         module BundlerErrorPatterns
-          # The `set --global` optional part can be made required when Bundler 1 support is dropped
-          MISSING_AUTH_REGEX = /bundle config (?:set --global )?(?<source>.*) username:password/
+          MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/
 
           BAD_AUTH_REGEX = /Bad username or password for (?<source>.*)\.$/
           FORBIDDEN_AUTH_REGEX = /Access token could not be authenticated for (?<source>.*)\.$/
@@ -41,7 +51,9 @@ module Dependabot
           Bundler::Fetcher::FallbackError
         ).freeze
 
-        attr_reader :dependency_files, :repo_contents_path, :credentials
+        attr_reader :dependency_files
+        attr_reader :repo_contents_path
+        attr_reader :credentials
 
         #########################
         # Bundler context setup #
@@ -189,7 +201,8 @@ module Dependabot
               next false unless uri.scheme&.match?(/https?/o)
 
               Dependabot::RegistryClient.get(
-                url: uri.to_s
+                url: uri.to_s,
+                headers: { "Accept-Encoding" => "gzip" }
               ).status == 200
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false
@@ -213,6 +226,9 @@ module Dependabot
             )
           end
         end
+
+        sig { abstract.returns(String) }
+        def bundler_version; end
 
         def write_temporary_dependency_files
           dependency_files.each do |file|

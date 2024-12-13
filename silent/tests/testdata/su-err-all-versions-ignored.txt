@@ -1,0 +1,66 @@
+# Testing that Dependabot raises an error when all versions are ignored.
+
+! dependabot update -f input-1.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr all_versions_ignored
+stderr 'Dependabot cannot update to the required version as all versions were ignored for dependency-a'
+stdout '{"data":{"error-type":"all_versions_ignored","error-details":{"dependency-name":"dependency-a"}},"type":"record_update_job_error"}'
+! stdout create_pull_request
+
+# Ignore conditions do not apply to security updates.
+
+dependabot update -f input-2.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=1 create_pull_request
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.4"
+  ]
+}
+
+-- input-1.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  allowed-updates:
+    - dependency-name: dependency-b
+
+-- input-2.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  ignore-conditions:
+    - dependency-name: dependency-a

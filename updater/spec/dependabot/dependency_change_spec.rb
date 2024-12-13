@@ -2,8 +2,12 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
+require "dependabot/dependency_file"
+require "dependabot/pull_request_creator"
 require "dependabot/dependency_change"
 require "dependabot/job"
+require "dependabot/pull_request"
 
 RSpec.describe Dependabot::DependencyChange do
   subject(:dependency_change) do
@@ -30,7 +34,8 @@ RSpec.describe Dependabot::DependencyChange do
         ],
         previous_requirements: [
           { file: "Gemfile", requirement: "~> 1.7.0", groups: [], source: nil }
-        ]
+        ],
+        directory: "/"
       )
     ]
   end
@@ -83,13 +88,19 @@ RSpec.describe Dependabot::DependencyChange do
     end
 
     let(:message_builder_mock) do
-      instance_double(Dependabot::PullRequestCreator::MessageBuilder, message: "Hello World!")
+      instance_double(
+        Dependabot::PullRequestCreator::MessageBuilder,
+        message: Dependabot::PullRequestCreator::Message.new(
+          pr_name: "Title",
+          pr_message: "Hello World!",
+          commit_message: "Commit message"
+        )
+      )
     end
 
     before do
-      allow(job).to receive(:source).and_return(github_source)
-      allow(job).to receive(:credentials).and_return(job_credentials)
-      allow(job).to receive(:commit_message_options).and_return(commit_message_options)
+      allow(job).to receive_messages(source: github_source, credentials: job_credentials,
+                                     commit_message_options: commit_message_options)
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
 
@@ -104,10 +115,11 @@ RSpec.describe Dependabot::DependencyChange do
           dependency_group: nil,
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
-          ignore_conditions: []
+          ignore_conditions: [],
+          notices: []
         )
 
-      expect(dependency_change.pr_message).to eql("Hello World!")
+      expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
     end
 
     context "when a dependency group is assigned" do
@@ -131,10 +143,11 @@ RSpec.describe Dependabot::DependencyChange do
             dependency_group: group,
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
-            ignore_conditions: []
+            ignore_conditions: [],
+            notices: []
           )
 
-        expect(dependency_change.pr_message).to eql("Hello World!")
+        expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")
       end
     end
   end
@@ -255,6 +268,156 @@ RSpec.describe Dependabot::DependencyChange do
         )
 
         expect(dependency_change.grouped_update?).to be true
+      end
+    end
+  end
+
+  describe "#matches_existing_pr?" do
+    context "when no existing pull requests are found" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: updated_dependencies.map(&:name),
+                        existing_pull_requests: [])
+      end
+      let(:dependency_change) do
+        described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files
+        )
+      end
+
+      it "returns false" do
+        expect(dependency_change.matches_existing_pr?).to be false
+      end
+    end
+
+    context "when updating a pull request with the same dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: updated_dependencies.map(&:name),
+                        existing_pull_requests: existing_pull_requests)
+      end
+      let(:existing_pull_requests) do
+        [
+          Dependabot::PullRequest.new(
+            updated_dependencies.map do |dep|
+              Dependabot::PullRequest::Dependency.new(
+                name: dep.name,
+                version: dep.version,
+                directory: dep.directory
+              )
+            end
+          )
+        ]
+      end
+      let(:dependency_change) do
+        described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files
+        )
+      end
+
+      it "returns true" do
+        expect(dependency_change.matches_existing_pr?).to be true
+      end
+
+      context "when there's no directory in an existing PR that otherwise matches" do
+        let(:existing_pull_requests) do
+          [
+            Dependabot::PullRequest.new(
+              updated_dependencies.map do |dep|
+                Dependabot::PullRequest::Dependency.new(
+                  name: dep.name,
+                  version: dep.version
+                )
+              end
+            )
+          ]
+        end
+
+        it "returns true" do
+          expect(dependency_change.matches_existing_pr?).to be true
+        end
+      end
+    end
+
+    context "when updating a grouped pull request with the same dependencies" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: updated_dependencies.map(&:name),
+                        existing_group_pull_requests: existing_group_pull_requests)
+      end
+      let(:existing_group_pull_requests) do
+        [
+          { "dependency-group-name" => "foo",
+            "dependencies" => updated_dependencies.map do |dep|
+                                { "dependency-name" => dep.name.to_s,
+                                  "dependency-version" => dep.version.to_s,
+                                  "directory" => dep.directory.to_s }
+                              end }
+        ]
+      end
+
+      let(:dependency_change) do
+        described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files,
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
+        )
+      end
+
+      it "returns true" do
+        expect(dependency_change.matches_existing_pr?).to be true
+      end
+
+      context "when there's no directory in a PR that otherwise matches" do
+        let(:existing_group_pull_requests) do
+          [
+            { "dependency-group-name" => "foo",
+              "dependencies" => updated_dependencies.map do |dep|
+                                  { "dependency-name" => dep.name.to_s,
+                                    "dependency-version" => dep.version.to_s }
+                                end }
+          ]
+        end
+
+        it "returns true" do
+          expect(dependency_change.matches_existing_pr?).to be true
+        end
+      end
+    end
+
+    context "when updating a grouped pull request with the same dependencies, but in different directory" do
+      let(:job) do
+        instance_double(Dependabot::Job,
+                        dependencies: updated_dependencies.map(&:name),
+                        existing_group_pull_requests: existing_group_pull_requests)
+      end
+      let(:existing_group_pull_requests) do
+        [
+          { "dependency-group-name" => "foo",
+            "dependencies" => updated_dependencies.map do |dep|
+                                { "dependency-name" => dep.name.to_s,
+                                  "dependency-version" => dep.version.to_s,
+                                  "directory" => "/foo" }
+                              end }
+        ]
+      end
+
+      let(:dependency_change) do
+        described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files,
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
+        )
+      end
+
+      it "returns false" do
+        expect(dependency_change.matches_existing_pr?).to be false
       end
     end
   end

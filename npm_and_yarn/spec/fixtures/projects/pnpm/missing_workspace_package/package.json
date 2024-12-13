@@ -1,0 +1,9 @@
+{
+  "author": "name",
+  "private": true,
+  "description": "The storybook for waystone-ui",
+  "devDependencies": {
+    "@waystone/tsconfig": "workspace:*",
+    "storybook": "^8.1.1"
+  }
+}

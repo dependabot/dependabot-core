@@ -5,6 +5,8 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
+  subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
+
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -16,10 +18,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
   let(:dependencies) { [dependency] }
 
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com"
-    }]
+    })]
   end
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -56,9 +58,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path)  }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
 
-  subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "errors" do
     context "with a dependency version that can't be found" do
@@ -122,6 +133,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
     end
 
+    context "with a missing double quotes token value in the .yarnrc.yml" do
+      let(:files) { project_dependency_files("yarn_berry/yarnrc_yml_misconfigured") }
+
+      it "raises a helpful error" do
+        expect { updated_yarn_lock_content }
+          .to raise_error("Expected content to change!")
+      end
+    end
+
     context "when there is a private dep we don't have access to" do
       let(:files) { project_dependency_files("yarn/private_source") }
 
@@ -131,7 +151,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
     end
 
-    context "because we're updating to a nonexistent version" do
+    context "when updating to a nonexistent version" do
       let(:files) { project_dependency_files("yarn/simple") }
 
       let(:dependency_name) { "fetch-factory" }
@@ -304,9 +324,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with a package.json which contains illegal characters in the name" do
+      let(:files) { project_dependency_files("yarn/package_json_contains_illegal_characters_in_name") }
+
+      it "raises a helpful error" do
+        expect { updated_yarn_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq("package.json: Name contains illegal characters")
+        end
+      end
+    end
   end
 
-  context "updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
+  context "when updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
     let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
 
     it "keeps the default npm registry" do
@@ -315,7 +346,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
-  context "updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
+  context "when updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
     let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
 
     let(:dependency_name) { "node-fetch" }

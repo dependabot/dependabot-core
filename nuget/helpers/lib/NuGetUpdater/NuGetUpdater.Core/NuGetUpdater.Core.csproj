@@ -8,20 +8,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="DependencyDiscovery.props" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="DependencyDiscovery.targets" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TargetFrameworkReporter.targets" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\NuGetProjects\NuGet.CommandLine\NuGet.CommandLine.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GuiLabs.Language.Xml" Version="1.2.60" />
-    <PackageReference Include="DiffPlex" Version="1.7.1" />
-    <PackageReference Include="Microsoft.Build.Locator" Version="1.5.5" />
-    <PackageReference Include="Microsoft.Build" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.5.0" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageReference Include="NuGet.Core" Version="2.14.0-rtm-832" Aliases="CoreV2" />
+    <PackageReference Include="GuiLabs.Language.Xml" />
+    <PackageReference Include="DiffPlex" />
+    <PackageReference Include="Microsoft.Build.Locator" />
+    <PackageReference Include="MSBuild.StructuredLogger" />
+    <PackageReference Include="NuGet.Core" Aliases="CoreV2" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="NuGetUpdater.Core.Test"/>
+    <InternalsVisibleTo Include="NuGetUpdater.Cli.Test" />
+    <InternalsVisibleTo Include="NuGetUpdater.Core.Test" />
   </ItemGroup>
 
 </Project>

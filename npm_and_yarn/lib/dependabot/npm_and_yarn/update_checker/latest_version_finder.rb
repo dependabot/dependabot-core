@@ -9,18 +9,13 @@ require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "sorbet-runtime"
+
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
-        class RegistryError < StandardError
-          attr_reader :status
-
-          def initialize(status, msg)
-            @status = status
-            super(msg)
-          end
-        end
+        extend T::Sig
 
         def initialize(dependency:, credentials:, dependency_files:,
                        ignored_versions:, security_advisories:,
@@ -104,13 +99,17 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :dependency_files
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
 
         def valid_npm_details?
           !npm_details&.fetch("dist-tags", nil).nil?
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_ignored_versions(versions_array)
           filtered = versions_array.reject do |v, _|
             ignore_requirements.any? { |r| r.satisfied_by?(v) }
@@ -120,9 +119,15 @@ module Dependabot
             raise AllVersionsIgnored
           end
 
+          if versions_array.count > filtered.count
+            diff = versions_array.count - filtered.count
+            Dependabot.logger.info("Filtered out #{diff} ignored versions")
+          end
+
           filtered
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.filter_map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
@@ -132,6 +137,7 @@ module Dependabot
             .select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
+        sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
 
@@ -314,6 +320,8 @@ module Dependabot
               password: password
             }
           )
+        rescue URI::InvalidURIError => e
+          raise DependencyFileNotResolvable, e.message
         end
 
         def check_npm_response(npm_response)
@@ -323,7 +331,22 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, dependency_registry
           end
 
+          # handles scenario when private registry returns a server error 5xx
+          if private_dependency_server_error?(npm_response)
+            msg = "Server error #{npm_response.status} returned while accessing registry" \
+                  " #{dependency_registry}."
+            raise DependencyFileNotResolvable, msg
+          end
+
           status = npm_response.status
+
+          # handles issue when status 200 is returned from registry but with an invalid JSON object
+          if status.to_s.start_with?("2") && response_invalid_json?(npm_response)
+            msg = "Invalid JSON object returned from registry #{dependency_registry}."
+            Dependabot.logger.warn("#{msg} Response body (truncated) : #{npm_response.body[0..500]}...")
+            raise DependencyFileNotResolvable, msg
+          end
+
           return if status.to_s.start_with?("2")
 
           # Ignore 404s from the registry for updates where a lockfile doesn't
@@ -355,6 +378,23 @@ module Dependabot
                    web_response.status == 429
           end
 
+          true
+        end
+
+        def private_dependency_server_error?(npm_response)
+          if [500, 501, 502, 503].include?(npm_response.status)
+            Dependabot.logger.warn("#{dependency_registry} returned code #{npm_response.status} with " \
+                                   "body #{npm_response.body}.")
+            return true
+          end
+          false
+        end
+
+        def response_invalid_json?(npm_response)
+          result = JSON.parse(npm_response.body)
+          result.is_a?(Hash) || result.is_a?(Array)
+          false
+        rescue JSON::ParserError, TypeError
           true
         end
 

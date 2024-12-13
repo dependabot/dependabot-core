@@ -2,23 +2,31 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/docker/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Docker::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [dockerfile] }
-  let(:dockerfile) do
-    Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+  let(:helm_parser) { described_class.new(dependency_files: helmfiles, source: source) }
+  let(:helmfile_fixture_name) { "values.yaml" }
+  let(:helmfile_body) do
+    fixture("helm", "yaml", helmfile_fixture_name)
   end
-  let(:dockerfile_body) do
-    fixture("docker", "dockerfiles", dockerfile_fixture_name)
+  let(:helmfile) do
+    Dependabot::DependencyFile.new(name: helmfile_fixture_name, content: helmfile_body)
   end
-  let(:dockerfile_fixture_name) { "tag" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:helmfiles) { [helmfile] }
+  let(:yaml_parser) { described_class.new(dependency_files: podfiles, source: source) }
+  let(:podfile_fixture_name) { "pod.yaml" }
+  let(:podfile_body) do
+    fixture("kubernetes", "yaml", podfile_fixture_name)
+  end
+  let(:podfile) do
+    Dependabot::DependencyFile.new(name: podfile_fixture_name, content: podfile_body)
+  end
+  let(:podfiles) { [podfile] }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -26,6 +34,17 @@ RSpec.describe Dependabot::Docker::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:dockerfile_fixture_name) { "tag" }
+  let(:dockerfile_body) do
+    fixture("docker", "dockerfiles", dockerfile_fixture_name)
+  end
+  let(:dockerfile) do
+    Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body)
+  end
+  let(:files) { [dockerfile] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -34,6 +53,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -53,6 +73,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with no tag or digest" do
       let(:dockerfile_fixture_name) { "bare" }
+
       its(:length) { is_expected.to eq(0) }
     end
 
@@ -61,6 +82,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -84,6 +106,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -118,9 +141,6 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         stub_request(:head, repo_url + "manifests/12.04.5")
           .and_return(status: 200, body: "", headers: digest_headers)
-      end
-
-      before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
         stub_request(:get, auth_url)
           .and_return(status: 200, body: { token: "token" }.to_json)
@@ -132,6 +152,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -155,6 +176,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -178,6 +200,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -217,13 +240,13 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "that doesn't match any tags" do
+      context "when the digest doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
-        before { digest_headers["docker_content_digest"] = "nomatch" }
 
         before do
+          digest_headers["docker_content_digest"] = "nomatch"
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
             .and_return(status: 200, body: "", headers: digest_headers)
@@ -232,7 +255,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "that matches a tag" do
+      context "when the digest matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -245,6 +268,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -278,11 +302,11 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
             let(:credentials) do
-              [{
+              [Dependabot::Credential.new({
                 "type" => "docker_registry",
                 "registry" => "registry-host.io:5000",
                 "replaces-base" => false
-              }]
+              })]
             end
             let(:parser) do
               described_class.new(
@@ -304,6 +328,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
             describe "the first dependency" do
               subject(:dependency) { dependencies.first }
+
               let(:expected_requirements) do
                 [{
                   requirement: nil,
@@ -330,6 +355,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:dockerfile_fixture_name) { "digest_and_tag" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -339,8 +366,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
@@ -375,6 +400,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -394,6 +420,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -411,13 +438,14 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are identical" do
+      context "when the lines are identical" do
         let(:dockerfile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -444,6 +472,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -469,6 +498,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -497,6 +527,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -519,10 +550,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "when the registry has no port" do
         let(:dockerfile_fixture_name) { "private_no_port" }
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -557,6 +590,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -584,6 +618,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -603,6 +638,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -626,6 +662,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -645,16 +682,6 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
   end
 
-  let(:podfiles) { [podfile] }
-  let(:podfile) do
-    Dependabot::DependencyFile.new(name: podfile_fixture_name, content: podfile_body)
-  end
-  let(:podfile_body) do
-    fixture("kubernetes", "yaml", podfile_fixture_name)
-  end
-  let(:podfile_fixture_name) { "pod.yaml" }
-  let(:yaml_parser) { described_class.new(dependency_files: podfiles, source: source) }
-
   describe "YAML parse" do
     subject(:dependencies) { yaml_parser.parse }
 
@@ -662,6 +689,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -679,8 +707,15 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "with unknown tag" do
+      let(:podfile_fixture_name) { "unexpected_image.yaml" }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
     context "with no tag or digest" do
       let(:podfile_fixture_name) { "bare.yaml" }
+
       its(:length) { is_expected.to eq(0) }
     end
 
@@ -689,6 +724,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -712,6 +748,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -751,13 +788,13 @@ RSpec.describe Dependabot::Docker::FileParser do
           .and_return(status: 200, body: registry_tags)
       end
 
-      context "that doesn't match any tags" do
+      context "when the digest doesn't match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
-        before { digest_headers["docker_content_digest"] = "nomatch" }
 
         before do
+          digest_headers["docker_content_digest"] = "nomatch"
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
             .and_return(status: 200, body: "", headers: digest_headers)
@@ -766,7 +803,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         its(:length) { is_expected.to eq(1) }
       end
 
-      context "that matches a tag" do
+      context "when the digest matches a tag" do
         before do
           stub_request(:head, repo_url + "manifests/10.04")
             .and_return(status: 404)
@@ -779,6 +816,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -802,6 +840,8 @@ RSpec.describe Dependabot::Docker::FileParser do
     end
 
     context "with a tag and digest" do
+      subject(:dependency) { dependencies.first }
+
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
@@ -811,8 +851,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
-
-      subject(:dependency) { dependencies.first }
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
@@ -847,6 +885,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -866,6 +905,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -883,13 +923,14 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
 
-      context "that are identical" do
+      context "when the lines are identical" do
         let(:podfile_fixture_name) { "multiple_identical.yaml" }
 
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -916,6 +957,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -941,6 +983,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -963,10 +1006,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "when the registry has no port" do
         let(:podfile_fixture_name) { "private_no_port.yaml" }
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -991,10 +1036,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "when it has multiple resources" do
       let(:podfile_fixture_name) { "multiple-resources.yaml" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1016,6 +1063,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1048,6 +1096,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1067,6 +1116,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1084,17 +1134,17 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
-  end
 
-  let(:helmfiles) { [helmfile] }
-  let(:helmfile) do
-    Dependabot::DependencyFile.new(name: helmfile_fixture_name, content: helmfile_body)
+    context "with an invalid yaml file" do
+      let(:podfile_fixture_name) { "with_bom.yaml" }
+
+      it "throws when the yaml starts with a byte order mark" do
+        expect do
+          _unused = dependencies
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
   end
-  let(:helmfile_body) do
-    fixture("helm", "yaml", helmfile_fixture_name)
-  end
-  let(:helmfile_fixture_name) { "values.yaml" }
-  let(:helm_parser) { described_class.new(dependency_files: helmfiles, source: source) }
 
   describe "YAML parse" do
     subject(:dependencies) { helm_parser.parse }
@@ -1103,6 +1153,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -1122,15 +1173,24 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with no image" do
       let(:helmfile_fixture_name) { "empty.yaml" }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with no tag" do
+      let(:helmfile_fixture_name) { "no-tag.yaml" }
+
       its(:length) { is_expected.to eq(0) }
     end
 
     context "with no registry" do
       let(:helmfile_fixture_name) { "no-registry.yaml" }
+
       its(:length) { is_expected.to eq(1) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1151,10 +1211,12 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with multiple images" do
       let(:helmfile_fixture_name) { "multi-image.yaml" }
+
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -1174,6 +1236,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,

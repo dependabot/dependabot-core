@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0018</NoWarn><!-- ReflectionOnly loading is not supported -->
   </PropertyGroup>
 
   <ItemGroup>

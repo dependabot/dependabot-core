@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(CommonTargetFramework)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS0414;CS1591;CS1574;CS1573;CS1572;RS0041</NoWarn>
+    <NoWarn>$(NoWarn);CA1305;CS0414;CS1591;CS1574;CS1573;CS1572;RS0041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,11 +14,15 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
-    <PackageReference Include="System.Security.Cryptography.Cng" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\**\*.cs" />
+    <!--
+    The `PackageFolderReader.GetFiles()` method is case-sensitive which doesn't work for some scenarios so this
+    directory contains a copy of that file with that method with a case-insensitive patch.
+    -->
+    <Compile Remove="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Packaging\PackageFolderReader.cs" />
   </ItemGroup>
 
   <ItemGroup>

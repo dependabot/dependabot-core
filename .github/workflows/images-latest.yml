@@ -1,7 +1,7 @@
 name: Latest images
 env:
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -27,6 +27,7 @@ jobs:
     needs: date-version
     permissions:
       contents: read
+      id-token: write
       packages: write
     strategy:
       fail-fast: false
@@ -36,6 +37,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
           - { name: github_actions, ecosystem: github-actions }
@@ -48,6 +50,7 @@ jobs:
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
           - { name: swift, ecosystem: swift }
+          - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
     env:
       COMMIT_SHA: ${{ github.sha }}
@@ -55,9 +58,11 @@ jobs:
       ECOSYSTEM: ${{ matrix.suite.ecosystem }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
+
+      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
 
       - name: Build the dependabot-updater-<ecosystem> image
         # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
@@ -73,7 +78,10 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push the images to GHCR
-        run: docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+        run: |
+          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
+          # All tags should resolve to the same digest so we only need to look up one of them
+          cosign sign --yes $(cosign triangulate --type=digest "${UPDATER_IMAGE}${ECOSYSTEM}:latest")
 
       - name: Set summary
         run: |

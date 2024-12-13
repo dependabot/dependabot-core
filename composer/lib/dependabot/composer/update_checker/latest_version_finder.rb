@@ -34,8 +34,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials,
-                    :ignored_versions, :security_advisories
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :ignored_versions
+        attr_reader :security_advisories
 
         def fetch_latest_version
           versions = available_versions
@@ -104,7 +107,7 @@ module Dependabot
                 .select { |r| r.is_a?(Hash) }
 
           urls = repositories
-                 .select { |h| h["type"] == "composer" }
+                 .select { |h| h["type"] == PackageManager::NAME }
                  .filter_map { |h| h["url"] }
                  .map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
@@ -141,9 +144,17 @@ module Dependabot
 
           listing = JSON.parse(response.body)
           return [] if listing.nil?
+          return [] unless listing.is_a?(Hash)
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
+          extract_versions(listing)
+        rescue JSON::ParserError
+          msg = "'#{url}' does not contain valid JSON"
+          raise DependencyFileNotResolvable, msg
+        end
+
+        def extract_versions(listing)
           # Packagist's Metadata API format:
           # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
           # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
@@ -161,13 +172,10 @@ module Dependabot
           else
             []
           end
-        rescue JSON::ParserError
-          msg = "'#{url}' does not contain valid JSON"
-          raise DependencyFileNotResolvable, msg
         end
 
         def registry_credentials
-          credentials.select { |cred| cred["type"] == "composer_repository" } +
+          credentials.select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY } +
             auth_json_credentials
         end
 
@@ -188,14 +196,16 @@ module Dependabot
 
         def composer_file
           composer_file =
-            dependency_files.find { |f| f.name == "composer.json" }
-          raise "No composer.json!" unless composer_file
+            dependency_files.find do |f|
+              f.name == PackageManager::MANIFEST_FILENAME
+            end
+          raise "No #{PackageManager::MANIFEST_FILENAME}!" unless composer_file
 
           composer_file
         end
 
         def auth_json
-          dependency_files.find { |f| f.name == "auth.json" }
+          dependency_files.find { |f| f.name == PackageManager::AUTH_FILENAME }
         end
 
         def ignore_requirements

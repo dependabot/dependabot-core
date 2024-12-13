@@ -1,6 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COMPOSER_V1_VERSION=1.10.27
-ARG COMPOSER_V2_VERSION=2.6.5
+ARG COMPOSER_V2_VERSION=2.7.7
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -53,8 +53,8 @@ RUN mkdir /tmp/composer-cache \
   && rm -rf /tmp/composer-cache
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-RUN bash /opt/composer/helpers/v1/build \
-  && bash /opt/composer/helpers/v2/build
+
+RUN bash /opt/composer/helpers/v2/build
 
 COPY --chown=dependabot:dependabot composer $DEPENDABOT_HOME/composer
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common

@@ -1,0 +1,6 @@
+[codespell]
+skip = .git,*.pdf,*.svg,gems,index,fixtures,CHANGELOG_ARCHIVE_*,yarn.lock
+ignore-regex = \bsha512-[^"]*|ENV\["ROUGE"\]|\b(com\.google\.errorprone)\b|\bto(_not)? include .*versio"|https://\S*
+# some modules, parts of regexes, and variable names to ignore, some
+# misspellings in fixtures/external responses we do not own
+ignore-words-list = caf,bu,nwo,nd,kernal,crate,unparseable,couldn,defintions,hashin

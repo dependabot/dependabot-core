@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/dependency_file"
 require "dependabot/job"
 require "dependabot/source"
 require "dependabot/updater/operations"
@@ -11,15 +12,11 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
   describe "current_dependency_files" do
     let(:files) do
       [
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-gemfile", directory: "/", job_directory: "/"),
-        Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "mock-gemfile-lock", directory: "/hello/..",
-                                       job_directory: "/"),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "/elsewhere",
-                                       job_directory: "/other"),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "unknown",
-                                       job_directory: "/hello"),
-        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "../../oob",
-                                       job_directory: "/oob")
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-gemfile", directory: "/"),
+        Dependabot::DependencyFile.new(name: "Gemfile.lock", content: "mock-gemfile-lock", directory: "/hello/.."),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "/elsewhere"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "unknown"),
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "mock-package-json", directory: "../../oob")
       ]
     end
 

@@ -19,15 +19,41 @@
   // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "features": {
-    "docker-from-docker": "latest",
-    "github-cli": "latest",
-    "node": "lts",
-    "golang": "latest",
-    "ruby": "3.1.4",
-    "rust": "latest",
-    "dotnet": "latest",
+    "ghcr.io/devcontainers/features/docker-outside-of-docker": "latest",
+    "ghcr.io/devcontainers/features/github-cli": "latest",
+    "ghcr.io/devcontainers/features/node": "lts",
+    "ghcr.io/devcontainers/features/go": "latest",
+    "ghcr.io/devcontainers/features/ruby": "3.3.1",
+    "ghcr.io/devcontainers/features/rust": "latest",
+    "ghcr.io/devcontainers/features/dotnet": "latest",
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "rubocop.vscode-rubocop",
+        "shopify.ruby-extensions-pack",
+        "ms-dotnettools.csdevkit"
+      ],
+      "settings": {
+        "[ruby]": {
+          "editor.defaultFormatter": "Shopify.ruby-lsp",
+          "editor.formatOnSave": true,
+          "editor.formatOnType": true,
+          "editor.insertSpaces": true,
+          "editor.rulers": [120],
+          "editor.semanticHighlighting.enabled": true,
+          "editor.tabSize": 2,
+          "files.insertFinalNewline": true,
+          "files.trimFinalNewlines": true,
+          "files.trimTrailingWhitespace": true
+        },
+        "rubocop.autocorrect": true,
+        "sorbet.enabled": true
+      }
     }
   }
 }

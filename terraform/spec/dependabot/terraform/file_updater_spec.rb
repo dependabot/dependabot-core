@@ -8,8 +8,6 @@ require "dependabot/terraform/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Terraform::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -19,17 +17,65 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     )
   end
 
-  let(:project_name) { "" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:files) { project_dependency_files(project_name) }
-  let(:dependencies) { [] }
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
+  let(:dependencies) { [] }
+  let(:files) { project_dependency_files(project_name) }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:project_name) { "" }
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "main.tf",
+          "variables.tf",
+          "outputs.tf",
+          "config.hcl",
+          "nested/directory/main.tf",
+          "nested/directory/config.hcl",
+          "terraform/main.tf",
+          "submodules/terraform/config.hcl",
+          "hashicorp/consul/aws/main.tf",
+          "hashicorp/consul/aws/config.hcl",
+          "terraform-aws-modules/iam/aws/main.tf",
+          "terraform-aws-modules/iam/aws/config.hcl"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "package-lock.json",
+          "package.json",
+          "Gemfile",
+          "Gemfile.lock"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
-    subject { updater.updated_dependency_files }
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
 
     context "with a private module" do
       let(:project_name) { "private_module" }
@@ -66,7 +112,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the private module version" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp" {
@@ -112,7 +158,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the private module version and drops the v-prefix" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp" {
@@ -176,7 +222,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates all private modules versions" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp-first" {
@@ -227,7 +273,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the private module version" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
           terraform {
@@ -277,8 +323,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
-      specify { expect(subject.length).to eq(1) }
+      specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
+      specify { expect(updated_dependency_files.length).to eq(1) }
     end
 
     context "with a valid HCL2 dependency file" do
@@ -316,8 +362,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
-      specify { expect(subject.length).to eq(1) }
+      specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
+      specify { expect(updated_dependency_files.length).to eq(1) }
     end
 
     describe "the updated file" do
@@ -358,7 +404,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         let(:project_name) { "git_tags_011" }
 
         it "updates the requirement" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -369,7 +415,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "doesn't update the duplicate" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -384,7 +430,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         let(:project_name) { "git_tags_012" }
 
         it "updates the requirement" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -395,7 +441,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "doesn't update the duplicate" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -410,7 +456,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         let(:project_name) { "hcl2" }
 
         it "shows no updates" do
-          expect { subject }.to raise_error do |error|
+          expect { updated_dependency_files }.to raise_error do |error|
             expect(error.message).to eq("Content didn't change!")
           end
         end
@@ -450,7 +496,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "updates the requirement" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -496,7 +542,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "updates the requirement and drops the v-prefix" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -542,7 +588,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "updates the requirement" do
-          updated_file = subject.find { |file| file.name == "main.tf" }
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
             <<~DEP
@@ -589,7 +635,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement and drops the v-prefix" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -638,7 +684,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "terragrunt.hcl" }
+        updated_file = updated_dependency_files.find { |file| file.name == "terragrunt.hcl" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -683,7 +729,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -738,7 +784,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -790,7 +836,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "versions.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "versions.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -804,7 +850,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "updating an up-to-date terraform project with a lockfile" do
+    context "when updating an up-to-date terraform project with a lockfile" do
       let(:project_name) { "up-to-date_lockfile" }
       let(:dependencies) do
         [
@@ -838,13 +884,13 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "raises an error" do
-        expect { subject }.to raise_error do |error|
+        expect { updated_dependency_files }.to raise_error do |error|
           expect(error.message).to eq("No files changed!")
         end
       end
     end
 
-    context "using versions.tf with a lockfile present" do
+    context "when using versions.tf with a lockfile present" do
       let(:project_name) { "lockfile" }
       let(:dependencies) do
         [
@@ -900,7 +946,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the aws requirement in the lockfile" do
-        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(actual_lockfile.content).to include(
           <<~DEP
@@ -912,7 +958,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "does not update the http requirement in the lockfile" do
-        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(actual_lockfile.content).to include(
           <<~DEP
@@ -938,7 +984,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "using versions.tf with a lockfile with multiple platforms present" do
+    context "when using versions.tf with a lockfile with multiple platforms present" do
       let(:project_name) { "lockfile_multiple_platforms" }
       let(:dependencies) do
         [
@@ -994,7 +1040,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the aws requirement in the lockfile" do
-        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(actual_lockfile.content).to include(
           <<~DEP
@@ -1006,7 +1052,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "does not update the http requirement in the lockfile" do
-        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(actual_lockfile.content).to include(
           <<~DEP
@@ -1068,7 +1114,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+        expect { updated_dependency_files }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.source).to eq("github.com/dependabot-fixtures/private-terraform-module")
         end
       end
@@ -1108,7 +1154,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -1163,7 +1209,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -1210,7 +1256,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the requirement and drops the v-prefix" do
-        updated_file = subject.find { |file| file.name == "main.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(
           <<~DEP
@@ -1257,7 +1303,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the version in the lockfile" do
-        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(lockfile.content).to include(
           <<~DEP
@@ -1303,7 +1349,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version" do
-        module_file = subject.find { |file| file.name == "caf_module.tf" }
+        module_file = updated_dependency_files.find { |file| file.name == "caf_module.tf" }
 
         expect(module_file.content).to include(
           <<~DEP
@@ -1350,7 +1396,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version and drops the v-prefix" do
-        module_file = subject.find { |file| file.name == "caf_module.tf" }
+        module_file = updated_dependency_files.find { |file| file.name == "caf_module.tf" }
 
         expect(module_file.content).to include(
           <<~DEP
@@ -1397,7 +1443,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version" do
-        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(lockfile.content).to include(
           <<~DEP
@@ -1442,7 +1488,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version" do
-        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(lockfile.content).to include(
           <<~DEP
@@ -1487,7 +1533,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version" do
-        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+        lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(lockfile.content).to include(
           <<~DEP
@@ -1568,7 +1614,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "updates the module version across all nested providers" do
-        updated_files = subject
+        updated_files = updated_dependency_files
         lockfile = updated_files.find { |file| file.name == ".terraform.lock.hcl" }
         provider_files = updated_files.select { |file| file.name.end_with?(".tf") }
 
@@ -1586,7 +1632,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "when provider version preceeds its source" do
+    describe "when provider version precedes its source" do
       let(:project_name) { "provider_version_preceed" }
       let(:dependencies) do
         [
@@ -1620,7 +1666,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "parses correctly and updates the module version" do
-        updated_file = subject.find { |file| file.name == "providers.tf" }
+        updated_file = updated_dependency_files.find { |file| file.name == "providers.tf" }
         expect(updated_file.content).to include("version = \"3.40.0\"")
       end
     end
@@ -1660,8 +1706,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
-      specify { expect(subject.length).to eq(1) }
+      specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
+      specify { expect(updated_dependency_files.length).to eq(1) }
     end
   end
 end

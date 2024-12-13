@@ -2,10 +2,12 @@
 # frozen_string_literal: true
 
 require "json"
+
+require "dependabot/errors"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 module Dependabot
   module Composer
@@ -70,15 +72,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? :widen_ranges : :bump_versions_if_necessary
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
@@ -137,8 +139,8 @@ module Dependabot
 
       def composer_file
         composer_file =
-          dependency_files.find { |f| f.name == "composer.json" }
-        raise "No composer.json!" unless composer_file
+          dependency_files.find { |f| f.name == PackageManager::MANIFEST_FILENAME }
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless composer_file
 
         composer_file
       end

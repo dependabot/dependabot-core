@@ -1,192 +1,124 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
+require "dependabot/maven/version_parser"
 require "dependabot/version"
 require "dependabot/utils"
 
-# Java versions use dots and dashes when tokenising their versions.
-# Gem::Version converts a "-" to ".pre.", so we override the `to_s` method.
-#
 # See https://maven.apache.org/pom.html#Version_Order_Specification for details.
 
 module Dependabot
   module Maven
     class Version < Dependabot::Version
-      NULL_VALUES = %w(0 final ga).freeze
-      PREFIXED_TOKEN_HIERARCHY = {
-        "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 },
-        "+" => { qualifier: 3, number: 2 }
-      }.freeze
-      NAMED_QUALIFIERS_HIERARCHY = {
-        "a" => 1, "alpha"     => 1,
-        "b" => 2, "beta"      => 2,
-        "m" => 3, "milestone" => 3,
-        "rc" => 4, "cr" => 4, "pr" => 4,
-        "snapshot" => 5, "dev" => 5,
-        "ga" => 6, "" => 6, "final" => 6,
-        "sp" => 7
-      }.freeze
+      extend T::Sig
+      extend T::Helpers
+
+      PRERELEASE_QUALIFIERS = T.let([
+        Dependabot::Maven::VersionParser::ALPHA,
+        Dependabot::Maven::VersionParser::BETA,
+        Dependabot::Maven::VersionParser::MILESTONE,
+        Dependabot::Maven::VersionParser::RC,
+        Dependabot::Maven::VersionParser::SNAPSHOT
+      ].freeze, T::Array[Integer])
+
       VERSION_PATTERN =
         "[0-9a-zA-Z]+" \
         '(?>\.[0-9a-zA-Z]*)*' \
         '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
+      sig { returns(Dependabot::Maven::TokenBucket) }
+      attr_accessor :token_bucket
+
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
-        return false if version.nil?
+        return false if version.to_s.empty?
 
-        version.to_s.match?(ANCHORED_VERSION_PATTERN)
+        Dependabot::Maven::VersionParser.parse(version.to_s).to_a.any?
+      rescue ArgumentError
+        Dependabot.logger.info("Malformed version string #{version}")
+        false
       end
 
+      sig { override.params(version: VersionParameter).void }
       def initialize(version)
-        @version_string = version.to_s
+        raise BadRequirementError, "Malformed version string - string is nil" if version.nil?
+
+        @version_string = T.let(version.to_s, String)
+        @token_bucket = T.let(Dependabot::Maven::VersionParser.parse(version_string), Dependabot::Maven::TokenBucket)
         super(version.to_s.tr("_", "-"))
       end
 
+      sig { returns(String) }
       def inspect
-        "#<#{self.class} #{@version_string}>"
+        "#<#{self.class} #{version_string}>"
       end
 
+      sig { returns(String) }
       def to_s
-        @version_string
+        version_string
       end
 
+      sig { returns(T::Boolean) }
       def prerelease?
-        tokens.any? do |token|
-          next true if token == "eap"
-          next false unless NAMED_QUALIFIERS_HIERARCHY[token]
-
-          NAMED_QUALIFIERS_HIERARCHY[token] < 6
+        token_bucket.to_a.flatten.any? do |token|
+          token.is_a?(Integer) && token.negative?
         end
       end
 
+      sig { returns(String) }
+      def lowest_prerelease_suffix
+        "a0"
+      end
+
+      sig { params(other: VersionParameter).returns(Integer) }
       def <=>(other)
-        version = stringify_version(@version_string)
-        version = fill_tokens(version)
-        version = trim_version(version)
+        other = Dependabot::Maven::Version.new(other.to_s) unless other.is_a? Dependabot::Maven::Version
+        T.must(token_bucket <=> T.cast(other, Dependabot::Maven::Version).token_bucket)
+      end
 
-        other_version = stringify_version(other)
-        other_version = fill_tokens(other_version)
-        other_version = trim_version(other_version)
+      sig { override.returns(T::Array[String]) }
+      def ignored_patch_versions
+        parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
+        return [] if parts.empty? # for non-semver versions
 
-        version, other_version = convert_dates(version, other_version)
+        version_parts = parts.fill("0", parts.length...2)
+        # the a0 is so we can get the next earliest prerelease patch version
+        upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+        lower_bound = "> #{to_semver}"
+        upper_bound = "< #{upper_parts.join('.')}"
 
-        prefixed_tokens = split_into_prefixed_tokens(version)
-        other_prefixed_tokens = split_into_prefixed_tokens(other_version)
+        ["#{lower_bound}, #{upper_bound}"]
+      end
 
-        prefixed_tokens, other_prefixed_tokens =
-          pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
+      sig { override.returns(T::Array[String]) }
+      def ignored_minor_versions
+        parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
+        return [] if parts.empty? # for non-semver versions
 
-        prefixed_tokens.count.times.each do |index|
-          comp = compare_prefixed_token(
-            prefix: prefixed_tokens[index][0],
-            token: prefixed_tokens[index][1..-1] || "",
-            other_prefix: other_prefixed_tokens[index][0],
-            other_token: other_prefixed_tokens[index][1..-1] || ""
-          )
-          return comp unless comp.zero?
-        end
+        version_parts = parts.fill("0", parts.length...2)
+        lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+        upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1] + [lowest_prerelease_suffix]
+        lower_bound = ">= #{lower_parts.join('.')}"
+        upper_bound = "< #{upper_parts.join('.')}"
 
-        0
+        ["#{lower_bound}, #{upper_bound}"]
+      end
+
+      sig { override.returns(T::Array[String]) }
+      def ignored_major_versions
+        version_parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
+        return [] if version_parts.empty? # for non-semver versions
+
+        lower_parts = [version_parts[0].to_i + 1] + [lowest_prerelease_suffix] # earliest next major version prerelease
+        lower_bound = ">= #{lower_parts.join('.')}"
+
+        [lower_bound]
       end
 
       private
 
-      def tokens
-        @tokens ||=
-          begin
-            version = @version_string.to_s.downcase
-            version = fill_tokens(version)
-            version = trim_version(version)
-            split_into_prefixed_tokens(version).map { |t| t[1..-1] }
-          end
-      end
-
-      def stringify_version(version)
-        version = version.to_s.downcase
-
-        # Not technically correct, but pragmatic
-        version.gsub(/^v(?=\d)/, "")
-      end
-
-      def fill_tokens(version)
-        # Add separators when transitioning from digits to characters
-        version = version.gsub(/(\d)([A-Za-z])/, '\1-\2')
-        version = version.gsub(/([A-Za-z])(\d)/, '\1-\2')
-
-        # Replace empty tokens with 0
-        version = version.gsub(/([\.\-])([\.\-])/, '\10\2')
-        version = version.gsub(/^([\.\-])/, '0\1')
-        version.gsub(/([\.\-])$/, '\10')
-      end
-
-      def trim_version(version)
-        version.split("-").filter_map do |v|
-          parts = v.split(".")
-          parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
-          parts&.join(".")
-        end.reject(&:empty?).join("-")
-      end
-
-      def convert_dates(version, other_version)
-        default = [version, other_version]
-        return default unless version.match?(/^\d{4}-?\d{2}-?\d{2}$/)
-        return default unless other_version.match?(/^\d{4}-?\d{2}-?\d{2}$/)
-
-        [version.delete("-"), other_version.delete("-")]
-      end
-
-      def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.\+])/)
-      end
-
-      def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
-        prefixed_tokens = prefixed_tokens.dup
-        other_prefixed_tokens = other_prefixed_tokens.dup
-
-        longest = [prefixed_tokens, other_prefixed_tokens].max_by(&:count)
-        shortest = [prefixed_tokens, other_prefixed_tokens].min_by(&:count)
-
-        longest.count.times do |index|
-          next unless shortest[index].nil?
-
-          shortest[index] = longest[index].start_with?(".") ? ".0" : "-"
-        end
-
-        [prefixed_tokens, other_prefixed_tokens]
-      end
-
-      def compare_prefixed_token(prefix:, token:, other_prefix:, other_token:)
-        token_type = token.match?(/^\d+$/) ? :number : :qualifier
-        other_token_type = other_token.match?(/^\d+$/) ? :number : :qualifier
-
-        hierarchy = PREFIXED_TOKEN_HIERARCHY.fetch(prefix).fetch(token_type)
-        other_hierarchy =
-          PREFIXED_TOKEN_HIERARCHY.fetch(other_prefix).fetch(other_token_type)
-
-        hierarchy_comparison = hierarchy <=> other_hierarchy
-        return hierarchy_comparison unless hierarchy_comparison.zero?
-
-        compare_token(token: token, other_token: other_token)
-      end
-
-      def compare_token(token:, other_token:)
-        if (token_hierarchy = NAMED_QUALIFIERS_HIERARCHY[token])
-          return -1 unless NAMED_QUALIFIERS_HIERARCHY[other_token]
-
-          return token_hierarchy <=> NAMED_QUALIFIERS_HIERARCHY[other_token]
-        end
-
-        return 1 if NAMED_QUALIFIERS_HIERARCHY[other_token]
-
-        if token.match?(/\A\d+\z/) && other_token.match?(/\A\d+\z/)
-          token = token.to_i
-          other_token = other_token.to_i
-        end
-
-        token <=> other_token
-      end
+      sig { returns(String) }
+      attr_reader :version_string
     end
   end
 end

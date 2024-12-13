@@ -20,7 +20,7 @@ public class CompatibilityCheckerFacts
     [InlineData("net4.8", "netstandard1.3")]
     public void PackageContainsCompatibleFramework(string projectTfm, string packageTfm)
     {
-        var result = CompatibilityChecker.IsCompatible(new[] { projectTfm }, new[] { packageTfm }, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible([projectTfm], [packageTfm], new TestLogger());
 
         Assert.True(result);
     }
@@ -37,7 +37,7 @@ public class CompatibilityCheckerFacts
     [InlineData("net7.0", "net48")]
     public void PackageContainsIncompatibleFramework(string projectTfm, string packageTfm)
     {
-        var result = CompatibilityChecker.IsCompatible(new[] { projectTfm }, new[] { packageTfm }, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible([projectTfm], [packageTfm], new TestLogger());
 
         Assert.False(result);
     }
@@ -48,7 +48,7 @@ public class CompatibilityCheckerFacts
     [InlineData(new[] { "net6.0", "net6.0-windows10.0.19041" }, new[] { "net6.0", ".NETStandard2.0" })]
     public void PackageContainsCompatibleFrameworks(string[] projectTfms, string[] packageTfms)
     {
-        var result = CompatibilityChecker.IsCompatible(projectTfms, packageTfms, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible(projectTfms, packageTfms, new TestLogger());
 
         Assert.True(result);
     }
@@ -57,7 +57,7 @@ public class CompatibilityCheckerFacts
     [InlineData(new[] { "net7.0", "net472" }, new[] { "net5.0" })]
     public void PackageContainsIncompatibleFrameworks(string[] projectTfms, string[] packageTfms)
     {
-        var result = CompatibilityChecker.IsCompatible(projectTfms, packageTfms, new Logger(verbose: true));
+        var result = CompatibilityChecker.IsCompatible(projectTfms, packageTfms, new TestLogger());
 
         Assert.False(result);
     }

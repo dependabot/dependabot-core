@@ -32,9 +32,14 @@ cd "$install_dir/lib/NuGetUpdater/NuGetUpdater.Cli"
 dotnet publish \
     --configuration Release \
     --output "$install_dir/NuGetUpdater" \
-    --framework net8.0 \
+    --framework net9.0 \
     --runtime "$os-$arch"
 dotnet clean
 
 echo "verifying NuGetUpdater tool"
 "$install_dir/NuGetUpdater/NuGetUpdater.Cli" --version
+
+if [ ! -f "$HOME/.nuget/NuGet/NuGet.Config" ]; then
+  echo "user-level NuGet.Config not found; credential patching will not work"
+  exit 1
+fi

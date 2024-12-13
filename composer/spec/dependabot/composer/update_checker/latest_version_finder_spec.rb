@@ -49,53 +49,60 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#latest_version" do
-    subject { finder.latest_version }
+    subject(:latest_version) { finder.latest_version }
 
     it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
-    context "raise_on_ignored when later versions are allowed" do
+    context "when raise_on_ignored is enabled and later versions are allowed" do
       let(:raise_on_ignored) { true }
+
       it "doesn't raise an error" do
-        expect { subject }.to_not raise_error
+        expect { latest_version }.not_to raise_error
       end
     end
 
     context "when the user is on the latest version" do
       let(:dependency_version) { "3.2.0" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
 
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 1.0.1"] }
+
       it { is_expected.to eq(Gem::Version.new("1.0.1")) }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
 
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 3.2.0.a, < 3.3"] }
+
       it { is_expected.to eq(Gem::Version.new("3.1.0")) }
     end
 
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
@@ -103,24 +110,27 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     context "when the dependency version isn't known" do
       let(:dependency_version) { nil }
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "doesn't raise an error" do
-          expect { subject }.to_not raise_error
+          expect { latest_version }.not_to raise_error
         end
       end
     end
 
     context "when the user is ignoring all versions" do
       let(:ignored_versions) { [">= 0"] }
+
       it "returns nil" do
-        expect(subject).to be_nil
+        expect(latest_version).to be_nil
       end
 
-      context "raise_on_ignored" do
+      context "when raise_on_ignored is enabled" do
         let(:raise_on_ignored) { true }
+
         it "raises an error" do
-          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
         end
       end
     end
@@ -142,11 +152,13 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           package_manager: "composer"
         )
       end
+
       it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
     end
 
     context "without a lockfile" do
       let(:project_name) { "exact_version_without_lockfile" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
       context "when using a pre-release" do
@@ -166,12 +178,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             package_manager: "composer"
           )
         end
+
         it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
       end
     end
 
     context "when packagist 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
+
       it { is_expected.to be_nil }
     end
 
@@ -243,13 +257,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.2.0")) }
+
       it "doesn't hit the main registry (since requested not to)" do
         finder.latest_version
-        expect(WebMock).to_not have_requested(:get, packagist_url)
+        expect(WebMock).not_to have_requested(:get, packagist_url)
       end
 
       context "when a 404 is returned" do
         before { stub_request(:get, gemfury_url).to_return(status: 404) }
+
         it { is_expected.to be_nil }
       end
 
@@ -272,6 +288,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           stub_request(:get, gemfury_url)
             .to_return(status: 200, body: { odd: "data" }.to_json)
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -321,7 +338,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           end
         end
 
-        context "in an auth.json file" do
+        context "when in an auth.json file" do
           let(:credentials) do
             [{
               "type" => "git_source",
@@ -339,7 +356,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
               .with(basic_auth: %w(user pass))
           end
 
-          context "that can't be parsed" do
+          context "when the auth.json file can't be parsed" do
             let(:project_name) { "private_registry_with_unparseable_auth_json" }
 
             it "raises a helpful error" do
@@ -356,6 +373,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "with an unreachable source (speccing we don't try to reach it)" do
       let(:project_name) { "git_source_unreachable_git_url" }
+
       it { is_expected.to eq(Gem::Version.new("3.2.0")) }
     end
   end
@@ -373,6 +391,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         )
       ]
     end
+
     it { is_expected.to eq(Gem::Version.new("1.12.0")) }
+  end
+
+  context "when the response status is 200 && the body is an empty array" do
+    let(:url) { "https://example.com/packages.json" }
+    let(:response) { instance_double(Excon::Response, status: 200, body: "[]") }
+
+    before do
+      allow(Dependabot::RegistryClient).to receive(:get).and_return(response)
+    end
+
+    it "returns an empty array" do
+      expect(finder.send(:fetch_registry_versions_from_url, url)).to eq([])
+    end
   end
 end

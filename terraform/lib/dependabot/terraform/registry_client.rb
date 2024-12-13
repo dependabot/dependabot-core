@@ -25,11 +25,13 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
-      def self.get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
+      def self.get_proxied_source(raw_source)
         return raw_source unless raw_source.start_with?("http")
 
         uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
-        return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+        return raw_source if ARCHIVE_EXTENSIONS.any? { |ext| uri.path&.end_with?(ext) }
         return raw_source if URI.parse(raw_source).query&.include?("archive=")
 
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
@@ -49,6 +51,8 @@ module Dependabot
 
         raw_source
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
 
       # Fetch all the versions of a provider, and return a Version
@@ -134,7 +138,8 @@ module Dependabot
 
       private
 
-      attr_reader :hostname, :tokens
+      attr_reader :hostname
+      attr_reader :tokens
 
       def version_class
         Version

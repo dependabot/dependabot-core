@@ -1,11 +1,13 @@
 # typed: true
 # frozen_string_literal: true
 
+require "set"
+
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-require "set"
 
 module Dependabot
   module NpmAndYarn
@@ -55,17 +57,29 @@ module Dependabot
       end
 
       def lowest_security_fix_version
+        # This will require a full unlock to update multiple top level ancestors.
+        return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
+
         latest_version_finder.lowest_security_fix_version
       end
 
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
-        # NOTE: we currently don't resolve transitive/sub-dependencies as
+
+        # NOTE: Currently, we don't resolve transitive/sub-dependencies as
         # npm/yarn don't provide any control over updating to a specific
-        # sub-dependency version
+        # sub-dependency version.
+
+        # Return nil for vulnerable transitive dependencies if there are conflicting dependencies.
+        # This helps catch errors in such cases.
+        return nil if !dependency.top_level? && conflicting_dependencies.any?
+
+        # For transitive dependencies without conflicts, return the latest resolvable transitive
+        # security fix version that does not require unlocking other dependencies.
         return latest_resolvable_transitive_security_fix_version_with_no_unlock unless dependency.top_level?
 
-        # TODO: Might want to check resolvability here?
+        # For top-level dependencies, return the lowest security fix version.
+        # TODO: Consider checking resolvability here in the future.
         lowest_security_fix_version
       end
 
@@ -104,15 +118,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? :widen_ranges : :bump_versions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
       def conflicting_dependencies
@@ -172,7 +186,7 @@ module Dependabot
       end
 
       def updated_dependencies_after_full_unlock
-        return conflicting_updated_dependencies if !dependency.top_level? && security_advisories.any?
+        return conflicting_updated_dependencies if security_advisories.any? && vulnerability_audit["fix_available"]
 
         version_resolver.dependency_updates_from_full_unlock
                         .map { |update_details| build_updated_dependency(update_details) }

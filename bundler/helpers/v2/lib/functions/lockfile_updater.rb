@@ -26,7 +26,9 @@ module Functions
 
     private
 
-    attr_reader :gemfile_name, :lockfile_name, :dependencies
+    attr_reader :gemfile_name
+    attr_reader :lockfile_name
+    attr_reader :dependencies
 
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
@@ -187,7 +189,7 @@ module Functions
       # if those sub-deps are top-level dependencies. We only want true
       # subdeps unlocked, like they were in the UpdateChecker, so we
       # mutate the unlocked gems array.
-      unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
+      unlocked = defn.instance_variable_get(:@gems_to_unlock)
       must_not_unlock = defn.dependencies.map { |x| x.name.to_s } -
                         dependencies_to_unlock
       unlocked.reject! { |n| must_not_unlock.include?(n) }

@@ -8,9 +8,21 @@ require "dependabot/source"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Cargo::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:lockfile_fixture_name) { "bare_version_specified" }
+  let(:manifest_fixture_name) { "bare_version_specified" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "Cargo.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:manifest) do
+    Dependabot::DependencyFile.new(
+      name: "Cargo.toml",
+      content: fixture("manifests", manifest_fixture_name)
+    )
+  end
+  let(:files) { [manifest, lockfile] }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -18,22 +30,9 @@ RSpec.describe Dependabot::Cargo::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
 
-  let(:files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(
-      name: "Cargo.toml",
-      content: fixture("manifests", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "Cargo.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "bare_version_specified" }
-  let(:lockfile_fixture_name) { "bare_version_specified" }
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -109,7 +108,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "which is part of a workspace but not the root" do
+      context "when the project is part of a workspace but not the root" do
         let(:manifest_fixture_name) { "workspace_child" }
 
         it "raises a helpful error" do
@@ -264,9 +263,10 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
 
         context "with an override (specified as a patch)" do
+          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
           let(:manifest_fixture_name) { "workspace_root_with_patch" }
           let(:lockfile_fixture_name) { "workspace_with_patch" }
-          subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
 
           it "excludes the patched dependency" do
             expect(top_level_dependencies.map(&:name)).to eq(["regex"])
@@ -361,6 +361,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
           context "when using an old format lockfile" do
             let(:lockfile_fixture_name) { "virtual_workspace_old_format" }
+
             its(:length) { is_expected.to eq(2) }
           end
         end
@@ -521,7 +522,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that is unparseable" do
+      context "when the input is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -532,7 +533,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
-      context "that have value overwrite issues" do
+      context "when there are value overwrite issues" do
         let(:manifest_fixture_name) { "unparseable_value_overwrite" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -548,11 +549,12 @@ RSpec.describe Dependabot::Cargo::FileParser do
       its(:length) { is_expected.to eq(10) }
 
       it "excludes the source application / library" do
-        expect(dependencies.map(&:name)).to_not include("dependabot")
+        expect(dependencies.map(&:name)).not_to include("dependabot")
       end
 
       describe "top level dependencies" do
         subject(:top_level_dependencies) { dependencies.select(&:top_level?) }
+
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
@@ -829,16 +831,18 @@ RSpec.describe Dependabot::Cargo::FileParser do
       context "with resolver version 2" do
         let(:manifest_fixture_name) { "resolver2" }
         let(:lockfile_fixture_name) { "no_dependencies" }
+
         it { is_expected.to eq([]) }
       end
 
       context "with no dependencies" do
         let(:manifest_fixture_name) { "no_dependencies" }
         let(:lockfile_fixture_name) { "no_dependencies" }
+
         it { is_expected.to eq([]) }
       end
 
-      context "that is unparseable" do
+      context "when the input is unparseable" do
         let(:lockfile_fixture_name) { "unparseable" }
 
         it "raises a DependencyFileNotParseable error" do
@@ -847,6 +851,34 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(error.file_name).to eq("Cargo.lock")
             end
         end
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "rust"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "cargo"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "1.82.0"
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "rust"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "1.82.0"
       end
     end
   end

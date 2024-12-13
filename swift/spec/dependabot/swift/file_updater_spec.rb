@@ -8,8 +8,6 @@ require "dependabot/swift/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Swift::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
   subject(:updater) do
     described_class.new(
       dependency_files: files,
@@ -19,17 +17,58 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     )
   end
 
-  let(:project_name) { "Example" }
-  let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-  let(:files) { project_dependency_files(project_name) }
-  let(:dependencies) { [] }
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
+  let(:dependencies) { [] }
+  let(:files) { project_dependency_files(project_name) }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+  let(:project_name) { "Example" }
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "Package.swift",
+          "Package@swift-5.swift",
+          "Package@swift-5.0.swift",
+          "Package@swift-5.0.1.swift",
+          "Package.resolved"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "package-lock.json",
+          "package.json",
+          "Gemfile",
+          "Gemfile.lock"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
-    subject { updater.updated_dependency_files }
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
 
     let(:dependencies) do
       [
@@ -74,13 +113,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
     end
 
     it "updates the version in manifest and lockfile" do
-      manifest = subject.find { |file| file.name == "Package.swift" }
+      manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
       expect(manifest.content).to include(
         "url: \"https://github.com/ReactiveCocoa/ReactiveSwift.git\",\n             exact: \"7.1.1\""
       )
 
-      lockfile = subject.find { |file| file.name == "Package.resolved" }
+      lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
       expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
         {
@@ -139,13 +178,13 @@ RSpec.describe Dependabot::Swift::FileUpdater do
       end
 
       it "properly updates to target version in manifest and lockfile" do
-        manifest = subject.find { |file| file.name == "Package.swift" }
+        manifest = updated_dependency_files.find { |file| file.name == "Package.swift" }
 
         expect(manifest.content).to include(
           "url: \"https://github.com/apple/swift-docc-plugin\",\n      from: \"1.1.0\""
         )
 
-        lockfile = subject.find { |file| file.name == "Package.resolved" }
+        lockfile = updated_dependency_files.find { |file| file.name == "Package.resolved" }
 
         expect(lockfile.content.gsub(/^ {4}/, "")).to include <<~RESOLVED
           {

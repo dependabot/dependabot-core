@@ -12,12 +12,15 @@ module Dependabot
       class RequirementFileUpdater
         require_relative "requirement_replacer"
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @index_urls = index_urls
         end
 
         def updated_dependency_files
@@ -56,7 +59,8 @@ module Dependabot
             dependency_name: dependency.name,
             old_requirement: old_req.fetch(:requirement),
             new_requirement: new_req.fetch(:requirement),
-            new_hash_version: dependency.version
+            new_hash_version: dependency.version,
+            index_urls: @index_urls
           ).updated_content
         end
 

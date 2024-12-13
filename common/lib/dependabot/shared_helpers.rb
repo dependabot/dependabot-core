@@ -11,6 +11,7 @@ require "shellwords"
 require "sorbet-runtime"
 require "tmpdir"
 
+require "dependabot/credential"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
@@ -112,7 +113,7 @@ module Dependabot
       end
 
       sig { returns(T::Hash[Symbol, T.untyped]) }
-      def raven_context
+      def sentry_context
         { fingerprint: [@fingerprint], extra: @error_context.except(:stderr_output, :fingerprint) }
       end
     end
@@ -130,16 +131,18 @@ module Dependabot
       params(
         command: String,
         function: String,
-        args: T.any(T::Array[String], T::Hash[Symbol, String]),
+        args: T.any(T::Array[T.any(String, T::Array[T::Hash[String, T.untyped]])], T::Hash[Symbol, String]),
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
-        allow_unsafe_shell_command: T::Boolean
+        allow_unsafe_shell_command: T::Boolean,
+        error_class: T.class_of(HelperSubprocessFailed)
       )
         .returns(T.nilable(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]])))
     end
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
-                                   allow_unsafe_shell_command: false)
+                                   allow_unsafe_shell_command: false,
+                                   error_class: HelperSubprocessFailed)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -179,33 +182,54 @@ module Dependabot
         process_termsig: process.termsig
       }
 
-      check_out_of_memory_error(stderr, error_context)
+      check_out_of_memory_error(stderr, error_context, error_class)
 
       begin
         response = JSON.parse(stdout)
         return response["result"] if process.success?
 
-        raise HelperSubprocessFailed.new(
+        raise error_class.new(
           message: response["error"],
           error_class: response["error_class"],
           error_context: error_context,
           trace: response["trace"]
         )
       rescue JSON::ParserError
-        raise HelperSubprocessFailed.new(
-          message: stdout || "No output from command",
-          error_class: "JSON::ParserError",
-          error_context: error_context
-        )
+        raise handle_json_parse_error(stdout, stderr, error_context, error_class)
       end
     end
 
+    sig do
+      params(stdout: String, stderr: String, error_context: T::Hash[Symbol, T.untyped],
+             error_class: T.class_of(HelperSubprocessFailed))
+        .returns(HelperSubprocessFailed)
+    end
+    def self.handle_json_parse_error(stdout, stderr, error_context, error_class)
+      # If the JSON is invalid, the helper has likely failed
+      # We should raise a more helpful error message
+      message = if !stdout.strip.empty?
+                  stdout
+                elsif !stderr.strip.empty?
+                  stderr
+                else
+                  "No output from command"
+                end
+      error_class.new(
+        message: message,
+        error_class: "JSON::ParserError",
+        error_context: error_context
+      )
+    end
+
     # rubocop:enable Metrics/MethodLength
-    sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
-    def self.check_out_of_memory_error(stderr, error_context)
+    sig do
+      params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String],
+             error_class: T.class_of(HelperSubprocessFailed)).void
+    end
+    def self.check_out_of_memory_error(stderr, error_context, error_class)
       return unless stderr&.include?("JavaScript heap out of memory")
 
-      raise HelperSubprocessFailed.new(
+      raise error_class.new(
         message: "JavaScript heap out of memory",
         error_class: "Dependabot::OutOfMemoryError",
         error_context: error_context
@@ -246,7 +270,7 @@ module Dependabot
     sig do
       type_parameters(:T)
         .params(
-          credentials: T::Array[T::Hash[String, String]],
+          credentials: T::Array[Dependabot::Credential],
           _block: T.proc.returns(T.type_parameter(:T))
         )
         .returns(T.type_parameter(:T))
@@ -257,13 +281,16 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
 
       previous_config = ENV.fetch("GIT_CONFIG_GLOBAL", nil)
+      previous_terminal_prompt = ENV.fetch("GIT_TERMINAL_PROMPT", nil)
 
       begin
         ENV["GIT_CONFIG_GLOBAL"] = GIT_CONFIG_GLOBAL_PATH
+        ENV["GIT_TERMINAL_PROMPT"] = "false"
         configure_git_to_use_https_with_credentials(credentials, safe_directories)
         yield
       ensure
         ENV["GIT_CONFIG_GLOBAL"] = previous_config
+        ENV["GIT_TERMINAL_PROMPT"] = previous_terminal_prompt
       end
     rescue Errno::ENOSPC => e
       raise Dependabot::OutOfDisk, e.message
@@ -285,7 +312,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
-    sig { params(credentials: T::Array[T::Hash[String, String]], safe_directories: T::Array[String]).void }
+    sig { params(credentials: T::Array[Dependabot::Credential], safe_directories: T::Array[String]).void }
     def self.configure_git_to_use_https_with_credentials(credentials, safe_directories)
       File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|
         file << "# Generated by dependabot/dependabot-core"
@@ -392,6 +419,7 @@ module Dependabot
       params(
         command: String,
         allow_unsafe_shell_command: T::Boolean,
+        cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean
@@ -399,16 +427,22 @@ module Dependabot
     end
     def self.run_shell_command(command,
                                allow_unsafe_shell_command: false,
+                               cwd: nil,
                                env: {},
                                fingerprint: nil,
                                stderr_to_stdout: true)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
+      puts cmd if ENV["DEBUG_HELPERS"] == "true"
+
+      opts = {}
+      opts[:chdir] = cwd if cwd
+
       if stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd)
+        stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
       end
 
       time_taken = Time.now - start
@@ -424,10 +458,29 @@ module Dependabot
         process_exit_value: process.to_s
       }
 
+      check_out_of_disk_memory_error(stderr, error_context)
+
       raise SharedHelpers::HelperSubprocessFailed.new(
         message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
+    end
+
+    sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
+    def self.check_out_of_disk_memory_error(stderr, error_context)
+      if stderr&.include?("No space left on device") || stderr&.include?("Out of diskspace")
+        raise HelperSubprocessFailed.new(
+          message: "No space left on device",
+          error_class: "Dependabot::OutOfDisk",
+          error_context: error_context
+        )
+      elsif stderr&.include?("MemoryError")
+        raise HelperSubprocessFailed.new(
+          message: "MemoryError",
+          error_class: "Dependabot::OutOfMemory",
+          error_context: error_context
+        )
+      end
     end
 
     sig { params(command: String, stdin_data: String, env: T.nilable(T::Hash[String, String])).returns(String) }

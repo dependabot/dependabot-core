@@ -4,10 +4,13 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/dependency_file"
+require "dependabot/pull_request_creator"
 require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do
-  subject(:client) { Dependabot::ApiClient.new("http://example.com", 1, "token") }
+  subject(:client) { described_class.new("http://example.com", 1, "token") }
+
   let(:headers) { { "Content-Type" => "application/json" } }
 
   describe "create_pull_request" do
@@ -18,9 +21,12 @@ RSpec.describe Dependabot::ApiClient do
         updated_dependency_files: dependency_files
       )
     end
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
     let(:job) do
       instance_double(Dependabot::Job,
-                      source: nil,
+                      source: source,
                       credentials: [],
                       commit_message_options: [],
                       updating_a_pull_request?: false,
@@ -71,7 +77,7 @@ RSpec.describe Dependabot::ApiClient do
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
-
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -112,7 +118,8 @@ RSpec.describe Dependabot::ApiClient do
                   "source" => nil
                 }
               ],
-            "version" => "1.8.0"
+            "version" => "1.8.0",
+            "directory" => "/"
           }
         ])
         expect(data["updated-dependency-files"]).to eql([
@@ -167,16 +174,16 @@ RSpec.describe Dependabot::ApiClient do
             .with(headers: { "Authorization" => "token" })
             .with do |req|
               data = JSON.parse(req.body)["data"]
-              expect(data["dependencies"].first["removed"]).to eq(true)
-              expect(data["dependencies"].first.key?("version")).to eq(false)
-              expect(data["dependencies"].last.key?("removed")).to eq(false)
+              expect(data["dependencies"].first["removed"]).to be(true)
+              expect(data["dependencies"].first.key?("version")).to be(false)
+              expect(data["dependencies"].last.key?("removed")).to be(false)
               expect(data["dependencies"].last["version"]).to eq("1.8.0")
               true
             end)
       end
     end
 
-    context "grouped updates" do
+    context "when dealing with grouped updates" do
       it "does not include the dependency-group key by default" do
         client.create_pull_request(dependency_change, base_commit)
 
@@ -217,9 +224,12 @@ RSpec.describe Dependabot::ApiClient do
         updated_dependency_files: dependency_files
       )
     end
+    let(:source) do
+      instance_double(Dependabot::Source, provider: "github", repo: "gocardless/bump", directory: "/")
+    end
     let(:job) do
       instance_double(Dependabot::Job,
-                      source: nil,
+                      source: source,
                       credentials: [],
                       commit_message_options: [],
                       updating_a_pull_request?: true)
@@ -335,6 +345,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:url) { "http://example.com/update_jobs/1/record_update_job_error" }
     let(:error_type) { "dependency_file_not_evaluatable" }
     let(:error_detail) { { "message" => "My message" } }
+
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
@@ -353,6 +364,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:url) { "http://example.com/update_jobs/1/record_update_job_unknown_error" }
     let(:error_type) { "server_error" }
     let(:error_detail) { { "message" => "My message" } }
+
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
@@ -367,9 +379,51 @@ RSpec.describe Dependabot::ApiClient do
     end
   end
 
+  describe "record_update_job_warning" do
+    let(:record_update_job_warning_url) { "http://example.com/update_jobs/1/record_update_job_warning" }
+
+    let(:warn_type) { "test_warning_type" }
+    let(:warn_title) { "Test Warning Title" }
+    let(:warn_description) { "Test Warning Description" }
+
+    before do
+      stub_request(:post, record_update_job_warning_url)
+        .to_return(status: 204, headers: headers)
+    end
+
+    it "hits the correct endpoint" do
+      client.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+
+      expect(WebMock)
+        .to have_requested(:post, record_update_job_warning_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_update_job_warning(
+        warn_type: warn_type,
+        warn_title: warn_title,
+        warn_description: warn_description
+      )
+
+      expect(WebMock).to(have_requested(:post, record_update_job_warning_url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data["warn-type"]).to eq(warn_type)
+        expect(data["warn-title"]).to eq(warn_title)
+        expect(data["warn-description"]).to eq(warn_description)
+      end)
+    end
+  end
+
   describe "mark_job_as_processed" do
     let(:url) { "http://example.com/update_jobs/1/mark_as_processed" }
     let(:base_commit) { "sha" }
+
     before { stub_request(:patch, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
@@ -393,6 +447,7 @@ RSpec.describe Dependabot::ApiClient do
         ]
       )
     end
+
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
@@ -406,6 +461,7 @@ RSpec.describe Dependabot::ApiClient do
 
   describe "ecosystem_versions" do
     let(:url) { "http://example.com/update_jobs/1/record_ecosystem_versions" }
+
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
@@ -419,6 +475,7 @@ RSpec.describe Dependabot::ApiClient do
 
   describe "increment_metric" do
     let(:url) { "http://example.com/update_jobs/1/increment_metric" }
+
     before { stub_request(:post, url).to_return(status: 204) }
 
     context "when successful" do
@@ -449,6 +506,89 @@ RSpec.describe Dependabot::ApiClient do
         expect(Dependabot.logger).to have_received(:debug).with(
           "Unable to report metric 'apples'."
         )
+      end
+    end
+  end
+
+  describe "record_ecosystem_meta" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
+    end
+
+    let(:ecosystem) do
+      Dependabot::Ecosystem.new(
+        name: "bundler",
+        package_manager: instance_double(
+          Dependabot::Ecosystem::VersionManager,
+          name: "bundler",
+          version: Dependabot::Version.new("2.1.4"),
+          requirement: instance_double(
+            Dependabot::Requirement,
+            constraints: [">= 2.0"],
+            min_version: Dependabot::Version.new("2.0.0"),
+            max_version: Dependabot::Version.new("3.0.0")
+          )
+        ),
+        language: instance_double(
+          Dependabot::Ecosystem::VersionManager,
+          name: "ruby",
+          version: Dependabot::Version.new("2.7.0"),
+          requirement: nil
+        )
+      )
+    end
+    let(:record_ecosystem_meta_url) { "http://example.com/update_jobs/1/record_ecosystem_meta" }
+
+    it "hits the correct endpoint" do
+      client.record_ecosystem_meta(ecosystem)
+
+      expect(WebMock)
+        .to have_requested(:post, record_ecosystem_meta_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_ecosystem_meta(ecosystem)
+
+      expect(WebMock).to(have_requested(:post, record_ecosystem_meta_url).with do |req|
+        data = JSON.parse(req.body)["data"][0]["ecosystem"]
+
+        expect(data).not_to be_nil # Ensure data is present
+        expect(data["name"]).to eq("bundler")
+        expect(data["package_manager"]).to include(
+          "name" => "bundler",
+          "raw_version" => "2.1.4",
+          "version" => "2.1.4",
+          "requirement" => {
+            "max_raw_version" => "3.0.0",
+            "max_version" => "3.0.0",
+            "min_raw_version" => "2.0.0",
+            "min_version" => "2.0.0",
+            "raw_constraint" => ">= 2.0"
+          }
+        )
+        expect(data["language"]).to include(
+          "name" => "ruby",
+          "version" => "2.7.0"
+        )
+      end)
+    end
+
+    context "when ecosystem is nil" do
+      it "does not send a request" do
+        client.record_ecosystem_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
+      end
+    end
+
+    context "when feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(false)
+      end
+
+      it "does not send a request" do
+        client.record_ecosystem_meta(ecosystem)
+        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
       end
     end
   end

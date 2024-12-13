@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -8,218 +6,370 @@ public partial class UpdateWorkerTests
 {
     public class DotNetTools : UpdateWorkerTestBase
     {
-        public DotNetTools()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task NoChangeWhenDotNetToolsJsonNotFound()
         {
-            await TestNoChangeforProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+            await TestNoChangeforProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task NoChangeWhenDependencyNotFound()
         {
-            await TestNoChangeforProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+            await TestNoChangeforProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some-Other-Tool", "2.0.0", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some-other-tool": {
+                              "version": "2.0.0",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]
+            );
         }
 
         [Fact]
-        public async Task UpdateSingleDependencyInDirsProj()
+        public async Task NoChangeWhenDotNetToolsJsonInUnexpectedLocation()
         {
-            await TestUpdateForProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+            await TestNoChangeforProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some-Other-Tool", "2.0.0", "net8.0"),
+                ],
+                // initial
+                projectFilePath: "src/project/project.csproj",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("eng/.config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some-other-tool": {
+                              "version": "2.0.0",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
+                          }
+                        }
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependency()
+        {
+            await TestUpdateForProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.0.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFilesExpected: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            "version": "1.1.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.1.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateSingleDependencyWithComments()
         {
-            await TestUpdateForProject("Microsoft.BotSay", "1.0.0", "1.1.0",
+            await TestUpdateForProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        // this is a comment
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            // this is a deep comment
-                            "version": "1.0.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          // this is a comment
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              // this is a deep comment
+                              "version": "1.0.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                },
+                        """)
+                ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFilesExpected: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
                     (".config/dotnet-tools.json", """
-                      {
-                        // this is a comment
-                        "version": 1,
-                        "isRoot": true,
-                        "tools": {
-                          "microsoft.botsay": {
-                            // this is a deep comment
-                            "version": "1.1.0",
-                            "commands": [
-                              "botsay"
-                            ]
-                          },
-                          "dotnetsay": {
-                            "version": "2.1.3",
-                            "commands": [
-                              "dotnetsay"
-                            ]
+                        {
+                          // this is a comment
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              // this is a deep comment
+                              "version": "1.1.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
                           }
                         }
-                      }
-                      """)
-                });
+                        """)
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateSingleDependencyWithTrailingComma()
+        {
+            await TestUpdateForProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    (".config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.0.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ],
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ],
+                            }
+                          }
+                        }
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected files no longer have trailing commas in the json
+                additionalFilesExpected:
+                [
+                    (".config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.1.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
+                          }
+                        }
+                        """)
+                ]
+            );
         }
     }
 }

@@ -3,6 +3,7 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "octokit"
@@ -17,44 +18,45 @@ module Dependabot
     def perform_job # rubocop:disable Metrics/PerceivedComplexity,Metrics/AbcSize
       @base_commit_sha = nil
 
-      span = ::Dependabot::OpenTelemetry.tracer&.start_span("file_fetcher", kind: :internal)
-      span&.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id)
+      Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
+      ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
-      begin
-        connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
-        clone_repo_contents
-        @base_commit_sha = file_fetcher.commit
-        raise "base commit SHA not found" unless @base_commit_sha
+        begin
+          connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
+          clone_repo_contents
+          @base_commit_sha = file_fetcher.commit
+          raise "base commit SHA not found" unless @base_commit_sha
 
-        # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
-        # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
-        if job.source.directories
-          dependency_files_for_multi_directories
-        else
-          dependency_files
+          # In the older versions of GHES (> 3.11.0) job.source.directories will be nil as source.directories was
+          # introduced after 3.11.0 release. So, this also supports backward compatibility for older versions of GHES.
+          if job.source.directories
+            dependency_files_for_multi_directories
+          else
+            dependency_files
+          end
+        rescue StandardError => e
+          @base_commit_sha ||= "unknown"
+          if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
+            remaining = rate_limit_error_remaining(e)
+            Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
+                                    "#{remaining}s")
+          else
+            Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
+          end
+          handle_file_fetcher_error(e)
+          service.mark_job_as_processed(@base_commit_sha)
+          return nil
         end
-      rescue StandardError => e
-        @base_commit_sha ||= "unknown"
-        if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
-          remaining = rate_limit_error_remaining(e)
-          Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
-                                  "#{remaining}s")
-        else
-          Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
-        end
-        handle_file_fetcher_error(e)
-        service.mark_job_as_processed(@base_commit_sha)
-        return
+
+        Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
+        File.write(Environment.output_path, JSON.dump(
+                                              base64_dependency_files: base64_dependency_files.map(&:to_h),
+                                              base_commit_sha: @base_commit_sha
+                                            ))
+
+        save_job_details
       end
-
-      File.write(Environment.output_path, JSON.dump(
-                                            base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                            base_commit_sha: @base_commit_sha
-                                          ))
-
-      save_job_details
-    ensure
-      span&.finish
     end
 
     private
@@ -97,15 +99,44 @@ module Dependabot
       @file_fetchers[directory] ||= create_file_fetcher(directory: directory)
     end
 
-    # Fetch dependency files for multiple directories
+    # rubocop:disable Metrics/PerceivedComplexity
     def dependency_files_for_multi_directories
-      @dependency_files_for_multi_directories ||= job.source.directories.flat_map do |dir|
+      return @dependency_files_for_multi_directories if defined?(@dependency_files_for_multi_directories)
+
+      has_glob = T.let(false, T::Boolean)
+      directories = Dir.chdir(job.repo_contents_path) do
+        job.source.directories.map do |dir|
+          next dir unless glob?(dir)
+
+          has_glob = true
+          dir = dir.delete_prefix("/")
+          Dir.glob(dir, File::FNM_DOTMATCH).select { |d| File.directory?(d) }.map { |d| "/#{d}" }
+        end.flatten
+      end.uniq
+
+      @dependency_files_for_multi_directories = directories.flat_map do |dir|
         ff = with_retries { file_fetcher_for_directory(dir) }
-        files = ff.files
+
+        begin
+          files = ff.files
+        rescue Dependabot::DependencyFileNotFound
+          # skip directories that don't contain manifests if globbing is used
+          next if has_glob
+
+          raise
+        end
+
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
         files
+      end.compact
+
+      if @dependency_files_for_multi_directories.empty?
+        raise Dependabot::DependencyFileNotFound, job.source.directories.join(", ")
       end
+
+      @dependency_files_for_multi_directories
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def dependency_files
       return @dependency_files if defined?(@dependency_files)
@@ -169,27 +200,34 @@ module Dependabot
     def handle_file_fetcher_error(error)
       error_details = Dependabot.fetcher_error_details(error)
 
-      error_details ||= begin
+      if error_details.nil?
         log_error(error)
 
         unknown_error_details = {
-          "error-class" => error.class.to_s,
-          "error-message" => error.message,
-          "error-backtrace" => error.backtrace.join("\n"),
-          "package-manager" => job.package_manager,
-          "job-id" => job.id,
-          "job-dependencies" => job.dependencies,
-          "job-dependency_group" => job.dependency_groups
+          ErrorAttributes::CLASS => error.class.to_s,
+          ErrorAttributes::MESSAGE => error.message,
+          ErrorAttributes::BACKTRACE => error.backtrace.join("\n"),
+          ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? error.sentry_context[:fingerprint] : nil,
+          ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
+          ErrorAttributes::JOB_ID => job.id,
+          ErrorAttributes::DEPENDENCIES => job.dependencies,
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
         }.compact
 
-        service.capture_exception(error: error, job: job)
-        {
+        error_details = {
           "error-type": "file_fetcher_error",
           "error-detail": unknown_error_details
         }
       end
 
-      record_error(error_details)
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
+
+      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+
+      service.capture_exception(error: error, job: job)
     end
 
     def rate_limit_error_remaining(error)
@@ -241,6 +279,11 @@ module Dependabot
           }
         }
       })
+    end
+
+    def glob?(directory)
+      # We could tighten this up, but it's probably close enough.
+      directory.include?("*") || directory.include?("?") || (directory.include?("[") && directory.include?("]"))
     end
   end
 end

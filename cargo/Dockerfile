@@ -1,4 +1,4 @@
-FROM rust:1.75.0-bookworm as rust
+FROM docker.io/library/rust:1.82.0-bookworm as rust
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 

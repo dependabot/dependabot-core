@@ -79,7 +79,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def write_lockfiles
           yarn_locks.each do |f|
@@ -112,7 +114,7 @@ module Dependabot
           return false unless yarnrc_global_registry
 
           UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.none? do |r|
-            r.include?(URI(yarnrc_global_registry).host)
+            r.include?(T.must(URI(yarnrc_global_registry).host))
           end
         end
 

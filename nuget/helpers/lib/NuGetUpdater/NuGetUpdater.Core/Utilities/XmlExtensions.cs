@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core;
@@ -28,6 +24,17 @@ public static class XmlExtensions
     public static XmlAttributeSyntax? GetAttribute(this IXmlElementSyntax element, string name, StringComparison comparisonType)
     {
         return element.Attributes.FirstOrDefault(a => a.Name.Equals(name, comparisonType));
+    }
+
+    public static IXmlElementSyntax RemoveAttributeByName(this IXmlElementSyntax element, string attributeName, StringComparison comparisonType = StringComparison.Ordinal)
+    {
+        var attribute = element.GetAttribute(attributeName, comparisonType);
+        if (attribute is null)
+        {
+            return element;
+        }
+
+        return element.RemoveAttribute(attribute);
     }
 
     public static string GetAttributeValue(this IXmlElementSyntax element, string name, StringComparison comparisonType)

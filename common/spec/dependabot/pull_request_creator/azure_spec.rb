@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/azure"
@@ -31,12 +32,12 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:branch_name) { "dependabot/bundler/business-1.5.0" }
   let(:base_commit) { "basecommitsha" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "dev.azure.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:files) { [gemfile, gemfile_lock] }
   let(:commit_message) { "Commit msg" }
@@ -120,7 +121,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               json_body = JSON.parse(req.body)
               expect(json_body.fetch("commits").count).to eq(1)
               expect(json_body.fetch("commits").first.keys)
-                .to_not include("author")
+                .not_to include("author")
             end
         )
       expect(WebMock)
@@ -129,6 +130,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
 
     context "with reviewers" do
       let(:reviewers) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned reviewers" do
         creator.create
 
@@ -142,7 +144,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                  .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                 .to eq(true)
+                 .to be(true)
             end
           )
       end
@@ -150,6 +152,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
 
     context "with assignees" do
       let(:assignees) { ["0013-0006-1980"] }
+
       it "pushes a commit to Azure and creates a pull request with assigned optional reviewers" do
         creator.create
 
@@ -163,7 +166,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
               expect(first_participant.fetch("id"))
                 .to eq("0013-0006-1980")
               expect(first_participant.fetch("isRequired"))
-                .to eq(false)
+                .to be(false)
             end
           )
       end
@@ -189,7 +192,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           )
       end
 
-      context "but are an empty hash" do
+      context "when there is an empty hash" do
         let(:author_details) { {} }
 
         it "does not include the author details in the commit" do
@@ -202,7 +205,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
                   json_body = JSON.parse(req.body)
                   expect(json_body.fetch("commits").count).to eq(1)
                   expect(json_body.fetch("commits").first.keys)
-                    .to_not include("author")
+                    .not_to include("author")
                 end
             )
         end
@@ -221,7 +224,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         )
       end
 
-      context "but a pull request to this branch doesn't" do
+      context "when a pull request to this branch doesn't exist" do
         before do
           stub_request(
             :get,
@@ -237,7 +240,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
 
         it "creates a commit and pull request with the right details" do
-          expect(creator.create).to_not be_nil
+          expect(creator.create).not_to be_nil
 
           expect(WebMock)
             .to have_requested(
@@ -252,7 +255,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         end
       end
 
-      context "and a pull request to this branch already exists" do
+      context "when a pull request to this branch already exists" do
         before do
           stub_request(
             :get,
@@ -270,12 +273,12 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           expect(creator.create).to be_nil
 
           expect(WebMock)
-            .to_not have_requested(
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pushes?api-version=5.0"
             )
           expect(WebMock)
-            .to_not have_requested(
+            .not_to have_requested(
               :post,
               "#{repo_api_url}/pullrequests?api-version=5.0"
             )

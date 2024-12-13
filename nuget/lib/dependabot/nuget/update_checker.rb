@@ -1,184 +1,207 @@
-# typed: false
+# typed: strong
 # frozen_string_literal: true
 
-require "dependabot/nuget/file_parser"
+require "dependabot/nuget/analysis/analysis_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "sorbet-runtime"
 
 module Dependabot
   module Nuget
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      require_relative "update_checker/version_finder"
-      require_relative "update_checker/property_updater"
-      require_relative "update_checker/requirements_updater"
-      require_relative "update_checker/dependency_finder"
+      extend T::Sig
 
+      require_relative "update_checker/requirements_updater"
+
+      sig { override.returns(T.nilable(String)) }
       def latest_version
         # No need to find latest version for transitive dependencies unless they have a vulnerability.
         return dependency.version if !dependency.top_level? && !vulnerable?
 
-        @latest_version = latest_version_details&.fetch(:version)
+        # if no update sources have the requisite package, then we can only assume that the current version is correct
+        @latest_version = T.let(
+          update_analysis.dependency_analysis.updated_version,
+          T.nilable(String)
+        )
       end
 
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         # We always want a full unlock since any package update could update peer dependencies as well.
         # To force a full unlock instead of an own unlock, we return nil.
         nil
       end
 
+      sig { override.returns(Dependabot::Nuget::Version) }
       def lowest_security_fix_version
-        lowest_security_fix_version_details&.fetch(:version)
+        update_analysis.dependency_analysis.numeric_updated_version
       end
 
+      sig { override.returns(T.nilable(Dependabot::Nuget::Version)) }
       def lowest_resolvable_security_fix_version
         return nil if version_comes_from_multi_dependency_property?
 
-        lowest_security_fix_version
+        update_analysis.dependency_analysis.numeric_updated_version
       end
 
+      sig { override.returns(NilClass) }
       def latest_resolvable_version_with_no_unlock
         # Irrelevant, since Nuget has a single dependency file
         nil
       end
 
+      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def updated_requirements
+        dep_details = updated_dependency_details.find { |d| d.name.casecmp?(dependency.name) }
         RequirementsUpdater.new(
           requirements: dependency.requirements,
-          latest_version: preferred_resolvable_version_details.fetch(:version)&.to_s,
-          source_details: preferred_resolvable_version_details
-                          &.slice(:nuspec_url, :repo_url, :source_url)
+          dependency_details: dep_details
         ).updated_requirements
       end
 
+      sig { returns(T::Boolean) }
       def up_to_date?
-        # No need to update transitive dependencies unless they have a vulnerability.
-        return true if !dependency.top_level? && !vulnerable?
-
-        # If any requirements have an uninterpolated property in them then
-        # that property couldn't be found, and we assume that the dependency
-        # is up-to-date
-        return true unless requirements_unlocked_or_can_be?
-
-        super
+        !update_analysis.dependency_analysis.can_update
       end
 
+      sig { returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
-        # If any requirements have an uninterpolated property in them then
-        # that property couldn't be found, and the requirement therefore
-        # cannot be unlocked (since we can't update that property)
-        namespace = Nuget::FileParser::PropertyValueFinder
-        dependency.requirements.none? do |req|
-          req.fetch(:requirement)&.match?(namespace::PROPERTY_REGEX)
-        end
+        update_analysis.dependency_analysis.can_update
       end
 
       private
 
-      def preferred_resolvable_version_details
-        # If this dependency is vulnerable, prefer trying to update to the
-        # lowest_resolvable_security_fix_version. Otherwise update all the way
-        # to the latest_resolvable_version.
-        return lowest_security_fix_version_details if vulnerable?
-
-        latest_version_details
+      sig { returns(String) }
+      def job_file_path
+        ENV.fetch("DEPENDABOT_JOB_PATH")
       end
 
-      def latest_version_resolvable_with_full_unlock?
-        # We always want a full unlock since any package update could update peer dependencies as well.
-        return true unless version_comes_from_multi_dependency_property?
-
-        property_updater.update_possible?
+      sig { returns(AnalysisJsonReader) }
+      def update_analysis
+        @update_analysis ||= T.let(request_analysis, T.nilable(AnalysisJsonReader))
       end
 
-      def updated_dependencies_after_full_unlock
-        return property_updater.updated_dependencies if version_comes_from_multi_dependency_property?
-
-        puts "Finding updated dependencies for #{dependency.name}."
-
-        updated_dependency = Dependency.new(
-          name: dependency.name,
-          version: latest_version&.to_s,
-          requirements: updated_requirements,
-          previous_version: dependency.version,
-          previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
-        )
-        updated_dependencies = [updated_dependency]
-        updated_dependencies += DependencyFinder.new(
-          dependency: updated_dependency,
-          dependency_files: dependency_files,
-          credentials: credentials
-        ).updated_peer_dependencies
-        updated_dependencies
+      sig { returns(String) }
+      def dependency_file_path
+        d = File.join(Dir.tmpdir, "dependency")
+        FileUtils.mkdir_p(d)
+        File.join(d, "#{dependency.name}.json")
       end
 
-      def preferred_version_details
-        return lowest_security_fix_version_details if vulnerable?
-
-        latest_version_details
-      end
-
-      def latest_version_details
-        @latest_version_details ||= version_finder.latest_version_details
-      end
-
-      def lowest_security_fix_version_details
-        @lowest_security_fix_version_details ||=
-          version_finder.lowest_security_fix_version_details
-      end
-
-      def version_finder
-        @version_finder ||=
-          VersionFinder.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: @raise_on_ignored,
-            security_advisories: security_advisories
+      sig { returns(T::Array[String]) }
+      def dependency_file_paths
+        dependency_files.map do |file|
+          DiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: file
           )
-      end
-
-      def property_updater
-        @property_updater ||=
-          PropertyUpdater.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            target_version_details: latest_version_details,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: @raise_on_ignored
-          )
-      end
-
-      def version_comes_from_multi_dependency_property?
-        declarations_using_a_property.any? do |requirement|
-          property_name = requirement.fetch(:metadata).fetch(:property_name)
-
-          all_property_based_dependencies.any? do |dep|
-            next false if dep.name == dependency.name
-
-            dep.requirements.any? do |req|
-              req.dig(:metadata, :property_name) == property_name
-            end
-          end
         end
       end
 
-      def declarations_using_a_property
-        @declarations_using_a_property ||=
-          dependency.requirements
-                    .select { |req| req.dig(:metadata, :property_name) }
+      sig { returns(AnalysisJsonReader) }
+      def request_analysis
+        discovery_file_path = DiscoveryJsonReader.get_discovery_json_path_for_dependency_file_paths(
+          dependency_file_paths
+        )
+        analysis_folder_path = AnalysisJsonReader.temp_directory
+
+        write_dependency_info
+
+        NativeHelpers.run_nuget_analyze_tool(job_path: job_file_path,
+                                             repo_root: T.must(repo_contents_path),
+                                             discovery_file_path: discovery_file_path,
+                                             dependency_file_path: dependency_file_path,
+                                             analysis_folder_path: analysis_folder_path,
+                                             credentials: credentials)
+
+        analysis_json = AnalysisJsonReader.analysis_json(dependency_name: dependency.name)
+
+        AnalysisJsonReader.new(analysis_json: T.must(analysis_json))
       end
 
-      def all_property_based_dependencies
-        @all_property_based_dependencies ||=
-          Nuget::FileParser.new(
-            dependency_files: dependency_files,
-            source: nil
-          ).parse.select do |dep|
-            dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+      sig { void }
+      def write_dependency_info
+        dependency_info = {
+          Name: dependency.name,
+          Version: dependency.version.to_s,
+          IsVulnerable: vulnerable?,
+          IgnoredVersions: ignored_versions,
+          Vulnerabilities: security_advisories.map do |vulnerability|
+            {
+              DependencyName: vulnerability.dependency_name,
+              PackageManager: vulnerability.package_manager,
+              VulnerableVersions: vulnerability.vulnerable_versions.map(&:to_s),
+              SafeVersions: vulnerability.safe_versions.map(&:to_s)
+            }
           end
+        }.to_json
+        dependency_directory = File.dirname(dependency_file_path)
+
+        begin
+          Dir.mkdir(dependency_directory)
+        rescue StandardError
+          nil?
+        end
+
+        Dependabot.logger.info("Writing dependency info: #{dependency_info}")
+        File.write(dependency_file_path, dependency_info)
+      end
+
+      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+      def discovered_dependencies
+        DiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).dependency_set
+      end
+
+      sig { override.returns(T::Boolean) }
+      def latest_version_resolvable_with_full_unlock?
+        # We always want a full unlock since any package update could update peer dependencies as well.
+        true
+      end
+
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
+      def updated_dependencies_after_full_unlock
+        dependencies = discovered_dependencies.dependencies
+        updated_dependency_details.filter_map do |dependency_details|
+          dep = dependencies.find { |d| d.name.casecmp(dependency_details.name)&.zero? }
+          next unless dep
+
+          metadata = {}
+          # For peer dependencies, instruct updater to not directly update this dependency
+          metadata = { information_only: true } unless dependency.name.casecmp(dependency_details.name)&.zero?
+
+          # rebuild the new requirements with the updated dependency details
+          updated_reqs = dep.requirements.map do |r|
+            r = r.clone
+            r[:requirement] = dependency_details.version
+            r[:source] = {
+              type: "nuget_repo",
+              source_url: dependency_details.info_url
+            }
+            r
+          end
+
+          Dependency.new(
+            name: dep.name,
+            version: dependency_details.version,
+            requirements: updated_reqs,
+            previous_version: dep.version,
+            previous_requirements: dep.requirements,
+            package_manager: dep.package_manager,
+            metadata: metadata
+          )
+        end
+      end
+
+      sig { returns(T::Array[Dependabot::Nuget::DependencyDetails]) }
+      def updated_dependency_details
+        @updated_dependency_details ||= T.let(update_analysis.dependency_analysis.updated_dependencies,
+                                              T.nilable(T::Array[Dependabot::Nuget::DependencyDetails]))
+      end
+
+      sig { returns(T::Boolean) }
+      def version_comes_from_multi_dependency_property?
+        update_analysis.dependency_analysis.version_comes_from_multi_dependency_property
       end
     end
   end

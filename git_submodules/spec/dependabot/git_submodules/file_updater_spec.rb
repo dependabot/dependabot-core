@@ -8,34 +8,6 @@ require "dependabot/git_submodules/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::GitSubmodules::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: [gitmodules, submodule],
-      dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
-    )
-  end
-  let(:gitmodules) do
-    Dependabot::DependencyFile.new(
-      content: fixture("gitmodules", ".gitmodules"),
-      name: ".gitmodules"
-    )
-  end
-  let(:submodule) do
-    Dependabot::DependencyFile.new(
-      content: "sha1",
-      name: "manifesto",
-      type: "submodule"
-    )
-  end
-
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "manifesto",
@@ -65,6 +37,56 @@ RSpec.describe Dependabot::GitSubmodules::FileUpdater do
       }],
       package_manager: "submodules"
     )
+  end
+  let(:submodule) do
+    Dependabot::DependencyFile.new(
+      content: "sha1",
+      name: "manifesto",
+      type: "submodule"
+    )
+  end
+  let(:gitmodules) do
+    Dependabot::DependencyFile.new(
+      content: fixture("gitmodules", ".gitmodules"),
+      name: ".gitmodules"
+    )
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: [gitmodules, submodule],
+      dependencies: [dependency],
+      credentials: [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          ".gitmodules",
+          "submodule/.git",
+          ".git/modules/submodule/config",
+          ".git/modules/another/config"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files" do

@@ -5,13 +5,14 @@ require "excon"
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/errors"
+require "dependabot/python/name_normaliser"
+require "dependabot/python/requirement_parser"
+require "dependabot/python/requirement"
+require "dependabot/registry_client"
+require "dependabot/requirements_update_strategy"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/registry_client"
-require "dependabot/errors"
-require "dependabot/python/requirement"
-require "dependabot/python/requirement_parser"
-require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -80,15 +81,15 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        requirements_update_strategy != :lockfile_only
+        !requirements_update_strategy.lockfile_only?
       end
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, check if this is a library or not
-        library? ? :widen_ranges : :bump_versions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
       private
@@ -112,6 +113,10 @@ module Dependabot
       end
 
       def resolver
+        if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
+          Dependabot.logger.info("Python package resolver : #{resolver_type}")
+        end
+
         case resolver_type
         when :pip_compile then pip_compile_version_resolver
         when :pipenv then pipenv_version_resolver
@@ -232,9 +237,9 @@ module Dependabot
           requirements.filter_map { |r| r[:requirement] }
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX) }
-                      .select { |version| Gem::Version.correct?(version) }
-                      .max_by { |version| Gem::Version.new(version) }
+                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
+                      .select { |version| Python::Version.correct?(version) }
+                      .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end
@@ -260,6 +265,8 @@ module Dependabot
 
       def library?
         return false unless updating_pyproject?
+
+        return false if library_details["name"].nil?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
@@ -322,7 +329,7 @@ module Dependabot
       end
 
       def library_details
-        @library_details ||= poetry_details || standard_details
+        @library_details ||= poetry_details || standard_details || build_system_details
       end
 
       def poetry_details
@@ -331,6 +338,10 @@ module Dependabot
 
       def standard_details
         @standard_details ||= toml_content["project"]
+      end
+
+      def build_system_details
+        @build_system_details ||= toml_content["build-system"]
       end
 
       def toml_content

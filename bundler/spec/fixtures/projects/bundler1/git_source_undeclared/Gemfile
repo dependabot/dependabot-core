@@ -1,7 +1,0 @@
-source "https://rubygems.org"
-
-git "https://github.com/dependabot-fixtures/kaminari" do
-  gem "kaminari-core"
-end
-
-gem 'kaminari-actionview'

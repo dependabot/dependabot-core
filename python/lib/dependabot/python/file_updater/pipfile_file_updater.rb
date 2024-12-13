@@ -21,7 +21,10 @@ module Dependabot
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
-        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:)
           @dependencies = dependencies
@@ -130,6 +133,8 @@ module Dependabot
           content = updated_pipfile_content
           content = add_private_sources(content)
           content = update_python_requirement(content)
+          content = update_ssl_requirement(content, updated_pipfile_content)
+
           content
         end
 
@@ -137,6 +142,12 @@ module Dependabot
           PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_python_requirement(language_version_manager.python_major_minor)
+        end
+
+        def update_ssl_requirement(pipfile_content, parsed_file)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_ssl_requirement(parsed_file)
         end
 
         def add_private_sources(pipfile_content)

@@ -39,9 +39,25 @@ module Dependabot
           TomlRB.dump(pipfile_object)
         end
 
+        def update_ssl_requirement(parsed_file)
+          pipfile_object = TomlRB.parse(pipfile_content)
+          parsed_object = TomlRB.parse(parsed_file)
+
+          # we parse the verify_ssl value from manifest if it exists
+          verify_ssl = parsed_object["source"].map { |x| x["verify_ssl"] }.first
+
+          # provide a default "true" value to file generator in case no value is provided in manifest file
+          pipfile_object["source"].each do |key|
+            key["verify_ssl"] = verify_ssl.nil? ? true : verify_ssl
+          end
+
+          TomlRB.dump(pipfile_object)
+        end
+
         private
 
-        attr_reader :pipfile_content, :lockfile
+        attr_reader :pipfile_content
+        attr_reader :lockfile
 
         def pipfile_sources
           @pipfile_sources ||= TomlRB.parse(pipfile_content).fetch("source", [])
@@ -52,7 +68,7 @@ module Dependabot
             base_url = source["url"].sub(/\${.*}@/, "")
 
             source_cred = credentials
-                          .select { |cred| cred["type"] == "python_index" }
+                          .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
                           .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?

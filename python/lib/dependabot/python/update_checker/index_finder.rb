@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/python/update_checker"
@@ -40,7 +40,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def main_index_url
           url =
@@ -50,8 +51,6 @@ module Dependabot
             pip_conf_index_urls[:main] ||
             pyproject_index_urls[:main] ||
             PYPI_BASE_URL
-
-          return unless url
 
           clean_check_and_remove_environment_variables(url)
         end
@@ -146,13 +145,13 @@ module Dependabot
           index_url_creds = credentials
                             .select { |cred| cred["type"] == "python_index" }
 
-          if (main_cred = index_url_creds.find { |cred| cred["replaces-base"] })
+          if (main_cred = index_url_creds.find(&:replaces_base?))
             urls[:main] = AuthedUrlBuilder.authed_url(credential: main_cred)
           end
 
           urls[:extra] =
             index_url_creds
-            .reject { |cred| cred["replaces-base"] }
+            .reject(&:replaces_base?)
             .map { |cred| AuthedUrlBuilder.authed_url(credential: cred) }
 
           urls

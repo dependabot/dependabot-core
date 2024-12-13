@@ -3,18 +3,20 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/update_checker/force_updater"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stubbing rubygems compact index"
 
   let(:updater) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      target_version: target_version,
+      target_version: Gem::Version.new(target_version),
       requirements_update_strategy: update_strategy,
       credentials: [{
         "type" => "git_source",
@@ -38,7 +40,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
   let(:dependency_name) { "rspec-mocks" }
   let(:current_version) { "3.5.0" }
   let(:target_version) { "3.6.0" }
-  let(:update_strategy) { :bump_versions }
+  let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:requirements) do
     [{
       file: "Gemfile",
@@ -307,7 +309,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       end
     end
 
-    context "when peer dependencies in the Gemfile shouldn't update together, because one of them would be dowgraded" do
+    context "when peer dependencies in the Gemfile shouldn't update together, since one of them would be downgraded" do
       let(:dependency_files) { bundler_project_dependency_files("no_downgrades") }
       let(:target_version) { "7.1.1" }
       let(:dependency_name) { "rails" }
@@ -322,6 +324,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
 
       it "raises a resolvability error" do
         pending "dependency updates probably broke this test, need a more robust one!"
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when lockfile_only strategy is used and manifest would need updates" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+      let(:dependency_files) { bundler_project_dependency_files("lockfile_only_and_forced_updates") }
+      let(:target_version) { "4.0.0.beta7" }
+      let(:dependency_name) { "activeadmin" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "4.0.0.beta6",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "raises a resolvability error" do
         expect { updater.updated_dependencies }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
       end

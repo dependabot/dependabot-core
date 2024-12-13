@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_updater/azure"
 
@@ -36,12 +37,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
   let(:temp_branch) { source_branch + "-temp" }
   let(:path) { "files/are/here" }
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "dev.azure.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
 
   let(:gemfile) do
@@ -110,7 +111,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, branch_update_url)
+          .not_to have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do
@@ -124,7 +125,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       it "doesn't update source branch head commit in AzureDevOps" do
         updater.update
         expect(WebMock)
-          .to_not have_requested(:post, branch_update_url)
+          .not_to have_requested(:post, branch_update_url)
       end
 
       it "returns nil" do
@@ -193,7 +194,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
         { email: "support@dependabot.com", name: "dependabot" }
       end
 
-      it "includes the author details when commiting on the temp branch" do
+      it "includes the author details when committing on the temp branch" do
         updater.update
 
         expect(WebMock)

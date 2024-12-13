@@ -6,8 +6,20 @@ require "dependabot/gradle/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::Gradle::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -15,9 +27,11 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       directory: directory
     )
   end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
+
+  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
+
   def stub_content_request(path, fixture)
     stub_request(:get, File.join(url, path))
       .with(headers: { "Authorization" => "token token" })
@@ -27,25 +41,12 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         headers: { "content-type" => "application/json" }
       )
   end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
 
   def stub_no_content_request(path)
     stub_request(:get, File.join(url, path))
       .with(headers: { "Authorization" => "token token" })
       .to_return(status: 404)
   end
-
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
   context "with a basic buildfile" do
     before do
@@ -100,7 +101,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "whith versions catalog" do
+      context "with versions catalog" do
         before do
           stub_content_request("gradle?ref=sha", "content_gradle_toml.json")
           stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
@@ -121,7 +122,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
         end
 
-        context "implicitly included" do
+        context "when the buildSrc is implicitly included" do
           before do
             stub_content_request("?ref=sha", "contents_java_with_buildsrc.json")
           end
@@ -144,7 +145,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           end
         end
 
-        context "explicitly included" do
+        context "when the buildSrc is explicitly included" do
           before do
             stub_content_request("?ref=sha", "contents_java_with_buildsrc_and_settings.json")
             stub_content_request("settings.gradle?ref=sha", "contents_java_settings_explicit_buildsrc.json")
@@ -252,7 +253,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "containing a script plugin" do
+      context "when a script plugin is present" do
         before do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
@@ -277,7 +278,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
 
-    context "only a settings.gradle" do
+    context "when only a settings.gradle is present" do
       before do
         stub_content_request("?ref=sha", "contents_java_only_settings.json")
         stub_content_request("app?ref=sha", "contents_java_subproject.json")
@@ -361,7 +362,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
 
-    context "that can't be found" do
+    context "when the content can't be found" do
       before do
         stub_content_request("?ref=sha", "contents_java.json")
         stub_request(
@@ -395,7 +396,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     it "raises dependency file not found" do
       expect { file_fetcher_instance.files }.to raise_error do |error|
         expect(error).to be_a(Dependabot::DependencyFileNotFound)
-        expect(error.file_path).to eq("/build.gradle(.kts)?")
       end
     end
   end

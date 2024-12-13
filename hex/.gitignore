@@ -6,4 +6,3 @@
 /helpers/deps/
 /helpers/install-dir
 /dependabot-*.gem
-Gemfile.lock

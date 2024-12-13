@@ -46,7 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:milestone) { nil }
   let(:author_details) { nil }
   let(:signature_key) { nil }
-  let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump") }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bump", branch: "main") }
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
   let(:provider_metadata) { nil }
@@ -69,14 +69,12 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:dummy_message_builder) do
     instance_double(described_class::MessageBuilder)
   end
+
   before do
     allow(described_class::MessageBuilder)
       .to receive(:new).once.and_return(dummy_message_builder)
-    allow(dummy_message_builder)
-      .to receive(:commit_message)
-      .and_return("Commit msg")
-    allow(dummy_message_builder).to receive(:pr_name).and_return("PR name")
-    allow(dummy_message_builder).to receive(:pr_message).and_return("PR msg")
+    allow(dummy_message_builder).to receive_messages(commit_message: "Commit msg", pr_name: "PR name",
+                                                     pr_message: "PR msg")
   end
 
   describe "#create" do
@@ -146,7 +144,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             creator.create
           end
 
-          context "one of which has a previous version, the other not" do
+          context "when one has a previous version, the other does not" do
             let(:dependencies) { [dependency, dependency_with_lock] }
             let(:dependency_with_lock) do
               Dependabot::Dependency.new(
@@ -181,7 +179,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a GitHub source" do
-      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Github) }
 
       it "delegates to PullRequestCreator::Github with correct params" do
@@ -189,7 +187,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           .to receive(:new)
           .with(
             source: source,
-            branch_name: "dependabot/bundler/business-1.5.0",
+            branch_name: "dependabot/bundler/main/business-1.5.0",
             base_commit: base_commit,
             credentials: credentials,
             files: files,
@@ -210,8 +208,23 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
     end
 
+    context "with a GitHub source and no target branch" do
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
+
+      it "delegates to PullRequestCreator::Github with a branch name that does not include any branch" do
+        expect(described_class::Github)
+          .to receive(:new)
+          .with(
+            a_hash_including(branch_name: "dependabot/bundler/business-1.5.0")
+          ).and_return(dummy_creator)
+        expect(dummy_creator).to receive(:create)
+        creator.create
+      end
+    end
+
     context "with a GitLab source" do
-      let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
+      let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }
       let(:provider_metadata) { { target_project_id: 1 } }
 
@@ -220,7 +233,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           .to receive(:new)
           .with(
             source: source,
-            branch_name: "dependabot/bundler/business-1.5.0",
+            branch_name: "dependabot/bundler/main/business-1.5.0",
             base_commit: base_commit,
             credentials: credentials,
             files: files,
@@ -240,7 +253,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a Bitbucket source" do
-      let(:source) { Dependabot::Source.new(provider: "bitbucket", repo: "gc/bp") }
+      let(:source) { Dependabot::Source.new(provider: "bitbucket", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Bitbucket) }
       let(:provider_metadata) { { work_item: 123 } }
 
@@ -249,7 +262,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           .to receive(:new)
           .with(
             source: source,
-            branch_name: "dependabot/bundler/business-1.5.0",
+            branch_name: "dependabot/bundler/main/business-1.5.0",
             base_commit: base_commit,
             credentials: credentials,
             files: files,
@@ -266,7 +279,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with an Azure source" do
-      let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
+      let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Azure) }
       let(:provider_metadata) { { work_item: 123 } }
 
@@ -275,7 +288,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           .to receive(:new)
           .with(
             source: source,
-            branch_name: "dependabot/bundler/business-1.5.0",
+            branch_name: "dependabot/bundler/main/business-1.5.0",
             base_commit: base_commit,
             credentials: credentials,
             files: files,
@@ -322,7 +335,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           commit_message: commit_message
         )
       end
-      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
       let(:dummy_creator) { instance_double(described_class::Github) }
 
       %i(pr_name pr_message commit_message).each do |field|
@@ -336,7 +349,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           .to receive(:new)
           .with(
             source: source,
-            branch_name: "dependabot/bundler/business-1.5.0",
+            branch_name: "dependabot/bundler/main/business-1.5.0",
             base_commit: base_commit,
             credentials: credentials,
             files: files,
@@ -358,10 +371,6 @@ RSpec.describe Dependabot::PullRequestCreator do
     end
 
     context "with a dependency group" do
-      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
-      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp") }
-      let(:dummy_creator) { instance_double(described_class::Github) }
-
       subject(:creator_with_group) do
         described_class.new(
           source: source,
@@ -380,12 +389,16 @@ RSpec.describe Dependabot::PullRequestCreator do
         )
       end
 
+      let(:dependency_group) { Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] }) }
+      let(:source) { Dependabot::Source.new(provider: "github", repo: "gc/bp", branch: "main") }
+      let(:dummy_creator) { instance_double(described_class::Github) }
+
       it "delegates to PullRequestCreator::Github with correct params" do
         expect(described_class::Github)
           .to receive(:new)
           .with(
             source: source,
-            branch_name: start_with("dependabot/bundler/all-the-things-"),
+            branch_name: start_with("dependabot/bundler/main/all-the-things-"),
             base_commit: base_commit,
             credentials: credentials,
             files: files,

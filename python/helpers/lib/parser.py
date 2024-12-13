@@ -4,6 +4,7 @@ import json
 import os.path
 import re
 
+import configparser
 import setuptools
 import pip._internal.req.req_file
 from pip._internal.network.session import PipSession
@@ -13,6 +14,8 @@ from pip._internal.req.constructors import (
 )
 
 from packaging.requirements import InvalidRequirement, Requirement
+# TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop
+# support for Python 3.10.
 import toml
 
 # Inspired by pips internal check:
@@ -21,7 +24,7 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    project_toml = toml.load(pyproject_path)['project']
+    project_toml = toml.load(pyproject_path)
 
     def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
         requirement_packages = []
@@ -51,26 +54,36 @@ def parse_pep621_dependencies(pyproject_path):
 
     dependencies = []
 
-    if 'dependencies' in project_toml:
-        dependencies_toml = project_toml['dependencies']
+    if 'project' in project_toml:
+        project_section = project_toml['project']
 
-        runtime_dependencies = parse_toml_section_pep621_dependencies(
-            pyproject_path,
-            dependencies_toml
-        )
-
-        dependencies.extend(runtime_dependencies)
-
-    if 'optional-dependencies' in project_toml:
-        optional_dependencies_toml = project_toml['optional-dependencies']
-
-        for group in optional_dependencies_toml:
-            group_dependencies = parse_toml_section_pep621_dependencies(
+        if 'dependencies' in project_section:
+            dependencies_toml = project_section['dependencies']
+            runtime_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,
-                optional_dependencies_toml[group]
+                dependencies_toml
             )
+            dependencies.extend(runtime_dependencies)
 
-            dependencies.extend(group_dependencies)
+        if 'optional-dependencies' in project_section:
+            optional_dependencies_toml = project_section[
+                'optional-dependencies'
+            ]
+            for group in optional_dependencies_toml:
+                group_dependencies = parse_toml_section_pep621_dependencies(
+                    pyproject_path,
+                    optional_dependencies_toml[group]
+                )
+                dependencies.extend(group_dependencies)
+
+    if 'build-system' in project_toml:
+        build_system_section = project_toml['build-system']
+        if 'requires' in build_system_section:
+            build_system_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                build_system_section['requires']
+            )
+            dependencies.extend(build_system_dependencies)
 
     return json.dumps({"result": dependencies})
 
@@ -224,23 +237,31 @@ def parse_setup(directory):
 
     if os.path.isfile(setup_cfg_path):
         try:
-            config = setuptools.config.read_configuration(setup_cfg_path)
+            config = configparser.ConfigParser()
+            config.read(setup_cfg_path)
 
             for req_type in [
                 "setup_requires",
                 "install_requires",
                 "tests_require",
             ]:
-                requires = config.get("options", {}).get(req_type, [])
+                requires = config.get(
+                    'options',
+                    req_type, fallback='').splitlines()
+                requires = [req for req in requires if req.strip()]
                 parse_requirements(requires, req_type, setup_cfg)
 
-            extras_require = config.get("options", {}).get(
-                "extras_require", {}
-            )
-            for key, value in extras_require.items():
-                parse_requirements(
-                    value, "extras_require:{}".format(key), setup_cfg
-                )
+            if config.has_section('options.extras_require'):
+                extras_require = config._sections['options.extras_require']
+                for key, value in extras_require.items():
+                    requires = value.splitlines()
+                    requires = [req for req in requires if req.strip()]
+                    parse_requirements(
+                        requires,
+                        f"extras_require:{key}",
+                        setup_cfg
+                    )
+
         except Exception as e:
             print(json.dumps({"error": repr(e)}))
             exit(1)

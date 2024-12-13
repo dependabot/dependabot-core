@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "excon"
@@ -61,7 +61,11 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file, :yarnrc_yml_file
+        attr_reader :dependency
+        attr_reader :credentials
+        attr_reader :npmrc_file
+        attr_reader :yarnrc_file
+        attr_reader :yarnrc_yml_file
 
         def explicit_registry_from_rc(dependency_name)
           if dependency_name.start_with?("@") && dependency_name.include?("/")
@@ -86,6 +90,8 @@ module Dependabot
                    Excon::Error::Socket,
                    JSON::ParserError
               nil
+            rescue URI::InvalidURIError => e
+              raise DependencyFileNotResolvable, e.message
             end&.fetch("registry")
 
           @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
@@ -156,7 +162,7 @@ module Dependabot
             begin
               registries = []
               registries += credentials
-                            .select { |cred| cred["type"] == "npm_registry" }
+                            .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
               registries += yarnrc_registries
@@ -170,14 +176,14 @@ module Dependabot
 
           registries = []
           npmrc_file.content.scan(NPM_AUTH_TOKEN_REGEX) do
-            next if Regexp.last_match[:registry].include?("${")
+            next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            registry = Regexp.last_match[:registry]
-            token = Regexp.last_match[:token]&.strip
+            registry = T.must(Regexp.last_match)[:registry]
+            token = T.must(Regexp.last_match)[:token]&.strip
 
             registries << {
               "type" => "npm_registry",
-              "registry" => registry.gsub(/\s+/, "%20"),
+              "registry" => registry&.gsub(/\s+/, "%20"),
               "token" => token
             }
           end
@@ -220,7 +226,7 @@ module Dependabot
             return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
           end
 
-          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred["replaces-base"] == true }
+          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
             registry = replaces_base["registry"]
             registry = "https://#{registry}" unless registry.start_with?("http")
@@ -256,9 +262,9 @@ module Dependabot
           registries = []
 
           file.content.scan(syntax) do
-            next if Regexp.last_match[:registry].include?("${")
+            next if Regexp.last_match&.[](:registry)&.include?("${")
 
-            url = Regexp.last_match[:registry].strip
+            url = T.must(T.must(Regexp.last_match)[:registry]).strip
             registry = normalize_configured_registry(url)
             registries << {
               "type" => "npm_registry",
@@ -273,9 +279,9 @@ module Dependabot
 
         def scoped_rc_registry(file, syntax:, scope:)
           file&.content.to_s.scan(syntax) do
-            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+            next if Regexp.last_match&.[](:registry)&.include?("${") || Regexp.last_match&.[](:scope) != scope
 
-            return Regexp.last_match[:registry].strip
+            return T.must(T.must(Regexp.last_match)[:registry]).strip
           end
 
           nil

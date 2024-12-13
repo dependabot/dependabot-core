@@ -1,6 +1,7 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
 require "toml-rb"
 
 require "dependabot/dependency"
@@ -8,6 +9,8 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/gradle/version"
+require "dependabot/gradle/language"
+require "dependabot/gradle/package_manager"
 
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
@@ -18,6 +21,8 @@ require "dependabot/gradle/version"
 module Dependabot
   module Gradle
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
+
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
@@ -68,7 +73,34 @@ module Dependabot
                   .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= T.let(
+          PackageManager.new("NOT-AVAILABLE"),
+          T.nilable(Dependabot::Gradle::PackageManager)
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        @language ||= T.let(begin
+          Language.new("NOT-AVAILABLE")
+        end, T.nilable(Dependabot::Gradle::Language))
+      end
 
       def version_catalog_dependencies(toml_file)
         dependency_set = DependencySet.new
@@ -148,10 +180,10 @@ module Dependabot
         dependency_set = DependencySet.new
 
         prepared_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
-          declaration = Regexp.last_match.named_captures.fetch("declaration")
+          declaration = T.must(Regexp.last_match).named_captures.fetch("declaration")
 
-          group, name, version = declaration.split(":")
-          version, _packaging_type = version.split("@")
+          group, name, version = T.must(declaration).split(":")
+          version, _packaging_type = T.must(version).split("@")
           details = { group: group, name: name, version: version }
 
           dep = dependency_from(details_hash: details, buildfile: buildfile)
@@ -185,7 +217,7 @@ module Dependabot
         dependency_set_blocks = []
 
         prepared_content(buildfile).scan(DEPENDENCY_SET_DECLARATION_REGEX) do
-          mch = Regexp.last_match
+          mch = T.must(Regexp.last_match)
           dependency_set_blocks <<
             {
               arguments: mch.named_captures.fetch("arguments"),
@@ -218,7 +250,7 @@ module Dependabot
         plugin_blocks = []
 
         prepared_content(buildfile).scan(PLUGIN_BLOCK_DECLARATION_REGEX) do
-          mch = Regexp.last_match
+          mch = T.must(Regexp.last_match)
           plugin_blocks <<
             mch.post_match[0..closing_bracket_index(mch.post_match)]
         end
@@ -355,7 +387,7 @@ module Dependabot
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
         prepared_content.dup.scan(/dependencyVerification\s*{/) do
-          mtch = Regexp.last_match
+          mtch = T.must(Regexp.last_match)
           block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
           prepared_content.gsub!(block, "")
         end

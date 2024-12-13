@@ -1,0 +1,73 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+# It fails to update "dont-update-any-files"
+stdout -count=1 record_update_job_error
+
+# It closes the previous PR since it no longer includes "dont-update-any-files"
+stdout -count=1 close_pull_request
+
+# It creates a new PR with the updated "dependency-a"
+stdout -count=1 create_pull_request
+
+stderr 'Error processing dont-update-any-files'
+pr-created expected.json
+
+# Testing what happens when a rebase job fails to update one dependency.
+# See the silent ecosystem code for special handling of a dependency named "dont-update-any-files".
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3"},
+  "dont-update-any-files": {"version": "1.0.0"}
+}
+
+-- expected.json --
+{
+  "dependency-a": { "version": "1.3.0"},
+  "dont-update-any-files": {"version": "1.0.0"}
+}
+
+-- dont-update-any-files --
+{
+  "versions": [
+    "1.0.0",
+    "1.0.1"
+  ]
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.3.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: all-group
+      rules:
+        patterns:
+         - "*"
+  dependencies:
+    - dependency-a
+    - dont-update-any-files
+  updating-a-pull-request: true
+  dependency-group-to-refresh: all-group
+  existing-group-pull-requests:
+    - dependency-group-name: all-group
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.0
+          directory: "/"
+        - dependency-name: dont-update-any-files
+          dependency-version: 0.9.0
+          directory: "/"

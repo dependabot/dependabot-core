@@ -23,6 +23,9 @@ function set_tag() {
       github_actions)
         TAG=github-actions
         ;;
+      dotnet_sdk)
+        TAG=dotnet-sdk
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;
@@ -41,16 +44,24 @@ function docker_build() {
     export DEPENDABOT_USER_GID=1000
   fi
 
+  # Only check Docker Content Trust for the updater-core image
+  # shellcheck disable=SC2034 # Used implicitly in docker build
+  DOCKER_CONTENT_TRUST=1
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
+    --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
     --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \
     .
+
+  # We don't sign the updater image with Notary, so disable Docker Content Trust for remaining builds
+  unset DOCKER_CONTENT_TRUST
 
   export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
 

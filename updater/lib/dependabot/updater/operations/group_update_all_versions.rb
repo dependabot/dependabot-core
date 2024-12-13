@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/create_group_update_pull_request"
@@ -18,59 +18,69 @@ module Dependabot
   class Updater
     module Operations
       class GroupUpdateAllVersions
+        extend T::Sig
         include GroupUpdateCreation
 
+        sig { params(job: Dependabot::Job).returns(T::Boolean) }
         def self.applies_to?(job:)
-          return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          if Dependabot::Experiments.enabled?(:grouped_security_updates_disabled) && job.security_updates_only?
+            return false
+          end
 
-          job.dependency_groups&.any?
+          if job.security_updates_only?
+            return true if job.dependencies && T.must(job.dependencies).count > 1
+            return true if job.dependency_groups.any? { |group| group["applies-to"] == "security-updates" }
+
+            return false
+          end
+
+          true
         end
 
+        sig { returns(Symbol) }
         def self.tag_name
           :group_update_all_versions
         end
 
+        sig do
+          params(
+            service: Dependabot::Service,
+            job: Dependabot::Job,
+            dependency_snapshot: Dependabot::DependencySnapshot,
+            error_handler: Dependabot::Updater::ErrorHandler
+          ).void
+        end
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          @dependencies_handled = Set.new
+          @dependencies_handled = T.let(Set.new, T::Set[String])
         end
 
+        sig { void }
         def perform
-          if dependency_snapshot.groups.any?
-            run_grouped_dependency_updates
-          else
-            # We shouldn't have selected this operation if no groups were defined
-            # due to the rules in `::applies_to?`, but if it happens it isn't
-            # enough reasons to fail the job.
-            Dependabot.logger.warn(
-              "No dependency groups defined!"
-            )
-
-            # We should warn our exception tracker in case this represents an
-            # unexpected problem hydrating groups we have swallowed and then
-            # delegate everything to run_ungrouped_dependency_updates.
-            service.capture_exception(
-              error: DependabotError.new("Attempted a grouped update with no groups defined."),
-              job: job
-            )
-          end
-
+          run_grouped_dependency_updates if dependency_snapshot.groups.any?
           run_ungrouped_dependency_updates
         end
 
         private
 
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
+        sig { returns(Dependabot::Job) }
+        attr_reader :job
 
-        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
+        sig { returns(Dependabot::Service) }
+        attr_reader :service
+
+        sig { returns(Dependabot::DependencySnapshot) }
+        attr_reader :dependency_snapshot
+
+        sig { returns(Dependabot::Updater::ErrorHandler) }
+        attr_reader :error_handler
+
+        sig { returns(T::Array[Dependabot::DependencyGroup]) }
+        def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
@@ -82,13 +92,7 @@ module Dependabot
               Dependabot.logger.info(
                 "Deferring creation of a new pull request. The existing pull request will update in a separate job."
               )
-              # add the dependencies in the group so individual updates don't try to update them
-              dependency_snapshot.add_handled_dependencies(
-                dependencies_in_existing_pr_for_group(group).map { |d| d["dependency-name"] }
-              )
-              # also add dependencies that might be in the group, as a rebase would add them;
-              # this avoids individual PR creation that immediately is superseded by a group PR supersede
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
+              dependency_snapshot.mark_group_handled(group)
               next
             end
 
@@ -96,18 +100,14 @@ module Dependabot
           end
 
           groups_without_pr.each do |group|
-            result = run_update_for(group)
-            if result
-              # Add the actual updated dependencies to the handled list so they don't get updated individually.
-              dependency_snapshot.add_handled_dependencies(result.updated_dependencies.map(&:name))
-            else
-              # The update failed, add the suspected dependencies to the handled list so they don't update individually.
-              dependency_snapshot.add_handled_dependencies(group.dependencies.map(&:name))
-            end
+            dependency_change = run_grouped_update_for(group)
+            # The update failed, add the suspected dependencies to the handled list so they don't update individually.
+            dependency_snapshot.mark_group_handled(group) if dependency_change.nil?
           end
         end
 
-        def run_update_for(group)
+        sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::DependencyChange)) }
+        def run_grouped_update_for(group)
           Dependabot::Updater::Operations::CreateGroupUpdatePullRequest.new(
             service: service,
             job: job,
@@ -117,15 +117,34 @@ module Dependabot
           ).perform
         end
 
+        sig { void }
         def run_ungrouped_dependency_updates
-          return if dependency_snapshot.ungrouped_dependencies.empty?
+          directories.each do |directory|
+            job.source.directory = directory
+            dependency_snapshot.current_directory = directory
+            next unless dependency_snapshot.dependencies.any?
 
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+            if dependency_snapshot.ungrouped_dependencies.empty?
+              Dependabot.logger.info("Found no dependencies to update after filtering allowed updates in #{directory}")
+              next
+            end
+
+            Dependabot::Updater::Operations::UpdateAllVersions.new(
+              service: service,
+              job: job,
+              dependency_snapshot: dependency_snapshot,
+              error_handler: error_handler
+            ).perform
+          end
+        end
+
+        sig { returns(T::Array[String]) }
+        def directories
+          if job.source.directories.nil?
+            [T.must(job.source.directory)]
+          else
+            T.must(job.source.directories)
+          end
         end
       end
     end

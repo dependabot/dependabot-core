@@ -8,8 +8,20 @@ require "dependabot/python/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Python::MetadataFinder do
-  it_behaves_like "a dependency metadata finder"
+  subject(:finder) do
+    described_class.new(dependency: dependency, credentials: credentials)
+  end
 
+  let(:version) { "1.0" }
+  let(:dependency_name) { "luigi" }
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    })]
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -23,19 +35,6 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       package_manager: "pip"
     )
   end
-  subject(:finder) do
-    described_class.new(dependency: dependency, credentials: credentials)
-  end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_name) { "luigi" }
-  let(:version) { "1.0" }
 
   before do
     stub_request(:get, "https://example.com/status").to_return(
@@ -47,8 +46,11 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     stub_request(:get, "https://pypi.org/status").to_return(status: 404)
   end
 
+  it_behaves_like "a dependency metadata finder"
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do
@@ -68,16 +70,18 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "with a private index" do
       let(:credentials) do
-        [{
+        [Dependabot::Credential.new({
           "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "token"
-        }, {
+        }), Dependabot::Credential.new({
           "type" => "python_index",
           "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-        }]
+        })]
       end
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
+
       before do
         private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
         stub_request(:get, pypi_url).to_return(status: 404, body: "")
@@ -85,22 +89,21 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .with(basic_auth: %w(username password))
           .to_return(status: 200, body: pypi_response)
       end
-      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
       context "with the creds passed as a token" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://pypi.posrip.com/pypi/",
             "token" => "username:password"
-          }]
+          })]
         end
 
         it { is_expected.to eq("https://github.com/spotify/luigi") }
@@ -108,15 +111,15 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       context "with the creds using an email address and basic auth" do
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "git_source",
             "host" => "github.com",
             "username" => "x-access-token",
             "password" => "token"
-          }, {
+          }), Dependabot::Credential.new({
             "type" => "python_index",
             "index-url" => "https://user@mail.co:password@pypi.posrip.com/pypi/"
-          }]
+          })]
         end
 
         before do
@@ -129,7 +132,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it { is_expected.to eq("https://github.com/spotify/luigi") }
       end
 
-      context "that isn't used" do
+      context "when isn't used" do
         before do
           private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
           stub_request(:get, private_url).to_return(status: 404, body: "")
@@ -139,7 +142,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         it { is_expected.to eq("https://github.com/spotify/luigi") }
 
-        context "because it doesn't return json" do
+        context "when it doesn't return json" do
           before do
             private_url = "https://pypi.posrip.com/pypi/#{dependency_name}/json"
             stub_request(:get, private_url)
@@ -159,7 +162,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it "doesn't call pypi" do
         source_url
-        expect(WebMock).to_not have_requested(:get, pypi_url).once
+        expect(WebMock).not_to have_requested(:get, pypi_url).once
       end
     end
 
@@ -179,7 +182,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         fixture("pypi", "pypi_response_description_source.json")
       end
 
-      context "for a different dependency" do
+      context "when dealing with a different dependency" do
         before do
           stub_request(:get, "https://github.com/benjaminp/six")
             .to_return(status: 404, body: "")
@@ -193,7 +196,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         end
       end
 
-      context "for this dependency" do
+      context "when dealing with this dependency" do
         let(:dependency_name) { "six" }
 
         it { is_expected.to eq("https://github.com/benjaminp/six") }
@@ -205,6 +208,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         context "with an unexpected name" do
           let(:dependency_name) { "python-six" }
+
           before do
             stub_request(:get, "https://github.com/benjaminp/six")
               .to_return(status: 200, body: "python-six")
@@ -236,7 +240,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           .to have_requested(:get, "http://initd.org/psycopg/").once
       end
 
-      context "and the homepage does an infinite redirect" do
+      context "when the homepage does an infinite redirect" do
         let(:redirect_url) { "http://initd.org/Psycopg/" }
 
         before do
@@ -252,7 +256,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         it { is_expected.to be_nil }
       end
 
-      context "but there are details on the home page" do
+      context "when there are details on the home page" do
         before do
           stub_request(:get, "http://initd.org/psycopg/")
             .to_return(
@@ -261,12 +265,14 @@ RSpec.describe Dependabot::Python::MetadataFinder do
             )
         end
 
-        context "for this dependency" do
+        context "when dealing with this dependency" do
           let(:dependency_name) { "psycopg2" }
+
           it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
 
           context "with an unexpected name" do
             let(:dependency_name) { "python-psycopg2" }
+
             before do
               stub_request(:get, "https://github.com/psycopg/psycopg2")
                 .to_return(status: 200, body: "python-psycopg2")
@@ -276,8 +282,9 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           end
         end
 
-        context "for another dependency" do
+        context "when dealing with another dependency" do
           let(:dependency_name) { "luigi" }
+
           before do
             stub_request(:get, "https://github.com/psycopg/psycopg2")
               .to_return(status: 200, body: "python-psycopg2")
@@ -310,10 +317,17 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       it { is_expected.to eq("https://github.com/celery/celery") }
     end
+
+    context "when the dependency source is in project_urls" do
+      let(:pypi_response) { fixture("pypi", "pypi_response_project_urls_source.json") }
+
+      it { is_expected.to eq("https://github.com/xxxxx/django-split-settings") }
+    end
   end
 
   describe "#homepage_url" do
     subject(:homepage_url) { finder.homepage_url }
+
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
 
     before do

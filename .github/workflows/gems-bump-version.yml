@@ -1,5 +1,5 @@
 name: Gems - Bump Version
-on:  # yamllint disable-line rule:truthy
+on: # yamllint disable-line rule:truthy
   schedule:
     - cron: '25 1 * * THU'
   workflow_dispatch:
@@ -19,18 +19,19 @@ jobs:
     steps:
       - name: Generate token
         id: generate_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
         with:
-          app_id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
-          private_key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
+          app-id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           token: ${{ steps.generate_token.outputs.token }}
           # Ensure we start from main in case the workflow is run from a branch
           ref: "main"
 
-      - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
+      # bump-version.rb needs bundler
+      - uses: ruby/setup-ruby@7d3497fd78c07c0d84ebafa58d8dac60cd1f0763 # v1.199.0
         with:
           # Use the version of bundler specified in `updater/Gemfile.lock`.
           # Otherwise the generated PR will change `BUNDLED WITH` in
@@ -58,7 +59,7 @@ jobs:
           # The branch name is purposefully different from the release tag to
           # avoid ambiguity when selecting git refs.
           git checkout -b "bump-to-v${{ env.NEW_VERSION }}"
-          git add common/lib/dependabot.rb updater/Gemfile.lock
+          git add common/lib/dependabot.rb updater/Gemfile.lock Gemfile.lock
           echo "Creating commit / PR linking to the releases notes URL."
           echo "This URL will 404 until the release is actually tagged, which you should do as soon as the PR is merged."
           git commit -m "v${{ env.NEW_VERSION }}" -m "Release notes: https://github.com/${{ github.repository }}/releases/tag/v${{ env.NEW_VERSION }}"

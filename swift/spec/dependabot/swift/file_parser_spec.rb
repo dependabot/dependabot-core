@@ -8,12 +8,26 @@ require "dependabot/swift/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Swift::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:parser) do
-    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
+  let(:dependencies) { parser.parse }
+  let(:package_resolved_file) do
+    Dependabot::DependencyFile.new(
+      name: "Package.resolved",
+      content: fixture("projects", project_name, "Package.resolved")
+    )
   end
-
+  let(:package_manifest_file) do
+    Dependabot::DependencyFile.new(
+      name: "Package.swift",
+      content: fixture("projects", project_name, "Package.swift")
+    )
+  end
+  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+  let(:files) do
+    [
+      package_manifest_file,
+      package_resolved_file
+    ]
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -21,31 +35,11 @@ RSpec.describe Dependabot::Swift::FileParser do
       directory: "/"
     )
   end
-
-  let(:files) do
-    [
-      package_manifest_file,
-      package_resolved_file
-    ]
+  let(:parser) do
+    described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path)
   end
 
-  let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
-
-  let(:package_manifest_file) do
-    Dependabot::DependencyFile.new(
-      name: "Package.swift",
-      content: fixture("projects", project_name, "Package.swift")
-    )
-  end
-
-  let(:package_resolved_file) do
-    Dependabot::DependencyFile.new(
-      name: "Package.resolved",
-      content: fixture("projects", project_name, "Package.resolved")
-    )
-  end
-
-  let(:dependencies) { parser.parse }
+  it_behaves_like "a dependency file parser"
 
   shared_examples_for "parse" do
     it "parses dependencies fine" do
@@ -290,5 +284,55 @@ RSpec.describe Dependabot::Swift::FileParser do
     end
 
     it_behaves_like "parse"
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:project_name) { "Example" }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "swift"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "swift"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "6.0.1.pre.dev"
+      end
+    end
+
+    describe "#package_manager_version" do
+      # If this test starts failing, the format of the output of `swing package --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:package_manager_version) { parser.send(:package_manager_version) }
+
+      it "has the correct format" do
+        expect(package_manager_version.match(/^\d+(?:\.\d+)*/)).to be_truthy
+      end
+    end
+
+    describe "#swift_version" do
+      # If this test starts failing, the format of the output of `swing --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:swift_version) { parser.send(:swift_version) }
+
+      it "has the correct format" do
+        expect(swift_version.match(/^\d+(?:\.\d+)*$/)).to be_truthy
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "swift"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "6.0.1"
+      end
+    end
   end
 end

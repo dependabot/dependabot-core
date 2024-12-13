@@ -1,4 +1,4 @@
-FROM golang:1.21.5-bookworm as go
+FROM docker.io/library/golang:1.22.5-bookworm as go
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
@@ -21,7 +21,8 @@ COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 # See https://go.dev/doc/toolchain#select
 # By specifying go1.20.10, we use 1.20.10 for any go.mod with go directive <= 1.20.
-# In the file_parser, GOTOOLCHAIN=local is set otherwise, which uses the latest version above.
+# In the file_parser, GOTOOLCHAIN=local+auto is set otherwise, which uses the latest version above
+# or downloads the correct version if it's later than the version installed.
 ENV GOTOOLCHAIN="go1.20.10"
 # This pre-installs go 1.20 so that each job doesn't have to do it.
 RUN go version

@@ -6,21 +6,6 @@ require "dependabot/github_actions/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
 RSpec.describe Dependabot::GithubActions::FileFetcher do
-  it_behaves_like "a dependency file fetcher"
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "gocardless/bump",
-      directory: directory
-    )
-  end
-  let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
-  end
-  let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -29,8 +14,23 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       "password" => "token"
     }]
   end
+  let(:url) { github_url + "repos/gocardless/bump/contents/" }
+  let(:github_url) { "https://api.github.com/" }
+  let(:directory) { "/" }
+  let(:file_fetcher_instance) do
+    described_class.new(source: source, credentials: credentials)
+  end
+  let(:source) do
+    Dependabot::Source.new(
+      provider: "github",
+      repo: "gocardless/bump",
+      directory: directory
+    )
+  end
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+  it_behaves_like "a dependency file fetcher"
 
   context "with workflow files" do
     before do
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
-    context "and an explicit directory given" do
+    context "when an explicit directory is given" do
       let(:directory) { "/.github/workflows" }
 
       it "fetches the workflow files relatively to the directory" do
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
     end
 
-    context "that has an invalid encoding" do
+    context "when it has an invalid encoding" do
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 
       it "raises a helpful error" do
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
     end
   end
 
-  context "with a repo containg only a composite action file" do
+  context "with a repo containing only a composite action file" do
     let(:composite_action_file_fixture) do
       fixture("github", "contents_githubaction_composite_file.json")
     end

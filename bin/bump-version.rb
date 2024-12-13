@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 unless %w(minor patch).include?(ARGV[0])
@@ -31,4 +31,12 @@ unless $?.success?
   puts "Failed to update `updater/Gemfile.lock`"
   exit $?.exitstatus
 end
+
+# Bump the root's Gemfile.lock with the new version
+`bundle lock`
+unless $?.success?
+  puts "Failed to update `Gemfile.lock`"
+  exit $?.exitstatus
+end
+
 puts new_version

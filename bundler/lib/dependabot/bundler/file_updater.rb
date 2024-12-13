@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -16,18 +16,17 @@ module Dependabot
 
       def self.updated_files_regex
         [
-          /^Gemfile$/,
-          /^Gemfile\.lock$/,
-          /^gems\.rb$/,
-          /^gems\.locked$/,
-          /^*\.gemspec$/
+          # Matches Gemfile, Gemfile.lock, gems.rb, gems.locked, .gemspec files, and anything in vendor directory
+          %r{^(Gemfile(\.lock)?|gems\.(rb|locked)|.*\.gemspec|vendor/.*)$},
+          # Matches the same files in any subdirectory
+          %r{^.*/(Gemfile|Gemfile\.lock|gems\.rb|gems\.locked)$}
         ]
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[Dependabot::DependencyFile])
 
         if gemfile && file_changed?(gemfile)
           updated_files <<
@@ -58,7 +57,7 @@ module Dependabot
 
         check_updated_files(updated_files)
 
-        base_dir = updated_files.first.directory
+        base_dir = T.must(updated_files.first).directory
         vendor_updater
           .updated_vendor_cache_files(base_directory: base_dir)
           .each do |file|
@@ -127,10 +126,10 @@ module Dependabot
           .reject { |f| f.name.end_with?(".gemspec") }
           .reject { |f| f.name.end_with?(".specification") }
           .reject { |f| f.name.end_with?(".lock") }
-          .reject { |f| f.name.end_with?(".ruby-version") }
           .reject { |f| f.name == "Gemfile" }
           .reject { |f| f.name == "gems.rb" }
           .reject { |f| f.name == "gems.locked" }
+          .reject(&:support_file?)
       end
 
       def updated_gemfile_content(file)

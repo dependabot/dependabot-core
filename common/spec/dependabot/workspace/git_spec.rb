@@ -8,9 +8,9 @@ require "spec_helper"
 require "dependabot/workspace/git"
 
 RSpec.describe Dependabot::Workspace::Git do
-  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
-
   subject(:workspace) { described_class.new(repo_contents_path) }
+
+  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
 
   around do |example|
     Dir.chdir(repo_contents_path) { example.run }
@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Workspace::Git do
   end
 
   describe "#change" do
-    context "on success" do
+    context "when the #change is successful" do
       it "captures the change" do
         workspace.change("timecop") do
           `echo 'gem "timecop", "~> 0.9.6", group: :test' >> Gemfile`
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Workspace::Git do
       end
     end
 
-    context "on error" do
+    context "when an error occurs" do
       it "captures the failed change attempt" do
         expect do
           workspace.change("timecop") do
@@ -114,8 +114,8 @@ RSpec.describe Dependabot::Workspace::Git do
         expect(workspace.change_attempts.first.memo).to eq("timecop")
         expect(workspace.change_attempts.first.error).not_to be_nil
         expect(workspace.change_attempts.first.error.message).to eq("uh oh")
-        expect(workspace.change_attempts.first.error?).to be_truthy
-        expect(workspace.change_attempts.first.success?).to be_falsy
+        expect(workspace.change_attempts.first).to be_error
+        expect(workspace.change_attempts.first).not_to be_success
       end
 
       context "when there are untracked/ignored files" do
@@ -210,8 +210,22 @@ RSpec.describe Dependabot::Workspace::Git do
       end
     end
 
+    context "when there are changes to ignored files" do
+      # See: common/spec/fixtures/projects/simple/.gitignore
+
+      it "returns nil and doesn't add any changes to the workspace" do
+        workspace.change { `echo "ignore me" >> ignored-file.txt` }
+        workspace.store_change("modify ignored file")
+        workspace.change { `mkdir -p ignored-dir && echo "ignore me" >> ignored-dir/file.txt` }
+        workspace.store_change("modify file in ignored directory")
+
+        expect(workspace).not_to be_changed
+        expect(workspace.changes).to be_empty
+      end
+    end
+
     context "when there are changes to store" do
-      it "captures the stores the changes correctly" do
+      it "stores the changes correctly" do
         workspace.change("timecop") do
           `echo 'gem "timecop", "~> 0.9.6", group: :test' >> Gemfile`
         end
@@ -229,8 +243,8 @@ RSpec.describe Dependabot::Workspace::Git do
         )
         expect(workspace.change_attempts.first.memo).to eq("Update timecop")
         expect(workspace.change_attempts.first.error).to be_nil
-        expect(workspace.change_attempts.first.error?).to be_falsy
-        expect(workspace.change_attempts.first.success?).to be_truthy
+        expect(workspace.change_attempts.first).not_to be_error
+        expect(workspace.change_attempts.first).to be_success
       end
     end
   end

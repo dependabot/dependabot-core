@@ -14,9 +14,9 @@ jobs:
     name: Sorbet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@7d3497fd78c07c0d84ebafa58d8dac60cd1f0763 # v1.199.0
         with:
           bundler-cache: true
 
@@ -24,17 +24,17 @@ jobs:
 
       - run: bundle exec srb tc
 
-      - run: bundle exec spoom coverage
+      - run: bundle exec spoom srb coverage
 
       - run: |
-          bundle exec spoom bump --from=false --to=true --dry
-          bundle exec spoom bump --from=true --to=strict --dry
-          bundle exec spoom bump --from=strict --to=strong --dry
+          bundle exec spoom srb bump --from=false --to=true --dry
+          bundle exec spoom srb bump --from=true --to=strict --dry
+          bundle exec spoom srb bump --from=strict --to=strong --dry
 
-      - run: bundle exec spoom coverage timeline --save
+      - run: bundle exec spoom srb coverage snapshot --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: spoom_data
           path: ./spoom_data/
@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: spoom_report
           path: ./spoom_report.html

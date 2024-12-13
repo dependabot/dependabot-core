@@ -79,28 +79,34 @@ module Dependabot
     sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
     attr_reader :previous_requirements
 
+    sig { returns(T.nilable(String)) }
+    attr_accessor :directory
+
     sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
     attr_reader :subdependency_metadata
 
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
         name: String,
-        requirements: T::Array[T::Hash[String, String]],
+        requirements: T::Array[T::Hash[T.any(Symbol, String), T.untyped]],
         package_manager: String,
         # TODO: Make version a Dependabot::Version everywhere
         version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
-        previous_requirements: T.nilable(T::Array[T::Hash[String, String]]),
-        subdependency_metadata: T.nilable(T::Array[T::Hash[String, String]]),
+        previous_requirements: T.nilable(T::Array[T::Hash[T.any(Symbol, String), T.untyped]]),
+        directory: T.nilable(String),
+        subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[String, String])
+        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
       ).void
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
-                   previous_version: nil, previous_requirements: nil,
+                   previous_version: nil, previous_requirements: nil, directory: nil,
                    subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = T.let(
@@ -110,13 +116,16 @@ module Dependabot
         end,
         T.nilable(String)
       )
-      @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, String]])
+      @version = nil if @version == ""
+      @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, T.untyped]])
       @previous_version = previous_version
+      @previous_version = nil if @previous_version == ""
       @previous_requirements = T.let(
         previous_requirements&.map { |req| symbolize_keys(req) },
         T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
       )
       @package_manager = package_manager
+      @directory = directory
       unless top_level? || subdependency_metadata == []
         @subdependency_metadata = T.let(
           subdependency_metadata&.map { |h| symbolize_keys(h) },
@@ -128,6 +137,8 @@ module Dependabot
 
       check_values
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { returns(T::Boolean) }
     def top_level?
@@ -143,7 +154,7 @@ module Dependabot
     def numeric_version
       return unless version && version_class.correct?(version)
 
-      @numeric_version ||= T.let(version_class.new(version), T.nilable(Dependabot::Version))
+      @numeric_version ||= T.let(version_class.new(T.must(version)), T.nilable(Dependabot::Version))
     end
 
     sig { returns(T::Hash[String, T.untyped]) }
@@ -154,6 +165,7 @@ module Dependabot
         "requirements" => requirements,
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
+        "directory" => directory,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
         "removed" => removed? ? true : nil
@@ -214,7 +226,7 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def humanized_version
-      return if removed?
+      return "removed" if removed?
 
       if T.must(version).match?(/^[0-9a-f]{40}/)
         return new_ref if ref_changed? && new_ref
@@ -238,6 +250,8 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def previous_ref
+      return nil if previous_requirements.nil?
+
       previous_refs = T.must(previous_requirements).filter_map do |r|
         r.dig(:source, "ref") || r.dig(:source, :ref)
       end.uniq
@@ -300,7 +314,7 @@ module Dependabot
       requirements.select { |r| requirement_class.new(r[:requirement]).specific? }
     end
 
-    sig { returns(T.class_of(Gem::Requirement)) }
+    sig { returns(T.class_of(Dependabot::Requirement)) }
     def requirement_class
       Utils.requirement_class_for_package_manager(package_manager)
     end
@@ -348,12 +362,15 @@ module Dependabot
       end
     end
 
+    sig { returns(T::Boolean) }
+    def requirements_changed?
+      (requirements - T.must(previous_requirements)).any?
+    end
+
     private
 
     sig { void }
     def check_values
-      raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
-
       check_requirement_fields
       check_subdependency_metadata
     end
@@ -391,7 +408,7 @@ module Dependabot
       end
     end
 
-    sig { params(hash: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T::Hash[T.any(Symbol, String), T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
     def symbolize_keys(hash)
       hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end

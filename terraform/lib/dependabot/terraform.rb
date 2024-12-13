@@ -19,9 +19,6 @@ require "dependabot/dependency"
 Dependabot::Dependency
   .register_production_check("terraform", ->(_) { true })
 
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("terraform")
-
 Dependabot::Dependency
   .register_display_name_builder(
     "terraform",

@@ -64,7 +64,7 @@ If you've added a new test which has the `vcr: true` metadata, you can record a 
 
 #### Updating existing fixtures
 
-If you need to upadate existing fixtures, you can use the `all` flag like so:
+If you need to update existing fixtures, you can use the `all` flag like so:
 
 ```zsh
 [dependabot-core-dev] ~/dependabot-updater $ VCR=new_episodes bundle exec rspec

@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 using Microsoft.Language.Xml;
+
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -50,7 +50,7 @@ public class ProjectBuildFileTests
         """;
 
     private static ProjectBuildFile GetBuildFile(string contents, string filename) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: $"/{filename}",
         contents: Parser.ParseText(contents));
 
@@ -59,16 +59,17 @@ public class ProjectBuildFileTests
     {
         var expectedDependencies = new List<Dependency>
         {
+            new("Microsoft.NET.Sdk", null, DependencyType.MSBuildSdk),
             new("GuiLabs.Language.Xml", "1.2.60", DependencyType.PackageReference),
             new("Microsoft.CodeAnalysis.CSharp", null, DependencyType.PackageReference),
-            new("Newtonsoft.Json", "13.0.3", DependencyType.PackageReference, IsOverride: true)
+            new("Newtonsoft.Json", "13.0.3", DependencyType.PackageReference, IsUpdate: true, IsOverride: true)
         };
 
         var buildFile = GetBuildFile(ProjectCsProj, "Project.csproj");
 
         var dependencies = buildFile.GetDependencies();
 
-        Assert.Equal(expectedDependencies, dependencies);
+        AssertEx.Equal(expectedDependencies, dependencies);
     }
 
     [Fact]
@@ -133,17 +134,26 @@ public class ProjectBuildFileTests
     }
 
     [Theory]
-    [InlineData( // no change made
-    @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>",
-    @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
+    // no change made
+    [InlineData(
+        // language=csproj
+        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>",
+        // language=csproj
+        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
     )]
-    [InlineData( // change from `/` to `\`
-    "<Project><ItemGroup><Reference><HintPath>path/to/file.dll</HintPath></Reference></ItemGroup></Project>",
-    @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
+    // change from `/` to `\`
+    [InlineData(
+        // language=csproj
+        "<Project><ItemGroup><Reference><HintPath>path/to/file.dll</HintPath></Reference></ItemGroup></Project>",
+        // language=csproj
+        @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>"
     )]
-    [InlineData( // multiple changes made
-    "<Project><ItemGroup><Reference><HintPath>path1/to1/file1.dll</HintPath></Reference><Reference><HintPath>path2/to2/file2.dll</HintPath></Reference></ItemGroup></Project>",
-    @"<Project><ItemGroup><Reference><HintPath>path1\to1\file1.dll</HintPath></Reference><Reference><HintPath>path2\to2\file2.dll</HintPath></Reference></ItemGroup></Project>"
+    // multiple changes made
+    [InlineData(
+        // language=csproj
+        "<Project><ItemGroup><Reference><HintPath>path1/to1/file1.dll</HintPath></Reference><Reference><HintPath>path2/to2/file2.dll</HintPath></Reference></ItemGroup></Project>",
+        // language=csproj
+        @"<Project><ItemGroup><Reference><HintPath>path1\to1\file1.dll</HintPath></Reference><Reference><HintPath>path2\to2\file2.dll</HintPath></Reference></ItemGroup></Project>"
     )]
     public void ReferenceHintPathsCanBeNormalized(string originalXml, string expectedXml)
     {

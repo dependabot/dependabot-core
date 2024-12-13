@@ -14,7 +14,6 @@ module Dependabot
 
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
-      LATEST_REQUIREMENT = "latest"
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
@@ -24,7 +23,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
-        return ["=", nil] if obj.is_a?(String) && obj.strip == LATEST_REQUIREMENT
+        return ["=", nil] if obj.is_a?(String) && Version::VERSION_TAGS.include?(obj.strip)
         return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
@@ -34,7 +33,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", NpmAndYarn::Version.new(matches[2])]
+        [matches[1] || "=", NpmAndYarn::Version.new(T.must(matches[2]))]
       end
 
       # Returns an array of requirements. At least one requirement from the

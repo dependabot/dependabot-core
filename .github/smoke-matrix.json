@@ -15,9 +15,19 @@
     "ecosystem": "composer"
   },
   {
+    "core": "devcontainers",
+    "test": "devcontainers",
+    "ecosystem": "devcontainers"
+  },
+  {
     "core": "docker",
     "test": "docker",
     "ecosystem": "docker"
+  },
+  {
+    "core": "dotnet_sdk",
+    "test": "dotnet-sdk",
+    "ecosystem": "dotnet-sdk"
   },
   {
     "core": "elm",

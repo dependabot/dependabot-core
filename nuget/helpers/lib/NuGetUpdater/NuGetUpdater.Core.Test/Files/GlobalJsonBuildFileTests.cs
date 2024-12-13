@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 using Xunit;
 
@@ -29,15 +27,33 @@ public class GlobalJsonBuildFileTests
         """;
 
     private static GlobalJsonBuildFile GetBuildFile(string contents) => new(
-        repoRootPath: "/",
+        basePath: "/",
         path: "/global.json",
-        contents: contents);
+        contents: contents,
+        logger: new TestLogger());
+
+    [Fact]
+    public void GlobalJson_Malformed_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("""[{ "Random": "stuff"}]""");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
+
+    [Fact]
+    public void GlobalJson_NotJson_DoesNotThrow()
+    {
+        var buildFile = GetBuildFile("not json");
+
+        Assert.Null(buildFile.MSBuildSdks);
+    }
 
     [Fact]
     public void GlobalJson_GetDependencies_ReturnsDependencies()
     {
         var expectedDependencies = new List<Dependency>
         {
+            new("Microsoft.NET.Sdk", "6.0.405", DependencyType.MSBuildSdk),
             new("My.Custom.Sdk", "5.0.0", DependencyType.MSBuildSdk),
             new("My.Other.Sdk", "1.0.0-beta", DependencyType.MSBuildSdk)
         };

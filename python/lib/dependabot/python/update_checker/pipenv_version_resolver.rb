@@ -30,9 +30,12 @@ module Dependabot
         PIPENV_INSTALLATION_ERROR_REGEX =
           /[\s\S]*Collecting\s(?<name>.+)\s\(from\s-r.+\)[\s\S]*(#{PIPENV_INSTALLATION_ERROR})/
 
-        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
+        PIPENV_RANGE_WARNING = /Python version range specifier '(?<ver>.*)' is not supported/
 
-        attr_reader :dependency, :dependency_files, :credentials, :repo_contents_path
+        attr_reader :dependency
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :repo_contents_path
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
@@ -281,6 +284,8 @@ module Dependabot
           content = pipfile.content
           content = add_private_sources(content)
           content = update_python_requirement(content)
+          content = update_ssl_requirement(content, pipfile.content)
+
           content
         end
 
@@ -288,6 +293,12 @@ module Dependabot
           Python::FileUpdater::PipfilePreparer
             .new(pipfile_content: pipfile_content)
             .update_python_requirement(language_version_manager.python_major_minor)
+        end
+
+        def update_ssl_requirement(pipfile_content, parsed_file)
+          Python::FileUpdater::PipfilePreparer
+            .new(pipfile_content: pipfile_content)
+            .update_ssl_requirement(parsed_file)
         end
 
         def add_private_sources(pipfile_content)

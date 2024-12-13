@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Update;
@@ -8,47 +6,45 @@ public partial class UpdateWorkerTests
 {
     public class GlobalJson : UpdateWorkerTestBase
     {
-        public GlobalJson()
-        {
-            MSBuildHelper.RegisterMSBuild();
-        }
-
         [Fact]
         public async Task NoChangeWhenGlobalJsonNotFound()
         {
             await TestNoChangeforProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+                packages: [],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """);
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
         }
 
         [Fact]
         public async Task NoChangeWhenDependencyNotFound()
         {
             await TestNoChangeforProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+                packages: [],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           "sdk": {
@@ -57,28 +53,31 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                });
+                ]
+            );
         }
 
         [Fact]
-        public async Task UpdateSingleDependencyInDirsProj()
+        public async Task NoChangeWhenGlobalJsonInUnexpectedLocation()
         {
-            await TestUpdateForProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+            await TestNoChangeforProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+                packages: [],
                 // initial
+                projectFilePath: "src/project/project.csproj",
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
-                    ("global.json", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>netstandard2.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("eng/global.json", """
                         {
                           "sdk": {
                             "version": "6.0.405",
@@ -89,53 +88,100 @@ public partial class UpdateWorkerTests
                           }
                         }
                         """)
-                },
-                // expected
-                expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+                ]
+            );
+        }
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFilesExpected: new[]
-                {
-                    ("global.json", """
+        [Fact]
+        public async Task UpdateSingleDependency()
+        {
+            await TestUpdateForProject("Some.MSBuild.Sdk", "3.2.0", "4.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "3.2.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "4.1.0"),
+                ],
+                // initial
+                projectFilePath: "src/project/project.csproj",
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("src/global.json", """
                         {
                           "sdk": {
                             "version": "6.0.405",
                             "rollForward": "latestPatch"
                           },
                           "msbuild-sdks": {
-                            "Microsoft.Build.Traversal": "4.1.0"
+                            "Some.MSBuild.Sdk": "3.2.0"
                           }
                         }
                         """)
-                });
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("src/global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Some.MSBuild.Sdk": "4.1.0"
+                          }
+                        }
+                        """)
+                ]
+            );
         }
 
         [Fact]
         public async Task UpdateDependencyWithComments()
         {
-            await TestUpdateForProject("Microsoft.Build.Traversal", "3.2.0", "4.1.0",
+            await TestUpdateForProject("Some.MSBuild.Sdk", "3.2.0", "4.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "3.2.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "4.1.0"),
+                ],
                 // initial
                 projectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFiles: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -145,25 +191,25 @@ public partial class UpdateWorkerTests
                           },
                           "msbuild-sdks": {
                             // this is a deep comment
-                            "Microsoft.Build.Traversal": "3.2.0"
+                            "Some.MSBuild.Sdk": "3.2.0"
                           }
                         }
                         """)
-                },
+                ],
                 // expected
                 expectedProjectContents: """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                  </ItemGroup>
-                </Project>
-                """,
-                additionalFilesExpected: new[]
-                {
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
                     ("global.json", """
                         {
                           // this is a comment
@@ -173,11 +219,78 @@ public partial class UpdateWorkerTests
                           },
                           "msbuild-sdks": {
                             // this is a deep comment
-                            "Microsoft.Build.Traversal": "4.1.0"
+                            "Some.MSBuild.Sdk": "4.1.0"
                           }
                         }
                         """)
-                });
+                ]
+            );
+        }
+
+        [Fact]
+        public async Task UpdateDependencyWithTrailingComma()
+        {
+            await TestUpdateForProject("Some.MSBuild.Sdk", "3.2.0", "4.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "3.2.0"),
+                    MockNuGetPackage.CreateMSBuildSdkPackage("Some.MSBuild.Sdk", "4.1.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Some.MSBuild.Sdk": "3.2.0"
+                          },
+                        }
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected file no longer has the trailing comma because the parser removes it.
+                additionalFilesExpected:
+                [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "6.0.405",
+                            "rollForward": "latestPatch"
+                          },
+                          "msbuild-sdks": {
+                            "Some.MSBuild.Sdk": "4.1.0"
+                          }
+                        }
+                        """)
+                ]
+            );
         }
     }
 }

@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -98,7 +98,7 @@ module Dependabot
                   requirement: dep["requirement"],
                   file: Pathname.new(dep["file"]).cleanpath.to_path,
                   source: nil,
-                  groups: [dep["requirement_type"]]
+                  groups: [dep["requirement_type"]].compact
                 }],
                 package_manager: "pip"
               )
@@ -160,12 +160,15 @@ module Dependabot
         end
 
         def missing_poetry_keys
-          %w(name version description authors).reject { |key| poetry_root.key?(key) }
+          package_mode = poetry_root.fetch("package-mode", true)
+          required_keys = package_mode ? %w(name version description authors) : []
+          required_keys.reject { |key| poetry_root.key?(key) }
         end
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
-            !parsed_pyproject.dig("project", "optional-dependencies").nil?
+            !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
+            !parsed_pyproject.dig("build-system", "requires").nil?
         end
 
         def poetry_root

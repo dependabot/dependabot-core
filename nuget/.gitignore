@@ -3,5 +3,6 @@
 /.env
 /tmp
 /dependabot-*.gem
-Gemfile.lock
 Properties/
+bin/
+obj/

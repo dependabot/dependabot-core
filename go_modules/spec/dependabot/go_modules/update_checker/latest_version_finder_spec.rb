@@ -146,7 +146,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version with pre-releases available" do
+    context "when dealing with a Git pseudo-version with pre-releases available" do
       let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
 
       it "returns the latest pre-release" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git psuedo-version with releases available" do
+    context "when dealing with a Git psuedo-version with releases available" do
       let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
       let(:dependency_name) { "golang.org/x/net" }
       let(:ignored_versions) { ["> 0.8.0"] }
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version that is later than all releases" do
+    context "when dealing with a Git pseudo-version that is later than all releases" do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
       it "doesn't downgrade the dependency" do
@@ -267,13 +267,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:dependency_name) { "github.com/dependabot-fixtures/future-go" }
       let(:dependency_version) { "0.0.0-1" }
 
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { finder.latest_version }
-          .to raise_error(error_class) do |error|
-          expect(error.message).to include("github.com/dependabot-fixtures/future-go")
-          expect(error.message).to include("requires go >= 99.21.3")
-        end
+      it "returns the correct release number" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
 
@@ -459,7 +454,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:current_version) { "1.1.0" }
 
       it "doesn't return pre-release" do
-        expect(finder.lowest_security_fix_version).to_not eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
+        expect(finder.lowest_security_fix_version).not_to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
   end

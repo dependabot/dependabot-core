@@ -4,6 +4,21 @@
 require "bundler/definition"
 
 module BundlerDefinitionRubyVersionPatch
+  def ruby_version
+    super || begin
+      file_content = Bundler.read_file(".ruby-version")
+      ruby_version =
+        if /^ruby(-|\s+)([^\s#]+)/ =~ file_content
+          ::Regexp.last_match(2)
+        else
+          file_content.strip
+        end
+      Bundler::RubyVersion.new(ruby_version, nil, nil, nil) if ruby_version
+    rescue SystemCallError
+      # .ruby-version doesn't exist, fallback to the Ruby Dependabot runs
+    end
+  end
+
   def source_requirements
     if ruby_version
       requested_version = ruby_version.gem_version
@@ -11,7 +26,7 @@ module BundlerDefinitionRubyVersionPatch
         Gem::Specification.new("Ruby\0", requested_version)
     end
 
-    %w(2.5.3 2.6.10 2.7.7 3.0.5 3.2.1).each do |version|
+    %w(2.5.3 2.6.10 2.7.8 3.0.7 3.1.5 3.2.4).each do |version|
       sources.metadata_source.specs << Gem::Specification.new("Ruby\0", version)
     end
 

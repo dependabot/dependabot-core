@@ -1,17 +1,16 @@
 extern alias CoreV2;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Xml.Linq;
+
+using CoreV2::NuGet.Runtime;
 
 using Microsoft.Language.Xml;
 
 using NuGet.ProjectManagement;
 
-using AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
+using NuGetUpdater.Core.Utilities;
+
+using Runtime_AssemblyBinding = CoreV2::NuGet.Runtime.AssemblyBinding;
 
 namespace NuGetUpdater.Core;
 
@@ -21,9 +20,21 @@ internal static class BindingRedirectManager
     private static readonly XName DependentAssemblyName = AssemblyBinding.GetQualifiedName("dependentAssembly");
     private static readonly XName BindingRedirectName = AssemblyBinding.GetQualifiedName("bindingRedirect");
 
-    public static async ValueTask UpdateBindingRedirectsAsync(ProjectBuildFile projectBuildFile)
+    /// <summary>
+    /// Updates assembly binding redirects for a project build file.
+    /// </summary>
+    /// <remarks>
+    /// Assembly binding redirects are only applicable to projects targeting .NET Framework.
+    /// .NET Framework targets can appear in SDK-style OR non-SDK-style project files, using either packages.config OR `<PackageReference>` MSBuild items.
+    /// See: https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions
+    ///      https://learn.microsoft.com/en-us/nuget/resources/check-project-format
+    /// </remarks>
+    /// <param name="projectBuildFile">The project build file (*.xproj) to be updated</param>
+    /// <param name="updatedPackageName"/>The name of the package that was updated</param>
+    /// <param name="updatedPackageVersion">The version of the package that was updated</param>
+    public static async ValueTask UpdateBindingRedirectsAsync(ProjectBuildFile projectBuildFile, string updatedPackageName, string updatedPackageVersion)
     {
-        var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile);
+        var configFile = await TryGetRuntimeConfigurationFile(projectBuildFile.Path);
         if (configFile is null)
         {
             // no runtime config file so no need to add binding redirects
@@ -36,11 +47,25 @@ internal static class BindingRedirectManager
         var bindings = BindingRedirectResolver.GetBindingRedirects(projectBuildFile.Path, references.Select(static x => x.Include));
         if (!bindings.Any())
         {
-            // no bindings to update
+            // no bindings found in the project file, nothing to update
             return;
         }
 
-        var fileContent = AddBindingRedirects(configFile, bindings);
+        // we need to detect what assembly references come from the newly updated package; the `HintPath` will look like
+        //    ..\packages\Some.Package.1.2.3\lib\net45\Some.Package.dll
+        // so we first pull out the packages sub-path, e.g., `..\packages`
+        // then we add the updated package name, version, and a trailing directory separator and ensure it's a unix-style path
+        //    e.g., ../packages/Some.Package/1.2.3/
+        // at this point any assembly in that directory is from the updated package and will need a binding redirect
+        // finally we pull out the assembly `HintPath` values for _all_ references relative to the project file in a unix-style value
+        //    e.g., ../packages/Some.Other.Package/4.5.6/lib/net45/Some.Other.Package.dll
+        // all of that is passed to `AddBindingRedirects()` so we can ensure binding redirects for the relevant assemblies
+        var packagesConfigPath = ProjectHelper.GetPackagesConfigPathFromProject(projectBuildFile.Path, ProjectHelper.PathFormat.Full);
+        var packagesDirectory = PackagesConfigUpdater.GetPathToPackagesDirectory(projectBuildFile, updatedPackageName, updatedPackageVersion, packagesConfigPath)!;
+        var assemblyPathPrefix = Path.Combine(packagesDirectory, $"{updatedPackageName}.{updatedPackageVersion}").NormalizePathToUnix().EnsureSuffix("/");
+        var assemblyPaths = references.Select(static x => x.HintPath).Select(x => Path.GetRelativePath(Path.GetDirectoryName(projectBuildFile.Path)!, x).NormalizePathToUnix()).ToList();
+        var bindingsAndAssemblyPaths = bindings.Zip(assemblyPaths);
+        var fileContent = AddBindingRedirects(configFile, bindingsAndAssemblyPaths, assemblyPathPrefix);
         configFile = configFile with { Content = fileContent };
 
         await File.WriteAllTextAsync(configFile.Path, configFile.Content);
@@ -102,98 +127,30 @@ internal static class BindingRedirectManager
         }
     }
 
-    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(ProjectBuildFile projectBuildFile)
+    private static async ValueTask<ConfigurationFile?> TryGetRuntimeConfigurationFile(string fullProjectPath)
     {
-        var directoryPath = Path.GetDirectoryName(projectBuildFile.Path);
-        if (directoryPath is null)
+        var additionalFiles = ProjectHelper.GetAdditionalFilesFromProjectContent(fullProjectPath, ProjectHelper.PathFormat.Full);
+        var configFilePath = additionalFiles
+            .FirstOrDefault(p =>
+            {
+                var fileName = Path.GetFileName(p);
+                return fileName.Equals(ProjectHelper.AppConfigFileName, StringComparison.OrdinalIgnoreCase)
+                    || fileName.Equals(ProjectHelper.WebConfigFileName, StringComparison.OrdinalIgnoreCase);
+            });
+
+        if (configFilePath is null)
         {
             return null;
         }
 
-        var configFile = projectBuildFile.ItemNodes
-            .Where(IsConfigFile)
-            .FirstOrDefault();
-
-        if (configFile is null)
-        {
-            return null;
-        }
-
-        var configFilePath = Path.GetFullPath(Path.Combine(directoryPath, GetContent(configFile)));
         var configFileContents = await File.ReadAllTextAsync(configFilePath);
         return new ConfigurationFile(configFilePath, configFileContents, false);
-
-        static string GetContent(IXmlElementSyntax element)
-        {
-            var content = element.GetContentValue();
-            if (!string.IsNullOrEmpty(content))
-            {
-                return content;
-            }
-
-            content = element.GetAttributeValue("Include");
-            if (!string.IsNullOrEmpty(content))
-            {
-                return content;
-            }
-
-            return string.Empty;
-        }
-
-        static bool IsConfigFile(IXmlElementSyntax element)
-        {
-            var content = GetContent(element);
-            if (content is null)
-            {
-                return false;
-            }
-
-            var path = Path.GetFileName(content);
-            return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
-                || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
-        }
-
-        static string GetConfigFileName(XmlDocumentSyntax document)
-        {
-            var guidValue = document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "ProjectGuid"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-            return guidValue switch
-            {
-                "{E24C65DC-7377-472B-9ABA-BC803B73C61A}" or "{349C5851-65DF-11DA-9384-00065B846F21}" => "Web.config",
-                _ => "App.config"
-            };
-        }
-
-        static string GenerateDefaultAppConfig(XmlDocumentSyntax document)
-        {
-            var frameworkVersion = GetFrameworkVersion(document);
-            return $"""
-            <?xml version="1.0" encoding="utf-8" ?>
-            <configuration>
-                <startup>
-                    <supportedRuntime version="v4.0" sku=".NETFramework,Version={frameworkVersion}" />
-                </startup>
-            </configuration>
-            """;
-        }
-
-        static string? GetFrameworkVersion(XmlDocumentSyntax document)
-        {
-            return document.Descendants()
-                .Where(static x => x.Name == "PropertyGroup")
-                .SelectMany(static x => x.Elements.Where(static x => x.Name == "TargetFrameworkVersion"))
-                .FirstOrDefault()
-                ?.GetContentValue();
-        }
     }
 
-    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<AssemblyBinding> bindingRedirects)
+    private static string AddBindingRedirects(ConfigurationFile configFile, IEnumerable<(Runtime_AssemblyBinding Binding, string AssemblyPath)> bindingRedirectsAndAssemblyPaths, string assemblyPathPrefix)
     {
         // Do nothing if there are no binding redirects to add, bail out
-        if (!bindingRedirects.Any())
+        if (!bindingRedirectsAndAssemblyPaths.Any())
         {
             return configFile.Content;
         }
@@ -214,24 +171,47 @@ internal static class BindingRedirectManager
         // Get all of the current bindings in config
         var currentBindings = GetAssemblyBindings(runtime);
 
-        foreach (var bindingRedirect in bindingRedirects)
+        foreach (var (bindingRedirect, assemblyPath) in bindingRedirectsAndAssemblyPaths)
         {
-            // Look to see if we already have this in the list of bindings already in config.
-            if (currentBindings.TryGetValue((bindingRedirect.Name, bindingRedirect.PublicKeyToken), out var existingBinding))
+            // If the binding redirect already exists in config, update it. Otherwise, add it.
+            var bindingAssemblyIdentity = new AssemblyIdentity(bindingRedirect.Name, bindingRedirect.PublicKeyToken);
+            if (currentBindings.Contains(bindingAssemblyIdentity))
             {
-                UpdateBindingRedirectElement(existingBinding, bindingRedirect);
+                // Check if there are multiple bindings in config for this assembly and remove all but the first one.
+                // Normally there should only be one binding per assembly identity unless the config is malformed, which we'll fix here like NuGet.exe would.
+                var existingBindings = currentBindings[bindingAssemblyIdentity];
+                if (existingBindings.Any())
+                {
+                    // Remove all but the first element
+                    foreach (var bindingElement in existingBindings.Skip(1))
+                    {
+                        RemoveElement(bindingElement);
+                    }
+
+                    // Update the first one with the new binding
+                    UpdateBindingRedirectElement(existingBindings.First(), bindingRedirect);
+                }
             }
             else
             {
-                // Get an assembly binding element to use
-                var assemblyBindingElement = GetAssemblyBindingElement(runtime);
+                // only add a previously missing binding redirect if it's related to the package that caused the whole update
+                // this isn't strictly necessary, but can be helpful to the end user and it's easy for them to revert if they
+                // don't like this particular change
+                if (assemblyPath.StartsWith(assemblyPathPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Get an assembly binding element to use
+                    var assemblyBindingElement = GetAssemblyBindingElement(runtime);
 
-                // Add the binding to that element
-                assemblyBindingElement.AddIndented(bindingRedirect.ToXElement());
+                    // Add the binding to that element
+                    assemblyBindingElement.AddIndented(bindingRedirect.ToXElement());
+                }
             }
         }
 
-        return document.ToString();
+        return string.Concat(
+            document.Declaration?.ToString() ?? String.Empty, // Ensure the <?xml> declaration node is preserved, if present
+            document.ToString()
+        );
 
         static XDocument GetConfiguration(string configFileContent)
         {
@@ -261,7 +241,7 @@ internal static class BindingRedirectManager
 
         static void UpdateBindingRedirectElement(
             XElement existingDependentAssemblyElement,
-            AssemblyBinding newBindingRedirect)
+            Runtime_AssemblyBinding newBindingRedirect)
         {
             var existingBindingRedirectElement = existingDependentAssemblyElement.Element(BindingRedirectName);
             // Since we've successfully parsed this node, it has to be valid and this child must exist.
@@ -281,21 +261,25 @@ internal static class BindingRedirectManager
             }
         }
 
-        static Dictionary<(string Name, string PublicKeyToken), XElement> GetAssemblyBindings(XElement runtime)
+        static ILookup<AssemblyIdentity, XElement> GetAssemblyBindings(XElement runtime)
         {
             var dependencyAssemblyElements = runtime.Elements(AssemblyBindingName)
                 .Elements(DependentAssemblyName);
 
             // We're going to need to know which element is associated with what binding for removal
-            var assemblyElementPairs = from dependentAssemblyElement in dependencyAssemblyElements
-                                       select new
-                                       {
-                                           Binding = AssemblyBinding.Parse(dependentAssemblyElement),
-                                           Element = dependentAssemblyElement
-                                       };
+            var assemblyElementPairs = dependencyAssemblyElements.Select(dependentAssemblyElement => new
+            {
+                Binding = Runtime_AssemblyBinding.Parse(dependentAssemblyElement),
+                Element = dependentAssemblyElement
+            });
 
             // Return a mapping from binding to element
-            return assemblyElementPairs.ToDictionary(p => (p.Binding.Name, p.Binding.PublicKeyToken), p => p.Element);
+            // It is possible that multiple elements exist for the same assembly identity, so use a lookup (1:*) instead of a dictionary (1:1) 
+            return assemblyElementPairs.ToLookup(
+                p => new AssemblyIdentity(p.Binding.Name, p.Binding.PublicKeyToken),
+                p => p.Element,
+                new AssemblyIdentityIgnoreCaseComparer()
+            );
         }
 
         static XElement GetAssemblyBindingElement(XElement runtime)
@@ -312,5 +296,22 @@ internal static class BindingRedirectManager
 
             return assemblyBinding;
         }
+    }
+
+    internal sealed record AssemblyIdentity(string Name, string PublicKeyToken);
+
+    // Case-insensitive comparer. This helps avoid creating duplicate binding redirects when there is a case form mismatch between assembly identities.
+    // Especially important for PublicKeyToken which is typically lowercase (using NuGet.exe), but can also be uppercase when using other tools (e.g. Visual Studio auto-resolve assembly conflicts feature).
+    internal sealed class AssemblyIdentityIgnoreCaseComparer : IEqualityComparer<AssemblyIdentity>
+    {
+        public bool Equals(AssemblyIdentity? x, AssemblyIdentity? y) =>
+            string.Equals(x?.Name, y?.Name, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x?.PublicKeyToken ?? "null", y?.PublicKeyToken ?? "null", StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(AssemblyIdentity obj) =>
+            HashCode.Combine(
+                obj.Name?.ToLowerInvariant(),
+                obj.PublicKeyToken?.ToLowerInvariant() ?? "null"
+            );
     }
 }

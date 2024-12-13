@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "opentelemetry/sdk"
+require "opentelemetry-metrics-sdk"
 
 module Dependabot
   module OpenTelemetry
@@ -10,6 +11,9 @@ module Dependabot
 
     module Attributes
       JOB_ID = "dependabot.job.id"
+      WARN_TYPE = "dependabot.job.warn_type"
+      WARN_TITLE = "dependabot.job.warn_title"
+      WARN_DESCRIPTION = "dependabot.job.warn_description"
       ERROR_TYPE = "dependabot.job.error_type"
       ERROR_DETAILS = "dependabot.job.error_details"
       METRIC = "dependabot.metric"
@@ -30,24 +34,33 @@ module Dependabot
       puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
+      require "opentelemetry-exporter-otlp-metrics"
+
+      # OpenTelemetry instrumentation expects the related gem to be loaded.
+      # While most are already loaded by this point in initialization, some are not.
+      # We explicitly load them here to ensure that the instrumentation is enabled.
+      require "excon"
       require "opentelemetry/instrumentation/excon"
+      require "faraday"
       require "opentelemetry/instrumentation/faraday"
+      require "http"
       require "opentelemetry/instrumentation/http"
+      require "net/http"
+      require "opentelemetry/instrumentation/net/http"
 
       ::OpenTelemetry::SDK.configure do |config|
         config.service_name = "dependabot"
         config.use "OpenTelemetry::Instrumentation::Excon"
         config.use "OpenTelemetry::Instrumentation::Faraday"
-        config.use "OpenTelemetry::Instrumentation::Http"
+        config.use "OpenTelemetry::Instrumentation::HTTP"
+        config.use "OpenTelemetry::Instrumentation::Net::HTTP"
       end
 
       tracer
     end
 
-    sig { returns(T.nilable(::OpenTelemetry::Trace::Tracer)) }
+    sig { returns(::OpenTelemetry::Trace::Tracer) }
     def self.tracer
-      return unless should_configure?
-
       ::OpenTelemetry.tracer_provider.tracer("dependabot", Dependabot::VERSION)
     end
 
@@ -67,8 +80,6 @@ module Dependabot
       ).void
     end
     def self.record_update_job_error(job_id:, error_type:, error_details:)
-      return unless should_configure?
-
       current_span = ::OpenTelemetry::Trace.current_span
 
       attributes = {
@@ -85,17 +96,35 @@ module Dependabot
 
     sig do
       params(
+        job_id: T.any(String, Integer),
+        warn_type: T.any(String, Symbol),
+        warn_title: String,
+        warn_description: String
+      ).void
+    end
+    def self.record_update_job_warning(job_id:, warn_type:, warn_title:, warn_description:)
+      current_span = ::OpenTelemetry::Trace.current_span
+
+      attributes = {
+        Attributes::JOB_ID => job_id,
+        Attributes::WARN_TYPE => warn_type,
+        Attributes::WARN_TITLE => warn_title,
+        Attributes::WARN_DESCRIPTION => warn_description
+      }
+      current_span.add_event(warn_type, attributes: attributes)
+    end
+
+    sig do
+      params(
         error: StandardError,
         job: T.untyped,
         tags: T::Hash[String, T.untyped]
       ).void
     end
     def self.record_exception(error:, job: nil, tags: {})
-      return unless should_configure?
-
       current_span = ::OpenTelemetry::Trace.current_span
 
-      current_span.set_attribute(Attributes::JOB_ID, job.id) if job
+      current_span.set_attribute(Attributes::JOB_ID, job.id.to_s) if job
       current_span.add_attributes(tags) if tags.any?
 
       current_span.status = ::OpenTelemetry::Trace::Status.error(error.message)

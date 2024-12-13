@@ -1,65 +1,49 @@
-using System;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace NuGetUpdater.Core;
 
-internal static partial class GlobalJsonUpdater
+internal static class GlobalJsonUpdater
 {
-    public static async Task UpdateDependencyAsync(string repoRootPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, Logger logger)
+    public static async Task UpdateDependencyAsync(
+        string repoRootPath,
+        string workspacePath,
+        string dependencyName,
+        string previousDependencyVersion,
+        string newDependencyVersion,
+        ILogger logger)
     {
-        var buildFiles = LoadBuildFiles(repoRootPath);
-        if (buildFiles.Length == 0)
+        if (!MSBuildHelper.TryGetGlobalJsonPath(repoRootPath, workspacePath, out var globalJsonPath))
         {
-            logger.Log($"  No global.json files found.");
+            logger.Info("  No global.json file found.");
             return;
         }
 
-        logger.Log($"  Updating global.json files.");
+        var globalJsonFile = GlobalJsonBuildFile.Open(repoRootPath, globalJsonPath, logger);
 
+        logger.Info($"  Updating [{globalJsonFile.RelativePath}] file.");
 
-        var filesToUpdate = buildFiles.Where(f =>
-            f.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)))
-            .ToImmutableArray();
-        if (filesToUpdate.Length == 0)
+        var containsDependency = globalJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+        if (!containsDependency)
         {
-            logger.Log($"    Dependency [{dependencyName}] not found in any global.json files.");
+            logger.Info($"    Dependency [{dependencyName}] not found.");
             return;
         }
 
-        foreach (var buildFile in filesToUpdate)
+        if (globalJsonFile.MSBuildSdks?.TryGetPropertyValue(dependencyName, out var version) != true
+            || version?.GetValue<string>() is not string versionString)
         {
-            if (buildFile.MSBuildSdks?.TryGetPropertyValue(dependencyName, out var version) != true)
-            {
-                continue;
-            }
-
-            if (version?.GetValue<string>() == previousDependencyVersion)
-            {
-                buildFile.UpdateProperty(new[] { "msbuild-sdks", dependencyName }, newDependencyVersion);
-
-                if (await buildFile.SaveAsync())
-                {
-                    logger.Log($"    Saved [{buildFile.RepoRelativePath}].");
-                }
-            }
+            logger.Info("    Unable to determine dependency version.");
+            return;
         }
-    }
 
-    private static ImmutableArray<GlobalJsonBuildFile> LoadBuildFiles(string repoRootPath)
-    {
-        var options = new EnumerationOptions()
+        if (versionString != previousDependencyVersion)
         {
-            RecurseSubdirectories = true,
-            MatchType = MatchType.Win32,
-            AttributesToSkip = 0,
-            IgnoreInaccessible = false,
-            MatchCasing = MatchCasing.CaseInsensitive,
-        };
-        return Directory.EnumerateFiles(repoRootPath, "global.json", options)
-            .Select(path => GlobalJsonBuildFile.Open(repoRootPath, path))
-            .ToImmutableArray();
+            return;
+        }
+
+        globalJsonFile.UpdateProperty(["msbuild-sdks", dependencyName], newDependencyVersion);
+
+        if (await globalJsonFile.SaveAsync())
+        {
+            logger.Info($"    Saved [{globalJsonFile.RelativePath}].");
+        }
     }
 }

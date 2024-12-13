@@ -9,11 +9,11 @@ module Dependabot
     class LanguageVersionManager
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.12.1
-        3.11.7
-        3.10.13
+        3.12.7
+        3.11.9
+        3.10.15
         3.9.18
-        3.8.18
+        3.8.20
       ).freeze
 
       def initialize(python_requirement_parser:)
@@ -30,7 +30,7 @@ module Dependabot
       end
 
       def python_major_minor
-        @python_major_minor ||= Python::Version.new(python_version).segments[0..1].join(".")
+        @python_major_minor ||= T.must(Python::Version.new(python_version).segments[0..1]).join(".")
       end
 
       def python_version

@@ -3,8 +3,6 @@ name: Smoke
 
 on: # yamllint disable-line rule:truthy
   workflow_dispatch:
-  push:
-    branches: ["main"]
   pull_request:
     paths-ignore:
       - docs/**
@@ -16,20 +14,22 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  SMOKE_TEST_BRANCH: main
 jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
+          token: "" # use git commands to avoid excessive rate limit usage
           filters: .github/smoke-filters.yml
 
       - name: Generate suites to run
@@ -44,14 +44,14 @@ jobs:
           cat filtered.json
 
           # Curl the smoke-test tests directory to get a list of tests to run
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $URL > tests.json
 
           # Select the names that match smoke-$test*.yaml, where $test is the .text value from filtered.json
           # We end up with, for example: [{core: "bundler", ecosystem: "rubygems", name: "smoke-bundler.yaml"}]
           jq -c '.[]' filtered.json | while read -r i; do
             test=$(echo "$i" | jq -r '.test')
-            jq --argjson i "$i" --arg test "-$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name}' tests.json
+            jq --argjson i "$i" --arg test "-$test" -r '.[] | select(.name | contains($test)) | {core: ($i | .core), ecosystem: ($i | .ecosystem), name: .name, sha: .sha }' tests.json
           done | jq -cs . > suites.json
 
           # Set the step output
@@ -64,17 +64,35 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.discover.outputs.suites) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
-      - name: Download CLI and test
+      - name: Download CLI
         run: |
           gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
           tar xzvf *.tar.gz >/dev/null 2>&1
           ./dependabot --version
-          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}
+
+      - name: Restore Smoke Test
+        id: cache-smoke-test
+        uses: actions/cache/restore@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: smoke.yaml
+          key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
+
+      - name: Download test
+        if: steps.cache-smoke-test.outputs.cache-hit != 'true'
+        run: |
+          URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/${{ matrix.suite.name }}?ref=${{ env.SMOKE_TEST_BRANCH }}
           curl $(gh api $URL --jq .download_url) -o smoke.yaml
+
+      - name: Cache Smoke Test
+        if: steps.cache-smoke-test.outputs.cache-hit != 'true'
+        uses: actions/cache/save@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+        with:
+          path: smoke.yaml
+          key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
       # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.

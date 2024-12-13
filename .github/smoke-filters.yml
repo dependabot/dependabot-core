@@ -16,9 +16,15 @@ cargo:
 composer:
   - *common
   - 'composer/**'
+devcontainers:
+  - *common
+  - 'devcontainers/**'
 docker:
   - *common
   - 'docker/**'
+dotnet_sdk:
+  - *common
+  - 'dotnet_sdk/**'
 elm:
   - *common
   - 'elm/**'

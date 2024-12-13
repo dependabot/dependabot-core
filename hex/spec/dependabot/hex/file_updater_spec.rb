@@ -8,40 +8,7 @@ require "dependabot/hex/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Hex::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:files) { [mixfile, lockfile] }
-  let(:mixfile) do
-    Dependabot::DependencyFile.new(
-      content: fixture("mixfiles", mixfile_fixture_name),
-      name: "mix.exs"
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "mix.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:mixfile_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
-
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "plug",
@@ -54,22 +21,91 @@ RSpec.describe Dependabot::Hex::FileUpdater do
       package_manager: "hex"
     )
   end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:lockfile_fixture_name) { "exact_version" }
+  let(:mixfile_fixture_name) { "exact_version" }
+  let(:lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "mix.lock",
+      content: fixture("lockfiles", lockfile_fixture_name)
+    )
+  end
+  let(:mixfile) do
+    Dependabot::DependencyFile.new(
+      content: fixture("mixfiles", mixfile_fixture_name),
+      name: "mix.exs"
+    )
+  end
+  let(:files) { [mixfile, lockfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
 
   before { FileUtils.mkdir_p(tmp_path) }
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "mix.exs",
+          "mix.lock",
+          "apps/dependabot_business/mix.exs",
+          "apps/dependabot_web/mix.exs"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "doesn't store the files permanently" do
-      expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+      expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
     end
 
     it "returns DependencyFile objects" do
       updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
     end
 
-    it { expect { updated_files }.to_not output.to_stdout }
+    it { expect { updated_files }.not_to output.to_stdout }
     its(:length) { is_expected.to eq(2) }
 
     context "without a lockfile" do

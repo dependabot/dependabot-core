@@ -116,6 +116,7 @@ mkdir -p dry-run tmp
 docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
+  -v "$(pwd)/.rubocop_todo.yml:$CODE_DIR/.rubocop_todo.yml" \
   -v "$(pwd)/.ruby-version:$CODE_DIR/.ruby-version" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
   -v "$(pwd)/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \
@@ -141,11 +142,21 @@ docker run --rm -ti \
   -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
   -v "$(pwd)/composer/script:$CODE_DIR/composer/script" \
   -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
+  -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
+  -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
+  -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \
+  -v "$(pwd)/devcontainers/script:$CODE_DIR/devcontainers/script" \
+  -v "$(pwd)/devcontainers/spec:$CODE_DIR/devcontainers/spec" \
   -v "$(pwd)/docker/.rubocop.yml:$CODE_DIR/docker/.rubocop.yml" \
   -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
   -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$(pwd)/dotnet_sdk/.rubocop.yml:$CODE_DIR/dotnet_sdk/.rubocop.yml" \
+  -v "$(pwd)/dotnet_sdk/dependabot-dotnet_sdk.gemspec:$CODE_DIR/dotnet_sdk/dependabot-dotnet_sdk.gemspec" \
+  -v "$(pwd)/dotnet_sdk/lib:$CODE_DIR/dotnet_sdk/lib" \
+  -v "$(pwd)/dotnet_sdk/script:$CODE_DIR/dotnet_sdk/script" \
+  -v "$(pwd)/dotnet_sdk/spec:$CODE_DIR/dotnet_sdk/spec" \
   -v "$(pwd)/dry-run:$CODE_DIR/dry-run" \
   -v "$(pwd)/elm/.rubocop.yml:$CODE_DIR/elm/.rubocop.yml" \
   -v "$(pwd)/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \

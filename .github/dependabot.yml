@@ -1,24 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: "bundler"
-    directory: "/updater"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-    groups:
-      aws-sdk:
-        patterns:
-          - "aws-sdk-*"
-      dev-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-
-  # Watch the root Gemfile used for sorbet typing
-  - package-ecosystem: "bundler"
-    directory: "/"
+    directories:
+      - "/updater"
+      - "/"
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -26,51 +11,55 @@ updates:
     groups:
       sorbet:
         patterns:
+          - "*-sorbet"
+          - "sorbet-*"
           - "sorbet"
           - "tapioca"
-    allow:
-      - dependency-name: "sorbet"
-      - dependency-name: "tapioca"
+      aws-sdk:
+        patterns:
+          - "aws-sdk-*"
+      prod-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
-    directory: "/composer/helpers/v1"
+    directories:
+      - "/composer/helpers/v1"
+      - "/composer/helpers/v2"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
     groups:
+      prod-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
       dev-dependencies:
         dependency-type: "development"
         update-types:
           - "minor"
           - "patch"
-  - package-ecosystem: "composer"
-    directory: "/composer/helpers/v2"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-    groups:
-      dev-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-  - package-ecosystem: "docker"
+  - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
   - package-ecosystem: "docker"
-    directory: "/go_modules"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "docker"
-    directory: "/cargo"
+    directories:
+      - "/"
+      - "/go_modules"
+      - "/cargo"
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -125,15 +114,50 @@ updates:
           - "patch"
     ignore:
       - dependency-name: "npm"
-        update-types: ["version-update:semver-major"]
+        update-types: [ "version-update:semver-major" ]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      common:
+        patterns:
+          - pip
+          - cython
+          - flake8
+      poetry:
+        patterns:
+          - poetry
+          - hashin
+      pip-tools:
+        patterns:
+          - pip-tools
+      pipenv:
+        patterns:
+          - pipfile
+          - pipenv
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "nuget"
+    directory: "/nuget/helpers/lib/NuGetUpdater"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "dotnet-sdk"
+    directory: "/nuget/helpers/lib/NuGetUpdater"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "sunday"

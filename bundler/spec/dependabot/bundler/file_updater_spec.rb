@@ -3,16 +3,41 @@
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/file_updater"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Bundler::FileUpdater do
-  include_context "stub rubygems compact index"
+  include_context "when stubbing rubygems compact index"
 
-  it_behaves_like "a dependency file updater"
-
+  let(:repo_contents_path) { nil }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:previous_requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  end
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
+  end
+  let(:dependency_previous_version) { "1.4.0" }
+  let(:dependency_version) { "1.5.0" }
+  let(:dependency_name) { "business" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: dependency_version,
+      previous_version: dependency_previous_version,
+      requirements: requirements,
+      previous_requirements: previous_requirements,
+      package_manager: "bundler"
+    )
+  end
+  let(:dependency_files) { bundler_project_dependency_files(project_name, directory: directory) }
+  let(:directory) { "/" }
+  let(:project_name) { "gemfile" }
+  let(:dependencies) { [dependency] }
   let(:updater) do
     described_class.new(
       dependency_files: dependency_files,
@@ -24,33 +49,54 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       repo_contents_path: repo_contents_path
     )
   end
-  let(:dependencies) { [dependency] }
-  let(:project_name) { "gemfile" }
-  let(:directory) { "/" }
-  let(:dependency_files) { bundler_project_dependency_files(project_name, directory: directory) }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: dependency_version,
-      previous_version: dependency_previous_version,
-      requirements: requirements,
-      previous_requirements: previous_requirements,
-      package_manager: "bundler"
-    )
-  end
-  let(:dependency_name) { "business" }
-  let(:dependency_version) { "1.5.0" }
-  let(:dependency_previous_version) { "1.4.0" }
-  let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
-  end
-  let(:previous_requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
-  end
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
-  let(:repo_contents_path) { nil }
 
   before { FileUtils.mkdir_p(tmp_path) }
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "Gemfile",
+          "Gemfile.lock",
+          "gems.rb",
+          "gems.locked",
+          "some_project.gemspec",
+          "vendor/cache/business-1.5.0.gem",
+          "backend/Gemfile",
+          "backend/Gemfile.lock",
+          "backend/gems.rb",
+          "backend/gems.locked"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -79,6 +125,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         let(:previous_requirements) do
           [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -116,7 +163,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             .to include("\"statesman\", \"~> 1.2.0\"")
         end
 
-        context "for a gems.rb setup" do
+        context "when dealing with a gems.rb setup" do
           subject(:updated_gemfile) do
             updated_files.find { |f| f.name == "gems.rb" }
           end
@@ -202,6 +249,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         it { is_expected.to be_nil }
       end
 
@@ -233,6 +281,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: nil
           }]
         end
+
         its(:content) { is_expected.to include "\"business\", \"~> 1.5.0\"" }
         its(:content) { is_expected.to include "\"statesman\", \"~> 1.2.0\"" }
       end
@@ -265,7 +314,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
         its(:content) { is_expected.to include("i18n (0.7.0)") }
 
-        context "which is blocked by another sub-dep" do
+        context "when blocked by another sub-dep" do
           let(:project_name) { "subdep_blocked_by_subdep" }
           let(:dependency_name) { "dummy-pkg-a" }
           let(:dependency_version) { "1.1.0" }
@@ -294,7 +343,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       context "when a gem has been yanked" do
         let(:project_name) { "minor_version_specified_yanked_gem" }
 
-        context "and it's that gem that we're attempting to bump" do
+        context "when it's that gem that we're attempting to bump" do
           it "locks the updated gem to the latest version" do
             expect(file.content).to include("business (1.5.0)")
           end
@@ -304,7 +353,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "and it's another gem" do
+        context "when it's another gem" do
           let(:dependency_name) { "statesman" }
           let(:dependency_version) { "1.3.1" }
           let(:dependency_previous_version) { "1.2.1" }
@@ -329,11 +378,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             expect(file.content).to include("statesman (1.3.1)")
           end
 
-          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
-            expect(file.content).to include("business (1.18.0)")
-          end
-
-          it "does not touch the yanked gem", :bundler_v2_only do
+          it "does not touch the yanked gem" do
             expect(file.content).to include("business (1.4.1)")
           end
         end
@@ -350,11 +395,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("statesman (1.2.1)")
         end
 
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v1_only do
-          expect(file.content).to include("BUNDLED WITH\n   1.10.6")
-        end
-
-        it "preserves the BUNDLED WITH line in the lockfile", :bundler_v2_only do
+        it "preserves the BUNDLED WITH line in the lockfile" do
           expect(file.content).to include("BUNDLED WITH\n   2.2.0")
         end
 
@@ -362,10 +403,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).not_to include("RUBY VERSION")
         end
 
-        context "for a gems.rb setup" do
-          let(:project_name) { "gems_rb" }
-
+        context "when dealing with a gems.rb setup" do
           subject(:file) { updated_files.find { |f| f.name == "gems.locked" } }
+
+          let(:project_name) { "gems_rb" }
 
           let(:requirements) do
             [{
@@ -473,7 +514,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           expect(file.content).to include("RUBY VERSION\n   ruby 2.2.0p0")
         end
 
-        context "but the lockfile didn't include that version" do
+        context "when the lockfile didn't include that version" do
           let(:project_name) { "explicit_ruby" }
 
           it "doesn't add in a RUBY VERSION" do
@@ -481,7 +522,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "that is legacy" do
+        context "when that is legacy" do
           let(:project_name) { "legacy_ruby" }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -514,8 +555,26 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
-      context "given a Gemfile that loads a .ruby-version file" do
+      context "when given a Gemfile that loads a .ruby-version file" do
         let(:project_name) { "ruby_version_file" }
+        let(:updater) do
+          described_class.new(
+            dependency_files: dependency_files,
+            dependencies: [dependency],
+            credentials: [{
+              "type" => "git_source",
+              "host" => "github.com"
+            }]
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include "business (1.5.0)"
+        end
+      end
+
+      context "when the Gemfile loads a .tool-versions file" do
+        let(:project_name) { "tool_versions_file" }
         let(:updater) do
           described_class.new(
             dependency_files: dependency_files,
@@ -653,7 +712,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "that specifies the dependency using github:" do
+        context "when that specifies the dependency using github:" do
           let(:project_name) { "github_source" }
 
           it "doesn't update the git dependencies" do
@@ -678,7 +737,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "and the git dependency is used internally" do
+        context "when the git dependency is used internally" do
           let(:project_name) { "git_source_internal" }
 
           it "doesn't update the git dependency's version" do
@@ -686,7 +745,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "and the git dependencies are in a weird order" do
+        context "when the git dependencies are in a weird order" do
           let(:project_name) { "git_source_reordered" }
 
           it "doesn't update the order of the git dependencies" do
@@ -721,7 +780,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "and the lockfile was wrong before" do
+        context "when the lockfile was wrong before" do
           let(:project_name) { "git_source_outdated" }
 
           it "generates the correct lockfile" do
@@ -732,7 +791,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
-      context "for a git dependency" do
+      context "when dealing with a git dependency" do
         let(:project_name) { "git_source" }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -839,7 +898,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
         end
 
-        context "that specifies a version that needs updating" do
+        context "when that specifies a version that needs updating" do
           context "with a gem that has a git source" do
             let(:project_name) { "git_source_with_version_gemfile" }
             let(:dependency) do
@@ -876,6 +935,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 }
               }]
             end
+
             its(:content) do
               is_expected.to include "dependabot-test-ruby-package (~> 1.0.1)!"
             end
@@ -884,7 +944,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       context "when another gem in the Gemfile has a path source" do
-        context "that we've downloaded" do
+        context "when that we've downloaded" do
           let(:project_name) { "path_source_no_overlap" }
 
           it "updates the gem just fine" do
@@ -899,7 +959,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               .not_to include Dependabot::Utils::BUMP_TMP_DIR_PATH
           end
 
-          context "as a .specification" do
+          context "when dealing with a .specification" do
             let(:project_name) { "path_source_statesman" }
 
             it "updates the gem just fine" do
@@ -907,7 +967,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             end
           end
 
-          context "that requires other files" do
+          context "when that requires other files" do
             let(:gemspec_body) do
               fixture("ruby", "gemspecs", "no_overlap_with_require")
             end
@@ -1010,7 +1070,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           it "returns an updated Gemfile and Gemfile.lock" do
             expect(updated_files.map(&:name))
-              .to match_array(["Gemfile", "Gemfile.lock"])
+              .to contain_exactly("Gemfile", "Gemfile.lock")
           end
 
           context "with a tricky ruby requirement" do
@@ -1018,7 +1078,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             it "returns an updated Gemfile and Gemfile.lock" do
               expect(updated_files.map(&:name))
-                .to match_array(["Gemfile", "Gemfile.lock"])
+                .to contain_exactly("Gemfile", "Gemfile.lock")
             end
           end
         end
@@ -1058,15 +1118,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           it "returns an updated gemspec, Gemfile and Gemfile.lock" do
             expect(updated_files.map(&:name))
-              .to match_array(["Gemfile", "Gemfile.lock", "example.gemspec"])
+              .to contain_exactly("Gemfile", "Gemfile.lock", "example.gemspec")
           end
 
-          context "but the gemspec constraint is already satisfied" do
+          context "when the gemspec constraint is already satisfied" do
             let(:requirement) { "~> 1.0" }
 
             it "returns an updated Gemfile and Gemfile.lock" do
               expect(updated_files.map(&:name))
-                .to match_array(["Gemfile", "Gemfile.lock"])
+                .to contain_exactly("Gemfile", "Gemfile.lock")
             end
           end
 
@@ -1110,7 +1170,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             end
           end
 
-          context "and only appears in the gemspec" do
+          context "when only appears in the gemspec" do
             let(:project_name) { "imports_gemspec_no_overlap" }
             let(:dependency) do
               Dependabot::Dependency.new(
@@ -1135,7 +1195,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             it "returns an updated gemspec and Gemfile.lock" do
               expect(updated_files.map(&:name))
-                .to match_array(["example.gemspec", "Gemfile.lock"])
+                .to contain_exactly("example.gemspec", "Gemfile.lock")
             end
           end
         end
@@ -1427,7 +1487,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
     end
 
-    context "for a gem that depends on bundler" do
+    context "when dealing with a gem that depends on bundler" do
       subject(:updated_gemfile) do
         updated_files.find { |f| f.name == "Gemfile" }
       end
@@ -1445,16 +1505,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         }]
       end
 
-      it "raises an error", :bundler_v1_only do
-        expect { updated_gemfile }.to raise_error(/Bundler could not find compatible versions for gem "bundler"/)
-      end
-
-      it "returns the latest version", :bundler_v2_only do
+      it "returns the latest version" do
         expect(updated_gemfile.content).to include("\"guard-bundler\", \"~> 2.2.1\"")
       end
     end
 
-    context "vendoring" do
+    context "when vendoring" do
       let(:project_name) { "vendored_gems" }
       let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
 
@@ -1471,14 +1527,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       it "vendors the new dependency" do
-        expect(updater.updated_dependency_files.map(&:name)).to match_array(
-          [
+        expect(updater.updated_dependency_files.map(&:name))
+          .to contain_exactly(
             "vendor/cache/business-1.4.0.gem",
             "vendor/cache/business-1.5.0.gem",
             "Gemfile",
             "Gemfile.lock"
-          ]
-        )
+          )
       end
 
       it "base64 encodes vendored gems" do
@@ -1562,8 +1617,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         added = "vendor/cache/dependabot-test-ruby-package-1c6331732c41"
 
         it "vendors the new dependency" do
-          expect(updater.updated_dependency_files.map(&:name)).to match_array(
-            [
+          expect(updater.updated_dependency_files.map(&:name))
+            .to contain_exactly(
               "#{removed}/.bundlecache",
               "#{removed}/README.md",
               "#{removed}/test-ruby-package.gemspec",
@@ -1571,11 +1626,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               "#{added}/.gitignore",
               "#{added}/README.md",
               "#{added}/dependabot-test-ruby-package.gemspec",
-              # modified:
               "Gemfile",
               "Gemfile.lock"
-            ]
-          )
+            )
         end
 
         it "deletes the old vendored repo" do
@@ -1595,7 +1648,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
     end
 
-    context "vendoring with subdir" do
+    context "when vendoring with subdir" do
       let(:project_name) { "vendored_gems_with_subdir" }
       let(:directory) { "/acceptance" }
       let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
@@ -1613,14 +1666,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
       end
 
       it "vendors the new dependency" do
-        expect(updater.updated_dependency_files.map(&:name)).to match_array(
-          [
+        expect(updater.updated_dependency_files.map(&:name))
+          .to contain_exactly(
             "vendor/cache/business-1.4.0.gem",
             "vendor/cache/business-1.5.0.gem",
             "Gemfile",
             "Gemfile.lock"
-          ]
-        )
+          )
       end
     end
   end

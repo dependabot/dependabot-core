@@ -1,0 +1,42 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr pull_request_exists_for_latest_version
+stdout '{"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dependency-a","dependency-version":"1.2.5"}},"type":"record_update_job_error"}'
+
+# An existing pull request exists for 1.2.5 which is the latest version of dependency-a.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.5
+        directory: "/"

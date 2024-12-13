@@ -1,11 +1,13 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
+
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -40,9 +42,9 @@ module Dependabot
         lowest_fix =
           latest_version_finder(remove_git_source: false)
           .lowest_security_fix_version
-        return unless lowest_fix
+        return unless lowest_fix && resolvable?(lowest_fix)
 
-        resolvable?(lowest_fix) ? lowest_fix : latest_resolvable_version
+        lowest_fix
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -75,11 +77,11 @@ module Dependabot
 
       def requirements_unlocked_or_can_be?
         return true if requirements_unlocked?
-        return false if requirements_update_strategy == :lockfile_only
+        return false if requirements_update_strategy.lockfile_only?
 
         dependency.specific_requirements
                   .all? do |req|
-          file = dependency_files.find { |f| f.name == req.fetch(:file) }
+          file = T.must(dependency_files.find { |f| f.name == req.fetch(:file) })
           updated = FileUpdater::RequirementReplacer.new(
             dependency: dependency,
             file_type: file.name.end_with?("gemspec") ? :gemspec : :gemfile,
@@ -92,10 +94,14 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+        if dependency.version.nil?
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary
+        else
+          RequirementsUpdateStrategy::BumpVersions
+        end
       end
 
       def conflicting_dependencies
