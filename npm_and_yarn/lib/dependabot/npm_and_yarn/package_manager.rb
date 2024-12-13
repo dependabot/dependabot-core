@@ -62,14 +62,13 @@ module Dependabot
 
       # Keep versions in ascending order
       SUPPORTED_VERSIONS = T.let([
-        Version.new(NPM_V6),
         Version.new(NPM_V7),
         Version.new(NPM_V8),
         Version.new(NPM_V9),
         Version.new(NPM_V10)
       ].freeze, T::Array[Dependabot::Version])
 
-      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+      DEPRECATED_VERSIONS = T.let([Version.new(NPM_V6)].freeze, T::Array[Dependabot::Version])
 
       sig do
         params(
@@ -89,12 +88,17 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
-        false
+        return false if unsupported?
+        return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
+
+        deprecated_versions.include?(version)
       end
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        false
+        return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
+
+        supported_versions.all? { |supported| supported > version }
       end
     end
 
