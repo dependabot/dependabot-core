@@ -1,7 +1,9 @@
 pip==24.0
 pip-tools==7.4.1
 flake8==7.1.0
-hashin==1.0.3
+# TODO: Drop the conditions and use the latest version once we drop support for Python 3.8.
+hashin==1.0.2; python_version < '3.9'
+hashin==1.0.3; python_version >= '3.9'
 pipenv==2024.0.2
 plette==2.1.0
 poetry==1.8.5
