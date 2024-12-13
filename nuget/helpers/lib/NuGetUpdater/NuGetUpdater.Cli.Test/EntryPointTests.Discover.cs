@@ -1,6 +1,8 @@
 using System.Text;
+using System.Text.Json;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Discover;
 using NuGetUpdater.Core.Test.Update;
@@ -15,22 +17,32 @@ public partial class EntryPointTests
 {
     public class Discover : DiscoveryWorkerTestBase
     {
-        [Fact]
-        public async Task PathWithSpaces()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PathWithSpaces(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
                     "path/to/some directory with spaces",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
-                packages: [],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0"),
+                ],
                 initialFiles:
                 [
                     ("path/to/some directory with spaces/project.csproj", """
-                        <Project Sdk="Microsoft.NETSdk">
+                        <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
@@ -42,37 +54,45 @@ public partial class EntryPointTests
                 ],
                 expectedResult: new()
                 {
-                    FilePath = "path/to/some directory with spaces",
+                    Path = "path/to/some directory with spaces",
                     Projects = [
                         new()
                         {
                             FilePath = "project.csproj",
                             TargetFrameworks = ["net8.0"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
                             ],
                             Properties = [
                                 new("TargetFramework", "net8.0", "path/to/some directory with spaces/project.csproj"),
                             ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         }
                     ]
                 }
             );
         }
 
-        [Fact]
-        public async Task WithSolution()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithSolution(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
                     "/",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -129,19 +149,20 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = "",
+                    Path = "",
                     Projects = [
                         new()
                         {
                             FilePath = "path/to/my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"]),
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -149,17 +170,24 @@ public partial class EntryPointTests
             );
         }
 
-        [Fact]
-        public async Task WithProject()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithProject(bool useDirectDiscovery)
         {
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
                     "path/to",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -193,19 +221,20 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = "path/to",
+                    Path = "path/to",
                     Projects = [
                         new()
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -213,18 +242,25 @@ public partial class EntryPointTests
             );
         }
 
-        [Fact]
-        public async Task WithDirectory()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WithDirectory(bool useDirectDiscovery)
         {
             var workspacePath = "path/to/";
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--workspace",
                     workspacePath,
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName),
                 ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
                 packages:
                 [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "7.0.1", "net45"),
@@ -258,19 +294,20 @@ public partial class EntryPointTests
                 },
                 expectedResult: new()
                 {
-                    FilePath = workspacePath,
+                    Path = workspacePath,
                     Projects = [
                         new()
                         {
                             FilePath = "my.csproj",
                             TargetFrameworks = ["net45"],
-                            ReferencedProjectPaths = [],
-                            ExpectedDependencyCount = 2,
                             Dependencies = [
                                 new("Some.Package", "7.0.1", DependencyType.PackagesConfig, TargetFrameworks: ["net45"])
                             ],
-                            Properties = [
-                                new("TargetFrameworkVersion", "v4.5", "path/to/my.csproj"),
+                            Properties = [],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
                             ],
                         }
                     ]
@@ -282,77 +319,84 @@ public partial class EntryPointTests
         public async Task WithDuplicateDependenciesOfDifferentTypes()
         {
             await RunAsync(path =>
-            [
-                "discover",
-                "--repo-root",
-                path,
-                "--workspace",
-                "path/to",
-            ],
-            new[]
-            {
-                ("path/to/my.csproj", """
-                    <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="7.0.1" />
-                      </ItemGroup>
-                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-                    </Project>
-                    """),
-                ("path/Directory.Build.props", """
-                    <Project>
-                        <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
-                          <GlobalPackageReference Include="System.Text.Json" Version="8.0.3" />
-                        </ItemGroup>
-                        <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' != 'true'">
-                          <PackageReference Include="System.Text.Json" Version="8.0.3" />
-                        </ItemGroup>
-                    </Project>
-                    """)
-            },
-            expectedResult: new()
-            {
-                FilePath = "path/to",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "my.csproj",
-                        TargetFrameworks = ["net8.0"],
-                        ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 2,
-                        Dependencies = [
-                            new("Newtonsoft.Json", "7.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            // $(ManagePackageVersionsCentrally) evaluates false by default, we only get a PackageReference
-                            new("System.Text.Json", "8.0.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
-                        ],
-                        Properties = [
-                            new("TargetFramework", "net8.0", "path/to/my.csproj"),
-                        ],
-                    },
-                    new()
-                    {
-                        FilePath = "../Directory.Build.props",
-                        ReferencedProjectPaths = [],
-                        ExpectedDependencyCount = 2,
-                        Dependencies = [
-                            new("System.Text.Json", "8.0.3", DependencyType.PackageReference, IsDirect: true),
-                            new("System.Text.Json", "8.0.3", DependencyType.GlobalPackageReference, IsDirect: true)
-                        ],
-                        Properties = [],
-                    }
-                ]
-            });
+                [
+                    "discover",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "path/to",
+                    "--output",
+                    Path.Combine(path, DiscoveryWorker.DiscoveryResultFileName)
+                ],
+                new[]
+                {
+                    ("path/to/my.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Package.A" Version="1.2.3" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("path/Directory.Build.props", """
+                        <Project>
+                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' != 'true'">
+                              <PackageReference Include="Package.B" Version="4.5.6" />
+                            </ItemGroup>
+                            <ItemGroup Condition="'$(ManagePackageVersionsCentrally)' == 'true'">
+                              <GlobalPackageReference Include="Package.B" Version="7.8.9" />
+                            </ItemGroup>
+                        </Project>
+                        """)
+                },
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                ],
+                expectedResult: new()
+                {
+                    Path = "path/to",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "my.csproj",
+                            TargetFrameworks = ["net8.0"],
+                            ExpectedDependencyCount = 2,
+                            Dependencies = [
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                            ],
+                            Properties = [
+                                new("ManagePackageVersionsCentrally", "false", "path/to/my.csproj"),
+                                new("TargetFramework", "net8.0", "path/to/my.csproj"),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "../Directory.Build.props"
+                            ],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                }
+            );
         }
 
         private static async Task RunAsync(
             Func<string, string[]> getArgs,
             TestFile[] initialFiles,
             ExpectedWorkspaceDiscoveryResult expectedResult,
-            MockNuGetPackage[]? packages = null)
+            MockNuGetPackage[]? packages = null,
+            ExperimentsManager? experimentsManager = null
+        )
         {
+            experimentsManager ??= new ExperimentsManager();
             var actualResult = await RunDiscoveryAsync(initialFiles, async path =>
             {
                 var sb = new StringBuilder();
@@ -365,8 +409,19 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await UpdateWorkerTestBase.MockJobFileInDirectory(path, experimentsManager);
                     await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, path);
                     var args = getArgs(path);
+
+                    // manually pull out the experiments manager for the validate step below
+                    for (int i = 0; i < args.Length - 1; i++)
+                    {
+                        if (args[i] == "--job-path")
+                        {
+                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                        }
+                    }
+
                     var result = await Program.Main(args);
                     if (result != 0)
                     {
@@ -378,9 +433,14 @@ public partial class EntryPointTests
                     Console.SetOut(originalOut);
                     Console.SetError(originalErr);
                 }
+
+                var resultPath = Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
+                var resultJson = await File.ReadAllTextAsync(resultPath);
+                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                return resultObject!;
             });
 
-            ValidateWorkspaceResult(expectedResult, actualResult);
+            ValidateWorkspaceResult(expectedResult, actualResult, experimentsManager);
         }
     }
 }

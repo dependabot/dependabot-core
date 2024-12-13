@@ -23,6 +23,9 @@ devcontainers:
 docker:
   - *shared
   - 'docker/**'
+dotnet_sdk:
+  - *shared
+  - 'dotnet_sdk/**'
 elm:
   - *shared
   - 'elm/**'

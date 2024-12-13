@@ -43,7 +43,7 @@ internal sealed class ProjectBuildFile : XmlBuildFile
     {
         var sdkDependencies = GetSdkDependencies();
         var packageDependencies = PackageItemNodes
-            .Select(GetPackageDependency)
+            .SelectMany(e => GetPackageDependencies(e) ?? Enumerable.Empty<Dependency>())
             .OfType<Dependency>();
         return sdkDependencies.Concat(packageDependencies);
     }
@@ -89,15 +89,16 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             : new Dependency(name, version, DependencyType.MSBuildSdk);
     }
 
-    private static Dependency? GetPackageDependency(IXmlElementSyntax element)
+    private static IEnumerable<Dependency>? GetPackageDependencies(IXmlElementSyntax element)
     {
+        List<Dependency> dependencies = [];
         var isUpdate = false;
 
-        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase);
+        var name = element.GetAttributeOrSubElementValue("Include", StringComparison.OrdinalIgnoreCase)?.Trim();
         if (name is null)
         {
             isUpdate = true;
-            name = element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase);
+            name = element.GetAttributeOrSubElementValue("Update", StringComparison.OrdinalIgnoreCase)?.Trim();
         }
 
         if (name is null || name.StartsWith("@("))
@@ -113,12 +114,18 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             isVersionOverride = version is not null;
         }
 
-        return new Dependency(
-            Name: name,
-            Version: version?.Length == 0 ? null : version,
-            Type: GetDependencyType(element.Name),
-            IsUpdate: isUpdate,
-            IsOverride: isVersionOverride);
+        dependencies.AddRange(
+            name.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(dep => new Dependency(
+                        Name: dep.Trim(),
+                        Version: string.IsNullOrEmpty(version) ? null : version,
+                        Type: GetDependencyType(element.Name),
+                        IsUpdate: isUpdate,
+                        IsOverride: isVersionOverride))
+        );
+
+
+        return dependencies;
     }
 
     private static DependencyType GetDependencyType(string name)

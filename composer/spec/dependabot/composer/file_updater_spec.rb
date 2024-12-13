@@ -50,6 +50,42 @@ RSpec.describe Dependabot::Composer::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "composer.json",
+          "composer.lock"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -110,24 +146,6 @@ RSpec.describe Dependabot::Composer::FileUpdater do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
         expect(parsed_updated_lockfile_content["prefer-stable"]).to be(false)
         expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.6.0")
-      end
-    end
-
-    describe "updates the lockfile using composer v1" do
-      let(:updated_lockfile_content) do
-        updated_files.find { |f| f.name == "composer.lock" }.content
-      end
-      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
-      let(:updated_lockfile_entry) do
-        parsed_updated_lockfile_content["packages"].find do |package|
-          package["name"] == dependency.name
-        end
-      end
-      let(:project_name) { "v1/exact_version" }
-
-      it "updates the dependency version and plugin-api-version (to match installed composer) in the lockfile" do
-        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("1.1.0")
       end
     end
 

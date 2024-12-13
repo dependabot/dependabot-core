@@ -1064,5 +1064,33 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
     end
+
+    describe "#ecosystem" do
+      subject(:ecosystem) { parser.ecosystem }
+
+      it "has the correct name" do
+        expect(ecosystem.name).to eq "maven"
+      end
+
+      describe "#package_manager" do
+        subject(:package_manager) { ecosystem.package_manager }
+
+        it "returns the correct package manager" do
+          expect(package_manager.name).to eq "maven"
+          expect(package_manager.requirement).to be_nil
+          expect(package_manager.version.to_s).to eq "NOT-AVAILABLE"
+        end
+      end
+
+      describe "#language" do
+        subject(:language) { ecosystem.language }
+
+        it "returns the correct language" do
+          expect(language.name).to eq "java"
+          expect(language.requirement).to be_nil
+          expect(language.version.to_s).to eq "NOT-AVAILABLE"
+        end
+      end
+    end
   end
 end

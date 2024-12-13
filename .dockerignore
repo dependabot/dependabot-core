@@ -25,3 +25,5 @@ git.store
 Dockerfile*
 *.md
 CODEOWNERS
+**/.vs
+**/NuGetUpdater/artifacts

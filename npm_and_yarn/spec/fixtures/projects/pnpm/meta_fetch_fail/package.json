@@ -1,0 +1,13 @@
+{
+    "name": "foo",
+    "version": "1.0.0",
+    "description": "",
+    "packageManager": "pnpm@9.0.1",
+    "main": "index.js",
+    "dependencies": {
+      "fetch-factory": "^2.0.1"
+    },
+    "devDependencies": {
+      "etag" : "^2.0.0"
+    }
+}

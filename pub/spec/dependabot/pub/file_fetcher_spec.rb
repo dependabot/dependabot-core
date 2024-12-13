@@ -52,4 +52,14 @@ RSpec.describe Dependabot::Pub::FileFetcher do
         .to match_array(%w(pubspec.yaml ../dep/pubspec.yaml))
     end
   end
+
+  context "when dealing with a pub workspace" do
+    let(:project_name) { "can_update_workspace" }
+    let(:directory) { "/" }
+
+    it "fetches the files" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(%w(app/pubspec.yaml pubspec.lock pubspec.yaml))
+    end
+  end
 end

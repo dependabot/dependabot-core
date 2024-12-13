@@ -441,26 +441,24 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       context "when dealing with POST" do
-        before do
-          @request_body = "request body"
-        end
+        let(:request_body) { "request body" }
 
         it "with failure count <= max_retries" do
           # Request succeeds on third attempt
           stub_request(:post, base_url)
-            .with(basic_auth: [username, password], body: @request_body)
+            .with(basic_auth: [username, password], body: request_body)
             .to_return({ status: 503 }, { status: 503 }, { status: 200 })
 
-          response = client.post(base_url, @request_body)
+          response = client.post(base_url, request_body)
           expect(response.status).to eq(200)
         end
 
         it "with failure count > max_retries raises an error" do
           stub_request(:post, base_url)
-            .with(basic_auth: [username, password], body: @request_body)
+            .with(basic_auth: [username, password], body: request_body)
             .to_return({ status: 503 }, { status: 503 }, { status: 503 }, { status: 503 })
 
-          expect { client.post(base_url, @request_body) }
+          expect { client.post(base_url, request_body) }
             .to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
         end
       end

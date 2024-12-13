@@ -49,6 +49,7 @@ job:
   package-manager: "silent"
   dependencies:
       - dependency-a
+      - dependency-a
   source:
     directories:
       - "/frontend"

@@ -7,6 +7,8 @@ require "dependabot/file_parsers/base"
 require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/native_helpers"
 require "sorbet-runtime"
+require "dependabot/nuget/package_manager"
+require "dependabot/nuget/language"
 
 # For details on how dotnet handles version constraints, see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
@@ -16,67 +18,129 @@ module Dependabot
       extend T::Sig
 
       require "dependabot/file_parsers/base/dependency_set"
-      require_relative "cache_manager"
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        return [] unless repo_contents_path
+        dependencies
+      end
 
-        cache = T.let(CacheManager.cache("file_parser.parse"), T::Hash[String, T::Array[Dependabot::Dependency]])
-        # key the cache on the dependency files, excluding the content
-        key = dependency_files.map { |d| d.to_h.except("content") }.to_s
-        cache[key] ||= begin
-          # run discovery for the repo
-          NativeHelpers.run_nuget_discover_tool(repo_root: T.must(repo_contents_path),
-                                                workspace_path: source&.directory || "/",
-                                                output_path: DiscoveryJsonReader.discovery_file_path,
-                                                credentials: credentials)
-          discovered_dependencies.dependencies
-        end
-
-        T.must(cache[key])
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
       end
 
       private
 
-      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-      def discovered_dependencies
-        discovery_json = DiscoveryJsonReader.discovery_json
-        return DependencySet.new unless discovery_json
+      sig { returns(T.nilable(T::Array[String])) }
+      def content_json
+        @content_json ||= T.let(begin
+          directory = source&.directory || "/"
+          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
+            repo_contents_path: T.must(repo_contents_path),
+            directory: directory,
+            credentials: credentials
+          )
 
-        Dependabot.logger.info("Discovery JSON content: #{discovery_json.content}")
-
-        DiscoveryJsonReader.new(
-          discovery_json: discovery_json
-        ).dependency_set
+          discovery_json_reader.workspace_discovery&.projects&.map do |framework|
+            T.let(framework.instance_variable_get(:@target_frameworks), T::Array[String]).compact.join(",")
+          end
+        end, T.nilable(T::Array[String]))
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def proj_files
-        projfile = /\.proj$/
-
-        dependency_files.select do |df|
-          df.name.match?(projfile)
-        end
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def project_files
-        projectfile = /\.(cs|vb|fs)proj$/
-
-        dependency_files.select do |df|
-          df.name.match?(projectfile)
-        end
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def dependencies
+        @dependencies ||= T.let(begin
+          directory = source&.directory || "/"
+          discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
+            repo_contents_path: T.must(repo_contents_path),
+            directory: directory,
+            credentials: credentials
+          )
+          discovery_json_reader.dependency_set.dependencies
+        end, T.nilable(T::Array[Dependabot::Dependency]))
       end
 
       sig { override.void }
       def check_required_files
-        return if project_files.any? || proj_files.any?
+        requirement_files = dependencies.flat_map do |dep|
+          dep.requirements.map { |r| T.let(r.fetch(:file), String) }
+        end.uniq
+
+        project_files = requirement_files.select { |f| File.basename(f).match?(/\.(cs|vb|fs)proj$/) }
+        global_json_file = requirement_files.select { |f| File.basename(f) == "global.json" }
+        dotnet_tools_json_file = requirement_files.select { |f| File.basename(f) == "dotnet-tools.json" }
+        return if project_files.any? || global_json_file.any? || dotnet_tools_json_file.any?
 
         raise Dependabot::DependencyFileNotFound.new(
-          "*.(cs|vb|fs)proj, *.proj",
-          "No project file or *.proj!"
+          "*.(cs|vb|fs)proj",
+          "No project file."
         )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        # Historically new version of language is released with incremental update of
+        # .Net version, so we tie the language with framework version for metric collection
+
+        nomenclature = "#{language_type} #{framework_version&.join(',')}".strip.tr(" ", "-")
+
+        Dependabot.logger.info("Detected language and framework #{nomenclature}")
+
+        case language_type
+
+        when CSharpLanguage::TYPE
+          CSharpLanguage.new(nomenclature)
+
+        when VBLanguage::TYPE
+          VBLanguage.new(nomenclature)
+
+        when FSharpLanguage::TYPE
+          FSharpLanguage.new(nomenclature)
+
+        when DotNet::TYPE
+          DotNet.new(nomenclature)
+
+        end
+      end
+
+      sig { returns(T.nilable(T::Array[String])) }
+      def framework_version
+        content_json
+      rescue StandardError
+        nil
+      end
+
+      sig { returns(T.nilable(String)) }
+      def language_type
+        requirement_files = dependencies.flat_map do |dep|
+          dep.requirements.map { |r| T.let(r.fetch(:file), String) }
+        end.uniq
+
+        return "cs" if requirement_files.any? { |f| File.basename(f).match?(/\.csproj$/) }
+        return "vb" if requirement_files.any? { |f| File.basename(f).match?(/\.vbproj$/) }
+        return "fs" if requirement_files.any? { |f| File.basename(f).match?(/\.fsproj$/) }
+
+        # return a fallback to avoid falling to exception
+        "dotnet"
+      end
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        NugetPackageManager.new(T.must(nuget_version))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def nuget_version
+        SharedHelpers.run_shell_command("dotnet nuget --version").split("Command Line").last&.strip
+      rescue StandardError
+        nil
       end
     end
   end

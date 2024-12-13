@@ -1,0 +1,13 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      rollup:
+        specifier: ^2.79.1
+        version: 2.79.1

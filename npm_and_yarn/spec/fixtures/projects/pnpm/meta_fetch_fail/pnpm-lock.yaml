@@ -1,0 +1,11 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  fetch-factory:
+    specifier: ^0.0.1
+    version: 0.0.1
+
+devDependencies:
+  etag:
+    specifier: ^1.0.0
+    version: 1.7.0

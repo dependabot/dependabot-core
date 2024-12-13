@@ -1,0 +1,13 @@
+{
+  "name": "test",
+  "version": "1.1.1",
+  "private": true,
+  "dependencies": {
+    "@blocknote/core": "^0.15.3"
+  },
+  "engines": {
+    "pnpm": ">=8.0.0 <11.0.0",
+    "node": ">=18.0.0 <19.0.0"
+  },
+  "packageManager": "pnpm@8.4.0+sha1.73c608c602d520c436c7b250330315d83ffcc1ee"
+}

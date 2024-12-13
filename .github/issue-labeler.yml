@@ -17,7 +17,7 @@
     - '(elm)'
 
 "L: git:submodules":
-    - '(git|submodules)'
+    - '(submodules)'
 
 "L: github:actions":
     - '(actions)'

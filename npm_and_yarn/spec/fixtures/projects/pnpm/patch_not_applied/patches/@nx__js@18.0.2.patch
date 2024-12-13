@@ -1,0 +1,61 @@
+diff --git a/.idea/13a1a2c358e469a3eef1cbaf1ca35967.iml b/.idea/13a1a2c358e469a3eef1cbaf1ca35967.iml
+new file mode 100644
+index 0000000000000000000000000000000000000000..cc5b7f96ae14b7c8332af8aa4292eb872549d0b2
+--- /dev/null
++++ b/.idea/13a1a2c358e469a3eef1cbaf1ca35967.iml
+@@ -0,0 +1,13 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<module type="WEB_MODULE" version="4">
++  <component name="NewModuleRootManager">
++    <content url="file://$MODULE_DIR$">
++      <excludeFolder url="file://$MODULE_DIR$/.idea/copilot/chatSessions" />
++      <excludeFolder url="file://$MODULE_DIR$/.tmp" />
++      <excludeFolder url="file://$MODULE_DIR$/temp" />
++      <excludeFolder url="file://$MODULE_DIR$/tmp" />
++    </content>
++    <orderEntry type="inheritedJdk" />
++    <orderEntry type="sourceFolder" forTests="false" />
++  </component>
++</module>
+\ No newline at end of file
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..90e0190f0b892e1baeec39c88c1a46b2761f9227
+--- /dev/null
++++ b/.idea/modules.xml
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectModuleManager">
++    <modules>
++      <module fileurl="file://$PROJECT_DIR$/.idea/13a1a2c358e469a3eef1cbaf1ca35967.iml" filepath="$PROJECT_DIR$/.idea/13a1a2c358e469a3eef1cbaf1ca35967.iml" />
++    </modules>
++  </component>
++</project>
+\ No newline at end of file
+diff --git a/src/executors/release-publish/release-publish.impl.js b/src/executors/release-publish/release-publish.impl.js
+index 5f30f0d87751d5ddb9f2ca54150aef281f6490be..2bbc0b471254fc1b785655457cc68dcb0edd8aa3 100644
+--- a/src/executors/release-publish/release-publish.impl.js
++++ b/src/executors/release-publish/release-publish.impl.js
+@@ -155,7 +155,10 @@ async function runExecutor(options, context) {
+             cwd: packageRoot,
+             stdio: ['ignore', 'pipe', 'pipe'],
+         });
+-        const stdoutData = JSON.parse(output.toString());
++        const outputString = output.toString()
++        const startOfObject = outputString.indexOf('{')
++        const endOfObject = outputString.lastIndexOf('}') + 1
++        const stdoutData = JSON.parse(outputString.slice(startOfObject, endOfObject))
+         // If npm workspaces are in use, the publish output will nest the data under the package name, so we normalize it first
+         const normalizedStdoutData = stdoutData[packageName] ?? stdoutData;
+         (0, log_tar_1.logTar)(normalizedStdoutData);
+@@ -171,8 +174,8 @@ async function runExecutor(options, context) {
+     }
+     catch (err) {
+         try {
++            console.error('npm publish error:', err);
+             const stdoutData = JSON.parse(err.stdout?.toString() || '{}');
+-            console.error('npm publish error:');
+             if (stdoutData.error.summary) {
+                 console.error(stdoutData.error.summary);
+             }

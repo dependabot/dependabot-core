@@ -14,7 +14,13 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [%r{\.github/workflows/.+\.ya?ml$}]
+        [
+          # Matches .yml or .yaml files in the .github/workflows directories
+          %r{\.github/workflows/.+\.ya?ml$},
+
+          # Matches .yml or .yaml files in the root directory or any subdirectory
+          %r{(?:^|/).+\.ya?ml$}
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -118,6 +124,8 @@ module Dependabot
         return unless comment.end_with? previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
       end

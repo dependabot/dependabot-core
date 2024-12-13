@@ -1,0 +1,6 @@
+lockfileVersion: '6.0'
+
+devDependencies:
+  eslint:
+    specifier: ^8.32.0
+    version: 8.57.0

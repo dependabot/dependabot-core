@@ -57,11 +57,75 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     )
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
   before do
     FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
   end
 
   it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "package.json",
+          "package-lock.json",
+          "npm-shrinkwrap.json",
+          "yarn.lock",
+          "pnpm-lock.yaml",
+          "subdirectory/package.json",
+          "subdirectory/package-lock.json",
+          "subdirectory/npm-shrinkwrap.json",
+          "subdirectory/yarn.lock",
+          "subdirectory/pnpm-lock.yaml",
+          "apps/dependabot_business/package.json",
+          "packages/package1/package.json",
+          "packages/package2/yarn.lock",
+          ".yarn/install-state.gz",
+          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
+          ".pnp.js",
+          ".pnp.cjs"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "Gemfile",
+          "Gemfile.lock"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -77,6 +141,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with both npm and yarn lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 
       it "updates the files" do
@@ -91,6 +157,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "without a lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6/simple_manifest") }
 
       its(:length) { is_expected.to eq(1) }
@@ -103,6 +171,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with multiple dependencies" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
       let(:dependencies) do
@@ -231,6 +301,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "with diverged lockfiles" do
       context "when updating a sub-dependency" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:dependency_name) { "stringstream" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
@@ -258,6 +329,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a shrinkwrap" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm4/shrinkwrap") }
 
       let(:updated_shrinkwrap) do
@@ -286,6 +358,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a git dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -346,6 +419,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when specified as a full URL" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           it "only updates the lockfile" do
@@ -363,6 +438,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the lockfile has an outdated source" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_outdated_source") }
 
             it "updates the lockfile" do
@@ -388,6 +465,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when the package lock is empty" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_empty_npm_lockfile") }
 
             it "updates the lockfile" do
@@ -403,6 +482,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when previously causing problems" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_git_url") }
 
             let(:dependency_name) { "slick-carousel" }
@@ -444,6 +525,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using ssh" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_ssh") }
 
             it "only updates the lockfile" do
@@ -500,6 +583,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
 
             context "with an npm6 lockfile" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency") }
 
               it "doesn't update the 'from' entry" do
@@ -518,6 +603,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           context "when using a URL token" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_token") }
 
             it "only updates the lockfile" do
@@ -540,6 +627,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: gitlab" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -588,6 +676,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: github" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency") }
 
           it "correctly update the lockfiles" do
@@ -606,6 +695,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a requirement" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { "^4.0.0" }
         let(:git_pack_fixture_name) { "is-number" }
         let(:ref) { "master" }
@@ -690,6 +780,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a reference" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { nil }
         let(:ref) { "4.0.0" }
         let(:old_req) { nil }
@@ -929,6 +1020,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a path-based dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/path_dependency") }
 
       let(:dependency_name) { "lodash" }
@@ -966,6 +1058,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a lerna.json and both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
 
       let(:dependency_name) { "etag" }
@@ -1030,6 +1123,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when updating a sub dependency with both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update") }
 
       let(:dependency_name) { "extend" }
@@ -1085,6 +1179,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "when one lockfile version is out of range" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range") }
 
         it "updates out of range to latest resolvable version" do
@@ -1116,6 +1211,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "when a wildcard is specified" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
       let(:version) { "0.2.0" }
@@ -1144,6 +1240,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     # npm specific tests #
     ######################
     describe "npm 6 specific" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/simple") }
 
       context "when the package lock is empty" do
@@ -3281,6 +3378,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when the npm registry access token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "${NPM_TOKEN}"
+          })]
+        end
+
+        let(:source) do
+          { type: "registry", url: "https://registry.npmjs.org" }
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${NPM_TOKEN}")
+          end
+        end
+      end
+
       context "when there's a duplicate indirect dependency" do
         let(:files) { project_dependency_files("yarn/duplicate_indirect_dependency") }
 
@@ -3324,6 +3443,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the version" do
           expect(updated_yarn_lock.content)
             .to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.4"))
+        end
+      end
+
+      context "when the private registry access #1 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://packagecloud.io/",
+            "token" => "${PACKAGECLOUD_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${PACKAGECLOUD_TOKEN}")
+          end
+        end
+      end
+
+      context "when the private registry access #2 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://npm.fontawesome.com/",
+            "token" => "${FONTAWESOME_NPM_AUTH_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${FONTAWESOME_NPM_AUTH_TOKEN}")
+          end
         end
       end
 
@@ -3970,6 +4125,85 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
           expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
         end
+      end
+    end
+  end
+
+  describe "without a package.json file" do
+    let(:child_class) do
+      Class.new(described_class) do
+        def check_required_files
+          %w(manifest).each do |filename|
+            unless get_original_file(filename)
+              raise Dependabot::DependencyFileNotFound.new(nil,
+                                                           "package.json not found.")
+            end
+          end
+        end
+      end
+    end
+    let(:updater_instance) do
+      child_class.new(
+        dependency_files: files,
+        dependencies: [dependency],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }]
+      )
+    end
+
+    let(:manifest) do
+      Dependabot::DependencyFile.new(
+        content: "a",
+        name: "manifest",
+        directory: "/path/to"
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        package_manager: "bundler",
+        requirements:
+          [{ file: "manifest", requirement: "~> 1.4.0", groups: [], source: nil }]
+      )
+    end
+    let(:files) { [manifest] }
+
+    describe "new file updater" do
+      subject { -> { updater_instance } }
+
+      context "when the required file is present" do
+        let(:files) { [manifest] }
+
+        it "doesn't raise" do
+          expect { updater_instance }.not_to raise_error
+        end
+      end
+
+      context "when the required file is missing" do
+        let(:files) { [] }
+
+        it "raises" do
+          expect { updater_instance }.to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
+    describe "#get_original_file" do
+      subject { updater_instance.send(:get_original_file, filename) }
+
+      context "when the requested file is present" do
+        let(:filename) { "manifest" }
+
+        it { is_expected.to eq(manifest) }
+      end
+
+      context "when the requested file is not present" do
+        let(:filename) { "package.json" }
+
+        it { is_expected.to be_nil }
       end
     end
   end

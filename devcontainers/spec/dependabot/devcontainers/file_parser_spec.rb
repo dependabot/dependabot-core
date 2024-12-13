@@ -217,4 +217,35 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       expect(dependencies).to be_empty
     end
   end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:project_name) { "config_in_root" }
+    let(:directory) { "/" }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "devcontainers"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "devcontainers"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "0.72.0"
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "node"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "18.20.5"
+      end
+    end
+  end
 end

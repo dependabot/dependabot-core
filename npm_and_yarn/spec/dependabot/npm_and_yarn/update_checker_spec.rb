@@ -56,11 +56,25 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { false }
+
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
   end
 
   it_behaves_like "an update checker"
@@ -565,6 +579,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(lowest_security_fix).to eq(Gem::Version.new("1.2.1"))
       end
     end
+
+    context "when the VulnerabilityAudit finds multiple top-level ancestors" do
+      let(:vulnerability_auditor) do
+        instance_double(described_class::VulnerabilityAuditor)
+      end
+
+      before do
+        allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
+        allow(vulnerability_auditor).to receive(:audit).and_return(
+          {
+            "fix_available" => true,
+            "top_level_ancestors" => %w(applause lodash)
+          }
+        )
+      end
+
+      it "returns nil to force a full unlock" do
+        expect(lowest_security_fix).to be_nil
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -670,6 +704,96 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
           expect(checker.preferred_resolvable_version)
             .to eq(Gem::Version.new("1.0.1"))
+        end
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+
+    let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+    let(:dependency_name) { "@dependabot-fixtures/npm-transitive-dependency" }
+    let(:target_version) { "1.2.1" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: "1.0.0",
+        requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    context "when the dependency is not vulnerable" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.0.0"],
+            safe_versions: [">=1.0.0 <2.0.0"]
+          )
+        ]
+      end
+
+      it "raises an error" do
+        expect { lowest_resolvable_security_fix_version }.to raise_error("Dependency not vulnerable!")
+      end
+    end
+
+    context "when the dependency is vulnerable" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<1.2.1"],
+            safe_versions: [">=1.2.1 <2.0.0"]
+          )
+        ]
+      end
+
+      context "when the dependency is top-level" do
+        let(:dependency_name) { "@dependabot-fixtures/npm-parent-dependency" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: "1.0.0",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:target_version) { "2.0.2" }
+
+        it "returns the lowest security fix version" do
+          allow(checker).to receive(:lowest_security_fix_version).and_return(Gem::Version.new(target_version))
+          expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+        end
+      end
+
+      context "when the dependency is not top-level" do
+        before { allow(dependency).to receive(:top_level?).and_return(false) }
+
+        context "when there are conflicting dependencies" do
+          before { allow(checker).to receive(:conflicting_dependencies).and_return(["conflict"]) }
+
+          it { is_expected.to be_nil }
+        end
+
+        context "when there are no conflicting dependencies" do
+          before { allow(checker).to receive(:conflicting_dependencies).and_return([]) }
+
+          it "returns the latest resolvable transitive security fix version with no unlock" do
+            allow(checker)
+              .to receive(:latest_resolvable_transitive_security_fix_version_with_no_unlock)
+              .and_return(Gem::Version.new(target_version))
+            expect(lowest_resolvable_security_fix_version).to eq(Gem::Version.new(target_version))
+          end
         end
       end
     end
@@ -1313,6 +1437,53 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     def eq_including_metadata(expected_array)
       eq(expected_array).and contain_exactly_including_metadata(*expected_array)
+    end
+
+    context "when a top-level dependency and a transitive dependency both need updating" do
+      let(:dependency_files) { project_dependency_files("npm8/top_level_and_transitive") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/top-level-and-transitive" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "lodash",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 4.17.21"]
+          )
+        ]
+      end
+      let(:dependency_version) { "3.10.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "lodash",
+          version: dependency_version,
+          requirements: [{
+            file: "package.json",
+            requirement: "^3.10.0",
+            groups: ["dependencies"],
+            source: {
+              type: "registry",
+              url: "https://registry.npmjs.org"
+            }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/lodash")
+          .and_return(status: 200, body: fixture("npm_responses", "lodash.json"))
+        stub_request(:head, "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz")
+          .and_return(status: 200)
+      end
+
+      it "correctly selects both top-level and parent of transitive" do
+        updated_dependencies = checker.send(:updated_dependencies_after_full_unlock)
+        expect(updated_dependencies.count).to eq(2)
+        expect(updated_dependencies.first.name).to eq("lodash")
+        expect(updated_dependencies.first.version).to eq("4.17.21")
+        expect(updated_dependencies.last.name).to eq("applause")
+        expect(updated_dependencies.last.version).to eq("2.0.4")
+      end
     end
 
     context "when dealing with a security update for a locked transitive dependency" do

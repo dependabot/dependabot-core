@@ -486,14 +486,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(Dir).to receive(:chdir).and_yield
 
         allow(Open3).to receive(:capture2e)
-          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node})
+          .with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}, anything)
           .and_return(["", exit_status])
       end
 
       context "when it's in the current (default) branch" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
         end
 
@@ -507,7 +507,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/releases/v1\n", exit_status])
         end
 
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
         end
 
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "when multiple branches include it and the current (default) branch NOT among them" do
         before do
           allow(Open3).to receive(:capture2e)
-            .with(anything, "git branch --remotes --contains #{reference}")
+            .with(anything, "git branch --remotes --contains #{reference}", anything)
             .and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
         end
 
@@ -606,9 +606,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#lowest_resolvable_security_fix_version" do
     subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
 
-    before { allow(checker).to receive(:lowest_security_fix_version).and_return("delegate") }
+    before do
+      allow(checker)
+        .to receive(:lowest_security_fix_version)
+        .and_return(Dependabot::GithubActions::Version.new("2.0.0"))
+    end
 
-    it { is_expected.to eq("delegate") }
+    it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0")) }
   end
 
   describe "#updated_requirements" do
@@ -806,7 +810,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(expected_requirements) }
     end
 
-    context "when a vulnerable dependency hase a major tag reference" do
+    context "when a vulnerable dependency has a major tag reference" do
       let(:dependency_name) { "kartverket/github-workflows" }
       let(:reference) { "v2" }
 
@@ -834,6 +838,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
           it "bumps to the lowest fixed version that keeps precision" do
             expect(updated_requirements.first[:source][:ref]).to eq("v3")
+          end
+        end
+
+        context "when no matching tag with a higher version is available" do
+          let(:upload_pack_fixture) { "github-workflows-no-tags" }
+
+          it "stays on the vulnerable version" do
+            expect(updated_requirements.first[:source][:ref]).to eq(reference)
           end
         end
       end

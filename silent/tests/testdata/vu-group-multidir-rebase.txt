@@ -1,0 +1,94 @@
+# Testing a grouped multi-dir configuration.
+
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+! stdout create_pull_request
+pr-updated foo/expected.json bar/expected.json
+
+-- foo/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- bar/manifest.json --
+{
+  "dependency-b": { "version": "1.2.4" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- foo/expected.json --
+{
+  "dependency-a": { "version": "1.2.5" },
+  "dependency-b": { "version": "1.2.5" }
+}
+
+-- bar/expected.json --
+{
+  "dependency-b": { "version": "1.2.5" },
+  "dependency-c": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-c --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/foo"
+      - "/bar"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: all
+      rules:
+        patterns:
+          - "*"
+  updating-a-pull-request: true
+  dependency-group-to-refresh: all
+  dependencies:
+    - dependency-a
+    - dependency-b
+    - dependency-c
+  existing-group-pull-requests:
+    - dependency-group-name: all
+      dependencies:
+        - dependency-name: dependency-a
+          dependency-version: 1.2.5
+          directory: "/foo"
+        - dependency-name: dependency-b
+          dependency-version: 1.2.5
+          directory: "/foo"
+        - dependency-name: dependency-b
+          dependency-version: 1.2.5
+          directory: "/bar"
+        - dependency-name: dependency-c
+          dependency-version: 1.2.5
+          directory: "/bar"

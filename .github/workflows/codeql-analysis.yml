@@ -12,8 +12,6 @@
 name: "CodeQL"
 
 on:  # yamllint disable-line rule:truthy
-  push:
-    branches: [ main ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main ]
@@ -47,23 +45,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL (ruby)
-        uses: github/codeql-action/init@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        uses: github/codeql-action/init@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
         with:
           languages: ${{ matrix.language }}
           config: |
             paths-ignore:
-              - 'bundler/spec/fixtures/projects/bundler1/invalid_ruby/Gemfile'
               - 'bundler/spec/fixtures/projects/bundler2/invalid_ruby/Gemfile'
         if: matrix.language == 'ruby'
 
       - name: Initialize CodeQL (others)
-        uses: github/codeql-action/init@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        uses: github/codeql-action/init@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
         with:
           languages: ${{ matrix.language }}
         if: matrix.language != 'ruby'
@@ -71,7 +68,7 @@ jobs:
       # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
       # If this step fails, then you should remove it and run the build manually (see below)
       - name: Autobuild
-        uses: github/codeql-action/autobuild@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        uses: github/codeql-action/autobuild@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 https://git.io/JvXDl
@@ -85,4 +82,4 @@ jobs:
       #   make release
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        uses: github/codeql-action/analyze@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0

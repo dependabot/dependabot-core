@@ -70,8 +70,8 @@ module Dependabot
                             run_yarn_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("pnpm-lock.yaml")
                             run_pnpm_updater(path, lockfile_name)
-                          elsif Helpers.npm8?(lockfile)
-                            run_npm8_updater(path, lockfile_name)
+                          elsif !Helpers.npm8?(lockfile)
+                            run_npm6_updater(path, lockfile_name)
                           else
                             run_npm_updater(path, lockfile_name)
                           end
@@ -143,7 +143,7 @@ module Dependabot
           end
         end
 
-        def run_npm8_updater(path, lockfile_name)
+        def run_npm_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
@@ -153,7 +153,7 @@ module Dependabot
           end
         end
 
-        def run_npm_updater(path, lockfile_name)
+        def run_npm6_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(

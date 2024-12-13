@@ -40,6 +40,8 @@ module Dependabot
 
     class UnmergedPRExists < StandardError; end
 
+    class BranchAlreadyExists < StandardError; end
+
     class BaseCommitNotUpToDate < StandardError; end
 
     class UnexpectedError < StandardError; end
@@ -181,10 +183,9 @@ module Dependabot
                    pr_message_header: nil, pr_message_footer: nil,
                    custom_labels: nil, author_details: nil, signature_key: nil,
                    commit_message_options: {}, vulnerabilities_fixed: {},
-                   reviewers: nil, assignees: nil, milestone: nil,
-                   branch_name_separator: "/", branch_name_prefix: "dependabot",
-                   branch_name_max_length: nil, label_language: false,
-                   automerge_candidate: false,
+                   reviewers: nil, assignees: nil, milestone: nil, branch_name_separator: "/",
+                   branch_name_prefix: "dependabot", branch_name_max_length: nil,
+                   label_language: false, automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
                    provider_metadata: {}, message: nil, dependency_group: nil, pr_message_max_length: nil,

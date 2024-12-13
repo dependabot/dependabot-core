@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -13,10 +13,12 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
         filenames.include?("pubspec.yaml")
       end
 
+      sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a pubspec.yaml."
       end
@@ -27,7 +29,7 @@ module Dependabot
         fetched_files << pubspec_yaml
         fetched_files << pubspec_lock if pubspec_lock
         # Fetch any additional pubspec.yamls in the same git repo for resolving
-        # local path-dependencies.
+        # local path-dependencies and workspace packages.
         extra_pubspecs = Dir.glob("**/pubspec.yaml", base: clone_repo_contents)
         fetched_files += extra_pubspecs.map do |pubspec|
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)
@@ -38,14 +40,16 @@ module Dependabot
 
       private
 
+      sig { returns(DependencyFile) }
       def pubspec_yaml
-        @pubspec_yaml ||= fetch_file_from_host("pubspec.yaml")
+        @pubspec_yaml ||= T.let(fetch_file_from_host("pubspec.yaml"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(DependencyFile)) }
       def pubspec_lock
         return @pubspec_lock if defined?(@pubspec_lock)
 
-        @pubspec_lock = fetch_file_if_present("pubspec.lock")
+        @pubspec_lock = T.let(fetch_file_if_present("pubspec.lock"), T.nilable(Dependabot::DependencyFile))
       end
     end
   end

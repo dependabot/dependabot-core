@@ -1,3 +1,0 @@
-source 'https://example.com' do
-  gem "business", "~> 1.0", require: true
-end

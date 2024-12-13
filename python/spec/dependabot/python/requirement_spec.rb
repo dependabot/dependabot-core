@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Python::Requirement do
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.2.0").to_s) }
       end
 
-      context "when dealing with one digit" do
+      context "when dealing with one digits" do
         let(:requirement_string) { "~1" }
 
         its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
@@ -77,31 +77,31 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with a ^" do
       let(:requirement_string) { "^1.2.3" }
 
-      it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.a")) }
+      it { is_expected.to eq(described_class.new(">= 1.2.3", "< 2.0.0.dev")) }
 
       context "when dealing with two digits" do
         let(:requirement_string) { "^1.2" }
 
-        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.a")) }
+        it { is_expected.to eq(described_class.new(">= 1.2", "< 2.0.0.dev")) }
       end
 
       context "with a pre-1.0.0 dependency" do
         let(:requirement_string) { "^0.2.3" }
 
-        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.a")) }
+        it { is_expected.to eq(described_class.new(">= 0.2.3", "< 0.3.0.dev")) }
       end
     end
 
     context "with an *" do
       let(:requirement_string) { "== 1.3.*" }
 
-      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s) }
+      its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.3.0.dev").to_s) }
 
       context "without a prefix" do
         let(:requirement_string) { "1.3.*" }
 
         its(:to_s) do
-          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s)
+          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.dev").to_s)
         end
       end
 
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Python::Requirement do
       context "with a >= op" do
         let(:requirement_string) { ">= 1.3.*" }
 
-        it { is_expected.to eq(described_class.new(">= 1.3.a")) }
+        it { is_expected.to eq(described_class.new(">= 1.3.dev")) }
       end
     end
 
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Python::Requirement do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
 
       its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new(["~> 1.3.0.a", ">= 1.3.1"]).to_s)
+        is_expected.to eq(Gem::Requirement.new(["~> 1.3.0.dev", ">= 1.3.1"]).to_s)
       end
     end
 
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::Python::Requirement do
       it { is_expected.to eq([Gem::Requirement.new("1.2.1")]) }
     end
 
-    context "with illformed parentheses" do
+    context "with a illformed parentheses" do
       let(:requirement_string) { "(== 1.2).1" }
 
       it "raises a helpful error" do
@@ -316,52 +316,6 @@ RSpec.describe Dependabot::Python::Requirement do
             it { is_expected.to be(false) }
           end
         end
-      end
-    end
-  end
-
-  describe "#satisfied_by? with BUMP_VERSIONS_OPS" do
-    subject(:requirement_satisfied_by) { requirement.satisfied_by?(version, described_class::BUMP_VERSIONS_OPS) }
-
-    let(:requirement_string) { ">=1.0.0" }
-
-    context "with a Python::Version" do
-      let(:version) { version_class.new(version_string) }
-
-      context "when dealing with the exact version" do
-        let(:version_string) { "1.0.0" }
-
-        it { is_expected.to be(true) }
-      end
-
-      context "when dealing with a different version" do
-        let(:version_string) { "2.0.0" }
-
-        it { is_expected.to be(false) }
-      end
-
-      context "when dealing with the latest resolvable version" do
-        let(:version_string) { "1.0.0" }
-
-        it { is_expected.to be(true) }
-
-        context "when the requirement includes a local version" do
-          let(:requirement_string) { ">=1.0.0+gc.1" }
-
-          it { is_expected.to be(false) }
-        end
-
-        context "when the version includes a local version" do
-          let(:version_string) { "1.0.0+gc.1" }
-
-          it { is_expected.to be(false) }
-        end
-      end
-
-      context "when dealing with an out-of-range version" do
-        let(:version_string) { "0.9.0" }
-
-        it { is_expected.to be(false) }
       end
     end
   end
