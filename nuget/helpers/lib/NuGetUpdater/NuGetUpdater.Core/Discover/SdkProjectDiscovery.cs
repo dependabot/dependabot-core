@@ -1,7 +1,10 @@
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Text.Json;
 using System.Xml.Linq;
 using System.Xml.XPath;
+
+using DotNetPackageCorrelation;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
@@ -9,12 +12,23 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
+using Semver;
+
 using LoggerProperty = Microsoft.Build.Logging.StructuredLogger.Property;
 
 namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
+    private static readonly SdkPackages _sdkPackages;
+
+    static SdkProjectDiscovery()
+    {
+        var packageCorrelationPath = Path.Combine(Path.GetDirectoryName(typeof(SdkProjectDiscovery).Assembly.Location)!, "dotnet-package-correlation.json");
+        var packageCorrelationJson = File.ReadAllText(packageCorrelationPath);
+        _sdkPackages = JsonSerializer.Deserialize<SdkPackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
+    }
+
     private static readonly HashSet<string> TopLevelPackageItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "PackageReference"
@@ -164,7 +178,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, experimentsManager);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -285,10 +299,18 @@ internal static class SdkProjectDiscovery
         return projectDiscoveryResults;
     }
 
+    private static string? GetCorrespondingSdkManagedPackageVersion(string packageName, string sdkVersionString)
+    {
+        var sdkVersion = SemVersion.Parse(sdkVersionString);
+        var replacementPackageVersion = _sdkPackages.GetReplacementPackageVersion(sdkVersion, packageName);
+        return replacementPackageVersion?.ToString();
+    }
+
     private static void ProcessResolvedPackageReference(
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
-        Dictionary<string, HashSet<string>> topLevelPackagesPerProject
+        Dictionary<string, HashSet<string>> topLevelPackagesPerProject,
+        ExperimentsManager experimentsManager
     )
     {
         var doRemoveOperation = node is RemoveItem;
@@ -348,7 +370,23 @@ internal static class SdkProjectDiscovery
 
                             if (doRemoveOperation)
                             {
-                                packagesPerTfm.Remove(packageName);
+                                var wasRemoved = packagesPerTfm.Remove(packageName);
+                                if (wasRemoved)
+                                {
+                                    if (experimentsManager.InstallDotnetSdks)
+                                    {
+                                        // dotnet package correlation correction requires specific dotnet sdk handling
+                                        var sdkVersionString = GetPropertyValueFromProjectEvaluation(projectEvaluation, "NETCoreSdkVersion");
+                                        if (sdkVersionString is not null)
+                                        {
+                                            var replacementVersion = GetCorrespondingSdkManagedPackageVersion(packageName, sdkVersionString);
+                                            if (replacementVersion is not null)
+                                            {
+                                                packagesPerTfm[packageName] = replacementVersion.ToString();
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             if (doAddOperation)
