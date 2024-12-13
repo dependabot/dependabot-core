@@ -1,6 +1,8 @@
 using System.CommandLine;
 
 using NuGetUpdater.Core;
+using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 
 namespace NuGetUpdater.Cli.Commands;
@@ -13,7 +15,6 @@ internal static class RunCommand
     internal static readonly Option<string> JobIdOption = new("--job-id") { IsRequired = true };
     internal static readonly Option<FileInfo> OutputPathOption = new("--output-path") { IsRequired = true };
     internal static readonly Option<string> BaseCommitShaOption = new("--base-commit-sha") { IsRequired = true };
-    internal static readonly Option<bool> VerboseOption = new("--verbose", getDefaultValue: () => false);
 
     internal static Command GetCommand(Action<int> setExitCode)
     {
@@ -24,18 +25,22 @@ internal static class RunCommand
             ApiUrlOption,
             JobIdOption,
             OutputPathOption,
-            BaseCommitShaOption,
-            VerboseOption
+            BaseCommitShaOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
-        command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId, outputPath, baseCommitSha, verbose) =>
+        command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId, outputPath, baseCommitSha) =>
         {
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
-            var worker = new RunWorker(apiHandler, new Logger(verbose));
+            var logger = new ConsoleLogger();
+            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
+            var discoverWorker = new DiscoveryWorker(experimentsManager, logger);
+            var analyzeWorker = new AnalyzeWorker(experimentsManager, logger);
+            var updateWorker = new UpdaterWorker(experimentsManager, logger);
+            var worker = new RunWorker(apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
             await worker.RunAsync(jobPath, repoContentsPath, baseCommitSha, outputPath);
-        }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption, OutputPathOption, BaseCommitShaOption, VerboseOption);
+        }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption, OutputPathOption, BaseCommitShaOption);
 
         return command;
     }

@@ -285,4 +285,54 @@ RSpec.describe Dependabot::Swift::FileParser do
 
     it_behaves_like "parse"
   end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:project_name) { "Example" }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "swift"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "swift"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "6.0.1.pre.dev"
+      end
+    end
+
+    describe "#package_manager_version" do
+      # If this test starts failing, the format of the output of `swing package --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:package_manager_version) { parser.send(:package_manager_version) }
+
+      it "has the correct format" do
+        expect(package_manager_version.match(/^\d+(?:\.\d+)*/)).to be_truthy
+      end
+    end
+
+    describe "#swift_version" do
+      # If this test starts failing, the format of the output of `swing --version` has
+      # changed and you'll need to update the code to extract the version correctly.
+      subject(:swift_version) { parser.send(:swift_version) }
+
+      it "has the correct format" do
+        expect(swift_version.match(/^\d+(?:\.\d+)*$/)).to be_truthy
+      end
+    end
+
+    describe "#language" do
+      subject(:language) { ecosystem.language }
+
+      it "returns the correct language" do
+        expect(language.name).to eq "swift"
+        expect(language.requirement).to be_nil
+        expect(language.version.to_s).to eq "6.0.1"
+      end
+    end
+  end
 end

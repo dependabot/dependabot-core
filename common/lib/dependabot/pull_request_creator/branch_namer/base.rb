@@ -18,9 +18,6 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :target_branch
 
-        sig { returns(T::Array[String]) }
-        attr_reader :existing_branches
-
         sig { returns(String) }
         attr_reader :separator
 
@@ -35,19 +32,17 @@ module Dependabot
             dependencies: T::Array[Dependency],
             files: T::Array[DependencyFile],
             target_branch: T.nilable(String),
-            existing_branches: T::Array[String],
             separator: String,
             prefix: String,
             max_length: T.nilable(Integer)
           )
             .void
         end
-        def initialize(dependencies:, files:, target_branch:, existing_branches: [],
-                       separator: "/", prefix: "dependabot", max_length: nil)
+        def initialize(dependencies:, files:, target_branch:, separator: "/",
+                       prefix: "dependabot", max_length: nil)
           @dependencies      = dependencies
           @files             = files
           @target_branch     = target_branch
-          @existing_branches = existing_branches
           @separator         = separator
           @prefix            = prefix
           @max_length        = max_length
@@ -74,25 +69,7 @@ module Dependabot
             sanitized_name[[T.must(max_length) - sha.size, 0].max..] = sha
           end
 
-          if Dependabot::Experiments.enabled?(:dedup_branch_names)
-            dedup_existing_branches(sanitized_name)
-          else
-            sanitized_name
-          end
-        end
-
-        sig { params(ref: String).returns(String) }
-        def dedup_existing_branches(ref)
-          return ref unless existing_branches.include?(ref)
-
-          i = 1
-          new_ref = "#{ref}-#{i}"
-          while existing_branches.include?(new_ref)
-            i += 1
-            new_ref = "#{ref}-#{i}"
-          end
-
-          new_ref
+          sanitized_name
         end
 
         sig { params(ref: String).returns(String) }

@@ -20,6 +20,12 @@ module Dependabot
         REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
         GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
 
+        # Note that as of Rust 1.80, git error message handling in the `cargo update` command changed.
+        # This change causes the NOT_OUR_REF error to appear *before* the UNABLE_TO_UPDATE error.
+        # Issue filed in Cargo project: https://github.com/rust-lang/cargo/issues/14621
+        NOT_OUR_REF = /fatal: remote error: upload-pack: not our ref/
+        NOT_OUR_REF_REGEX = /#{NOT_OUR_REF}.*#{UNABLE_TO_UPDATE}/m
+
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
           @dependency = dependency
@@ -223,7 +229,7 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, urls
           end
 
-          [BRANCH_NOT_FOUND_REGEX, REF_NOT_FOUND_REGEX, GIT_REF_NOT_FOUND_REGEX].each do |regex|
+          [BRANCH_NOT_FOUND_REGEX, REF_NOT_FOUND_REGEX, GIT_REF_NOT_FOUND_REGEX, NOT_OUR_REF_REGEX].each do |regex|
             next unless error.message.match?(regex)
 
             dependency_url = error.message.match(regex).named_captures.fetch("url").split(/[#?]/).first

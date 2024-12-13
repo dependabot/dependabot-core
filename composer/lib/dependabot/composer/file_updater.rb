@@ -46,7 +46,7 @@ module Dependabot
       private
 
       def check_required_files
-        raise "No composer.json!" unless get_original_file("composer.json")
+        raise "No #{PackageManager::MANIFEST_FILENAME}!" unless get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
       def updated_composer_json_content
@@ -66,11 +66,11 @@ module Dependabot
       end
 
       def composer_json
-        @composer_json ||= get_original_file("composer.json")
+        @composer_json ||= get_original_file(PackageManager::MANIFEST_FILENAME)
       end
 
       def lockfile
-        @lockfile ||= get_original_file("composer.lock")
+        @lockfile ||= get_original_file(PackageManager::LOCKFILE_FILENAME)
       end
     end
   end

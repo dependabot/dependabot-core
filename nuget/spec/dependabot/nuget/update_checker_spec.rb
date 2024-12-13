@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/nuget/analysis/analysis_json_reader"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
+require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/update_checker"
 require "dependabot/nuget/requirement"
@@ -55,39 +55,79 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
 
-  before do
-    Dependabot::Experiments.register(:nuget_native_analysis, true)
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: directory,
+          branch: "main"
+        }
+      }
+    }
   end
+  let(:directory) { "/" }
 
   it_behaves_like "an update checker"
+
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
+
+  def clean_common_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
+  end
 
   def run_analyze_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
+    clean_common_files
 
-    # don't allow a previous test to pollute the file parser cache
-    Dependabot::Nuget::FileParser.file_dependency_cache.clear
+    ensure_job_file do
+      # ensure discovery files are present
+      Dependabot::Nuget::DiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                        directory: directory,
+                                                                        credentials: [])
 
-    # calling `#parse` is necessary to force `discover` which is stubbed below
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
+      # calling `#parse` is necessary to force `discover` which is stubbed below
+      Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                        source: source,
+                                        repo_contents_path: repo_contents_path).parse
 
-    # create the checker...
-    checker = described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      repo_contents_path: repo_contents_path,
-      ignored_versions: ignored_versions,
-      security_advisories: security_advisories
-    )
+      # create the checker...
+      checker = described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        repo_contents_path: repo_contents_path,
+        ignored_versions: ignored_versions,
+        security_advisories: security_advisories
+      )
 
-    # ...and invoke the actual test
-    yield checker
+      # ...and invoke the actual test
+      yield checker
+    end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    clean_common_files
   end
 
   def registration_index_url(name)
@@ -128,111 +168,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
 
   describe "up_to_date?" do
-    context "with a property dependency whose property couldn't be found" do
-      let(:dependency_name) { "Nuke.Common" }
-      let(:dependency_requirements) do
-        [{
-          requirement: "$(NukeVersion)",
-          file: "my.csproj",
-          groups: ["dependencies"],
-          source: nil,
-          metadata: { property_name: "NukeVersion" }
-        }]
-      end
-      let(:dependency_version) { "$(NukeVersion)" }
-
-      before do
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [
-              {
-                FilePath: "my.csproj",
-                Dependencies: [], # dependency not found
-                IsSuccess: true,
-                Properties: [
-                  {
-                    Name: "TargetFrameworks",
-                    Value: "netstandard1.6;net462",
-                    SourceFilePath: "my.csproj"
-                  }
-                ],
-                TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
-              }
-            ],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          },
-          dependency_name: "Nuke.Common",
-          analysis_content_hash: {
-            UpdatedVersion: "$(NukeVersion)",
-            CanUpdate: false,
-            VersionComesFromMultiDependencyProperty: false,
-            UpdatedDependencies: [],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          }
-        )
-      end
-
-      it "reports the expected result" do
-        run_analyze_test do |checker|
-          expect(checker.up_to_date?).to be(true)
-        end
-      end
-    end
-
-    context "with a dependency that is not reported" do
-      let(:dependency_name) { "Nuke.Common" }
-      let(:dependency_requirements) { [] }
-      let(:dependency_version) { "2.0.0" }
-
-      before do
-        intercept_native_tools(
-          discovery_content_hash: {
-            Path: "",
-            IsSuccess: true,
-            Projects: [
-              {
-                FilePath: "my.csproj",
-                Dependencies: [], # dependency not found
-                IsSuccess: true,
-                Properties: [
-                  {
-                    Name: "TargetFrameworks",
-                    Value: "netstandard1.6;net462",
-                    SourceFilePath: "my.csproj"
-                  }
-                ],
-                TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
-              }
-            ],
-            DirectoryPackagesProps: nil,
-            GlobalJson: nil,
-            DotNetToolsJson: nil
-          },
-          dependency_name: "Nuke.Common",
-          analysis_content_hash: {
-            UpdatedVersion: "2.0.0",
-            CanUpdate: false,
-            VersionComesFromMultiDependencyProperty: false,
-            UpdatedDependencies: []
-          }
-        )
-      end
-
-      it "reports the expected result" do
-        run_analyze_test do |checker|
-          expect(checker.up_to_date?).to be(true)
-        end
-      end
-    end
-
     context "with a dependency that can be updated" do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_requirements) { [] }
@@ -268,10 +203,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net462", "netstandard1.6"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -314,8 +250,34 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           discovery_content_hash: {
             Path: "",
             IsSuccess: false,
-            Projects: [],
-            DirectoryPackagesProps: nil,
+            Projects: [{
+              FilePath: "my.csproj",
+              Dependencies: [{
+                Name: "Nuke.Common",
+                Version: "2.0.0",
+                Type: "Unknown",
+                EvaluationResult: nil,
+                TargetFrameworks: ["net8.0"],
+                IsDevDependency: false,
+                IsDirect: true,
+                IsTransitive: false,
+                IsOverride: false,
+                IsUpdate: false,
+                InfoUrl: nil
+              }],
+              IsSuccess: true,
+              Properties: [
+                {
+                  Name: "TargetFramework",
+                  Value: "net8.0",
+                  SourceFilePath: "my.csproj"
+                }
+              ],
+              TargetFrameworks: ["net8.0"],
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
+            }],
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -371,10 +333,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -440,10 +403,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -521,10 +485,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -602,10 +567,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -681,10 +647,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },
@@ -762,10 +729,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   }
                 ],
                 TargetFrameworks: ["net8.0"],
-                ReferencedProjectPaths: []
+                ReferencedProjectPaths: [],
+                ImportedFiles: [],
+                AdditionalFiles: []
               }
             ],
-            DirectoryPackagesProps: nil,
             GlobalJson: nil,
             DotNetToolsJson: nil
           },

@@ -30,7 +30,8 @@ module Dependabot
       Excon.get(
         url,
         idempotent: true,
-        **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
+        **SharedHelpers.excon_defaults({ headers: headers }.merge(options)),
+        retry_interval: 5
       )
     rescue Excon::Error::Timeout => e
       cache_error(url, e)

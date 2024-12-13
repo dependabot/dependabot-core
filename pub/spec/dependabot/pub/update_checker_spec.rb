@@ -839,6 +839,28 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
+  context "when given a project with dependencies from dart sdk" do
+    let(:project) { "can_update_with_dart_sdk_deps" }
+    let(:dependency_name) { "lints" }
+    let(:requirements_to_unlock) { :all }
+
+    it "can update lints" do
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "lints",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["dev"], requirement: "^3.0.0", source: nil
+          }],
+          "previous_version" => "3.0.0",
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["dev"], requirement: "^4.0.0", source: nil
+          }],
+          "version" => "4.0.0" }
+      ]
+    end
+  end
+
   context "when loading a YAML file with alias" do
     fixture = "spec/fixtures/projects/yaml_alias/"
     alias_info_file = "pubspec_alias_true.yaml"

@@ -1,8 +1,10 @@
 using System.Text;
+using System.Text.Json;
 using System.Xml.Linq;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test;
 using NuGetUpdater.Core.Test.Analyze;
 using NuGetUpdater.Core.Test.Update;
@@ -24,6 +26,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -32,7 +36,6 @@ public partial class EntryPointTests
                     Path.Join(path, "Some.Package.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages: [
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", additionalMetadata: [repositoryXml]),
@@ -93,7 +96,9 @@ public partial class EntryPointTests
                               "TargetFrameworks": [
                                 "net8.0"
                               ],
-                              "ReferencedProjectPaths": []
+                              "ReferencedProjectPaths": [],
+                              "ImportedFiles": [],
+                              "AdditionalFiles": []
                             }
                           ],
                           "DirectoryPackagesProps": null,
@@ -141,6 +146,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -149,7 +156,6 @@ public partial class EntryPointTests
                     Path.Join(path, "some-global-tool.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages:
                 [
@@ -229,6 +235,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -237,7 +245,6 @@ public partial class EntryPointTests
                     Path.Join(path, "Some.MSBuild.Sdk.json"),
                     "--analysis-folder-path",
                     Path.Join(path, AnalyzeWorker.AnalysisDirectoryName),
-                    "--verbose",
                 ],
                 packages:
                 [
@@ -307,8 +314,16 @@ public partial class EntryPointTests
             );
         }
 
-        private static async Task RunAsync(Func<string, string[]> getArgs, string dependencyName, TestFile[] initialFiles, ExpectedAnalysisResult expectedResult, MockNuGetPackage[]? packages = null)
+        private static async Task RunAsync(
+            Func<string, string[]> getArgs,
+            string dependencyName,
+            TestFile[] initialFiles,
+            ExpectedAnalysisResult expectedResult,
+            MockNuGetPackage[]? packages = null,
+            ExperimentsManager? experimentsManager = null
+        )
         {
+            experimentsManager ??= new ExperimentsManager();
             var actualResult = await RunAnalyzerAsync(dependencyName, initialFiles, async path =>
             {
                 var sb = new StringBuilder();
@@ -321,8 +336,19 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await UpdateWorkerTestBase.MockJobFileInDirectory(path, experimentsManager);
                     await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, path);
                     var args = getArgs(path);
+
+                    // manually pull out the experiments manager for the validate step below
+                    for (int i = 0; i < args.Length - 1; i++)
+                    {
+                        if (args[i] == "--job-path")
+                        {
+                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                        }
+                    }
+
                     var result = await Program.Main(args);
                     if (result != 0)
                     {
@@ -334,6 +360,11 @@ public partial class EntryPointTests
                     Console.SetOut(originalOut);
                     Console.SetError(originalErr);
                 }
+
+                var resultPath = Path.Join(path, AnalyzeWorker.AnalysisDirectoryName, $"{dependencyName}.json");
+                var resultJson = await File.ReadAllTextAsync(resultPath);
+                var resultObject = JsonSerializer.Deserialize<AnalysisResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                return resultObject!;
             });
 
             ValidateAnalysisResult(expectedResult, actualResult);

@@ -54,9 +54,6 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking and updating security pull requests...")
 
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
-
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
@@ -64,6 +61,9 @@ module Dependabot
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependencies.last)
+        ensure
+          # Record ecosystem metrics for the update job
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         private
@@ -132,7 +132,28 @@ module Dependabot
           # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
-          lead_dep_name = job_dependencies.first&.downcase
+          # Dependabot::Experiments.register(:lead_security_dependency, true)
+
+          if Dependabot::Experiments.enabled?(:lead_security_dependency)
+            lead_dep_name = security_advisory_dependency.downcase
+
+            # telemetry data collection
+            Dependabot.logger.info(
+              "Security advisory dependency: #{lead_dep_name}\n" \
+              "First dependency in list: #{job_dependencies.first&.downcase}"
+            )
+
+            if lead_dep_name != job_dependencies.first&.downcase
+              Dependabot.logger.info(
+                "Difference found between security-advisory (#{lead_dep_name}) and " \
+                "first-dependency (#{job_dependencies.first&.downcase})"
+              )
+            end
+
+          else
+            lead_dep_name = job_dependencies.first&.downcase
+          end
+
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
@@ -174,7 +195,9 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job_dependencies.map(&:downcase)
-          if dependency_change.updated_dependencies.map { |x| x.name.downcase } != job_dependencies
+          changed_dependencies = dependency_change.updated_dependencies.map { |x| x.name.downcase }
+
+          if changed_dependencies.sort_by(&:downcase) != job_dependencies.sort_by(&:downcase)
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
@@ -287,6 +310,11 @@ module Dependabot
                                  "#{job_dependencies.join(', ')} - #{reason_string}")
 
           service.close_pull_request(job_dependencies, reason)
+        end
+
+        sig { returns(String) }
+        def security_advisory_dependency
+          T.cast(job.security_advisories.first, T::Hash[String, String])["dependency-name"].to_s
         end
       end
     end

@@ -38,7 +38,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   let(:previous_version) { "1.4.0" }
   let(:files) { [gemfile] }
   let(:target_branch) { nil }
-  let(:existing_branches) { [] }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -86,29 +85,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       let(:prefix) { "myapp" }
 
       it { is_expected.to eq("myapp/dummy/business-1.5.0") }
-    end
-
-    context "with a branch name that already exists" do
-      before do
-        Dependabot::Experiments.register(:dedup_branch_names, true)
-      end
-
-      let!(:existing_branches) do
-        [
-          "dependabot/dummy/business-1.5.0",
-          "dependabot/dummy/business-1.5.0-1"
-        ]
-      end
-      let(:namer) do
-        described_class.new(
-          dependencies: dependencies,
-          files: files,
-          target_branch: target_branch,
-          existing_branches: existing_branches
-        )
-      end
-
-      it { is_expected.to eq("dependabot/dummy/business-1.5.0-2") }
     end
 
     context "with a target branch" do

@@ -46,11 +46,14 @@ public class RequirementTests
     }
 
     [Theory]
+    [InlineData("> *", "> 0")] // standard wildcard, no digits
     [InlineData("> 1.*", "> 1.0")] // standard wildcard, single digit
     [InlineData("> 1.2.*", "> 1.2.0")] // standard wildcard, multiple digit
+    [InlineData("> a", "> 0")] // alternate wildcard, no digits
     [InlineData("> 1.a", "> 1.0")] // alternate wildcard, single digit
     [InlineData("> 1.2.a", "> 1.2.0")] // alternate wildcard, multiple digit
-    public void Parse_ConvertsWildcardInVersion(string givenRequirementString, string expectedRequirementString)
+    [InlineData(">= 1.40.0, ", ">= 1.40.0")] // empty string following comma
+    public void Parse_Requirement(string givenRequirementString, string expectedRequirementString)
     {
         var parsedRequirement = Requirement.Parse(givenRequirementString);
         var actualRequirementString = parsedRequirement.ToString();

@@ -77,7 +77,7 @@ RSpec.describe Dependabot::ApiClient do
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
-
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
       stub_request(:post, create_pull_request_url)
         .to_return(status: 204, headers: headers)
     end
@@ -506,6 +506,89 @@ RSpec.describe Dependabot::ApiClient do
         expect(Dependabot.logger).to have_received(:debug).with(
           "Unable to report metric 'apples'."
         )
+      end
+    end
+  end
+
+  describe "record_ecosystem_meta" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(true)
+    end
+
+    let(:ecosystem) do
+      Dependabot::Ecosystem.new(
+        name: "bundler",
+        package_manager: instance_double(
+          Dependabot::Ecosystem::VersionManager,
+          name: "bundler",
+          version: Dependabot::Version.new("2.1.4"),
+          requirement: instance_double(
+            Dependabot::Requirement,
+            constraints: [">= 2.0"],
+            min_version: Dependabot::Version.new("2.0.0"),
+            max_version: Dependabot::Version.new("3.0.0")
+          )
+        ),
+        language: instance_double(
+          Dependabot::Ecosystem::VersionManager,
+          name: "ruby",
+          version: Dependabot::Version.new("2.7.0"),
+          requirement: nil
+        )
+      )
+    end
+    let(:record_ecosystem_meta_url) { "http://example.com/update_jobs/1/record_ecosystem_meta" }
+
+    it "hits the correct endpoint" do
+      client.record_ecosystem_meta(ecosystem)
+
+      expect(WebMock)
+        .to have_requested(:post, record_ecosystem_meta_url)
+        .with(headers: { "Authorization" => "token" })
+    end
+
+    it "encodes the payload correctly" do
+      client.record_ecosystem_meta(ecosystem)
+
+      expect(WebMock).to(have_requested(:post, record_ecosystem_meta_url).with do |req|
+        data = JSON.parse(req.body)["data"][0]["ecosystem"]
+
+        expect(data).not_to be_nil # Ensure data is present
+        expect(data["name"]).to eq("bundler")
+        expect(data["package_manager"]).to include(
+          "name" => "bundler",
+          "raw_version" => "2.1.4",
+          "version" => "2.1.4",
+          "requirement" => {
+            "max_raw_version" => "3.0.0",
+            "max_version" => "3.0.0",
+            "min_raw_version" => "2.0.0",
+            "min_version" => "2.0.0",
+            "raw_constraint" => ">= 2.0"
+          }
+        )
+        expect(data["language"]).to include(
+          "name" => "ruby",
+          "version" => "2.7.0"
+        )
+      end)
+    end
+
+    context "when ecosystem is nil" do
+      it "does not send a request" do
+        client.record_ecosystem_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
+      end
+    end
+
+    context "when feature flag is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_record_ecosystem_meta).and_return(false)
+      end
+
+      it "does not send a request" do
+        client.record_ecosystem_meta(ecosystem)
+        expect(WebMock).not_to have_requested(:post, record_ecosystem_meta_url)
       end
     end
   end

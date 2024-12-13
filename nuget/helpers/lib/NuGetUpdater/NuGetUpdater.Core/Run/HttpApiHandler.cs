@@ -25,6 +25,11 @@ public class HttpApiHandler : IApiHandler
         _jobId = jobId;
     }
 
+    public async Task RecordUpdateJobError(JobErrorBase error)
+    {
+        await PostAsJson("record_update_job_error", error);
+    }
+
     public async Task UpdateDependencyList(UpdatedDependencyList updatedDependencyList)
     {
         await PostAsJson("update_dependency_list", updatedDependencyList);
@@ -45,13 +50,19 @@ public class HttpApiHandler : IApiHandler
         await PostAsJson("mark_as_processed", markAsProcessed);
     }
 
-    private async Task PostAsJson(string endpoint, object body)
+    internal static string Serialize(object body)
     {
         var wrappedBody = new
         {
-            Data = body,
+            Data = body
         };
         var payload = JsonSerializer.Serialize(wrappedBody, SerializerOptions);
+        return payload;
+    }
+
+    private async Task PostAsJson(string endpoint, object body)
+    {
+        var payload = Serialize(body);
         var content = new StringContent(payload, Encoding.UTF8, "application/json");
         var response = await HttpClient.PostAsync($"{_apiUrl}/update_jobs/{_jobId}/{endpoint}", content);
         var _ = response.EnsureSuccessStatusCode();

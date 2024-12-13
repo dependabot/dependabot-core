@@ -21,14 +21,19 @@ internal static class CompatibilityChecker
         PackageIdentity package,
         ImmutableArray<NuGetFramework> projectFrameworks,
         NuGetContext nugetContext,
-        Logger logger,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
-        var (isDevDependency, packageFrameworks) = await GetPackageInfoAsync(
+        var packageInfo = await GetPackageInfoAsync(
             package,
             nugetContext,
             cancellationToken);
+        if (packageInfo is null)
+        {
+            return false;
+        }
 
+        var (isDevDependency, packageFrameworks) = packageInfo.GetValueOrDefault();
         return PerformCheck(package, projectFrameworks, isDevDependency, packageFrameworks, logger);
     }
 
@@ -37,7 +42,7 @@ internal static class CompatibilityChecker
         ImmutableArray<NuGetFramework> projectFrameworks,
         bool isDevDependency,
         ImmutableArray<NuGetFramework> packageFrameworks,
-        Logger logger)
+        ILogger logger)
     {
         // development dependencies are packages such as analyzers which need to be compatible with the compiler not the
         // project itself, but some packages that report themselves as development dependencies still contain target
@@ -63,23 +68,37 @@ internal static class CompatibilityChecker
         var incompatibleFrameworks = projectFrameworks.Where(f => !compatibleFrameworks.Contains(f)).ToArray();
         if (incompatibleFrameworks.Length > 0)
         {
-            logger.Log($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");
+            logger.Info($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");
             return false;
         }
 
         return true;
     }
 
-    internal static async Task<PackageInfo> GetPackageInfoAsync(
+    internal static async Task<PackageReaders?> GetPackageReadersAsync(
         PackageIdentity package,
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
-        var tempPackagePath = GetTempPackagePath(package, nugetContext);
-        var readers = File.Exists(tempPackagePath)
-            ? ReadPackage(tempPackagePath)
+        var packagePath = GetPackagePath(package, nugetContext);
+        var readers = File.Exists(packagePath)
+            ? ReadPackage(packagePath)
             : await DownloadPackageAsync(package, nugetContext, cancellationToken);
+        return readers;
+    }
 
+    internal static async Task<PackageInfo?> GetPackageInfoAsync(
+        PackageIdentity package,
+        NuGetContext nugetContext,
+        CancellationToken cancellationToken)
+    {
+        var readersOption = await GetPackageReadersAsync(package, nugetContext, cancellationToken);
+        if (readersOption is null)
+        {
+            return null;
+        }
+
+        var readers = readersOption.GetValueOrDefault();
         var nuspecStream = await readers.CoreReader.GetNuspecAsync(cancellationToken);
         var reader = new NuspecReader(nuspecStream);
 
@@ -115,10 +134,10 @@ internal static class CompatibilityChecker
         return (isDevDependency, tfms.ToImmutableArray());
     }
 
-    internal static PackageReaders ReadPackage(string tempPackagePath)
+    internal static PackageReaders ReadPackage(string packagePath)
     {
         var stream = new FileStream(
-              tempPackagePath,
+              packagePath,
               FileMode.Open,
               FileAccess.Read,
               FileShare.Read,
@@ -127,7 +146,7 @@ internal static class CompatibilityChecker
         return (archiveReader, archiveReader);
     }
 
-    internal static async Task<PackageReaders> DownloadPackageAsync(
+    internal static async Task<PackageReaders?> DownloadPackageAsync(
         PackageIdentity package,
         NuGetContext context,
         CancellationToken cancellationToken)
@@ -175,19 +194,34 @@ internal static class CompatibilityChecker
                 context.Logger,
                 cancellationToken);
 
-            var tempPackagePath = GetTempPackagePath(package, context);
-            var isDownloaded = await downloader.CopyNupkgFileToAsync(tempPackagePath, cancellationToken);
+            var packagePath = GetPackagePath(package, context);
+            var isDownloaded = await downloader.CopyNupkgFileToAsync(packagePath, cancellationToken);
             if (!isDownloaded)
             {
-                throw new Exception($"Failed to download package [{package.Id}/{package.Version}] from [${source.SourceUri}]");
+                continue;
             }
 
             return (downloader.CoreReader, downloader.ContentReader);
         }
 
-        throw new Exception($"Package [{package.Id}/{package.Version}] does not exist in any of the configured sources.");
+        return null;
     }
 
-    internal static string GetTempPackagePath(PackageIdentity package, NuGetContext context)
-        => Path.Combine(context.TempPackageDirectory, package.Id + "." + package.Version + ".nupkg");
+    internal static string GetPackagePath(PackageIdentity package, NuGetContext context)
+    {
+        // https://learn.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
+        var nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        if (nugetPackagesPath is null)
+        {
+            // n.b., this path should never be hit during a unit test
+            nugetPackagesPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+        }
+
+        var normalizedName = package.Id.ToLowerInvariant();
+        var normalizedVersion = package.Version.ToNormalizedString().ToLowerInvariant();
+        var packageDirectory = Path.Join(nugetPackagesPath, normalizedName, normalizedVersion);
+        Directory.CreateDirectory(packageDirectory);
+        var packagePath = Path.Join(packageDirectory, $"{normalizedName}.{normalizedVersion}.nupkg");
+        return packagePath;
+    }
 }

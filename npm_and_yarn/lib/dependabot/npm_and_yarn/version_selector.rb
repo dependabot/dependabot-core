@@ -17,16 +17,7 @@ module Dependabot
       def setup(manifest_json, name)
         engine_versions = manifest_json["engines"]
 
-        if engine_versions.nil?
-          Dependabot.logger.info("No info (engines) found")
-          return {}
-        end
-
-        # logs entries for analysis purposes
-        log = engine_versions.select do |engine, _value|
-          engine.to_s.match(name)
-        end
-        Dependabot.logger.info("Found engine info #{log}") unless log.empty?
+        return {} if engine_versions.nil?
 
         # Only keep matching specs versions i.e. "20.21.2", "7.1.2",
         # Additional specs can be added later

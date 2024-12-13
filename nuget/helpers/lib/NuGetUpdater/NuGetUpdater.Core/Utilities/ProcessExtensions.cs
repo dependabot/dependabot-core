@@ -5,17 +5,15 @@ namespace NuGetUpdater.Core;
 
 public static class ProcessEx
 {
-    public static Task<(int ExitCode, string Output, string Error)> RunAsync(string fileName, string arguments = "", string? workingDirectory = null)
+    public static Task<(int ExitCode, string Output, string Error)> RunAsync(string fileName, IEnumerable<string>? arguments = null, string? workingDirectory = null)
     {
         var tcs = new TaskCompletionSource<(int, string, string)>();
 
         var redirectInitiated = new ManualResetEventSlim();
         var process = new Process
         {
-            StartInfo =
+            StartInfo = new ProcessStartInfo(fileName, arguments ?? [])
             {
-                FileName = fileName,
-                Arguments = arguments,
                 UseShellExecute = false, // required to redirect output
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

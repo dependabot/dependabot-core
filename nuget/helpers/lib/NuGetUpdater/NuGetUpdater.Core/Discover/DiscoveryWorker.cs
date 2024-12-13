@@ -12,12 +12,13 @@ using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
 
-public partial class DiscoveryWorker
+public partial class DiscoveryWorker : IDiscoveryWorker
 {
     public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
-    private readonly Logger _logger;
-    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ExperimentsManager _experimentsManager;
+    private readonly ILogger _logger;
+    private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
 
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -25,14 +26,43 @@ public partial class DiscoveryWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public DiscoveryWorker(Logger logger)
+    public DiscoveryWorker(ExperimentsManager experimentsManager, ILogger logger)
     {
+        _experimentsManager = experimentsManager;
         _logger = logger;
+    }
+
+    public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
+    {
+        var result = await RunWithErrorHandlingAsync(repoRootPath, workspacePath);
+        await WriteResultsAsync(repoRootPath, outputPath, result);
+    }
+
+    internal async Task<WorkspaceDiscoveryResult> RunWithErrorHandlingAsync(string repoRootPath, string workspacePath)
+    {
+        WorkspaceDiscoveryResult result;
+        try
+        {
+            result = await RunAsync(repoRootPath, workspacePath);
+        }
+        catch (HttpRequestException ex)
+        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            result = new WorkspaceDiscoveryResult
+            {
+                ErrorType = ErrorType.AuthenticationFailure,
+                ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(PathHelper.JoinPath(repoRootPath, workspacePath))) + ")",
+                Path = workspacePath,
+                Projects = [],
+            };
+        }
+
+        return result;
     }
 
     public async Task<WorkspaceDiscoveryResult> RunAsync(string repoRootPath, string workspacePath)
     {
-        MSBuildHelper.RegisterMSBuild(Environment.CurrentDirectory, repoRootPath);
+        MSBuildHelper.RegisterMSBuild(repoRootPath, workspacePath);
 
         // the `workspacePath` variable is relative to a repository root, so a rooted path actually isn't rooted; the
         // easy way to deal with this is to just trim the leading "/" if it exists
@@ -46,79 +76,49 @@ public partial class DiscoveryWorker
 
         DotNetToolsJsonDiscoveryResult? dotNetToolsJsonDiscovery = null;
         GlobalJsonDiscoveryResult? globalJsonDiscovery = null;
-        DirectoryPackagesPropsDiscoveryResult? directoryPackagesPropsDiscovery = null;
 
         ImmutableArray<ProjectDiscoveryResult> projectResults = [];
         WorkspaceDiscoveryResult result;
 
-        try
+        if (Directory.Exists(workspacePath))
         {
-            if (Directory.Exists(workspacePath))
+            _logger.Info($"Discovering build files in workspace [{workspacePath}].");
+
+            dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+            globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
+
+            if (globalJsonDiscovery is not null)
             {
-                _logger.Log($"Discovering build files in workspace [{workspacePath}].");
-
-                dotNetToolsJsonDiscovery = DotNetToolsJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
-                globalJsonDiscovery = GlobalJsonDiscovery.Discover(repoRootPath, workspacePath, _logger);
-
-                if (globalJsonDiscovery is not null)
-                {
-                    await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, globalJsonDiscovery.Dependencies, _logger);
-                }
-
-                // this next line should throw or something
-                projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
-
-                directoryPackagesPropsDiscovery = DirectoryPackagesPropsDiscovery.Discover(repoRootPath, workspacePath, projectResults, _logger);
-
-                if (directoryPackagesPropsDiscovery is not null)
-                {
-                    projectResults = projectResults.Remove(projectResults.First(p => p.FilePath.Equals(directoryPackagesPropsDiscovery.FilePath, StringComparison.OrdinalIgnoreCase)));
-                }
-            }
-            else
-            {
-                _logger.Log($"Workspace path [{workspacePath}] does not exist.");
+                await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, globalJsonDiscovery.Dependencies, _logger);
             }
 
-            result = new WorkspaceDiscoveryResult
-            {
-                Path = initialWorkspacePath,
-                DotNetToolsJson = dotNetToolsJsonDiscovery,
-                GlobalJson = globalJsonDiscovery,
-                DirectoryPackagesProps = directoryPackagesPropsDiscovery,
-                Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
-            };
+            // this next line should throw or something
+            projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        else
         {
-            // TODO: consolidate this error handling between AnalyzeWorker, DiscoveryWorker, and UpdateWorker
-            result = new WorkspaceDiscoveryResult
-            {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(workspacePath)) + ")",
-                Path = initialWorkspacePath,
-                Projects = [],
-            };
+            _logger.Info($"Workspace path [{workspacePath}] does not exist.");
         }
 
-        _logger.Log("Discovery complete.");
+        result = new WorkspaceDiscoveryResult
+        {
+            Path = initialWorkspacePath,
+            DotNetToolsJson = dotNetToolsJsonDiscovery,
+            GlobalJson = globalJsonDiscovery,
+            Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
+        };
+
+        _logger.Info("Discovery complete.");
         _processedProjectPaths.Clear();
 
         return result;
-    }
-
-    public async Task RunAsync(string repoRootPath, string workspacePath, string outputPath)
-    {
-        var result = await RunAsync(repoRootPath, workspacePath);
-        await WriteResultsAsync(repoRootPath, outputPath, result);
     }
 
     /// <summary>
     /// Restores MSBuild SDKs from the given dependencies.
     /// </summary>
     /// <returns>Returns `true` when SDKs were restored successfully.</returns>
-    private async Task<bool> TryRestoreMSBuildSdksAsync(string repoRootPath, string workspacePath, ImmutableArray<Dependency> dependencies, Logger logger)
+    private async Task<bool> TryRestoreMSBuildSdksAsync(string repoRootPath, string workspacePath, ImmutableArray<Dependency> dependencies, ILogger logger)
     {
         var msbuildSdks = dependencies
             .Where(d => d.Type == DependencyType.MSBuildSdk && !string.IsNullOrEmpty(d.Version))
@@ -135,19 +135,19 @@ public partial class DiscoveryWorker
 
         _restoredMSBuildSdks.AddRange(keys);
 
-        _logger.Log($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
+        _logger.Info($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
 
         return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
     {
-        _logger.Log($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
+        _logger.Info($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
         var entryPoints = FindEntryPoints(workspacePath);
         var projects = ExpandEntryPointsIntoProjects(entryPoints);
         if (projects.IsEmpty)
         {
-            _logger.Log("  No project files found.");
+            _logger.Info("  No project files found.");
             return [];
         }
 
@@ -264,60 +264,80 @@ public partial class DiscoveryWorker
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForProjectPathsAsync(string repoRootPath, string workspacePath, IEnumerable<string> projectPaths)
     {
-        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.OrdinalIgnoreCase);
+        var results = new Dictionary<string, ProjectDiscoveryResult>(StringComparer.Ordinal);
         foreach (var projectPath in projectPaths)
         {
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
-            if (!File.Exists(projectPath))
+            // Ensure file existence is checked case-insensitively
+            var actualProjectPaths = PathHelper.ResolveCaseInsensitivePathsInsideRepoRoot(projectPath, repoRootPath);
+
+            if (actualProjectPaths == null)
             {
                 continue;
             }
 
-            if (_processedProjectPaths.Contains(projectPath))
+            foreach (var actualProjectPath in actualProjectPaths)
             {
-                continue;
-            }
-            _processedProjectPaths.Add(projectPath);
-
-            var relativeProjectPath = Path.GetRelativePath(workspacePath, projectPath);
-            var packagesConfigDependencies = PackagesConfigDiscovery.Discover(workspacePath, projectPath, _logger)
-                    ?.Dependencies;
-
-            var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
-
-            // Determine if there were unrestored MSBuildSdks
-            var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
-            if (msbuildSdks.Length > 0)
-            {
-                // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
-                if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
-                {
-                    projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, projectPath, _logger);
-                }
-            }
-
-            foreach (var projectResult in projectResults)
-            {
-                if (results.ContainsKey(projectResult.FilePath))
+                if (_processedProjectPaths.Contains(actualProjectPath))
                 {
                     continue;
                 }
 
-                // If we had packages.config dependencies, merge them with the project dependencies
-                if (projectResult.FilePath == relativeProjectPath && packagesConfigDependencies is not null)
-                {
-                    packagesConfigDependencies = packagesConfigDependencies.Value
-                        .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
-                        .ToImmutableArray();
+                _processedProjectPaths.Add(actualProjectPath);
 
-                    results[projectResult.FilePath] = projectResult with
-                    {
-                        Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
-                    };
-                }
-                else
+                var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _logger);
+                var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+
+                // Determine if there were unrestored MSBuildSdks
+                var msbuildSdks = projectResults.SelectMany(p => p.Dependencies.Where(d => d.Type == DependencyType.MSBuildSdk)).ToImmutableArray();
+                if (msbuildSdks.Length > 0)
                 {
-                    results[projectResult.FilePath] = projectResult;
+                    // If new SDKs were restored, then we need to rerun SdkProjectDiscovery.
+                    if (await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, msbuildSdks, _logger))
+                    {
+                        projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
+                    }
+                }
+
+                foreach (var projectResult in projectResults)
+                {
+                    if (results.ContainsKey(projectResult.FilePath))
+                    {
+                        continue;
+                    }
+
+                    // If we had packages.config dependencies, merge them with the project dependencies
+                    if (projectResult.FilePath == relativeProjectPath && packagesConfigResult is not null)
+                    {
+                        var packagesConfigDependencies = packagesConfigResult.Dependencies
+                            .Select(d => d with { TargetFrameworks = projectResult.TargetFrameworks })
+                            .ToImmutableArray();
+
+                        results[projectResult.FilePath] = projectResult with
+                        {
+                            Dependencies = [.. projectResult.Dependencies, .. packagesConfigDependencies],
+                        };
+                    }
+                    else
+                    {
+                        results[projectResult.FilePath] = projectResult;
+                    }
+                }
+
+                if (!results.ContainsKey(relativeProjectPath) &&
+                    packagesConfigResult is not null &&
+                    packagesConfigResult.Dependencies.Length > 0)
+                {
+                    // project contained only packages.config dependencies
+                    results[relativeProjectPath] = new ProjectDiscoveryResult()
+                    {
+                        FilePath = relativeProjectPath,
+                        Dependencies = packagesConfigResult.Dependencies,
+                        TargetFrameworks = packagesConfigResult.TargetFrameworks,
+                        ImportedFiles = [], // no imported files resolved for packages.config scenarios
+                        AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                    };
                 }
             }
         }

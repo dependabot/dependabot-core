@@ -159,10 +159,7 @@ module Dependabot
         end
 
         def wants_prerelease?
-          if dependency.version
-            version = version_class.new(dependency.version.tr("+", "."))
-            return version.prerelease?
-          end
+          return version_class.new(dependency.version).prerelease? if dependency.version
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)

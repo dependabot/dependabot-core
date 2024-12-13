@@ -2,11 +2,12 @@
 # frozen_string_literal: true
 
 require "dependabot/bundler/package_manager"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Bundler::PackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(version, requirement) }
+  let(:requirement) { nil }
 
   describe "#initialize" do
     context "when version is a String" do
@@ -30,7 +31,7 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is a Dependabot::Bundler::Version" do
-      let(:version) { Dependabot::Bundler::Version.new("2") }
+      let(:version) { "2" }
 
       it "sets the version correctly" do
         expect(package_manager.version).to eq(version)
@@ -48,6 +49,57 @@ RSpec.describe Dependabot::Bundler::PackageManager do
         expect(package_manager.supported_versions).to eq(Dependabot::Bundler::SUPPORTED_BUNDLER_VERSIONS)
       end
     end
+
+    context "when a requirement is provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.12.0, ~> 2.3.0") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq(">= 1.12.0, ~> 2.3.0")
+      end
+
+      it "calculates the correct min_version" do
+        expect(package_manager.requirement.min_version).to eq(Dependabot::Version.new("2.3.0"))
+      end
+
+      it "calculates the correct max_version" do
+        expect(package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.4.0"))
+      end
+    end
+
+    context "when a single minimum constraint is provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.5") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq(">= 1.5")
+      end
+
+      it "calculates the correct min_version" do
+        expect(package_manager.requirement.min_version).to eq(Dependabot::Version.new("1.5"))
+      end
+
+      it "returns nil for max_version" do
+        expect(package_manager.requirement.max_version).to be_nil
+      end
+    end
+
+    context "when multiple maximum constraints are provided" do
+      let(:version) { "2.1" }
+      let(:requirement) { Dependabot::Bundler::Requirement.new("<= 2.5, < 3.0") }
+
+      it "sets the requirement correctly" do
+        expect(package_manager.requirement.to_s).to eq("<= 2.5, < 3.0")
+      end
+
+      it "calculates the correct max_version" do
+        expect(package_manager.requirement.max_version).to eq(Dependabot::Version.new("2.5"))
+      end
+
+      it "returns nil for min_version" do
+        expect(package_manager.requirement.min_version).to be_nil
+      end
+    end
   end
 
   describe "SUPPORTED_BUNDLER_VERSIONS" do
@@ -58,24 +110,17 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#deprecated?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
     context "when version is deprecated but not unsupported" do
       let(:version) { "1" }
-      let(:feature_flag_enabled) { false }
 
       it "returns true" do
+        allow(package_manager).to receive_messages(deprecated?: true)
         expect(package_manager.deprecated?).to be true
       end
     end
 
     context "when version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -84,59 +129,34 @@ RSpec.describe Dependabot::Bundler::PackageManager do
   end
 
   describe "#unsupported?" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
+    context "when version is supported" do
+      let(:version) { "2" }
+
+      it "returns false" do
+        expect(package_manager.unsupported?).to be false
+      end
     end
 
-    context "when feature flag is enabled and version is unsupported" do
+    context "when version is not supported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
       end
     end
-
-    context "when feature flag is enabled and version is supported" do
-      let(:version) { "2" }
-      let(:feature_flag_enabled) { true }
-
-      it "returns false" do
-        expect(package_manager.unsupported?).to be false
-      end
-    end
-
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
-
-      it "returns false" do
-        expect(package_manager.unsupported?).to be false
-      end
-    end
   end
 
   describe "#raise_if_unsupported!" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:bundler_v1_unsupported_error)
-        .and_return(feature_flag_enabled)
-    end
-
-    context "when feature flag is enabled and version is unsupported" do
+    context "when version is unsupported" do
       let(:version) { "0.9" }
-      let(:feature_flag_enabled) { true }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 
-    context "when feature flag is disabled" do
-      let(:version) { "0.9" }
-      let(:feature_flag_enabled) { false }
+    context "when version is supported" do
+      let(:version) { "2.1" }
 
       it "does not raise an error" do
         expect { package_manager.raise_if_unsupported! }.not_to raise_error

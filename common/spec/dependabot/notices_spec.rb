@@ -3,43 +3,34 @@
 
 require "dependabot/version"
 require "dependabot/experiments"
-require "dependabot/package_manager"
+require "dependabot/ecosystem"
 require "dependabot/notices"
 
 # A stub package manager for testing purposes.
-class StubPackageManager < Dependabot::PackageManagerBase
-  def initialize(name:, version:, deprecated_versions: [], unsupported_versions: [], supported_versions: [],
+class StubPackageManager < Dependabot::Ecosystem::VersionManager
+  def initialize(name:, version:, deprecated_versions: [], supported_versions: [],
                  support_later_versions: false)
-    @name = name
-    @version = version
-    @deprecated_versions = deprecated_versions
-    @unsupported_versions = unsupported_versions
-    @supported_versions = supported_versions
     @support_later_versions = support_later_versions
+    super(
+      name,
+     Dependabot::Version.new(version),
+     deprecated_versions,
+     supported_versions
+   )
   end
 
-  attr_reader :name
-  attr_reader :version
-  attr_reader :deprecated_versions
-  attr_reader :unsupported_versions
-  attr_reader :supported_versions
   attr_reader :support_later_versions
 
   sig { override.returns(T::Boolean) }
-  def deprecated?
-    # If the version is unsupported, the unsupported error is getting raised separately.
-    return false if unsupported?
-
-    deprecated_versions.include?(version)
+  def unsupported?
+    # Determine if the Bundler version is unsupported.
+    version < supported_versions.first
   end
 
   sig { override.returns(T::Boolean) }
-  def unsupported?
-    # Check if the feature flag for Bundler v1 unsupported error is enabled.
-    return false unless Dependabot::Experiments.enabled?(:bundler_v1_unsupported_error)
-
+  def support_later_versions?
     # Determine if the Bundler version is unsupported.
-    version < supported_versions.first
+    support_later_versions
   end
 end
 
@@ -129,6 +120,7 @@ RSpec.describe Dependabot::Notice do
     end
 
     it "returns the correct deprecation notice" do
+      allow(package_manager).to receive(:unsupported?).and_return(false)
       expect(generate_pm_deprecation_notice.to_hash)
         .to eq({
           mode: "WARN",
