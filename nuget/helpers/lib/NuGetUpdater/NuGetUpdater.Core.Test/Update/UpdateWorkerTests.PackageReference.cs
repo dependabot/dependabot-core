@@ -3487,5 +3487,84 @@ public partial class UpdateWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task UpdateSdkManagedPackage_DirectDependency()
+        {
+            // this test uses live packages
+            await TestUpdateForProject("System.Text.Json", "8.0.0", "8.0.5",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("global.json", """
+                        {
+                            "sdk": {
+                                "version": "8.0.307",
+                                "rollForward": "latestMinor"
+                            }
+                        }
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="8.0.5" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdateSdkManagedPackage_TransitiveDependency()
+        {
+            // this test uses live packages
+            await TestUpdateForProject("System.Text.Json", "6.0.9", "6.0.10", isTransitive: true,
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Core" Version="1.44.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("global.json", """
+                        {
+                            "sdk": {
+                                "version": "8.0.307",
+                                "rollForward": "latestMinor"
+                            }
+                        }
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Azure.Core" Version="1.44.0" />
+                        <PackageReference Include="System.Text.Json" Version="6.0.10" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
