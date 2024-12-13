@@ -470,6 +470,7 @@ public partial class EntryPointTests
         {
             // this test uses live packages
 
+            // .NET SDK 8.0.303 ships with System.Text.Json/8.0.4
             // .NET SDK 8.0.306 ships with System.Text.Json/8.0.5
             await RunAsync(path =>
                 [
