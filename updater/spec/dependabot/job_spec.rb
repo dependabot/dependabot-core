@@ -39,6 +39,7 @@ RSpec.describe Dependabot::Job do
       lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
       update_subdependencies: false,
+      update_dependency_list_only: update_dependency_list_only,
       updating_a_pull_request: false,
       vendor_dependencies: vendor_dependencies,
       experiments: experiments,
@@ -56,6 +57,7 @@ RSpec.describe Dependabot::Job do
   let(:package_manager) { "bundler" }
   let(:lockfile_only) { false }
   let(:security_updates_only) { false }
+  let(:update_dependency_list_only) { false }
   let(:allowed_updates) do
     [
       {
@@ -406,6 +408,18 @@ RSpec.describe Dependabot::Job do
 
     context "with security only allowed updates" do
       let(:security_updates_only) { true }
+
+      it { is_expected.to be(true) }
+    end
+  end
+
+  describe "#update_dependency_list_only?" do
+    subject { job.update_dependency_list_only? }
+
+    it { is_expected.to be(false) }
+
+    context "with update dependency list only allowed" do
+      let(:update_dependency_list_only) { true }
 
       it { is_expected.to be(true) }
     end
