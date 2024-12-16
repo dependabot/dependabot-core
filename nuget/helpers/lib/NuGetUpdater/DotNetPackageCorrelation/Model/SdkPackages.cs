@@ -7,5 +7,5 @@ namespace DotNetPackageCorrelation;
 public record SdkPackages
 {
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-    public SortedDictionary<SemVersion, PackageSet> Packages { get; init; } = new(SemVerComparer.Instance);
+    public SortedDictionary<SemVersion, PackageSet> Sdks { get; init; } = new(SemVerComparer.Instance);
 }

@@ -1274,7 +1274,7 @@ public partial class DiscoveryWorkerTests
             var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
             await File.WriteAllTextAsync(packageCorrelationFile, """
                 {
-                    "Packages": {
+                    "Sdks": {
                         "8.0.100": {
                             "Packages": {
                                 "Test.Only.Package": "1.0.99"

@@ -22,8 +22,8 @@ public class Program
             // the tool is expected to be given the path to the .NET Core repository, but the correlator only needs a specific subdirectory
             var releaseNotesDirectory = new DirectoryInfo(Path.Combine(coreLocationDirectory.FullName, "release-notes"));
             var correlator = new Correlator(releaseNotesDirectory);
-            var (packages, _warnings) = await correlator.RunAsync();
-            var json = JsonSerializer.Serialize(packages, Correlator.SerializerOptions);
+            var (sdkPackages, _warnings) = await correlator.RunAsync();
+            var json = JsonSerializer.Serialize(sdkPackages, Correlator.SerializerOptions);
             await File.WriteAllTextAsync(output.FullName, json);
         }, coreLocationOption, outputOption);
         var exitCode = await command.InvokeAsync(args);

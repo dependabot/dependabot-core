@@ -10,7 +10,7 @@ public class CorrelatorTests
     public async Task FileHandling_AllFilesShapedAppropriately()
     {
         // the JSON and markdown are shaped as expected
-        var (packages, warnings) = await RunFromFilesAsync(
+        var (sdkPackages, warnings) = await RunFromFilesAsync(
             ("8.0/releases.json", """
                 {
                     "releases": [
@@ -31,8 +31,8 @@ public class CorrelatorTests
                 """)
         );
         Assert.Empty(warnings);
-        AssertPackageVersion(packages, "8.0.100", "Package.A", "8.0.0");
-        AssertPackageVersion(packages, "8.0.100", "Package.B", "1.2.3");
+        AssertPackageVersion(sdkPackages, "8.0.100", "Package.A", "8.0.0");
+        AssertPackageVersion(sdkPackages, "8.0.100", "Package.B", "1.2.3");
     }
 
     [Theory]
@@ -58,15 +58,15 @@ public class CorrelatorTests
         Assert.Equal(expectedPackageVersion, actualpackage.Version.ToString());
     }
 
-    private static void AssertPackageVersion(SdkPackages packages, string sdkVersion, string packageName, string expectedPackageVersion)
+    private static void AssertPackageVersion(SdkPackages sdkPackages, string sdkVersion, string packageName, string expectedPackageVersion)
     {
-        Assert.True(packages.Packages.TryGetValue(SemVersion.Parse(sdkVersion), out var packageSet), $"Unable to find SDK version [{sdkVersion}]");
+        Assert.True(sdkPackages.Sdks.TryGetValue(SemVersion.Parse(sdkVersion), out var packageSet), $"Unable to find SDK version [{sdkVersion}]");
         Assert.True(packageSet.Packages.TryGetValue(packageName, out var packageVersion), $"Unable to find package [{packageName}] under SDK version [{sdkVersion}]");
         var actualPackageVersion = packageVersion.ToString();
         Assert.Equal(expectedPackageVersion, actualPackageVersion);
     }
 
-    private static async Task<(SdkPackages Packages, IEnumerable<string> Warnings)> RunFromFilesAsync(params (string Path, string Content)[] files)
+    private static async Task<(SdkPackages SdkPackages, IEnumerable<string> Warnings)> RunFromFilesAsync(params (string Path, string Content)[] files)
     {
         var testDirectory = Path.Combine(Path.GetDirectoryName(typeof(CorrelatorTests).Assembly.Location)!, "test-data", Guid.NewGuid().ToString("D"));
         Directory.CreateDirectory(testDirectory);

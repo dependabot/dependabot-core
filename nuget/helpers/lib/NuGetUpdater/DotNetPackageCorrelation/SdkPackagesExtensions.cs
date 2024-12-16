@@ -8,7 +8,7 @@ public static class SdkPackagesExtensions
 {
     public static SemVersion? GetReplacementPackageVersion(this SdkPackages packages, SemVersion sdkVersion, string packageName)
     {
-        var sdkVersionsToCheck = packages.Packages.Keys
+        var sdkVersionsToCheck = packages.Sdks.Keys
             .Where(v => v.Major == sdkVersion.Major)
             .Where(v => v.ComparePrecedenceTo(sdkVersion) <= 0)
             .OrderBy(v => v, SemVerComparer.Instance)
@@ -16,7 +16,7 @@ public static class SdkPackagesExtensions
             .ToImmutableArray();
         foreach (var sdkVersionToCheck in sdkVersionsToCheck)
         {
-            var sdkPackages = packages.Packages[sdkVersionToCheck];
+            var sdkPackages = packages.Sdks[sdkVersionToCheck];
             if (sdkPackages.Packages.TryGetValue(packageName, out var packageVersion))
             {
                 return packageVersion;
