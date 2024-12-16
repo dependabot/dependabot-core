@@ -1,7 +1,9 @@
 using System.CommandLine;
 using System.Text.Json;
 
-namespace DotNetPackageCorrelation;
+using DotNetPackageCorrelation;
+
+namespace DotNetPackageCorrelation.Cli;
 
 public class Program
 {
