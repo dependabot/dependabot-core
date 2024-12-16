@@ -51,7 +51,6 @@ module Dependabot
                                                                                     T::Array[T::Hash[String,
                                                                                                      T.untyped]]])
       end
-
       def merge_modules(modules, base_modules)
         merged_modules = base_modules.dup
 
