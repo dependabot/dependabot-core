@@ -373,16 +373,22 @@ internal static class SdkProjectDiscovery
                                 var wasRemoved = packagesPerTfm.Remove(packageName);
                                 if (wasRemoved)
                                 {
-                                    if (experimentsManager.InstallDotnetSdks)
+                                    // we only want to track packages that were explicitly part of the SDK's conflict resolution
+                                    if (node.Name == "RuntimeCopyLocalItems" &&
+                                        node.Parent is Target target &&
+                                        target.Name == "GenerateBuildDependencyFile")
                                     {
                                         // dotnet package correlation correction requires specific dotnet sdk handling
-                                        var sdkVersionString = GetPropertyValueFromProjectEvaluation(projectEvaluation, "NETCoreSdkVersion");
-                                        if (sdkVersionString is not null)
+                                        if (experimentsManager.InstallDotnetSdks)
                                         {
-                                            var replacementVersion = GetCorrespondingSdkManagedPackageVersion(packageName, sdkVersionString);
-                                            if (replacementVersion is not null)
+                                            var sdkVersionString = GetPropertyValueFromProjectEvaluation(projectEvaluation, "NETCoreSdkVersion");
+                                            if (sdkVersionString is not null)
                                             {
-                                                packagesPerTfm[packageName] = replacementVersion.ToString();
+                                                var replacementVersion = GetCorrespondingSdkManagedPackageVersion(packageName, sdkVersionString);
+                                                if (replacementVersion is not null)
+                                                {
+                                                    packagesPerTfm[packageName] = replacementVersion.ToString();
+                                                }
                                             }
                                         }
                                     }
