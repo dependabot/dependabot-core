@@ -1,5 +1,6 @@
-using Semver;
 using System.Text.Json.Serialization;
+
+using Semver;
 
 namespace DotNetPackageCorrelation;
 
