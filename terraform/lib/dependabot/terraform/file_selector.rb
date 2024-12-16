@@ -47,21 +47,23 @@ module Dependabot
         params(modules: T::Hash[String, T::Array[T::Hash[String, T.untyped]]],
                base_modules: T::Hash[String,
                                      T::Array[T::Hash[String,
-                                                      T.untyped]]]).returns(T::Hash[String,
-                                                                                    T::Array[T::Hash[String,
-                                                                                                     T.untyped]]])
+                                                      T.untyped]]])
+          .returns(T::Hash[String,
+                           T::Array[T::Hash[String,
+                                            T.untyped]]])
       end
       def merge_modules(modules, base_modules)
         merged_modules = base_modules.dup
 
         modules.each do |key, value|
-          merged_modules[key] = if merged_modules.key?(key)
-                                  T.must(merged_modules[key]).map do |base_value|
-                                    base_value.merge(T.must(value.first))
-                                  end
-                                else
-                                  value
-                                end
+          merged_modules[key] =
+            if merged_modules.key?(key)
+              T.must(merged_modules[key]).map do |base_value|
+                base_value.merge(T.must(value.first))
+              end
+            else
+              value
+            end
         end
 
         merged_modules
