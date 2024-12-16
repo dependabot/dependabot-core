@@ -147,8 +147,10 @@ public class MSBuildHelperTests : TestBase
         AssertEx.Equal(expectedTopLevelDependencies, actualTopLevelDependencies);
     }
 
-    [Fact]
-    public async Task AllPackageDependenciesCanBeTraversed()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AllPackageDependenciesCanBeTraversed(bool useExistingSdks)
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -173,13 +175,16 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "netstandard2.0",
             [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Fact]
-    public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AllPackageDependencies_DoNotTruncateLongDependencyLists(bool useExistingSdks)
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -301,7 +306,14 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Package.2A", "1.0.0", DependencyType.Unknown),
             new Dependency("Package.2R", "18.0.0", DependencyType.Unknown),
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages, new TestLogger());
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            temp.DirectoryPath,
+            temp.DirectoryPath,
+            "net8.0",
+            packages,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         for (int i = 0; i < actualDependencies.Length; i++)
         {
             var ad = actualDependencies[i];
@@ -312,8 +324,10 @@ public class MSBuildHelperTests : TestBase
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Fact]
-    public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AllPackageDependencies_DoNotIncludeUpdateOnlyPackages(bool useExistingSdks)
     {
         using var temp = new TemporaryDirectory();
         MockNuGetPackage[] testPackages =
@@ -335,12 +349,21 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
             new Dependency("Package.C", "3.0.0", DependencyType.Unknown, IsUpdate: true)
         };
-        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(temp.DirectoryPath, temp.DirectoryPath, "net8.0", packages, new TestLogger());
+        var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
+            temp.DirectoryPath,
+            temp.DirectoryPath,
+            "net8.0",
+            packages,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Fact]
-    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetAllPackageDependencies_NugetConfigInvalid_DoesNotThrow(bool useExistingSdks)
     {
         using var temp = new TemporaryDirectory();
 
@@ -362,12 +385,15 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             [new Dependency("Some.Package", "4.5.11", DependencyType.Unknown)],
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
     }
 
-    [Fact]
-    public async Task LocalPackageSourcesAreHonored()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task LocalPackageSourcesAreHonored(bool useExistingSdks)
     {
         using var temp = new TemporaryDirectory();
 
@@ -402,14 +428,17 @@ public class MSBuildHelperTests : TestBase
             temp.DirectoryPath,
             "net8.0",
             [new Dependency("Package.A", "1.0.0", DependencyType.Unknown)],
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
             new TestLogger()
         );
 
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedWithBruteForce()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedWithBruteForce(bool useExistingSdks)
     {
         var repoRoot = Directory.CreateTempSubdirectory($"test_{nameof(DependencyConflictsCanBeResolvedWithBruteForce)}_");
         MockNuGetPackage[] testPackages =
@@ -450,7 +479,14 @@ public class MSBuildHelperTests : TestBase
             {
                 new Dependency("Some.Other.Package", "1.2.0", DependencyType.PackageReference),
             };
-            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(repoRoot.FullName, projectPath, "net8.0", dependencies, new TestLogger());
+            var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflictsWithBruteForce(
+                repoRoot.FullName,
+                projectPath,
+                "net8.0",
+                dependencies,
+                new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+                new TestLogger()
+            );
             Assert.NotNull(resolvedDependencies);
             Assert.Equal(2, resolvedDependencies.Length);
             Assert.Equal("Some.Package", resolvedDependencies[0].Name);
@@ -505,8 +541,10 @@ public class MSBuildHelperTests : TestBase
     #region
     // Updating root package
     // CS-Script Code to 2.0.0 requires its dependency Microsoft.CodeAnalysis.CSharp.Scripting to be 3.6.0 and its transitive dependency Microsoft.CodeAnalysis.Common to be 3.6.0
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -535,7 +573,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("CS-Script.Core", "2.0.0", DependencyType.PackageReference),
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(3, resolvedDependencies.Length);
         Assert.Equal("CS-Script.Core", resolvedDependencies[0].Name);
@@ -547,8 +593,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Updating a dependency (Microsoft.Bcl.AsyncInterfaces) of the root package (Azure.Core) will require the root package to also update, but since the dependency is not in the existing list, we do not include it
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistingDependency(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -572,7 +620,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.Bcl.AsyncInterfaces", "1.1.1", DependencyType.Unknown)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Single(resolvedDependencies);
         Assert.Equal("Azure.Core", resolvedDependencies[0].Name);
@@ -582,8 +638,10 @@ public class MSBuildHelperTests : TestBase
     // Adding a reference
     // Newtonsoft.Json needs to update to 13.0.1. Although Newtonsoft.Json.Bson can use the original version of 12.0.1, for security vulnerabilities and
     // because there is no later version of Newtonsoft.Json.Bson 1.0.2, Newtonsoft.Json would be added to the existing list to prevent resolution
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistentDependencyAndKeepingReference()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingNonExistentDependencyAndKeepingReference(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -607,7 +665,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(2, resolvedDependencies.Length);
         Assert.Equal("Newtonsoft.Json.Bson", resolvedDependencies[0].Name);
@@ -620,8 +686,10 @@ public class MSBuildHelperTests : TestBase
     // Root package (Microsoft.CodeAnalysis.Compilers) and its dependencies (Microsoft.CodeAnalysis.CSharp), (Microsoft.CodeAnalysis.VisualBasic) are all 4.9.2
     // These packages all require the transitive dependency of the root package (Microsoft.CodeAnalysis.Common) to be 4.9.2, but it's not in the existing list
     // If Microsoft.CodeAnalysis.Common is updated to 4.10.0, everything else updates and Microsoft.CoseAnalysis.Common is not kept in the existing list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewTransitiveDependencyNotExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -649,7 +717,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(3, resolvedDependencies.Length);
         Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -662,8 +738,10 @@ public class MSBuildHelperTests : TestBase
 
     // Updating referenced dependency
     // The same as previous test, but the transitive dependency (Microsoft.CodeAnalysis.Common) is in the existing list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependencyExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewSingleTransitiveDependencyExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -693,7 +771,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.CodeAnalysis.Common", "4.10.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(4, resolvedDependencies.Length);
         Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -709,8 +795,10 @@ public class MSBuildHelperTests : TestBase
     // A combination of the third and fourth test, to measure efficiency of updating separate families
     // Keeping a dependency that was not included in the original list (Newtonsoft.Json)
     // Not keeping a dependency that was not included in the original list (Microsoft.CodeAnalysis.Common)
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewSelectiveAdditionPackages(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -741,7 +829,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Newtonsoft.Json", "13.0.1", DependencyType.Unknown)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(5, resolvedDependencies.Length);
         Assert.Equal("Microsoft.CodeAnalysis.Compilers", resolvedDependencies[0].Name);
@@ -761,8 +857,10 @@ public class MSBuildHelperTests : TestBase
     // First family: Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
     // Second family: Microsoft.CodeAnalysis.CSharp.Scripting 4.0.0 requires Microsoft.CodeAnalysis.CSharp 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (Specific version)
     // Updating Buildalyzer to 7.0.1 will update its transitive dependency (Microsoft.CodeAnalysis.Common) and then its transitive dependency's "family"
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewSharingDependency(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -792,7 +890,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(4, resolvedDependencies.Length);
         Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
@@ -808,8 +914,10 @@ public class MSBuildHelperTests : TestBase
     // Updating two families at once to test efficiency
     // First family: Direct dependency (Microsoft.CodeAnalysis.Common) needs to be updated, which will then need to update in the existing list its dependency (System.Collections.Immutable) and "parent" (Microsoft.CodeAnalysis.Csharp.Scripting)
     // Second family: Updating the root package (Azure.Core) in the existing list will also need to update its dependency (Microsoft.Bcl.AsyncInterfaces)
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingEntireFamily(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -841,7 +949,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(4, resolvedDependencies.Length);
         Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -855,8 +971,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Similar to the last test, except Microsoft.CodeAnalysis.Common is in the existing list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelAndDependency()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelAndDependency(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -890,7 +1008,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Azure.Core", "1.22.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(5, resolvedDependencies.Length);
         Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -908,8 +1034,10 @@ public class MSBuildHelperTests : TestBase
     // Out of scope test: AutoMapper.Extensions.Microsoft.DependencyInjection's versions are not yet compatible
     // To update root package (AutoMapper.Collection) to 10.0.0, its dependency (AutoMapper) needs to update to 13.0.0. 
     // However, there is no higher version of AutoMapper's other "parent" (AutoMapper.Extensions.Microsoft.DependencyInjection) that is compatible with the new version
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewOutOfScope()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewOutOfScope(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -937,7 +1065,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("AutoMapper.Collection", "10.0.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(3, resolvedDependencies.Length);
         Assert.Equal("AutoMapper.Extensions.Microsoft.DependencyInjection", resolvedDependencies[0].Name);
@@ -949,8 +1085,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Two dependencies (Microsoft.Extensions.Caching.Memory), (Microsoft.EntityFrameworkCore.Analyzers) used by the same parent (Microsoft.EntityFrameworkCore), updating one of the dependencies
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewTwoDependenciesShareSameParent()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewTwoDependenciesShareSameParent(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -976,7 +1114,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.Extensions.Caching.Memory", "8.0.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(2, resolvedDependencies.Length);
         Assert.Equal("Microsoft.EntityFrameworkCore", resolvedDependencies[0].Name);
@@ -987,8 +1133,10 @@ public class MSBuildHelperTests : TestBase
 
     // Updating referenced package
     // 4 dependency chain to be updated. Since the package to be updated is in the existing list, do not update its parents since we want to change as little as possible
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -1018,7 +1166,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(4, resolvedDependencies.Length);
         Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
@@ -1033,8 +1189,10 @@ public class MSBuildHelperTests : TestBase
 
     // Updating unreferenced package
     // 4 dependency chain to be updated, dependency to be updated is not in the existing list, so its family will all be updated
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourNotInExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourNotInExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -1062,7 +1220,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", DependencyType.PackageReference)
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(3, resolvedDependencies.Length);
         Assert.Equal("Microsoft.EntityFrameworkCore.Design", resolvedDependencies[0].Name);
@@ -1075,8 +1241,10 @@ public class MSBuildHelperTests : TestBase
 
     // Updating a referenced transitive dependency
     // Updating a transtitive dependency (System.Collections.Immutable) to 8.0.0, which will update its "parent" (Microsoft.CodeAnalysis.CSharp) and its "grandparent" (Microsoft.CodeAnalysis.CSharp.Workspaces) to update
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -1106,7 +1274,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(4, resolvedDependencies.Length);
         Assert.Equal("System.Collections.Immutable", resolvedDependencies[0].Name);
@@ -1120,8 +1296,10 @@ public class MSBuildHelperTests : TestBase
     }
 
     // Similar to the last test, with the "grandchild" (System.Collections.Immutable) not in the existing list
-    [Fact]
-    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DependencyConflictsCanBeResolvedNewFamilyOfFourSpecificNotInExisting(bool useExistingSdks)
     {
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
@@ -1150,7 +1328,15 @@ public class MSBuildHelperTests : TestBase
             new Dependency("System.Collections.Immutable", "8.0.0", DependencyType.PackageReference),
         };
 
-        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(tempDirectory.DirectoryPath, projectPath, "net8.0", dependencies, update, new TestLogger());
+        var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
+            tempDirectory.DirectoryPath,
+            projectPath,
+            "net8.0",
+            dependencies,
+            update,
+            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new TestLogger()
+        );
         Assert.NotNull(resolvedDependencies);
         Assert.Equal(3, resolvedDependencies.Length);
         Assert.Equal("Microsoft.CodeAnalysis.CSharp.Workspaces", resolvedDependencies[0].Name);

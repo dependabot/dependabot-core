@@ -6,6 +6,7 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    public bool InstallDotnetSdks { get; init; } = false;
     public bool UseLegacyDependencySolver { get; init; } = false;
     public bool UseDirectDiscovery { get; init; } = false;
 
@@ -13,6 +14,7 @@ public record ExperimentsManager
     {
         return new()
         {
+            ["nuget_install_dotnet_sdks"] = InstallDotnetSdks,
             ["nuget_legacy_dependency_solver"] = UseLegacyDependencySolver,
             ["nuget_use_direct_discovery"] = UseDirectDiscovery,
         };
@@ -22,6 +24,7 @@ public record ExperimentsManager
     {
         return new ExperimentsManager()
         {
+            InstallDotnetSdks = IsEnabled(experiments, "nuget_install_dotnet_sdks"),
             UseLegacyDependencySolver = IsEnabled(experiments, "nuget_legacy_dependency_solver"),
             UseDirectDiscovery = IsEnabled(experiments, "nuget_use_direct_discovery"),
         };

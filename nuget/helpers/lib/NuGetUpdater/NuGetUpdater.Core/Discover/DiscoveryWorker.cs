@@ -137,7 +137,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 
         _logger.Info($"  Restoring MSBuild SDKs: {string.Join(", ", keys)}");
 
-        return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, logger);
+        return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, _experimentsManager, logger);
     }
 
     private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
@@ -286,7 +286,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 _processedProjectPaths.Add(actualProjectPath);
 
                 var relativeProjectPath = Path.GetRelativePath(workspacePath, actualProjectPath).NormalizePathToUnix();
-                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _logger);
+                var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
                 var projectResults = await SdkProjectDiscovery.DiscoverAsync(repoRootPath, workspacePath, actualProjectPath, _experimentsManager, _logger);
 
                 // Determine if there were unrestored MSBuildSdks
