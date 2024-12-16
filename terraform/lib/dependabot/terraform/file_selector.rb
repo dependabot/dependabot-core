@@ -22,7 +22,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") }
+        dependency_files.select { |f| f.name.end_with?(".tf") && !f.name.end_with?("override.tf") }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def override_terraform_files
+        dependency_files.select { |f| f.name.end_with?("override.tf") }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -33,6 +38,22 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def lockfile
         dependency_files.find { |f| lockfile?(f.name) }
+      end
+
+      def merge_modules(modules, base_modules)
+        merged_modules = base_modules.dup
+
+        modules.each do |key, value|
+          merged_modules[key] = if merged_modules.key?(key)
+                                  merged_modules[key].map do |base_value|
+                                    base_value.merge(value.first)
+                                  end
+                                else
+                                  value
+                                end
+        end
+
+        merged_modules
       end
     end
   end
