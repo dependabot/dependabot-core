@@ -870,7 +870,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
     end
 
