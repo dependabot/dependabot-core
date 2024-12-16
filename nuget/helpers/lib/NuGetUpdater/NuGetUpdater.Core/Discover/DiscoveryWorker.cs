@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Definition;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Exceptions;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Utilities;
@@ -93,11 +94,30 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             }
 
             // this next line should throw or something
-            projectResults = await RunForDirectoryAsnyc(repoRootPath, workspacePath);
+            projectResults = await RunForDirectoryAsync(repoRootPath, workspacePath);
         }
         else
         {
             _logger.Info($"Workspace path [{workspacePath}] does not exist.");
+        }
+
+        //if any projectResults are not successful, return a failed result
+        if (projectResults.Any(p => p.IsSuccess == false))
+        {
+            var failedProjectResults = projectResults.Where(p => p.IsSuccess == false).First();
+
+            var failedResult = new WorkspaceDiscoveryResult
+            {
+                Path = initialWorkspacePath,
+                DotNetToolsJson = dotNetToolsJsonDiscovery,
+                GlobalJson = globalJsonDiscovery,
+                Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
+                ErrorType = ErrorType.DependencyFileNotParseable,
+                ErrorDetails = failedProjectResults.FilePath,
+                IsSuccess = false,
+            };
+
+            return failedResult;
         }
 
         result = new WorkspaceDiscoveryResult
@@ -140,11 +160,30 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         return await NuGetHelper.DownloadNuGetPackagesAsync(repoRootPath, workspacePath, msbuildSdks, _experimentsManager, logger);
     }
 
-    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsnyc(string repoRootPath, string workspacePath)
+    private async Task<ImmutableArray<ProjectDiscoveryResult>> RunForDirectoryAsync(string repoRootPath, string workspacePath)
     {
         _logger.Info($"  Discovering projects beneath [{Path.GetRelativePath(repoRootPath, workspacePath)}].");
         var entryPoints = FindEntryPoints(workspacePath);
-        var projects = ExpandEntryPointsIntoProjects(entryPoints);
+        ImmutableArray<string> projects;
+        try
+        {
+            projects = ExpandEntryPointsIntoProjects(entryPoints);
+        }
+        catch (InvalidProjectFileException e)
+        {
+            var invalidProjectFile = Path.GetRelativePath(workspacePath, e.ProjectFile).NormalizePathToUnix();
+
+            _logger.Info("Error encountered during discovery: " + e.Message);
+            return [new ProjectDiscoveryResult
+            {
+                FilePath = invalidProjectFile,
+                Dependencies = ImmutableArray<Dependency>.Empty,
+                ImportedFiles = ImmutableArray<string>.Empty,
+                AdditionalFiles = ImmutableArray<string>.Empty,
+                IsSuccess = false,
+                ErrorDetails = "Failed to parse project file found at " + invalidProjectFile,
+            }];
+        }
         if (projects.IsEmpty)
         {
             _logger.Info("  No project files found.");

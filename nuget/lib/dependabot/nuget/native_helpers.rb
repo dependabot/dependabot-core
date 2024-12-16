@@ -297,6 +297,8 @@ module Dependabot
         case error_type
         when "None", nil
           # no issue
+        when "DependencyFileNotParseable"
+          raise DependencyFileNotParseable, T.must(T.let(error_details, T.nilable(String)))
         when "AuthenticationFailure"
           raise PrivateSourceAuthenticationFailure, T.let(error_details, T.nilable(String))
         when "MissingFile"
