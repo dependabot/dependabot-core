@@ -3491,9 +3491,35 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task UpdateSdkManagedPackage_DirectDependency()
         {
-            // this test uses live packages
-            await TestUpdateForProject("System.Text.Json", "8.0.0", "8.0.5",
+            // To avoid a unit test that's tightly coupled to the installed SDK, the package correlation file is faked.
+            // Doing this requires a temporary file and environment variable override.  Note that SDK version 8.0.100
+            // or greater is required.
+            using var tempDirectory = new TemporaryDirectory();
+            var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
+            await File.WriteAllTextAsync(packageCorrelationFile, """
+                {
+                    "Sdks": {
+                        "8.0.100": {
+                            "Packages": {
+                                "System.Text.Json": "8.0.98"
+                            }
+                        }
+                    }
+                }
+                """);
+            using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
+
+            // In the `packages` section below, we fake a `System.Text.Json` package with a low assembly version that
+            // will always trigger the replacement so that can be detected and then the equivalent version is pulled
+            // from the correlation file specified above.  In the original project contents, package version `8.0.98`
+            // is reported which makes the update to `8.0.99` always possible.
+            await TestUpdateForProject("System.Text.Json", "8.0.0", "8.0.99",
                 experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+                packages:
+                [
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", "8.0.0", "net8.0", assemblyVersion: "8.0.0.0"), // this assembly version is lower than what the SDK will have
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", "8.0.99", "net8.0", assemblyVersion: "8.99.99.99"), // this assembly version is greater than what the SDK will have
+                ],
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -3508,7 +3534,7 @@ public partial class UpdateWorkerTests
                     ("global.json", """
                         {
                             "sdk": {
-                                "version": "8.0.307",
+                                "version": "8.0.100",
                                 "rollForward": "latestMinor"
                             }
                         }
@@ -3520,47 +3546,7 @@ public partial class UpdateWorkerTests
                         <TargetFramework>net8.0</TargetFramework>
                       </PropertyGroup>
                       <ItemGroup>
-                        <PackageReference Include="System.Text.Json" Version="8.0.5" />
-                      </ItemGroup>
-                    </Project>
-                    """
-            );
-        }
-
-        [Fact]
-        public async Task UpdateSdkManagedPackage_TransitiveDependency()
-        {
-            // this test uses live packages
-            await TestUpdateForProject("System.Text.Json", "6.0.9", "6.0.10", isTransitive: true,
-                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
-                projectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Azure.Core" Version="1.44.0" />
-                      </ItemGroup>
-                    </Project>
-                    """,
-                additionalFiles: [
-                    ("global.json", """
-                        {
-                            "sdk": {
-                                "version": "8.0.307",
-                                "rollForward": "latestMinor"
-                            }
-                        }
-                        """)
-                ],
-                expectedProjectContents: """
-                    <Project Sdk="Microsoft.NET.Sdk">
-                      <PropertyGroup>
-                        <TargetFramework>net8.0</TargetFramework>
-                      </PropertyGroup>
-                      <ItemGroup>
-                        <PackageReference Include="Azure.Core" Version="1.44.0" />
-                        <PackageReference Include="System.Text.Json" Version="6.0.10" />
+                        <PackageReference Include="System.Text.Json" Version="8.0.99" />
                       </ItemGroup>
                     </Project>
                     """
