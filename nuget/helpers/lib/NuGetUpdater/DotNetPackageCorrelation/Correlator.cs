@@ -21,7 +21,7 @@ public partial class Correlator
         _releaseNotesDirectory = releaseNotesDirectory;
     }
 
-    public async Task<(SdkPackages Packages, IEnumerable<string> Warnings)> RunAsync()
+    public async Task<(SdkPackages SdkPackages, IEnumerable<string> Warnings)> RunAsync()
     {
         var runtimeVersions = new List<Version>();
         foreach (var directory in Directory.EnumerateDirectories(_releaseNotesDirectory.FullName))
@@ -63,10 +63,10 @@ public partial class Correlator
                         continue;
                     }
 
-                    if (!sdkPackages.Packages.TryGetValue(sdk.Version, out var packagesAndVersions))
+                    if (!sdkPackages.Sdks.TryGetValue(sdk.Version, out var packagesAndVersions))
                     {
                         packagesAndVersions = new PackageSet();
-                        sdkPackages.Packages[sdk.Version] = packagesAndVersions;
+                        sdkPackages.Sdks[sdk.Version] = packagesAndVersions;
                     }
 
                     var runtimeDirectory = new DirectoryInfo(Path.Combine(_releaseNotesDirectory.FullName, version.ToString(), sdk.RuntimeVersion.ToString()));
