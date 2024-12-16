@@ -1309,7 +1309,7 @@ public partial class DiscoveryWorkerTests
 
                           <Target Name="_TEST_ONLY_POPULATE_GROUP_">
                             <ItemGroup>
-                              <!-- We first need a value in this item group with the approprate metadata to simulate it having been added by NuGet. -->
+                              <!-- We first need a value in this item group with the appropriate metadata to simulate it having been added by NuGet. -->
                               <RuntimeCopyLocalItems Include="TestOnlyAssembly.dll" NuGetPackageId="Test.Only.Package" NuGetPackageVersion="1.0.0" />
                             </ItemGroup>
                           </Target>
