@@ -21,12 +21,12 @@ namespace NuGetUpdater.Core.Discover;
 internal static class SdkProjectDiscovery
 {
     private static readonly SdkPackages _sdkPackages;
+    private static readonly Dictionary<string, SdkPackages> _sdkPackagesByOverrideFile = new();
 
     static SdkProjectDiscovery()
     {
         var packageCorrelationPath = Path.Combine(Path.GetDirectoryName(typeof(SdkProjectDiscovery).Assembly.Location)!, "dotnet-package-correlation.json");
-        var packageCorrelationJson = File.ReadAllText(packageCorrelationPath);
-        _sdkPackages = JsonSerializer.Deserialize<SdkPackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
+        _sdkPackages = LoadPackageCorrelationsFromFile(packageCorrelationPath);
     }
 
     private static readonly HashSet<string> TopLevelPackageItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -302,8 +302,33 @@ internal static class SdkProjectDiscovery
     private static string? GetCorrespondingSdkManagedPackageVersion(string packageName, string sdkVersionString)
     {
         var sdkVersion = SemVersion.Parse(sdkVersionString);
-        var replacementPackageVersion = _sdkPackages.GetReplacementPackageVersion(sdkVersion, packageName);
+        var replacementPackageVersion = GetSdkPackageCorrelations().GetReplacementPackageVersion(sdkVersion, packageName);
         return replacementPackageVersion?.ToString();
+    }
+
+    private static SdkPackages GetSdkPackageCorrelations()
+    {
+        var packageCorrelationFileOverride = Environment.GetEnvironmentVariable("DOTNET_PACKAGE_CORRELATION_FILE_PATH");
+        if (packageCorrelationFileOverride is not null)
+        {
+            // this is used as a test hook to allow unit tests to be SDK agnostic
+            if (_sdkPackagesByOverrideFile.TryGetValue(packageCorrelationFileOverride, out var sdkPackages))
+            {
+                return sdkPackages;
+            }
+
+            sdkPackages = LoadPackageCorrelationsFromFile(packageCorrelationFileOverride);
+            _sdkPackagesByOverrideFile[packageCorrelationFileOverride] = sdkPackages;
+            return sdkPackages;
+        }
+
+        return _sdkPackages;
+    }
+
+    private static SdkPackages LoadPackageCorrelationsFromFile(string filePath)
+    {
+        var packageCorrelationJson = File.ReadAllText(filePath);
+        return JsonSerializer.Deserialize<SdkPackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
     }
 
     private static void ProcessResolvedPackageReference(
