@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <PackageCorrelationDirectory>$(MSBuildThisFileDirectory)..\DotNetPackageCorrelation</PackageCorrelationDirectory>
+    <PackageCorrelationCliDirectory>$(MSBuildThisFileDirectory)..\DotNetPackageCorrelation.Cli</PackageCorrelationCliDirectory>
     <DotNetCoreDirectory>$(MSBuildThisFileDirectory)..\..\dotnet-core</DotNetCoreDirectory>
     <PackageCorrelationFile>$(MSBuildThisFileDirectory)dotnet-package-correlation.json</PackageCorrelationFile>
   </PropertyGroup>
@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <Target Name="BuildDotNetPackageCorrelationFile" Inputs="@(_DotNetCoreFiles)" Outputs="$(PackageCorrelationFile)" BeforeTargets="GetCopyToOutputDirectoryItems">
-    <Exec Command="dotnet run --core-location &quot;$(DotNetCoreDirectory)&quot; --output &quot;$(PackageCorrelationFile)&quot;" WorkingDirectory="$(PackageCorrelationDirectory)" />
+    <Exec Command="dotnet run --core-location &quot;$(DotNetCoreDirectory)&quot; --output &quot;$(PackageCorrelationFile)&quot;" WorkingDirectory="$(PackageCorrelationCliDirectory)" />
   </Target>
 
   <Target Name="CleanDotNetPackageCorrelationFile" BeforeTargets="Clean">

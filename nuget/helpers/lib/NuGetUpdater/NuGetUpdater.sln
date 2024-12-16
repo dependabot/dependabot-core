@@ -46,6 +46,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetPackageCorrelation", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetPackageCorrelation.Test", "DotNetPackageCorrelation.Test\DotNetPackageCorrelation.Test.csproj", "{0945703C-C8DC-44F0-B1D8-0EFE011411AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNetPackageCorrelation.Cli", "DotNetPackageCorrelation.Cli\DotNetPackageCorrelation.Cli.csproj", "{509454EE-629F-4767-B1D4-7F2DF86C11B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +138,10 @@ Global
 		{0945703C-C8DC-44F0-B1D8-0EFE011411AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0945703C-C8DC-44F0-B1D8-0EFE011411AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0945703C-C8DC-44F0-B1D8-0EFE011411AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{509454EE-629F-4767-B1D4-7F2DF86C11B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
