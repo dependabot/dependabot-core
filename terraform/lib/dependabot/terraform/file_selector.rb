@@ -11,6 +11,9 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      TF_EXTENSION = ".tf"
+      OVERRIDE_TF_EXTENSION = "override.tf"
+
       abstract!
 
       sig { abstract.returns(T::Array[Dependabot::DependencyFile]) }
@@ -22,12 +25,12 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") && !f.name.end_with?("override.tf") }
+        dependency_files.select { |f| f.name.end_with?(TF_EXTENSION) && !f.name.end_with?(OVERRIDE_TF_EXTENSION) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def override_terraform_files
-        dependency_files.select { |f| f.name.end_with?("override.tf") }
+        dependency_files.select { |f| f.name.end_with?(OVERRIDE_TF_EXTENSION) }
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -40,13 +43,22 @@ module Dependabot
         dependency_files.find { |f| lockfile?(f.name) }
       end
 
+      sig do
+        params(modules: T::Hash[String, T::Array[T::Hash[String, T.untyped]]],
+               base_modules: T::Hash[String,
+                                     T::Array[T::Hash[String,
+                                                      T.untyped]]]).returns(T::Hash[String,
+                                                                                    T::Array[T::Hash[String,
+                                                                                                     T.untyped]]])
+      end
+
       def merge_modules(modules, base_modules)
         merged_modules = base_modules.dup
 
         modules.each do |key, value|
           merged_modules[key] = if merged_modules.key?(key)
-                                  merged_modules[key].map do |base_value|
-                                    base_value.merge(value.first)
+                                  T.must(merged_modules[key]).map do |base_value|
+                                    base_value.merge(T.must(value.first))
                                   end
                                 else
                                   value
