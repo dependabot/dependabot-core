@@ -26,7 +26,7 @@ public class SdkPackagesTests
             // packages
             new SdkPackages()
             {
-                Packages = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
+                Sdks = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
                 {
                     {
                         SemVersion.Parse("1.0.100"),
@@ -74,7 +74,7 @@ public class SdkPackagesTests
             // packages
             new SdkPackages()
             {
-                Packages = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
+                Sdks = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
                 {
                     {
                         SemVersion.Parse("1.0.100"),
@@ -112,7 +112,7 @@ public class SdkPackagesTests
             // packages
             new SdkPackages()
             {
-                Packages = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
+                Sdks = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
                 {
                     {
                         SemVersion.Parse("1.0.100"),
@@ -150,7 +150,7 @@ public class SdkPackagesTests
             // packages
             new SdkPackages()
             {
-                Packages = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
+                Sdks = new SortedDictionary<SemVersion, PackageSet>(SemVerComparer.Instance)
                 {
                     {
                         SemVersion.Parse("1.0.100"),
