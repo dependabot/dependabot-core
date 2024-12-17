@@ -113,24 +113,31 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: dockerfile_2_fixture,
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, File.join(url, "Containerfile?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
     let(:dockerfile_2_fixture) { fixture("github", "contents_dockerfile.json") }
 
     it "fetches both Dockerfiles" do
-      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Dockerfile Dockerfile-base))
+        .to match_array(%w(Dockerfile Dockerfile-base Containerfile))
     end
 
     context "when an invalid encoding is present" do
       let(:dockerfile_2_fixture) { fixture("github", "contents_image.json") }
 
       it "fetches the first Dockerfile, and ignores the invalid one" do
-        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(Dockerfile))
+          .to match_array(%w(Dockerfile Containerfile)
       end
     end
   end
