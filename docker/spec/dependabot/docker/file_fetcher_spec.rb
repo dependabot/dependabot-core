@@ -326,9 +326,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     context "with a Containerfile" do
       before do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
             status: 200,
             body: fixture("github", "contents_docker_repo.json"),
             headers: { "content-type" => "application/json" }
