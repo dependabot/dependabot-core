@@ -301,7 +301,7 @@ GEM
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.0.8)
-    parser (3.3.5.0)
+    parser (3.3.6.0)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
