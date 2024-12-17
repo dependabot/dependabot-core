@@ -53,12 +53,15 @@ module Dependabot
       end
     end
 
+    # Default timeout for commands
+    DEFAULT_TIMEOUT = 120
+
     DEFAULT_TIMEOUTS = T.let({
       no_time_out: -1,  # No timeout
       local: 30,        # Local commands
-      network: 120,     # Network-dependent commands
+      network: DEFAULT_TIMEOUT, # Network-dependent commands
       long_running: 300 # Long-running tasks (e.g., builds)
-    }.freeze, T::Hash[T.untyped, T.untyped])
+    }.freeze, T::Hash[Symbol, Integer])
 
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
@@ -82,6 +85,7 @@ module Dependabot
     )
       # Assign default timeout based on command type if timeout < 0
       timeout = DEFAULT_TIMEOUTS[command_type] if timeout.negative?
+      timeout = DEFAULT_TIMEOUT if command_type != :no_time_out && (!timeout || timeout.negative?)
 
       stdout = T.let("", String)
       stderr = T.let("", String)
@@ -92,6 +96,9 @@ module Dependabot
       begin
         T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr|
           pid = wait_thr.pid
+          Dependabot.logger.info("Started process PID: #{pid} with command: #{env_cmd.join(' ')}")
+
+          # Write to stdin if input data is provided
           stdin&.write(stdin_data) if stdin_data
           stdin&.close
 
@@ -105,10 +112,11 @@ module Dependabot
 
           until ios.empty?
             # Calculate remaining timeout dynamically
-            remaining_timeout = timeout - (Time.now - last_output_time)
+            remaining_timeout = T.must(timeout) - (Time.now - last_output_time) if command_type != :no_time_out
 
             # Raise an error if timeout is exceeded
-            if remaining_timeout <= 0
+            if command_type != :no_time_out && T.must(remaining_timeout) <= 0
+              Dependabot.logger.warn("Process PID: #{pid} timed out after #{timeout}s. Terminating...")
               terminate_process(pid)
               status = ProcessStatus.new(wait_thr.value, 124)
               raise Timeout::Error, "Timed out due to inactivity after #{timeout} seconds"
@@ -119,11 +127,12 @@ module Dependabot
 
             # Process ready IO streams
             ready_ios&.first&.each do |io|
+              # Ensure UTF-8 encoding for input data
               io.set_encoding("UTF-8", "UTF-8")
-
               data = io.read_nonblock(1024)
 
-              last_output_time = Time.now
+              # Reset the timeout if data is received
+              last_output_time = Time.now if data
               if io == stdout_io
                 stdout += data
               else
@@ -131,23 +140,29 @@ module Dependabot
                 stdout += data if stderr_to_stdout
               end
             rescue EOFError
+              # Remove the stream when EOF is reached
               ios.delete(io)
             rescue IO::WaitReadable
+              # Continue when IO is not ready yet
               next
             end
           end
 
           status = ProcessStatus.new(wait_thr.value)
+          Dependabot.logger.info("Process PID: #{pid} completed with status: #{status}")
         end
       rescue Timeout::Error => e
+        Dependabot.logger.error("Process PID: #{pid} failed due to timeout: #{e.message}")
         stderr += e.message unless stderr_to_stdout
         stdout += e.message if stderr_to_stdout
       rescue Errno::ENOENT => e
+        Dependabot.logger.error("Command failed: #{e.message}")
         stderr += e.message unless stderr_to_stdout
         stdout += e.message if stderr_to_stdout
       end
 
       elapsed_time = Time.now - start_time
+      Dependabot.logger.info("Total execution time: #{elapsed_time.round(2)} seconds")
       [stdout, stderr, status, elapsed_time]
     end
     # rubocop:enable Metrics/AbcSize
@@ -155,6 +170,7 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
 
+    # Terminate a process by PID
     sig { params(pid: T.nilable(Integer)).void }
     def self.terminate_process(pid)
       return unless pid
@@ -178,21 +194,23 @@ module Dependabot
       end
     end
 
+    # Check if the process is still alive
     sig { params(pid: T.nilable(Integer)).returns(T::Boolean) }
     def self.process_alive?(pid)
-      return false if pid.nil? # No PID, consider process not alive
+      return false if pid.nil?
 
       begin
         Process.kill(0, pid) # Check if the process exists
-        true # Process is still alive
+        true
       rescue Errno::ESRCH
-        false # Process does not exist (terminated successfully)
+        false
       rescue Errno::EPERM
         Dependabot.logger.error("Insufficient permissions to check process: #{pid}")
-        false # Assume process not alive due to lack of permissions
+        false
       end
     end
 
+    # Escape shell commands to ensure safe execution
     sig { params(command: String).returns(String) }
     def self.escape_command(command)
       command_parts = command.split.map(&:strip).reject(&:empty?)
