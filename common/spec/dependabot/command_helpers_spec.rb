@@ -11,6 +11,7 @@ RSpec.describe Dependabot::CommandHelpers do
     let(:output_hang_cmd) { command_fixture("output_hang.sh") }
     let(:error_hang_cmd) { command_fixture("error_hang.sh") }
     let(:invalid_cmd) { "non_existent_command" }
+    let(:no_timeout_cmd) { command_fixture("no_timeout.sh") }
     let(:timeout) { 2 } # Timeout for hanging commands
 
     context "when the command runs successfully" do
@@ -62,8 +63,8 @@ RSpec.describe Dependabot::CommandHelpers do
           timeout: timeout
         )
 
-        expect(stdout).to eq("")
-        expect(stderr).to include("This is a hanging error command.")
+        expect(stdout).to eq("This is a output for command error command.\n")
+        expect(stderr).to include("This is an error message.")
         expect(stderr).to include("Timed out due to inactivity after #{timeout} seconds")
         expect(status.exitstatus).to eq(124)
         expect(elapsed_time).to be_within(1).of(timeout)
@@ -81,6 +82,20 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stderr).to include("No such file or directory - non_existent_command") if stderr
         expect(status).to be_nil
         expect(elapsed_time).to be > 0
+      end
+    end
+
+    context "when timeout is zero or negative" do
+      it "waiting commands to be done" do
+        stdout, stderr, status, elapsed_time = described_class.capture3_with_timeout(
+          [no_timeout_cmd],
+          timeout: -1
+        )
+
+        expect(stdout).to eq("This is a command result.\n")
+        expect(stderr).to eql("")
+        expect(status.exitstatus).to eq(0)
+        expect(elapsed_time).to be_within(0.5).of(3)
       end
     end
   end

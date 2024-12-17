@@ -135,7 +135,6 @@ module Dependabot
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean,
         error_class: T.class_of(HelperSubprocessFailed),
-        command_type: Symbol,
         timeout: Integer
       )
         .returns(T.nilable(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]])))
@@ -144,8 +143,7 @@ module Dependabot
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false,
                                    error_class: HelperSubprocessFailed,
-                                   command_type: :network,
-                                   timeout: -1)
+                                   timeout: CommandHelpers::TIMEOUTS::DEFAULT)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -164,7 +162,6 @@ module Dependabot
         stdout, stderr, process = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stdin_data: stdin_data,
-          command_type: command_type,
           timeout: timeout
         )
       else
@@ -436,7 +433,6 @@ module Dependabot
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
         stderr_to_stdout: T::Boolean,
-        command_type: Symbol,
         timeout: Integer
       ).returns(String)
     end
@@ -446,8 +442,7 @@ module Dependabot
                                env: {},
                                fingerprint: nil,
                                stderr_to_stdout: true,
-                               command_type: :network,
-                               timeout: -1)
+                               timeout: CommandHelpers::TIMEOUTS::DEFAULT)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
@@ -461,7 +456,6 @@ module Dependabot
         stdout, stderr, process, _elapsed_time = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stderr_to_stdout: stderr_to_stdout,
-          command_type: command_type,
           timeout: timeout
         )
       elsif stderr_to_stdout

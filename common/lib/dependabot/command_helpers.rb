@@ -10,6 +10,14 @@ module Dependabot
   module CommandHelpers
     extend T::Sig
 
+    module TIMEOUTS
+      NO_TIME_OUT = -1
+      LOCAL = 30
+      NETWORK = 120
+      LONG_RUNNING = 300
+      DEFAULT = NETWORK
+    end
+
     class ProcessStatus
       extend T::Sig
 
@@ -53,15 +61,12 @@ module Dependabot
       end
     end
 
-    # Default timeout for commands
-    DEFAULT_TIMEOUT = 120
-
     DEFAULT_TIMEOUTS = T.let({
       no_time_out: -1,  # No timeout
       local: 30,        # Local commands
-      network: DEFAULT_TIMEOUT, # Network-dependent commands
+      network: 120,     # Network-dependent commands
       long_running: 300 # Long-running tasks (e.g., builds)
-    }.freeze, T::Hash[Symbol, Integer])
+    }.freeze, T::Hash[T.untyped, T.untyped])
 
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
@@ -72,7 +77,6 @@ module Dependabot
         env_cmd: T::Array[T.any(T::Hash[String, String], String)],
         stdin_data: T.nilable(String),
         stderr_to_stdout: T::Boolean,
-        command_type: Symbol,
         timeout: Integer
       ).returns([T.nilable(String), T.nilable(String), T.nilable(ProcessStatus), Float])
     end
@@ -80,12 +84,8 @@ module Dependabot
       env_cmd,
       stdin_data: nil,
       stderr_to_stdout: false,
-      command_type: :network,
-      timeout: -1
+      timeout: TIMEOUTS::DEFAULT
     )
-      # Assign default timeout based on command type if timeout < 0
-      timeout = DEFAULT_TIMEOUTS[command_type] if timeout.negative?
-      timeout = DEFAULT_TIMEOUT if command_type != :no_time_out && (!timeout || timeout.negative?)
 
       stdout = T.let("", String)
       stderr = T.let("", String)
@@ -94,7 +94,7 @@ module Dependabot
       start_time = Time.now
 
       begin
-        T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr|
+        T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
           pid = wait_thr.pid
           Dependabot.logger.info("Started process PID: #{pid} with command: #{env_cmd.join(' ')}")
 
@@ -111,19 +111,21 @@ module Dependabot
           last_output_time = Time.now # Track the last time output was received
 
           until ios.empty?
-            # Calculate remaining timeout dynamically
-            remaining_timeout = T.must(timeout) - (Time.now - last_output_time) if command_type != :no_time_out
+            if timeout.positive?
+              # Calculate remaining timeout dynamically
+              remaining_timeout = timeout - (Time.now - last_output_time)
 
-            # Raise an error if timeout is exceeded
-            if command_type != :no_time_out && T.must(remaining_timeout) <= 0
-              Dependabot.logger.warn("Process PID: #{pid} timed out after #{timeout}s. Terminating...")
-              terminate_process(pid)
-              status = ProcessStatus.new(wait_thr.value, 124)
-              raise Timeout::Error, "Timed out due to inactivity after #{timeout} seconds"
+              # Raise an error if timeout is exceeded
+              if remaining_timeout <= 0
+                Dependabot.logger.warn("Process PID: #{pid} timed out after #{timeout}s. Terminating...")
+                terminate_process(pid)
+                status = ProcessStatus.new(wait_thr.value, 124)
+                raise Timeout::Error, "Timed out due to inactivity after #{timeout} seconds"
+              end
             end
 
             # Use IO.select with a dynamically calculated short timeout
-            ready_ios = IO.select(ios, nil, nil, [0.1, remaining_timeout].min)
+            ready_ios = IO.select(ios, nil, nil, 0)
 
             # Process ready IO streams
             ready_ios&.first&.each do |io|
@@ -153,8 +155,11 @@ module Dependabot
         end
       rescue Timeout::Error => e
         Dependabot.logger.error("Process PID: #{pid} failed due to timeout: #{e.message}")
-        stderr += e.message unless stderr_to_stdout
-        stdout += e.message if stderr_to_stdout
+        terminate_process(pid)
+
+        # Append timeout message only to stderr without interfering with stdout
+        stderr += "\n#{e.message}" unless stderr_to_stdout
+        stdout += "\n#{e.message}" if stderr_to_stdout
       rescue Errno::ENOENT => e
         Dependabot.logger.error("Command failed: #{e.message}")
         stderr += e.message unless stderr_to_stdout
