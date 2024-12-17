@@ -146,6 +146,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
       .to receive(:create_from)
       .and_return(stub_dependency_change)
     allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   after do

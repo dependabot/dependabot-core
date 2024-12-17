@@ -63,6 +63,7 @@ module Dependabot
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/CyclomaticComplexity
     sig do
       params(
         env_cmd: T::Array[T.any(T::Hash[String, String], String)],
@@ -149,6 +150,8 @@ module Dependabot
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/PerceivedComplexity
+    # rubocop:enable Metrics/CyclomaticComplexity
+
     sig { params(pid: T.nilable(Integer)).void }
     def self.terminate_process(pid)
       return unless pid
