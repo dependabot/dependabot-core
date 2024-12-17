@@ -334,9 +334,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
 
-        stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
+        stub_request(:get, File.join(url, "Dockerfile?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
             status: 200,
             body: dockerfile_fixture,
             headers: { "content-type" => "application/json" }
@@ -347,8 +347,8 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
       it "fetches the Containerfile" do
         expect(file_fetcher_instance.files.count).to eq(1)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(Containerfile))
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(Containerfile))
       end
     end
   end
