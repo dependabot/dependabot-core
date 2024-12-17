@@ -1094,6 +1094,47 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DiscoveryReportsDependencyFileNotParseable(bool useDirectDiscovery)
+    {
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery };
+        await TestDiscoveryAsync(
+            experimentsManager: experimentsManager,
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                  ("project2.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference: Include="Some.Package2" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [],
+                ErrorType = ErrorType.DependencyFileNotParseable,
+                ErrorDetails = "project2.csproj",
+            });
+    }
+
     [Fact]
     public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
     {
