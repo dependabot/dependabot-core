@@ -572,10 +572,12 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         mock_service_pack_request("taiki-e/install-action")
       end
 
-      it "raises an UpdateNotPossible error" do
+      it "raises an UnresolvableVersionError error" do
         expect { parser.parse }.to raise_error(
-          Dependabot::UpdateNotPossible,
-          "The following dependencies could not be updated: taiki-e/install-action"
+          Dependabot::UnresolvableVersionError,
+          "Unable to determine semantic version from tags or commits for dependencies. " \
+          "Dependencies must have a tag or commit that references a semantic version. " \
+          "Affected dependencies: taiki-e/install-action"
         )
       end
     end

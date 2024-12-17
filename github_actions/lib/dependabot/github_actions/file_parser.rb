@@ -36,7 +36,7 @@ module Dependabot
         end
 
         dependencies_without_version = dependency_set.dependencies.select { |dep| dep.version.nil? }
-        raise UpdateNotPossible, dependencies_without_version.map(&:name) unless dependencies_without_version.empty?
+        raise UnresolvableVersionError, dependencies_without_version.map(&:name) unless dependencies_without_version.empty?
 
         dependency_set.dependencies
       end

@@ -661,6 +661,23 @@ module Dependabot
     end
   end
 
+  class UnresolvableVersionError < DependabotError
+    extend T::Sig
+
+    sig { returns(T::Array[String]) }
+    attr_reader :dependencies
+
+    sig { params(dependencies: T::Array[String]).void }
+    def initialize(dependencies)
+      @dependencies = dependencies
+
+      msg = "Unable to determine semantic version from tags or commits for dependencies. " \
+            "Dependencies must have a tag or commit that references a semantic version. " \
+            "Affected dependencies: #{@dependencies.join(', ')}"
+      super(msg)
+    end
+  end
+
   class GitDependenciesNotReachable < DependabotError
     extend T::Sig
 
