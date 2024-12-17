@@ -1129,18 +1129,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
-                Projects = [
-                    new()
-                    {
-                        FilePath = "project2.csproj",
-                        TargetFrameworks = [],
-                        Dependencies = [],
-                        Properties = [],
-                        ReferencedProjectPaths = [],
-                        ImportedFiles = [],
-                        AdditionalFiles = [],
-                    }
-                ],
+                Projects = [],
                 ErrorType = ErrorType.DependencyFileNotParseable,
                 ErrorDetails = "project2.csproj",
             });

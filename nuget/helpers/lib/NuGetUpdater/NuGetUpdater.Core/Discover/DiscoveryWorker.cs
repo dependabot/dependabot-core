@@ -110,7 +110,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 Path = initialWorkspacePath,
                 DotNetToolsJson = null,
                 GlobalJson = null,
-                Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
+                Projects = projectResults.Where(p => p.IsSuccess).OrderBy(p => p.FilePath).ToImmutableArray(),
                 ErrorType = failedProjectResult.ErrorType,
                 ErrorDetails = failedProjectResult.FilePath,
                 IsSuccess = false,
