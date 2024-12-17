@@ -122,9 +122,15 @@ module Dependabot
 
             # Process ready IO streams
             ready_ios&.first&.each do |io|
-              # Ensure UTF-8 encoding for input data
-              io.set_encoding("UTF-8", "UTF-8")
+              # 1. Read data from the stream
+              io.set_encoding("BINARY")
               data = io.read_nonblock(1024)
+
+              # 2. Force encoding to UTF-8 (for proper conversion)
+              data.force_encoding("UTF-8")
+
+              # 3. Convert to UTF-8 safely, handling invalid/undefined bytes
+              data = data.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
 
               # Reset the timeout if data is received
               last_output_time = Time.now if data
@@ -134,12 +140,12 @@ module Dependabot
                 stderr += data unless stderr_to_stdout
                 stdout += data if stderr_to_stdout
               end
-            rescue EOFError
-              # Remove the stream when EOF is reached
-              ios.delete(io)
-            rescue IO::WaitReadable
-              # Continue when IO is not ready yet
-              next
+                                                    rescue EOFError
+                                                      # Remove the stream when EOF is reached
+                                                      ios.delete(io)
+                                                    rescue IO::WaitReadable
+                                                      # Continue when IO is not ready yet
+                                                      next
             end
           end
 
