@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     it "fetches both Dockerfiles" do
       expect(file_fetcher_instance.files.count).to eq(2)
       expect(file_fetcher_instance.files.map(&:name))
-        .to match_array(%w(Dockerfile Dockerfile-base Containerfile))
+        .to match_array(%w(Dockerfile Dockerfile-base))
     end
 
     context "when an invalid encoding is present" do
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       it "fetches the first Dockerfile, and ignores the invalid one" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name))
-          .to match_array(%w(Dockerfile Containerfile))
+          .to match_array(%w(Dockerfile))
       end
     end
   end
