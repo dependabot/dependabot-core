@@ -13,7 +13,7 @@ module Dependabot
       extend T::Helpers
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
+      DOCKER_REGEXP = /dockerfile|containerfile/i
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
