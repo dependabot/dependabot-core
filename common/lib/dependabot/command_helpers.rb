@@ -119,9 +119,9 @@ module Dependabot
 
             # Process ready IO streams
             ready_ios&.first&.each do |io|
-              data = io.read_nonblock(1024)
+              io.set_encoding("UTF-8", "UTF-8")
 
-              data.force_encoding("UTF-8").scrub! # Normalize to UTF-8 and replace invalid characters
+              data = io.read_nonblock(1024)
 
               last_output_time = Time.now
               if io == stdout_io
