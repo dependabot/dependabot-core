@@ -61,13 +61,6 @@ module Dependabot
       end
     end
 
-    DEFAULT_TIMEOUTS = T.let({
-      no_time_out: -1,  # No timeout
-      local: 30,        # Local commands
-      network: 120,     # Network-dependent commands
-      long_running: 300 # Long-running tasks (e.g., builds)
-    }.freeze, T::Hash[T.untyped, T.untyped])
-
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/PerceivedComplexity
