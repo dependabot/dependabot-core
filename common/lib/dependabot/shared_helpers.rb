@@ -458,14 +458,12 @@ module Dependabot
 
       env_cmd = [env || {}, cmd, opts].compact
       if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-
         stdout, stderr, process, _elapsed_time = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stderr_to_stdout: stderr_to_stdout,
           command_type: command_type,
           timeout: timeout
         )
-
       elsif stderr_to_stdout
         stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
