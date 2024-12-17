@@ -1099,9 +1099,6 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     [InlineData(false)]
     public async Task DiscoveryReportsDependencyFileNotParseable(bool useDirectDiscovery)
     {
-        // override temp directory
-        using var tempDir = new TemporaryDirectory();
-
         var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery };
         await TestDiscoveryAsync(
             experimentsManager: experimentsManager,

@@ -104,20 +104,19 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         //if any projectResults are not successful, return a failed result
         if (projectResults.Any(p => p.IsSuccess == false))
         {
-            var failedProjectResults = projectResults.Where(p => p.IsSuccess == false).First();
-
-            var failedResult = new WorkspaceDiscoveryResult
+            var failedProjectResult = projectResults.Where(p => p.IsSuccess == false).First();
+            var failedDiscoveryResult = new WorkspaceDiscoveryResult
             {
                 Path = initialWorkspacePath,
-                DotNetToolsJson = dotNetToolsJsonDiscovery,
-                GlobalJson = globalJsonDiscovery,
+                DotNetToolsJson = null,
+                GlobalJson = null,
                 Projects = projectResults.OrderBy(p => p.FilePath).ToImmutableArray(),
-                ErrorType = ErrorType.DependencyFileNotParseable,
-                ErrorDetails = failedProjectResults.FilePath,
+                ErrorType = failedProjectResult.ErrorType,
+                ErrorDetails = failedProjectResult.FilePath,
                 IsSuccess = false,
             };
 
-            return failedResult;
+            return failedDiscoveryResult;
         }
 
         result = new WorkspaceDiscoveryResult
@@ -181,6 +180,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 ImportedFiles = ImmutableArray<string>.Empty,
                 AdditionalFiles = ImmutableArray<string>.Empty,
                 IsSuccess = false,
+                ErrorType = ErrorType.DependencyFileNotParseable,
                 ErrorDetails = "Failed to parse project file found at " + invalidProjectFile,
             }];
         }
