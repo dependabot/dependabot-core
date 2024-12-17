@@ -15,7 +15,7 @@ module Dependabot
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
+      DOCKER_REGEXP = /(docker|container)file/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -63,7 +63,7 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No Dockerfile or Containerfile!"
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
