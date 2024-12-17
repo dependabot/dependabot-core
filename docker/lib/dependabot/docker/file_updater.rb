@@ -15,7 +15,7 @@ module Dependabot
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
+      DOCKER_REGEXP = /(docker|container)file/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
