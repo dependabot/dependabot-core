@@ -144,6 +144,11 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::UnresolvableVersionError
+      {
+        "error-type": "unresolvable_version",
+        "error-detail": { dependencies: error.dependencies }
+      }
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
