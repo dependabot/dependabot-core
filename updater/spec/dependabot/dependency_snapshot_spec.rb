@@ -108,6 +108,9 @@ RSpec.describe Dependabot::DependencySnapshot do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:add_deprecation_warn_to_pr_message)
       .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   after do
