@@ -17,7 +17,8 @@ module Dependabot
       abstract!
       # Initialize version information for a package manager or language.
       # @param name [String] the name of the package manager or language (e.g., "bundler", "ruby").
-      # @param version [Dependabot::Version] the parsed current version.
+      # @param detected_version [Dependabot::Version] the detected version.
+      # @param version [Dependabot::Version] the package manager current version.
       # @param deprecated_versions [Array<Dependabot::Version>] an array of deprecated versions.
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
       # @param requirement [Dependabot::Requirement] an array of requirements.
@@ -26,20 +27,19 @@ module Dependabot
       sig do
         params(
           name: String,
+          detected_version: Dependabot::Version,
           version: Dependabot::Version,
           deprecated_versions: T::Array[Dependabot::Version],
           supported_versions: T::Array[Dependabot::Version],
           requirement: T.nilable(Dependabot::Requirement)
         ).void
       end
-      def initialize(
-        name,
-        version,
-        deprecated_versions = [],
-        supported_versions = [],
-        requirement = nil
+      def initialize( # rubocop:disable Metrics/ParameterLists
+        name, detected_version, version,
+        deprecated_versions = [], supported_versions = [], requirement = nil
       )
         @name = T.let(name, String)
+        @detected_version = T.let(detected_version, Dependabot::Version)
         @version = T.let(version, Dependabot::Version)
         @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
         @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
@@ -51,6 +51,12 @@ module Dependabot
       #   name #=> "bundler"
       sig { returns(String) }
       attr_reader :name
+
+      # The current version of the package manager or language.
+      # @example
+      #   detected_version #=> Dependabot::Version.new("2")
+      sig { returns(Dependabot::Version) }
+      attr_reader :detected_version
 
       # The current version of the package manager or language.
       # @example
@@ -85,7 +91,7 @@ module Dependabot
         # If the version is unsupported, the unsupported error is getting raised separately.
         return false if unsupported?
 
-        deprecated_versions.include?(version)
+        deprecated_versions.include?(detected_version)
       end
 
       # Checks if the current version is unsupported.
@@ -96,7 +102,7 @@ module Dependabot
         return false if supported_versions.empty?
 
         # Check if the version is not supported
-        supported_versions.all? { |supported| supported > version }
+        supported_versions.all? { |supported| supported > detected_version }
       end
 
       # Raises an error if the current package manager or language version is unsupported.
@@ -110,7 +116,7 @@ module Dependabot
 
         raise ToolVersionNotSupported.new(
           name,
-          version.to_s,
+          detected_version.to_s,
           supported_versions_message
         )
       end
