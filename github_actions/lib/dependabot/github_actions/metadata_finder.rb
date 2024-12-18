@@ -19,7 +19,7 @@ module Dependabot
 
         url =
           if info.nil?
-            "https://github.com/#{dependency.name}"
+            "https://#{DOTCOM}/#{dependency.name}"
           else
             info[:url] || info.fetch("url")
           end

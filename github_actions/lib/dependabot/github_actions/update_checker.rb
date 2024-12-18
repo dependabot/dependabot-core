@@ -312,8 +312,8 @@ module Dependabot
       sig { params(sha: String).returns(T.nilable(String)) }
       def find_container_branch(sha)
         branches_including_ref = SharedHelpers.run_shell_command(
-          "git branch --remotes --contains #{sha}",
-          fingerprint: "git branch --remotes --contains <sha>"
+          git_branches_containing(sha),
+          fingerprint: git_branches_containing("<sha>")
         ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
         return if branches_including_ref.empty?
 
@@ -327,6 +327,11 @@ module Dependabot
         else
           branches_including_ref.first
         end
+      end
+
+      sig { params(sha: String).returns(String) }
+      def git_branches_containing(sha)
+        "git branch --remotes --contains #{sha}"
       end
     end
   end
