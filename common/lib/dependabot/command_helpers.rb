@@ -133,7 +133,9 @@ module Dependabot
               data = data.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
 
               # Reset the timeout if data is received
-              last_output_time = Time.now if data
+              last_output_time = Time.now unless data.empty?
+
+              # 4. Append data to the appropriate stream
               if io == stdout_io
                 stdout += data
               else
