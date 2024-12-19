@@ -159,7 +159,7 @@ module Dependabot
 
       env_cmd = [env, cmd].compact
       if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        stdout, stderr, process, _elapsed_time = CommandHelpers.capture3_with_timeout(
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stdin_data: stdin_data,
           timeout: timeout
@@ -453,7 +453,7 @@ module Dependabot
 
       env_cmd = [env || {}, cmd, opts].compact
       if Experiments.enabled?(:enable_shared_helpers_command_timeout)
-        stdout, stderr, process, _elapsed_time = CommandHelpers.capture3_with_timeout(
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
           env_cmd,
           stderr_to_stdout: stderr_to_stdout,
           timeout: timeout
