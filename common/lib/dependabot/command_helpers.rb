@@ -11,11 +11,11 @@ module Dependabot
     extend T::Sig
 
     module TIMEOUTS
-      NO_TIME_OUT = -1
-      LOCAL = 30
-      NETWORK = 120
-      LONG_RUNNING = 300
-      DEFAULT = NETWORK
+      NO_TIME_OUT = -1 # No timeout
+      LOCAL = 30 # 30 seconds
+      NETWORK = 120 # 2 minutes
+      LONG_RUNNING = 300 # 5 minutes
+      DEFAULT = 900 # 15 minutes
     end
 
     class ProcessStatus
