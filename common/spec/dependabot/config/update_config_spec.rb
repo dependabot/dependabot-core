@@ -118,6 +118,23 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
+    context "with ignored version semver major and the version is nil because package-lock.json not checked in" do
+      let(:dependency) { instance_double(Dependabot::Dependency, name: 'eslint-plugin-playwright', package_manager: 'npm_and_yarn', version: nil, requirements: [{:requirement=>"^1.7.0", :file=>"package.json", :groups=>["dependencies"], :source=>nil}]) }
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns versions" do
+        # expect(ignored_versions).to eq([">= 2.a"]) if there is a version in the package-lock.json
+        expect(ignored_versions).to eq([])
+      end
+    end
+
     context "with an dependency that must be name normalized" do
       let(:dependency) do
         Dependabot::Dependency.new(
