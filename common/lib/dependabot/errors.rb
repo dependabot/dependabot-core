@@ -144,6 +144,11 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::UnresolvableVersionError
+      {
+        "error-type": "unresolvable_version",
+        "error-detail": { dependencies: error.dependencies }
+      }
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
@@ -657,6 +662,23 @@ module Dependabot
       @dependencies = dependencies
 
       msg = "The following dependencies could not be updated: #{@dependencies.join(', ')}"
+      super(msg)
+    end
+  end
+
+  class UnresolvableVersionError < DependabotError
+    extend T::Sig
+
+    sig { returns(T::Array[String]) }
+    attr_reader :dependencies
+
+    sig { params(dependencies: T::Array[String]).void }
+    def initialize(dependencies)
+      @dependencies = dependencies
+
+      msg = "Unable to determine semantic version from tags or commits for dependencies. " \
+            "Dependencies must have a tag or commit that references a semantic version. " \
+            "Affected dependencies: #{@dependencies.join(', ')}"
       super(msg)
     end
   end

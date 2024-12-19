@@ -35,6 +35,12 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
+        dependencies_without_version = dependency_set.dependencies.select { |dep| dep.version.nil? }
+        unless dependencies_without_version.empty?
+          raise UnresolvableVersionError,
+                dependencies_without_version.map(&:name)
+        end
+
         dependency_set.dependencies
       end
 
