@@ -394,7 +394,7 @@ module Dependabot
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
-      def setup(name)
+      def setup(name) # rubocop:disable Metrics/MethodLength
         # we prioritize version mentioned in "packageManager" instead of "engines"
         # i.e. if { engines : "pnpm" : "6" } and { packageManager: "pnpm@6.0.2" },
         # we go for the specificity mentioned in packageManager (6.0.2)
@@ -404,6 +404,8 @@ module Dependabot
                @manifest_package_manager.nil?
           return
         end
+
+        return package_manager.version.to_s if package_manager.deprecated? || package_manager.unsupported?
 
         if @engines && @manifest_package_manager.nil?
           # if "packageManager" doesn't exists in manifest file,
@@ -461,6 +463,13 @@ module Dependabot
         name = ensure_valid_package_manager(name)
         package_manager_class = T.must(PACKAGE_MANAGER_CLASSES[name])
 
+        if name == NpmPackageManager::NAME
+          detected_version = Helpers.npm_version_numeric_latest(@lockfiles[:npm])
+          package_manager = package_manager_class.new(detected_version.to_s)
+
+          return package_manager if package_manager.deprecated? || package_manager.unsupported?
+        end
+
         installed_version = installed_version(name)
         Dependabot.logger.info("Installed version for #{name}: #{installed_version}")
 
@@ -472,7 +481,7 @@ module Dependabot
         end
 
         package_manager_class.new(
-          installed_version,
+          installed_version.to_s,
           requirement: package_manager_requirement
         )
       rescue StandardError => e
