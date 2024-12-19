@@ -4,11 +4,11 @@ namespace DotNetPackageCorrelation;
 
 public class PackageMapper
 {
-    private readonly RuntimePackages _runtimePackages;
+    public RuntimePackages RuntimePackages { get; }
 
     private PackageMapper(RuntimePackages runtimePackages)
     {
-        _runtimePackages = runtimePackages;
+        RuntimePackages = runtimePackages;
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ public class PackageMapper
             return null;
         }
 
-        var candidateRuntimeVersions = _runtimePackages.Runtimes.Keys
+        var candidateRuntimeVersions = RuntimePackages.Runtimes.Keys
             .Where(v => v.Major == runtimeVersion.Major)
             .Where(v => v.ComparePrecedenceTo(runtimeVersion) <= 0)
             .OrderBy(v => v, SemVerComparer.Instance)
@@ -32,7 +32,7 @@ public class PackageMapper
             .ToArray();
         foreach (var candidateRuntimeVersion in candidateRuntimeVersions)
         {
-            if (!_runtimePackages.Runtimes.TryGetValue(candidateRuntimeVersion, out var packageSet))
+            if (!RuntimePackages.Runtimes.TryGetValue(candidateRuntimeVersion, out var packageSet))
             {
                 continue;
             }
@@ -49,7 +49,7 @@ public class PackageMapper
     private SemVersion? GetRuntimeVersionFromPackage(string packageName, SemVersion packageVersion)
     {
         // TODO: linear search is slow
-        foreach (var runtime in _runtimePackages.Runtimes)
+        foreach (var runtime in RuntimePackages.Runtimes)
         {
             if (runtime.Value.Packages.TryGetValue(packageName, out var foundPackageVersion) &&
                 foundPackageVersion == packageVersion)
