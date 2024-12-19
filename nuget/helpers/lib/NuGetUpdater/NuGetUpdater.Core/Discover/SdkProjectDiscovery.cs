@@ -1,10 +1,7 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using System.Text.Json;
 using System.Xml.Linq;
 using System.Xml.XPath;
-
-using DotNetPackageCorrelation;
 
 using Microsoft.Build.Logging.StructuredLogger;
 
@@ -20,16 +17,6 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
-    private static readonly PackageMapper _packageMapper;
-    private static readonly Dictionary<string, PackageMapper> _packageMapperByOverrideFile = new();
-
-    static SdkProjectDiscovery()
-    {
-        var packageCorrelationPath = Path.Combine(Path.GetDirectoryName(typeof(SdkProjectDiscovery).Assembly.Location)!, "dotnet-package-correlation.json");
-        var runtimePackages = LoadRuntimePackagesFromFile(packageCorrelationPath);
-        _packageMapper = PackageMapper.Load(runtimePackages);
-    }
-
     private static readonly HashSet<string> TopLevelPackageItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "PackageReference"
@@ -252,7 +239,7 @@ internal static class SdkProjectDiscovery
                                                             runtimePackageVersion is not null &&
                                                             SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
                                                         {
-                                                            var packageMapper = GetPackageMapper();
+                                                            var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
                                                             var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
                                                             if (replacementPackageVersion is not null)
                                                             {
@@ -376,32 +363,6 @@ internal static class SdkProjectDiscovery
             };
         }).ToImmutableArray();
         return projectDiscoveryResults;
-    }
-
-    private static PackageMapper GetPackageMapper()
-    {
-        var packageCorrelationFileOverride = Environment.GetEnvironmentVariable("DOTNET_PACKAGE_CORRELATION_FILE_PATH");
-        if (packageCorrelationFileOverride is not null)
-        {
-            // this is used as a test hook to allow unit tests to be SDK agnostic
-            if (_packageMapperByOverrideFile.TryGetValue(packageCorrelationFileOverride, out var packageMapper))
-            {
-                return packageMapper;
-            }
-
-            var runtimePackages = LoadRuntimePackagesFromFile(packageCorrelationFileOverride);
-            packageMapper = PackageMapper.Load(runtimePackages);
-            _packageMapperByOverrideFile[packageCorrelationFileOverride] = packageMapper;
-            return packageMapper;
-        }
-
-        return _packageMapper;
-    }
-
-    private static RuntimePackages LoadRuntimePackagesFromFile(string filePath)
-    {
-        var packageCorrelationJson = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<RuntimePackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
     }
 
     private static void ProcessResolvedPackageReference(
