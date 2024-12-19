@@ -4,6 +4,8 @@ using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Utilities;
+
 namespace NuGetUpdater.Core;
 
 /// <summary>
@@ -36,6 +38,25 @@ internal static class PackageReferenceUpdater
 
         // Get the set of all top-level dependencies in the current project
         var topLevelDependencies = MSBuildHelper.GetTopLevelPackageDependencyInfos(buildFiles).ToArray();
+        var isDependencyTopLevel = topLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
+        if (isDependencyTopLevel)
+        {
+            var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
+            // TODO: this is slow
+            var isSdkReplacementPackage = packageMapper.RuntimePackages.Runtimes.Any(r =>
+            {
+                return r.Value.Packages.Any(p => dependencyName.Equals(p.Key, StringComparison.Ordinal));
+            });
+            if (isSdkReplacementPackage)
+            {
+                // If we're updating a top level SDK replacement package, the version listed in the project file won't
+                // necessarily match the resolved version that caused the update because the SDK might have replaced
+                // the package.  To handle this scenario, we pretend the version we're searching for is the actual
+                // version in the file, not the resolved version.  This allows us to keep a strict equality check when
+                // finding the file to update.
+                previousDependencyVersion = topLevelDependencies.First(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).Version!;
+            }
+        }
 
         if (!await DoesDependencyRequireUpdateAsync(repoRootPath, projectPath, tfms, topLevelDependencies, dependencyName, newDependencyVersion, experimentsManager, logger))
         {
@@ -95,11 +116,6 @@ internal static class PackageReferenceUpdater
         var dependenciesToUpdate = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference) };
 
         // update the initial dependency...
-        if (isDependencyTopLevel)
-        {
-            // TODO: is SDK replacement package
-            previousDependencyVersion = topLevelDependencies.First(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).Version!;
-        }
         TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
 
         // ...and the peer dependencies...
