@@ -120,6 +120,142 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
       end
     end
+
+    context "when package manager has been deprecated" do
+      subject(:package_manager) { helper.package_manager }
+
+      let(:lockfiles) { { npm: npm_lockfile } }
+      let(:package_json) { { "packageManager" => "npm@6" } }
+      let(:npm_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: <<~LOCKFILE
+            {
+              "name": "example-npm-project",
+              "version": "1.0.0",
+              "lockfileVersion": 1,
+              "requires": true,
+              "dependencies": {
+                "lodash": {
+                  "version": "4.17.21",
+                  "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+                  "integrity": "sha512-abc123"
+                }
+              }
+            }
+          LOCKFILE
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_fallback_version_above_v6)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_deprecation_warning)
+          .and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_unsupported_error)
+          .and_return(false)
+      end
+
+      it "returns the deprecated package manager" do
+        expect(package_manager.deprecated?).to be true
+        expect(package_manager.version.to_s).to eq "6"
+      end
+    end
+
+    context "when package manager is no longer supported" do
+      subject(:package_manager) { helper.package_manager }
+
+      let(:lockfiles) { { npm: npm_lockfile } }
+      let(:package_json) { { "packageManager" => "npm@6" } }
+      let(:npm_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: <<~LOCKFILE
+            {
+              "name": "example-npm-project",
+              "version": "1.0.0",
+              "lockfileVersion": 1,
+              "requires": true,
+              "dependencies": {
+                "lodash": {
+                  "version": "4.17.21",
+                  "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+                  "integrity": "sha512-abc123"
+                }
+              }
+            }
+          LOCKFILE
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_fallback_version_above_v6)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_deprecation_warning)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_unsupported_error)
+          .and_return(true)
+      end
+
+      it "returns the unsupported package manager" do
+        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.unsupported?).to be true
+      end
+    end
+  end
+
+  describe "#setup" do
+    context "when lockfile specifies a deprecated version" do
+      subject(:package_manager) { helper.package_manager }
+
+      let(:lockfiles) { { npm: npm_lockfile } }
+      let(:package_json) { { "packageManager" => "npm@6" } }
+      let(:npm_lockfile) do
+        instance_double(
+          Dependabot::DependencyFile,
+          name: "package-lock.json",
+          content: <<~LOCKFILE
+            {
+              "name": "example-npm-project",
+              "version": "1.0.0",
+              "lockfileVersion": 1,
+              "requires": true,
+              "dependencies": {
+                "lodash": {
+                  "version": "4.17.21",
+                  "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+                  "integrity": "sha512-abc123"
+                }
+              }
+            }
+          LOCKFILE
+        )
+      end
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_fallback_version_above_v6)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_deprecation_warning)
+          .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_unsupported_error)
+          .and_return(true)
+      end
+
+      it "returns the deprecated version" do
+        expect(package_manager.version.to_s).to eq "6"
+      end
+    end
   end
 
   describe "#installed_version" do
