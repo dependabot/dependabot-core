@@ -1274,9 +1274,16 @@ public partial class DiscoveryWorkerTests
             var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
             await File.WriteAllTextAsync(packageCorrelationFile, """
                 {
-                    "Sdks": {
-                        "8.0.100": {
+                    "Runtimes": {
+                        "1.0.0": {
                             "Packages": {
+                                "Dependabot.App.Core.Ref": "1.0.0",
+                                "Test.Only.Package": "1.0.0"
+                            }
+                        },
+                        "1.0.1": {
+                            "Packages": {
+                                "Dependabot.App.Core.Ref": "1.0.1",
                                 "Test.Only.Package": "1.0.99"
                             }
                         }
@@ -1286,8 +1293,8 @@ public partial class DiscoveryWorkerTests
             using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
 
             // The SDK package handling is detected in a very specific circumstance; an assembly being removed from the
-            // `@(RuntimeCopyLocalItems)` item group in the `GenerateBuildDependencyFile` target.  Since we don't want
-            // to involve the real SDK, we fake some required targets.
+            // `@(References)` item group in the `_HandlePackageFileConflicts` target.  Since we don't want to involve
+            // the real SDK, we fake some required targets.
             await TestDiscoveryAsync(
                 experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true, UseDirectDiscovery = true },
                 packages: [],
@@ -1296,28 +1303,42 @@ public partial class DiscoveryWorkerTests
                 [
                     ("project.csproj", """
                         <Project>
-                          <!-- note that the attribute `Sdk="Microsoft.NET.Sdk"` is missing because we don't want the real SDK interfering. -->
+                          <!-- note that the attribute `Sdk="Microsoft.NET.Sdk"` is missing because we don't want the real SDK interfering -->
 
-                          <!-- This allows the detection custom targets to be injected. -->
+                          <!-- this allows custom targets to be injected for dependency detection -->
                           <Import Project="$(CustomAfterMicrosoftCommonTargets)" Condition="Exists('$(CustomAfterMicrosoftCommonTargets)')" />
 
                           <PropertyGroup>
-                            <!-- This property is used for the package lookup from the correlation file. -->
-                            <NETCoreSdkVersion>8.0.100</NETCoreSdkVersion>
                             <TargetFramework>net8.0</TargetFramework>
                           </PropertyGroup>
 
-                          <Target Name="_TEST_ONLY_POPULATE_GROUP_">
+                          <ItemGroup>
+                            <!-- we need a value in this item group with the appropriate metadata to simulate it having been added by NuGet -->
+                            <RuntimeCopyLocalItems Include="TestOnlyAssembly.dll" NuGetPackageId="Test.Only.Package" NuGetPackageVersion="1.0.0" />
+
+                            <!-- this represents the assemblies being extracted from the package -->
+                            <Reference Include="@(RuntimeCopyLocalItems)" />
+                          </ItemGroup>
+
+                          <Target Name="_HandlePackageFileConflicts">
+                            <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
-                              <!-- We first need a value in this item group with the appropriate metadata to simulate it having been added by NuGet. -->
-                              <RuntimeCopyLocalItems Include="TestOnlyAssembly.dll" NuGetPackageId="Test.Only.Package" NuGetPackageVersion="1.0.0" />
+                              <!-- this removal is what triggers the package lookup in the correlation file -->
+                              <Reference Remove="TestOnlyAssembly.dll" />
+
+                              <!-- this addition is what's used for the lookup -->
+                              <Reference Include="TestOnlyAssembly.dll" NuGetPackageId="Dependabot.App.Core.Ref" NuGetPackageVersion="1.0.1" />
                             </ItemGroup>
                           </Target>
 
-                          <Target Name="GenerateBuildDependencyFile" DependsOnTargets="_TEST_ONLY_POPULATE_GROUP_">
+                          <Target Name="ResolveAssemblyReferences" DependsOnTargets="_HandlePackageFileConflicts">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="GenerateBuildDependencyFile">
                             <!-- this target needs to exist for discovery to work -->
                             <ItemGroup>
-                              <!-- This removal is what triggers the package lookup in the correlation file. -->
+                              <!-- this removal is what removes the regular package reference from the project -->
                               <RuntimeCopyLocalItems Remove="TestOnlyAssembly.dll" />
                             </ItemGroup>
                           </Target>
@@ -1339,8 +1360,7 @@ public partial class DiscoveryWorkerTests
                                 new("Test.Only.Package", "1.0.99", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
                             ],
                             Properties = [
-                                new("NETCoreSdkVersion", "8.0.100", "project.csproj"),
-                                new("TargetFramework", "net8.0", "project.csproj"),
+                                new("TargetFramework", "net8.0", "project.csproj")
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],

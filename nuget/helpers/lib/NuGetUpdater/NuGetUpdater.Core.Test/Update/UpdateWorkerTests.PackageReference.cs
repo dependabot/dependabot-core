@@ -3489,17 +3489,53 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task BrettFo()
+        {
+            await TestUpdateForProject("System.Text.Json", "8.0.4", "8.0.5",
+                experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true, UseDirectDiscovery = true },
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="8.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("global.json", """
+                        {
+                            "sdk": {
+                                "version": "8.0.303"
+                            }
+                        }
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="8.0.5" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
         public async Task UpdateSdkManagedPackage_DirectDependency()
         {
             // To avoid a unit test that's tightly coupled to the installed SDK, the package correlation file is faked.
-            // Doing this requires a temporary file and environment variable override.  Note that SDK version 8.0.100
-            // or greater is required.
+            // Doing this requires a temporary file and environment variable override.
             using var tempDirectory = new TemporaryDirectory();
             var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
             await File.WriteAllTextAsync(packageCorrelationFile, """
                 {
-                    "Sdks": {
-                        "8.0.100": {
+                    "Runtimes": {
+                        "1": {
                             "Packages": {
                                 "System.Text.Json": "8.0.98"
                             }
@@ -3530,16 +3566,6 @@ public partial class UpdateWorkerTests
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles: [
-                    ("global.json", """
-                        {
-                            "sdk": {
-                                "version": "8.0.100",
-                                "rollForward": "latestMinor"
-                            }
-                        }
-                        """)
-                ],
                 expectedProjectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
