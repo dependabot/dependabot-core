@@ -118,7 +118,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "with ignore condition semver major, and the version is not nil" do
+    context "with ignore condition is present and the version is not nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "with ignore condition semver major and the version is nil" do
+    context "with ignore condition present and the version is nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
