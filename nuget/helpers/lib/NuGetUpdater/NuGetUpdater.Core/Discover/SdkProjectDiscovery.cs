@@ -20,13 +20,14 @@ namespace NuGetUpdater.Core.Discover;
 
 internal static class SdkProjectDiscovery
 {
-    private static readonly SdkPackages _sdkPackages;
-    private static readonly Dictionary<string, SdkPackages> _sdkPackagesByOverrideFile = new();
+    private static readonly PackageMapper _packageMapper;
+    private static readonly Dictionary<string, PackageMapper> _packageMapperByOverrideFile = new();
 
     static SdkProjectDiscovery()
     {
         var packageCorrelationPath = Path.Combine(Path.GetDirectoryName(typeof(SdkProjectDiscovery).Assembly.Location)!, "dotnet-package-correlation.json");
-        _sdkPackages = LoadPackageCorrelationsFromFile(packageCorrelationPath);
+        var runtimePackages = LoadRuntimePackagesFromFile(packageCorrelationPath);
+        _packageMapper = PackageMapper.Load(runtimePackages);
     }
 
     private static readonly HashSet<string> TopLevelPackageItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -85,6 +86,9 @@ internal static class SdkProjectDiscovery
 
         Dictionary<string, HashSet<string>> topLevelPackagesPerProject = new(PathComparer.Instance);
         //         projectPath, packageNames
+
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject = new(PathComparer.Instance);
+        //         projectPath        tfm           packageName, packageVersion
 
         Dictionary<string, Dictionary<string, string>> resolvedProperties = new(PathComparer.Instance);
         //         projectPath        propertyName, propertyValue
@@ -217,6 +221,54 @@ internal static class SdkProjectDiscovery
                                 }
                             }
                             break;
+                        case Target target when target.Name == "_HandlePackageFileConflicts":
+                            // this only works if we've installed the exact SDK required
+                            if (experimentsManager.InstallDotnetSdks)
+                            {
+                                var projectEvaluation = GetNearestProjectEvaluation(target);
+                                if (projectEvaluation is not null)
+                                {
+                                    var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
+                                    var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
+                                    if (removedReferences is not null && addedReferences is not null)
+                                    {
+                                        foreach (var removedAssembly in removedReferences.Children.OfType<Item>())
+                                        {
+                                            var removedPackageName = GetChildMetadataValue(removedAssembly, "NuGetPackageId");
+                                            var removedFileName = Path.GetFileName(removedAssembly.Name);
+                                            if (removedPackageName is not null && removedFileName is not null)
+                                            {
+                                                var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                                var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                                if (existingProjectPackages.ContainsKey(removedPackageName))
+                                                {
+                                                    var correspondingAddedFile = addedReferences.Children.OfType<Item>()
+                                                        .FirstOrDefault(i => removedFileName.Equals(Path.GetFileName(i.Name), StringComparison.OrdinalIgnoreCase));
+                                                    if (correspondingAddedFile is not null)
+                                                    {
+                                                        var runtimePackageName = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageId");
+                                                        var runtimePackageVersion = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageVersion");
+                                                        if (runtimePackageName is not null &&
+                                                            runtimePackageVersion is not null &&
+                                                            SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
+                                                        {
+                                                            var packageMapper = GetPackageMapper();
+                                                            var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
+                                                            if (replacementPackageVersion is not null)
+                                                            {
+                                                                var packagesPerProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                                                var packagesPerTfm = packagesPerProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                                                packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
                     }
                 }, takeChildrenSnapshot: true);
             }
@@ -242,6 +294,33 @@ internal static class SdkProjectDiscovery
         {
             // gather some project-level information
             var packagesByTfm = packagesPerProject[projectPath];
+            if (packagesReplacedBySdkPerProject.TryGetValue(projectPath, out var packagesReplacedBySdk))
+            {
+                var consolidatedPackagesByTfm = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+                // copy the first dictionary
+                foreach (var kvp in packagesByTfm)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    consolidatedPackagesByTfm[tfm] = packages;
+                }
+
+                // merge in the second
+                foreach (var kvp in packagesReplacedBySdk)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    var replacedPackages = consolidatedPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                    foreach (var packagePair in packages)
+                    {
+                        replacedPackages[packagePair.Key] = packagePair.Value;
+                    }
+                }
+
+                packagesByTfm = consolidatedPackagesByTfm;
+            }
+
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
             var doc = XDocument.Load(projectPath);
             var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
@@ -299,36 +378,30 @@ internal static class SdkProjectDiscovery
         return projectDiscoveryResults;
     }
 
-    private static string? GetCorrespondingSdkManagedPackageVersion(string packageName, string sdkVersionString)
-    {
-        var sdkVersion = SemVersion.Parse(sdkVersionString);
-        var replacementPackageVersion = GetSdkPackageCorrelations().GetReplacementPackageVersion(sdkVersion, packageName);
-        return replacementPackageVersion?.ToString();
-    }
-
-    private static SdkPackages GetSdkPackageCorrelations()
+    private static PackageMapper GetPackageMapper()
     {
         var packageCorrelationFileOverride = Environment.GetEnvironmentVariable("DOTNET_PACKAGE_CORRELATION_FILE_PATH");
         if (packageCorrelationFileOverride is not null)
         {
             // this is used as a test hook to allow unit tests to be SDK agnostic
-            if (_sdkPackagesByOverrideFile.TryGetValue(packageCorrelationFileOverride, out var sdkPackages))
+            if (_packageMapperByOverrideFile.TryGetValue(packageCorrelationFileOverride, out var packageMapper))
             {
-                return sdkPackages;
+                return packageMapper;
             }
 
-            sdkPackages = LoadPackageCorrelationsFromFile(packageCorrelationFileOverride);
-            _sdkPackagesByOverrideFile[packageCorrelationFileOverride] = sdkPackages;
-            return sdkPackages;
+            var runtimePackages = LoadRuntimePackagesFromFile(packageCorrelationFileOverride);
+            packageMapper = PackageMapper.Load(runtimePackages);
+            _packageMapperByOverrideFile[packageCorrelationFileOverride] = packageMapper;
+            return packageMapper;
         }
 
-        return _sdkPackages;
+        return _packageMapper;
     }
 
-    private static SdkPackages LoadPackageCorrelationsFromFile(string filePath)
+    private static RuntimePackages LoadRuntimePackagesFromFile(string filePath)
     {
         var packageCorrelationJson = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<SdkPackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
+        return JsonSerializer.Deserialize<RuntimePackages>(packageCorrelationJson, Correlator.SerializerOptions)!;
     }
 
     private static void ProcessResolvedPackageReference(
@@ -395,29 +468,7 @@ internal static class SdkProjectDiscovery
 
                             if (doRemoveOperation)
                             {
-                                var wasRemoved = packagesPerTfm.Remove(packageName);
-                                if (wasRemoved)
-                                {
-                                    // we only want to track packages that were explicitly part of the SDK's conflict resolution
-                                    if (node.Name == "RuntimeCopyLocalItems" &&
-                                        node.Parent is Target target &&
-                                        target.Name == "GenerateBuildDependencyFile")
-                                    {
-                                        // dotnet package correlation correction requires specific dotnet sdk handling
-                                        if (experimentsManager.InstallDotnetSdks)
-                                        {
-                                            var sdkVersionString = GetPropertyValueFromProjectEvaluation(projectEvaluation, "NETCoreSdkVersion");
-                                            if (sdkVersionString is not null)
-                                            {
-                                                var replacementVersion = GetCorrespondingSdkManagedPackageVersion(packageName, sdkVersionString);
-                                                if (replacementVersion is not null)
-                                                {
-                                                    packagesPerTfm[packageName] = replacementVersion.ToString();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                packagesPerTfm.Remove(packageName);
                             }
 
                             if (doAddOperation)
