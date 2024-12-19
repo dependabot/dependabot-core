@@ -118,8 +118,22 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "with ignored version semver major and the version is nil because package-lock.json not checked in" do
-      let(:dependency) { instance_double(Dependabot::Dependency, name: 'eslint-plugin-playwright', package_manager: 'npm_and_yarn', version: nil, requirements: [{:requirement=>"^1.7.0", :file=>"package.json", :groups=>["dependencies"], :source=>nil}]) }
+    context "with ignored version semver major and the version is not nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: "1.7.2",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^1.7.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
       let(:ignore_conditions) do
         [
           Dependabot::Config::IgnoreCondition.new(
@@ -129,8 +143,37 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns versions" do
-        # expect(ignored_versions).to eq([">= 2.a"]) if there is a version in the package-lock.json
+      it "returns ignored condition" do
+        expect(ignored_versions).to eq([">= 2.a"])
+      end
+    end
+
+    context "with ignored version semver major and the version is nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^1.7.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns empty array with no ignore conditions" do
         expect(ignored_versions).to eq([])
       end
     end
