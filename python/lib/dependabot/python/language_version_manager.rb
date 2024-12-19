@@ -9,6 +9,7 @@ module Dependabot
     class LanguageVersionManager
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
+        3.13.1
         3.12.7
         3.11.9
         3.10.15
