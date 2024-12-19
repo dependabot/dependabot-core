@@ -79,6 +79,8 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 
     public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
     {
+        MSBuildHelper.RegisterMSBuild(repoRoot, repoRoot);
+
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
         _logger.Info($"Starting analysis of {dependencyInfo.Name}...");

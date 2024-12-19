@@ -10,7 +10,8 @@ public class CorrelatorTests
     public async Task FileHandling_AllFilesShapedAppropriately()
     {
         // the JSON and markdown are shaped as expected
-        var (sdkPackages, warnings) = await RunFromFilesAsync(
+        // we're able to determine from `Runtime.Package/8.0.0` that the corresponding version of `Some.Package` is `1.2.3`
+        var (packageMapper, warnings) = await PackageMapperFromFilesAsync(
             ("8.0/releases.json", """
                 {
                     "releases": [
@@ -26,13 +27,12 @@ public class CorrelatorTests
             ("8.0/8.0.0/8.0.0.md", """
                 Package name | Version
                 :-- | :--
-                Package.A | 8.0.0
-                Package.B | 1.2.3
+                Runtime.Package | 8.0.0
+                Some.Package | 1.2.3
                 """)
         );
         Assert.Empty(warnings);
-        AssertPackageVersion(sdkPackages, "8.0.100", "Package.A", "8.0.0");
-        AssertPackageVersion(sdkPackages, "8.0.100", "Package.B", "1.2.3");
+        AssertPackageVersion(packageMapper, "Runtime.Package", "8.0.0", "Some.Package", "1.2.3");
     }
 
     [Theory]
@@ -58,15 +58,21 @@ public class CorrelatorTests
         Assert.Equal(expectedPackageVersion, actualpackage.Version.ToString());
     }
 
-    private static void AssertPackageVersion(SdkPackages sdkPackages, string sdkVersion, string packageName, string expectedPackageVersion)
+    private static void AssertPackageVersion(PackageMapper packageMapper, string runtimePackageName, string runtimePackageVersion, string candidatePackageName, string? expectedPackageVersion)
     {
-        Assert.True(sdkPackages.Sdks.TryGetValue(SemVersion.Parse(sdkVersion), out var packageSet), $"Unable to find SDK version [{sdkVersion}]");
-        Assert.True(packageSet.Packages.TryGetValue(packageName, out var packageVersion), $"Unable to find package [{packageName}] under SDK version [{sdkVersion}]");
-        var actualPackageVersion = packageVersion.ToString();
-        Assert.Equal(expectedPackageVersion, actualPackageVersion);
+        var actualPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, SemVersion.Parse(runtimePackageVersion), candidatePackageName);
+        if (expectedPackageVersion is null)
+        {
+            Assert.Null(actualPackageVersion);
+        }
+        else
+        {
+            Assert.NotNull(actualPackageVersion);
+            Assert.Equal(expectedPackageVersion, actualPackageVersion.ToString());
+        }
     }
 
-    private static async Task<(SdkPackages SdkPackages, IEnumerable<string> Warnings)> RunFromFilesAsync(params (string Path, string Content)[] files)
+    private static async Task<(PackageMapper PackageMapper, IEnumerable<string> Warnings)> PackageMapperFromFilesAsync(params (string Path, string Content)[] files)
     {
         var testDirectory = Path.Combine(Path.GetDirectoryName(typeof(CorrelatorTests).Assembly.Location)!, "test-data", Guid.NewGuid().ToString("D"));
         Directory.CreateDirectory(testDirectory);
@@ -81,8 +87,9 @@ public class CorrelatorTests
             }
 
             var correlator = new Correlator(new DirectoryInfo(testDirectory));
-            var result = await correlator.RunAsync();
-            return result;
+            var (runtimePackages, warnings) = await correlator.RunAsync();
+            var packageMapper = PackageMapper.Load(runtimePackages);
+            return (packageMapper, warnings);
         }
         finally
         {

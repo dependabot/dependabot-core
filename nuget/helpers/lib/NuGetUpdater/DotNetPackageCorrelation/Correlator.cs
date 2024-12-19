@@ -21,7 +21,7 @@ public partial class Correlator
         _releaseNotesDirectory = releaseNotesDirectory;
     }
 
-    public async Task<(SdkPackages SdkPackages, IEnumerable<string> Warnings)> RunAsync()
+    public async Task<(RuntimePackages RuntimePackages, IEnumerable<string> Warnings)> RunAsync()
     {
         var runtimeVersions = new List<Version>();
         foreach (var directory in Directory.EnumerateDirectories(_releaseNotesDirectory.FullName))
@@ -33,14 +33,14 @@ public partial class Correlator
             }
         }
 
-        var sdkPackages = new SdkPackages();
+        var runtimePackages = new RuntimePackages();
         var warnings = new List<string>();
-        foreach (var version in runtimeVersions)
+        foreach (var majorVersion in runtimeVersions)
         {
-            var releasesJsonPath = Path.Combine(_releaseNotesDirectory.FullName, version.ToString(), "releases.json");
+            var releasesJsonPath = Path.Combine(_releaseNotesDirectory.FullName, majorVersion.ToString(), "releases.json");
             if (!File.Exists(releasesJsonPath))
             {
-                warnings.Add($"Unable to find releases.json file for version {version}");
+                warnings.Add($"Unable to find releases.json file for version {majorVersion}");
                 continue;
             }
 
@@ -63,13 +63,15 @@ public partial class Correlator
                         continue;
                     }
 
-                    if (!sdkPackages.Sdks.TryGetValue(sdk.Version, out var packagesAndVersions))
+                    if (runtimePackages.Runtimes.ContainsKey(sdk.RuntimeVersion))
                     {
-                        packagesAndVersions = new PackageSet();
-                        sdkPackages.Sdks[sdk.Version] = packagesAndVersions;
+                        // already processed this runtime
+                        continue;
                     }
 
-                    var runtimeDirectory = new DirectoryInfo(Path.Combine(_releaseNotesDirectory.FullName, version.ToString(), sdk.RuntimeVersion.ToString()));
+                    var packagesAndVersions = new PackageSet();
+                    runtimePackages.Runtimes.Add(sdk.RuntimeVersion, packagesAndVersions);
+                    var runtimeDirectory = new DirectoryInfo(Path.Combine(_releaseNotesDirectory.FullName, majorVersion.ToString(), sdk.RuntimeVersion.ToString()));
                     var runtimeMarkdownPath = Path.Combine(runtimeDirectory.FullName, $"{sdk.RuntimeVersion}.md");
                     if (!File.Exists(runtimeMarkdownPath))
                     {
@@ -87,7 +89,7 @@ public partial class Correlator
             }
         }
 
-        return (sdkPackages, warnings);
+        return (runtimePackages, warnings);
     }
 
     public static ImmutableArray<(string Name, SemVersion Version)> GetPackagesFromMarkdown(string markdownPath, string markdownContent, List<string> warnings)

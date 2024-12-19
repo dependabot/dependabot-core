@@ -95,6 +95,11 @@ internal static class PackageReferenceUpdater
         var dependenciesToUpdate = new[] { new Dependency(dependencyName, newDependencyVersion, DependencyType.PackageReference) };
 
         // update the initial dependency...
+        if (isDependencyTopLevel)
+        {
+            // TODO: is SDK replacement package
+            previousDependencyVersion = topLevelDependencies.First(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)).Version!;
+        }
         TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion, logger);
 
         // ...and the peer dependencies...

@@ -4,8 +4,8 @@ using Semver;
 
 namespace DotNetPackageCorrelation;
 
-public record SdkPackages
+public record RuntimePackages
 {
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-    public SortedDictionary<SemVersion, PackageSet> Sdks { get; init; } = new(SemVerComparer.Instance);
+    public SortedDictionary<SemVersion, PackageSet> Runtimes { get; init; } = new(SemVerComparer.Instance);
 }
