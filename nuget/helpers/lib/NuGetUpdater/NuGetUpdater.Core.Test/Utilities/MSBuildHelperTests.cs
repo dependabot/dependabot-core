@@ -854,29 +854,44 @@ public class MSBuildHelperTests : TestBase
 
     // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp)
     // Updating ONE of the top level packages, which updates the dependencies and their other "parents"
-    // First family: Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
-    // Second family: Microsoft.CodeAnalysis.CSharp.Scripting 4.0.0 requires Microsoft.CodeAnalysis.CSharp 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (Specific version)
+    // First family: Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be = 4.0.1 and Microsoft.CodeAnalysis.Common to be 4.0.1 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
+    // Second family: Microsoft.CodeAnalysis.CSharp.Scripting 4.0.1 requires Microsoft.CodeAnalysis.CSharp 4.0.1 and Microsoft.CodeAnalysis.Common to be 4.0.1 (Specific version)
     // Updating Buildalyzer to 7.0.1 will update its transitive dependency (Microsoft.CodeAnalysis.Common) and then its transitive dependency's "family"
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task DependencyConflictsCanBeResolvedNewSharingDependency(bool useExistingSdks)
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
     {
+        // arrange
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Buildalyzer" Version="6.0.4" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Csharp.Scripting" Version="3.10.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+
+        var testPackages = new MockNuGetPackage[]
+        {
+            MockNuGetPackage.CreateSimplePackage("Buildalyzer", "6.0.4", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Buildalyzer", "7.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "3.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "3.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.0.1", "net8.0"),
+        };
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -890,25 +905,28 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
         };
 
+        // act
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
             projectPath,
             "net8.0",
             dependencies,
             update,
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new ExperimentsManager(),
             new TestLogger()
         );
+
+        // assert
+        var expectedDependencies = new[]
+        {
+            "Buildalyzer/7.0.1",
+            "Microsoft.CodeAnalysis.CSharp.Scripting/4.0.1",
+            "Microsoft.CodeAnalysis.CSharp/4.0.1",
+            "Microsoft.CodeAnalysis.Common/4.0.1"
+        };
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
-        Assert.Equal("7.0.1", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[3].Version);
+        var actualDependencies = resolvedDependencies.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
     // Updating two families at once to test efficiency

@@ -3075,14 +3075,14 @@ public partial class UpdateWorkerTests
         public async Task UpdatingTransitiveDependencyWithNewSolverCanUpdateJustTheTopLevelPackage()
         {
             // we've been asked to explicitly update a transitive dependency, but we can solve it by updating the top-level package instead
-            await TestUpdateForProject("Transitive.Package", "1.0.0", "2.0.0",
+            await TestUpdateForProject("Transitive.Package", "7.0.0", "8.0.0",
                 isTransitive: true,
                 packages:
                 [
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[1.0.0]")])]),
-                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[2.0.0]")])]),
-                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net8.0"),
-                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[7.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0", [("net8.0", [("Transitive.Package", "[8.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "7.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Transitive.Package", "8.0.0", "net8.0"),
                 ],
                 projectContents: """
                     <Project Sdk="Microsoft.NET.Sdk">
