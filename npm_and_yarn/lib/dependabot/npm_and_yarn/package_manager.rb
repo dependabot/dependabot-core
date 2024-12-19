@@ -5,6 +5,7 @@ require "dependabot/shared_helpers"
 require "dependabot/ecosystem"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/version_selector"
+require "dependabot/npm_and_yarn/registry_helper"
 
 module Dependabot
   module NpmAndYarn
@@ -61,14 +62,13 @@ module Dependabot
 
       # Keep versions in ascending order
       SUPPORTED_VERSIONS = T.let([
-        Version.new(NPM_V6),
         Version.new(NPM_V7),
         Version.new(NPM_V8),
         Version.new(NPM_V9),
         Version.new(NPM_V10)
       ].freeze, T::Array[Dependabot::Version])
 
-      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+      DEPRECATED_VERSIONS = T.let([Version.new(NPM_V6)].freeze, T::Array[Dependabot::Version])
 
       sig do
         params(
@@ -88,12 +88,17 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
-        false
+        return false if unsupported?
+        return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
+
+        deprecated_versions.include?(version)
       end
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        false
+        return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
+
+        supported_versions.all? { |supported| supported > version }
       end
     end
 
@@ -311,17 +316,24 @@ module Dependabot
       sig do
         params(
           package_json: T.nilable(T::Hash[String, T.untyped]),
-          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]
+          lockfiles: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
+          credentials: T.nilable(T::Array[Dependabot::Credential])
         ).void
       end
-      def initialize(package_json, lockfiles:)
+      def initialize(package_json, lockfiles, registry_config_files, credentials)
         @package_json = package_json
         @lockfiles = lockfiles
+        @registry_helper = T.let(
+          RegistryHelper.new(registry_config_files, credentials),
+          Dependabot::NpmAndYarn::RegistryHelper
+        )
         @package_manager_detector = T.let(PackageManagerDetector.new(lockfiles, package_json), PackageManagerDetector)
         @manifest_package_manager = T.let(package_json&.fetch(MANIFEST_PACKAGE_MANAGER_KEY, nil), T.nilable(String))
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, nil), T.nilable(T::Hash[String, T.untyped]))
 
         @installed_versions = T.let({}, T::Hash[String, String])
+        @registries = T.let({}, T::Hash[String, String])
 
         @language = T.let(nil, T.nilable(Ecosystem::VersionManager))
         @language_requirement = T.let(nil, T.nilable(Requirement))
@@ -379,8 +391,8 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
@@ -438,6 +450,9 @@ module Dependabot
         end
         version
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
       def package_manager_by_name(name)
@@ -456,21 +471,15 @@ module Dependabot
           Dependabot.logger.info("No version requirement found for #{name}")
         end
 
-        package_manager_instance = package_manager_class.new(
+        package_manager_class.new(
           installed_version,
           requirement: package_manager_requirement
         )
-
-        Dependabot.logger.info("Package manager resolved for #{name}: #{package_manager_instance}")
-        package_manager_instance
       rescue StandardError => e
         Dependabot.logger.error("Error resolving package manager for #{name || 'default'}: #{e.message}")
         raise
       end
 
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/AbcSize
       # Retrieve the installed version of the package manager by executing
       # the "corepack <name> -v" command and using the output.
       # If the output does not match the expected version format (PACKAGE_MANAGER_VERSION_REGEX),
@@ -504,13 +513,18 @@ module Dependabot
         return unless name == PNPMPackageManager::NAME
         return unless Version.new(version) < Version.new("7")
 
-        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*")
+        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
       end
 
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          return Helpers.install(name, version.to_s)
+          env = {}
+          if Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
+            env = @registry_helper.find_corepack_env_variables
+          end
+          # Use the Helpers.install method to install the package manager
+          return Helpers.install(name, version.to_s, env: env)
         end
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")

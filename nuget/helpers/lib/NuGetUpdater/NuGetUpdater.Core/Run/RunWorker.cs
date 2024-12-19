@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -21,7 +22,7 @@ public class RunWorker
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new JsonStringEnumConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
     public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
@@ -113,8 +114,8 @@ public class RunWorker
     {
         var discoveryResult = await _discoveryWorker.RunAsync(repoContentsPath.FullName, repoDirectory);
 
-        _logger.Log("Discovery JSON content:");
-        _logger.Log(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
+        _logger.Info("Discovery JSON content:");
+        _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
 
         // report dependencies
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
@@ -123,9 +124,8 @@ public class RunWorker
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         // TODO: for each top-level dependency, _or_ specific dependency (if security, use transitive)
         var originalDependencyFileContents = new Dictionary<string, string>();
-        var allowedUpdates = job.AllowedUpdates ?? [];
         var actualUpdatedDependencies = new List<ReportedDependency>();
-        if (allowedUpdates.Any(a => a.UpdateType == "all"))
+        if (job.AllowedUpdates.Any(a => a.UpdateType == UpdateType.All))
         {
             await _apiHandler.IncrementMetric(new()
             {
@@ -155,7 +155,7 @@ public class RunWorker
             }
 
             // do update
-            _logger.Log($"Running update in directory {repoDirectory}");
+            _logger.Info($"Running update in directory {repoDirectory}");
             foreach (var project in discoveryResult.Projects)
             {
                 foreach (var dependency in project.Dependencies.Where(d => !d.IsTransitive))
@@ -173,12 +173,13 @@ public class RunWorker
                         continue;
                     }
 
+                    var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
                     var dependencyInfo = new DependencyInfo()
                     {
                         Name = dependency.Name,
                         Version = dependency.Version!,
                         IsVulnerable = false,
-                        IgnoredVersions = [],
+                        IgnoredVersions = ignoredVersions,
                         Vulnerabilities = [],
                     };
                     var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
@@ -301,6 +302,25 @@ public class RunWorker
             BaseCommitSha = baseCommitSha,
         };
         return result;
+    }
+
+    internal static ImmutableArray<Requirement> GetIgnoredRequirementsForDependency(Job job, string dependencyName)
+    {
+        var ignoreConditions = job.IgnoreConditions
+            .Where(c => c.DependencyName.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (ignoreConditions.Length == 1 && ignoreConditions[0].VersionRequirement is null)
+        {
+            // if only one match with no version requirement, ignore all versions
+            return [Requirement.Parse("> 0.0.0")];
+        }
+
+        var ignoredVersions = ignoreConditions
+            .Select(c => c.VersionRequirement)
+            .Where(r => r is not null)
+            .Cast<Requirement>()
+            .ToImmutableArray();
+        return ignoredVersions;
     }
 
     internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)

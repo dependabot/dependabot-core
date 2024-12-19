@@ -331,6 +331,76 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .to_return(status: 404)
     end
 
+    context "when source points to nested project" do
+      let(:repo) { "dependabot-fixtures/projects/pnpm/workspace_v9" }
+      let(:directory) { "/packages/package1" }
+
+      before do
+        stub_request(:get, File.join(url, "packages/package1?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_js_pnpm_workspace.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/package1/package.json?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        # FileFetcher will iterate trying to find `.npmrc` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/.npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, ".npmrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_content.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, ".yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/.yarnrc?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
+        stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "pnpm_lock_quotes_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the pnpm-lock.yaml file at the root of the monorepo" do
+        expect(file_fetcher_instance.files.map(&:name)).to include("../../pnpm-lock.yaml")
+      end
+    end
+
     context "when using older than 5.4 lockfile format" do
       before do
         stub_request(:get, File.join(url, "pnpm-lock.yaml?ref=sha"))
@@ -1195,6 +1265,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             ".yarnrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
+            "pnpm-lock.yaml?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
         end
 
         it "fetches package.json from the workspace dependencies" do
@@ -1758,6 +1834,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             ".yarnrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
+            "pnpm-lock.yaml?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
         end
 
         it "fetches package.json from the workspace dependencies" do
@@ -1859,6 +1941,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             .to include("other_package/package.json")
         end
       end
+    end
+  end
+
+  context "with package.json file just including a dummy string" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm/package_json_faked", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_name).to eq("package.json")
+        end
     end
   end
 

@@ -68,7 +68,7 @@ internal static class CompatibilityChecker
         var incompatibleFrameworks = projectFrameworks.Where(f => !compatibleFrameworks.Contains(f)).ToArray();
         if (incompatibleFrameworks.Length > 0)
         {
-            logger.Log($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");
+            logger.Info($"The package {package} is not compatible. Incompatible project frameworks: {string.Join(", ", incompatibleFrameworks.Select(f => f.GetShortFolderName()))}");
             return false;
         }
 
@@ -80,9 +80,9 @@ internal static class CompatibilityChecker
         NuGetContext nugetContext,
         CancellationToken cancellationToken)
     {
-        var tempPackagePath = GetTempPackagePath(package, nugetContext);
-        var readers = File.Exists(tempPackagePath)
-            ? ReadPackage(tempPackagePath)
+        var packagePath = GetPackagePath(package, nugetContext);
+        var readers = File.Exists(packagePath)
+            ? ReadPackage(packagePath)
             : await DownloadPackageAsync(package, nugetContext, cancellationToken);
         return readers;
     }
@@ -134,10 +134,10 @@ internal static class CompatibilityChecker
         return (isDevDependency, tfms.ToImmutableArray());
     }
 
-    internal static PackageReaders ReadPackage(string tempPackagePath)
+    internal static PackageReaders ReadPackage(string packagePath)
     {
         var stream = new FileStream(
-              tempPackagePath,
+              packagePath,
               FileMode.Open,
               FileAccess.Read,
               FileShare.Read,
@@ -194,8 +194,8 @@ internal static class CompatibilityChecker
                 context.Logger,
                 cancellationToken);
 
-            var tempPackagePath = GetTempPackagePath(package, context);
-            var isDownloaded = await downloader.CopyNupkgFileToAsync(tempPackagePath, cancellationToken);
+            var packagePath = GetPackagePath(package, context);
+            var isDownloaded = await downloader.CopyNupkgFileToAsync(packagePath, cancellationToken);
             if (!isDownloaded)
             {
                 continue;
@@ -207,6 +207,21 @@ internal static class CompatibilityChecker
         return null;
     }
 
-    internal static string GetTempPackagePath(PackageIdentity package, NuGetContext context)
-        => Path.Combine(context.TempPackageDirectory, package.Id + "." + package.Version + ".nupkg");
+    internal static string GetPackagePath(PackageIdentity package, NuGetContext context)
+    {
+        // https://learn.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
+        var nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+        if (nugetPackagesPath is null)
+        {
+            // n.b., this path should never be hit during a unit test
+            nugetPackagesPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+        }
+
+        var normalizedName = package.Id.ToLowerInvariant();
+        var normalizedVersion = package.Version.ToNormalizedString().ToLowerInvariant();
+        var packageDirectory = Path.Join(nugetPackagesPath, normalizedName, normalizedVersion);
+        Directory.CreateDirectory(packageDirectory);
+        var packagePath = Path.Join(packageDirectory, $"{normalizedName}.{normalizedVersion}.nupkg");
+        return packagePath;
+    }
 }

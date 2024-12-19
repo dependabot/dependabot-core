@@ -26,6 +26,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -144,6 +146,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -231,6 +235,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "analyze",
+                    "--job-path",
+                    Path.Combine(path, "job.json"),
                     "--repo-root",
                     path,
                     "--discovery-file-path",
@@ -308,8 +314,16 @@ public partial class EntryPointTests
             );
         }
 
-        private static async Task RunAsync(Func<string, string[]> getArgs, string dependencyName, TestFile[] initialFiles, ExpectedAnalysisResult expectedResult, MockNuGetPackage[]? packages = null)
+        private static async Task RunAsync(
+            Func<string, string[]> getArgs,
+            string dependencyName,
+            TestFile[] initialFiles,
+            ExpectedAnalysisResult expectedResult,
+            MockNuGetPackage[]? packages = null,
+            ExperimentsManager? experimentsManager = null
+        )
         {
+            experimentsManager ??= new ExperimentsManager();
             var actualResult = await RunAnalyzerAsync(dependencyName, initialFiles, async path =>
             {
                 var sb = new StringBuilder();
@@ -322,8 +336,19 @@ public partial class EntryPointTests
 
                 try
                 {
+                    await UpdateWorkerTestBase.MockJobFileInDirectory(path, experimentsManager);
                     await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, path);
                     var args = getArgs(path);
+
+                    // manually pull out the experiments manager for the validate step below
+                    for (int i = 0; i < args.Length - 1; i++)
+                    {
+                        if (args[i] == "--job-path")
+                        {
+                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                        }
+                    }
+
                     var result = await Program.Main(args);
                     if (result != 0)
                     {

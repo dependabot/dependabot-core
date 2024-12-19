@@ -115,11 +115,11 @@ public class UpdaterWorker : IUpdaterWorker
                 await RunForProjectAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
                 break;
             default:
-                _logger.Log($"File extension [{extension}] is not supported.");
+                _logger.Info($"File extension [{extension}] is not supported.");
                 break;
         }
 
-        _logger.Log("Update complete.");
+        _logger.Info("Update complete.");
 
         _processedProjectPaths.Clear();
         return new UpdateOperationResult();
@@ -127,7 +127,7 @@ public class UpdaterWorker : IUpdaterWorker
 
     internal static async Task WriteResultFile(UpdateOperationResult result, string resultOutputPath, ILogger logger)
     {
-        logger.Log($"  Writing update result to [{resultOutputPath}].");
+        logger.Info($"  Writing update result to [{resultOutputPath}].");
 
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
         await File.WriteAllTextAsync(resultOutputPath, resultJson);
@@ -141,7 +141,7 @@ public class UpdaterWorker : IUpdaterWorker
         string newDependencyVersion,
         bool isTransitive)
     {
-        _logger.Log($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
+        _logger.Info($"Running for solution [{Path.GetRelativePath(repoRootPath, solutionPath)}]");
         var projectPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
         foreach (var projectPath in projectPaths)
         {
@@ -157,10 +157,10 @@ public class UpdaterWorker : IUpdaterWorker
         string newDependencyVersion,
         bool isTransitive)
     {
-        _logger.Log($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
+        _logger.Info($"Running for proj file [{Path.GetRelativePath(repoRootPath, projFilePath)}]");
         if (!File.Exists(projFilePath))
         {
-            _logger.Log($"File [{projFilePath}] does not exist.");
+            _logger.Info($"File [{projFilePath}] does not exist.");
             return;
         }
 
@@ -183,10 +183,10 @@ public class UpdaterWorker : IUpdaterWorker
         string newDependencyVersion,
         bool isTransitive)
     {
-        _logger.Log($"Running for project file [{Path.GetRelativePath(repoRootPath, projectPath)}]");
+        _logger.Info($"Running for project file [{Path.GetRelativePath(repoRootPath, projectPath)}]");
         if (!File.Exists(projectPath))
         {
-            _logger.Log($"File [{projectPath}] does not exist.");
+            _logger.Info($"File [{projectPath}] does not exist.");
             return;
         }
 
@@ -216,7 +216,7 @@ public class UpdaterWorker : IUpdaterWorker
 
         _processedProjectPaths.Add(projectPath);
 
-        _logger.Log($"Updating project [{projectPath}]");
+        _logger.Info($"Updating project [{projectPath}]");
 
         var additionalFiles = ProjectHelper.GetAllAdditionalFilesFromProject(projectPath, ProjectHelper.PathFormat.Full);
         var packagesConfigFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesConfigFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
@@ -232,7 +232,7 @@ public class UpdaterWorker : IUpdaterWorker
         var packagesLockFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         if (packagesLockFullPath is not null)
         {
-            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
+            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _experimentsManager, _logger);
         }
     }
 }

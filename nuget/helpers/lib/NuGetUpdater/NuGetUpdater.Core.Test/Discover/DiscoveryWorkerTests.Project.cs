@@ -441,8 +441,6 @@ public partial class DiscoveryWorkerTests
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
                                 "Directory.Build.targets",
-                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
-                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
                                 "Packages.props",
                             ],
                             AdditionalFiles = [],
@@ -513,8 +511,6 @@ public partial class DiscoveryWorkerTests
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
                                 "Directory.Build.targets",
-                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.props", // this is an artifact of the package cache existing next to the csproj
-                                "NUGET_PACKAGES/microsoft.build.centralpackageversions/2.1.3/Sdk/Sdk.targets", // this is an artifact of the package cache existing next to the csproj
                                 "Packages.props",
                             ],
                             AdditionalFiles = [],

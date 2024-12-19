@@ -62,7 +62,7 @@ internal static class VersionFinder
             var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
             if (feed is null)
             {
-                logger.Log($"Failed to get MetadataResource for [{source.Source}]");
+                logger.Warn($"Failed to get MetadataResource for [{source.Source}]");
                 continue;
             }
 

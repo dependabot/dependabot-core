@@ -98,7 +98,9 @@ module Dependabot
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles: lockfiles
+            lockfiles,
+            registry_config_files,
+            credentials
           ), T.nilable(PackageManagerHelper)
         )
       end
@@ -109,6 +111,15 @@ module Dependabot
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
           pnpm: pnpm_lock
+        }
+      end
+
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc,
+          yarnrc: yarnrc,
+          yarnrc_yml: yarnrc_yml
         }
       end
 
@@ -153,6 +164,27 @@ module Dependabot
       def pnpm_lock
         @pnpm_lock ||= T.let(dependency_files.find do |f|
           f.name == PNPMPackageManager::LOCKFILE_NAME
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def npmrc
+        @npmrc ||= T.let(dependency_files.find do |f|
+          f.name == NpmPackageManager::RC_FILENAME
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def yarnrc
+        @yarnrc ||= T.let(dependency_files.find do |f|
+          f.name == YarnPackageManager::RC_FILENAME
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def yarnrc_yml
+        @yarnrc_yml ||= T.let(dependency_files.find do |f|
+          f.name == YarnPackageManager::RC_YML_FILENAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 

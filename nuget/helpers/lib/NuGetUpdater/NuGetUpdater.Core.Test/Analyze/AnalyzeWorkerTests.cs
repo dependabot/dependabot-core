@@ -1238,4 +1238,35 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public void DeserializeDependencyInfo_UnsupportedIgnoredVersionsAreIgnored()
+    {
+        // arrange
+        // "1.0.0.pre.rc2" isn't a valid NuGet version; ignore that requirement
+        var json = """
+            {
+                "Name": "Some.Package",
+                "Version": "1.10.0",
+                "IsVulnerable": false,
+                "IgnoredVersions": [
+                    "> 1.0.0.pre.rc2, < 2",
+                    "< 1.0.1"
+                ],
+                "Vulnerabilities": []
+            }
+            """;
+
+        // act
+        var dependencyInfo = AnalyzeWorker.DeserializeDependencyInfo(json);
+
+        // assert
+        Assert.NotNull(dependencyInfo);
+        Assert.Equal("Some.Package", dependencyInfo.Name);
+        Assert.Equal("1.10.0", dependencyInfo.Version);
+        Assert.False(dependencyInfo.IsVulnerable);
+        Assert.Single(dependencyInfo.IgnoredVersions);
+        Assert.Equal("< 1.0.1", dependencyInfo.IgnoredVersions.Single().ToString());
+        Assert.Empty(dependencyInfo.Vulnerabilities);
+    }
 }

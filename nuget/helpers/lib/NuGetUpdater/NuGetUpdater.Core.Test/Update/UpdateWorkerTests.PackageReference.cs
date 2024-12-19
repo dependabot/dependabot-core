@@ -158,6 +158,61 @@ public partial class UpdateWorkerTests
             );
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task PackageIsUpdatedFromCommonTargetsFile(bool useDirectDiscovery)
+        {
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                ],
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery },
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <Import Project="CommonPackages.targets" />
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    ("CommonPackages.targets", """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package">
+                              <Version>1.0.0</Version>
+                            </PackageReference>
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <Import Project="CommonPackages.targets" />
+                    </Project>
+                    """,
+                additionalFilesExpected:
+                [
+                    ("CommonPackages.targets", """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package">
+                              <Version>2.0.0</Version>
+                            </PackageReference>
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ]
+            );
+        }
+
         [Fact]
         public async Task CallingResolveDependencyConflictsNew()
         {

@@ -8,6 +8,8 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     public required string FilePath { get; init; }
     public required ImmutableArray<Dependency> Dependencies { get; init; }
     public bool IsSuccess { get; init; } = true;
+    public string? ErrorDetails { get; init; }
+    public ErrorType? ErrorType { get; init; }
     public ImmutableArray<Property> Properties { get; init; } = [];
     public ImmutableArray<string> TargetFrameworks { get; init; } = [];
     public ImmutableArray<string> ReferencedProjectPaths { get; init; } = [];

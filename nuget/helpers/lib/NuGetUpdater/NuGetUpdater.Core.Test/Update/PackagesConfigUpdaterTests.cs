@@ -169,5 +169,29 @@ public class PackagesConfigUpdaterTests : TestBase
             // expected packages directory path
             null
         ];
+
+        // project with differing package name and assembly name
+        yield return
+        [
+            // project contents
+            """
+            <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <ItemGroup>
+                <Reference Include="Assembly.For.Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                  <HintPath>..\packages\Some.Package.1.0.0\lib\net45\Assembly.For.Some.Package.dll</HintPath>
+                  <Private>True</Private>
+                </Reference>
+              </ItemGroup>
+            </Project>
+            """,
+            // packages.config contents
+            null,
+            // dependency name
+            "Some.Package",
+            // dependency version
+            "1.0.0",
+            // expected packages directory path
+            "../packages"
+        ];
     }
 }

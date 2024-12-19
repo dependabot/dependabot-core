@@ -158,6 +158,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       .and_return(stub_dependency_change)
 
     allow(mock_service).to receive(:close_pull_request)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   after do

@@ -1,5 +1,9 @@
+using NuGet.Versioning;
+
+using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -257,13 +261,349 @@ public class SerializationTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void DeserializeJobIgnoreConditions()
+    {
+        var jobContent = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "specific-sdk"
+                },
+                "ignore-conditions": [
+                  {
+                    "dependency-name": "Package.1",
+                    "source": "some-file",
+                    "update-types": [
+                      "version-update:semver-major"
+                    ],
+                    "version-requirement": "> 1.2.3"
+                  },
+                  {
+                    "dependency-name": "Package.2",
+                    "updated-at": "2024-12-05T15:47:12Z"
+                  }
+                ]
+              }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jobContent)!;
+        Assert.Equal(2, jobWrapper.Job.IgnoreConditions.Length);
+
+        Assert.Equal("Package.1", jobWrapper.Job.IgnoreConditions[0].DependencyName);
+        Assert.Equal("some-file", jobWrapper.Job.IgnoreConditions[0].Source);
+        Assert.Equal("version-update:semver-major", jobWrapper.Job.IgnoreConditions[0].UpdateTypes.Single());
+        Assert.Null(jobWrapper.Job.IgnoreConditions[0].UpdatedAt);
+        Assert.Equal("> 1.2.3", jobWrapper.Job.IgnoreConditions[0].VersionRequirement?.ToString());
+
+        Assert.Equal("Package.2", jobWrapper.Job.IgnoreConditions[1].DependencyName);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].Source);
+        Assert.Empty(jobWrapper.Job.IgnoreConditions[1].UpdateTypes);
+        Assert.Equal(new DateTime(2024, 12, 5, 15, 47, 12), jobWrapper.Job.IgnoreConditions[1].UpdatedAt);
+        Assert.Null(jobWrapper.Job.IgnoreConditions[1].VersionRequirement);
+    }
+
+    [Theory]
+    [MemberData(nameof(DeserializeAllowedUpdatesData))]
+    public void DeserializeAllowedUpdates(string? allowedUpdatesJsonBody, AllowedUpdate[] expectedAllowedUpdates)
+    {
+        string? allowedUpdatesJson = allowedUpdatesJsonBody is null
+            ? null
+            : $$"""
+                ,
+                "allowed-updates": {{allowedUpdatesJsonBody}}
+                """;
+        var jobWrapperJson = $$"""
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    }
+                    {{allowedUpdatesJson}}
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jobWrapperJson)!;
+        AssertEx.Equal(expectedAllowedUpdates, jobWrapper.Job.AllowedUpdates);
+    }
+
+    [Fact]
+    public void DeserializeDependencyGroups()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "dependency-groups": [
+                        {
+                            "name": "Some.Dependency",
+                            "rules": {
+                                "patterns": ["1.2.3", "4.5.6"]
+                            }
+                        },
+                        {
+                            "name": "Some.Other.Dependency",
+                            "applies-to": "something"
+                        }
+                    ]
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Equal(2, jobWrapper.Job.DependencyGroups.Length);
+
+        Assert.Equal("Some.Dependency", jobWrapper.Job.DependencyGroups[0].Name);
+        Assert.Null(jobWrapper.Job.DependencyGroups[0].AppliesTo);
+        Assert.Single(jobWrapper.Job.DependencyGroups[0].Rules);
+        Assert.Equal("[\"1.2.3\", \"4.5.6\"]", jobWrapper.Job.DependencyGroups[0].Rules["patterns"].ToString());
+
+        Assert.Equal("Some.Other.Dependency", jobWrapper.Job.DependencyGroups[1].Name);
+        Assert.Equal("something", jobWrapper.Job.DependencyGroups[1].AppliesTo);
+        Assert.Empty(jobWrapper.Job.DependencyGroups[1].Rules);
+    }
+
+    [Fact]
+    public void DeserializeExistingPullRequests()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "existing-pull-requests": [
+                        [
+                            {
+                                "dependency-name": "Some.Package",
+                                "dependency-version": "1.2.3"
+                            }
+                        ]
+                    ]
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Single(jobWrapper.Job.ExistingPullRequests);
+        Assert.Single(jobWrapper.Job.ExistingPullRequests[0]);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingPullRequests[0][0].DependencyName);
+        Assert.Equal(NuGetVersion.Parse("1.2.3"), jobWrapper.Job.ExistingPullRequests[0][0].DependencyVersion);
+        Assert.False(jobWrapper.Job.ExistingPullRequests[0][0].DependencyRemoved);
+        Assert.Null(jobWrapper.Job.ExistingPullRequests[0][0].Directory);
+    }
+
+    [Fact]
+    public void DeserializeExistingGroupPullRequests()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "existing-group-pull-requests": [
+                        {
+                            "dependency-group-name": "Some-Group-Name",
+                            "dependencies": [
+                                {
+                                    "dependency-name": "Some.Package",
+                                    "dependency-version": "1.2.3"
+                                },
+                                {
+                                    "dependency-name": "Some.Other.Package",
+                                    "dependency-version": "4.5.6",
+                                    "directory": "/some-dir"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Single(jobWrapper.Job.ExistingGroupPullRequests);
+        Assert.Equal("Some-Group-Name", jobWrapper.Job.ExistingGroupPullRequests[0].DependencyGroupName);
+        Assert.Equal(2, jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies.Length);
+        Assert.Equal("Some.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyName);
+        Assert.Equal("1.2.3", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].DependencyVersion.ToString());
+        Assert.Null(jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[0].Directory);
+        Assert.Equal("Some.Other.Package", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyName);
+        Assert.Equal("4.5.6", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].DependencyVersion.ToString());
+        Assert.Equal("/some-dir", jobWrapper.Job.ExistingGroupPullRequests[0].Dependencies[1].Directory);
+    }
+
+    [Theory]
+    [InlineData("null", null)]
+    [InlineData("\"bump_versions\"", RequirementsUpdateStrategy.BumpVersions)]
+    [InlineData("\"lockfile_only\"", RequirementsUpdateStrategy.LockfileOnly)]
+    public void DeserializeRequirementsUpdateStrategy(string requirementsUpdateStrategyStringJson, RequirementsUpdateStrategy? expectedRequirementsUpdateStrategy)
+    {
+        var jsonWrapperJson = $$"""
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "requirements-update-strategy": {{requirementsUpdateStrategyStringJson}}
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        var actualRequirementsUpdateStrategy = jobWrapper.Job.RequirementsUpdateStrategy;
+        Assert.Equal(expectedRequirementsUpdateStrategy, actualRequirementsUpdateStrategy);
+    }
+
+    [Fact]
+    public void DeserializeSecurityAdvisories()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "security-advisories": [
+                        {
+                            "dependency-name": "Some.Package",
+                            "affected-versions": [
+                                ">= 1.0.0, < 1.2.0"
+                            ],
+                            "patched-versions": null
+                        }
+                    ]
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Single(jobWrapper.Job.SecurityAdvisories);
+        Assert.Equal("Some.Package", jobWrapper.Job.SecurityAdvisories[0].DependencyName);
+        Assert.Equal(">= 1.0.0, < 1.2.0", jobWrapper.Job.SecurityAdvisories[0].AffectedVersions!.Value.Single().ToString());
+        Assert.Null(jobWrapper.Job.SecurityAdvisories[0].PatchedVersions);
+        Assert.Null(jobWrapper.Job.SecurityAdvisories[0].PatchedVersions);
+    }
+
+    [Fact]
+    public void DeserializeCommitOptions()
+    {
+        var jsonWrapperJson = """
+            {
+                "job": {
+                    "source": {
+                        "provider": "github",
+                        "repo": "some/repo"
+                    },
+                    "commit-message-options": {
+                        "prefix": "[SECURITY] "
+                    }
+                }
+            }
+            """;
+        var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
+        Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
+        Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
+        Assert.Null(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+    }
+
+    public static IEnumerable<object?[]> DeserializeAllowedUpdatesData()
+    {
+        // common default value - most job files look like this
+        yield return
+        [
+            // allowedUpdatesJsonBody
+            """
+            [
+                {
+                    "update-type": "all"
+                }
+            ]
+            """,
+            // expectedAllowedUpdates
+            new[]
+            {
+                new AllowedUpdate()
+                {
+                    DependencyType = Core.Run.ApiModel.DependencyType.All,
+                    DependencyName = null,
+                    UpdateType = UpdateType.All
+                }
+            }
+        ];
+
+        // allowed updates is missing - ensure proper defaults
+        yield return
+        [
+            // allowedUpdatesJsonBody
+            null,
+            // expectedAllowedUpdates
+            new[]
+            {
+                new AllowedUpdate()
+            }
+        ];
+
+        // multiple non-default values
+        yield return
+        [
+            // allowedUpdatesJsonBody
+            """
+            [
+                {
+                    "dependency-type": "indirect",
+                    "dependency-name": "Dependency.One",
+                    "update-type": "security"
+                },
+                {
+                    "dependency-type": "production",
+                    "dependency-name": "Dependency.Two",
+                    "update-type": "all"
+                },
+                {
+                    "dependency-type": "indirect",
+                    "update-type": "security"
+                }
+            ]
+            """,
+            new[]
+            {
+                new AllowedUpdate()
+                {
+                    DependencyType = Core.Run.ApiModel.DependencyType.Indirect,
+                    DependencyName = "Dependency.One",
+                    UpdateType = UpdateType.Security
+                },
+                new AllowedUpdate()
+                {
+                    DependencyType = Core.Run.ApiModel.DependencyType.Production,
+                    DependencyName = "Dependency.Two",
+                    UpdateType = UpdateType.All
+                },
+                new AllowedUpdate()
+                {
+                    DependencyType = Core.Run.ApiModel.DependencyType.Indirect,
+                    DependencyName = null,
+                    UpdateType = UpdateType.Security
+                }
+            }
+        ];
+    }
+
     private class CapturingTestLogger : ILogger
     {
         private readonly List<string> _messages = new();
 
         public IReadOnlyList<string> Messages => _messages;
 
-        public void Log(string message)
+        public void LogRaw(string message)
         {
             _messages.Add(message);
         }

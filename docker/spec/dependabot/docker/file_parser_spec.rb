@@ -1134,6 +1134,16 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "with an invalid yaml file" do
+      let(:podfile_fixture_name) { "with_bom.yaml" }
+
+      it "throws when the yaml starts with a byte order mark" do
+        expect do
+          _unused = dependencies
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
   end
 
   describe "YAML parse" do

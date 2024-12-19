@@ -9,7 +9,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    module Helpers
+    module Helpers # rubocop:disable Metrics/ModuleLength
       extend T::Sig
 
       YARN_PATH_NOT_FOUND =
@@ -332,7 +332,7 @@ module Dependabot
           version.strip.delete_prefix("v") # Remove the "v" prefix if present
         end
       rescue StandardError => e
-        puts "Error retrieving Node.js version: #{e.message}"
+        Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
         nil
       end
 
@@ -388,35 +388,89 @@ module Dependabot
       end
 
       # Install the package manager for specified version by using corepack
-      # and prepare it for use by using corepack
-      sig { params(name: String, version: String).returns(String) }
-      def self.install(name, version)
+      sig do
+        params(
+          name: String,
+          version: String,
+          env: T.nilable(T::Hash[String, String])
+        )
+          .returns(String)
+      end
+      def self.install(name, version, env: {})
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        package_manager_install(name, version)
-        package_manager_activate(name, version)
-        installed_version = package_manager_version(name)
+        begin
+          # Try to install the specified version
+          output = package_manager_install(name, version, env: env)
 
-        Dependabot.logger.info("Installed version of #{name}: #{installed_version}")
+          # Confirm success based on the output
+          if output.match?(/Adding #{name}@.* to the cache/)
+            Dependabot.logger.info("#{name}@#{version} successfully installed.")
+
+            Dependabot.logger.info("Activating currently installed version of #{name}: #{version}")
+            package_manager_activate(name, version)
+
+          else
+            Dependabot.logger.error("Corepack installation output unexpected: #{output}")
+            fallback_to_local_version(name)
+          end
+        rescue StandardError => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          fallback_to_local_version(name)
+        end
+
+        # Verify the installed version
+        installed_version = package_manager_version(name)
 
         installed_version
       end
 
+      # Attempt to activate the local version of the package manager
+      sig { params(name: String).void }
+      def self.fallback_to_local_version(name)
+        Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
+
+        # Fetch the currently installed version directly from the environment
+        current_version = local_package_manager_version(name)
+        Dependabot.logger.info("Activating currently installed version of #{name}: #{current_version}")
+
+        # Prepare the existing version
+        package_manager_activate(name, current_version)
+      end
+
       # Install the package manager for specified version by using corepack
-      sig { params(name: String, version: String).void }
-      def self.package_manager_install(name, version)
+      sig do
+        params(
+          name: String,
+          version: String,
+          env: T.nilable(T::Hash[String, String])
+        )
+          .returns(String)
+      end
+      def self.package_manager_install(name, version, env: {})
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
+          fingerprint: "corepack install <name>@<version> --global --cache-only",
+          env: env
         ).strip
       end
 
       # Prepare the package manager for use by using corepack
-      sig { params(name: String, version: String).void }
+      sig { params(name: String, version: String).returns(String) }
       def self.package_manager_activate(name, version)
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
-          fingerprint: "corepack prepare --activate"
+          fingerprint: "corepack prepare <name>@<version> --activate"
+        ).strip
+      end
+
+      # Fetch the currently installed version of the package manager directly
+      # from the system without involving Corepack
+      sig { params(name: String).returns(String) }
+      def self.local_package_manager_version(name)
+        Dependabot::SharedHelpers.run_shell_command(
+          "#{name} -v",
+          fingerprint: "#{name} -v"
         ).strip
       end
 
@@ -427,7 +481,8 @@ module Dependabot
 
         version = package_manager_run_command(name, "-v").strip
 
-        Dependabot.logger.info("Version for #{name}: #{version}")
+        Dependabot.logger.info("Installed version of #{name}: #{version}")
+
         version
       rescue StandardError => e
         Dependabot.logger.error("Error fetching version for package manager #{name}: #{e.message}")
@@ -445,14 +500,11 @@ module Dependabot
       def self.package_manager_run_command(name, command, fingerprint: nil)
         full_command = "corepack #{name} #{command}"
 
-        Dependabot.logger.info("Running package manager command: #{full_command}")
-
         result = Dependabot::SharedHelpers.run_shell_command(
           full_command,
           fingerprint: "corepack #{name} #{fingerprint || command}"
         ).strip
 
-        Dependabot.logger.info("Command executed successfully: #{full_command}")
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")

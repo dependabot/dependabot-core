@@ -272,10 +272,6 @@ public abstract class UpdateWorkerTestBase : TestBase
         {
             Job = new()
             {
-                AllowedUpdates =
-                [
-                    new() { UpdateType = "all" }
-                ],
                 Source = new()
                 {
                     Provider = "github",
@@ -314,14 +310,6 @@ public abstract class UpdateWorkerTestBase : TestBase
                 </configuration>
                 """
             );
-        }
-
-        // override various nuget locations
-        foreach (var envName in new[] { "NUGET_PACKAGES", "NUGET_HTTP_CACHE_PATH", "NUGET_SCRATCH", "NUGET_PLUGINS_CACHE_PATH" })
-        {
-            string dir = Path.Join(temporaryDirectory, envName);
-            Directory.CreateDirectory(dir);
-            Environment.SetEnvironmentVariable(envName, dir);
         }
     }
 

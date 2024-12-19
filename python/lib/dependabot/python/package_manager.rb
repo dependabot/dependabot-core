@@ -130,6 +130,7 @@ module Dependabot
       NAME = "pipenv"
 
       MANIFEST_FILENAME = "Pipfile"
+      LOCKFILE_FILENAME = "Pipfile.lock"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 

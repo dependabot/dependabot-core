@@ -83,6 +83,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
   end
 
   after do
@@ -870,7 +872,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
     end
 
