@@ -194,3 +194,11 @@ def github_credentials
     }]
   end
 end
+
+# Load a command from the fixtures/commands directory
+def command_fixture(name)
+  path = File.join("spec", "fixtures", "commands", name)
+  raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
+
+  File.expand_path(path)
+end

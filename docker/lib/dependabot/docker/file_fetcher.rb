@@ -13,7 +13,7 @@ module Dependabot
       extend T::Helpers
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
+      DOCKER_REGEXP = /dockerfile|containerfile/i
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -23,7 +23,7 @@ module Dependabot
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a Dockerfile or Kubernetes YAML files."
+        "Repo must contain a Dockerfile, Containerfile, or Kubernetes YAML files."
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

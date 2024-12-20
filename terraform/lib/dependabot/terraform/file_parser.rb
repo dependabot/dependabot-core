@@ -58,6 +58,14 @@ module Dependabot
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
           modules = parsed_file(file).fetch("module", {})
+          # If override.tf files are present, we need to merge the modules
+          if override_terraform_files.any?
+            override_terraform_files.each do |override_file|
+              override_modules = parsed_file(override_file).fetch("module", {})
+              modules = merge_modules(override_modules, modules)
+            end
+          end
+
           modules.each do |name, details|
             details = details.first
 
