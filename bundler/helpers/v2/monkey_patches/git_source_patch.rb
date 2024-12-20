@@ -55,7 +55,7 @@ module Bundler
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
 
-          Bundler.rubygems.set_installed_by_version(spec)
+          spec.installed_by_version = Gem::VERSION
           Bundler.rubygems.validate(spec)
           File.binwrite(spec_path, spec.to_ruby)
         end
