@@ -425,6 +425,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             .SelectMany(p => p.TargetFrameworks)
             .Select(NuGetFramework.Parse)
             .Distinct()
+            .Select(f => f.GetShortFolderName())
             .ToImmutableArray();
 
         // When updating peer dependencies, we only need to consider top-level dependencies.

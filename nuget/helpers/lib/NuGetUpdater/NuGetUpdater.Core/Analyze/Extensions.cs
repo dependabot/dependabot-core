@@ -7,7 +7,7 @@ using NuGetUpdater.Core;
 
 internal static class Extensions
 {
-    public static ImmutableArray<Dependency> GetDependencies(this ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>> dependenciesByTfm)
+    public static ImmutableArray<Dependency> GetDependencies(this ImmutableDictionary<string, ImmutableArray<Dependency>> dependenciesByTfm)
     {
         Dictionary<string, Dependency> dependencies = [];
         foreach (var (_framework, dependenciesForTfm) in dependenciesByTfm)
