@@ -22,6 +22,7 @@ module Dependabot
         super(
           PACKAGE_MANAGER,
           Version.new(raw_version),
+          Version.new(raw_version),
           DEPRECATED_GIT_VERSIONS,
           SUPPORTED_GIT_VERSIONS
         )
