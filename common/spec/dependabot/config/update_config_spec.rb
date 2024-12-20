@@ -178,6 +178,59 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
+    context "with ignore condition present and the version is nil and no base requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "*",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns empty array with no ignore conditions" do
+        expect(ignored_versions).to eq([])
+      end
+    end
+
+    context "with ignore condition present and the version is nil and empty requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: []
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns empty array with no ignore conditions" do
+        expect(ignored_versions).to eq([])
+      end
+    end
+
     context "with an dependency that must be name normalized" do
       let(:dependency) do
         Dependabot::Dependency.new(

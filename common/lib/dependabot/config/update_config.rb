@@ -32,7 +32,7 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
-        if dependency.version.nil?
+        if dependency.version.nil? && dependency.requirements.any?
           requirements = dependency.requirements
           requirement = T.must(requirements.first)[:requirement]
           version = requirement.match(/\d+\.\d+\.\d+/).to_s
