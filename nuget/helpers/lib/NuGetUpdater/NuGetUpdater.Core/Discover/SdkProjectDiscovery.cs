@@ -243,8 +243,8 @@ internal static class SdkProjectDiscovery
                                                             var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
                                                             if (replacementPackageVersion is not null)
                                                             {
-                                                                var packagesPerProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                                                var packagesPerTfm = packagesPerProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                                                var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                                                var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
                                                                 packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
                                                             }
                                                         }
