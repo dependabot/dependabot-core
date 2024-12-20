@@ -32,17 +32,8 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
-        # When the version is not set, extract the base version from the requirement.
         if dependency.version.nil? && dependency.requirements.any?
-          requirements = dependency.requirements
-          requirement = T.must(requirements.first)[:requirement]
-          version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
-          dependency = Dependabot::Dependency.new(
-            name: dependency.name,
-            version: version,
-            requirements: dependency.requirements,
-            package_manager: dependency.package_manager
-          )
+          dependency = extract_base_version_from_requirement(dependency)
         end
 
         @ignore_conditions
@@ -51,6 +42,19 @@ module Dependabot
           .flatten
           .compact
           .uniq
+      end
+
+      sig { params(dependency: Dependency).returns(Dependency) }
+      def extract_base_version_from_requirement(dependency)
+        requirements = dependency.requirements
+        requirement = T.must(requirements.first)[:requirement]
+        version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version,
+          requirements: dependency.requirements,
+          package_manager: dependency.package_manager
+        )
       end
 
       sig { params(wildcard_string: T.nilable(String), candidate_string: T.nilable(String)).returns(T::Boolean) }
