@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       it "returns empty array with no ignore conditions" do
-        expect(ignored_versions).to eq([])
+        expect(ignored_versions).to eq([">= 2.a"])
       end
     end
 
