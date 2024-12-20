@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns ignored condition" do
+      it "returns the ignored condition as an array" do
         expect(ignored_versions).to eq([">= 2.a"])
       end
     end
@@ -173,7 +173,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns empty array with no ignore conditions" do
+      it "returns the ignored condition as an array" do
         expect(ignored_versions).to eq([">= 2.a"])
       end
     end
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns empty array with no ignore conditions" do
+      it "it returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
@@ -233,7 +233,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns empty array with no ignore conditions" do
+      it "it returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "returns empty array with no ignore conditions" do
+      it "it returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
