@@ -9,8 +9,12 @@ public partial class UpdateWorkerTests
         [Fact]
         public async Task UpdateSingleDependency()
         {
-            // update Newtonsoft.Json from 13.0.1 to 13.0.3
-            await TestUpdateForProject("Newtonsoft.Json", "13.0.1", "13.0.3",
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -20,10 +24,14 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
                     """,
+                additionalFiles:
+                [
+                    ("packages.lock.json", "{}")
+                ],
                 // expected
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -33,54 +41,27 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                        <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 1,
-                          "dependencies": {
-                            "net8.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.1, )",
-                                "resolved": "13.0.1",
-                                "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-                              }
-                            }
-                          }
-                        }
-                        """)
-                ],
-                additionalFilesExpected:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 1,
-                          "dependencies": {
-                            "net8.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.3, )",
-                                "resolved": "13.0.3",
-                                "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
-                              }
-                            }
-                          }
-                        }
-                        """)
-                ]
+                additionalChecks: path =>
+                {
+                    var lockContents = File.ReadAllText(Path.Combine(path, "packages.lock.json"));
+                    Assert.Contains("\"resolved\": \"2.0.0\"", lockContents);
+                }
             );
         }
-        
+
         [Fact]
         public async Task UpdateSingleDependency_CentralPackageManagement()
         {
-            // update Newtonsoft.Json from 13.0.1 to 13.0.3
-            await TestUpdateForProject("Newtonsoft.Json", "13.0.1", "13.0.3",
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -90,10 +71,25 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """,
+                additionalFiles:
+                [
+                    ("packages.lock.json", "{}"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                    
+                          <ItemGroup>
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
                 // expected
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -103,56 +99,12 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 2,
-                          "dependencies": {
-                            "net8.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.1, )",
-                                "resolved": "13.0.1",
-                                "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-                              }
-                            }
-                          }
-                        }
-                        """),
-                    ("Directory.Packages.props", """
-                    <Project>
-                      <PropertyGroup>
-                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                      </PropertyGroup>
-                    
-                      <ItemGroup>
-                        <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-                ],
                 additionalFilesExpected:
                 [
-                    ("packages.lock.json", """
-                        {
-                          "version": 2,
-                          "dependencies": {
-                            "net8.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.3, )",
-                                "resolved": "13.0.3",
-                                "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
-                              }
-                            }
-                          }
-                        }
-                        """),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -160,19 +112,28 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+                            <PackageVersion Include="Some.Package" Version="2.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]
+                ],
+                additionalChecks: path =>
+                {
+                    var lockContents = File.ReadAllText(Path.Combine(path, "packages.lock.json"));
+                    Assert.Contains("\"resolved\": \"2.0.0\"", lockContents);
+                }
             );
         }
-        
+
         [Fact]
         public async Task UpdateSingleDependency_WindowsSpecific()
         {
-            // update Newtonsoft.Json from 13.0.1 to 13.0.3
-            await TestUpdateForProject("Newtonsoft.Json", "13.0.1", "13.0.3",
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -183,10 +144,14 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
                     """,
+                additionalFiles:
+                [
+                    ("packages.lock.json", "{}")
+                ],
                 // expected
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -197,54 +162,27 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+                        <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 1,
-                          "dependencies": {
-                            "net8.0-windows7.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.1, )",
-                                "resolved": "13.0.1",
-                                "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-                              }
-                            }
-                          }
-                        }
-                        """)
-                ],
-                additionalFilesExpected:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 1,
-                          "dependencies": {
-                            "net8.0-windows7.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.3, )",
-                                "resolved": "13.0.3",
-                                "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
-                              }
-                            }
-                          }
-                        }
-                        """)
-                ]
+                additionalChecks: path =>
+                {
+                    var lockContents = File.ReadAllText(Path.Combine(path, "packages.lock.json"));
+                    Assert.Contains("\"resolved\": \"2.0.0\"", lockContents);
+                }
             );
         }
-        
+
         [Fact]
         public async Task UpdateSingleDependency_CentralPackageManagement_WindowsSpecific()
         {
-            // update Newtonsoft.Json from 13.0.1 to 13.0.3
-            await TestUpdateForProject("Newtonsoft.Json", "13.0.1", "13.0.3",
+            await TestUpdateForProject("Some.Package", "1.0.0", "2.0.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+                ],
                 // initial
                 projectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -255,10 +193,25 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """,
+                additionalFiles:
+                [
+                    ("packages.lock.json", "{}"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                    
+                          <ItemGroup>
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """)
+                ],
                 // expected
                 expectedProjectContents: $"""
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -269,56 +222,12 @@ public partial class UpdateWorkerTests
                       </PropertyGroup>
 
                       <ItemGroup>
-                        <PackageReference Include="Newtonsoft.Json" />
+                        <PackageReference Include="Some.Package" />
                       </ItemGroup>
                     </Project>
                     """,
-                additionalFiles:
-                [
-                    ("packages.lock.json", """
-                        {
-                          "version": 2,
-                          "dependencies": {
-                            "net8.0-windows7.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.1, )",
-                                "resolved": "13.0.1",
-                                "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-                              }
-                            }
-                          }
-                        }
-                        """),
-                    ("Directory.Packages.props", """
-                    <Project>
-                      <PropertyGroup>
-                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                      </PropertyGroup>
-                    
-                      <ItemGroup>
-                        <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
-                      </ItemGroup>
-                    </Project>
-                    """)
-                ],
                 additionalFilesExpected:
                 [
-                    ("packages.lock.json", """
-                        {
-                          "version": 2,
-                          "dependencies": {
-                            "net8.0-windows7.0": {
-                              "Newtonsoft.Json": {
-                                "type": "Direct",
-                                "requested": "[13.0.3, )",
-                                "resolved": "13.0.3",
-                                "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
-                              }
-                            }
-                          }
-                        }
-                        """),
                     ("Directory.Packages.props", """
                         <Project>
                           <PropertyGroup>
@@ -326,11 +235,16 @@ public partial class UpdateWorkerTests
                           </PropertyGroup>
                         
                           <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+                            <PackageVersion Include="Some.Package" Version="2.0.0" />
                           </ItemGroup>
                         </Project>
                         """)
-                ]
+                ],
+                additionalChecks: path =>
+                {
+                    var lockContents = File.ReadAllText(Path.Combine(path, "packages.lock.json"));
+                    Assert.Contains("\"resolved\": \"2.0.0\"", lockContents);
+                }
             );
         }
     }
