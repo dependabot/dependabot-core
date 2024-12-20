@@ -5,7 +5,6 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/nuget/discovery/discovery_json_reader"
 require "dependabot/nuget/native_helpers"
-require "set"
 require "sorbet-runtime"
 
 module Dependabot
