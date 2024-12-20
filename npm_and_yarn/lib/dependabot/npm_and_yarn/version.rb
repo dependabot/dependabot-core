@@ -75,8 +75,8 @@ module Dependabot
 
       sig { params(version: VersionParameter).returns(VersionParameter) }
       def clean_version(version)
+        # Check if version is a string before attempting to match
         if version.is_a?(String)
-          # Check if version is a string before attempting to match
           # Matches @ followed by x.y.z (digits separated by dots)
           if (match = version.match(/@(\d+\.\d+\.\d+)/))
             version = match[1] # Just "4.5.3"
