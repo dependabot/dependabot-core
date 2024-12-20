@@ -246,6 +246,8 @@ internal static class SdkProjectDiscovery
                                                                 var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
                                                                 var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
                                                                 packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
+                                                                var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
+                                                                logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
                                                             }
                                                         }
                                                     }
