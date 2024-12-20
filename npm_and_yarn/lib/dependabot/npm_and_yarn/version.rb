@@ -81,7 +81,7 @@ module Dependabot
           if (match = version.match(/@(\d+\.\d+\.\d+)/))
             version = match[1] # Just "4.5.3"
           end
-          version = version.gsub(/^v/, "") if version.is_a?(String)
+          version = version&.gsub(/^v/, "")
         end
 
         # If version is not a string or no match found, return original version
