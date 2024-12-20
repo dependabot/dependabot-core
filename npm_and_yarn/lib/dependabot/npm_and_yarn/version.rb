@@ -84,7 +84,6 @@ module Dependabot
           version = version&.gsub(/^v/, "")
         end
 
-        # If version is not a string or no match found, return original version
         version
       end
 
