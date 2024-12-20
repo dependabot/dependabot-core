@@ -35,7 +35,7 @@ module Dependabot
         if dependency.version.nil? && dependency.requirements.any?
           requirements = dependency.requirements
           requirement = T.must(requirements.first)[:requirement]
-          version = requirement.match(/\d+\.\d+\.\d+/).to_s
+          version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
           dependency = Dependabot::Dependency.new(
             name: dependency.name,
             version: version,
