@@ -32,7 +32,7 @@ module Dependabot
         normalizer = name_normaliser_for(dependency)
         dep_name = T.must(normalizer).call(dependency.name)
 
-        # When version is not set, trying to get the version from the base requirement.
+        # When version is not set, trying to get the base version from the requirement.
         if dependency.version.nil? && dependency.requirements.any?
           requirements = dependency.requirements
           requirement = T.must(requirements.first)[:requirement]
