@@ -118,7 +118,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "When an ignore condition is present and the version is not nil" do
+    context "when an ignore condition is present and the version is not nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "When an ignore condition is present and the version is nil" do
+    context "when an ignore condition is present and the version is nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "When an ignore condition is present and the version is nil with no base requirement" do
+    context "when an ignore condition is present and the version is nil with no base requirement" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -203,12 +203,12 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "it returns an empty array as it cannot determine the semver:major version" do
+      it "returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
 
-    context "When an ignore condition is present and the version is nil with no specific requirement" do
+    context "when an ignore condition is present and the version is nil with no specific requirement" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -233,12 +233,12 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "it returns an empty array as it cannot determine the semver:major version" do
+      it "returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
 
-    context "When an ignore condition is present and the version is nil with empty requirements" do
+    context "when an ignore condition is present and the version is nil with empty requirements" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         ]
       end
 
-      it "it returns an empty array as it cannot determine the semver:major version" do
+      it "returns an empty array as it cannot determine the semver:major version" do
         expect(ignored_versions).to eq([])
       end
     end
