@@ -31,4 +31,6 @@
     <InternalsVisibleTo Include="NuGetUpdater.Core.Test" />
   </ItemGroup>
 
+  <Import Project="EnsureDotNetPackageCorrelation.targets" />
+
 </Project>
