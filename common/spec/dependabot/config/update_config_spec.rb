@@ -208,7 +208,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
-    context "with ignore condition present and the version is nil and wrong format base requirement" do
+    context "with ignore condition present and the version is nil and requirement is nil" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "eslint-plugin-playwright",
