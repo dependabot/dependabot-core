@@ -30,8 +30,6 @@ module Dependabot
 
         def latest_version_from_registry
           return unless valid_npm_details?
-          # @ignored_versions = [">= 2.a"] if package-lock.json is present or dependency version is present.
-          # Now @ignored_versions is an empty array
           return version_from_dist_tags if version_from_dist_tags
           return if specified_dist_tag_requirement?
 
