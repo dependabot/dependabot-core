@@ -522,6 +522,8 @@ RSpec.describe Dependabot::ApiClient do
           Dependabot::Ecosystem::VersionManager,
           name: "bundler",
           version: Dependabot::Version.new("2.1.4"),
+          version_to_s: "2.1.4",
+          version_to_raw_s: "2.1.4",
           requirement: instance_double(
             Dependabot::Requirement,
             constraints: [">= 2.0"],
@@ -533,6 +535,8 @@ RSpec.describe Dependabot::ApiClient do
           Dependabot::Ecosystem::VersionManager,
           name: "ruby",
           version: Dependabot::Version.new("2.7.0"),
+          version_to_s: "2.7.0",
+          version_to_raw_s: "2.7.0",
           requirement: nil
         )
       )
