@@ -174,7 +174,7 @@ module Dependabot
 
       sig { params(dependency_url: String).returns(String) }
       def self.clean_dependency_url(dependency_url)
-        return dependency_url unless URI::DEFAULT_PARSER.regexp[:ABS_URI].match?(dependency_url)
+        return dependency_url unless URI::RFC2396_PARSER.regexp[:ABS_URI].match?(dependency_url)
 
         url = URI.parse(dependency_url)
         url.user = nil

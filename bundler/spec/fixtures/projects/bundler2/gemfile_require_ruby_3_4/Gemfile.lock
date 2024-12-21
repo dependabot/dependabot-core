@@ -1,0 +1,16 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    business (1.4.0)
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  business (~> 1.4.0)
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   2.6.0.dev

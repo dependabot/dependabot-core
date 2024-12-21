@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "set"
 require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
