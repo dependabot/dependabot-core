@@ -3487,5 +3487,150 @@ public partial class UpdateWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task UpdateSdkManagedPackage_DirectDependency()
+        {
+            // To avoid a unit test that's tightly coupled to the installed SDK, several values are simulated,
+            // including the runtime major version, the current Microsoft.NETCore.App.Ref package, and the package
+            // correlation file.  Doing this requires a temporary file and environment variable override.
+            var runtimeMajorVersion = Environment.Version.Major;
+            var netCoreAppRefPackage = MockNuGetPackage.GetMicrosoftNETCoreAppRefPackage(runtimeMajorVersion);
+            using var tempDirectory = new TemporaryDirectory();
+            var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
+            await File.WriteAllTextAsync(packageCorrelationFile, $$"""
+                {
+                    "Runtimes": {
+                        "{{runtimeMajorVersion}}.0.0": {
+                            "Packages": {
+                                "{{netCoreAppRefPackage.Id}}": "{{netCoreAppRefPackage.Version}}",
+                                "System.Text.Json": "{{runtimeMajorVersion}}.0.98"
+                            }
+                        }
+                    }
+                }
+                """);
+            using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
+
+            // In the `packages` section below, we fake a `System.Text.Json` package with a low assembly version that
+            // will always trigger the replacement so that can be detected and then the equivalent version is pulled
+            // from the correlation file specified above.  In the original project contents, package version `x.0.98`
+            // is reported which makes the update to `x.0.99` always possible.
+            await TestUpdateForProject("System.Text.Json", $"{runtimeMajorVersion}.0.98", $"{runtimeMajorVersion}.0.99",
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+                packages:
+                [
+                    // this assembly version is lower than what the SDK will have
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", $"{runtimeMajorVersion}.0.0", $"net{runtimeMajorVersion}.0", assemblyVersion: $"{runtimeMajorVersion}.0.0.0"),
+                    // this assembly version is greater than what the SDK will have
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", $"{runtimeMajorVersion}.0.99", $"net{runtimeMajorVersion}.0", assemblyVersion: $"{runtimeMajorVersion}.99.99.99"),
+                ],
+                projectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net{runtimeMajorVersion}.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="{runtimeMajorVersion}.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("global.json", $$"""
+                        {
+                            "sdk": {
+                                "version": "{{runtimeMajorVersion}}.0.100",
+                                "allowPrerelease": true,
+                                "rollForward": "latestMinor"
+                            }
+                        }
+                        """)
+                ],
+                expectedProjectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net{runtimeMajorVersion}.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="System.Text.Json" Version="{runtimeMajorVersion}.0.99" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
+
+        [Fact]
+        public async Task UpdateSdkManagedPackage_TransitiveDependency()
+        {
+            // To avoid a unit test that's tightly coupled to the installed SDK, several values are simulated,
+            // including the runtime major version, the current Microsoft.NETCore.App.Ref package, and the package
+            // correlation file.  Doing this requires a temporary file and environment variable override.
+            var runtimeMajorVersion = Environment.Version.Major;
+            var netCoreAppRefPackage = MockNuGetPackage.GetMicrosoftNETCoreAppRefPackage(runtimeMajorVersion);
+            using var tempDirectory = new TemporaryDirectory();
+            var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
+            await File.WriteAllTextAsync(packageCorrelationFile, $$"""
+                {
+                    "Runtimes": {
+                        "{{runtimeMajorVersion}}.0.0": {
+                            "Packages": {
+                                "{{netCoreAppRefPackage.Id}}": "{{netCoreAppRefPackage.Version}}",
+                                "System.Text.Json": "{{runtimeMajorVersion}}.0.98"
+                            }
+                        }
+                    }
+                }
+                """);
+            using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
+
+            // In the `packages` section below, we fake a `System.Text.Json` package with a low assembly version that
+            // will always trigger the replacement so that can be detected and then the equivalent version is pulled
+            // from the correlation file specified above.  In the original project contents, package version `x.0.98`
+            // is reported which makes the update to `x.0.99` always possible.
+            await TestUpdateForProject("System.Text.Json", $"{runtimeMajorVersion}.0.98", $"{runtimeMajorVersion}.0.99",
+                isTransitive: true,
+                experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", $"net{runtimeMajorVersion}.0", [(null, [("System.Text.Json", $"[{runtimeMajorVersion}.0.0]")])]),
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", $"net{runtimeMajorVersion}.0", [(null, [("System.Text.Json", $"[{runtimeMajorVersion}.0.99]")])]),
+                    // this assembly version is lower than what the SDK will have
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", $"{runtimeMajorVersion}.0.0", $"net{runtimeMajorVersion}.0", assemblyVersion: $"{runtimeMajorVersion}.0.0.0"),
+                    // this assembly version is greater than what the SDK will have
+                    MockNuGetPackage.CreatePackageWithAssembly("System.Text.Json", $"{runtimeMajorVersion}.0.99", $"net{runtimeMajorVersion}.0", assemblyVersion: $"{runtimeMajorVersion}.99.99.99"),
+                ],
+                projectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net{runtimeMajorVersion}.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles: [
+                    ("global.json", $$"""
+                        {
+                            "sdk": {
+                                "version": "{{runtimeMajorVersion}}.0.100",
+                                "allowPrerelease": true,
+                                "rollForward": "latestMinor"
+                            }
+                        }
+                        """)
+                ],
+                expectedProjectContents: $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net{runtimeMajorVersion}.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """
+            );
+        }
     }
 }
