@@ -1,6 +1,6 @@
-pip==24.0
+pip==24.3.1
 pip-tools==7.4.1
-flake8==7.1.0
+flake8==7.1.1
 # TODO: Drop the conditions and use the latest version once we drop support for Python 3.8.
 hashin==1.0.2; python_version < '3.9'
 hashin==1.0.3; python_version >= '3.9'
@@ -11,4 +11,4 @@ poetry==1.8.5
 toml==0.10.2
 
 # Some dependencies will only install if Cython is present
-Cython==3.0.10
+Cython==3.0.11
