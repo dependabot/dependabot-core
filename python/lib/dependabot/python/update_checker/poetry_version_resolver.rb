@@ -41,6 +41,8 @@ module Dependabot
           \s+check\syour\sgit\sconfiguration
         /mx
 
+        PACKAGE_REFERENCE = /(?<package>.+?) = {\s?path = "*.*", develop = true\s?}/
+
         INCOMPATIBLE_CONSTRAINTS = /Incompatible constraints in requirements of (?<dep>.+?) ((?<ver>.+?)):/
 
         attr_reader :dependency
@@ -194,12 +196,35 @@ module Dependabot
           message.gsub(/http.*?(?=\s)/, "<redacted>")
         end
 
+        def remove_packages(file_content)
+          cleaned_content = ""
+          file_content.lines.map do |line|
+            if line.match?(PACKAGE_REFERENCE)
+              Dependabot.logger.info("Project reference found in dependency list: #{line}")
+            end
+
+            next if line.match?(PACKAGE_REFERENCE)
+
+            cleaned_content += line
+          end.join
+          cleaned_content
+        end
+
         def write_temporary_dependency_files(updated_req: nil,
                                              update_pyproject: true)
+
           dependency_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+
+            Dependabot::Experiments.register(:remove_packages, true)
+
+            if Dependabot::Experiments.enabled?(:remove_packages) && file.name.include?(".toml")
+              file_content = remove_packages(file.content)
+              File.write(path, file_content)
+            else
+              File.write(path, file.content)
+            end
           end
 
           # Overwrite the .python-version with updated content
