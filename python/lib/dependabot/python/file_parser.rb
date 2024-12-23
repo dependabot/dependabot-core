@@ -21,6 +21,7 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
+      require_relative "file_parser/python_requirement_parser"
 
       DEPENDENCY_GROUP_KEYS = [
         {
@@ -97,11 +98,11 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
-        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
-
         return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
+
+        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
 
         PipPackageManager.new(detect_pip_version)
       end
