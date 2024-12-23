@@ -32,6 +32,11 @@ module Dependabot
 
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
+        if job.update_dependency_list_only?
+          # If the job is to only discover dependencies, there's nothing more to do,
+          # skip the updater, mark the job as processed and stop.
+          return service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
+        end
 
         # TODO: Pull fatal error handling handling up into this class
         #
