@@ -97,11 +97,11 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
+        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
+
         return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
         return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
-
-        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
 
         PipPackageManager.new(detect_pip_version)
       end
@@ -337,7 +337,7 @@ module Dependabot
       end
 
       def pipcompile_in_file
-        requirement_files.any? { |f| f.end_with?(".in") }
+        requirement_files.any? { |f| f.name.end_with?(PipCompilePackageManager::MANIFEST_FILENAME) }
       end
 
       def pipenv_files
