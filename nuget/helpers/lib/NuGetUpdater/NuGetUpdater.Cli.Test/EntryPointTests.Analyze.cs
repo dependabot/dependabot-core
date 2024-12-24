@@ -345,7 +345,8 @@ public partial class EntryPointTests
                     {
                         if (args[i] == "--job-path")
                         {
-                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                            var experimentsResult = await ExperimentsManager.FromJobFileAsync(args[i + 1]);
+                            experimentsManager = experimentsResult.ExperimentsManager;
                         }
                     }
 

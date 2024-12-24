@@ -4,6 +4,7 @@ public enum ErrorType
 {
     None,
     AuthenticationFailure,
+    BadRequirement,
     MissingFile,
     UpdateNotPossible,
     DependencyFileNotParseable,

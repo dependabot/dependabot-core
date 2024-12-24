@@ -45,7 +45,16 @@ public class DiscoveryWorkerTestBase : TestBase
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects, experimentsManager);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
         Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
-        Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        if (expectedResult.ErrorDetailsPattern is not null)
+        {
+            var errorDetails = actualResult.ErrorDetails?.ToString();
+            Assert.NotNull(errorDetails);
+            Assert.Matches(expectedResult.ErrorDetailsPattern, errorDetails);
+        }
+        else
+        {
+            Assert.Equal(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+        }
 
         return;
 

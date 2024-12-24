@@ -29,7 +29,7 @@ internal static class AnalyzeCommand
         command.SetHandler(async (jobPath, repoRoot, discoveryPath, dependencyPath, analysisDirectory) =>
         {
             var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
+            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobPath.FullName);
             var worker = new AnalyzeWorker(experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, discoveryPath.FullName, dependencyPath.FullName, analysisDirectory.FullName);
         }, JobPathOption, RepoRootOption, DiscoveryFilePathOption, DependencyFilePathOption, AnalysisFolderOption);
