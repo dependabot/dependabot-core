@@ -9,23 +9,45 @@ namespace NuGetUpdater.Core.Clone;
 
 public class CloneWorker
 {
+    private readonly string _jobId;
     private readonly IApiHandler _apiHandler;
     private readonly IGitCommandHandler _gitCommandHandler;
-    private readonly ILogger _logger;
 
-    public CloneWorker(IApiHandler apiHandler, IGitCommandHandler gitCommandHandler, ILogger logger)
+    public CloneWorker(string jobId, IApiHandler apiHandler, IGitCommandHandler gitCommandHandler)
     {
+        _jobId = jobId;
         _apiHandler = apiHandler;
         _gitCommandHandler = gitCommandHandler;
-        _logger = logger;
     }
 
     // entrypoint for cli
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = RunWorker.Deserialize(jobFileContent);
-        var result = await RunAsync(jobWrapper.Job, repoContentsPath.FullName);
+
+        // only a limited set of errors can occur here
+        JobFile? jobFile = null;
+        JobErrorBase? parseError = null;
+        try
+        {
+            jobFile = RunWorker.Deserialize(jobFileContent);
+        }
+        catch (BadRequirementException ex)
+        {
+            parseError = new BadRequirement(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            parseError = new UnknownError(ex, _jobId);
+        }
+
+        if (parseError is not null)
+        {
+            await ReportError(parseError);
+            return 1;
+        }
+
+        var result = await RunAsync(jobFile!.Job, repoContentsPath.FullName);
         return result;
     }
 
@@ -48,17 +70,22 @@ public class CloneWorker
         }
         catch (Exception ex)
         {
-            error = new UnknownError(ex.ToString());
+            error = new UnknownError(ex, _jobId);
         }
 
         if (error is not null)
         {
-            await _apiHandler.RecordUpdateJobError(error);
-            await _apiHandler.MarkAsProcessed(new("unknown"));
+            await ReportError(error);
             return 1;
         }
 
         return 0;
+    }
+
+    private async Task ReportError(JobErrorBase error)
+    {
+        await _apiHandler.RecordUpdateJobError(error);
+        await _apiHandler.MarkAsProcessed(new("unknown"));
     }
 
     internal static CommandArguments[] GetAllCommandArgs(Job job, string repoContentsPath)

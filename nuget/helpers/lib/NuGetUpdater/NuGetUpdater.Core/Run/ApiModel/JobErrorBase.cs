@@ -13,6 +13,5 @@ public abstract record JobErrorBase
     public string Type { get; }
 
     [JsonPropertyName("error-details")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public object? Details { get; init; } = null;
+    public Dictionary<string, object> Details { get; init; } = new();
 }

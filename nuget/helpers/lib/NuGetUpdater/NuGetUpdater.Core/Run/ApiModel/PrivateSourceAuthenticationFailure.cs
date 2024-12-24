@@ -5,6 +5,6 @@ public record PrivateSourceAuthenticationFailure : JobErrorBase
     public PrivateSourceAuthenticationFailure(string[] urls)
         : base("private_source_authentication_failure")
     {
-        Details = $"({string.Join("|", urls)})";
+        Details["source"] = $"({string.Join("|", urls)})";
     }
 }

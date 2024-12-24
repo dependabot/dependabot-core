@@ -1733,7 +1733,7 @@ public class RunWorkerTests
         analyzeWorker ??= new AnalyzeWorker(experimentsManager, logger);
         updaterWorker ??= new UpdaterWorker(experimentsManager, logger);
 
-        var worker = new RunWorker(testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var worker = new RunWorker("TEST-JOB-ID", testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
         var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();
