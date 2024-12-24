@@ -57,6 +57,16 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 Projects = [],
             };
         }
+        catch (Exception ex)
+        {
+            result = new WorkspaceDiscoveryResult
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+                Path = workspacePath,
+                Projects = [],
+            };
+        }
 
         return result;
     }
@@ -397,6 +407,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         var resultJson = JsonSerializer.Serialize(result, SerializerOptions);
-        await File.WriteAllTextAsync(path: resultPath, resultJson);
+        await File.WriteAllTextAsync(resultPath, resultJson);
     }
 }

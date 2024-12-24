@@ -92,6 +92,11 @@ module Dependabot
           "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     end
   end
 
