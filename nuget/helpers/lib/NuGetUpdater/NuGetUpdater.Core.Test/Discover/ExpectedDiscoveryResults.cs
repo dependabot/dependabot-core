@@ -12,6 +12,7 @@ public record ExpectedWorkspaceDiscoveryResult : NativeResult
     public int? ExpectedProjectCount { get; init; }
     public ExpectedDependencyDiscoveryResult? GlobalJson { get; init; }
     public ExpectedDependencyDiscoveryResult? DotNetToolsJson { get; init; }
+    public string? ErrorDetailsPattern { get; init; } = null;
 }
 
 public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryResult
