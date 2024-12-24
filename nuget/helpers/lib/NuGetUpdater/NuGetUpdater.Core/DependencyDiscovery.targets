@@ -1,9 +1,9 @@
 <Project>
   <Import Project="DependencyDiscovery.props" />
 
-  <Target Name="_DiscoverDependencies" DependsOnTargets="GenerateBuildDependencyFile;ResolvePackageAssets">
+  <Target Name="_DiscoverDependencies" DependsOnTargets="ResolveAssemblyReferences;GenerateBuildDependencyFile;ResolvePackageAssets">
     <!--
-    The target GenerateBuildDependencyFile is sufficient for projects targeting .NET Standard or .NET Core.
+    The targets ResolveAssemblyReferences and GenerateBuildDependencyFile are sufficient for projects targeting .NET Standard or .NET Core.
     The target ResolvePackageAssets is necessary for projects targeting .NET Framework.
     -->
   </Target>
