@@ -337,7 +337,7 @@ module Dependabot
       end
 
       def pipcompile_in_file
-        requirement_files.any? { |f| f.end_with?(".in") }
+        requirement_files.any? { |f| f.name.end_with?(PipCompilePackageManager::MANIFEST_FILENAME) }
       end
 
       def pipenv_files

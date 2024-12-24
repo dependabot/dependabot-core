@@ -881,6 +881,18 @@ RSpec.describe Dependabot::Python::FileParser do
               )
             end
           end
+
+          it "returns the correct ecosystem and package manager set" do
+            parser.parse do |parser|
+              ecosystem = parser.ecosystem
+              package_manager = ecosystem.package_manager
+              language = ecosystem.language
+
+              expect(ecosystem.name).to eq "python"
+              expect(package_manager.name).to "pip-compile"
+              expect(language.name).to eq "python"
+            end
+          end
         end
       end
 
