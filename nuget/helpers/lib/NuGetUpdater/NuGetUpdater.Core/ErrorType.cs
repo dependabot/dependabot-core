@@ -6,5 +6,6 @@ public enum ErrorType
     AuthenticationFailure,
     MissingFile,
     UpdateNotPossible,
+    DependencyFileNotParseable,
     Unknown,
 }

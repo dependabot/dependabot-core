@@ -232,7 +232,7 @@ public class UpdaterWorker : IUpdaterWorker
         var packagesLockFullPath = additionalFiles.Where(p => Path.GetFileName(p).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         if (packagesLockFullPath is not null)
         {
-            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _logger);
+            await LockFileUpdater.UpdateLockFileAsync(repoRootPath, projectPath, _experimentsManager, _logger);
         }
     }
 }

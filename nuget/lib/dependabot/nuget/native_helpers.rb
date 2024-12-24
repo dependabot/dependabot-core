@@ -81,6 +81,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "discover",
+          "--job-path",
+          "<job-path>",
           "--repo-root",
           "<repo-root>",
           "--workspace",
@@ -116,15 +118,17 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, discovery_file_path: String, dependency_file_path: String,
+        params(job_path: String, repo_root: String, discovery_file_path: String, dependency_file_path: String,
                analysis_folder_path: String).returns([String, String])
       end
-      def self.get_nuget_analyze_tool_command(repo_root:, discovery_file_path:, dependency_file_path:,
+      def self.get_nuget_analyze_tool_command(job_path:, repo_root:, discovery_file_path:, dependency_file_path:,
                                               analysis_folder_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "analyze",
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--discovery-file-path",
@@ -140,6 +144,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "analyze",
+          "--job-path",
+          "<job-path>",
           "--discovery-file-path",
           "<discovery-file-path>",
           "--dependency-file-path",
@@ -153,13 +159,14 @@ module Dependabot
 
       sig do
         params(
-          repo_root: String, discovery_file_path: String, dependency_file_path: String,
+          job_path: String, repo_root: String, discovery_file_path: String, dependency_file_path: String,
           analysis_folder_path: String, credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_analyze_tool(repo_root:, discovery_file_path:, dependency_file_path:,
+      def self.run_nuget_analyze_tool(job_path:, repo_root:, discovery_file_path:, dependency_file_path:,
                                       analysis_folder_path:, credentials:)
-        (command, fingerprint) = get_nuget_analyze_tool_command(repo_root: repo_root,
+        (command, fingerprint) = get_nuget_analyze_tool_command(job_path: job_path,
+                                                                repo_root: repo_root,
                                                                 discovery_file_path: discovery_file_path,
                                                                 dependency_file_path: dependency_file_path,
                                                                 analysis_folder_path: analysis_folder_path)
@@ -205,6 +212,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "update",
+          "--job-path",
+          "<job-path>",
           "--repo-root",
           "<repo-root>",
           "--solution-or-project",
@@ -260,6 +269,27 @@ module Dependabot
         end
       end
 
+      sig { void }
+      def self.install_dotnet_sdks
+        return unless Dependabot::Experiments.enabled?(:nuget_install_dotnet_sdks)
+
+        # environment variables are required and the following will generate an actionable error message if they're not
+        _dependabot_job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
+        _dependabot_repo_contents_path = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH")
+        _dotnet_install_script_path = ENV.fetch("DOTNET_INSTALL_SCRIPT_PATH")
+        _dotnet_install_dir = ENV.fetch("DOTNET_INSTALL_DIR")
+
+        # this environment variable is directly used
+        dependabot_home = ENV.fetch("DEPENDABOT_HOME")
+
+        command = [
+          "pwsh",
+          "#{dependabot_home}/dependabot-updater/bin/install-sdks.ps1"
+        ].join(" ")
+        output = SharedHelpers.run_shell_command(command)
+        puts output
+      end
+
       sig { params(json: T::Hash[String, T.untyped]).void }
       def self.ensure_no_errors(json)
         error_type = T.let(json.fetch("ErrorType", nil), T.nilable(String))
@@ -267,6 +297,8 @@ module Dependabot
         case error_type
         when "None", nil
           # no issue
+        when "DependencyFileNotParseable"
+          raise DependencyFileNotParseable, T.must(T.let(error_details, T.nilable(String)))
         when "AuthenticationFailure"
           raise PrivateSourceAuthenticationFailure, T.let(error_details, T.nilable(String))
         when "MissingFile"

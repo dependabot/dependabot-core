@@ -207,7 +207,9 @@ module Dependabot
         @package_manager_helper ||= T.let(
           PackageManagerHelper.new(
             parsed_package_json,
-            lockfiles: lockfiles
+            lockfiles,
+            registry_config_files,
+            credentials
           ), T.nilable(PackageManagerHelper)
         )
       end
@@ -218,6 +220,17 @@ module Dependabot
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
           pnpm: pnpm_lock
+        }
+      end
+
+      # Returns the .npmrc, and .yarnrc files for the repository.
+      # @return [Hash{Symbol => Dependabot::DependencyFile}]
+      sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
+      def registry_config_files
+        {
+          npmrc: npmrc,
+          yarnrc: yarnrc,
+          yarnrc_yml: yarnrc_yml
         }
       end
 
@@ -601,7 +614,10 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def parsed_package_json
-        JSON.parse(T.must(package_json.content))
+        parsed = JSON.parse(T.must(package_json.content))
+        raise Dependabot::DependencyFileNotParseable, package_json.path unless parsed.is_a?(Hash)
+
+        parsed
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, package_json.path
       end

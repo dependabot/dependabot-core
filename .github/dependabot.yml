@@ -32,7 +32,6 @@ updates:
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directories:
-      - "/composer/helpers/v1"
       - "/composer/helpers/v2"
     schedule:
       interval: "weekly"

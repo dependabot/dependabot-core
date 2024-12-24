@@ -41,12 +41,6 @@ public partial class EntryPointTests
                 ],
                 job: new Job()
                 {
-                    AllowedUpdates = [
-                        new()
-                        {
-                            UpdateType = "all"
-                        }
-                    ],
                     Source = new()
                     {
                         Provider = "github",

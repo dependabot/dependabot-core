@@ -72,6 +72,11 @@ module Dependabot
 
       private
 
+      sig { returns(String) }
+      def job_file_path
+        ENV.fetch("DEPENDABOT_JOB_PATH")
+      end
+
       sig { returns(AnalysisJsonReader) }
       def update_analysis
         @update_analysis ||= T.let(request_analysis, T.nilable(AnalysisJsonReader))
@@ -103,7 +108,8 @@ module Dependabot
 
         write_dependency_info
 
-        NativeHelpers.run_nuget_analyze_tool(repo_root: T.must(repo_contents_path),
+        NativeHelpers.run_nuget_analyze_tool(job_path: job_file_path,
+                                             repo_root: T.must(repo_contents_path),
                                              discovery_file_path: discovery_file_path,
                                              dependency_file_path: dependency_file_path,
                                              analysis_folder_path: analysis_folder_path,

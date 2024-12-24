@@ -118,6 +118,149 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
 
+    context "when an ignore condition is present and the version is not nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: "1.7.2",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^1.7.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns the ignored condition as an array" do
+        expect(ignored_versions).to eq([">= 2.a"])
+      end
+    end
+
+    context "when an ignore condition is present and the version is nil" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^1.7.0",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns the ignored condition as an array" do
+        expect(ignored_versions).to eq([">= 2.a"])
+      end
+    end
+
+    context "when an ignore condition is present and the version is nil with no base requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "*",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns an empty array as it cannot determine the semver:major version" do
+        expect(ignored_versions).to eq([])
+      end
+    end
+
+    context "when an ignore condition is present and the version is nil with no specific requirement" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: nil,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }
+          ]
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns an empty array as it cannot determine the semver:major version" do
+        expect(ignored_versions).to eq([])
+      end
+    end
+
+    context "when an ignore condition is present and the version is nil with empty requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "eslint-plugin-playwright",
+          version: nil,
+          package_manager: "npm_and_yarn",
+          requirements: []
+        )
+      end
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "*",
+            update_types: ["version-update:semver-major"]
+          )
+        ]
+      end
+
+      it "returns an empty array as it cannot determine the semver:major version" do
+        expect(ignored_versions).to eq([])
+      end
+    end
+
     context "with an dependency that must be name normalized" do
       let(:dependency) do
         Dependabot::Dependency.new(

@@ -870,6 +870,18 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when the overridden module does not include source" do
+      let(:files) { project_dependency_files("child_module_with_no_source") }
+
+      it "has the module with no source" do
+        module_dependency = dependencies.find { |d| d.name == "babbel/cloudfront-bucket/aws" }
+
+        expect(module_dependency).not_to be_nil
+        expect(module_dependency.version).to eq("2.2.0")
+        expect(module_dependency.requirements.first[:source][:module_identifier]).to eq("babbel/cloudfront-bucket/aws")
+      end
+    end
+
     context "with a toplevel provider" do
       let(:files) { project_dependency_files("provider") }
 
