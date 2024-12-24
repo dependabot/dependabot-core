@@ -59,11 +59,13 @@ module Dependabot
       def package_manager
         if composer_version == Helpers::V1
           return PackageManager.new(
+            composer_version,
             composer_version
           )
         end
         PackageManager.new(
-          env_versions[:composer] || composer_version
+          composer_version,
+          env_versions[:composer]
         )
       end
 

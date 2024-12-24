@@ -72,13 +72,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
-          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
+          requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version, raw_version, requirement: nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
@@ -123,13 +125,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version, raw_version, requirement: nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
@@ -168,13 +172,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version, raw_version, requirement: nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
@@ -291,6 +297,7 @@ module Dependabot
       def initialize(raw_version, requirement: nil)
         super(
           NAME,
+          Version.new(raw_version),
           Version.new(raw_version),
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
@@ -465,9 +472,10 @@ module Dependabot
         name = ensure_valid_package_manager(name)
         package_manager_class = T.must(PACKAGE_MANAGER_CLASSES[name])
 
+        # TODO: This code can be more generic for all npm_and_yarn package managers
         if name == NpmPackageManager::NAME
           detected_version = Helpers.npm_version_numeric_latest(@lockfiles[:npm])
-          package_manager = package_manager_class.new(detected_version.to_s)
+          package_manager = package_manager_class.new(detected_version.to_s, "")
 
           return package_manager if package_manager.deprecated? || package_manager.unsupported?
         end
@@ -483,6 +491,7 @@ module Dependabot
         end
 
         package_manager_class.new(
+          detected_version.to_s,
           installed_version.to_s,
           requirement: package_manager_requirement
         )

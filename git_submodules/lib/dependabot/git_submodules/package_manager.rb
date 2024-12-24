@@ -21,6 +21,7 @@ module Dependabot
       def initialize(raw_version)
         super(
           PACKAGE_MANAGER,
+          Version.new(""),
           Version.new(raw_version),
           DEPRECATED_GIT_VERSIONS,
           SUPPORTED_GIT_VERSIONS

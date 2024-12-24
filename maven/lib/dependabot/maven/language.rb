@@ -13,10 +13,19 @@ module Dependabot
     class Language < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig do
+        params(
+          detected_version: String,
+          raw_version: String
+        ).void
+      end
+      def initialize(
+        detected_version,
+        raw_version
+      )
         super(
           LANGUAGE,
+          Version.new(detected_version),
           Version.new(raw_version)
         )
       end

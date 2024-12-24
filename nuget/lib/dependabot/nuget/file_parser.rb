@@ -134,7 +134,7 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        NugetPackageManager.new(T.must(nuget_version))
+        NugetPackageManager.new("", T.must(nuget_version))
       end
 
       sig { returns(T.nilable(String)) }

@@ -30,9 +30,22 @@ module Dependabot
         Version.new(PYTHON_3_13)
       ].freeze, T::Array[Dependabot::Version])
 
-      sig { params(raw_version: String, requirement: T.nilable(Requirement)).void }
-      def initialize(raw_version, requirement = nil)
-        super(LANGUAGE, Version.new(raw_version), DEPRECATED_VERSIONS, SUPPORTED_VERSIONS, requirement)
+      sig do
+        params(
+          detected_version: String,
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(detected_version, raw_version, requirement = nil)
+        super(
+          LANGUAGE,
+          Version.new(detected_version),
+          Version.new(raw_version),
+          DEPRECATED_VERSIONS,
+          SUPPORTED_VERSIONS,
+          requirement
+        )
       end
 
       sig { override.returns(T::Boolean) }

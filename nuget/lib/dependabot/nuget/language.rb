@@ -12,7 +12,14 @@ module Dependabot
 
       sig { params(language: String, raw_version: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, raw_version, requirement = nil)
-        super(language, Version.new(raw_version), [], [], requirement)
+        super(
+          language,
+          Version.new(raw_version),
+          Version.new(raw_version),
+          [],
+          [],
+          requirement
+        )
       end
     end
 
@@ -28,7 +35,14 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          language,
+          Version.new(""),
+          Version.new(""),
+          [],
+          [],
+          requirement
+        )
       end
     end
 
@@ -44,7 +58,14 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          language,
+          Version.new(""),
+          Version.new(""),
+          [],
+          [],
+          requirement
+        )
       end
     end
 
@@ -60,7 +81,14 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          language,
+          Version.new(""),
+          Version.new(""),
+          [],
+          [],
+          requirement
+        )
       end
     end
 
@@ -75,7 +103,14 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          language,
+          Version.new(""),
+          Version.new(""),
+          [],
+          [],
+          requirement
+        )
       end
     end
   end

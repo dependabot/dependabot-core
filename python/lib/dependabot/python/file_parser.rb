@@ -97,13 +97,31 @@ module Dependabot
       def detected_package_manager
         setup_python_environment if Dependabot::Experiments.enabled?(:enable_file_parser_python_local)
 
-        return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
+        if detect_pipenv_version
+          return PipenvPackageManager.new(
+            T.must(detect_pipenv_version),
+            T.must(detect_pipenv_version)
+          )
+        end
 
-        return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
+        if detect_poetry_version
+          return PoetryPackageManager.new(
+            T.must(detect_pipenv_version),
+            T.must(detect_poetry_version)
+          )
+        end
 
-        return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
+        if detect_pipcompile_version
+          return PipCompilePackageManager.new(
+            T.must(detect_pipenv_version),
+            T.must(detect_pipcompile_version)
+          )
+        end
 
-        PipPackageManager.new(detect_pip_version)
+        PipPackageManager.new(
+          detect_pip_version,
+          detect_pip_version
+        )
       end
 
       # Detects the version of poetry. If the version cannot be detected, it returns nil
@@ -219,7 +237,7 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        Language.new(python_raw_version)
+        Language.new(language_version_manager.python_major_minor, python_raw_version)
       end
 
       def requirement_files
