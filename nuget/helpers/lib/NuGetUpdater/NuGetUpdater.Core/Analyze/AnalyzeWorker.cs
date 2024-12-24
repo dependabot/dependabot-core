@@ -62,6 +62,17 @@ public partial class AnalyzeWorker : IAnalyzeWorker
                 UpdatedDependencies = [],
             };
         }
+        catch (Exception ex)
+        {
+            analysisResult = new AnalysisResult
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+                UpdatedVersion = string.Empty,
+                CanUpdate = false,
+                UpdatedDependencies = [],
+            };
+        }
 
         return analysisResult;
     }
