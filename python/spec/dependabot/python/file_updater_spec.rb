@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "ostruct"
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"

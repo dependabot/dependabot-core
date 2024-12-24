@@ -519,7 +519,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       it "raises a helpful error" do
         expect { latest_version_details }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-          expect(error.message).to start_with("bad URI(is not URI?): \"http://host:port/content/groups/public")
+          expect(error.message).to start_with("bad URI (is not URI?): \"http://host:port/content/groups/public")
         end
       end
     end
