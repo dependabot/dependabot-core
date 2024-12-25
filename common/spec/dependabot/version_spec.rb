@@ -38,4 +38,12 @@ RSpec.describe Dependabot::Version do
 
     it { is_expected.to eq(["> #{version_string}, < 1.3"]) }
   end
+
+  context "when the version string is empty" do
+    let(:version_string) { "" }
+
+    it "is equal `0" do
+      expect(version.to_s).to eq("0")
+    end
+  end
 end

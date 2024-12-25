@@ -25,13 +25,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(detected_version, raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
@@ -63,13 +65,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(detected_version, raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
@@ -99,13 +103,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(detected_version, raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,
@@ -138,13 +144,15 @@ module Dependabot
 
       sig do
         params(
+          detected_version: String,
           raw_version: String,
           requirement: T.nilable(Requirement)
         ).void
       end
-      def initialize(raw_version, requirement = nil)
+      def initialize(detected_version, raw_version, requirement = nil)
         super(
           NAME,
+          Version.new(detected_version),
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS,

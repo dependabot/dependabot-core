@@ -332,8 +332,8 @@ module Dependabot
 
       {
         name: version_manager.name,
-        raw_version: version_manager.version.to_semver.to_s,
-        version: version_manager.version.to_s,
+        raw_version: version_manager.version&.to_semver.to_s,
+        version: version_manager.version&.to_s,
         requirement: version_manager_requirement_json(version_manager)
       }
     end
