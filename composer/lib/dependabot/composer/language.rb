@@ -17,7 +17,7 @@ module Dependabot
       def initialize(raw_version, requirement: nil)
         super(
           NAME,
-          Version.new(""),
+          nil,
           Version.new(raw_version),
           [],
           [],

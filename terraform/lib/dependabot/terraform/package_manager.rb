@@ -21,7 +21,7 @@ module Dependabot
       def initialize(raw_version)
         super(
           PACKAGE_MANAGER,
-          Version.new(""),
+          nil,
           Version.new(raw_version),
           DEPRECATED_TERRAFORM_VERSIONS,
           SUPPORTED_TERRAFORM_VERSIONS

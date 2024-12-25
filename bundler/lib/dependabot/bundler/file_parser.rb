@@ -355,7 +355,7 @@ module Dependabot
       def bundler_raw_version
         return bundler_raw_version if defined?(@bundler_raw_version)
 
-        package_manager = PackageManager.new(bundler_version, "")
+        package_manager = PackageManager.new(bundler_version, nil)
 
         # If the selected version is unsupported, an unsupported error will be raised,
         # so there’s no need to attempt retrieving the raw version.

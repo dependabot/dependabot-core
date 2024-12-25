@@ -32,7 +32,7 @@ module Dependabot
       def initialize(raw_version)
         super(
           NAME,
-          Version.new(""),
+          nil,
           Version.new(raw_version),
           SUPPORTED_VERSIONS,
           DEPRECATED_VERSIONS

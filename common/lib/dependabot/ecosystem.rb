@@ -36,15 +36,15 @@ module Dependabot
       end
       def initialize( # rubocop:disable Metrics/ParameterLists
         name,
-        detected_version = Dependabot::Version.new(""),
-        version = Dependabot::Version.new(""),
+        detected_version = nil,
+        version = nil,
         deprecated_versions = [],
         supported_versions = [],
         requirement = nil
       )
         @name = T.let(name, String)
-        @detected_version = T.let(T.must(detected_version), Dependabot::Version)
-        @version = T.let(T.must(version), Dependabot::Version)
+        @detected_version = T.let(detected_version, T.nilable(Dependabot::Version))
+        @version = T.let(version, T.nilable(Dependabot::Version))
         @deprecated_versions = T.let(deprecated_versions, T::Array[Dependabot::Version])
         @supported_versions = T.let(supported_versions, T::Array[Dependabot::Version])
         @requirement = T.let(requirement, T.nilable(Dependabot::Requirement))
@@ -59,13 +59,13 @@ module Dependabot
       # The current version of the package manager or language.
       # @example
       #   version #=> Dependabot::Version.new("2")
-      sig { returns(Dependabot::Version) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       attr_reader :detected_version
 
       # The current version of the package manager or language.
       # @example
       #   version #=> Dependabot::Version.new("2.1.4")
-      sig { returns(Dependabot::Version) }
+      sig { returns(T.nilable(Dependabot::Version)) }
       attr_reader :version
 
       # Returns an array of deprecated versions of the package manager.
@@ -92,6 +92,8 @@ module Dependabot
       #   deprecated? #=> true
       sig { returns(T::Boolean) }
       def deprecated?
+        return false if detected_version
+
         # If the version is unsupported, the unsupported error is getting raised separately.
         return false if unsupported?
 
@@ -113,6 +115,8 @@ module Dependabot
       # If the version is unsupported, it raises a ToolVersionNotSupported error.
       sig { void }
       def raise_if_unsupported!
+        return unless detected_version
+
         return unless unsupported?
 
         # Example: v2.*, v3.*

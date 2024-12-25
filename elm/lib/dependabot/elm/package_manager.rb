@@ -35,7 +35,7 @@ module Dependabot
       def initialize(raw_version, requirement = nil)
         super(
           PACKAGE_MANAGER,
-          Version.new("0"),
+          nil,
           Version.new(raw_version),
           DEPRECATED_ELM_VERSIONS,
           SUPPORTED_ELM_VERSIONS,
