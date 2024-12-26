@@ -71,7 +71,7 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(begin
-          Language.new("", "")
+          Language.new
         end, T.nilable(Dependabot::Maven::Language))
       end
 

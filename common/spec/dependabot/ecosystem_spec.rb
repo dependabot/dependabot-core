@@ -13,35 +13,39 @@ RSpec.describe Dependabot::Ecosystem do
   let(:deprecated_versions) { [Dependabot::Version.new("1")] }
   let(:requirement) { TestRequirement.new(">= 1.0") }
 
+  let(:package_manager_detected_version) { "1.0.0" }
   let(:package_manager_raw_version) { "1.0.0" }
+  let(:language_detected_version) { "3.0.0" }
   let(:language_raw_version) { "3.0.0" }
 
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def initialize(raw_version, deprecated_versions, supported_versions, requirement)
+      def initialize(detected_version, raw_version, deprecated_versions, supported_versions, requirement)
         super(
           "bundler", # name
+          Dependabot::Version.new(detected_version), # version
           Dependabot::Version.new(raw_version), # version
           deprecated_versions, # deprecated_versions
           supported_versions, # supported_versions
           requirement # requirement
         )
       end
-    end.new(package_manager_raw_version, deprecated_versions, supported_versions, requirement)
+    end.new(package_manager_detected_version, package_manager_raw_version, deprecated_versions, supported_versions, requirement)
   end
 
   let(:language) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
-      def initialize(raw_version)
+      def initialize(detected_version, raw_version)
         super(
           "ruby", # name
+          Dependabot::Version.new(detected_version), # version
           Dependabot::Version.new(raw_version), # version
           [], # deprecated_versions
           [], # supported_versions
           nil # requirement
         )
       end
-    end.new(language_raw_version)
+    end.new(language_detected_version, language_raw_version)
   end
 
   describe "#initialize" do
@@ -56,6 +60,7 @@ RSpec.describe Dependabot::Ecosystem do
 
   describe "#deprecated?" do
     context "when the package manager version is deprecated" do
+      let(:package_manager_detected_version) { "1" }
       let(:package_manager_raw_version) { "1" }
 
       it "returns true" do
@@ -65,6 +70,7 @@ RSpec.describe Dependabot::Ecosystem do
     end
 
     context "when the package manager version is not deprecated" do
+      let(:package_manager_detected_version) { "2.0.0" }
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "returns false" do
@@ -76,6 +82,7 @@ RSpec.describe Dependabot::Ecosystem do
 
   describe "#unsupported?" do
     context "when the package manager version is unsupported" do
+      let(:package_manager_detected_version) { "0.8.0" }
       let(:package_manager_raw_version) { "0.8.0" }
 
       it "returns true" do
@@ -85,6 +92,7 @@ RSpec.describe Dependabot::Ecosystem do
     end
 
     context "when the package manager version is supported" do
+      let(:package_manager_detected_version) { "2.0.0" }
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "returns false" do
@@ -96,6 +104,7 @@ RSpec.describe Dependabot::Ecosystem do
 
   describe "#raise_if_unsupported!" do
     context "when the package manager version is unsupported" do
+      let(:package_manager_detected_version) { "0.8.0" }
       let(:package_manager_raw_version) { "0.8.0" }
 
       it "raises a ToolVersionNotSupported error" do
@@ -105,6 +114,7 @@ RSpec.describe Dependabot::Ecosystem do
     end
 
     context "when the package manager version is supported" do
+      let(:package_manager_detected_version) { "2.0.0" }
       let(:package_manager_raw_version) { "2.0.0" }
 
       it "does not raise an error" do
