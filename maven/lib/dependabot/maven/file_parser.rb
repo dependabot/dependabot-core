@@ -63,7 +63,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new("", ""),
+          PackageManager.new,
           T.nilable(Dependabot::Maven::PackageManager)
         )
       end

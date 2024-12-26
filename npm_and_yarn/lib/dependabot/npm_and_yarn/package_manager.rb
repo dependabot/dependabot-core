@@ -73,7 +73,7 @@ module Dependabot
       sig do
         params(
           detected_version: String,
-          raw_version: String,
+          raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
       end
@@ -81,7 +81,7 @@ module Dependabot
         super(
           NAME,
           Version.new(detected_version),
-          Version.new(raw_version),
+          raw_version ? Version.new(raw_version) : nil,
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
           requirement
@@ -126,7 +126,7 @@ module Dependabot
       sig do
         params(
           detected_version: String,
-          raw_version: String,
+          raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
       end
@@ -134,7 +134,7 @@ module Dependabot
         super(
           NAME,
           Version.new(detected_version),
-          Version.new(raw_version),
+          raw_version ? Version.new(raw_version) : nil,
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
           requirement
@@ -173,7 +173,7 @@ module Dependabot
       sig do
         params(
           detected_version: String,
-          raw_version: String,
+          raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
       end
@@ -181,7 +181,7 @@ module Dependabot
         super(
           NAME,
           Version.new(detected_version),
-          Version.new(raw_version),
+          raw_version ? Version.new(raw_version) : nil,
           DEPRECATED_VERSIONS,
           SUPPORTED_VERSIONS,
           requirement
@@ -475,7 +475,7 @@ module Dependabot
         # TODO: This code can be more generic for all npm_and_yarn package managers
         if name == NpmPackageManager::NAME
           detected_version = Helpers.npm_version_numeric_latest(@lockfiles[:npm])
-          package_manager = package_manager_class.new(detected_version.to_s, "")
+          package_manager = package_manager_class.new(detected_version.to_s, nil)
 
           return package_manager if package_manager.deprecated? || package_manager.unsupported?
         end

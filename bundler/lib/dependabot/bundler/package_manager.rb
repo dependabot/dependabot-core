@@ -25,7 +25,7 @@ module Dependabot
 
       sig do
         params(
-          detected_version: String,
+          detected_version: T.nilable(String),
           raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
@@ -33,8 +33,8 @@ module Dependabot
       def initialize(detected_version, raw_version, requirement = nil)
         super(
           PACKAGE_MANAGER,
-          Version.new(detected_version),
-          Version.new(raw_version),
+          detected_version ? Version.new(detected_version) : nil,
+          raw_version ? Version.new(raw_version) : nil,
           DEPRECATED_BUNDLER_VERSIONS,
           SUPPORTED_BUNDLER_VERSIONS,
           requirement,

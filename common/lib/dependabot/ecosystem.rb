@@ -92,7 +92,7 @@ module Dependabot
       #   deprecated? #=> true
       sig { returns(T::Boolean) }
       def deprecated?
-        return false if detected_version
+        return false unless detected_version
 
         # If the version is unsupported, the unsupported error is getting raised separately.
         return false if unsupported?
@@ -105,6 +105,8 @@ module Dependabot
       #   unsupported? #=> false
       sig { returns(T::Boolean) }
       def unsupported?
+        return false unless detected_version
+
         return false if supported_versions.empty?
 
         # Check if the version is not supported
