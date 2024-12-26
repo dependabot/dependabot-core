@@ -28,7 +28,7 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
+          raw_version: T.nilable(String),
           requirement: T.nilable(Requirement)
         ).void
       end
@@ -36,7 +36,7 @@ module Dependabot
         super(
           PACKAGE_MANAGER,
           nil,
-          Version.new(raw_version),
+          raw_version ? Version.new(raw_version) : nil,
           DEPRECATED_ELM_VERSIONS,
           SUPPORTED_ELM_VERSIONS,
           requirement,
