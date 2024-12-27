@@ -158,11 +158,15 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:npm_v6_unsupported_error)
           .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout)
+          .and_return(true)
       end
 
       it "returns the deprecated package manager" do
         expect(package_manager.deprecated?).to be true
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
+        expect(package_manager.version.to_s).to eq "9.6.5"
       end
     end
 
@@ -206,7 +210,8 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
 
       it "returns the unsupported package manager" do
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
+        expect(package_manager.version).to be_nil
         expect(package_manager.unsupported?).to be true
       end
     end
@@ -253,7 +258,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
 
       it "returns the deprecated version" do
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
       end
     end
   end

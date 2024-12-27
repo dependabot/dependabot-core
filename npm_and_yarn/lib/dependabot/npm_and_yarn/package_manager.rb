@@ -90,17 +90,22 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
+        return false unless detected_version
+
         return false if unsupported?
+
         return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
 
-        deprecated_versions.include?(version)
+        deprecated_versions.include?(detected_version)
       end
 
       sig { override.returns(T::Boolean) }
       def unsupported?
+        return false unless detected_version
+
         return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
 
-        supported_versions.all? { |supported| supported > version }
+        supported_versions.all? { |supported| supported > detected_version }
       end
     end
 
@@ -477,7 +482,7 @@ module Dependabot
           detected_version = Helpers.npm_version_numeric_latest(@lockfiles[:npm])
           package_manager = package_manager_class.new(detected_version.to_s, nil)
 
-          return package_manager if package_manager.deprecated? || package_manager.unsupported?
+          return package_manager if package_manager.unsupported?
         end
 
         installed_version = installed_version(name)
