@@ -6,7 +6,7 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Python::PipCompilePackageManager do
-  let(:package_manager) { described_class.new("2024.0.1") }
+  let(:package_manager) { described_class.new("2024.0.1", "2024.0.1") }
 
   describe "#initialize" do
     context "when version is a String" do

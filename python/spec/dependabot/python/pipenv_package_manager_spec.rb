@@ -6,7 +6,7 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Python::PipenvPackageManager do
-  let(:package_manager) { described_class.new("1.8.3") }
+  let(:package_manager) { described_class.new("1.8.3", "1.8.3") }
 
   describe "#initialize" do
     context "when version is a String" do
