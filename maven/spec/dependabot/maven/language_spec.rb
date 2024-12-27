@@ -6,7 +6,8 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Maven::Language do
-  let(:language) { described_class.new(version) }
+  let(:language) { described_class.new(detected_version, version) }
+  let(:detected_version) { "3.0.0" }
   let(:version) { "3.0.0" }
 
   describe "#version" do

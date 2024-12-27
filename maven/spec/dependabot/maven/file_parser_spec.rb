@@ -1078,7 +1078,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         it "returns the correct package manager" do
           expect(package_manager.name).to eq "maven"
           expect(package_manager.requirement).to be_nil
-          expect(package_manager.version.to_s).to eq "NOT-AVAILABLE"
+          expect(package_manager.version.to_s).to be_nil
         end
       end
 

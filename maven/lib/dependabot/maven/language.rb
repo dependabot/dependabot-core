@@ -15,11 +15,7 @@ module Dependabot
 
       sig { void }
       def initialize
-        super(
-          LANGUAGE,
-          nil,
-          nil
-        )
+        super(LANGUAGE)
       end
     end
   end
