@@ -31,9 +31,9 @@ RSpec.describe Dependabot::Ecosystem::VersionManager do # rubocop:disable RSpec/
         detected_version = "1.0.0"
         raw_version = "1.0.0"
         super(
-          "bundler", # name
-          Dependabot::Version.new(detected_version),
-          Dependabot::Version.new(raw_version)
+          name: "bundler", # name
+          detected_version: Dependabot::Version.new(detected_version),
+          version: Dependabot::Version.new(raw_version)
         )
       end
     end
