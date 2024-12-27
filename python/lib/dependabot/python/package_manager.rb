@@ -96,6 +96,7 @@ module Dependabot
       extend T::Sig
 
       NAME = "pip-compile"
+      MANIFEST_FILENAME = ".in"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 

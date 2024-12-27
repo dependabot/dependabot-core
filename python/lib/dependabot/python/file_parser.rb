@@ -21,6 +21,7 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
+      require_relative "file_parser/python_requirement_parser"
 
       DEPENDENCY_GROUP_KEYS = [
         {
@@ -355,7 +356,7 @@ module Dependabot
       end
 
       def pipcompile_in_file
-        requirement_files.any? { |f| f.end_with?(".in") }
+        requirement_files.any? { |f| f.name.end_with?(PipCompilePackageManager::MANIFEST_FILENAME) }
       end
 
       def pipenv_files
