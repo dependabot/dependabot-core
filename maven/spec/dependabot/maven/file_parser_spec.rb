@@ -1088,7 +1088,7 @@ RSpec.describe Dependabot::Maven::FileParser do
         it "returns the correct language" do
           expect(language.name).to eq "java"
           expect(language.requirement).to be_nil
-          expect(language.version.to_s).to eq "NOT-AVAILABLE"
+          expect(language.version).to be_nil
         end
       end
     end

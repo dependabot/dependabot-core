@@ -1082,7 +1082,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "gradle"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "NOT-AVAILABLE"
+        expect(package_manager.version).to be_nil
       end
     end
 
@@ -1092,7 +1092,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "jvm_languages"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "NOT-AVAILABLE"
+        expect(language.version).to be_nil
       end
     end
   end
