@@ -33,8 +33,7 @@ module Dependabot
           name: NAME,
           version: Version.new(raw_version),
           deprecated_versions: DEPRECATED_VERSIONS,
-          supported_versions: SUPPORTED_VERSIONS,
-          requirement: requirement,
+          supported_versions: SUPPORTED_VERSIONS
        )
       end
 
