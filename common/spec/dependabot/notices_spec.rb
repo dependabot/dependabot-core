@@ -8,12 +8,13 @@ require "dependabot/notices"
 
 # A stub package manager for testing purposes.
 class StubPackageManager < Dependabot::Ecosystem::VersionManager
-  def initialize(name:, version:, deprecated_versions: [], supported_versions: [],
+  def initialize(name:, detected_version:, raw_version:, deprecated_versions: [], supported_versions: [],
                  support_later_versions: false)
     @support_later_versions = support_later_versions
     super(
       name,
-     Dependabot::Version.new(version),
+     Dependabot::Version.new(detected_version),
+     Dependabot::Version.new(raw_version),
      deprecated_versions,
      supported_versions
    )
@@ -113,7 +114,8 @@ RSpec.describe Dependabot::Notice do
     let(:package_manager) do
       StubPackageManager.new(
         name: "bundler",
-        version: Dependabot::Version.new("1"),
+        detected_version: Dependabot::Version.new("1"),
+        raw_version: Dependabot::Version.new("1.0.0"),
         deprecated_versions: [Dependabot::Version.new("1")],
         supported_versions: [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
       )

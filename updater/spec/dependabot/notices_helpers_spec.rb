@@ -25,9 +25,11 @@ RSpec.describe Dependabot::NoticesHelpers do
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize
-        raw_version = "1"
+        detected_version = "1"
+        raw_version = "1.0.0"
         super(
           "bundler", # name
+          Dependabot::Version.new(detected_version), # version
           Dependabot::Version.new(raw_version), # version
           [Dependabot::Version.new("1")], # deprecated_versions
           [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
@@ -81,9 +83,11 @@ RSpec.describe Dependabot::NoticesHelpers do
       let(:package_manager) do
         Class.new(Dependabot::Ecosystem::VersionManager) do
           def initialize
-            raw_version = "2"
+            detected_version = "2"
+            raw_version = "2.0.0"
             super(
               "bundler", # name
+              Dependabot::Version.new(detected_version), # version
               Dependabot::Version.new(raw_version), # version
               [Dependabot::Version.new("1")], # deprecated_versions
               [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
