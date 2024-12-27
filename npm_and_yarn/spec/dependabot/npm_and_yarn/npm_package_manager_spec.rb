@@ -6,10 +6,11 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(detected_version, version) }
 
   describe "#initialize" do
     context "when version is a String" do
+      let(:detected_version) { "8" }
       let(:version) { "8" }
 
       it "sets the version correctly" do
@@ -33,6 +34,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
   end
 
   describe "#deprecated?" do
+    let(:detected_version) { "6" }
     let(:version) { "6" }
 
     it "returns false" do
@@ -59,6 +61,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
       end
 
       context "when npm_v6_deprecation_warning is enabled but version is not deprecated" do
+        let(:detected_version) { "9" }
         let(:version) { "9" }
         let(:deprecation_enabled) { true }
         let(:unsupported_enabled) { false }
@@ -89,6 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
   end
 
   describe "#unsupported?" do
+    let(:detected_version) { "5" }
     let(:version) { "5" }
 
     it "returns false for supported versions" do
@@ -103,6 +107,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
       end
 
       context "when npm_v6_unsupported_error is enabled and version is unsupported" do
+        let(:detected_version) { "6" }
         let(:version) { "6" }
         let(:unsupported_enabled) { true }
 
@@ -112,6 +117,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
       end
 
       context "when npm_v6_unsupported_error is enabled but version is supported" do
+        let(:detected_version) { "7" }
         let(:version) { "7" }
         let(:unsupported_enabled) { true }
 
@@ -137,7 +143,8 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
         .and_return(unsupported_enabled)
     end
 
-    context "when npm_v6_unsupported_error is enabled and version is unsupported" do
+    context "when npm_v6_unsupported_error is enabled and detected version is unsupported" do
+      let(:detected_version) { "6" }
       let(:version) { "6" }
       let(:unsupported_enabled) { true }
 
@@ -147,6 +154,7 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
     end
 
     context "when npm_v6_unsupported_error is disabled" do
+      let(:detected_version) { "6" }
       let(:version) { "6" }
       let(:unsupported_enabled) { false }
 

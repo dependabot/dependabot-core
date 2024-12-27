@@ -6,10 +6,11 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::PNPMPackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(detected_version, version) }
 
   describe "#initialize" do
     context "when version is a String" do
+      let(:detected_version) { "9" }
       let(:version) { "9" }
 
       it "sets the version correctly" do
@@ -33,6 +34,7 @@ RSpec.describe Dependabot::NpmAndYarn::PNPMPackageManager do
   end
 
   describe "#deprecated?" do
+    let(:detected_version) { "7" }
     let(:version) { "7" }
 
     it "returns false" do
@@ -41,6 +43,7 @@ RSpec.describe Dependabot::NpmAndYarn::PNPMPackageManager do
   end
 
   describe "#unsupported?" do
+    let(:detected_version) { "6" }
     let(:version) { "6" }
 
     it "returns true for unsupported versions" do

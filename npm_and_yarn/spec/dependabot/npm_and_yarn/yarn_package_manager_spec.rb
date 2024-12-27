@@ -6,14 +6,15 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::YarnPackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(detected_version, raw_version) }
 
   describe "#initialize" do
     context "when version is a String" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.1.0" }
 
-      it "sets the version correctly" do
-        expect(package_manager.version).to eq(Dependabot::Version.new(version))
+      it "sets the detected version and version correctly" do
+        expect(package_manager.version).to eq(Dependabot::Version.new(raw_version))
       end
 
       it "sets the name correctly" do
@@ -33,7 +34,8 @@ RSpec.describe Dependabot::NpmAndYarn::YarnPackageManager do
   end
 
   describe "#deprecated?" do
-    let(:version) { "1" }
+    let(:detected_version) { "1" }
+    let(:raw_version) { "1.1.0" }
 
     it "returns false" do
       expect(package_manager.deprecated?).to be false
@@ -41,7 +43,8 @@ RSpec.describe Dependabot::NpmAndYarn::YarnPackageManager do
   end
 
   describe "#unsupported?" do
-    let(:version) { "4" }
+    let(:detected_version) { "4" }
+    let(:raw_version) { "4.1.0" }
 
     it "returns false for supported versions" do
       expect(package_manager.unsupported?).to be false
