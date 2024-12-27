@@ -22,8 +22,8 @@ module Dependabot
         super(
           name: PACKAGE_MANAGER,
           version: Version.new(raw_version),
-          supported_versions: DEPRECATED_SWIFT_VERSIONS,
-          deprecated_versions: SUPPORTED_SWIFT_VERSIONS
+          deprecated_versions: SUPPORTED_SWIFT_VERSIONS,
+          supported_versions: DEPRECATED_SWIFT_VERSIONS
         )
       end
 
