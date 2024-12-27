@@ -48,9 +48,11 @@ RSpec.describe Dependabot::FileParsers::Base do
   let(:concrete_package_manager_class) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize
+        detected_version = "1.0.0"
         raw_version = "1.0.0"
         super(
           "bundler", # name
+          Dependabot::Version.new(detected_version), # version
           Dependabot::Version.new(raw_version), # version
           [Dependabot::Version.new("1.0.0")], # deprecated_versions
           [Dependabot::Version.new("1.1.0"), Dependabot::Version.new("2.0.0")] # supported_versions
