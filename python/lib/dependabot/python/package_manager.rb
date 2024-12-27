@@ -33,8 +33,8 @@ module Dependabot
         super(
           name: NAME,
           version: Version.new(raw_version),
-          deprecated_versions: SUPPORTED_VERSIONS,
-          supported_versions: DEPRECATED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
        )
       end
@@ -71,8 +71,8 @@ module Dependabot
         super(
           name: NAME,
           version: Version.new(raw_version),
-          deprecated_versions: SUPPORTED_VERSIONS,
-          supported_versions: DEPRECATED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
        )
       end
@@ -108,8 +108,8 @@ module Dependabot
         super(
           name: NAME,
           version: Version.new(raw_version),
-          deprecated_versions: SUPPORTED_VERSIONS,
-          supported_versions: DEPRECATED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
        )
       end
@@ -147,8 +147,8 @@ module Dependabot
         super(
           name: NAME,
           version: Version.new(raw_version),
-          deprecated_versions: SUPPORTED_VERSIONS,
-          supported_versions: DEPRECATED_VERSIONS,
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
        )
       end
