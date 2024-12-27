@@ -8,7 +8,7 @@ require "spec_helper"
 ComposerPackageManager = Dependabot::Composer::PackageManager
 
 RSpec.describe Dependabot::Composer::PackageManager do
-  let(:package_manager) { described_class.new(detected_version, version) }
+  let(:package_manager) { described_class.new(detected_version, raw_version) }
 
   describe "#initialize" do
     context "when version is a String" do
