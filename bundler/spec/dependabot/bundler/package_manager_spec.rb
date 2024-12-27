@@ -6,15 +6,16 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Bundler::PackageManager do
-  let(:package_manager) { described_class.new(version, requirement) }
+  let(:package_manager) { described_class.new(detected_version, raw_version, requirement) }
   let(:requirement) { nil }
 
   describe "#initialize" do
     context "when version is a String" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.0.0" }
 
       it "sets the version correctly" do
-        expect(package_manager.version).to eq(Dependabot::Bundler::Version.new(version))
+        expect(package_manager.version).to eq(Dependabot::Bundler::Version.new(raw_version))
       end
 
       it "sets the name correctly" do
@@ -31,10 +32,11 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is a Dependabot::Bundler::Version" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2" }
 
       it "sets the version correctly" do
-        expect(package_manager.version).to eq(version)
+        expect(package_manager.version).to eq(raw_version)
       end
 
       it "sets the name correctly" do
@@ -51,7 +53,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when a requirement is provided" do
-      let(:version) { "2.1" }
+      let(:detected_version) { "2.1" }
+      let(:raw_version) { "2.1.2" }
       let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.12.0, ~> 2.3.0") }
 
       it "sets the requirement correctly" do
@@ -68,7 +71,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when a single minimum constraint is provided" do
-      let(:version) { "2.1" }
+      let(:detected_version) { "2.1" }
+      let(:raw_version) { "2.1.2" }
       let(:requirement) { Dependabot::Bundler::Requirement.new(">= 1.5") }
 
       it "sets the requirement correctly" do
@@ -85,7 +89,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when multiple maximum constraints are provided" do
-      let(:version) { "2.1" }
+      let(:detected_version) { "2.1" }
+      let(:raw_version) { "2.1.2" }
       let(:requirement) { Dependabot::Bundler::Requirement.new("<= 2.5, < 3.0") }
 
       it "sets the requirement correctly" do
@@ -111,7 +116,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
   describe "#deprecated?" do
     context "when version is deprecated but not unsupported" do
-      let(:version) { "1" }
+      let(:detected_version) { "1" }
+      let(:raw_version) { "1" }
 
       it "returns true" do
         allow(package_manager).to receive_messages(deprecated?: true)
@@ -120,7 +126,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is unsupported" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9" }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -130,7 +137,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
   describe "#unsupported?" do
     context "when version is supported" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2" }
 
       it "returns false" do
         expect(package_manager.unsupported?).to be false
@@ -138,7 +146,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is not supported" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9" }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
@@ -148,7 +157,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
 
   describe "#raise_if_unsupported!" do
     context "when version is unsupported" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9" }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
@@ -156,7 +166,8 @@ RSpec.describe Dependabot::Bundler::PackageManager do
     end
 
     context "when version is supported" do
-      let(:version) { "2.1" }
+      let(:detected_version) { "2.1" }
+      let(:raw_version) { "2.1" }
 
       it "does not raise an error" do
         expect { package_manager.raise_if_unsupported! }.not_to raise_error
