@@ -22,12 +22,12 @@ RSpec.describe Dependabot::Ecosystem do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize(detected_version, raw_version, deprecated_versions, supported_versions, requirement)
         super(
-          "bundler", # name
-          Dependabot::Version.new(detected_version), # version
-          Dependabot::Version.new(raw_version), # version
-          deprecated_versions, # deprecated_versions
-          supported_versions, # supported_versions
-          requirement # requirement
+          name: "bundler", # name
+          detected_version: Dependabot::Version.new(detected_version), # version
+          version: Dependabot::Version.new(raw_version), # version
+          deprecated_versions: deprecated_versions, # deprecated_versions
+          supported_versions: supported_versions, # supported_versions
+          requirement: requirement # requirement
         )
       end
     end.new(
@@ -43,12 +43,11 @@ RSpec.describe Dependabot::Ecosystem do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize(detected_version, raw_version)
         super(
-          "ruby", # name
-          Dependabot::Version.new(detected_version), # version
-          Dependabot::Version.new(raw_version), # version
-          [], # deprecated_versions
-          [], # supported_versions
-          nil # requirement
+          name: "ruby", # name
+          detected_version: Dependabot::Version.new(detected_version), # version
+          version: Dependabot::Version.new(raw_version), # version
+          deprecated_versions: [], # deprecated_versions
+          supported_versions: [], # supported_versions
         )
       end
     end.new(language_detected_version, language_raw_version)
