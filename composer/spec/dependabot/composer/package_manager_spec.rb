@@ -8,14 +8,15 @@ require "spec_helper"
 ComposerPackageManager = Dependabot::Composer::PackageManager
 
 RSpec.describe Dependabot::Composer::PackageManager do
-  let(:package_manager) { described_class.new(version) }
+  let(:package_manager) { described_class.new(detected_version, version) }
 
   describe "#initialize" do
     context "when version is a String" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.0.2" }
 
       it "sets the version correctly" do
-        expect(package_manager.version).to eq(Dependabot::Version.new(version))
+        expect(package_manager.version).to eq(Dependabot::Version.new(raw_version))
       end
 
       it "sets the name correctly" do
@@ -32,10 +33,11 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is a Dependabot::Version" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.0.1" }
 
       it "sets the version correctly" do
-        expect(package_manager.version).to eq(version)
+        expect(package_manager.version).to eq(raw_version)
       end
 
       it "sets the name correctly" do
@@ -61,7 +63,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
 
   describe "#deprecated?" do
     context "when there is no deprecated version defined" do
-      let(:version) { "1" }
+      let(:detected_version) { "1" }
+      let(:raw_version) { "1.0.1" }
 
       it "returns false" do
         expect(package_manager.deprecated?).to be false
@@ -69,7 +72,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is not deprecated" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.0.1" }
 
       it "returns false" do
         expect(package_manager.deprecated?).to be false
@@ -77,7 +81,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is unsupported and takes precedence" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9.1" }
 
       it "returns false, as unsupported takes precedence" do
         expect(package_manager.deprecated?).to be false
@@ -87,7 +92,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
 
   describe "#unsupported?" do
     context "when is unsupported" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9.1" }
 
       it "returns true" do
         expect(package_manager.unsupported?).to be true
@@ -95,7 +101,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
     end
 
     context "when version is supported" do
-      let(:version) { "2" }
+      let(:detected_version) { "2" }
+      let(:raw_version) { "2.0.0" }
 
       it "returns false" do
         expect(package_manager.unsupported?).to be false
@@ -105,7 +112,8 @@ RSpec.describe Dependabot::Composer::PackageManager do
 
   describe "#raise_if_unsupported!" do
     context "when feature flag is enabled and version is unsupported" do
-      let(:version) { "0.9" }
+      let(:detected_version) { "0.9" }
+      let(:raw_version) { "0.9.2" }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
