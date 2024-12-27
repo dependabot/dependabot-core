@@ -23,7 +23,11 @@ module Dependabot
       # @param supported_versions [Array<Dependabot::Version>] an array of supported versions.
       # @param requirement [Dependabot::Requirement] an array of requirements.
       # @example
-      #   VersionManager.new("bundler", "2.1.4", nil)
+      #   VersionManager.new(
+      #   name: "bundler",
+      #   version: Version.new("2.1.4"),
+      #   requirement: nil
+      # )
       sig do
         params(
           name: String,
