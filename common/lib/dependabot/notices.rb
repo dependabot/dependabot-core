@@ -112,7 +112,7 @@ module Dependabot
       )
       notice_type = "#{package_manager.name}_deprecated_warn"
       title = "Package manager deprecation notice"
-      description = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.version}`!"
+      description = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.detected_version}`!"
 
       ## Add the supported versions to the description
       description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?

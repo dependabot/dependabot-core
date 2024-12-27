@@ -68,9 +68,10 @@ module DummyPkgHelpers
     def initialize(name:, version:, deprecated_versions: [], supported_versions: [])
       super(
         name,
-        Dependabot::Version.new(version),
-        deprecated_versions,
-        supported_versions
+        detected_version: Dependabot::Version.new(version),
+        version: Dependabot::Version.new(version),
+        deprecated_versions: deprecated_versions,
+        unsupported: supported_versions
       )
     end
 

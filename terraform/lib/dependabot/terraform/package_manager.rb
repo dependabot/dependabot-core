@@ -20,10 +20,10 @@ module Dependabot
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
-          PACKAGE_MANAGER,
-          Version.new(raw_version),
-          DEPRECATED_TERRAFORM_VERSIONS,
-          SUPPORTED_TERRAFORM_VERSIONS
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version),
+          supported_versions: SUPPORTED_TERRAFORM_VERSIONS,
+          deprecated_versions: SUPPORTED_TERRAFORM_VERSIONS
         )
       end
 

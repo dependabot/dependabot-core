@@ -28,11 +28,11 @@ module Dependabot
       end
       def initialize(raw_version, requirement = nil)
         super(
-          PACKAGE_MANAGER,
-          Version.new(raw_version),
-          DEPRECATED_MAVEN_VERSIONS,
-          SUPPORTED_MAVEN_VERSIONS,
-          requirement,
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_MAVEN_VERSIONS,
+          supported_versions: SUPPORTED_MAVEN_VERSIONS,
+          requirement: requirement,
         )
       end
 
