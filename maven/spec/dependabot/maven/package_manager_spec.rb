@@ -22,13 +22,13 @@ RSpec.describe Dependabot::Maven::PackageManager do
 
   describe "#deprecated_versions" do
     it "returns deprecated versions" do
-      expect(package_manager.deprecated_versions).to eq(Dependabot::Maven::DEPRECATED_MAVEN_VERSIONS)
+      expect(package_manager.deprecated_versions).to eq([])
     end
   end
 
   describe "#supported_versions" do
     it "returns supported versions" do
-      expect(package_manager.supported_versions).to eq(Dependabot::Maven::SUPPORTED_MAVEN_VERSIONS)
+      expect(package_manager.supported_versions).to eq([])
     end
   end
 end
