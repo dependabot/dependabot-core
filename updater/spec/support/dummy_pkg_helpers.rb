@@ -69,6 +69,7 @@ module DummyPkgHelpers
       super(
         name,
         Dependabot::Version.new(version),
+        Dependabot::Version.new(version),
         deprecated_versions,
         supported_versions
       )

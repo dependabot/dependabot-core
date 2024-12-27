@@ -30,7 +30,13 @@ RSpec.describe Dependabot::Ecosystem do
           requirement # requirement
         )
       end
-    end.new(package_manager_detected_version, package_manager_raw_version, deprecated_versions, supported_versions, requirement)
+    end.new(
+      package_manager_detected_version,
+      package_manager_raw_version,
+      deprecated_versions,
+      supported_versions,
+      requirement
+    )
   end
 
   let(:language) do
