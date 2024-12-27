@@ -106,14 +106,14 @@ module Dependabot
 
         if detect_poetry_version
           return PoetryPackageManager.new(
-            T.must(detect_pipenv_version),
+            T.must(detect_poetry_version),
             T.must(detect_poetry_version)
           )
         end
 
         if detect_pipcompile_version
           return PipCompilePackageManager.new(
-            T.must(detect_pipenv_version),
+            T.must(detect_pipcompile_version),
             T.must(detect_pipcompile_version)
           )
         end
