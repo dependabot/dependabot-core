@@ -22,8 +22,8 @@ module Dependabot
         super(
           name: PACKAGE_MANAGER,
           version: Version.new(raw_version),
-          supported_versions: DEPRECATED_TERRAFORM_VERSIONS,
-          deprecated_versions: SUPPORTED_TERRAFORM_VERSIONS
+          deprecated_versions: DEPRECATED_TERRAFORM_VERSIONS,
+          supported_versions: SUPPORTED_TERRAFORM_VERSIONS
         )
       end
 
