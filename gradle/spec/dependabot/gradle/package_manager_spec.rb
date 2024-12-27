@@ -6,13 +6,11 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Gradle::PackageManager do
-  subject(:package_manager) { described_class.new(version) }
-
-  let(:version) { "3.9.5" }
+  subject(:package_manager) { described_class.new }
 
   describe "#version" do
-    it "returns the version" do
-      expect(package_manager.version).to eq(Dependabot::Gradle::Version.new(version))
+    it "returns version as nil" do
+      expect(package_manager.version).to be_nil
     end
   end
 

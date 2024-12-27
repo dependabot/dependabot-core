@@ -13,13 +13,9 @@ module Dependabot
     class PackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
-        super(
-          PACKAGE_MANAGER,
-          nil,
-          Version.new(raw_version),
-        )
+      sig { void }
+      def initialize
+        super(PACKAGE_MANAGER)
       end
     end
   end

@@ -6,12 +6,11 @@ require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::Gradle::Language do
-  let(:language) { described_class.new(version) }
-  let(:version) { "3.0.0" }
+  let(:language) { described_class.new }
 
   describe "#version" do
-    it "returns the version" do
-      expect(language.version).to eq(Dependabot::Gradle::Version.new(version))
+    it "returns version as nil" do
+      expect(language.version).to be_nil
     end
   end
 

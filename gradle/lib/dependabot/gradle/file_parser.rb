@@ -90,7 +90,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
         @package_manager ||= T.let(
-          PackageManager.new("NOT-AVAILABLE"),
+          PackageManager.new,
           T.nilable(Dependabot::Gradle::PackageManager)
         )
       end
@@ -98,7 +98,7 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
         @language ||= T.let(begin
-          Language.new("NOT-AVAILABLE")
+          Language.new
         end, T.nilable(Dependabot::Gradle::Language))
       end
 
