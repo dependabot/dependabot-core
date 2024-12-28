@@ -62,7 +62,7 @@ module Dependabot
 
       # The current version of the package manager or language.
       # @example
-      #   version #=> Dependabot::Version.new("2")
+      #   detected_version #=> Dependabot::Version.new("2")
       sig { returns(T.nilable(Dependabot::Version)) }
       attr_reader :detected_version
 
