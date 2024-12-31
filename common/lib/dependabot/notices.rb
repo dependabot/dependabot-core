@@ -71,15 +71,20 @@ module Dependabot
     # Generates a description for supported versions.
     # @param supported_versions [Array<Dependabot::Version>, nil] The supported versions of the package manager.
     # @param support_later_versions [Boolean] Whether later versions are supported.
+    # @param version_manager_type [Symbol] The type of entity being deprecated i.e. :language or :package_manager
     # @return [String, nil] The generated description or nil if no supported versions are provided.
     sig do
       params(
         supported_versions: T.nilable(T::Array[Dependabot::Version]),
-        support_later_versions: T::Boolean
+        support_later_versions: T::Boolean,
+        version_manager_type: Symbol
       ).returns(String)
     end
-    def self.generate_supported_versions_description(supported_versions, support_later_versions)
-      return "Please upgrade your package manager version" unless supported_versions&.any?
+    def self.generate_supported_versions_description(
+      supported_versions, support_later_versions, version_manager_type = :package_manager
+    )
+      entity_text = version_manager_type == :language ? "language" : "package manager"
+      return "Please upgrade your #{entity_text} version" unless supported_versions&.any?
 
       versions_string = supported_versions.map { |version| "`v#{version}`" }
 
@@ -94,25 +99,28 @@ module Dependabot
       "Please upgrade to one of the following versions: #{versions_string}#{later_description}."
     end
 
-    # Generates a deprecation notice for the given package manager.
-    # @param package_manager [VersionManager] The package manager object.
-    # @return [Notice, nil] The generated deprecation notice or nil if the package manager is not deprecated.
+    # Generates a deprecation notice for the given version manager.
+    # @param version_manager [VersionManager] The version manager object.
+    # @param version_manager_type [Symbol] The version manager type e.g. :language or :package_manager
+    # @return [Notice, nil] The generated deprecation notice or nil if the version manager is not deprecated.
     sig do
       params(
-        package_manager: Ecosystem::VersionManager
+        version_manager: Ecosystem::VersionManager,
+        version_manager_type: Symbol
       ).returns(T.nilable(Notice))
     end
-    def self.generate_pm_deprecation_notice(package_manager)
-      return nil unless package_manager.deprecated?
+    def self.generate_deprecation_notice(version_manager, version_manager_type = :package_manager)
+      return nil unless version_manager.deprecated?
 
       mode = NoticeMode::WARN
       supported_versions_description = generate_supported_versions_description(
-        package_manager.supported_versions,
-        package_manager.support_later_versions?
+        version_manager.supported_versions,
+        version_manager.support_later_versions?,
+        version_manager_type
       )
-      notice_type = "#{package_manager.name}_deprecated_warn"
-      title = "Package manager deprecation notice"
-      description = "Dependabot will stop supporting `#{package_manager.name} v#{package_manager.version}`!"
+      notice_type = "#{version_manager.name}_deprecated_warn"
+      title = version_manager_type == :language ? "Language deprecation notice" : "Package manager deprecation notice"
+      description = "Dependabot will stop supporting `#{version_manager.name} v#{version_manager.version}`!"
 
       ## Add the supported versions to the description
       description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?
@@ -120,7 +128,7 @@ module Dependabot
       Notice.new(
         mode: mode,
         type: notice_type,
-        package_manager_name: package_manager.name,
+        package_manager_name: version_manager.name,
         title: title,
         description: description,
         show_in_pr: true,
