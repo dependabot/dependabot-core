@@ -62,13 +62,29 @@ module Dependabot
 
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
+        version = clean_version(version)
+
         @version_string = T.let(version.to_s, String)
-        version = version.gsub(/^v/, "") if version.is_a?(String)
+
         @build_info = T.let(nil, T.nilable(String))
 
         version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super(T.must(version))
+      end
+
+      sig { params(version: VersionParameter).returns(VersionParameter) }
+      def clean_version(version)
+        # Check if version is a string before attempting to match
+        if version.is_a?(String)
+          # Matches @ followed by x.y.z (digits separated by dots)
+          if (match = version.match(/@(\d+\.\d+\.\d+)/))
+            version = match[1] # Just "4.5.3"
+          end
+          version = version&.gsub(/^v/, "")
+        end
+
+        version
       end
 
       sig { override.params(version: VersionParameter).returns(Dependabot::NpmAndYarn::Version) }
