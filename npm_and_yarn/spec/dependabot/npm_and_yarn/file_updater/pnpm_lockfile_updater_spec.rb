@@ -477,7 +477,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "with a registry resolution that returns err_pnpm_broken_metadata_json response" do
+    context "with a registry resolution that returns 'Expected content to change!' response" do
       let(:dependency_name) { "nodemon" }
       let(:version) { "3.3.3" }
       let(:previous_version) { "^3.1.3" }
@@ -502,7 +502,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
+          .to raise_error(RuntimeError).with_message(/Expected content to change!/)
       end
     end
 
