@@ -21,6 +21,10 @@ module Dependabot
         end
 
         def updated_pnpm_lock_content(pnpm_lock)
+          if dependencies[0].name == 'styled-components'
+            # debugger
+          end
+
           @updated_pnpm_lock_content ||= {}
           return @updated_pnpm_lock_content[pnpm_lock.name] if @updated_pnpm_lock_content[pnpm_lock.name]
 
@@ -83,31 +87,23 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_pnpm_updater
+              run_pnpm_update_packages
 
               write_final_package_json_files
-
-              run_pnpm_install
 
               File.read(pnpm_lock.name)
             end
           end
         end
 
-        def run_pnpm_updater
+        def run_pnpm_update_packages
           dependency_updates = dependencies.map do |d|
             "#{d.name}@#{d.version}"
           end.join(" ")
 
           Helpers.run_pnpm_command(
-            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
-          )
-        end
-
-        def run_pnpm_install
-          Helpers.run_pnpm_command(
-            "install --lockfile-only"
+            "up #{dependency_updates} --recursive",
+            fingerprint: "up <dependency_updates> --recursive"
           )
         end
 
