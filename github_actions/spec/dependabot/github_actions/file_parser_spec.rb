@@ -582,4 +582,15 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
   end
+
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version nil" do
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::GithubActions::PackageManager)
+      expect(parser.ecosystem.package_manager.version).to be_nil
+    end
+  end
 end

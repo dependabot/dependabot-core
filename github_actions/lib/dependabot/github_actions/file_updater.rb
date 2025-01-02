@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/github_actions/constants"
 
 module Dependabot
   module GithubActions
@@ -16,10 +17,10 @@ module Dependabot
       def self.updated_files_regex
         [
           # Matches .yml or .yaml files in the .github/workflows directories
-          %r{\.github/workflows/.+\.ya?ml$},
+          WORKFLOW_YAML_REGEX,
 
           # Matches .yml or .yaml files in the root directory or any subdirectory
-          %r{(?:^|/).+\.ya?ml$}
+          ALL_YAML_FILES
         ]
       end
 
