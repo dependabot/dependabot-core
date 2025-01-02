@@ -135,7 +135,7 @@ module Dependabot
             file: file.name,
             metadata: { declaration_string: string }
           }],
-          package_manager: PackageManager::PACKAGE_MANAGER
+          package_manager: PackageManager::NAME
         )
       end
 
