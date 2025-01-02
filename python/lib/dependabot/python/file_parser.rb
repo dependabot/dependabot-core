@@ -294,6 +294,7 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
+
         marker = dep["markers"]
         version = python_raw_version
 
@@ -302,12 +303,14 @@ module Dependabot
         else
           return true if dep["markers"].include?("<")
           return false if dep["markers"].include?(">")
+
           dep["requirement"]&.include?("<")
         end
       end
 
       def marker_satisfied?(marker, python_version)
         return true if marker == "None"
+
         operator, version = marker.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
 
         case operator
