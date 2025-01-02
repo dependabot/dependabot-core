@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Notice do
       StubVersionManager.new(
         name: "bundler",
         detected_version: Dependabot::Version.new("1"),
-        raw_version: Dependabot::Version.new("1.0.0"),
+        raw_version: Dependabot::Version.new("1"),
         deprecated_versions: [Dependabot::Version.new("1")],
         supported_versions: [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
       )
@@ -157,7 +157,8 @@ RSpec.describe Dependabot::Notice do
       let(:language_manager) do
         StubVersionManager.new(
           name: "python",
-          version: Dependabot::Version.new("3.8"),
+          detected_version: Dependabot::Version.new("3.8"),
+          raw_version: Dependabot::Version.new("3.8"),
           deprecated_versions: [Dependabot::Version.new("3.8")],
           supported_versions: [Dependabot::Version.new("3.9")]
         )
