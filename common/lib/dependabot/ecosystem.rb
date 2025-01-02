@@ -90,6 +90,22 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Requirement)) }
       attr_reader :requirement
 
+      # The version of the package manager or language as a string.
+      # @example
+      # version_to_s #=> "2.1"
+      sig { returns(String) }
+      def version_to_s
+        version.to_s
+      end
+
+      # The raw version of the package manager or language.
+      # @example
+      #  raw_version #=> "2.1.4"
+      sig { returns(String) }
+      def version_to_raw_s
+        version&.to_semver.to_s
+      end
+
       # Checks if the current version is deprecated.
       # Returns true if the version is in the deprecated_versions array; false otherwise.
       # @example

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-
+require "dependabot/github_actions/constants"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 
@@ -19,7 +19,7 @@ module Dependabot
 
         url =
           if info.nil?
-            "https://github.com/#{dependency.name}"
+            "https://#{GITHUB_COM}/#{dependency.name}"
           else
             info[:url] || info.fetch("url")
           end
