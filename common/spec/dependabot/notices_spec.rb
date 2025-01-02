@@ -5,9 +5,10 @@ require "dependabot/version"
 require "dependabot/experiments"
 require "dependabot/ecosystem"
 require "dependabot/notices"
+require "debug"
 
 # A stub package manager for testing purposes.
-class StubPackageManager < Dependabot::Ecosystem::VersionManager
+class StubVersionManager < Dependabot::Ecosystem::VersionManager
   def initialize(name:, detected_version:, raw_version:, deprecated_versions: [], supported_versions: [],
                  support_later_versions: false)
     @support_later_versions = support_later_versions
@@ -24,7 +25,7 @@ class StubPackageManager < Dependabot::Ecosystem::VersionManager
 
   sig { override.returns(T::Boolean) }
   def unsupported?
-    # Determine if the Bundler version is unsupported.
+    # Determine if the version is unsupported.
     version < supported_versions.first
   end
 
@@ -100,19 +101,31 @@ RSpec.describe Dependabot::Notice do
       let(:supported_versions) { [] }
       let(:support_later_versions) { false }
 
-      it "returns nil" do
+      it "returns the correct description" do
         expect(generate_supported_versions_description).to eq("Please upgrade your package manager version")
+      end
+
+      context "when the entity being deprecated is the language" do
+        subject(:generate_supported_versions_description) do
+          described_class.generate_supported_versions_description(
+            supported_versions, support_later_versions, :language
+          )
+        end
+
+        it "returns the correct description" do
+          expect(generate_supported_versions_description).to eq("Please upgrade your language version")
+        end
       end
     end
   end
 
-  describe ".generate_pm_deprecation_notice" do
-    subject(:generate_pm_deprecation_notice) do
-      described_class.generate_pm_deprecation_notice(package_manager)
+  describe ".generate_deprecation_notice" do
+    subject(:package_manager_deprecation_notice) do
+      described_class.generate_deprecation_notice(package_manager)
     end
 
     let(:package_manager) do
-      StubPackageManager.new(
+      StubVersionManager.new(
         name: "bundler",
         detected_version: Dependabot::Version.new("1"),
         raw_version: Dependabot::Version.new("1.0.0"),
@@ -123,7 +136,7 @@ RSpec.describe Dependabot::Notice do
 
     it "returns the correct deprecation notice" do
       allow(package_manager).to receive(:unsupported?).and_return(false)
-      expect(generate_pm_deprecation_notice.to_hash)
+      expect(package_manager_deprecation_notice.to_hash)
         .to eq({
           mode: "WARN",
           type: "bundler_deprecated_warn",
@@ -134,6 +147,36 @@ RSpec.describe Dependabot::Notice do
           show_in_pr: true,
           show_alert: true
         })
+    end
+
+    context "when generating a notice for a deprecated language" do
+      subject(:deprecation_notice) do
+        described_class.generate_deprecation_notice(language_manager, :language)
+      end
+
+      let(:language_manager) do
+        StubVersionManager.new(
+          name: "python",
+          version: Dependabot::Version.new("3.8"),
+          deprecated_versions: [Dependabot::Version.new("3.8")],
+          supported_versions: [Dependabot::Version.new("3.9")]
+        )
+      end
+
+      it "returns the correct deprecation notice" do
+        allow(language_manager).to receive(:unsupported?).and_return(false)
+        expect(deprecation_notice.to_hash)
+          .to eq({
+            mode: "WARN",
+            type: "python_deprecated_warn",
+            package_manager_name: "python",
+            title: "Language deprecation notice",
+            description: "Dependabot will stop supporting `python v3.8`!" \
+                         "\n\nPlease upgrade to version `v3.9`.\n",
+            show_in_pr: true,
+            show_alert: true
+          })
+      end
     end
   end
 end

@@ -245,6 +245,8 @@ module Dependabot
       ecosystem = parser.ecosystem
       # Raise an error if the package manager version is unsupported
       ecosystem&.raise_if_unsupported!
+      # Raise an error if the language version is unsupported
+      ecosystem&.language&.raise_if_unsupported!
 
       @ecosystem[@current_directory] = ecosystem
 
@@ -255,8 +257,18 @@ module Dependabot
       # add deprecation notices for the package manager
       add_deprecation_notice(
         notices: notices_for_current_directory,
-        package_manager: ecosystem&.package_manager
+        version_manager: ecosystem&.package_manager
       )
+
+      if ecosystem&.language
+        # add deprecation notices for the language
+        add_deprecation_notice(
+          notices: notices_for_current_directory,
+          version_manager: ecosystem.language,
+          version_manager_type: :language
+        )
+      end
+
       @notices[@current_directory] = notices_for_current_directory
 
       parser

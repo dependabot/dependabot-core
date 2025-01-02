@@ -44,7 +44,7 @@ RSpec.describe Dependabot::NoticesHelpers do
     context "when package manager is provided and is deprecated" do
       it "adds a deprecation notice to the notices array" do
         expect do
-          dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, package_manager: package_manager)
+          dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, version_manager: package_manager)
         end
           .to change { dummy_instance.notices.size }.by(1)
 
@@ -57,7 +57,7 @@ RSpec.describe Dependabot::NoticesHelpers do
       it "logs deprecation notices line by line" do
         allow(Dependabot.logger).to receive(:warn)
 
-        dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, package_manager: package_manager)
+        dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, version_manager: package_manager)
 
         notice = dummy_instance.notices.first
         notice.description.each_line do |line|
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::NoticesHelpers do
 
     context "when package manager is not provided" do
       it "does not add a deprecation notice to the notices array" do
-        expect { dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, package_manager: nil) }
+        expect { dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, version_manager: nil) }
           .not_to(change { dummy_instance.notices.size })
       end
     end
@@ -94,9 +94,45 @@ RSpec.describe Dependabot::NoticesHelpers do
 
       it "does not add a deprecation notice to the notices array" do
         expect do
-          dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, package_manager: package_manager)
+          dummy_instance.add_deprecation_notice(notices: dummy_instance.notices, version_manager: package_manager)
         end
           .not_to(change { dummy_instance.notices.size })
+      end
+    end
+
+    context "when the language version is deprecated" do
+      let(:language_manager) do
+        Class.new(Dependabot::Ecosystem::VersionManager) do
+          def initialize
+            super(
+              "python", # name
+              Dependabot::Version.new("3.8"), # version
+              [Dependabot::Version.new("3.8")], # deprecated_versions
+              [Dependabot::Version.new("3.9"), Dependabot::Version.new("3.10")] # supported_versions
+            )
+          end
+        end.new
+      end
+
+      before do
+        allow(language_manager).to receive(:unsupported?).and_return(false)
+      end
+
+      it "adds a deprecation notice to the notices array" do
+        expect do
+          dummy_instance
+            .add_deprecation_notice(
+              notices: dummy_instance.notices,
+              version_manager: language_manager,
+              version_manager_type: :language
+            )
+        end.to change { dummy_instance.notices.size }.by(1)
+
+        notice = dummy_instance.notices.first
+
+        expect(notice.mode).to eq("WARN")
+        expect(notice.type).to eq("python_deprecated_warn")
+        expect(notice.package_manager_name).to eq("python")
       end
     end
   end
