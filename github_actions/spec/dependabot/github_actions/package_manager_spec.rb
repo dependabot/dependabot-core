@@ -10,13 +10,13 @@ RSpec.describe Dependabot::GithubActions::PackageManager do
 
   describe "#version_to_s" do
     it "returns the package manager version empty" do
-      expect(package_manager.version_to_s).to eq("")
+      expect(package_manager.version_to_s).to eq("1.0.0")
     end
   end
 
   describe "#version_to_raw_s" do
     it "returns the package manager raw version empty" do
-      expect(package_manager.version_to_raw_s).to eq("")
+      expect(package_manager.version_to_raw_s).to eq("1.0.0")
     end
   end
 

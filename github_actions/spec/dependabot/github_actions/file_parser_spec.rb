@@ -588,9 +588,9 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
     end
 
-    it "returns package manager with version nil" do
+    it "returns package manager with version" do
       expect(parser.ecosystem.package_manager).to be_a(Dependabot::GithubActions::PackageManager)
-      expect(parser.ecosystem.package_manager.version).to be_nil
+      expect(parser.ecosystem.package_manager.version.to_s).to eq("1.0.0")
     end
   end
 end
