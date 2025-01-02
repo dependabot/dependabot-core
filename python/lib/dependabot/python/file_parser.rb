@@ -294,10 +294,36 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
-        return true if dep["markers"].include?("<")
-        return false if dep["markers"].include?(">")
+        marker = dep["markers"]
+        version = python_raw_version
 
-        dep["requirement"]&.include?("<")
+        if marker.include?("python_version")
+          !marker_satisfied?(marker, version)
+        else
+          return true if dep["markers"].include?("<")
+          return false if dep["markers"].include?(">")
+          dep["requirement"]&.include?("<")
+        end
+      end
+
+      def marker_satisfied?(marker, python_version)
+        return true if marker == "None"
+        operator, version = marker.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
+
+        case operator
+        when "<"
+          Gem::Version.new(python_version) < Gem::Version.new(version)
+        when "<="
+          Gem::Version.new(python_version) <= Gem::Version.new(version)
+        when ">"
+          Gem::Version.new(python_version) > Gem::Version.new(version)
+        when ">="
+          Gem::Version.new(python_version) >= Gem::Version.new(version)
+        when "=="
+          Gem::Version.new(python_version) == Gem::Version.new(version)
+        else
+          false
+        end
       end
 
       def setup_file_dependencies
