@@ -20,8 +20,7 @@ module Dependabot
 
       sig { override.returns(String) }
       def self.required_files_message
-        "Repo must contain a #{WORKFLOW_DIRECTORY} directory with YAML files or " \
-          "an #{MANIFEST_FILE_YML} file"
+        "Repo must contain a .github/workflows directory with YAML files or an action.yml file"
       end
 
       sig do
