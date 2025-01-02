@@ -42,6 +42,17 @@ module Dependabot
         numeric_version&.match?(/[a-zA-Z]/)
       end
 
+      sig do
+        params(other_format: Symbol, other_prefix: T.nilable(String),
+               other_suffix: T.nilable(String)).returns(T::Boolean)
+      end
+      def comparable_formats(other_format, other_prefix, other_suffix)
+        return false unless prefix.nil? && suffix.nil? && other_prefix.nil? && other_suffix.nil?
+
+        formats = %i(year_month year_month_day)
+        (format == :build_num && formats.include?(other_format)) || (formats.include?(format) && other_format == :build_num) # rubocop:disable Layout/LineLength
+      end
+
       sig { params(other: Tag).returns(T::Boolean) }
       def comparable_to?(other)
         return false unless comparable?
@@ -52,10 +63,11 @@ module Dependabot
 
         equal_prefix = prefix == other_prefix
         equal_format = format == other_format
+        comparable_format = comparable_formats(other.format, other.prefix, other.suffix)
         return equal_prefix && equal_format if other_format == :sha_suffixed
 
         equal_suffix = suffix == other_suffix
-        equal_prefix && equal_format && equal_suffix
+        (equal_prefix && equal_format && equal_suffix) || comparable_format
       end
 
       sig { returns(T::Boolean) }

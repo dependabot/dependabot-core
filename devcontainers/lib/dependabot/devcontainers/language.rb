@@ -14,7 +14,9 @@ module Dependabot
 
       sig { params(raw_version: String).void }
       def initialize(raw_version)
-        super(LANGUAGE, Version.new(raw_version))
+        super(
+          name: LANGUAGE,
+          version: Version.new(raw_version))
       end
     end
   end
