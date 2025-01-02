@@ -330,13 +330,13 @@ module Dependabot
     def version_manager_json(version_manager)
       return nil unless version_manager
 
-      raw_version = version_manager.version&.to_semver.to_s
-      version = version_manager.version&.to_semver.to_s
+      version = version_manager.version_to_s
+      raw_version = version_manager.version_to_raw_s
 
       {
         name: version_manager.name,
-        raw_version: raw_version.empty? ? "N/A" : raw_version,
         version: version.empty? ? "N/A" : version,
+        raw_version: raw_version.empty? ? "N/A" : raw_version,
         requirement: version_manager_requirement_json(version_manager)
       }
     end
