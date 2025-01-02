@@ -9,14 +9,15 @@ require "debug"
 
 # A stub package manager for testing purposes.
 class StubVersionManager < Dependabot::Ecosystem::VersionManager
-  def initialize(name:, version:, deprecated_versions: [], supported_versions: [],
+  def initialize(name:, detected_version:, raw_version:, deprecated_versions: [], supported_versions: [],
                  support_later_versions: false)
     @support_later_versions = support_later_versions
     super(
-      name,
-     Dependabot::Version.new(version),
-     deprecated_versions,
-     supported_versions
+      name: name,
+      detected_version: Dependabot::Version.new(detected_version),
+      version: Dependabot::Version.new(raw_version),
+      deprecated_versions: deprecated_versions,
+      supported_versions: supported_versions
    )
   end
 
@@ -126,7 +127,8 @@ RSpec.describe Dependabot::Notice do
     let(:package_manager) do
       StubVersionManager.new(
         name: "bundler",
-        version: Dependabot::Version.new("1"),
+        detected_version: Dependabot::Version.new("1"),
+        raw_version: Dependabot::Version.new("1"),
         deprecated_versions: [Dependabot::Version.new("1")],
         supported_versions: [Dependabot::Version.new("2"), Dependabot::Version.new("3")]
       )
@@ -155,7 +157,8 @@ RSpec.describe Dependabot::Notice do
       let(:language_manager) do
         StubVersionManager.new(
           name: "python",
-          version: Dependabot::Version.new("3.8"),
+          detected_version: Dependabot::Version.new("3.8"),
+          raw_version: Dependabot::Version.new("3.8"),
           deprecated_versions: [Dependabot::Version.new("3.8")],
           supported_versions: [Dependabot::Version.new("3.9")]
         )

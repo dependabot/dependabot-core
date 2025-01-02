@@ -16,11 +16,9 @@ module Dependabot
       sig { params(raw_version: String, requirement: T.nilable(Requirement)).void }
       def initialize(raw_version, requirement: nil)
         super(
-          NAME,
-          Version.new(raw_version),
-          [],
-          [],
-          requirement
+          name: NAME,
+          version: Version.new(raw_version),
+          requirement: requirement
        )
       end
 
