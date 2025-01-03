@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/version"
+require "dependabot/updater"
 require "dependabot/ecosystem"
 require "dependabot/notices"
 require "dependabot/notices_helpers"
