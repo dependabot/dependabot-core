@@ -388,6 +388,17 @@ namespace NuGetUpdater.Core.Test
             return WellKnownPackages[key];
         }
 
+        public static MockNuGetPackage GetMicrosoftNETCoreAppRefPackage(int majorRuntimeVersion)
+        {
+            return WellKnownReferencePackage("Microsoft.NETCore.App", $"net{majorRuntimeVersion}.0",
+            [
+                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes($"""
+                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="{majorRuntimeVersion}.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
+                    </FileList>
+                    """))
+            ]);
+        }
+
         public static MockNuGetPackage WellKnownHostPackage(string packageName, string targetFramework, (string Path, byte[] Content)[]? files = null)
         {
             string key = $"{packageName}/{targetFramework}";
@@ -437,34 +448,10 @@ namespace NuGetUpdater.Core.Test
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net9.0"),
-            WellKnownReferencePackage("Microsoft.NETCore.App", "net6.0",
-            [
-                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
-                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="6.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
-                    </FileList>
-                    """))
-            ]),
-            WellKnownReferencePackage("Microsoft.NETCore.App", "net7.0",
-            [
-                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
-                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="7.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
-                    </FileList>
-                    """))
-            ]),
-            WellKnownReferencePackage("Microsoft.NETCore.App", "net8.0",
-            [
-                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
-                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="8.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
-                    </FileList>
-                    """))
-            ]),
-            WellKnownReferencePackage("Microsoft.NETCore.App", "net9.0",
-            [
-                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
-                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="9.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
-                    </FileList>
-                    """))
-            ]),
+            GetMicrosoftNETCoreAppRefPackage(6),
+            GetMicrosoftNETCoreAppRefPackage(7),
+            GetMicrosoftNETCoreAppRefPackage(8),
+            GetMicrosoftNETCoreAppRefPackage(9),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net6.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0"),
