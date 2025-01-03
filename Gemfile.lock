@@ -1,3 +1,18 @@
+GIT
+  remote: https://github.com/Shopify/tapioca.git
+  revision: a41dc1c65c7283932d34257228c8a42639f5d61e
+  ref: refs/pull/2129/head
+  specs:
+    tapioca (0.16.5)
+      bundler (>= 2.2.25)
+      netrc (>= 0.11.0)
+      parallel (>= 1.21.0)
+      rbi (~> 0.2)
+      sorbet-static-and-runtime (>= 0.5.11087)
+      spoom (>= 1.2.0)
+      thor (>= 1.2.0)
+      yard-sorbet
+
 PATH
   remote: bundler
   specs:
@@ -183,7 +198,7 @@ GEM
     docker_registry2 (1.18.2)
       rest-client (>= 1.8.0)
     domain_name (0.6.20231109)
-    erubi (1.13.0)
+    erubi (1.13.1)
     excon (0.110.0)
     faraday (2.7.11)
       base64
@@ -241,14 +256,14 @@ GEM
     parser (3.3.6.0)
       ast (~> 2.4.1)
       racc
-    prism (1.2.0)
+    prism (1.3.0)
     psych (5.1.2)
       stringio
     public_suffix (5.0.4)
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.1.0)
-    rbi (0.2.1)
+    rbi (0.2.2)
       prism (~> 1.0)
       sorbet-runtime (>= 0.5.9204)
     rdoc (6.6.3.1)
@@ -338,15 +353,6 @@ GEM
     stackprof (0.2.25)
     stringio (3.1.0)
     strscan (3.1.0)
-    tapioca (0.16.3)
-      bundler (>= 2.2.25)
-      netrc (>= 0.11.0)
-      parallel (>= 1.21.0)
-      rbi (~> 0.2)
-      sorbet-static-and-runtime (>= 0.5.11087)
-      spoom (>= 1.2.0)
-      thor (>= 1.2.0)
-      yard-sorbet
     terminal-table (3.0.2)
       unicode-display_width (>= 1.1.1, < 3)
     thor (1.3.2)
@@ -408,11 +414,11 @@ DEPENDENCIES
   rubocop-sorbet (~> 0.8.5)
   simplecov (~> 0.22.0)
   sorbet (= 0.5.11630)
-  tapioca (= 0.16.3)
+  tapioca!
   turbo_tests (~> 2.2.0)
   vcr (~> 6.1)
   webmock (~> 3.18)
   webrick (>= 1.7)
 
 BUNDLED WITH
-   2.5.16
+   2.6.2
