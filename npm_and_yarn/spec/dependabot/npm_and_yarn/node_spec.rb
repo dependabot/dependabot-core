@@ -5,7 +5,7 @@ require "dependabot/ecosystem"
 require "dependabot/npm_and_yarn/package_manager"
 require "spec_helper"
 
-RSpec.describe Dependabot::NpmAndYarn::Language do
+RSpec.describe Dependabot::NpmAndYarn::Node do
   let(:language) { described_class.new(raw_version, requirement: requirement) }
   let(:raw_version) { "16.13.1" }
   let(:requirement) { nil }
@@ -16,15 +16,15 @@ RSpec.describe Dependabot::NpmAndYarn::Language do
     end
 
     it "sets the name correctly" do
-      expect(language.name).to eq(Dependabot::NpmAndYarn::Language::NAME)
+      expect(language.name).to eq(Dependabot::NpmAndYarn::Node::NAME)
     end
 
     it "sets the deprecated_versions correctly" do
-      expect(language.deprecated_versions).to eq(Dependabot::NpmAndYarn::Language::DEPRECATED_VERSIONS)
+      expect(language.deprecated_versions).to eq(Dependabot::NpmAndYarn::Node::DEPRECATED_VERSIONS)
     end
 
     it "sets the supported_versions correctly" do
-      expect(language.supported_versions).to eq(Dependabot::NpmAndYarn::Language::SUPPORTED_VERSIONS)
+      expect(language.supported_versions).to eq(Dependabot::NpmAndYarn::Node::SUPPORTED_VERSIONS)
     end
 
     context "when a requirement is provided" do

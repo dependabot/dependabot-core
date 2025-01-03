@@ -193,6 +193,44 @@ module Dependabot
       end
     end
 
+    class Bun < Ecosystem::VersionManager
+      extend T::Sig
+      NAME = "bun"
+      LOCKFILE_NAME = "bun.lock"
+
+      # In Bun 1.1.39, the lockfile format was changed from a binary bun.lockb to a text-based bun.lock.
+      # https://bun.sh/blog/bun-lock-text-lockfile
+      MIN_SUPPORTED_VERSION = Version.new("1.1.39")
+      SUPPORTED_VERSIONS = T.let([MIN_SUPPORTED_VERSION].freeze, T::Array[Dependabot::Version])
+      DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+      sig do
+        params(
+          raw_version: String,
+          requirement: T.nilable(Requirement)
+        ).void
+      end
+      def initialize(raw_version, requirement: nil)
+        super(
+          NAME,
+          Version.new(raw_version),
+          DEPRECATED_VERSIONS,
+          SUPPORTED_VERSIONS,
+          requirement
+        )
+      end
+
+      sig { override.returns(T::Boolean) }
+      def deprecated?
+        false
+      end
+
+      sig { override.returns(T::Boolean) }
+      def unsupported?
+        version < MIN_SUPPORTED_VERSION
+      end
+    end
+
     DEFAULT_PACKAGE_MANAGER = NpmPackageManager::NAME
 
     # Define a type alias for the expected class interface
@@ -200,14 +238,16 @@ module Dependabot
       T.any(
         T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
         T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager),
+        T.class_of(Dependabot::NpmAndYarn::Bun)
       )
     end
 
     PACKAGE_MANAGER_CLASSES = T.let({
       NpmPackageManager::NAME => NpmPackageManager,
       YarnPackageManager::NAME => YarnPackageManager,
-      PNPMPackageManager::NAME => PNPMPackageManager
+      PNPMPackageManager::NAME => PNPMPackageManager,
+      Bun::NAME => Bun
     }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
 
     class PackageManagerDetector
@@ -227,7 +267,7 @@ module Dependabot
         @engines = T.let(package_json&.fetch(MANIFEST_ENGINES_KEY, {}), T::Hash[String, T.untyped])
       end
 
-      # Returns npm, yarn, or pnpm based on the lockfiles, package.json, and engines
+      # Returns npm, yarn, pnpm, or bun based on the lockfiles, package.json, and engines
       # Defaults to npm if no package manager is detected
       sig { returns(String) }
       def detect_package_manager
@@ -274,7 +314,7 @@ module Dependabot
       end
     end
 
-    class Language < Ecosystem::VersionManager
+    class Node < Ecosystem::VersionManager
       extend T::Sig
       NAME = "node"
 
@@ -348,7 +388,7 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def language
-        @language ||= Language.new(
+        @language ||= Node.new(
           Helpers.node_version,
           requirement: language_requirement
         )
@@ -356,7 +396,7 @@ module Dependabot
 
       sig { returns(T.nilable(Requirement)) }
       def language_requirement
-        @language_requirement ||= find_engine_constraints_as_requirement(Language::NAME)
+        @language_requirement ||= find_engine_constraints_as_requirement(Node::NAME)
       end
 
       sig { params(name: String).returns(T.nilable(Requirement)) }

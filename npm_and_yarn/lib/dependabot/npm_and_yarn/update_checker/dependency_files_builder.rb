@@ -49,6 +49,12 @@ module Dependabot
             .select { |f| f.name.end_with?("pnpm-lock.yaml") }
         end
 
+        def bun_locks
+          @bun_locks ||=
+            dependency_files
+            .select { |f| f.name.end_with?(Bun::LOCKFILE_NAME) }
+        end
+
         def root_yarn_lock
           @root_yarn_lock ||=
             dependency_files
@@ -61,6 +67,12 @@ module Dependabot
             .find { |f| f.name == "pnpm-lock.yaml" }
         end
 
+        def root_bun_lock
+          @root_bun_lock ||=
+            dependency_files
+            .find { |f| f.name == Bun::LOCKFILE_NAME }
+        end
+
         def shrinkwraps
           @shrinkwraps ||=
             dependency_files
@@ -68,7 +80,7 @@ module Dependabot
         end
 
         def lockfiles
-          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks]
+          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks, *bun_locks]
         end
 
         def package_files
@@ -89,12 +101,7 @@ module Dependabot
             File.write(f.name, prepared_yarn_lockfile_content(f.content))
           end
 
-          pnpm_locks.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
-          end
-
-          [*package_locks, *shrinkwraps].each do |f|
+          [*package_locks, *shrinkwraps, *pnpm_locks, *bun_locks].each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, f.content)
           end
