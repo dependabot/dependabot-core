@@ -5,9 +5,6 @@ require "spec_helper"
 require "dependabot/ecosystem"
 require "dependabot/requirement"
 
-# Define an anonymous subclass of Dependabot::Requirement for testing purposes
-TestRequirement = Class.new(Dependabot::Requirement)
-
 RSpec.describe Dependabot::Ecosystem do
   let(:package_manager_supported_versions) { [Dependabot::Version.new("1"), Dependabot::Version.new("2")] }
   let(:package_manager_deprecated_versions) { [Dependabot::Version.new("1")] }
