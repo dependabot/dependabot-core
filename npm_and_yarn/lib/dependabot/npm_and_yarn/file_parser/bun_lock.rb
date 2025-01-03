@@ -19,6 +19,7 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed
+          @content ||= T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           return @content if @content
 
           # Since bun.lock is a JSONC file, which is a subset of YAML, we can use YAML to parse it
@@ -36,7 +37,7 @@ module Dependabot
                           )
           end
 
-          @content = content
+          @content = T.let(content, T::Hash[String, T.untyped])
         rescue Psych::SyntaxError => e
           raise_invalid!("malformed JSONC at line #{e.line}, column #{e.column}")
         end
