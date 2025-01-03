@@ -34,7 +34,7 @@ module Dependabot
       def initialize(raw_version, requirement = nil)
         super(
           name: LANGUAGE,
-          version: Version.new(raw_version),
+          version: major_minor_version(raw_version),
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement,
@@ -54,6 +54,15 @@ module Dependabot
         return false unless Dependabot::Experiments.enabled?(:python_3_8_unsupported_error)
 
         supported_versions.all? { |supported| supported > version }
+      end
+
+      private
+
+      sig { params(version: String).returns(Dependabot::Python::Version) }
+      def major_minor_version(version)
+        major_minor = T.let(T.must(Version.new(version).segments[0..1]&.join(".")), String)
+
+        Version.new(major_minor)
       end
     end
   end
