@@ -5,6 +5,7 @@ require "dependabot/version"
 require "dependabot/experiments"
 require "dependabot/ecosystem"
 require "dependabot/notices"
+require "debug"
 
 # A stub package manager for testing purposes.
 class StubVersionManager < Dependabot::Ecosystem::VersionManager
