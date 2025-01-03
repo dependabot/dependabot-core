@@ -56,7 +56,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BunLockfileUpdater do
   let(:files) { project_dependency_files(project_name) }
 
   let(:bun_lock) do
-    files.find { |f| f.name == Bun::LOCKFILE_NAME }
+    files.find { |f| f.name == "bun.lock" }
   end
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }

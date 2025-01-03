@@ -52,7 +52,7 @@ module Dependabot
         def bun_locks
           @bun_locks ||=
             dependency_files
-            .select { |f| f.name.end_with?(Bun::LOCKFILE_NAME) }
+            .select { |f| f.name.end_with?("bun.lock") }
         end
 
         def root_yarn_lock
@@ -70,7 +70,7 @@ module Dependabot
         def root_bun_lock
           @root_bun_lock ||=
             dependency_files
-            .find { |f| f.name == Bun::LOCKFILE_NAME }
+            .find { |f| f.name == "bun.lock" }
         end
 
         def shrinkwraps

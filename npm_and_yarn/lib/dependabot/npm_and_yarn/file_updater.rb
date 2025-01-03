@@ -194,7 +194,7 @@ module Dependabot
       def bun_locks
         @bun_locks ||= T.let(
           filtered_dependency_files
-          .select { |f| f.name.end_with?(Bun::LOCKFILE_NAME) },
+          .select { |f| f.name.end_with?("bun.lock") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

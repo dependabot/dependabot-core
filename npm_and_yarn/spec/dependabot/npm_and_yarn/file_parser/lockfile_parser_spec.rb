@@ -328,7 +328,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           expect { dependencies }
             .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
               expect(error.file_name).to eq("bun.lock")
-              expect(error.message).to eq("Invalid bun.lock file")
+              expect(error.message).to eq("Invalid bun.lock file: malformed JSONC at line 3, column 1")
             end
         end
       end
@@ -688,14 +688,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       let(:manifest_name) { "package.json" }
 
       it "finds the dependency" do
+        # rubocop:disable Layout/LineLength
         expect(lockfile_details).to eq({
           "name" => "fetch-factory",
           "version" => "0.0.1",
           "registry" => "",
           "details" => { "dependencies" => { "es6-promise" => "^3.0.2", "isomorphic-fetch" => "^2.1.1",
                                              "lodash" => "^3.10.1" } },
-          "hash" => "sha512-gexRwqIhwzDJ2pJvL0UYfiZwW06/bdYWxAmswFFts7C87CF8i6liApihTk7TZFYMDcQjvvDIvyHv0q379z0aWA=="
+          "integrity" => "sha512-gexRwqIhwzDJ2pJvL0UYfiZwW06/bdYWxAmswFFts7C87CF8i6liApihTk7TZFYMDcQjvvDIvyHv0q379z0aWA=="
         })
+        # rubocop:enable Layout/LineLength
       end
     end
   end
