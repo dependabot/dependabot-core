@@ -25,12 +25,14 @@ RSpec.describe Dependabot::NoticesHelpers do
   let(:package_manager) do
     Class.new(Dependabot::Ecosystem::VersionManager) do
       def initialize
+        detected_version = "1"
         raw_version = "1"
         super(
-          "bundler", # name
-          Dependabot::Version.new(raw_version), # version
-          [Dependabot::Version.new("1")], # deprecated_versions
-          [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+          name: "bundler", # name
+          detected_version: Dependabot::Version.new(detected_version), # detected_version
+          version: Dependabot::Version.new(raw_version), # version
+          deprecated_versions: [Dependabot::Version.new("1")], # deprecated_versions
+          supported_versions: [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
         )
       end
     end.new
@@ -81,12 +83,14 @@ RSpec.describe Dependabot::NoticesHelpers do
       let(:package_manager) do
         Class.new(Dependabot::Ecosystem::VersionManager) do
           def initialize
+            detected_version = "2"
             raw_version = "2"
             super(
-              "bundler", # name
-              Dependabot::Version.new(raw_version), # version
-              [Dependabot::Version.new("1")], # deprecated_versions
-              [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
+              name: "bundler", # name
+              detected_version: Dependabot::Version.new(detected_version),
+              version: Dependabot::Version.new(raw_version), # version
+              deprecated_versions: [Dependabot::Version.new("1")], # deprecated_versions
+              supported_versions: [Dependabot::Version.new("2"), Dependabot::Version.new("3")] # supported_versions
             )
           end
         end.new
@@ -105,10 +109,11 @@ RSpec.describe Dependabot::NoticesHelpers do
         Class.new(Dependabot::Ecosystem::VersionManager) do
           def initialize
             super(
-              "python", # name
-              Dependabot::Version.new("3.8"), # version
-              [Dependabot::Version.new("3.8")], # deprecated_versions
-              [Dependabot::Version.new("3.9"), Dependabot::Version.new("3.10")] # supported_versions
+              name: "python", # name
+              detected_version: Dependabot::Version.new("3.8"), # version
+              version: Dependabot::Version.new("3.8"), # version
+              deprecated_versions: [Dependabot::Version.new("3.8")], # deprecated_versions
+              supported_versions: [Dependabot::Version.new("3.9"), Dependabot::Version.new("3.10")] # supported_versions
             )
           end
         end.new

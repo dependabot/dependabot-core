@@ -120,7 +120,7 @@ module Dependabot
       )
       notice_type = "#{version_manager.name}_deprecated_warn"
       title = version_manager_type == :language ? "Language deprecation notice" : "Package manager deprecation notice"
-      description = "Dependabot will stop supporting `#{version_manager.name} v#{version_manager.version}`!"
+      description = "Dependabot will stop supporting `#{version_manager.name} v#{version_manager.detected_version}`!"
 
       ## Add the supported versions to the description
       description += "\n\n#{supported_versions_description}\n" unless supported_versions_description.empty?

@@ -36,10 +36,10 @@ module Dependabot
       sig { params(raw_version: String).void }
       def initialize(raw_version)
         super(
-          NAME,
-          Version.new(raw_version),
-          DEPRECATED_COMPOSER_VERSIONS,
-          SUPPORTED_COMPOSER_VERSIONS,
+          name: NAME,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_COMPOSER_VERSIONS,
+          supported_versions: SUPPORTED_COMPOSER_VERSIONS,
        )
       end
     end

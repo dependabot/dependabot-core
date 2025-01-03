@@ -31,11 +31,11 @@ module Dependabot
       end
       def initialize(raw_version, requirement = nil)
         super(
-          PACKAGE_MANAGER,
-          Version.new(raw_version),
-          DEPRECATED_BUNDLER_VERSIONS,
-          SUPPORTED_BUNDLER_VERSIONS,
-          requirement,
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_BUNDLER_VERSIONS,
+          supported_versions: SUPPORTED_BUNDLER_VERSIONS,
+          requirement: requirement,
        )
       end
     end

@@ -32,7 +32,13 @@ module Dependabot
 
       sig { params(raw_version: String, requirement: T.nilable(Requirement)).void }
       def initialize(raw_version, requirement = nil)
-        super(LANGUAGE, Version.new(raw_version), DEPRECATED_VERSIONS, SUPPORTED_VERSIONS, requirement)
+        super(
+          name: LANGUAGE,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS,
+          requirement: requirement,
+       )
       end
 
       sig { override.returns(T::Boolean) }
