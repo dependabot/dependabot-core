@@ -44,13 +44,15 @@ jobs:
       - name: Check if pull request is approved
         id: decision
         run: |
-          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
+          # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
+          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
           echo "decision=$DECISION" >> $GITHUB_OUTPUT
 
   push-updater-images:
     runs-on: ubuntu-latest
     needs: approval
-    if: needs.approval.outputs.decision == 'APPROVED:OPEN'
+    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     strategy:
       fail-fast: false
       matrix:
@@ -95,6 +97,12 @@ jobs:
       - name: Prepare tag (forks)
         run: |
           gh pr checkout ${{ inputs.pr }}
+
+          # Ensure the commit we've checked out matches our expected SHA from when we checked the PR's approval status above.
+          # This is a security measure to prevent any unreviewed commits from getting pulled into this action workflow.
+          # The format is "APPROVED:OPEN:<PR_COMMIT_SHA>", so compare the end of the string to the current commit.
+          [[ ${{needs.approval.outputs.decision}} =~ $(git rev-parse HEAD)$ ]]
+
           git fetch origin main
           git merge origin/main --ff-only || exit 1
           git submodule update --init --recursive
