@@ -11,6 +11,7 @@ on: # yamllint disable-line rule:truthy
 jobs:
   date-version:
     runs-on: ubuntu-latest
+    if: github.repository == 'dependabot/dependabot-core'
     outputs:
       date: ${{ steps.date.outputs.DATE_BASED_VERSION }}
     steps:
