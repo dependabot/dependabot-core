@@ -106,6 +106,10 @@ RSpec.describe Dependabot::Python::FileParser do
     end
 
     context "with markers" do
+      before do
+        allow(parser).to receive(:python_raw_version).and_return("2.6")
+      end
+
       context "when including a < in the marker" do
         let(:requirements_fixture_name) { "markers.txt" }
 
@@ -116,10 +120,10 @@ RSpec.describe Dependabot::Python::FileParser do
 
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("distro")
-          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.version).to eq("1.0.4")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "==1.3.0",
+              requirement: "==1.0.4",
               file: "requirements.txt",
               groups: ["dependencies"],
               source: nil
