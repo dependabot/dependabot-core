@@ -29,6 +29,10 @@ module Dependabot
       PNPM_DEFAULT_VERSION = PNPM_V9
       PNPM_FALLBACK_VERSION = PNPM_V6
 
+      # BUN Version Constants
+      BUN_V1 = 1
+      BUN_DEFAULT_VERSION = BUN_V1
+
       # YARN Version Constants
       YARN_V3 = 3
       YARN_V2 = 2
@@ -157,6 +161,11 @@ module Dependabot
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
         PNPM_FALLBACK_VERSION
+      end
+
+      sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
+      def self.bun_version_numeric(_bun_lock)
+        BUN_DEFAULT_VERSION
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -352,6 +361,35 @@ module Dependabot
         raise
       end
 
+      sig { returns(T.nilable(String)) }
+      def self.bun_version
+        version = run_bun_command("--version", fingerprint: "--version").strip
+        if version.include?("+")
+          version.split("+").first # Remove build info, if present
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Error retrieving Bun version: #{e.message}")
+        nil
+      end
+
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.run_bun_command(command, fingerprint: nil)
+        full_command = "bun #{command}"
+
+        Dependabot.logger.info("Running bun command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "bun #{fingerprint || command}"
+        )
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
+        raise
+      end
+
       # Setup yarn and run a single yarn command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_yarn_command(command, fingerprint: nil)
@@ -496,6 +534,8 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
+        return run_bun_command(command, fingerprint: fingerprint) if name == Bun::NAME
+
         full_command = "corepack #{name} #{command}"
 
         result = Dependabot::SharedHelpers.run_shell_command(

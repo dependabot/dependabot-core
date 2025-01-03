@@ -68,7 +68,8 @@ module Dependabot
           "package-lock.json",
           "yarn.lock",
           "npm-shrinkwrap.json",
-          "pnpm-lock.yaml"
+          "pnpm-lock.yaml",
+          "bun.lock"
         )
       end
 

@@ -9,6 +9,8 @@ ARG PNPM_VERSION=9.15.3
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.5.3
 
+# Check for updates at https://github.com/oven-sh/bun/releases
+ARG BUN_VERSION=1.1.39
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=20
@@ -26,7 +28,7 @@ RUN mkdir -p /etc/apt/keyrings \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g corepack@$COREPACK_VERSION \
+  && npm install -g corepack@$COREPACK_VERSION bun@$BUN_VERSION \
   && rm -rf ~/.npm
 
 USER dependabot
