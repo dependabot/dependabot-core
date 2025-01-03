@@ -95,7 +95,7 @@ jobs:
           key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
-      # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
+      # Allowed to fail to get out of chicken and egg situations, for example, when adding a new ecosystem.
       - name: Download cache
         run: |
           # The name of the cache is derived from the test name, e.g. smoke-bundler.yaml -> cache-bundler
@@ -133,5 +133,5 @@ jobs:
         run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
         # No upload at the end:
-        # - If a test is uncachable in some regard, the cache would grow unbound.
-        # - We might want to consider erroring if the cache is changed.
+        # - If a test is uncacheable in some regard, the cache would grow unbounded.
+        # - We should consider erroring if the cache is changed.
