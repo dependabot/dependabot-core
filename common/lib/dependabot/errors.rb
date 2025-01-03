@@ -83,6 +83,11 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
