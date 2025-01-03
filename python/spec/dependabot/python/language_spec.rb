@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Python::Language do
   subject(:language) { described_class.new(version) }
 
   describe "#deprecated?" do
-    let(:version) { "3.8" }
+    let(:version) { "3.8.20" }
 
     before do
       allow(::Dependabot::Experiments).to receive(:enabled?)
