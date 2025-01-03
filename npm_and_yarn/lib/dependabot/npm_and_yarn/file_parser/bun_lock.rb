@@ -88,10 +88,12 @@ module Dependabot
 
         private
 
+        sig { params(message: String).void }
         def raise_invalid_lock!(message)
           raise Dependabot::DependencyFileNotParseable.new(@dependency_file.path, "Invalid bun.lock file: #{message}")
         end
 
+        sig { params(lockfile_version: T.nilable(Integer), entry: T.nilable(T::Array[T.untyped])).returns(T.nilable(T::Hash[String, T.untyped])) }
         def format_details(lockfile_version, entry)
           return unless lockfile_version.zero?
           return unless entry.is_a?(Array)

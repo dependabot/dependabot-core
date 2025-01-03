@@ -227,7 +227,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        version < MIN_SUPPORTED_VERSION
+        version && version < MIN_SUPPORTED_VERSION
       end
     end
 
