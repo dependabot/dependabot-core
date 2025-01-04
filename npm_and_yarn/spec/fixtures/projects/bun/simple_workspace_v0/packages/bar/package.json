@@ -1,0 +1,12 @@
+{
+  "name": "bar",
+  "version": "0.0.1",
+  "dependencies": {
+    "chalk": "0.3.0",
+    "lodash": "^1.2.1",
+    "foo": "workspace:*"
+  },
+  "devDependencies": {
+    "etag": "^1.1.0"
+  }
+}

@@ -64,7 +64,9 @@ module Dependabot
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
           path = Pathname.new(lockfile.name).dirname.to_s
 
-          updated_files = if lockfile.name.end_with?("yarn.lock") && Helpers.yarn_berry?(lockfile)
+          updated_files = if lockfile.name.end_with?("bun.lock")
+                            run_bun_updater(path, lockfile_name)
+                          elsif lockfile.name.end_with?("yarn.lock") && Helpers.yarn_berry?(lockfile)
                             run_yarn_berry_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
@@ -137,6 +139,18 @@ module Dependabot
               Helpers.run_pnpm_command(
                 "update #{dependency.name} --lockfile-only",
                 fingerprint: "update <dependency_name> --lockfile-only"
+              )
+              { lockfile_name => File.read(lockfile_name) }
+            end
+          end
+        end
+
+        def run_bun_updater(path, lockfile_name)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_bun_command(
+                "update #{dependency.name} --save-text-lockfile",
+                fingerprint: "update <dependency_name> --save-text-lockfile"
               )
               { lockfile_name => File.read(lockfile_name) }
             end

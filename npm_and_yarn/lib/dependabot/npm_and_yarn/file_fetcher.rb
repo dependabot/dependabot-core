@@ -68,6 +68,7 @@ module Dependabot
         package_managers["npm"] = npm_version if npm_version
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["pnpm"] = pnpm_version if pnpm_version
+        package_managers["bun"] = bun_version if bun_version
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
@@ -83,6 +84,7 @@ module Dependabot
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
+        fetched_files += bun_files if bun_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -118,6 +120,13 @@ module Dependabot
         fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
         fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def bun_files
+        fetched_bun_files = []
+        fetched_bun_files << bun_lock if bun_lock
+        fetched_bun_files
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -202,6 +211,14 @@ module Dependabot
         )
       end
 
+      sig { returns(T.nilable(T.any(Integer, String))) }
+      def bun_version
+        @bun_version ||= T.let(
+          package_manager_helper.setup(Bun::NAME),
+          T.nilable(T.any(Integer, String))
+        )
+      end
+
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
         @package_manager_helper ||= T.let(
@@ -219,7 +236,8 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock
+          pnpm: pnpm_lock,
+          bun: bun_lock
         }
       end
 
@@ -272,6 +290,27 @@ module Dependabot
         end
 
         @pnpm_lock
+      end
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def bun_lock
+        return @bun_lock if defined?(@bun_lock)
+
+        @bun_lock ||= T.let(fetch_file_if_present(Bun::LOCKFILE_NAME), T.nilable(DependencyFile))
+
+        return @bun_lock if @bun_lock || directory == "/"
+
+        # Loop through parent directories looking for a pnpm-lock
+        (1..directory.split("/").count).each do |i|
+          @bun_lock = fetch_file_from_host(("../" * i) + Bun::LOCKFILE_NAME)
+                      .tap { |f| f.support_file = true }
+          break if @bun_lock
+        rescue Dependabot::DependencyFileNotFound
+          # Ignore errors (bun.lock may not be present)
+          nil
+        end
+
+        @bun_lock
       end
 
       sig { returns(T.nilable(DependencyFile)) }
