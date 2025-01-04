@@ -11,11 +11,9 @@ RSpec.describe Dependabot::Composer::PackageManager do
   let(:package_manager) do
     described_class.new(
       detected_version: detected_version,
-      raw_version: raw_version,
-      requirement: requirement
+      raw_version: raw_version
     )
   end
-  let(:requirement) { nil }
 
   describe "#initialize" do
     context "when versions are set" do
