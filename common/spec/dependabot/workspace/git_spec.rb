@@ -10,7 +10,7 @@ require "dependabot/workspace/git"
 RSpec.describe Dependabot::Workspace::Git do
   subject(:workspace) { described_class.new(repo_contents_path) }
 
-  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
+  let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: File.join(Dir.tmpdir, "with space")) }
 
   around do |example|
     Dir.chdir(repo_contents_path) { example.run }
