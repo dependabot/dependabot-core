@@ -218,9 +218,17 @@ module Dependabot
         language_version_manager.python_version
       end
 
+      sig { returns(String) }
+      def python_command_version
+        language_version_manager.installed_version
+      end
+
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        Language.new(python_raw_version)
+        Language.new(
+          detected_version: python_raw_version,
+          raw_version: python_command_version
+        )
       end
 
       def requirement_files
