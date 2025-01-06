@@ -87,7 +87,7 @@ module Dependabot
 
       sig { returns(String) }
       def head_sha
-        run_shell_command("git rev-parse HEAD").strip
+        run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
       end
 
       sig { returns(String) }
