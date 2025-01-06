@@ -1969,7 +1969,7 @@ public partial class UpdateWorkerTests
                         <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
                       </PropertyGroup>
                       <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-                      <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                      <Import Project="$(VSToolsPath)\SomeSubPath\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                       <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
                             Other similar extension points exist, see Microsoft.Common.targets.
                       <Target Name="BeforeBuild">
@@ -2050,7 +2050,7 @@ public partial class UpdateWorkerTests
                         <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
                       </PropertyGroup>
                       <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-                      <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                      <Import Project="$(VSToolsPath)\SomeSubPath\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                       <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
                             Other similar extension points exist, see Microsoft.Common.targets.
                       <Target Name="BeforeBuild">
