@@ -315,15 +315,15 @@ module Dependabot
 
         case operator
         when "<"
-          Gem::Version.new(python_version) < Gem::Version.new(version)
+          Dependabot::Python::Version.new(python_version) < Dependabot::Python::Version.new(version)
         when "<="
-          Gem::Version.new(python_version) <= Gem::Version.new(version)
+          Dependabot::Python::Version.new(python_version) <= Dependabot::Python::Version.new(version)
         when ">"
-          Gem::Version.new(python_version) > Gem::Version.new(version)
+          Dependabot::Python::Version.new(python_version) > Dependabot::Python::Version.new(version)
         when ">="
-          Gem::Version.new(python_version) >= Gem::Version.new(version)
+          Dependabot::Python::Version.new(python_version) >= Dependabot::Python::Version.new(version)
         when "=="
-          Gem::Version.new(python_version) == Gem::Version.new(version)
+          Dependabot::Python::Version.new(python_version) == Dependabot::Python::Version.new(version)
         else
           false
         end
