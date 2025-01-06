@@ -6,10 +6,19 @@ require "dependabot/ecosystem"
 require_relative "../../spec_helper"
 
 RSpec.describe Dependabot::Python::Language do
-  subject(:language) { described_class.new(version) }
+  let(:language) do
+    described_class.new(
+      detected_version: detected_version,
+      raw_version: raw_version
+    )
+  end
+
+  let(:detected_version) { "3.8.20" }
+  let(:raw_version) { "3.13.1" }
 
   describe "#deprecated?" do
-    let(:version) { "3.8.20" }
+    let(:detected_version) { "3.8.20" }
+    let(:raw_version) { "3.13.1" }
 
     before do
       allow(::Dependabot::Experiments).to receive(:enabled?)
@@ -20,7 +29,7 @@ RSpec.describe Dependabot::Python::Language do
         .and_return(unsupported_enabled)
     end
 
-    context "when python_3_8_deprecation_warning is enabled and version is deprecated" do
+    context "when python_3_8_deprecation_warning is enabled and detected version is deprecated" do
       let(:deprecation_enabled) { true }
       let(:unsupported_enabled) { false }
 
@@ -29,8 +38,10 @@ RSpec.describe Dependabot::Python::Language do
       end
     end
 
-    context "when python_3_8_deprecation_warning is enabled but version is not deprecated" do
-      let(:version) { "3.13" }
+    context "when python_3_8_deprecation_warning is enabled but detected version is not deprecated" do
+      let(:detected_version) { "3.13" }
+      let(:raw_version) { "3.13.1" }
+
       let(:deprecation_enabled) { true }
       let(:unsupported_enabled) { false }
 
@@ -48,7 +59,7 @@ RSpec.describe Dependabot::Python::Language do
       end
     end
 
-    context "when version is unsupported" do
+    context "when detected version is unsupported" do
       let(:deprecation_enabled) { true }
       let(:unsupported_enabled) { true }
 
@@ -59,7 +70,8 @@ RSpec.describe Dependabot::Python::Language do
   end
 
   describe "#unsupported?" do
-    let(:version) { "3.8" }
+    let(:detected_version) { "3.8" }
+    let(:raw_version) { "3.13.1" }
 
     before do
       allow(::Dependabot::Experiments).to receive(:enabled?)
@@ -67,7 +79,7 @@ RSpec.describe Dependabot::Python::Language do
         .and_return(unsupported_enabled)
     end
 
-    context "when python_3_8_unsupported_error is enabled and version is unsupported" do
+    context "when python_3_8_unsupported_error is enabled and detected version is unsupported" do
       let(:unsupported_enabled) { true }
 
       it "returns true" do
@@ -75,8 +87,10 @@ RSpec.describe Dependabot::Python::Language do
       end
     end
 
-    context "when python_3_8_unsupported_error is enabled but version is supported" do
-      let(:version) { "3.13" }
+    context "when python_3_8_unsupported_error is enabled but detected version is supported" do
+      let(:detected_version) { "3.13" }
+      let(:raw_version) { "3.13.1" }
+
       let(:unsupported_enabled) { true }
 
       it "returns false" do
@@ -102,7 +116,7 @@ RSpec.describe Dependabot::Python::Language do
         .and_return(unsupported_enabled)
     end
 
-    context "when python_3_8_unsupported_error is enabled and version is unsupported" do
+    context "when python_3_8_unsupported_error is enabled and detected version is unsupported" do
       let(:unsupported_enabled) { true }
 
       it "raises a ToolVersionNotSupported error" do

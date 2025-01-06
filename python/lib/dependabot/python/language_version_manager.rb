@@ -30,6 +30,14 @@ module Dependabot
         )
       end
 
+      def installed_version
+        # Use `pyenv exec` to query the active Python version
+        output, _status = SharedHelpers.run_shell_command("pyenv exec python --version")
+        version = output.strip.split.last # Extract the version number (e.g., "3.13.1")
+
+        version
+      end
+
       def python_major_minor
         @python_major_minor ||= T.must(Python::Version.new(python_version).segments[0..1]).join(".")
       end
