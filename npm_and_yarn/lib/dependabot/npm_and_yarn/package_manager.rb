@@ -72,14 +72,16 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
+          detected_version: T.nilable(String),
+          raw_version: T.nilable(String),
           requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version: nil, raw_version: nil, requirement: nil)
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          detected_version: detected_version ? Version.new(detected_version) : nil,
+          version: raw_version ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement
@@ -88,17 +90,22 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
+        return false unless detected_version
+
         return false if unsupported?
+
         return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
 
-        deprecated_versions.include?(version)
+        deprecated_versions.include?(detected_version)
       end
 
       sig { override.returns(T::Boolean) }
       def unsupported?
+        return false unless detected_version
+
         return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
 
-        supported_versions.all? { |supported| supported > version }
+        supported_versions.all? { |supported| supported > detected_version }
       end
     end
 
@@ -123,14 +130,16 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
-          requirement: T.nilable(Requirement)
+          detected_version: T.nilable(String),
+          raw_version: T.nilable(String),
+          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version: nil, raw_version: nil, requirement: nil)
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          detected_version: detected_version ? Version.new(detected_version) : nil,
+          version: raw_version ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement
@@ -168,14 +177,16 @@ module Dependabot
 
       sig do
         params(
-          raw_version: String,
-          requirement: T.nilable(Requirement)
+          detected_version: T.nilable(String),
+          raw_version: T.nilable(String),
+          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version: nil, raw_version: nil, requirement: nil)
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          detected_version: detected_version ? Version.new(detected_version) : nil,
+          version: raw_version ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement
@@ -284,14 +295,16 @@ module Dependabot
 
       sig do
         params(
+          detected_version: T.nilable(String),
           raw_version: T.nilable(String),
-          requirement: T.nilable(Requirement)
+          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
         ).void
       end
-      def initialize(raw_version, requirement: nil)
+      def initialize(detected_version: nil, raw_version: nil, requirement: nil)
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          detected_version: detected_version ? Version.new(detected_version) : nil,
+          version: raw_version ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement
@@ -349,7 +362,7 @@ module Dependabot
       sig { returns(Ecosystem::VersionManager) }
       def language
         @language ||= Language.new(
-          Helpers.node_version,
+          raw_version: Helpers.node_version,
           requirement: language_requirement
         )
       end
@@ -458,6 +471,23 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/MethodLength
 
+      sig { params(name: String).returns(T.nilable(String)) }
+      def detect_version(name)
+        # we prioritize version mentioned in "packageManager" instead of "engines"
+        if @manifest_package_manager&.start_with?("#{name}@")
+          detected_version = @manifest_package_manager.split("@").last.to_s
+        end
+
+        # if "packageManager" have no version specified, we check if we can extract "engines" information
+        detected_version = check_engine_version(name) if !detected_version || detected_version.empty?
+
+        # if "packageManager" and "engines" both are not present, we check if we can infer the version
+        # from the manifest file lockfileVersion
+        detected_version = guessed_version(name) if !detected_version || detected_version.empty?
+
+        detected_version&.to_s
+      end
+
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
       def package_manager_by_name(name)
         Dependabot.logger.info("Resolving package manager for: #{name || 'default'}")
@@ -465,10 +495,13 @@ module Dependabot
         name = ensure_valid_package_manager(name)
         package_manager_class = T.must(PACKAGE_MANAGER_CLASSES[name])
 
-        if name == NpmPackageManager::NAME
-          detected_version = Helpers.npm_version_numeric_latest(@lockfiles[:npm])
-          package_manager = package_manager_class.new(detected_version.to_s)
+        detected_version = detect_version(name)
 
+        # if we have a detected version, we check if it is deprecated or unsupported
+        if detected_version
+          package_manager = package_manager_class.new(
+            detected_version: detected_version.to_s
+          )
           return package_manager if package_manager.deprecated? || package_manager.unsupported?
         end
 
@@ -483,7 +516,8 @@ module Dependabot
         end
 
         package_manager_class.new(
-          installed_version.to_s,
+          detected_version: detected_version.to_s,
+          raw_version: installed_version,
           requirement: package_manager_requirement
         )
       rescue StandardError => e
