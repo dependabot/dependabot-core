@@ -309,8 +309,6 @@ module Dependabot
       end
 
       def marker_satisfied?(marker, python_version)
-        return true if marker == "None"
-
         operator, version = marker.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
 
         case operator
