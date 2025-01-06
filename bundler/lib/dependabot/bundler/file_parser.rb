@@ -50,7 +50,11 @@ module Dependabot
 
       sig { returns(Ecosystem::VersionManager) }
       def package_manager
-        @package_manager ||= PackageManager.new(bundler_raw_version, package_manager_requirement)
+        @package_manager ||= PackageManager.new(
+          detected_version: bundler_version,
+          raw_version: bundler_raw_version,
+          requirement: package_manager_requirement
+        )
       end
 
       def package_manager_requirement
@@ -355,7 +359,9 @@ module Dependabot
       def bundler_raw_version
         return bundler_raw_version if defined?(@bundler_raw_version)
 
-        package_manager = PackageManager.new(bundler_version)
+        package_manager = PackageManager.new(
+          detected_version: bundler_version
+        )
 
         # If the selected version is unsupported, an unsupported error will be raised,
         # so there’s no need to attempt retrieving the raw version.

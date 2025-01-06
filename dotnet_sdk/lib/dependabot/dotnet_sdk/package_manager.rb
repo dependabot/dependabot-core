@@ -2,36 +2,38 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/nuget/version"
+require "dependabot/dotnet_sdk/version"
 require "dependabot/ecosystem"
-require "dependabot/nuget/requirement"
+require "dependabot/dotnet_sdk/requirement"
 
 module Dependabot
-  module Nuget
-    ECOSYSTEM = "dotnet"
+  module DotnetSdk
+    ECOSYSTEM = "dotnet-sdk"
 
     SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    class NugetPackageManager < Dependabot::Ecosystem::VersionManager
+    class DotNetSdkPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      NAME = "nuget"
+      NAME = "dotnet_sdk"
+
+      # we are not using any native helper or 3rd party utility for package manager,
+      # So we supply a placeholder version with for our package manager
+      VERSION = "1.0.0"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
       sig do
-        params(
-          raw_version: T.nilable(String)
-        ).void
+        void
       end
-      def initialize(raw_version)
+      def initialize
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          version: Version.new(VERSION),
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS
        )

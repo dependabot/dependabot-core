@@ -2,36 +2,38 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/nuget/version"
+require "dependabot/docker/version"
 require "dependabot/ecosystem"
-require "dependabot/nuget/requirement"
+require "dependabot/docker/requirement"
 
 module Dependabot
-  module Nuget
-    ECOSYSTEM = "dotnet"
+  module Docker
+    ECOSYSTEM = "docker"
 
     SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
     DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-    class NugetPackageManager < Dependabot::Ecosystem::VersionManager
+    class DockerPackageManager < Dependabot::Ecosystem::VersionManager
       extend T::Sig
 
-      NAME = "nuget"
+      NAME = "docker"
+
+      # As dockerfile updater is a inhouse custom utility, We use a placeholder
+      # version number for dockerfile updater
+      VERSION = "1.0.0"
 
       SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
       DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
       sig do
-        params(
-          raw_version: T.nilable(String)
-        ).void
+        void
       end
-      def initialize(raw_version)
+      def initialize
         super(
           name: NAME,
-          version: Version.new(raw_version),
+          version: Version.new(VERSION),
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS
        )

@@ -5,15 +5,6 @@ require "spec_helper"
 require "dependabot/requirement"
 require "dependabot/version"
 
-# Define an anonymous subclass of Dependabot::Requirement for testing purposes
-TestRequirement = Class.new(Dependabot::Requirement) do
-  # Initialize with comma-separated requirement constraints
-  def initialize(constraint_string)
-    requirements = constraint_string.split(",").map(&:strip)
-    super(requirements)
-  end
-end
-
 RSpec.describe Dependabot::Requirement do
   subject(:requirement) { TestRequirement.new(constraint_string) }
 

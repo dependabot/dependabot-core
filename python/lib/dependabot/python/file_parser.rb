@@ -21,6 +21,7 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
+      require_relative "file_parser/python_requirement_parser"
 
       DEPENDENCY_GROUP_KEYS = [
         {
@@ -293,10 +294,37 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
-        return true if dep["markers"].include?("<")
-        return false if dep["markers"].include?(">")
 
-        dep["requirement"]&.include?("<")
+        marker = dep["markers"]
+        version = python_raw_version
+
+        if marker.include?("python_version")
+          !marker_satisfied?(marker, version)
+        else
+          return true if dep["markers"].include?("<")
+          return false if dep["markers"].include?(">")
+
+          dep["requirement"]&.include?("<")
+        end
+      end
+
+      def marker_satisfied?(marker, python_version)
+        operator, version = marker.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
+
+        case operator
+        when "<"
+          Dependabot::Python::Version.new(python_version) < Dependabot::Python::Version.new(version)
+        when "<="
+          Dependabot::Python::Version.new(python_version) <= Dependabot::Python::Version.new(version)
+        when ">"
+          Dependabot::Python::Version.new(python_version) > Dependabot::Python::Version.new(version)
+        when ">="
+          Dependabot::Python::Version.new(python_version) >= Dependabot::Python::Version.new(version)
+        when "=="
+          Dependabot::Python::Version.new(python_version) == Dependabot::Python::Version.new(version)
+        else
+          false
+        end
       end
 
       def setup_file_dependencies
@@ -337,7 +365,7 @@ module Dependabot
       end
 
       def pipcompile_in_file
-        requirement_files.any? { |f| f.end_with?(".in") }
+        requirement_files.any? { |f| f.name.end_with?(PipCompilePackageManager::MANIFEST_FILENAME) }
       end
 
       def pipenv_files

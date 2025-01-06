@@ -45,6 +45,12 @@ RSpec.describe Dependabot::DotnetSdk::FileParser do
           metadata: metadata
         )
       end
+
+      ecosystem = parser.ecosystem
+
+      expect(ecosystem.name).to eq("dotnet-sdk")
+      expect(ecosystem.package_manager.name).to eq("dotnet_sdk")
+      expect(ecosystem.language.name).to eq("DotnetSDK")
     end
   end
 
