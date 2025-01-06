@@ -495,7 +495,7 @@ public partial class UpdateWorkerTests
                     MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.1", "net8.0"),
                 ],
                 projectContents: $"""
-                    <Project Sdk="Microsoft.NET.Sdk">">
+                    <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
                         <TargetFramework>net8.0</TargetFramework>
                         <SomePackageVersion>9.0.1</SomePackageVersion>

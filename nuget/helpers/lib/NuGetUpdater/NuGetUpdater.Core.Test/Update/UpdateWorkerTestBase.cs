@@ -159,6 +159,10 @@ public abstract class UpdateWorkerTestBase : TestBase
             {
                 ValidateUpdateOperationResult(expectedResult, actualResult!);
             }
+            else if ((actualResult.ErrorType ?? ErrorType.None) != ErrorType.None)
+            {
+                throw new Exception($"Result indicates failure: ErrorType={actualResult.ErrorType}, ErrorDetails={actualResult.ErrorDetails}");
+            }
 
             if (additionalChecks is not null)
             {
