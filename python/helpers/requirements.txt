@@ -7,7 +7,6 @@ hashin==1.0.3; python_version >= '3.9'
 pipenv==2024.0.2
 plette==2.1.0
 poetry==1.8.5; python_version < "3.9"
-poetry==2.0.0; python_version >= "3.9"
 # TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop support for Python 3.10.
 toml==0.10.2
 
