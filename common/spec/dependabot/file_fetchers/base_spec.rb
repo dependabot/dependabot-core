@@ -297,18 +297,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
 
     context "with a git repo" do
-      let(:repo_contents_path) { Dir.mktmpdir }
+      let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
       let(:head_sha) { File.read(File.join(repo_contents_path, ".git", "refs", "heads", "master")).strip }
 
-      before do
-        FileUtils.mkdir_p(repo_contents_path)
-        Dir.chdir(repo_contents_path) do
-          Dependabot::SharedHelpers.run_shell_command("git init")
-          Dependabot::SharedHelpers.run_shell_command("git commit --allow-empty -m first")
-        end
-      end
-
-      after do
+      around do |example|
+        Dir.chdir(repo_contents_path) { example.run }
         FileUtils.rm_rf(repo_contents_path)
       end
 
