@@ -26,8 +26,22 @@ internal static class DiscoverCommand
 
         command.SetHandler(async (jobPath, repoRoot, workspace, outputPath) =>
         {
+            var (experimentsManager, errorResult) = await ExperimentsManager.FromJobFileAsync(jobPath.FullName);
+            if (errorResult is not null)
+            {
+                // to make testing easier, this should be a `WorkspaceDiscoveryResult` object
+                var discoveryErrorResult = new WorkspaceDiscoveryResult
+                {
+                    Path = workspace,
+                    Projects = [],
+                    ErrorType = errorResult.ErrorType,
+                    ErrorDetails = errorResult.ErrorDetails,
+                };
+                await DiscoveryWorker.WriteResultsAsync(repoRoot.FullName, outputPath.FullName, discoveryErrorResult);
+                return;
+            }
+
             var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
             var worker = new DiscoveryWorker(experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, workspace, outputPath.FullName);
         }, JobPathOption, RepoRootOption, WorkspaceOption, OutputOption);

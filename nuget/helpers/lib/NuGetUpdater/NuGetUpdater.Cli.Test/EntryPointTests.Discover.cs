@@ -388,6 +388,83 @@ public partial class EntryPointTests
             );
         }
 
+        [Fact]
+        public async Task JobFileParseErrorIsReported_InvalidJson()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+            await File.WriteAllTextAsync(jobFilePath, "not json");
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    ErrorType = ErrorType.Unknown,
+                    ErrorDetailsPattern = "JsonException",
+                }
+            );
+        }
+
+        [Fact]
+        public async Task JobFileParseErrorIsReported_BadRequirement()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+
+            // write a job file with a valid shape, but invalid requirement
+            await File.WriteAllTextAsync(jobFilePath, """
+                {
+                    "job": {
+                        "source": {
+                            "provider": "github",
+                            "repo": "test/repo"
+                        },
+                        "security-advisories": [
+                            {
+                                "dependency-name": "Some.Dependency",
+                                "affected-versions": ["not a valid requirement"]
+                            }
+                        ]
+                    }
+                }
+                """);
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    ErrorType = ErrorType.BadRequirement,
+                    ErrorDetailsPattern = "not a valid requirement",
+                }
+            );
+        }
+
         private static async Task RunAsync(
             Func<string, string[]> getArgs,
             TestFile[] initialFiles,
@@ -406,6 +483,7 @@ public partial class EntryPointTests
                 var originalErr = Console.Error;
                 Console.SetOut(writer);
                 Console.SetError(writer);
+                string? resultPath = null;
 
                 try
                 {
@@ -416,9 +494,15 @@ public partial class EntryPointTests
                     // manually pull out the experiments manager for the validate step below
                     for (int i = 0; i < args.Length - 1; i++)
                     {
-                        if (args[i] == "--job-path")
+                        switch (args[i])
                         {
-                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                            case "--job-path":
+                                var experimentsResult = await ExperimentsManager.FromJobFileAsync(args[i + 1]);
+                                experimentsManager = experimentsResult.ExperimentsManager;
+                                break;
+                            case "--output":
+                                resultPath = args[i + 1];
+                                break;
                         }
                     }
 
@@ -434,7 +518,7 @@ public partial class EntryPointTests
                     Console.SetError(originalErr);
                 }
 
-                var resultPath = Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
+                resultPath ??= Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
                 var resultJson = await File.ReadAllTextAsync(resultPath);
                 var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
                 return resultObject!;
