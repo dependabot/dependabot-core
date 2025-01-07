@@ -62,32 +62,6 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a version specified (composer v1)" do
-      let(:project_name) { "v1/minor_version" }
-
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
-
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: "1.0.*",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
-            }]
-          )
-        end
-      end
-    end
-
     context "with doctored entries" do
       let(:project_name) { "doctored" }
 
