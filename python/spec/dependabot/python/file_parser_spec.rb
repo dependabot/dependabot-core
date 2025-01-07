@@ -158,6 +158,33 @@ RSpec.describe Dependabot::Python::FileParser do
         end
       end
 
+      context "when there is a combination of multiple conditions with 'and' in a marker" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("3.13.1")
+        end
+
+        # python_version >= '3.0' and python_version <= '3.7'
+        let(:requirements_fixture_name) { "markers_with_combination_of_conditions.txt" }
+
+        it "then the dependency version should be 1.3.0" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("arrow")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
       context "when including a < in the requirement" do
         let(:requirements_fixture_name) { "markers_2.txt" }
 
