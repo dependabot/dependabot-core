@@ -31,6 +31,10 @@ public class CloneWorker
         try
         {
             jobFile = RunWorker.Deserialize(jobFileContent);
+            if (jobFile is null)
+            {
+                parseError = new UnknownError(new Exception("Job file could not be deserialized"), _jobId);
+            }
         }
         catch (BadRequirementException ex)
         {
