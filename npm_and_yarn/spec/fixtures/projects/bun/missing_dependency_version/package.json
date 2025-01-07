@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "fetch-factory": "^0.0.1",
+    "lodash": "^99999.0.0" // previous: "^4.17.21"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}
