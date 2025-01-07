@@ -2292,6 +2292,62 @@ public partial class UpdateWorkerTests
         }
 
         [Fact]
+        public async Task MissingVisualStudioComponentTargetsAreReportedAsMissingFiles()
+        {
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+                [
+                    ("project.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Some.Visual.Studio.Component.props" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("packages.config", """
+                        <packages>
+                          <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                        </packages>
+                        """),
+                    ("NuGet.Config", """
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="packages" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ]
+            );
+            MockNuGetPackage[] packages =
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net45"),
+            ];
+            await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
+            var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
+
+            var worker = new UpdaterWorker(new ExperimentsManager(), new TestLogger());
+            await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
+
+            var resultContents = await File.ReadAllTextAsync(resultOutputPath);
+            var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
+            Assert.Equal(ErrorType.MissingFile, result.ErrorType);
+            Assert.Equal("$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v$(VisualStudioVersion)/Some.Visual.Studio.Component.props", result.ErrorDetails!.ToString().NormalizePathToUnix());
+        }
+
+        [Fact]
         public async Task ReportsPrivateSourceAuthenticationFailure()
         {
             static (int, string) TestHttpHandler(string uriString)
