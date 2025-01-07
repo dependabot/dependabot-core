@@ -213,48 +213,62 @@ internal static class SdkProjectDiscovery
                             if (experimentsManager.InstallDotnetSdks)
                             {
                                 var projectEvaluation = GetNearestProjectEvaluation(target);
-                                if (projectEvaluation is not null)
+                                if (projectEvaluation is null)
                                 {
-                                    var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
-                                    var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
-                                    if (removedReferences is not null && addedReferences is not null)
+                                    break;
+                                }
+
+                                var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
+                                var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
+                                if (removedReferences is null || addedReferences is null)
+                                {
+                                    break;
+                                }
+
+                                foreach (var removedAssembly in removedReferences.Children.OfType<Item>())
+                                {
+                                    var removedPackageName = GetChildMetadataValue(removedAssembly, "NuGetPackageId");
+                                    var removedFileName = Path.GetFileName(removedAssembly.Name);
+                                    if (removedPackageName is null || removedFileName is null)
                                     {
-                                        foreach (var removedAssembly in removedReferences.Children.OfType<Item>())
-                                        {
-                                            var removedPackageName = GetChildMetadataValue(removedAssembly, "NuGetPackageId");
-                                            var removedFileName = Path.GetFileName(removedAssembly.Name);
-                                            if (removedPackageName is not null && removedFileName is not null)
-                                            {
-                                                var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                                var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
-                                                if (existingProjectPackages.ContainsKey(removedPackageName))
-                                                {
-                                                    var correspondingAddedFile = addedReferences.Children.OfType<Item>()
-                                                        .FirstOrDefault(i => removedFileName.Equals(Path.GetFileName(i.Name), StringComparison.OrdinalIgnoreCase));
-                                                    if (correspondingAddedFile is not null)
-                                                    {
-                                                        var runtimePackageName = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageId");
-                                                        var runtimePackageVersion = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageVersion");
-                                                        if (runtimePackageName is not null &&
-                                                            runtimePackageVersion is not null &&
-                                                            SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
-                                                        {
-                                                            var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
-                                                            var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
-                                                            if (replacementPackageVersion is not null)
-                                                            {
-                                                                var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
-                                                                var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
-                                                                packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
-                                                                var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
-                                                                logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        continue;
                                     }
+
+                                    var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    if (!existingProjectPackages.ContainsKey(removedPackageName))
+                                    {
+                                        continue;
+                                    }
+
+                                    var correspondingAddedFile = addedReferences.Children.OfType<Item>()
+                                        .FirstOrDefault(i => removedFileName.Equals(Path.GetFileName(i.Name), StringComparison.OrdinalIgnoreCase));
+                                    if (correspondingAddedFile is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var runtimePackageName = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageId");
+                                    var runtimePackageVersion = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageVersion");
+                                    if (runtimePackageName is null ||
+                                        runtimePackageVersion is null ||
+                                        !SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
+                                    {
+                                        continue;
+                                    }
+
+                                    var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
+                                    var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
+                                    if (replacementPackageVersion is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
+                                    var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
+                                    logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
                                 }
                             }
                             break;
