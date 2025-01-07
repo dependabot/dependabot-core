@@ -14,7 +14,7 @@ on: # yamllint disable-line rule:truthy
     inputs:
       pr:
         required: true
-        type: string
+        type: number
         description: PR number
 
 jobs:

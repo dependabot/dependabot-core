@@ -24,9 +24,27 @@ RSpec.describe Dependabot::Workspace::Git do
     expect(workspace).not_to be_changed
   end
 
-  describe "#initial_head_sha" do
+  describe "#initial_head_sha", :focus do # rubocop:disable RSpec/Focus
+    let(:head_sha) { File.read(File.join(repo_contents_path, ".git", "refs", "heads", "master")).strip }
+
     it "is the initial HEAD sha before any change attempts" do
-      expect(workspace.initial_head_sha).to eq(`git rev-parse HEAD`.strip)
+      expect(workspace.initial_head_sha).to eq(head_sha)
+    end
+
+    context "with warnings from git rev-parse" do
+      before do
+        # Git no longer allows you to create a branch or symbolic ref named HEAD
+        # so we need to manually hack a HEAD ref file to ensure that no warnings
+        # are included in the output of git rev-parse
+        FileUtils.cp(
+          File.join(repo_contents_path, ".git", "refs", "heads", "master"),
+          File.join(repo_contents_path, ".git", "refs", "heads", "HEAD")
+        )
+      end
+
+      it "is the initial HEAD sha before any change attempts" do
+        expect(workspace.initial_head_sha).to eq(head_sha)
+      end
     end
   end
 
