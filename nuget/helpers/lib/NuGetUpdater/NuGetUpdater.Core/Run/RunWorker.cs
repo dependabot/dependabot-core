@@ -12,6 +12,7 @@ namespace NuGetUpdater.Core.Run;
 
 public class RunWorker
 {
+    private readonly string _jobId;
     private readonly IApiHandler _apiHandler;
     private readonly ILogger _logger;
     private readonly IDiscoveryWorker _discoveryWorker;
@@ -25,8 +26,9 @@ public class RunWorker
         Converters = { new JsonStringEnumConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
-    public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
+    public RunWorker(string jobId, IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
     {
+        _jobId = jobId;
         _apiHandler = apiHandler;
         _logger = logger;
         _discoveryWorker = discoverWorker;
@@ -87,9 +89,13 @@ public class RunWorker
         {
             error = new PrivateSourceAuthenticationFailure(lastUsedPackageSourceUrls);
         }
+        catch (BadRequirementException ex)
+        {
+            error = new BadRequirement(ex.Message);
+        }
         catch (MissingFileException ex)
         {
-            error = new DependencyFileNotFound(ex.FilePath);
+            error = new DependencyFileNotFound("file not found", ex.FilePath);
         }
         catch (UpdateNotPossibleException ex)
         {
@@ -97,7 +103,7 @@ public class RunWorker
         }
         catch (Exception ex)
         {
-            error = new UnknownError(ex.ToString());
+            error = new UnknownError(ex, _jobId);
         }
 
         if (error is not null)

@@ -33,8 +33,8 @@ internal static class UpdateCommand
 
         command.SetHandler(async (jobPath, repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, isTransitive, resultOutputPath) =>
         {
+            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobPath.FullName);
             var logger = new ConsoleLogger();
-            var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobPath.FullName, logger);
             var worker = new UpdaterWorker(experimentsManager, logger);
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion, isTransitive, resultOutputPath);
             setExitCode(0);
