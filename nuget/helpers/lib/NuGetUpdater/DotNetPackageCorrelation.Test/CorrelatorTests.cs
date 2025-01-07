@@ -7,7 +7,7 @@ namespace DotNetPackageCorrelation.Tests;
 public class CorrelatorTests
 {
     [Fact]
-    public async Task AllFilesShapedAppropriately()
+    public async Task FileHandling_AllFilesShapedAppropriately()
     {
         // the JSON and markdown are shaped as expected
         var (packages, warnings) = await RunFromFilesAsync(
