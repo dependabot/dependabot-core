@@ -318,7 +318,9 @@ module Dependabot
 
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
-        result = evaluate_condition(conditions.shift, python_version)
+
+        # Explicitly define the type of result as T::Boolean
+        result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
 
         until conditions.empty?
           operator = conditions.shift
