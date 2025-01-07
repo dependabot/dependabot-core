@@ -218,9 +218,17 @@ module Dependabot
         language_version_manager.python_version
       end
 
+      sig { returns(String) }
+      def python_command_version
+        language_version_manager.installed_version
+      end
+
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        Language.new(python_raw_version)
+        Language.new(
+          detected_version: python_raw_version,
+          raw_version: python_command_version
+        )
       end
 
       def requirement_files
@@ -294,10 +302,37 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
-        return true if dep["markers"].include?("<")
-        return false if dep["markers"].include?(">")
 
-        dep["requirement"]&.include?("<")
+        marker = dep["markers"]
+        version = python_raw_version
+
+        if marker.include?("python_version")
+          !marker_satisfied?(marker, version)
+        else
+          return true if dep["markers"].include?("<")
+          return false if dep["markers"].include?(">")
+
+          dep["requirement"]&.include?("<")
+        end
+      end
+
+      def marker_satisfied?(marker, python_version)
+        operator, version = marker.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
+
+        case operator
+        when "<"
+          Dependabot::Python::Version.new(python_version) < Dependabot::Python::Version.new(version)
+        when "<="
+          Dependabot::Python::Version.new(python_version) <= Dependabot::Python::Version.new(version)
+        when ">"
+          Dependabot::Python::Version.new(python_version) > Dependabot::Python::Version.new(version)
+        when ">="
+          Dependabot::Python::Version.new(python_version) >= Dependabot::Python::Version.new(version)
+        when "=="
+          Dependabot::Python::Version.new(python_version) == Dependabot::Python::Version.new(version)
+        else
+          false
+        end
       end
 
       def setup_file_dependencies

@@ -311,7 +311,7 @@ module Dependabot
 
         SharedHelpers.with_git_configured(credentials: credentials) do
           Dir.chdir(T.must(repo_contents_path)) do
-            return SharedHelpers.run_shell_command("git rev-parse HEAD").strip
+            return SharedHelpers.run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
           end
         end
       end
