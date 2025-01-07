@@ -1,12 +1,17 @@
 # typed: false
 # frozen_string_literal: true
 
-require "dependabot/ecosystem"
 require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/ecosystem"
 require "spec_helper"
 
 RSpec.describe Dependabot::NpmAndYarn::Language do
-  let(:language) { described_class.new(raw_version, requirement: requirement) }
+  let(:language) do
+    described_class.new(
+      raw_version: raw_version,
+      requirement: requirement
+    )
+  end
   let(:raw_version) { "16.13.1" }
   let(:requirement) { nil }
 
