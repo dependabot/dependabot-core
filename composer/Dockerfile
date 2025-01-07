@@ -1,5 +1,4 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG COMPOSER_V1_VERSION=1.10.27
 ARG COMPOSER_V2_VERSION=2.7.7
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN apt-get update \
@@ -38,7 +37,6 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-mcrypt \
   && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer1 --version=${COMPOSER_V1_VERSION}
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
 
 USER dependabot
