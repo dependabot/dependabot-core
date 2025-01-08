@@ -18,7 +18,7 @@ RSpec.describe Dependabot::Composer do
     # composer/helpers/v2/composer.lock, you also need to bump it in the
     # Dockerfile.
 
-    expect(helper_composer_version(major_version: "v2")).to eq(native_composer_version(major_version: "v2"))
+    expect(helper_composer_version(major_version: "v2")).to eq(native_composer_version)
   end
 
   private
@@ -30,12 +30,8 @@ RSpec.describe Dependabot::Composer do
     JSON.parse(composer_lock)["packages"].find { |p| p["name"] == "composer/composer" }["version"]
   end
 
-  def native_composer_version(major_version:)
-    native_composer_output = if major_version == "v1"
-                               Dependabot::SharedHelpers.run_shell_command("composer1 --version")
-                             else
-                               Dependabot::SharedHelpers.run_shell_command("composer --version")
-                             end
+  def native_composer_version
+    native_composer_output = Dependabot::SharedHelpers.run_shell_command("composer --version")
     native_composer_output.match(/composer\s+version\s+(\d+\.\d+\.\d+)/i).captures.first
   end
 end
