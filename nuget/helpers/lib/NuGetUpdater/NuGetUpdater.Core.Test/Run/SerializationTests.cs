@@ -498,7 +498,9 @@ public class SerializationTests
                         "repo": "some/repo"
                     },
                     "commit-message-options": {
-                        "prefix": "[SECURITY] "
+                        "prefix": "[SECURITY] ",
+                        "prefix-development": null,
+                        "include-scope": true
                     }
                 }
             }
@@ -506,7 +508,7 @@ public class SerializationTests
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
-        Assert.Null(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+        Assert.True(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
     }
 
     public static IEnumerable<object?[]> DeserializeErrorTypesData()
