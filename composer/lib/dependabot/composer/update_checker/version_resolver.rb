@@ -34,7 +34,6 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1
             (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/

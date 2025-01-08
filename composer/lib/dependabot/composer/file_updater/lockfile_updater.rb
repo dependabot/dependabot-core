@@ -204,14 +204,6 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, source
           end
 
-          # NOTE: This error is raised by composer v1
-          if error.message.include?("Argument 1 passed to Composer")
-            msg = "One of your Composer plugins is not compatible with the " \
-                  "latest version of Composer. Please update Composer and " \
-                  "try running `composer update` to debug further."
-            raise DependencyFileNotResolvable, msg
-          end
-
           # NOTE: This error is raised by composer v2 and includes helpful
           # information about which plugins or dependencies are not compatible
           if error.message.include?("Your requirements could not be resolved")
