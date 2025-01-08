@@ -222,7 +222,8 @@ module Dependabot
             git_source_details_from(bare_source)
           when :registry
             registry_source_details_from(bare_source)
-          when :interpolation
+          # Interpolation and GCS sources are not supported
+          when :interpolation, :gcs
             return nil
           end
 
@@ -321,6 +322,7 @@ module Dependabot
         return :git if source_string.start_with?("git::", "git@")
         return :mercurial if source_string.start_with?("hg::")
         return :s3 if source_string.start_with?("s3::")
+        return :gcs if source_string.start_with?("gcs::")
 
         raise "Unknown src: #{source_string}" if source_string.split("/").first&.include?("::")
 

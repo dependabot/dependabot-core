@@ -1025,6 +1025,14 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when the source type is a GCS bucket" do
+      let(:source_string) { "gcs::https://www.googleapis.com/storage/v1/modules/foomodule.zip" }
+
+      it "returns the correct source type" do
+        expect(source_type).to eq(:gcs)
+      end
+    end
+
     context "when the source type is unknown" do
       let(:source_string) { "unknown_source" }
 
