@@ -279,17 +279,7 @@ module Dependabot
 
         return @pnpm_lock if @pnpm_lock || directory == "/"
 
-        # Loop through parent directories looking for a pnpm-lock
-        (1..directory.split("/").count).each do |i|
-          @pnpm_lock = fetch_file_from_host(("../" * i) + PNPMPackageManager::LOCKFILE_NAME)
-                       .tap { |f| f.support_file = true }
-          break if @pnpm_lock
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (pnpm_lock.yaml may not be present)
-          nil
-        end
-
-        @pnpm_lock
+        @pnpm_lock = fetch_file_from_parent_directories(PNPMPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -300,17 +290,7 @@ module Dependabot
 
         return @bun_lock if @bun_lock || directory == "/"
 
-        # Loop through parent directories looking for a pnpm-lock
-        (1..directory.split("/").count).each do |i|
-          @bun_lock = fetch_file_from_host(("../" * i) + Bun::LOCKFILE_NAME)
-                      .tap { |f| f.support_file = true }
-          break if @bun_lock
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (bun.lock may not be present)
-          nil
-        end
-
-        @bun_lock
+        @bun_lock = fetch_file_from_parent_directories(Bun::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -333,17 +313,7 @@ module Dependabot
 
         return @npmrc if @npmrc || directory == "/"
 
-        # Loop through parent directories looking for an npmrc
-        (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host(("../" * i) + NpmPackageManager::RC_FILENAME)
-                   .tap { |f| f.support_file = true }
-          break if @npmrc
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (.npmrc may not be present)
-          nil
-        end
-
-        @npmrc
+        @npmrc = fetch_file_from_parent_directories(NpmPackageManager::RC_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -354,17 +324,7 @@ module Dependabot
 
         return @yarnrc if @yarnrc || directory == "/"
 
-        # Loop through parent directories looking for an yarnrc
-        (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host(("../" * i) + YarnPackageManager::RC_FILENAME)
-                    .tap { |f| f.support_file = true }
-          break if @yarnrc
-        rescue Dependabot::DependencyFileNotFound
-          # Ignore errors (.yarnrc may not be present)
-          nil
-        end
-
-        @yarnrc
+        @yarnrc = fetch_file_from_parent_directories(YarnPackageManager::RC_FILENAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -737,6 +697,22 @@ module Dependabot
         else
           Dependabot.logger.info("Repository contents path does not exist")
         end
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_with_support(filename)
+        fetch_file_from_host(filename).tap { |f| f.support_file = true }
+      rescue Dependabot::DependencyFileNotFound
+        nil
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_file_from_parent_directories(filename)
+        (1..directory.split("/").count).each do |i|
+          file = fetch_file_with_support(("../" * i) + filename)
+          return file if file
+        end
+        nil
       end
     end
   end

@@ -78,11 +78,12 @@ module Dependabot
         sig { params(file: DependencyFile).returns(T.any(JsonLock, YarnLock, PnpmLock, BunLock)) }
         def lockfile_for(file)
           @lockfiles ||= T.let({}, T.nilable(T::Hash[String, T.any(JsonLock, YarnLock, PnpmLock, BunLock)]))
-          @lockfiles[file.name] ||= if [*package_locks, *shrinkwraps].include?(file)
+          @lockfiles[file.name] ||= case file.name
+                                    when *package_locks.map(&:name), *shrinkwraps.map(&:name)
                                       JsonLock.new(file)
-                                    elsif yarn_locks.include?(file)
+                                    when *yarn_locks.map(&:name)
                                       YarnLock.new(file)
-                                    elsif pnpm_locks.include?(file)
+                                    when *pnpm_locks.map(&:name)
                                       PnpmLock.new(file)
                                     else
                                       BunLock.new(file)

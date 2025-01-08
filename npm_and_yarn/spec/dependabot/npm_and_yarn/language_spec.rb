@@ -21,15 +21,15 @@ RSpec.describe Dependabot::NpmAndYarn::Language do
     end
 
     it "sets the name correctly" do
-      expect(language.name).to eq(Dependabot::NpmAndYarn::Node::NAME)
+      expect(language.name).to eq(Dependabot::NpmAndYarn::Language::NAME)
     end
 
     it "sets the deprecated_versions correctly" do
-      expect(language.deprecated_versions).to eq(Dependabot::NpmAndYarn::Node::DEPRECATED_VERSIONS)
+      expect(language.deprecated_versions).to eq(Dependabot::NpmAndYarn::Language::DEPRECATED_VERSIONS)
     end
 
     it "sets the supported_versions correctly" do
-      expect(language.supported_versions).to eq(Dependabot::NpmAndYarn::Node::SUPPORTED_VERSIONS)
+      expect(language.supported_versions).to eq(Dependabot::NpmAndYarn::Language::SUPPORTED_VERSIONS)
     end
 
     context "when a requirement is provided" do

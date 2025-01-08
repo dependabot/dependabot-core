@@ -19,32 +19,22 @@ module Dependabot
 
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed
-          @content ||= T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-          return @content if @content
+          @parsed ||= begin
+            content = begin
+              # Since bun.lock is a JSONC file, which is a subset of YAML, we can use YAML to parse it
+              YAML.load(T.must(@dependency_file.content))
+            rescue Psych::SyntaxError => e
+              raise_invalid!("malformed JSONC at line #{e.line}, column #{e.column}")
+            end
+            raise_invalid!("expected to be an object") unless content.is_a?(Hash)
 
-          # Since bun.lock is a JSONC file, which is a subset of YAML, we can use YAML to parse it
-          content = YAML.load(T.must(@dependency_file.content))
-          raise_invalid!("expected to be an object") unless content.is_a?(Hash)
+            version = content["lockfileVersion"]
+            raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
+            raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
+            raise_invalid!("unsupported 'lockfileVersion' = #{version}") unless version.zero?
 
-          version = content["lockfileVersion"]
-          raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
-          raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
-          unless version.zero?
-            raise_invalid!(<<~ERROR
-              unsupported 'lockfileVersion' = #{version}, please open an issue with Dependabot to support this:
-              https://github.com/dependabot/dependabot/issues/new
-            ERROR
-                          )
+            T.let(content, T.untyped)
           end
-
-          @content = T.let(content, T::Hash[String, T.untyped])
-        rescue Psych::SyntaxError => e
-          raise_invalid!("malformed JSONC at line #{e.line}, column #{e.column}")
-        end
-
-        sig { returns(Integer) }
-        def version
-          parsed["lockfileVersion"]
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
