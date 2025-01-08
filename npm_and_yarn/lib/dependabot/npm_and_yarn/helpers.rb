@@ -534,7 +534,7 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
-        return run_bun_command(command, fingerprint: fingerprint) if name == Bun::NAME
+        return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
 
         full_command = "corepack #{name} #{command}"
 

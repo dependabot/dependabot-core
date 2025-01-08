@@ -171,7 +171,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def bun_lock
         @bun_lock ||= T.let(dependency_files.find do |f|
-          f.name == Bun::LOCKFILE_NAME
+          f.name == BunPackageManager::LOCKFILE_NAME
         end, T.nilable(Dependabot::DependencyFile))
       end
 

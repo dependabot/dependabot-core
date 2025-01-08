@@ -214,7 +214,7 @@ module Dependabot
       sig { returns(T.nilable(T.any(Integer, String))) }
       def bun_version
         @bun_version ||= T.let(
-          package_manager_helper.setup(Bun::NAME),
+          package_manager_helper.setup(BunPackageManager::NAME),
           T.nilable(T.any(Integer, String))
         )
       end
@@ -286,11 +286,11 @@ module Dependabot
       def bun_lock
         return @bun_lock if defined?(@bun_lock)
 
-        @bun_lock ||= T.let(fetch_file_if_present(Bun::LOCKFILE_NAME), T.nilable(DependencyFile))
+        @bun_lock ||= T.let(fetch_file_if_present(BunPackageManager::LOCKFILE_NAME), T.nilable(DependencyFile))
 
         return @bun_lock if @bun_lock || directory == "/"
 
-        @bun_lock = fetch_file_from_parent_directories(Bun::LOCKFILE_NAME)
+        @bun_lock = fetch_file_from_parent_directories(BunPackageManager::LOCKFILE_NAME)
       end
 
       sig { returns(T.nilable(DependencyFile)) }
