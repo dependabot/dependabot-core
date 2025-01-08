@@ -2347,16 +2347,18 @@ public partial class UpdateWorkerTests
             Assert.Equal("$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v$(VisualStudioVersion)/Some.Visual.Studio.Component.props", result.ErrorDetails!.ToString().NormalizePathToUnix());
         }
 
-        [Fact]
-        public async Task ReportsPrivateSourceAuthenticationFailure()
+        [Theory]
+        [InlineData(401)]
+        [InlineData(403)]
+        public async Task ReportsPrivateSourceAuthenticationFailure(int httpStatusCode)
         {
-            static (int, string) TestHttpHandler(string uriString)
+            (int, string) TestHttpHandler(string uriString)
             {
                 var uri = new Uri(uriString, UriKind.Absolute);
                 var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
                 return uri.PathAndQuery switch
                 {
-                    _ => (401, "{}"), // everything is unauthorized
+                    _ => (httpStatusCode, "{}"), // everything is unauthorized
                 };
             }
             using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);

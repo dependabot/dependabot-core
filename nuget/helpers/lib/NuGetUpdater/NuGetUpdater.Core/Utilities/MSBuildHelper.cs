@@ -886,6 +886,7 @@ internal static partial class MSBuildHelper
             "The plugin credential provider could not acquire credentials",
             "401 (Unauthorized)",
             "error NU1301: Unable to load the service index for source",
+            "Response status code does not indicate success: 403",
         };
         if (unauthorizedMessageSnippets.Any(stdout.Contains))
         {
