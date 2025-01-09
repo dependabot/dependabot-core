@@ -3,6 +3,7 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser_for_graph"
 require "sorbet-runtime"
 
 module Dependabot
