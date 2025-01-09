@@ -79,6 +79,55 @@ module Dependabot
         end
       end
 
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraph]) }
+      def parse_for_dependency_graph
+        # Parse manifest dependencies
+        main_dependencies = parse_manifest_dependencies
+
+        dependency_graphs = {}
+
+        lockfiles.map do |package_manager, lockfile|
+          next unless lockfile
+
+          # Parse lockfile dependencies
+          lockfile_parser = lockfile_parser_for(package_manager, lockfile)
+
+          # Build dependency graph
+          dependency_graph = lockfile_parser.build_dependency_graph(
+            main_dependencies
+          )
+
+          dependency_graphs[package_manager] = dependency_graph
+        end
+        dependency_graphs
+      end
+
+      private
+
+      sig { returns(T::Hash[String, Dependabot::Dependency]) }
+      def parse_manifest_dependencies
+        ManifestParserForGraph.new(package_files).parse
+      end
+
+      sig do
+        params(
+          package_manager: Symbol,
+          lockfile: Dependabot::DependencyFile
+        ).returns(Dependabot::NpmAndYarn::LockFileParserForGraph)
+      end
+      def lockfile_parser_for(package_manager, lockfile)
+        case package_manager
+        when :npm
+          JsonLockParserForGraph.new(lockfile)
+        when :pnpm
+          PnpmLockParserForGraph.new(lockfile)
+        when :yarn
+          YarnLockParserForGraph.new(lockfile)
+        else
+          raise "Unsupported package manager: #{package_manager}"
+        end
+      end
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -90,8 +139,6 @@ module Dependabot
           T.nilable(Ecosystem)
         )
       end
-
-      private
 
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
