@@ -181,12 +181,14 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+      @dependencies_graphs = T.let({}, T::Hash[String, T::Hash[String, DependencyGraph]])
       @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
 
       directories.each do |dir|
         @current_directory = dir
         @dependencies[dir] = parse_files!
+        @dependencies_graphs[dir] = parse_files_for_dependency_graph!
       end
 
       @dependency_group_engine = T.let(DependencyGroupEngine.from_job_config(job: job),
@@ -227,6 +229,11 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Dependency]) }
     def parse_files!
       dependency_file_parser.parse
+    end
+
+    sig { returns(T::Hash[String, DependencyGraph]) }
+    def parse_files_for_dependency_graph!
+      dependency_file_parser.parse_for_dependency_graph
     end
 
     sig { returns(Dependabot::FileParsers::Base) }
