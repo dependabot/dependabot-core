@@ -3,10 +3,12 @@
 
 require "dependabot/logger"
 require "dependabot/python/version"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
     class LanguageVersionManager
+      extend T::Sig
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
         3.13.1
@@ -21,6 +23,7 @@ module Dependabot
         @python_requirement_parser = python_requirement_parser
       end
 
+      sig { returns(T.nilable(String)) }
       def install_required_python
         # The leading space is important in the version check
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
@@ -46,6 +49,7 @@ module Dependabot
         @python_version ||= python_version_from_supported_versions
       end
 
+      sig { returns(String) }
       def python_requirement_string
         if user_specified_python_version
           if user_specified_python_version.start_with?(/\d/)
@@ -59,6 +63,7 @@ module Dependabot
         end
       end
 
+      sig { returns(String) }
       def python_version_from_supported_versions
         requirement_string = python_requirement_string
 
@@ -88,6 +93,7 @@ module Dependabot
         python_version_matching(compiled_file_python_requirement_markers)
       end
 
+      sig { params(requirements: T.untyped).returns(T.nilable(String)) }
       def python_version_matching(requirements)
         PRE_INSTALLED_PYTHON_VERSIONS.find do |version_string|
           version = Python::Version.new(version_string)

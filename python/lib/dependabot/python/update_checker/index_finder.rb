@@ -9,6 +9,7 @@ module Dependabot
   module Python
     class UpdateChecker
       class IndexFinder
+        extend T::Sig
         PYPI_BASE_URL = "https://pypi.org/simple/"
         ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
@@ -55,6 +56,7 @@ module Dependabot
           clean_check_and_remove_environment_variables(url)
         end
 
+        sig { returns({ main: NilClass, extra: [] }) }
         def requirement_file_index_urls
           urls = { main: nil, extra: [] }
 
@@ -74,6 +76,7 @@ module Dependabot
           urls
         end
 
+        sig { returns({ main: NilClass, extra: [] }) }
         def pip_conf_index_urls
           urls = { main: nil, extra: [] }
 
@@ -90,6 +93,7 @@ module Dependabot
           urls
         end
 
+        sig { returns(T.nilable({ main: NilClass, extra: [] })) }
         def pipfile_index_urls
           urls = { main: nil, extra: [] }
 
@@ -109,6 +113,7 @@ module Dependabot
           urls
         end
 
+        sig { returns(T.nilable({ main: NilClass, extra: [] })) }
         def pyproject_index_urls
           urls = { main: nil, extra: [] }
 
@@ -139,6 +144,7 @@ module Dependabot
           urls
         end
 
+        sig { returns({ main: NilClass, extra: [] }) }
         def config_variable_index_urls
           urls = { main: nil, extra: [] }
 
