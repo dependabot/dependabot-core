@@ -93,7 +93,6 @@ module Dependabot
           urls
         end
 
-        sig { returns(T.nilable({ main: NilClass, extra: [] })) }
         def pipfile_index_urls
           urls = { main: nil, extra: [] }
 
@@ -113,7 +112,6 @@ module Dependabot
           urls
         end
 
-        sig { returns(T.nilable({ main: NilClass, extra: [] })) }
         def pyproject_index_urls
           urls = { main: nil, extra: [] }
 
