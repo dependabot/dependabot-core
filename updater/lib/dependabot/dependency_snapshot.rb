@@ -4,6 +4,7 @@
 require "base64"
 require "sorbet-runtime"
 
+require "dependabot/dependency_graph"
 require "dependabot/file_parsers"
 require "dependabot/notices_helpers"
 
@@ -181,7 +182,7 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
-      @dependencies_graphs = T.let({}, T::Hash[String, T::Hash[String, DependencyGraph]])
+      @dependencies_graphs = T.let({}, T::Hash[String, T::Hash[String, Dependabot::DependencyGraph]])
       @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
 
@@ -231,7 +232,7 @@ module Dependabot
       dependency_file_parser.parse
     end
 
-    sig { returns(T::Hash[String, DependencyGraph]) }
+    sig { returns(T::Hash[String, Dependabot::DependencyGraph]) }
     def parse_files_for_dependency_graph!
       dependency_file_parser.parse_for_dependency_graph
     end

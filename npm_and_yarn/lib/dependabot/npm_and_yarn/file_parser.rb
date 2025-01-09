@@ -4,6 +4,7 @@
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
 require "dependabot/dependency"
+require "dependabot/dependency_graph"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -81,9 +82,6 @@ module Dependabot
 
       sig { override.returns(T::Hash[String, Dependabot::DependencyGraph]) }
       def parse_for_dependency_graph
-        # Parse manifest dependencies
-        main_dependencies = parse_manifest_dependencies
-
         dependency_graphs = {}
 
         lockfiles.map do |package_manager, lockfile|
@@ -99,14 +97,35 @@ module Dependabot
 
           dependency_graphs[package_manager] = dependency_graph
         end
+
+        # If no lockfile is present, build a dependency graph from the manifest
+        if lockfiles.values.all?(&:nil?)
+          # If no lockfile is present, build a dependency graph from the manifest
+          dependency_graph = Dependabot::DependencyGraph.new.tap do |dg|
+            main_dependencies.each do |_, dep|
+              dg.add_dependency(
+                dependency: dep,
+                dependency_data: nil
+              )
+            end
+          end
+          dependency_graphs = {
+            npm: dependency_graph,
+            yarn: dependency_graph,
+            pnpm: dependency_graph
+          }
+        end
         dependency_graphs
       end
 
       private
 
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
-      def parse_manifest_dependencies
-        ManifestParserForGraph.new(package_files).parse
+      def main_dependencies
+        @main_dependencies ||= T.let(
+          ManifestParserForGraph.new(package_files).parse,
+          T.nilable(T::Hash[String, Dependabot::Dependency])
+        )
       end
 
       sig do

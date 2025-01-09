@@ -88,8 +88,8 @@ module Dependabot
       # Adds transitive dependencies for a given main dependency
       sig do
         params(
-          dependency_graph: DependencyGraph,
-          parent: DependencyNode,
+          dependency_graph: Dependabot::DependencyGraph,
+          parent: Dependabot::DependencyNode,
           lockfile_data: T::Hash[String, T::Hash[String, T.untyped]],
           lockfile_version: Integer
         ).void

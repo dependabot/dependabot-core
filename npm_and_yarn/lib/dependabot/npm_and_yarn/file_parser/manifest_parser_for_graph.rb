@@ -36,7 +36,9 @@ module Dependabot
             next if requirement.start_with?("workspace:")
 
             # Normalize empty requirements
-            requirement = "*" if requirement == ""
+            requirement = "*" if requirement.empty?
+
+            # Find version from manifest
 
             # Create and store the dependency
             dependencies[name] = Dependabot::Dependency.new(

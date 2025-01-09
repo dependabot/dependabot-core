@@ -24,12 +24,12 @@ module Dependabot
       sig do
         override.params(
           main_dependencies: T::Hash[String, Dependabot::Dependency]
-        ).returns(DependencyGraph)
+        ).returns(Dependabot::DependencyGraph)
       end
       def build_dependency_graph(main_dependencies)
         lockfile_data = parse
 
-        dependency_graph = DependencyGraph.new
+        dependency_graph = Dependabot::DependencyGraph.new
 
         # Create main dependency nodes with versions from lockfile
         main_nodes = main_dependencies.filter_map do |name, dependency|
@@ -91,8 +91,8 @@ module Dependabot
 
       sig do
         params(
-          dependency_graph: DependencyGraph,
-          parent: DependencyNode,
+          dependency_graph: Dependabot::DependencyGraph,
+          parent: Dependabot::DependencyNode,
           lockfile_data: T::Array[T::Hash[String, T.untyped]]
         ).void
       end
