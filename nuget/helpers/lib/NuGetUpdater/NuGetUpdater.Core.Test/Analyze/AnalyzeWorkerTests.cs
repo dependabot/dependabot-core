@@ -32,6 +32,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -80,6 +83,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                             new("Some.Package", "4.0.1", DependencyType.PackageReference),
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -129,6 +135,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                     new()
                     {
@@ -137,6 +146,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "4.0.1", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -187,6 +199,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Package.A", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                     new()
                     {
@@ -195,6 +210,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Package.B", "4.5.0", DependencyType.PackageReference, EvaluationResult: evaluationResult, TargetFrameworks: ["net8.0"]),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -241,6 +259,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "$(MissingPackageVersion)", DependencyType.PackageReference, EvaluationResult: new EvaluationResult(EvaluationResultType.PropertyNotFound, "$(MissingPackageVersion)", "$(MissingPackageVersion)", "$(MissingPackageVersion)", ErrorMessage: null)),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -281,6 +302,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference), // this was found in the source, but doesn't exist in any feed
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -326,6 +350,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Transitive.Dependency", "4.0.1", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -343,6 +370,62 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = false,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task DuplicateTargetFrameworksWithCasingDifferencesAreCombined()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"),
+            ],
+            discovery: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "projecta/projecta.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                    new()
+                    {
+                        FilePath = "projectb/projectb.csproj",
+                        TargetFrameworks = ["NET8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IsVulnerable = false,
+                IgnoredVersions = [],
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.1.0",
+                CanUpdate = true,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
             }
         );
     }
@@ -368,6 +451,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     },
                 ],
             },
@@ -535,7 +621,10 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies =
                         [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -704,7 +793,10 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies =
                         [
                             new("Some.Package", "1.0.0", DependencyType.PackageReference),
-                        ]
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -730,6 +822,194 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
     }
 
     [Fact]
+    public async Task AnalysisCanContineWhenRegistrationJSONIsMalformed()
+    {
+        // from a case seen in the wild; a transitive dependency's registration JSON has an invalid `range` property
+        // analysis should continue
+        var aspNetCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0");
+        var desktopAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0");
+        var netCoreAppRefPackage = MockNuGetPackage.WellKnownReferencePackage("Microsoft.NETCore.App", "net8.0",
+            [
+                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
+                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="8.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
+                    </FileList>
+                    """))
+            ]);
+        (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            switch (uri.PathAndQuery)
+            {
+                // initial request is good
+                case "/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "version": "3.0.0",
+                            "resources": [
+                                {
+                                    "@id": "{{baseUrl}}/download",
+                                    "@type": "PackageBaseAddress/3.0.0"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/query",
+                                    "@type": "SearchQueryService"
+                                },
+                                {
+                                    "@id": "{{baseUrl}}/registrations",
+                                    "@type": "RegistrationsBaseUrl"
+                                }
+                            ]
+                        }
+                        """));
+                case "/registrations/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.1.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            }
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.1.0",
+                                                "dependencyGroups": [
+                                                    {
+                                                        "dependencies": [
+                                                            {
+                                                                "id": "Some.Transitive.Dependency",
+                                                                "range": "",
+                                                                "comment": "The above range is invalid and fails the JSON parse"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """));
+                case "/download/some.package/index.json":
+                    return (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "versions": [
+                                "1.0.0",
+                                "1.1.0"
+                            ]
+                        }
+                        """));
+                case "/download/some.package/1.0.0/some.package.1.0.0.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/download/some.package/1.1.0/some.package.1.1.0.nupkg":
+                    return (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0").GetZipStream().ReadAllBytes());
+                case "/download/microsoft.aspnetcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{aspNetCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.netcore.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{netCoreAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                case "/download/microsoft.windowsdesktop.app.ref/index.json":
+                    return (200, Encoding.UTF8.GetBytes($$"""
+                        {
+                            "versions": [
+                                "{{desktopAppRefPackage.Version}}"
+                            ]
+                        }
+                        """));
+                default:
+                    if (uri.PathAndQuery == $"/download/microsoft.aspnetcore.app.ref/{aspNetCoreAppRefPackage.Version}/microsoft.aspnetcore.app.ref.{aspNetCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, aspNetCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    if (uri.PathAndQuery == $"/download/microsoft.netcore.app.ref/{netCoreAppRefPackage.Version}/microsoft.netcore.app.ref.{netCoreAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, netCoreAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    if (uri.PathAndQuery == $"/download/microsoft.windowsdesktop.app.ref/{desktopAppRefPackage.Version}/microsoft.windowsdesktop.app.ref.{desktopAppRefPackage.Version}.nupkg")
+                    {
+                        return (200, desktopAppRefPackage.GetZipStream().ReadAllBytes());
+                    }
+
+                    // nothing else is found
+                    return (404, Encoding.UTF8.GetBytes("{}"));
+            };
+        }
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="package_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies =
+                        [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                CanUpdate = true,
+                UpdatedVersion = "1.1.0",
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies =
+                [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
     public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
     {
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
@@ -739,7 +1019,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             ErrorDetails = "<some package feed>",
             UpdatedVersion = "",
             UpdatedDependencies = [],
-        }, new Logger(false));
+        }, new TestLogger());
         var discoveryContents = await File.ReadAllTextAsync(Path.Combine(temporaryDirectory.DirectoryPath, "Some.Dependency.json"));
 
         // raw result file should look like this:
@@ -814,6 +1094,9 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                         Dependencies = [
                             new("Some.Package", "1.2.3", DependencyType.PackageReference),
                         ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
                     }
                 ]
             },
@@ -834,5 +1117,156 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedDependencies = [],
             }
         );
+    }
+
+    [Fact]
+    public async Task AnalysisFailsWhenNewerPackageDownloadIsDenied()
+    {
+        static (int, byte[]) TestHttpHandler(string uriString)
+        {
+            var uri = new Uri(uriString, UriKind.Absolute);
+            var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+            return uri.PathAndQuery switch
+            {
+                // initial request is good
+                "/index.json" => (200, Encoding.UTF8.GetBytes($$"""
+                    {
+                        "version": "3.0.0",
+                        "resources": [
+                            {
+                                "@id": "{{baseUrl}}/download",
+                                "@type": "PackageBaseAddress/3.0.0"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/query",
+                                "@type": "SearchQueryService"
+                            },
+                            {
+                                "@id": "{{baseUrl}}/registrations",
+                                "@type": "RegistrationsBaseUrl"
+                            }
+                        ]
+                    }
+                    """)),
+                // request for package index is good
+                "/registrations/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                        {
+                            "count": 1,
+                            "items": [
+                                {
+                                    "lower": "1.0.0",
+                                    "upper": "1.1.0",
+                                    "items": [
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.0.0"
+                                            }
+                                        },
+                                        {
+                                            "catalogEntry": {
+                                                "listed": true,
+                                                "version": "1.1.0"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                        """)),
+                // request for versions is good
+                "/download/some.package/index.json" => (200, Encoding.UTF8.GetBytes("""
+                    {
+                        "versions": [
+                            "1.0.0",
+                            "1.1.0"
+                        ]
+                    }
+                    """)),
+                // download of old package is good
+                "/download/some.package/1.0.0/some.package.1.0.0.nupkg" => (200, MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0").GetZipStream().ReadAllBytes()),
+                // download of new package is denied
+                "/download/some.package/1.1.0/some.package.1.1.0.nupkg" => (401, Array.Empty<byte>()),
+                // all other requests are not found
+                _ => (404, Encoding.UTF8.GetBytes("{}")),
+            };
+        }
+        using var http = TestHttpServer.CreateTestServer(TestHttpHandler);
+        await TestAnalyzeAsync(
+            extraFiles:
+            [
+                ("NuGet.Config", $"""
+                    <configuration>
+                      <packageSources>
+                        <clear />
+                        <add key="private_feed" value="{http.BaseUrl.TrimEnd('/')}/index.json" allowInsecureConnections="true" />
+                      </packageSources>
+                    </configuration>
+                    """)
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net9.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.0.0",
+                CanUpdate = false,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [],
+            }
+        );
+    }
+
+    [Fact]
+    public void DeserializeDependencyInfo_UnsupportedIgnoredVersionsAreIgnored()
+    {
+        // arrange
+        // "1.0.0.pre.rc2" isn't a valid NuGet version; ignore that requirement
+        var json = """
+            {
+                "Name": "Some.Package",
+                "Version": "1.10.0",
+                "IsVulnerable": false,
+                "IgnoredVersions": [
+                    "> 1.0.0.pre.rc2, < 2",
+                    "< 1.0.1"
+                ],
+                "Vulnerabilities": []
+            }
+            """;
+
+        // act
+        var dependencyInfo = AnalyzeWorker.DeserializeDependencyInfo(json);
+
+        // assert
+        Assert.NotNull(dependencyInfo);
+        Assert.Equal("Some.Package", dependencyInfo.Name);
+        Assert.Equal("1.10.0", dependencyInfo.Version);
+        Assert.False(dependencyInfo.IsVulnerable);
+        Assert.Single(dependencyInfo.IgnoredVersions);
+        Assert.Equal("< 1.0.1", dependencyInfo.IgnoredVersions.Single().ToString());
+        Assert.Empty(dependencyInfo.Vulnerabilities);
     }
 }

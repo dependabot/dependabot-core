@@ -62,32 +62,6 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
-    context "with a version specified (composer v1)" do
-      let(:project_name) { "v1/minor_version" }
-
-      describe "the first dependency" do
-        subject { dependencies.first }
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:name) { is_expected.to eq("monolog/monolog") }
-        its(:version) { is_expected.to eq("1.0.2") }
-
-        its(:requirements) do
-          is_expected.to eq(
-            [{
-              requirement: "1.0.*",
-              file: "composer.json",
-              groups: ["runtime"],
-              source: {
-                type: "git",
-                url: "https://github.com/Seldaek/monolog.git"
-              }
-            }]
-          )
-        end
-      end
-    end
-
     context "with doctored entries" do
       let(:project_name) { "doctored" }
 
@@ -407,6 +381,41 @@ RSpec.describe Dependabot::Composer::FileParser do
             expect(error.file_name).to eq("composer.json")
           end
       end
+    end
+  end
+
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::Composer::PackageManager)
+      expect(parser.ecosystem.package_manager.version).to eq("2.7.7")
+    end
+
+    it "returns language with version" do
+      expect(parser.ecosystem.language).to be_a(Dependabot::Composer::Language)
+      expect(parser.ecosystem.language.version).to eq("7.4.33")
+    end
+  end
+
+  describe "REQUIREMENT_SEPARATOR" do
+    let(:requirements) do
+      [
+        "php >=7.4 || php >=8.0",
+        "php >=7.4, || php >=8.0",
+        "php >=7.4 |||| php >=8.0"
+      ]
+    end
+
+    it "splits requirements correctly" do
+      results = requirements.map { |req| req.split(Dependabot::Composer::REQUIREMENT_SEPARATOR) }
+      expect(results).to eq([
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "php >=8.0"],
+        ["php >=7.4", "", "php >=8.0"]
+      ])
     end
   end
 end

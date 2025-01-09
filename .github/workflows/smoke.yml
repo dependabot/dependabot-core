@@ -14,14 +14,14 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: amazimbe/update-maven-test
+  SMOKE_TEST_BRANCH: main
 jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
@@ -64,7 +64,7 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.discover.outputs.suites) }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           submodules: recursive
 
@@ -76,7 +76,7 @@ jobs:
 
       - name: Restore Smoke Test
         id: cache-smoke-test
-        uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
@@ -89,13 +89,13 @@ jobs:
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: smoke.yaml
           key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
 
       # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
-      # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
+      # Allowed to fail to get out of chicken and egg situations, for example, when adding a new ecosystem.
       - name: Download cache
         run: |
           # The name of the cache is derived from the test name, e.g. smoke-bundler.yaml -> cache-bundler
@@ -133,5 +133,5 @@ jobs:
         run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
         # No upload at the end:
-        # - If a test is uncachable in some regard, the cache would grow unbound.
-        # - We might want to consider erroring if the cache is changed.
+        # - If a test is uncacheable in some regard, the cache would grow unbounded.
+        # - We should consider erroring if the cache is changed.

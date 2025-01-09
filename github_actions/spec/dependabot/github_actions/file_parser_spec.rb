@@ -560,5 +560,37 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         end
       end
     end
+
+    context "with an unresolvable version" do
+      let(:workflow_file_fixture_name) { "unresolved_version.yml" }
+      let(:service_pack_url) do
+        "https://github.com/taiki-e/install-action.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      before do
+        mock_service_pack_request("taiki-e/install-action")
+      end
+
+      it "raises an UnresolvableVersionError error" do
+        expect { parser.parse }.to raise_error(
+          Dependabot::UnresolvableVersionError,
+          "Unable to determine semantic version from tags or commits for dependencies. " \
+          "Dependencies must have a tag or commit that references a semantic version. " \
+          "Affected dependencies: taiki-e/install-action"
+        )
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    it "returns the correct ecosystem" do
+      expect(parser.ecosystem).to be_a(Dependabot::Ecosystem)
+    end
+
+    it "returns package manager with version" do
+      expect(parser.ecosystem.package_manager).to be_a(Dependabot::GithubActions::PackageManager)
+      expect(parser.ecosystem.package_manager.version.to_s).to eq("1.0.0")
+    end
   end
 end

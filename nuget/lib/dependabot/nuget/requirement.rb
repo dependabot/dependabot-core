@@ -42,6 +42,8 @@ module Dependabot
           convert_dotnet_constraint_to_ruby_constraint(req_string)
         end
 
+        requirements = requirements.compact.reject(&:empty?)
+
         super(requirements)
       end
 

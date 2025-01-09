@@ -291,9 +291,12 @@ namespace NuGetUpdater.Core.Test
                     <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                         <!-- this is a simplified version of this package used for testing -->
                         <PropertyGroup>
-                        <CentralPackagesFile Condition=" '$(CentralPackagesFile)' == '' ">$([MSBuild]::GetPathOfFileAbove('Packages.props', $(MSBuildProjectDirectory)))</CentralPackagesFile>
+                          <CentralPackagesFile Condition=" '$(CentralPackagesFile)' == '' ">$([MSBuild]::GetPathOfFileAbove('Packages.props', $(MSBuildProjectDirectory)))</CentralPackagesFile>
                         </PropertyGroup>
                         <Import Project="$(CentralPackagesFile)" Condition="Exists('$(CentralPackagesFile)')" />
+                        <ItemGroup Condition=" '$(EnableGlobalPackageReferences)' != 'false' ">
+                          <PackageReference Include="@(GlobalPackageReference)" Condition=" '$(EnableGlobalPackageReferences)' != 'false' " />
+                        </ItemGroup>
                     </Project>
                     """
             );
@@ -315,7 +318,8 @@ namespace NuGetUpdater.Core.Test
                     </Project>
                     """
                 );
-                var (exitCode, stdout, stderr) = ProcessEx.RunAsync("dotnet", $"msbuild {projectPath} /t:_ReportCurrentSdkVersion").Result;
+                var experimentsManager = new ExperimentsManager();
+                var (exitCode, stdout, stderr) = ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["msbuild", projectPath, "/t:_ReportCurrentSdkVersion"], projectDir.FullName, experimentsManager).Result;
                 if (exitCode != 0)
                 {
                     throw new Exception($"Failed to report the current SDK version:\n{stdout}\n{stderr}");
@@ -384,6 +388,47 @@ namespace NuGetUpdater.Core.Test
             return WellKnownPackages[key];
         }
 
+        public static MockNuGetPackage WellKnownHostPackage(string packageName, string targetFramework, (string Path, byte[] Content)[]? files = null)
+        {
+            string key = $"{packageName}/{targetFramework}";
+            if (!WellKnownPackages.ContainsKey(key))
+            {
+                // for the current SDK, the file `Microsoft.NETCoreSdk.BundledVersions.props` contains the version of the
+                // `Microsoft.WindowsDesktop.App.Ref` package that will be needed to build, so we find it by TFM
+                XDocument propsDocument = XDocument.Load(BundledVersionsPropsPath.Value);
+                XElement? ridElement = propsDocument.XPathSelectElement("/Project/PropertyGroup/NETCoreSdkRuntimeIdentifier");
+                if (ridElement is null)
+                {
+                    throw new Exception($"Unable to find RID property.");
+                }
+
+                string expectedRid = ridElement.Value.Trim();
+
+                XElement? matchingAppHostPack = propsDocument.XPathSelectElement(
+                    $"""
+                    /Project/ItemGroup/KnownAppHostPack
+                        [
+                            @Include='{packageName}' and
+                            @AppHostPackNamePattern='{packageName}.Host.**RID**' and
+                            @TargetFramework='{targetFramework}'
+                        ]
+                    """);
+                if (matchingAppHostPack is null)
+                {
+                    throw new Exception($"Unable to find {packageName}.Host.**RID** version for target framework '{targetFramework}'");
+                }
+
+                string expectedVersion = matchingAppHostPack.Attribute("AppHostPackVersion")!.Value;
+                return new(
+                    $"{packageName}.Host.{expectedRid}",
+                    expectedVersion,
+                    Files: files
+                );
+            }
+
+            return WellKnownPackages[key];
+        }
+
         public static MockNuGetPackage[] CommonPackages { get; } =
         [
             CreateSimplePackage("NETStandard.Library", "2.0.3", "netstandard2.0"),
@@ -391,6 +436,7 @@ namespace NuGetUpdater.Core.Test
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net6.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.AspNetCore.App", "net8.0"),
+            WellKnownReferencePackage("Microsoft.AspNetCore.App", "net9.0"),
             WellKnownReferencePackage("Microsoft.NETCore.App", "net6.0",
             [
                 ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
@@ -412,9 +458,18 @@ namespace NuGetUpdater.Core.Test
                     </FileList>
                     """))
             ]),
+            WellKnownReferencePackage("Microsoft.NETCore.App", "net9.0",
+            [
+                ("data/FrameworkList.xml", Encoding.UTF8.GetBytes("""
+                    <FileList TargetFrameworkIdentifier=".NETCoreApp" TargetFrameworkVersion="9.0" FrameworkName="Microsoft.NETCore.App" Name=".NET Runtime">
+                    </FileList>
+                    """))
+            ]),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net6.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net7.0"),
             WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net8.0"),
+            WellKnownReferencePackage("Microsoft.WindowsDesktop.App", "net9.0"),
+            WellKnownHostPackage("Microsoft.NETCore.App", "net8.0"),
         ];
     }
 }

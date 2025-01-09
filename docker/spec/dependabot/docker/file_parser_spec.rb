@@ -677,6 +677,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
+
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.name).to eq("docker")
+          expect(ecosystem.package_manager.name).to eq("docker")
+
+          expect(ecosystem.package_manager.deprecated?).to be false
+          expect(ecosystem.package_manager.unsupported?).to be false
         end
       end
     end
@@ -1132,6 +1140,16 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.version).to eq("1.14.2")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "with an invalid yaml file" do
+      let(:podfile_fixture_name) { "with_bom.yaml" }
+
+      it "throws when the yaml starts with a byte order mark" do
+        expect do
+          _unused = dependencies
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end

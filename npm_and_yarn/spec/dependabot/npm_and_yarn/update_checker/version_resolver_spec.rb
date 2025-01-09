@@ -18,6 +18,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       dependency_group: group
     )
   end
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:dependency_files) { project_dependency_files(project_name) }
   let(:credentials) do
     [Dependabot::Credential.new({
@@ -59,6 +60,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
   before do
     stub_request(:get, react_dom_registry_listing_url)
       .to_return(status: 200, body: react_dom_registry_response)
@@ -72,6 +79,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_api_registry_response)
     stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url)
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
   end
 
   describe "#latest_resolvable_version" do
@@ -479,6 +498,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "when it has (old) peer requirements that aren't included" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:project_name) { "npm6/peer_dependency_changed" }
           let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
           let(:dependency) do
@@ -517,6 +537,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         context "when the peer dependency was previously a normal dependency" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:project_name) { "npm6/peer_dependency_switch" }
           let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
           let(:dependency) do
@@ -853,7 +874,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           )
         end
 
-        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+        it { is_expected.to eq(Gem::Version.new("16.3.1")) }
       end
     end
 
@@ -1537,6 +1558,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
     end
 
     context "when updating a dependency that is a peer requirement with npm 6" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:project_name) { "npm6/peer_dependency" }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do

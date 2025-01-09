@@ -48,32 +48,68 @@ RSpec.describe Dependabot::Python::Version do
       it { is_expected.to be(false) }
     end
 
-    context "with an invalid version" do
-      let(:version_string) { "bad" }
+    context "with an empty version" do
+      let(:version_string) { "" }
 
       it { is_expected.to be(false) }
+    end
 
-      context "when version includes an invalid local version" do
-        let(:version_string) { "1.0.0+abc 123" }
+    context "with invalid versions" do
+      versions = [
+        "bad",
+        "1.0+a+",
+        "1.0++",
+        "1.0+_foobar",
+        "1.0+foo&asd",
+        "1.0+1+1",
+        "1.0.0+abc 123",
+        "v1.8.0--failed-release-attempt"
+      ]
 
-        it { is_expected.to be(false) }
-      end
-
-      context "when version includes two dashes" do
-        let(:version_string) { "v1.8.0--failed-release-attempt" }
-
-        it { is_expected.to be(false) }
+      versions.each do |version|
+        it "returns false for #{version}" do
+          expect(described_class.correct?(version)).to be false
+        end
       end
     end
   end
 
   describe ".new" do
-    subject { described_class.new(version_string) }
+    subject(:version) { described_class.new(version_string) }
 
-    context "with a blank string" do
+    context "with an empty string" do
       let(:version_string) { "" }
+      let(:error_msg) { "Malformed version string - string is empty" }
 
-      it { is_expected.to eq(Gem::Version.new("0")) }
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
+      end
+    end
+
+    context "with a nil version" do
+      let(:version_string) { nil }
+      let(:error_msg) { "Malformed version string - string is nil" }
+
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
+      end
+    end
+
+    context "with a valid version" do
+      let(:version_string) { "1!1.3b2.post345.dev456" }
+
+      it "is parsed correctly" do
+        expect(version.epoch).to eq 1
+      end
+    end
+
+    context "with an invalid version" do
+      let(:version_string) { "1.0++" }
+      let(:error_msg) { "Malformed version string - #{version_string} does not match regex" }
+
+      it "raises an error" do
+        expect { version }.to raise_error(Dependabot::BadRequirementError, error_msg)
+      end
     end
   end
 
@@ -95,7 +131,6 @@ RSpec.describe Dependabot::Python::Version do
 
   describe "#<=>" do
     sorted_versions = [
-      "",
       "0.9",
       "1.0.0-alpha",
       "1.0.0-a.1",
@@ -104,8 +139,8 @@ RSpec.describe Dependabot::Python::Version do
       "1.0.0-beta.11",
       "1.0.0-rc.1",
       "1",
-      # "1.0.0.post", TODO fails comparing to 1
       "1.0.0+gc1",
+      "1.0.0.post", # TODO: fails comparing to 1
       "1.post2",
       "1.post2+gc1",
       "1.post2+gc1.2",
@@ -118,6 +153,7 @@ RSpec.describe Dependabot::Python::Version do
       "2!0.1.0",
       "10!0.1.0"
     ]
+
     sorted_versions.combination(2).each do |lhs, rhs|
       it "'#{lhs}' < '#{rhs}'" do
         expect(described_class.new(lhs)).to be < rhs
@@ -130,9 +166,97 @@ RSpec.describe Dependabot::Python::Version do
         expect(described_class.new(v)).to eq v
       end
     end
+
+    context "when sorting a list of versions" do
+      let(:version_strings) do
+        [
+          # Implicit epoch of 0
+          "1.0.dev456",
+          "1.0a1",
+          "1.0a2.dev456",
+          "1.0a12.dev456",
+          "1.0a12",
+          "1.0b1.dev456",
+          "1.0b2",
+          "1.0b2.post345.dev456",
+          "1.0b2.post345",
+          "1.0b2-346",
+          "1.0c1.dev456",
+          "1.0c1",
+          "1.0rc2",
+          "1.0c3",
+          "1.0",
+          "1.0.post456.dev34",
+          "1.0.post456",
+          "1.1.dev1",
+          "1.2+123abc",
+          "1.2+123abc456",
+          "1.2+abc",
+          "1.2+abc123",
+          "1.2+abc123def",
+          "1.2+1234.abc",
+          "1.2+123456",
+          "1.2.r32+123456",
+          "1.2.rev33+123456",
+          # Explicit epoch of 1
+          "1!1.0.dev456",
+          "1!1.0a1",
+          "1!1.0a2.dev456",
+          "1!1.0a12.dev456",
+          "1!1.0a12",
+          "1!1.0b1.dev456",
+          "1!1.0b2",
+          "1!1.0b2.post345.dev456",
+          "1!1.0b2.post345",
+          "1!1.0b2-346",
+          "1!1.0c1.dev456",
+          "1!1.0c1",
+          "1!1.0rc2",
+          "1!1.0c3",
+          "1!1.0",
+          "1!1.0.post456.dev34",
+          "1!1.0.post456",
+          "1!1.1.dev1",
+          "1!1.2+123abc",
+          "1!1.2+123abc456",
+          "1!1.2+abc",
+          "1!1.2+abc123",
+          "1!1.2+abc123def",
+          "1!1.2+1234.abc",
+          "1!1.2+123456",
+          "1!1.2.r32+123456",
+          "1!1.2.rev33+123456"
+        ]
+      end
+
+      let(:versions) { version_strings.map { |v| described_class.new(v) } }
+
+      it "returns list in the correct order" do
+        expect(versions.shuffle.sort).to eq versions
+      end
+    end
+
     it "handles missing version segments" do
       expect(described_class.new("1")).to eq "v1.0"
       expect(described_class.new("1")).to eq "v1.0.0"
+    end
+
+    context "with different epochs" do
+      let(:version) { described_class.new("1!1.0.dev456") }
+      let(:other_version) { described_class.new("1.0.dev456") }
+
+      it "compares correctly" do
+        expect(version <=> other_version).to eq 1
+      end
+    end
+
+    context "with equivalent release candidates" do
+      let(:version) { described_class.new("1.0rc1") }
+      let(:other_version) { described_class.new("1.0c1") }
+
+      it "returns 0" do
+        expect(version <=> other_version).to eq 0
+      end
     end
   end
 
@@ -140,9 +264,33 @@ RSpec.describe Dependabot::Python::Version do
     subject { version.prerelease? }
 
     context "with a prerelease" do
-      let(:version_string) { "1.0.0alpha" }
+      versions = [
+        "1.0.dev0",
+        "1.0.dev1",
+        "1.0a1.dev1",
+        "1.0b1.dev1",
+        "1.0c1.dev1",
+        "1.0rc1.dev1",
+        "1.0a1",
+        "1.0b1",
+        "1.0c1",
+        "1.0rc1",
+        "1.0a1.post1.dev1",
+        "1.0b1.post1.dev1",
+        "1.0c1.post1.dev1",
+        "1.0rc1.post1.dev1",
+        "1.0a1.post1",
+        "1.0b1.post1",
+        "1.0c1.post1",
+        "1.0rc1.post1",
+        "1!1.0a1"
+      ]
 
-      it { is_expected.to be(true) }
+      versions.each do |version|
+        it "returns true for #{version}" do
+          expect(described_class.new(version).prerelease?).to be true
+        end
+      end
     end
 
     context "with a normal release" do
@@ -168,6 +316,50 @@ RSpec.describe Dependabot::Python::Version do
         it { is_expected.to be(false) }
       end
     end
+
+    context "with a local release" do
+      let(:version_string) { "1.0+dev" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with a local post release" do
+      let(:version_string) { "1.0.post1+dev" }
+
+      it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#lowest_prerelease_suffix" do
+    subject { version.lowest_prerelease_suffix }
+
+    let(:version_string) { "1.2.3" }
+
+    it { is_expected.to eq "dev0" }
+  end
+
+  describe "#ignored_major_versions" do
+    subject(:ignored_versions) { version.ignored_major_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 2.dev0"]) }
+  end
+
+  describe "#ignored_minor_versions" do
+    subject(:ignored_versions) { version.ignored_minor_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq([">= 1.3.dev0, < 2.dev0"]) }
+  end
+
+  describe "#ignored_patch_versions" do
+    subject(:ignored_versions) { version.ignored_patch_versions }
+
+    let(:version_string) { "1.2.3-alpha.1" }
+
+    it { is_expected.to eq(["> #{version_string}, < 1.3.dev0"]) }
   end
 
   describe "compatibility with Gem::Requirement" do

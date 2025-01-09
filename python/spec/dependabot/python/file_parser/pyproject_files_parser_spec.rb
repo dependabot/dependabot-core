@@ -281,7 +281,9 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
     let(:pyproject_fixture_name) { "standard_python.toml" }
 
-    its(:length) { is_expected.to eq(1) }
+    # fixture has 1 build system requires and plus 1 dependencies exists
+
+    its(:length) { is_expected.to eq(2) }
 
     context "with a string declaration" do
       subject(:dependency) { dependencies.first }
@@ -307,7 +309,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "no_dependencies.toml" }
 
-      its(:length) { is_expected.to eq(0) }
+      # fixture has 1 build system requires and no dependencies or
+      # optional dependencies exists
+
+      its(:length) { is_expected.to eq(1) }
     end
 
     context "with dependencies with empty requirements" do
@@ -360,8 +365,8 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "optional_dependencies.toml" }
 
       # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
-      # is ignored because it has markers
-      its(:length) { is_expected.to eq(4) }
+      # is ignored because it has markers, plus 1 is build system requires
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with optional dependencies only" do

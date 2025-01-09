@@ -64,6 +64,8 @@ module Dependabot
               service.create_pull_request(T.must(dependency_change), dependency_snapshot.base_commit_sha)
             rescue StandardError => e
               error_handler.handle_job_error(error: e, dependency_group: group)
+            ensure
+              service.record_ecosystem_meta(dependency_snapshot.ecosystem)
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")

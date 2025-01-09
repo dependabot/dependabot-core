@@ -110,8 +110,19 @@ module Dependabot
 
       sig { returns(T.untyped) }
       def create
-        if branch_exists?(branch_name) && unmerged_pull_request_exists?
-          raise UnmergedPRExists, "PR ##{unmerged_pull_requests.first.number} already exists"
+        Dependabot.logger.info(
+          "Initiating Github pull request."
+        )
+
+        if branch_exists?(branch_name) && no_pull_request_exists?
+          Dependabot.logger.info(
+            "Existing branch \"#{branch_name}\" found. Pull request not created."
+          )
+          raise BranchAlreadyExists, "Duplicate branch #{branch_name} already exists"
+        end
+
+        if branch_exists?(branch_name) && open_pull_request_exists?
+          raise UnmergedPRExists, "PR ##{open_pull_requests.first.number} already exists"
         end
         if require_up_to_date_base? && !base_commit_is_up_to_date?
           raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
@@ -132,6 +143,10 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(name: String).returns(T::Boolean) }
       def branch_exists?(name)
+        Dependabot.logger.info(
+          "Checking if branch #{name} already exists."
+        )
+
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
         raise T.must(e.cause) if e.cause&.message&.include?("is disabled")
@@ -149,13 +164,18 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T::Boolean) }
-      def unmerged_pull_request_exists?
-        unmerged_pull_requests.any?
+      def no_pull_request_exists?
+        pull_requests_for_branch.none?
+      end
+
+      sig { returns(T::Boolean) }
+      def open_pull_request_exists?
+        open_pull_requests.any?
       end
 
       sig { returns(T::Array[T.untyped]) }
-      def unmerged_pull_requests
-        pull_requests_for_branch.reject(&:merged)
+      def open_pull_requests
+        pull_requests_for_branch.reject(&:closed).reject(&:merged)
       end
 
       sig { returns(T::Array[T.untyped]) }

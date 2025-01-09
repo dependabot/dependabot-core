@@ -524,7 +524,7 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
       it "exposes the expected ecosystem_versions metric" do
         expect(file_fetcher_instance.ecosystem_versions).to eq({
-          languages: { python: { "max" => "3.12", "raw" => "unknown" } }
+          languages: { python: { "max" => "3.13", "raw" => "unknown" } }
         })
       end
     end

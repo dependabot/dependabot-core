@@ -68,6 +68,21 @@ RSpec.describe Dependabot::DependencySnapshot do
     ]
   end
 
+  let(:dependency_files_for_unsupported) do
+    [
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: fixture("bundler/unsupported/Gemfile"),
+        directory: directory
+      ),
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/unsupported/Gemfile.lock"),
+        directory: directory
+      )
+    ]
+  end
+
   let(:dependency_groups) do
     [
       {
@@ -84,6 +99,24 @@ RSpec.describe Dependabot::DependencySnapshot do
     "mock-sha"
   end
 
+  let(:unsupported_error_enabled) { false }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:bundler_v1_unsupported_error)
+      .and_return(unsupported_error_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:add_deprecation_warn_to_pr_message)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
+
   describe "::add_handled_dependencies" do
     subject(:create_dependency_snapshot) do
       described_class.create_from_job_definition(
@@ -91,6 +124,8 @@ RSpec.describe Dependabot::DependencySnapshot do
         job_definition: job_definition
       )
     end
+
+    let(:unsupported_error_enabled) { false }
 
     let(:job_definition) do
       {
@@ -146,6 +181,23 @@ RSpec.describe Dependabot::DependencySnapshot do
         job: job,
         job_definition: job_definition
       )
+    end
+
+    context "when the package manager version is unsupported" do
+      let(:unsupported_error_enabled) { true }
+
+      let(:job_definition) do
+        {
+          "base_commit_sha" => base_commit_sha,
+          "base64_dependency_files" => encode_dependency_files(dependency_files_for_unsupported)
+        }
+      end
+
+      it "raises ToolVersionNotSupported error" do
+        expect do
+          create_dependency_snapshot
+        end.to raise_error(Dependabot::ToolVersionNotSupported)
+      end
     end
 
     context "when the job definition includes valid information prepared by the file fetcher step" do

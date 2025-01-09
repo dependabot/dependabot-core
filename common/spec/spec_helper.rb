@@ -194,3 +194,20 @@ def github_credentials
     }]
   end
 end
+
+# Load a command from the fixtures/commands directory
+def command_fixture(name)
+  path = File.join("spec", "fixtures", "commands", name)
+  raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
+
+  File.expand_path(path)
+end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestRequirement = Class.new(Dependabot::Requirement) do
+  # Initialize with comma-separated requirement constraints
+  def initialize(constraint_string)
+    requirements = constraint_string.split(",").map(&:strip)
+    super(requirements)
+  end
+end

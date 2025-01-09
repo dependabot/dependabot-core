@@ -67,9 +67,9 @@ module Dependabot
       T.must(@dependencies[@current_directory])
     end
 
-    sig { returns(T.nilable(Dependabot::PackageManagerBase)) }
-    def package_manager
-      @package_manager[@current_directory]
+    sig { returns(T.nilable(Dependabot::Ecosystem)) }
+    def ecosystem
+      @ecosystem[@current_directory]
     end
 
     sig { returns(T::Array[Dependabot::Notice]) }
@@ -181,7 +181,7 @@ module Dependabot
       @current_directory = T.let("", String)
 
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
-      @package_manager = T.let({}, T::Hash[String, T.nilable(Dependabot::PackageManagerBase)])
+      @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
 
       directories.each do |dir|
@@ -241,10 +241,14 @@ module Dependabot
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
-      # Add 'package_manager' to the depedency_snapshopt to use it in operations'
-      package_manager = parser.package_manager
+      # Add 'ecosystem' to the dependency_snapshot to use it in operations
+      ecosystem = parser.ecosystem
+      # Raise an error if the package manager version is unsupported
+      ecosystem&.raise_if_unsupported!
+      # Raise an error if the language version is unsupported
+      ecosystem&.language&.raise_if_unsupported!
 
-      @package_manager[@current_directory] = package_manager
+      @ecosystem[@current_directory] = ecosystem
 
       # Log deprecation notices if the package manager is deprecated
       # and add them to the notices array
@@ -253,8 +257,18 @@ module Dependabot
       # add deprecation notices for the package manager
       add_deprecation_notice(
         notices: notices_for_current_directory,
-        package_manager: package_manager
+        version_manager: ecosystem&.package_manager
       )
+
+      if ecosystem&.language
+        # add deprecation notices for the language
+        add_deprecation_notice(
+          notices: notices_for_current_directory,
+          version_manager: ecosystem.language,
+          version_manager_type: :language
+        )
+      end
+
       @notices[@current_directory] = notices_for_current_directory
 
       parser

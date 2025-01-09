@@ -8,13 +8,14 @@ namespace NuGetUpdater.Core.Analyze;
 internal static class DependencyFinder
 {
     public static async Task<ImmutableDictionary<NuGetFramework, ImmutableArray<Dependency>>> GetDependenciesAsync(
-        string workspacePath,
+        string repoRoot,
         string projectPath,
         IEnumerable<NuGetFramework> frameworks,
         ImmutableHashSet<string> packageIds,
         NuGetVersion version,
         NuGetContext nugetContext,
-        Logger logger,
+        ExperimentsManager experimentsManager,
+        ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionString = version.ToNormalizedString();
@@ -26,10 +27,11 @@ internal static class DependencyFinder
         foreach (var framework in frameworks)
         {
             var dependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
-                workspacePath,
+                repoRoot,
                 projectPath,
                 framework.ToString(),
                 packages,
+                experimentsManager,
                 logger);
             var updatedDependencies = new List<Dependency>();
             foreach (var dependency in dependencies)

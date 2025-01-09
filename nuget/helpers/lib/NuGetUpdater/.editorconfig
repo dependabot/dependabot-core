@@ -20,11 +20,13 @@ tab_width = 4
 
 # New line preferences
 insert_final_newline = true
+end_of_line = lf
 
 #### .NET Coding Conventions ####
 [*.{cs,vb}]
 
 max_line_length = 0
+dotnet_diagnostic.IDE0055.severity = error
 
 # Organize usings
 dotnet_separate_import_directive_groups = true

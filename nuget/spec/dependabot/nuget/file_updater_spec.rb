@@ -6,16 +6,10 @@ require "dependabot/source"
 require "dependabot/nuget/file_parser"
 require "dependabot/nuget/file_updater"
 require "dependabot/nuget/version"
-require_relative "github_helpers"
-require_relative "nuget_search_stubs"
 require "json"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Nuget::FileUpdater do
-  RSpec.configure do |config|
-    config.include(NuGetSearchStubs)
-  end
-
   let(:stub_native_tools) { true } # set to `false` to allow invoking the native tools during tests
   let(:report_stub_debug_information) { false } # set to `true` to write native tool stubbing information to the screen
 
@@ -30,7 +24,12 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   let(:project_name) { "file_updater_dirsproj" }
   let(:directory) { "/" }
   # project_dependency files comes back with directory files first, we need the closest project at the top
-  let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
+  let(:dependency_files) do
+    nuget_project_dependency_files(project_name, directory: directory).reverse.select do |f|
+      # intermediate `dirs.proj` aren't dependency files
+      f.name.match?(/\.csproj$/)
+    end
+  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -52,44 +51,79 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   end
   let(:repo_contents_path) { nuget_build_tmp_repo(project_name) }
 
-  before do
-    stub_search_results_with_versions_v3("microsoft.extensions.dependencymodel", ["1.0.0", "1.1.1"])
-    stub_request(:get, "https://api.nuget.org/v3-flatcontainer/" \
-                       "microsoft.extensions.dependencymodel/1.0.0/" \
-                       "microsoft.extensions.dependencymodel.nuspec")
-      .to_return(status: 200, body: fixture("nuspecs", "Microsoft.Extensions.DependencyModel.1.0.0.nuspec"))
+  # the minimum job object required by the updater
+  let(:job) do
+    {
+      job: {
+        "allowed-updates": [
+          { "update-type": "all" }
+        ],
+        "package-manager": "nuget",
+        source: {
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          branch: "main"
+        }
+      }
+    }
   end
 
   it_behaves_like "a dependency file updater"
 
+  def ensure_job_file(&_block)
+    file = Tempfile.new
+    begin
+      File.write(file.path, job.to_json)
+      ENV["DEPENDABOT_JOB_PATH"] = file.path
+      puts "created temp job file at [#{file.path}]"
+      yield
+    ensure
+      ENV.delete("DEPENDABOT_JOB_PATH")
+      FileUtils.rm_f(file.path)
+      puts "deleted temp job file at [#{file.path}]"
+    end
+  end
+
+  def clean_common_files
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_discovery_files
+  end
+
   def run_update_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
+    clean_common_files
 
-    # don't allow a previous test to pollute the file parser cache
-    Dependabot::Nuget::FileParser.file_dependency_cache.clear
+    ensure_job_file do
+      # ensure discovery files are present
+      Dependabot::Nuget::DiscoveryJsonReader.run_discovery_in_directory(repo_contents_path: repo_contents_path,
+                                                                        directory: directory,
+                                                                        credentials: [])
 
-    # calling `#parse` is necessary to force `discover` which is stubbed below
-    Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
-                                      source: source,
-                                      repo_contents_path: repo_contents_path).parse
+      # calling `#parse` is necessary to force `discover` which is stubbed below
+      Dependabot::Nuget::FileParser.new(dependency_files: dependency_files,
+                                        source: source,
+                                        repo_contents_path: repo_contents_path).parse
 
-    # create the file updater...
-    updater = described_class.new(
-      dependency_files: dependency_files,
-      dependencies: dependencies,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com"
-      }],
-      repo_contents_path: repo_contents_path
-    )
+      # create the file updater...
+      updater = described_class.new(
+        dependency_files: dependency_files,
+        dependencies: dependencies,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }],
+        repo_contents_path: repo_contents_path
+      )
 
-    # ...and invoke the actual test
-    yield updater
+      # ...and invoke the actual test
+      yield updater
+    end
   ensure
-    Dependabot::Nuget::NativeDiscoveryJsonReader.clear_discovery_file_path_from_cache(dependency_files)
+    Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    clean_common_files
   end
 
   def intercept_native_tools(discovery_content_hash:)
@@ -123,6 +157,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           "project.csproj",
           "library.fsproj",
           "app.vbproj",
+          "packages.lock.json",
           "packages.config",
           "app.config",
           "web.config",
@@ -200,10 +235,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          DirectoryPackagesProps: nil,
           GlobalJson: nil,
           DotNetToolsJson: nil
         }
@@ -223,11 +259,31 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
       end
     end
+
+    context "when no update is performed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "This.Dependency.Does.Not.Exist",
+          version: "4.5.6",
+          previous_version: "1.2.3",
+          requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "4.5.6", groups: [], source: nil }],
+          previous_requirements: [{ file: "Proj1/Proj1/Proj1.csproj", requirement: "1.2.3", groups: [], source: nil }],
+          package_manager: "nuget"
+        )
+      end
+
+      it "raises the expected error" do
+        run_update_test do |updater|
+          expect do
+            updater.updated_dependency_files
+          end.to raise_error(Dependabot::UpdateNotPossible)
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files_with_wildcard" do
     let(:project_name) { "file_updater_dirsproj_wildcards" }
-    let(:dependency_files) { nuget_project_dependency_files(project_name, directory: directory).reverse }
     let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
     let(:dependency_version) { "1.1.1" }
     let(:dependency_previous_version) { "1.0.0" }
@@ -260,7 +316,9 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj1/Proj1/Proj1.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }, {
               FilePath: "Proj2/Proj2.csproj",
               Dependencies: [{
@@ -283,10 +341,11 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
                 SourceFilePath: "Proj2/Proj2.csproj"
               }],
               TargetFrameworks: ["net461"],
-              ReferencedProjectPaths: []
+              ReferencedProjectPaths: [],
+              ImportedFiles: [],
+              AdditionalFiles: []
             }
           ],
-          DirectoryPackagesProps: nil,
           GlobalJson: nil,
           DotNetToolsJson: nil
         }

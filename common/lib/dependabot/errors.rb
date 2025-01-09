@@ -83,6 +83,11 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
@@ -143,6 +148,11 @@ module Dependabot
       {
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::UnresolvableVersionError
+      {
+        "error-type": "unresolvable_version",
+        "error-detail": { dependencies: error.dependencies }
       }
     when Dependabot::NotImplemented
       {
@@ -238,6 +248,13 @@ module Dependabot
           "declared-path": error.declared_path,
           "discovered-path": error.discovered_path,
           "go-mod": error.go_mod
+        }
+      }
+    when Dependabot::UpdateNotPossible
+      {
+        "error-type": "update_not_possible",
+        "error-detail": {
+          dependencies: error.dependencies
         }
       }
     when BadRequirementError
@@ -638,6 +655,38 @@ module Dependabot
   ###########################
   # Dependency level errors #
   ###########################
+
+  class UpdateNotPossible < DependabotError
+    extend T::Sig
+
+    sig { returns(T::Array[String]) }
+    attr_reader :dependencies
+
+    sig { params(dependencies: T::Array[String]).void }
+    def initialize(dependencies)
+      @dependencies = dependencies
+
+      msg = "The following dependencies could not be updated: #{@dependencies.join(', ')}"
+      super(msg)
+    end
+  end
+
+  class UnresolvableVersionError < DependabotError
+    extend T::Sig
+
+    sig { returns(T::Array[String]) }
+    attr_reader :dependencies
+
+    sig { params(dependencies: T::Array[String]).void }
+    def initialize(dependencies)
+      @dependencies = dependencies
+
+      msg = "Unable to determine semantic version from tags or commits for dependencies. " \
+            "Dependencies must have a tag or commit that references a semantic version. " \
+            "Affected dependencies: #{@dependencies.join(', ')}"
+      super(msg)
+    end
+  end
 
   class GitDependenciesNotReachable < DependabotError
     extend T::Sig

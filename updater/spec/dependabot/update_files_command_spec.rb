@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/update_files_command"
+require "dependabot/bundler"
 require "tmpdir"
 
 RSpec.describe Dependabot::UpdateFilesCommand do
@@ -107,6 +108,32 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       it "marks the job as processed without proceeding further" do
         expect(service).to receive(:mark_job_as_processed)
         expect(Dependabot::Updater).not_to receive(:new)
+
+        perform_job
+      end
+    end
+
+    context "when there is an unsupported package manager version" do
+      let(:error) do
+        Dependabot::ToolVersionNotSupported.new(
+          "bundler",       # tool name
+          "1.0.0",         # detected version
+          ">= 2.0.0"       # supported versions
+        )
+      end
+
+      it_behaves_like "a fast-failed job"
+
+      it "records the unsupported version error with details" do
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "tool_version_not_supported",
+          error_details: {
+            "tool-name": "bundler",
+            "detected-version": "1.0.0",
+            "supported-versions": ">= 2.0.0"
+          }
+        )
+        expect(service).to receive(:mark_job_as_processed)
 
         perform_job
       end

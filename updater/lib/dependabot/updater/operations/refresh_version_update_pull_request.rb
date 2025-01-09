@@ -67,6 +67,8 @@ module Dependabot
           check_and_update_pull_request(dependencies)
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependency)
+        ensure
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         private
@@ -137,9 +139,6 @@ module Dependabot
           if requirements_to_unlock == :update_not_possible
             return close_pull_request(reason: :update_no_longer_possible)
           end
-
-          # Raise an error if the package manager version is unsupported
-          dependency_snapshot.package_manager&.raise_if_unsupported!
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock

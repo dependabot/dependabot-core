@@ -7,7 +7,6 @@ require "excon"
 require "fileutils"
 require "json"
 require "open3"
-require "shellwords"
 require "sorbet-runtime"
 require "tmpdir"
 
@@ -17,9 +16,10 @@ require "dependabot/utils"
 require "dependabot/errors"
 require "dependabot/workspace"
 require "dependabot"
+require "dependabot/command_helpers"
 
 module Dependabot
-  module SharedHelpers
+  module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
 
     GIT_CONFIG_GLOBAL_PATH = T.let(File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH), String)
@@ -121,8 +121,7 @@ module Dependabot
     # Escapes all special characters, e.g. = & | <>
     sig { params(command: String).returns(String) }
     def self.escape_command(command)
-      command_parts = command.split.map(&:strip).reject(&:empty?)
-      Shellwords.join(command_parts)
+      CommandHelpers.escape_command(command)
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -135,14 +134,16 @@ module Dependabot
         env: T.nilable(T::Hash[String, String]),
         stderr_to_stdout: T::Boolean,
         allow_unsafe_shell_command: T::Boolean,
-        error_class: T.class_of(HelperSubprocessFailed)
+        error_class: T.class_of(HelperSubprocessFailed),
+        timeout: Integer
       )
         .returns(T.nilable(T.any(String, T::Hash[String, T.untyped], T::Array[T::Hash[String, T.untyped]])))
     end
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false,
-                                   error_class: HelperSubprocessFailed)
+                                   error_class: HelperSubprocessFailed,
+                                   timeout: CommandHelpers::TIMEOUTS::DEFAULT)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
@@ -157,7 +158,15 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
+      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+          env_cmd,
+          stdin_data: stdin_data,
+          timeout: timeout
+        )
+      else
+        stdout, stderr, process = T.unsafe(Open3).capture3(*env_cmd, stdin_data: stdin_data)
+      end
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
@@ -177,16 +186,16 @@ module Dependabot
         function: function,
         args: args,
         time_taken: time_taken,
-        stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+        stderr_output: stderr[0..50_000], # Truncate to ~100kb
         process_exit_value: process.to_s,
-        process_termsig: process.termsig
+        process_termsig: process&.termsig
       }
 
       check_out_of_memory_error(stderr, error_context, error_class)
 
       begin
         response = JSON.parse(stdout)
-        return response["result"] if process.success?
+        return response["result"] if process&.success?
 
         raise error_class.new(
           message: response["error"],
@@ -415,36 +424,51 @@ module Dependabot
       safe_directories
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
         command: String,
         allow_unsafe_shell_command: T::Boolean,
+        cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
         fingerprint: T.nilable(String),
-        stderr_to_stdout: T::Boolean
+        stderr_to_stdout: T::Boolean,
+        timeout: Integer
       ).returns(String)
     end
     def self.run_shell_command(command,
                                allow_unsafe_shell_command: false,
+                               cwd: nil,
                                env: {},
                                fingerprint: nil,
-                               stderr_to_stdout: true)
+                               stderr_to_stdout: true,
+                               timeout: CommandHelpers::TIMEOUTS::DEFAULT)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
       puts cmd if ENV["DEBUG_HELPERS"] == "true"
 
-      if stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd)
+      opts = {}
+      opts[:chdir] = cwd if cwd
+
+      env_cmd = [env || {}, cmd, opts].compact
+      if Experiments.enabled?(:enable_shared_helpers_command_timeout)
+        stdout, stderr, process = CommandHelpers.capture3_with_timeout(
+          env_cmd,
+          stderr_to_stdout: stderr_to_stdout,
+          timeout: timeout
+        )
+      elsif stderr_to_stdout
+        stdout, process = Open3.capture2e(env || {}, cmd, opts)
       else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd)
+        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
       end
 
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return stdout if process.success?
+      return stdout || "" if process&.success?
 
       error_context = {
         command: cmd,
@@ -456,10 +480,11 @@ module Dependabot
       check_out_of_disk_memory_error(stderr, error_context)
 
       raise SharedHelpers::HelperSubprocessFailed.new(
-        message: stderr_to_stdout ? stdout : "#{stderr}\n#{stdout}",
+        message: stderr_to_stdout ? (stdout || "") : "#{stderr}\n#{stdout}",
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
     def self.check_out_of_disk_memory_error(stderr, error_context)

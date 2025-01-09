@@ -63,7 +63,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
   let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "errors" do
     context "with a dependency version that can't be found" do
@@ -141,6 +154,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "when there is a private registry we don't have access to" do
+      let(:project_name) { "pnpm/private_package_access_with_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
+    context "when there is a private registry we don't have access to and no package name is mentioned" do
+      let(:dependency_name) { "rollup" }
+      let(:version) { "3.29.5" }
+      let(:previous_version) { "^2.79.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.29.5",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.79.1",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
+      let(:project_name) { "pnpm/private_dep_access_with_no_package_name" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound)
       end
     end
 
@@ -337,7 +387,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
               ]
             )
         end
@@ -382,7 +432,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(error.dependency_urls)
             .to eq(
               [
-                "https://github.com/Zelcord/electron-context-menu"
+                "https://github.com/dependabot-fixtures/pnpm_github_dependency_private"
               ]
             )
         end

@@ -58,7 +58,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "errors" do
     context "with a dependency version that can't be found" do
@@ -314,13 +327,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       end
     end
 
-    context "with a package.json which contains illegal character '@' in the name" do
+    context "with a package.json which contains illegal characters in the name" do
       let(:files) { project_dependency_files("yarn/package_json_contains_illegal_characters_in_name") }
 
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
-          expect(error.message).to eq("package.json: Name contains illegal characters not parseable")
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to eq("package.json: Name contains illegal characters")
         end
       end
     end
