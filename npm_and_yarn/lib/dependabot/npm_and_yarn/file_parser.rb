@@ -15,6 +15,9 @@ require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/registry_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/json_lock_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/pnpm_lock_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/yarn_lock_parser_for_graph"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -150,11 +153,11 @@ module Dependabot
       def lockfile_parser_for(package_manager, lockfile)
         case package_manager
         when :npm
-          JsonLockParserForGraph.new(lockfile)
+          Dependabot::NpmAndYarn::JsonLockParserForGraph.new(lockfile)
         when :pnpm
-          PnpmLockParserForGraph.new(lockfile)
+          Dependabot::NpmAndYarn::PnpmLockParserForGraph.new(lockfile)
         when :yarn
-          YarnLockParserForGraph.new(lockfile)
+          Dependabot::NpmAndYarn::YarnLockParserForGraph.new(lockfile)
         else
           raise "Unsupported package manager: #{package_manager}"
         end
