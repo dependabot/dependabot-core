@@ -78,6 +78,16 @@ module Dependabot
         ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
         ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
 
+        # Unparsable package.json file
+        ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
+
+        # Unparsable lockfile
+        ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE = /ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE/
+        ERR_PNPM_OUTDATED_LOCKFILE = /ERR_PNPM_OUTDATED_LOCKFILE/
+
+        # Peer dependencies configuration error
+        ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
@@ -193,6 +203,29 @@ module Dependabot
           if error_message.match?(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND)
             dir = error_message.match(ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND).named_captures.fetch("dir")
             msg = "Could not find linked package installation directory \"#{dir.split('/').last}\""
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if error_message.match?(ERR_PNPM_INVALID_PACKAGE_JSON)
+            msg = "Error while resolving package.json."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]
+            .each do |regexp|
+            next unless error_message.match?(regexp)
+
+            error_msg = T.let("Error while resolving pnpm-lock.yaml file.", String)
+
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          if error_message.match?(ERR_PNPM_PEER_DEP_ISSUES)
+            msg = "Missing or invalid configuration while installing peer dependencies."
+
+            Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
