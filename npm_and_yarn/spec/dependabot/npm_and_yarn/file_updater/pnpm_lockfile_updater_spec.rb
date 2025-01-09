@@ -592,5 +592,92 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           .to raise_error(Dependabot::DependencyNotFound)
       end
     end
+
+    context "with a dependency resolution that returns Invalid package.json response" do
+      let(:dependency_name) { "@radix-ui/react-context-menu" }
+      let(:version) { "2.2.3-rc.12" }
+      let(:previous_version) { "^2.2.3" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "2.2.3-rc.12",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.2.3",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/invalid_json" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns invalid YAML response" do
+      let(:dependency_name) { "@mdx-js/react" }
+      let(:version) { "3.0.2" }
+      let(:previous_version) { "^3.0.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.0.2",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.0.1",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/invalid_yaml" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns unmet peer deps response" do
+      let(:dependency_name) { "clsx" }
+      let(:version) { "2.2.2" }
+      let(:previous_version) { "^2.1.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.1.1",
+          groups: ["peerDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "2.2.2",
+          groups: ["peerDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unmet_peer_deps" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
