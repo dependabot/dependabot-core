@@ -14,6 +14,7 @@ module Dependabot
   module Python
     class FileUpdater
       class PyprojectPreparer
+        extend T::Sig
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
           @lockfile = lockfile
@@ -21,6 +22,7 @@ module Dependabot
 
         # For hosted Dependabot token will be nil since the credentials aren't present.
         # This is for those running Dependabot themselves and for dry-run.
+        sig { params(credentials: T.nilable(Hash)).void }
         def add_auth_env_vars(credentials)
           TomlRB.parse(@pyproject_content).dig("tool", "poetry", "source")&.each do |source|
             cred = credentials&.find { |c| c["index-url"] == source["url"] }
@@ -37,6 +39,7 @@ module Dependabot
           end
         end
 
+        sig { params(requirement: String).void }
         def update_python_requirement(requirement)
           pyproject_object = TomlRB.parse(@pyproject_content)
           if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
@@ -48,6 +51,7 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
+        sig { returns(String) }
         def sanitize
           # {{ name }} syntax not allowed
           pyproject_content
@@ -111,6 +115,7 @@ module Dependabot
                          .find { |d| d["name"] == normalise(dep_name) }
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end

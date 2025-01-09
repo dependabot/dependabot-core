@@ -100,7 +100,6 @@ module Dependabot
           []
         end
 
-        sig { params(requirements: T.untyped).void }
         def check_requirements(requirements)
           requirements.each do |dep|
             next unless dep["requirement"]
@@ -150,14 +149,14 @@ module Dependabot
           "[#{mch.post_match[0..closing_bracket_index(mch.post_match, '[')]}"
         end
 
-        sig { params(regex: Regexp).returns(T.untyped) }
+        sig { params(regex: Regexp).returns(T.nilable(String)) }
         def get_regexed_req_dict(regex)
           return unless (mch = setup_file.content.match(regex))
 
           "{#{mch.post_match[0..closing_bracket_index(mch.post_match, '{')]}"
         end
 
-        sig { params(string: String, bracket: String).returns(T.untyped) }
+        sig { params(string: String, bracket: String).returns(Integer) }
         def closing_bracket_index(string, bracket)
           closes_required = 1
 
@@ -170,7 +169,7 @@ module Dependabot
           0
         end
 
-        sig { params(name: String, extras: T::Array[String]).returns(T.untyped) }
+        sig { params(name: String, extras: T::Array[String]).returns(String) }
         def normalised_name(name, extras)
           NameNormaliser.normalise_including_extras(name, extras)
         end
