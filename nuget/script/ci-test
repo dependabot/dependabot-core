@@ -11,6 +11,7 @@ popd
 pushd ./helpers/lib/NuGetUpdater
 dotnet restore
 dotnet build --configuration Release
+dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./DotNetPackageCorrelation.Test/DotNetPackageCorrelation.Test.csproj
 dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Cli.Test/NuGetUpdater.Cli.Test.csproj
 dotnet test --configuration Release --no-restore --no-build --logger "console;verbosity=normal" --blame-hang-timeout 5m ./NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj
 popd

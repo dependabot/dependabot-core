@@ -79,6 +79,8 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 
     public async Task<AnalysisResult> RunAsync(string repoRoot, WorkspaceDiscoveryResult discovery, DependencyInfo dependencyInfo)
     {
+        MSBuildHelper.RegisterMSBuild(repoRoot, repoRoot);
+
         var startingDirectory = PathHelper.JoinPath(repoRoot, discovery.Path);
 
         _logger.Info($"Starting analysis of {dependencyInfo.Name}...");
@@ -423,6 +425,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
             .SelectMany(p => p.TargetFrameworks)
             .Select(NuGetFramework.Parse)
             .Distinct()
+            .Select(f => f.GetShortFolderName())
             .ToImmutableArray();
 
         // When updating peer dependencies, we only need to consider top-level dependencies.

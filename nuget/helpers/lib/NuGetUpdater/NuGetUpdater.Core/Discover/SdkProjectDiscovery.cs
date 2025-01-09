@@ -9,6 +9,8 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
+using Semver;
+
 using LoggerProperty = Microsoft.Build.Logging.StructuredLogger.Property;
 
 namespace NuGetUpdater.Core.Discover;
@@ -71,6 +73,9 @@ internal static class SdkProjectDiscovery
 
         Dictionary<string, HashSet<string>> topLevelPackagesPerProject = new(PathComparer.Instance);
         //         projectPath, packageNames
+
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject = new(PathComparer.Instance);
+        //         projectPath        tfm           packageName, packageVersion
 
         Dictionary<string, Dictionary<string, string>> resolvedProperties = new(PathComparer.Instance);
         //         projectPath        propertyName, propertyValue
@@ -164,7 +169,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, experimentsManager);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -203,6 +208,70 @@ internal static class SdkProjectDiscovery
                                 }
                             }
                             break;
+                        case Target target when target.Name == "_HandlePackageFileConflicts":
+                            // this only works if we've installed the exact SDK required
+                            if (experimentsManager.InstallDotnetSdks)
+                            {
+                                var projectEvaluation = GetNearestProjectEvaluation(target);
+                                if (projectEvaluation is null)
+                                {
+                                    break;
+                                }
+
+                                var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
+                                var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
+                                if (removedReferences is null || addedReferences is null)
+                                {
+                                    break;
+                                }
+
+                                foreach (var removedAssembly in removedReferences.Children.OfType<Item>())
+                                {
+                                    var removedPackageName = GetChildMetadataValue(removedAssembly, "NuGetPackageId");
+                                    var removedFileName = Path.GetFileName(removedAssembly.Name);
+                                    if (removedPackageName is null || removedFileName is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    if (!existingProjectPackages.ContainsKey(removedPackageName))
+                                    {
+                                        continue;
+                                    }
+
+                                    var correspondingAddedFile = addedReferences.Children.OfType<Item>()
+                                        .FirstOrDefault(i => removedFileName.Equals(Path.GetFileName(i.Name), StringComparison.OrdinalIgnoreCase));
+                                    if (correspondingAddedFile is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var runtimePackageName = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageId");
+                                    var runtimePackageVersion = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageVersion");
+                                    if (runtimePackageName is null ||
+                                        runtimePackageVersion is null ||
+                                        !SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
+                                    {
+                                        continue;
+                                    }
+
+                                    var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
+                                    var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
+                                    if (replacementPackageVersion is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
+                                    var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
+                                    logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
+                                }
+                            }
+                            break;
                     }
                 }, takeChildrenSnapshot: true);
             }
@@ -228,6 +297,33 @@ internal static class SdkProjectDiscovery
         {
             // gather some project-level information
             var packagesByTfm = packagesPerProject[projectPath];
+            if (packagesReplacedBySdkPerProject.TryGetValue(projectPath, out var packagesReplacedBySdk))
+            {
+                var consolidatedPackagesByTfm = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+                // copy the first dictionary
+                foreach (var kvp in packagesByTfm)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    consolidatedPackagesByTfm[tfm] = packages;
+                }
+
+                // merge in the second
+                foreach (var kvp in packagesReplacedBySdk)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    var replacedPackages = consolidatedPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                    foreach (var packagePair in packages)
+                    {
+                        replacedPackages[packagePair.Key] = packagePair.Value;
+                    }
+                }
+
+                packagesByTfm = consolidatedPackagesByTfm;
+            }
+
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
             var doc = XDocument.Load(projectPath);
             var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
@@ -288,7 +384,8 @@ internal static class SdkProjectDiscovery
     private static void ProcessResolvedPackageReference(
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
-        Dictionary<string, HashSet<string>> topLevelPackagesPerProject
+        Dictionary<string, HashSet<string>> topLevelPackagesPerProject,
+        ExperimentsManager experimentsManager
     )
     {
         var doRemoveOperation = node is RemoveItem;
