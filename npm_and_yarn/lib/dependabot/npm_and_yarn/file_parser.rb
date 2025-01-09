@@ -118,6 +118,18 @@ module Dependabot
         dependency_graphs
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager_helper.package_manager,
+            language: package_manager_helper.language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
 
       sig { returns(T::Hash[String, Dependabot::Dependency]) }
@@ -145,18 +157,6 @@ module Dependabot
         else
           raise "Unsupported package manager: #{package_manager}"
         end
-      end
-
-      sig { returns(Ecosystem) }
-      def ecosystem
-        @ecosystem ||= T.let(
-          Ecosystem.new(
-            name: ECOSYSTEM,
-            package_manager: package_manager_helper.package_manager,
-            language: package_manager_helper.language
-          ),
-          T.nilable(Ecosystem)
-        )
       end
 
       sig { returns(PackageManagerHelper) }
