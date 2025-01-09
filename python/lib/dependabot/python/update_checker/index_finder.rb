@@ -139,7 +139,6 @@ module Dependabot
           urls
         end
 
-        sig { returns({ main: NilClass, extra: [] }) }
         def config_variable_index_urls
           urls = { main: nil, extra: [] }
 
