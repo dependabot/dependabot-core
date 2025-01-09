@@ -73,6 +73,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
   end
 
   after do

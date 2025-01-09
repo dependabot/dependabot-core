@@ -158,11 +158,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:npm_v6_unsupported_error)
           .and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout)
+          .and_return(true)
       end
 
       it "returns the deprecated package manager" do
         expect(package_manager.deprecated?).to be true
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
       end
     end
 
@@ -203,10 +206,13 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:npm_v6_unsupported_error)
           .and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout)
+          .and_return(true)
       end
 
       it "returns the unsupported package manager" do
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
         expect(package_manager.unsupported?).to be true
       end
     end
@@ -250,10 +256,142 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:npm_v6_unsupported_error)
           .and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout)
+          .and_return(true)
       end
 
       it "returns the deprecated version" do
-        expect(package_manager.version.to_s).to eq "6"
+        expect(package_manager.detected_version.to_s).to eq "6"
+      end
+    end
+  end
+
+  describe "#detect_version" do
+    let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
+
+    context "when packageManager field exists" do
+      let(:package_json) { { "packageManager" => "npm@7.5.2" } }
+
+      context "with a selected engine" do
+        let(:package_json) do
+          { "packageManager" => "npm@7.5.2", "engines" => { "npm" => ">=7.0.0 <8.0.0" } }
+        end
+
+        context "when package manager lockfile exists" do
+          let(:lockfiles) { { npm: npm_lockfile } }
+
+          it "returns the packageManager field value version over engines and lockfile" do
+            expect(helper.detect_version("npm")).to eq("7.5.2")
+          end
+        end
+
+        context "when package manager lockfile does not exist" do
+          let(:lockfiles) { {} }
+
+          it "returns the packageManager field value version over engines" do
+            expect(helper.detect_version("npm")).to eq("7.5.2")
+          end
+        end
+      end
+
+      context "with multiple engines including the selected one" do
+        let(:package_json) do
+          {
+            "packageManager" => "npm",
+            "engines" => { "npm" => "8.0.0", "yarn" => "2.0.0" }
+          }
+        end
+
+        context "when package manager lockfile exists" do
+          let(:lockfiles) { { npm: npm_lockfile } }
+
+          it "returns engines version over lockfile" do
+            expect(helper.detect_version("npm")).to eq("8.0.0")
+          end
+        end
+
+        context "when package manager lockfile does not exist" do
+          let(:lockfiles) { {} }
+
+          it "returns the engines version" do
+            expect(helper.detect_version("npm")).to eq("8.0.0")
+          end
+        end
+      end
+
+      context "with no engine" do
+        context "when package manager lockfile exists" do
+          let(:lockfiles) { { npm: npm_lockfile } }
+
+          it "returns the packageManager field version" do
+            expect(helper.detect_version("npm")).to eq("7.5.2")
+          end
+        end
+
+        context "when package manager lockfile does not exist" do
+          let(:lockfiles) { {} }
+
+          it "returns the packageManager field version" do
+            expect(helper.detect_version("npm")).to eq("7.5.2")
+          end
+        end
+      end
+    end
+
+    context "when packageManager field does not exist" do
+      let(:package_json) { {} }
+
+      context "with engines specifying the selected package manager" do
+        let(:package_json) { { "engines" => { "npm" => "8.0.0" } } }
+
+        context "when package manager lockfile exists" do
+          let(:lockfiles) { { npm: npm_lockfile } }
+
+          it "returns engines version over lockfile" do
+            expect(helper.detect_version("npm")).to eq("8.0.0")
+          end
+        end
+
+        context "when package manager lockfile does not exist" do
+          let(:lockfiles) { {} }
+
+          it "returns the engines version" do
+            expect(helper.detect_version("npm")).to eq("8.0.0")
+          end
+        end
+      end
+
+      context "with no engines and no lockfile" do
+        let(:lockfiles) { {} }
+
+        it "returns nil as no version can be detected" do
+          expect(helper.detect_version("npm")).to be_nil
+        end
+      end
+
+      context "with no engines and a lockfile for the selected package manager" do
+        let(:lockfiles) { { npm: npm_lockfile } }
+
+        it "returns the version inferred from the lockfile" do
+          expect(helper.detect_version("npm")).to eq("8")
+        end
+      end
+
+      context "with no engines and a lockfile for a different package manager" do
+        let(:lockfiles) { { yarn: yarn_lockfile } }
+
+        it "returns nil as no version can be detected for the selected package manager" do
+          expect(helper.detect_version("npm")).to be_nil
+        end
+      end
+
+      context "with no engines and multiple lockfiles" do
+        let(:lockfiles) { { npm: npm_lockfile, yarn: yarn_lockfile } }
+
+        it "returns the version inferred from the lockfile matching the selected package manager" do
+          expect(helper.detect_version("npm")).to eq("8")
+        end
       end
     end
   end

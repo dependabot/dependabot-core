@@ -30,19 +30,42 @@ public record ExperimentsManager
         };
     }
 
-    public static async Task<ExperimentsManager> FromJobFileAsync(string jobFilePath, ILogger logger)
+    public static async Task<(ExperimentsManager ExperimentsManager, NativeResult? ErrorResult)> FromJobFileAsync(string jobFilePath)
     {
-        var jobFileContent = await File.ReadAllTextAsync(jobFilePath);
+        var experimentsManager = new ExperimentsManager();
+        NativeResult? errorResult = null;
         try
         {
+            var jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
-            return GetExperimentsManager(jobWrapper.Job.Experiments);
+            experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
+        }
+        catch (BadRequirementException ex)
+        {
+            errorResult = new NativeResult
+            {
+                ErrorType = ErrorType.BadRequirement,
+                ErrorDetails = ex.Message,
+            };
         }
         catch (JsonException ex)
         {
-            logger.Info($"Error deserializing job file: {ex.ToString()}: {jobFileContent}");
-            return new ExperimentsManager();
+            errorResult = new NativeResult
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = $"Error deserializing job file: {ex}: {File.ReadAllText(jobFilePath)}",
+            };
         }
+        catch (Exception ex)
+        {
+            errorResult = new NativeResult
+            {
+                ErrorType = ErrorType.Unknown,
+                ErrorDetails = ex.ToString(),
+            };
+        }
+
+        return (experimentsManager, errorResult);
     }
 
     private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName)

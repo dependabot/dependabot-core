@@ -4,7 +4,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG COREPACK_VERSION=0.30.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=9.15.0
+ARG PNPM_VERSION=9.15.3
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.5.3

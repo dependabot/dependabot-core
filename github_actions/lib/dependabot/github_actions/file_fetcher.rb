@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/github_actions/constants"
 
 module Dependabot
   module GithubActions
@@ -12,11 +13,9 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
-      FILENAME_PATTERN = /\.ya?ml$/
-
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(FILENAME_PATTERN) }
+        filenames.any? { |f| f.match?(MANIFEST_FILE_PATTERN) }
       end
 
       sig { override.returns(String) }
@@ -49,9 +48,9 @@ module Dependabot
         if incorrectly_encoded_workflow_files.none?
           expected_paths =
             if directory == "/"
-              File.join(directory, "action.yml") + " or /.github/workflows/<anything>.yml"
+              File.join(directory, MANIFEST_FILE_YML) + " or /#{CONFIG_YMLS}"
             else
-              File.join(directory, "<anything>.yml")
+              File.join(directory, ANYTHING_YML)
             end
 
           raise(
@@ -75,16 +74,19 @@ module Dependabot
         # In the special case where the root directory is defined we also scan
         # the .github/workflows/ folder.
         if directory == "/"
-          @workflow_files += [fetch_file_if_present("action.yml"), fetch_file_if_present("action.yaml")].compact
+          @workflow_files += [
+            fetch_file_if_present(MANIFEST_FILE_YML),
+            fetch_file_if_present(MANIFEST_FILE_YAML)
+          ].compact
 
-          workflows_dir = ".github/workflows"
+          workflows_dir = WORKFLOW_DIRECTORY
         else
           workflows_dir = "."
         end
 
         @workflow_files +=
           repo_contents(dir: workflows_dir, raise_errors: false)
-          .select { |f| f.type == "file" && f.name.match?(FILENAME_PATTERN) }
+          .select { |f| f.type == "file" && f.name.match?(MANIFEST_FILE_PATTERN) }
           .map { |f| fetch_file_from_host("#{workflows_dir}/#{f.name}") }
       end
 

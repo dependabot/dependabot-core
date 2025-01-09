@@ -21,6 +21,7 @@ module Dependabot
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
+      require_relative "file_parser/python_requirement_parser"
 
       DEPENDENCY_GROUP_KEYS = [
         {
@@ -217,9 +218,17 @@ module Dependabot
         language_version_manager.python_version
       end
 
+      sig { returns(String) }
+      def python_command_version
+        language_version_manager.installed_version
+      end
+
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def language
-        Language.new(python_raw_version)
+        Language.new(
+          detected_version: python_raw_version,
+          raw_version: python_command_version
+        )
       end
 
       def requirement_files
@@ -293,10 +302,58 @@ module Dependabot
 
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
-        return true if dep["markers"].include?("<")
-        return false if dep["markers"].include?(">")
 
-        dep["requirement"]&.include?("<")
+        marker = dep["markers"]
+        version = python_raw_version
+
+        if marker.include?("python_version")
+          !marker_satisfied?(marker, version)
+        else
+          return true if dep["markers"].include?("<")
+          return false if dep["markers"].include?(">")
+
+          dep["requirement"]&.include?("<")
+        end
+      end
+
+      def marker_satisfied?(marker, python_version)
+        conditions = marker.split(/\s+(and|or)\s+/)
+
+        # Explicitly define the type of result as T::Boolean
+        result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
+
+        until conditions.empty?
+          operator = conditions.shift
+          next_condition = conditions.shift
+          next_result = evaluate_condition(next_condition, python_version)
+
+          result = if operator == "and"
+                     result && next_result
+                   else
+                     result || next_result
+                   end
+        end
+
+        result
+      end
+
+      def evaluate_condition(condition, python_version)
+        operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/).captures
+
+        case operator
+        when "<"
+          Dependabot::Python::Version.new(python_version) < Dependabot::Python::Version.new(version)
+        when "<="
+          Dependabot::Python::Version.new(python_version) <= Dependabot::Python::Version.new(version)
+        when ">"
+          Dependabot::Python::Version.new(python_version) > Dependabot::Python::Version.new(version)
+        when ">="
+          Dependabot::Python::Version.new(python_version) >= Dependabot::Python::Version.new(version)
+        when "=="
+          Dependabot::Python::Version.new(python_version) == Dependabot::Python::Version.new(version)
+        else
+          false
+        end
       end
 
       def setup_file_dependencies
@@ -337,7 +394,7 @@ module Dependabot
       end
 
       def pipcompile_in_file
-        requirement_files.any? { |f| f.end_with?(".in") }
+        requirement_files.any? { |f| f.name.end_with?(PipCompilePackageManager::MANIFEST_FILENAME) }
       end
 
       def pipenv_files

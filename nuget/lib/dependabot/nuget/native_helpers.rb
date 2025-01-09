@@ -301,6 +301,8 @@ module Dependabot
           raise DependencyFileNotParseable, T.must(T.let(error_details, T.nilable(String)))
         when "AuthenticationFailure"
           raise PrivateSourceAuthenticationFailure, T.let(error_details, T.nilable(String))
+        when "BadRequirement"
+          raise BadRequirementError, T.let(error_details, T.nilable(String))
         when "MissingFile"
           raise DependencyFileNotFound, T.let(error_details, T.nilable(String))
         when "UpdateNotPossible"

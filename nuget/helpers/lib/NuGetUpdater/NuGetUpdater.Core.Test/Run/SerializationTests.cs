@@ -1,6 +1,5 @@
 using NuGet.Versioning;
 
-using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Utilities;
@@ -228,37 +227,33 @@ public class SerializationTests
         Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
-    [Fact]
-    public async Task DeserializeExperimentsManager_UnsupportedJobFileShape_InfoIsReportedAndEmptyExperimentSetIsReturned()
+    [Theory]
+    [MemberData(nameof(DeserializeErrorTypesData))]
+    public void SerializeError(JobErrorBase error, string expectedSerialization)
     {
-        // arrange
-        using var tempDir = new TemporaryDirectory();
-        var jobFilePath = Path.Combine(tempDir.DirectoryPath, "job.json");
-        var jobContent = """
-            {
-              "this-is-not-a-job-and-parsing-will-fail-but-an-empty-experiment-set-should-sill-be-returned": {
-              }
-            }
-            """;
-        await File.WriteAllTextAsync(jobFilePath, jobContent);
-        var capturingTestLogger = new CapturingTestLogger();
+        if (error is UnknownError unknown)
+        {
+            // special case the exception's call stack to make it testable
+            unknown.Details["error-backtrace"] = "TEST-BACKTRACE";
+        }
 
-        // act - this is the entrypoint the update command uses to parse the job file
-        var experimentsManager = await ExperimentsManager.FromJobFileAsync(jobFilePath, capturingTestLogger);
-
-        // assert
-        Assert.False(experimentsManager.UseLegacyDependencySolver);
-        Assert.False(experimentsManager.UseDirectDiscovery);
-        Assert.Single(capturingTestLogger.Messages, m => m.Contains("Error deserializing job file"));
+        var actual = HttpApiHandler.Serialize(error);
+        Assert.Equal(expectedSerialization, actual);
     }
 
     [Fact]
-    public void SerializeError()
+    public void SerializeError_AllErrorTypesHaveSerializationTests()
     {
-        var error = new JobRepoNotFound("some message");
-        var actual = HttpApiHandler.Serialize(error);
-        var expected = """{"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}""";
-        Assert.Equal(expected, actual);
+        var untestedTypes = typeof(JobErrorBase).Assembly.GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(JobErrorBase)))
+            .ToHashSet();
+        foreach (object?[] data in DeserializeErrorTypesData())
+        {
+            var testedErrorType = data[0]!.GetType();
+            untestedTypes.Remove(testedErrorType);
+        }
+
+        Assert.Empty(untestedTypes.Select(t => t.Name));
     }
 
     [Fact]
@@ -503,7 +498,9 @@ public class SerializationTests
                         "repo": "some/repo"
                     },
                     "commit-message-options": {
-                        "prefix": "[SECURITY] "
+                        "prefix": "[SECURITY] ",
+                        "prefix-development": null,
+                        "include-scope": true
                     }
                 }
             }
@@ -511,7 +508,58 @@ public class SerializationTests
         var jobWrapper = RunWorker.Deserialize(jsonWrapperJson)!;
         Assert.Equal("[SECURITY] ", jobWrapper.Job.CommitMessageOptions!.Prefix);
         Assert.Null(jobWrapper.Job.CommitMessageOptions!.PrefixDevelopment);
-        Assert.Null(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+        Assert.True(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
+    }
+
+    public static IEnumerable<object?[]> DeserializeErrorTypesData()
+    {
+        yield return
+        [
+            new BadRequirement("some message"),
+            """
+            {"data":{"error-type":"illformed_requirement","error-details":{"message":"some message"}}}
+            """
+        ];
+
+        yield return
+        [
+            new DependencyFileNotFound("some message", "/some/file"),
+            """
+            {"data":{"error-type":"dependency_file_not_found","error-details":{"message":"some message","file-path":"/some/file"}}}
+            """
+        ];
+
+        yield return
+        [
+            new JobRepoNotFound("some message"),
+            """
+            {"data":{"error-type":"job_repo_not_found","error-details":{"message":"some message"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PrivateSourceAuthenticationFailure(["url1", "url2"]),
+            """
+            {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new UnknownError(new Exception("some message"), "JOB-ID"),
+            """
+            {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
+            """
+        ];
+
+        yield return
+        [
+            new UpdateNotPossible(["dep1", "dep2"]),
+            """
+            {"data":{"error-type":"update_not_possible","error-details":{"dependencies":["dep1","dep2"]}}}
+            """
+        ];
     }
 
     public static IEnumerable<object?[]> DeserializeAllowedUpdatesData()
@@ -595,17 +643,5 @@ public class SerializationTests
                 }
             }
         ];
-    }
-
-    private class CapturingTestLogger : ILogger
-    {
-        private readonly List<string> _messages = new();
-
-        public IReadOnlyList<string> Messages => _messages;
-
-        public void LogRaw(string message)
-        {
-            _messages.Add(message);
-        }
     }
 }

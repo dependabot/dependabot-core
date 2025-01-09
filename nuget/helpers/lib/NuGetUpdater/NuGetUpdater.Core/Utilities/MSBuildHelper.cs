@@ -886,6 +886,7 @@ internal static partial class MSBuildHelper
             "The plugin credential provider could not acquire credentials",
             "401 (Unauthorized)",
             "error NU1301: Unable to load the service index for source",
+            "Response status code does not indicate success: 403",
         };
         if (unauthorizedMessageSnippets.Any(stdout.Contains))
         {
@@ -895,9 +896,13 @@ internal static partial class MSBuildHelper
 
     internal static string? GetMissingFile(string output)
     {
-        var missingFilePattern = new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found");
-        var match = missingFilePattern.Match(output);
-        if (match.Success)
+        var missingFilePatterns = new[]
+        {
+            new Regex(@"The imported project \""(?<FilePath>.*)\"" was not found"),
+            new Regex(@"The imported file \""(?<FilePath>.*)\"" does not exist"),
+        };
+        var match = missingFilePatterns.Select(p => p.Match(output)).Where(m => m.Success).FirstOrDefault();
+        if (match is not null)
         {
             return match.Groups["FilePath"].Value;
         }
