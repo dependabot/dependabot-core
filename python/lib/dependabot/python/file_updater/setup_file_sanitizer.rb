@@ -88,7 +88,7 @@ module Dependabot
             ).dependency_set
         end
 
-        sig{ returns(String) }
+        sig { returns(String) }
         def package_name
           content = setup_file.content
           match = content.match(/name\s*=\s*['"](?<package_name>[^'"]+)['"]/)
