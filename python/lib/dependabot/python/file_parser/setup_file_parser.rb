@@ -8,11 +8,13 @@ require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
     class FileParser
       class SetupFileParser
+        extend T::Sig
         INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m
         SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m
         TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m
@@ -98,6 +100,7 @@ module Dependabot
           []
         end
 
+        sig { params(requirements: T.untyped).void }
         def check_requirements(requirements)
           requirements.each do |dep|
             next unless dep["requirement"]
@@ -140,19 +143,21 @@ module Dependabot
 
           File.write("setup.py", tmp)
         end
-
+        sig { params(regex: Regexp).returns(T.untyped) }
         def get_regexed_req_array(regex)
           return unless (mch = setup_file.content.match(regex))
 
           "[#{mch.post_match[0..closing_bracket_index(mch.post_match, '[')]}"
         end
 
+        sig { params(regex: Regexp).returns(T.untyped) }
         def get_regexed_req_dict(regex)
           return unless (mch = setup_file.content.match(regex))
 
           "{#{mch.post_match[0..closing_bracket_index(mch.post_match, '{')]}"
         end
 
+        sig { params(string: String, bracket: String).returns(T.untyped) }
         def closing_bracket_index(string, bracket)
           closes_required = 1
 
@@ -165,6 +170,7 @@ module Dependabot
           0
         end
 
+        sig { params(name: String, extras: T::Array[String]).returns(T.untyped) }
         def normalised_name(name, extras)
           NameNormaliser.normalise_including_extras(name, extras)
         end

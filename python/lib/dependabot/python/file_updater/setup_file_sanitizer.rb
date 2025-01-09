@@ -3,6 +3,7 @@
 
 require "dependabot/python/file_updater"
 require "dependabot/python/file_parser/setup_file_parser"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
@@ -10,6 +11,7 @@ module Dependabot
       # Take a setup.py, parses it (carefully!) and then create a new, clean
       # setup.py using only the information which will appear in the lockfile.
       class SetupFileSanitizer
+        extend T::Sig
         def initialize(setup_file:, setup_cfg:)
           @setup_file = setup_file
           @setup_cfg = setup_cfg
@@ -86,6 +88,7 @@ module Dependabot
             ).dependency_set
         end
 
+        sig{ returns(String) }
         def package_name
           content = setup_file.content
           match = content.match(/name\s*=\s*['"](?<package_name>[^'"]+)['"]/)
