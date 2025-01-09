@@ -12,7 +12,7 @@ module Dependabot
 
       # Builds a dependency graph from the main dependencies and the lockfile
       sig do
-        abstract.params(main_dependencies: T::Hash[String, Dependabot::Dependency]).returns(DependencyGraph)
+        abstract.params(main_dependencies: T::Hash[String, Dependabot::Dependency]).returns(Dependabot::DependencyGraph)
       end
       def build_dependency_graph(main_dependencies); end
     end
