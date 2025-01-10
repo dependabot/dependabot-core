@@ -4,6 +4,7 @@
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
 require "dependabot/dependency"
+require "dependabot/dependency_graph"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -13,6 +14,11 @@ require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/registry_parser"
+require "dependabot/npm_and_yarn/file_parser/manifest_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/json_lock_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/pnpm_lock_parser_for_graph"
+require "dependabot/npm_and_yarn/file_parser/yarn_lock_parser_for_graph"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
@@ -79,6 +85,44 @@ module Dependabot
         end
       end
 
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraph]) }
+      def parse_for_dependency_graph
+        dependency_graphs = {}
+
+        lockfiles.map do |package_manager, lockfile|
+          next unless lockfile
+
+          # Parse lockfile dependencies
+          lockfile_parser = lockfile_parser_for(package_manager, lockfile)
+
+          # Build dependency graph
+          dependency_graph = lockfile_parser.build_dependency_graph(
+            main_dependencies
+          )
+
+          dependency_graphs[package_manager] = dependency_graph
+        end
+
+        # If no lockfile is present, build a dependency graph from the manifest
+        if lockfiles.values.all?(&:nil?)
+          # If no lockfile is present, build a dependency graph from the manifest
+          dependency_graph = Dependabot::DependencyGraph.new.tap do |dg|
+            main_dependencies.each do |_, dep|
+              dg.add_dependency(
+                dependency: dep,
+                dependency_data: nil
+              )
+            end
+          end
+          dependency_graphs = {
+            npm: dependency_graph,
+            yarn: dependency_graph,
+            pnpm: dependency_graph
+          }
+        end
+        dependency_graphs
+      end
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -92,6 +136,33 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Hash[String, Dependabot::Dependency]) }
+      def main_dependencies
+        @main_dependencies ||= T.let(
+          ManifestParserForGraph.new(package_files).parse,
+          T.nilable(T::Hash[String, Dependabot::Dependency])
+        )
+      end
+
+      sig do
+        params(
+          package_manager: Symbol,
+          lockfile: Dependabot::DependencyFile
+        ).returns(Dependabot::NpmAndYarn::LockFileParserForGraph)
+      end
+      def lockfile_parser_for(package_manager, lockfile)
+        case package_manager
+        when :npm
+          Dependabot::NpmAndYarn::JsonLockParserForGraph.new(lockfile)
+        when :pnpm
+          Dependabot::NpmAndYarn::PnpmLockParserForGraph.new(lockfile)
+        when :yarn
+          Dependabot::NpmAndYarn::YarnLockParserForGraph.new(lockfile)
+        else
+          raise "Unsupported package manager: #{package_manager}"
+        end
+      end
 
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
