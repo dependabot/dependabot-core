@@ -39,7 +39,6 @@ module Dependabot
           end
         end
 
-        sig { params(requirement: String).void }
         def update_python_requirement(requirement)
           pyproject_object = TomlRB.parse(@pyproject_content)
           if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
