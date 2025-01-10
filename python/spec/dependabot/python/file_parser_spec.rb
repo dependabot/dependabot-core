@@ -214,7 +214,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
         let(:requirements_fixture_name) { "malformed_markers.txt" }
 
-        it "then the dependency version should be 1.0.4" do
+        it "does not return any dependencies" do
           expect(dependencies).to be_empty
         end
       end
