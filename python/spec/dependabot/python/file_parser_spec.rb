@@ -1217,6 +1217,13 @@ RSpec.describe Dependabot::Python::FileParser do
           end
         end
       end
+
+      context "when the pipfile has markers" do
+        let(:pipfile_fixture_name) { "version_with_markers" }
+        let(:lockfile_fixture_name) { "version_with_markers.lock" }
+
+        its(:length) { is_expected.to eq(2) }
+      end
     end
 
     context "with a Pipfile but no Pipfile.lock" do
