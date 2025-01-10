@@ -93,7 +93,6 @@ module Dependabot
         python_version_matching(compiled_file_python_requirement_markers)
       end
 
-      # sig { params(requirements: T.untyped).returns(T.nilable(String)) }
       def python_version_matching(requirements)
         PRE_INSTALLED_PYTHON_VERSIONS.find do |version_string|
           version = Python::Version.new(version_string)
