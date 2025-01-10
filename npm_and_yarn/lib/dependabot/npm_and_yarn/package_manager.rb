@@ -221,6 +221,9 @@ module Dependabot
       PNPMPackageManager::NAME => PNPMPackageManager
     }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
 
+    # Error malformed version number string
+    ERROR_MALFORMED_VERSION_NUMBER = "Malformed version number"
+
     class PackageManagerDetector
       extend T::Sig
       extend T::Helpers
@@ -520,6 +523,10 @@ module Dependabot
           raw_version: installed_version,
           requirement: package_manager_requirement
         )
+      rescue ArgumentError => e
+        raise DependencyFileNotParseable, e.message if e.message.include?(ERROR_MALFORMED_VERSION_NUMBER)
+
+        raise
       rescue StandardError => e
         Dependabot.logger.error("Error resolving package manager for #{name || 'default'}: #{e.message}")
         raise

@@ -337,6 +337,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           end
         end
       end
+
+      context "with a malformed packageManager" do
+        let(:package_json) { { "packageManager" => "npm^@7.5.2" } }
+
+        context "when package manager version is not specified correctly" do
+          it "returns the nil packageManager version" do
+            expect(helper.detect_version("npm")).to be_nil
+          end
+        end
+      end
     end
 
     context "when packageManager field does not exist" do
