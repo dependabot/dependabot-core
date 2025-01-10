@@ -57,6 +57,8 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
+          next if file.support_file?
+
           modules = parsed_file(file).fetch("module", {})
           # If override.tf files are present, we need to merge the modules
           if override_terraform_files.any?
