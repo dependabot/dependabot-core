@@ -3,9 +3,18 @@
     "description": "A helper package for Dependabot to perform updates using Composer",
     "license": "MIT",
     "require": {
-        "php": "^7.4",
+        "php": "^7.4 || ^8.1",
         "ext-json": "*",
-        "composer/composer": "^2"
+        "composer/composer": "^2",
+        "symfony/console": "^6.0",
+        "symfony/filesystem": "^6.0",
+        "symfony/finder": "^6.0",
+        "symfony/process": "^6.0",
+        "symfony/string": "^6.0",
+        "sebastian/diff": "^5.0",
+        "symfony/event-dispatcher": "^6.0",
+        "symfony/options-resolver": "^6.0",
+        "symfony/stopwatch": "^6.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
