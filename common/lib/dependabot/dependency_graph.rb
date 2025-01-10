@@ -93,14 +93,6 @@ module Dependabot
       children.find { |child| child.dependency.name == name }
     end
 
-    protected
-
-    sig { params(node: DependencyNode).void }
-    def add_sub_dependency(node)
-      children.add(node)
-      node.parents.add(self)
-    end
-
     sig { returns(Integer) }
     def hash
       [dependency.name, dependency.version].hash
@@ -123,6 +115,14 @@ module Dependabot
     sig { params(other: T.untyped).returns(T::Boolean) }
     def ==(other)
       eql?(other)
+    end
+
+    protected
+
+    sig { params(node: DependencyNode).void }
+    def add_sub_dependency(node)
+      children.add(node)
+      node.parents.add(self)
     end
   end
 end
