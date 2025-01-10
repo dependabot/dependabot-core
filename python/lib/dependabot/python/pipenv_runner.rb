@@ -4,16 +4,20 @@
 require "dependabot/shared_helpers"
 require "dependabot/python/file_parser"
 require "json"
+require "sorbet-runtime"
 
 module Dependabot
   module Python
     class PipenvRunner
+      extend T::Sig
+
       def initialize(dependency:, lockfile:, language_version_manager:)
         @dependency = dependency
         @lockfile = lockfile
         @language_version_manager = language_version_manager
       end
 
+      sig { params(constraint: String).void }
       def run_upgrade(constraint)
         constraint = "" if constraint == "*"
         command = "pyenv exec pipenv upgrade --verbose #{dependency_name}#{constraint}"
@@ -30,6 +34,7 @@ module Dependabot
         fetch_version_from_parsed_lockfile(updated_lockfile)
       end
 
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run(command, fingerprint: nil)
         run_command(
           "pyenv local #{language_version_manager.python_major_minor}",
@@ -52,6 +57,7 @@ module Dependabot
             &.gsub(/^==/, "")
       end
 
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end

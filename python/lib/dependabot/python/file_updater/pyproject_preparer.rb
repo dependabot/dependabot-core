@@ -14,6 +14,7 @@ module Dependabot
   module Python
     class FileUpdater
       class PyprojectPreparer
+        extend T::Sig
         def initialize(pyproject_content:, lockfile: nil)
           @pyproject_content = pyproject_content
           @lockfile = lockfile
@@ -48,6 +49,7 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
+        sig { returns(String) }
         def sanitize
           # {{ name }} syntax not allowed
           pyproject_content
@@ -111,6 +113,7 @@ module Dependabot
                          .find { |d| d["name"] == normalise(dep_name) }
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end
