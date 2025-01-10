@@ -26,7 +26,7 @@ module Dependabot
         run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
-      sig { params(constraint: String).void }
+      # sig { params(constraint: String).void }
       def run_upgrade_and_fetch_version(constraint)
         run_upgrade(constraint)
 
@@ -35,7 +35,7 @@ module Dependabot
         fetch_version_from_parsed_lockfile(updated_lockfile)
       end
 
-      sig { params(command: String, fingerprint: T.nilable(String)).void }
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run(command, fingerprint: nil)
         run_command(
           "pyenv local #{language_version_manager.python_major_minor}",
@@ -51,7 +51,7 @@ module Dependabot
       attr_reader :lockfile
       attr_reader :language_version_manager
 
-      sig { params(updated_lockfile: Array).void }
+      # sig { params(updated_lockfile: Array).void }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
         deps = updated_lockfile[lockfile_section] || {}
 
@@ -59,7 +59,7 @@ module Dependabot
             &.gsub(/^==/, "")
       end
 
-      sig { params(command: String, fingerprint: T.nilable(String)).void }
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def run_command(command, fingerprint: nil)
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end
