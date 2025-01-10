@@ -369,6 +369,12 @@ module Dependabot
         server504: /504 Server Error/
       }.freeze, T::Hash[T.nilable(String), Regexp])
 
+      # invalid configuration in pyproject.toml
+      POETRY_VIRTUAL_ENV_CONFIG = %r{pypoetry/virtualenvs(.|\n)*list index out of range}
+
+      # error related to local project as dependency in pyproject.toml
+      ERR_LOCAL_PROJECT_PATH = /Path (?<path>.*) for (?<dep>.*) does not exist/
+
       sig do
         params(
           dependencies: Dependabot::Dependency,
@@ -417,6 +423,12 @@ module Dependabot
         end
 
         raise DependencyFileNotResolvable, error.message if error.message.match(PYTHON_RANGE_NOT_SATISFIED)
+
+        if error.message.match(POETRY_VIRTUAL_ENV_CONFIG) || error.message.match(ERR_LOCAL_PROJECT_PATH)
+          msg = "Error while resolving pyproject.toml file"
+
+          raise DependencyFileNotResolvable, msg
+        end
 
         SERVER_ERROR_CODES.each do |(_error_codes, error_regex)|
           next unless error.message.match?(error_regex)
