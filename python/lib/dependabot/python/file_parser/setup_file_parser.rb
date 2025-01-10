@@ -143,14 +143,14 @@ module Dependabot
           File.write("setup.py", tmp)
         end
 
-        # sig { params(regex: Regexp).returns(T.nilable(String)) }
+        sig { params(regex: Regexp).returns(T.nilable(String)) }
         def get_regexed_req_array(regex)
           return unless (mch = setup_file.content.match(regex))
 
           "[#{mch.post_match[0..closing_bracket_index(mch.post_match, '[')]}"
         end
 
-        # sig { params(regex: Regexp).returns(T.nilable(String)) }
+        sig { params(regex: Regexp).returns(T.nilable(String)) }
         def get_regexed_req_dict(regex)
           return unless (mch = setup_file.content.match(regex))
 
