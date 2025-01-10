@@ -488,6 +488,22 @@ RSpec.describe namespace::PoetryVersionResolver do
 
     context "with private registry authentication 504 Server Error" do
       let(:response) do
+        "Creating virtualenv pylossmap-m4-85W1Y-py3.13 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        
+        500 Server Error: Internal Server Error for url: http://acc-py-repo.cern.ch:8081/repository/vr-py-releases/simple/jinja2/"
+      end
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse) do |error|
+          expect(error.message)
+            .to include("http://acc-py-repo.cern.ch")
+        end
+      end
+    end
+
+    context "with private registry authentication 504 Server Error" do
+      let(:response) do
         "Creating virtualenv alk-service-import-product-TbrdR40A-py3.8 in /home/dependabot/.cache/pypoetry/virtualenvs
         Updating dependencies
         Resolving dependencies...

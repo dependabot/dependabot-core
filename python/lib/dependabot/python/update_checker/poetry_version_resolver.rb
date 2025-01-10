@@ -364,6 +364,7 @@ module Dependabot
 
       # server response error codes while accessing package index
       SERVER_ERROR_CODES = T.let({
+        server500: /500 Server Error/,
         server502: /502 Server Error/,
         server503: /503 Server Error/,
         server504: /504 Server Error/
@@ -409,6 +410,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
+        debugger
         Dependabot.logger.warn(error.message)
 
         if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
