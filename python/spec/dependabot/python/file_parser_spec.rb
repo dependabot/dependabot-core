@@ -206,6 +206,18 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
       end
+
+      context "when the marker is malformed" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("3.13.3")
+        end
+
+        let(:requirements_fixture_name) { "malformed_markers.txt" }
+
+        it "does not return any dependencies" do
+          expect(dependencies).to be_empty
+        end
+      end
     end
 
     context "with extras" do
