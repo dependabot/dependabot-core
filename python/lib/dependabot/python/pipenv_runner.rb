@@ -26,7 +26,6 @@ module Dependabot
         run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
-      # sig { params(constraint: String).void }
       def run_upgrade_and_fetch_version(constraint)
         run_upgrade(constraint)
 
@@ -51,7 +50,6 @@ module Dependabot
       attr_reader :lockfile
       attr_reader :language_version_manager
 
-      # sig { params(updated_lockfile: Array).void }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
         deps = updated_lockfile[lockfile_section] || {}
 

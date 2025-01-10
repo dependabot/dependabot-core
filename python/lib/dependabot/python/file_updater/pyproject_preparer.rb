@@ -22,7 +22,6 @@ module Dependabot
 
         # For hosted Dependabot token will be nil since the credentials aren't present.
         # This is for those running Dependabot themselves and for dry-run.
-        sig { params(credentials: T.nilable(Hash)).void }
         def add_auth_env_vars(credentials)
           TomlRB.parse(@pyproject_content).dig("tool", "poetry", "source")&.each do |source|
             cred = credentials&.find { |c| c["index-url"] == source["url"] }
