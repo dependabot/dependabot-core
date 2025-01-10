@@ -9,6 +9,7 @@ require "dependabot/npm_and_yarn/registry_helper"
 require "dependabot/npm_and_yarn/npm_package_manager"
 require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
+require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
 
 module Dependabot
