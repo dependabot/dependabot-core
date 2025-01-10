@@ -51,7 +51,7 @@ module Dependabot
       attr_reader :lockfile
       attr_reader :language_version_manager
 
-      sig { params(updated_lockfile: []).void }
+      sig { params(updated_lockfile: Array).void }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
         deps = updated_lockfile[lockfile_section] || {}
 
