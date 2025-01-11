@@ -338,7 +338,7 @@ module Dependabot
       end
 
       def evaluate_condition(condition, python_version)
-        operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
+        operator, version = condition.match(/([<>=!]=?)\s*("|')?([\d.]+)("|')?/)&.captures
 
         case operator
         when "<"
