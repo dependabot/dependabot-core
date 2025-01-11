@@ -164,7 +164,7 @@ public class RunWorker
             _logger.Info($"Running update in directory {repoDirectory}");
             foreach (var project in discoveryResult.Projects)
             {
-                foreach (var dependency in project.Dependencies.Where(d => !d.IsTransitive))
+                foreach (var dependency in project.Dependencies)
                 {
                     if (dependency.Name == "Microsoft.NET.Sdk")
                     {
@@ -219,7 +219,7 @@ public class RunWorker
                         };
 
                         var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).FullyNormalizedRootedPath();
-                        var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
+                        var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
                         // TODO: need to report if anything was actually updated
                         if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
                         {
@@ -372,7 +372,7 @@ public class RunWorker
                     new ReportedDependency()
                     {
                         Name = d.Name,
-                        Requirements = d.IsTransitive ? [] : [new ReportedRequirement()
+                        Requirements = [new ReportedRequirement()
                         {
                             File = GetFullRepoPath(p.FilePath),
                             Requirement = d.Version!,
