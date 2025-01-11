@@ -58,16 +58,18 @@ internal static class VersionFinder
 
         foreach (var source in sources)
         {
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
-            var feed = await sourceRepository.GetResourceAsync<MetadataResource>();
-            if (feed is null)
-            {
-                logger.Warn($"Failed to get MetadataResource for [{source.Source}]");
-                continue;
-            }
-
+            MetadataResource? feed = null;
             try
             {
+                var sourceRepository = Repository.Factory.GetCoreV3(source);
+                feed = await sourceRepository.GetResourceAsync<MetadataResource>();
+
+                if (feed is null)
+                {
+                    logger.Warn($"Failed to get MetadataResource for [{source.Source}]");
+                    continue;
+                }
+
                 // a non-compliant v2 API returning 404 can cause this to throw
                 var existsInFeed = await feed.Exists(
                     packageId,
