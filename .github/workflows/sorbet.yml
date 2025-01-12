@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: ruby/setup-ruby@2a18b06812b0e15bb916e1df298d3e740422c47e # v1.203.0
+      - uses: ruby/setup-ruby@4a9ddd6f338a97768b8006bf671dfbad383215f4 # v1.207.0
         with:
           bundler-cache: true
 
@@ -34,7 +34,7 @@ jobs:
       - run: bundle exec spoom srb coverage snapshot --save
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: spoom_data
           path: ./spoom_data/
@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: spoom_report
           path: ./spoom_report.html
