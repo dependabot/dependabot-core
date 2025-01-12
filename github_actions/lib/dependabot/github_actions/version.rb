@@ -24,14 +24,14 @@ module Dependabot
 
       sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.remove_leading_v(version)
-        return version unless version.to_s.match?(/\A(?:.*\/)?v?([0-9])/)
+        return version unless version.to_s.match?(%r{\A(?:.*/)?v?([0-9])})
 
-        version.to_s.sub(/\A(?:.*\/)?v?/, "")
+        version.to_s.sub(%r{\A(?:.*/)?v?}, "")
       end
 
       sig { params(version: VersionParameter).returns(T::Boolean) }
       def self.path_based?(version)
-        version.to_s.match?(/\A.+\/v?([0-9])/)
+        version.to_s.match?(%r{\A.+/v?([0-9])})
       end
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
