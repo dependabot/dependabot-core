@@ -243,45 +243,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when an environment variable is required (composer v1)" do
-      let(:project_name) { "v1/env_variable" }
-
-      context "when it hasn't been provided" do
-        it "raises a MissingEnvironmentVariable error" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
-            expect(error.environment_variable).to eq("ACF_PRO_KEY")
-          end
-        end
-      end
-
-      context "when it has been provided" do
-        let(:updater) do
-          described_class.new(
-            dependency_files: files,
-            dependencies: [dependency],
-            credentials: [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "php_environment_variable",
-              "env-key" => "ACF_PRO_KEY",
-              "env-value" => "example_key"
-            }]
-          )
-        end
-
-        it "runs just fine (we get a 404 here because our key is wrong)" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404")
-          end
-        end
-      end
-    end
-
     context "when an environment variable is required (composer v2)" do
       let(:project_name) { "env_variable" }
 
@@ -628,40 +589,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           expect(error.dependency_urls)
             .to eq(["https://github.com/no-exist-sorry/monolog.git"])
         end
-      end
-    end
-
-    context "when there are patches (composer v1)" do
-      let(:project_name) { "v1/patches" }
-
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ehime/hello-world",
-          version: "1.0.5",
-          requirements: [{
-            file: "composer.json",
-            requirement: "1.0.5",
-            groups: [],
-            source: nil
-          }],
-          previous_version: "1.0.4",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "1.0.4",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-
-      it "doesn't strip the patches" do
-        updated_dep = JSON.parse(updated_lockfile_content)
-                          .fetch("packages")
-                          .find { |p| p["name"] == "ehime/hello-world" }
-
-        expect(updated_dep.dig("extra", "patches_applied"))
-          .to include("[PATCH] markdown modified")
       end
     end
 
