@@ -589,17 +589,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "init/v1.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/v1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
+          }]
         end
 
         it "has the right details" do
@@ -615,17 +615,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "run/v2.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "run/v2.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
+          }]
         end
 
         it "has the right details" do
@@ -665,17 +665,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "exec/1.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "exec/1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+          }]
         end
 
         it "has the right details" do
@@ -716,17 +716,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "init/v1.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/v1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/v1.0.0" }
+          }]
         end
 
         it "has the right details" do
@@ -742,17 +742,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/actions/checkout",
-               ref: "v1",
-               branch: nil
-             },
-             metadata: { declaration_string: "actions/checkout@v1" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/checkout@v1" }
+          }]
         end
 
         it "has the right details" do
@@ -793,17 +793,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "init/1.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/1.0.0" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/gopidesupavan/monorepo-actions",
+              ref: "init/1.0.0",
+              branch: nil
+            },
+            metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/init@init/1.0.0" }
+          }]
         end
 
         it "has the right details" do
@@ -819,17 +819,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/actions/checkout",
-               ref: "v1",
-               branch: nil
-             },
-             metadata: { declaration_string: "actions/checkout@v1" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/checkout@v1" }
+          }]
         end
 
         it "has the right details" do

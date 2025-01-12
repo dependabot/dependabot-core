@@ -536,17 +536,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             version: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
             previous_version: nil,
             requirements: [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "run/v3.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
-           }],
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "run/v3.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
+            }],
             previous_requirements: [{
               requirement: nil,
               groups: [],
@@ -562,6 +562,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             package_manager: "github_actions"
           )
         end
+
         its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/first/run@run/v3.0.0\n" }
       end
 
@@ -576,17 +577,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             version: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
             previous_version: nil,
             requirements: [{
-             requirement: nil,
-             groups: [],
-             file: ".github/workflows/workflow.yml",
-             source: {
-               type: "git",
-               url: "https://github.com/gopidesupavan/monorepo-actions",
-               ref: "exec/2.0.0",
-               branch: nil
-             },
-             metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
-           }],
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "exec/2.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+            }],
             previous_requirements: [{
               requirement: nil,
               groups: [],
@@ -602,6 +603,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             package_manager: "github_actions"
           )
         end
+
         its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/second/exec@exec/2.0.0\n" }
       end
     end
