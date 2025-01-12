@@ -1101,5 +1101,133 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         expect(updated_requirements).to eq(expected_requirements)
       end
     end
+
+    context "when a dependency has a path based tag reference with semver" do
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "github-monorepo-path-based" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0",
+          version: "1.0.0",
+          requirements: [{
+           requirement: nil,
+           groups: [],
+           file: ".github/workflows/workflow.yml",
+           source: {
+             type: "git",
+             url: "https://github.com/gopidesupavan/monorepo-actions",
+             ref: "run/v1.0.0",
+             branch: nil
+           },
+           metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0" }
+         }],
+          package_manager: "github_actions"
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+           requirement: nil,
+           groups: [],
+           file: ".github/workflows/workflow.yml",
+           source: {
+             type: "git",
+             url: "https://github.com/gopidesupavan/monorepo-actions",
+             ref: "run/v3.0.0",
+             branch: nil
+           },
+           metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v1.0.0" }
+         }]
+      end
+
+      it { is_expected.to eq(expected_requirements) }
+
+      # context "when the latest version is being ignored" do
+      #   let(:ignored_versions) { [">= 1.1.0"] }
+      #   let(:expected_requirements) do
+      #     [{
+      #        requirement: nil,
+      #        groups: [],
+      #        file: ".github/workflows/workflow.yml",
+      #        source: {
+      #          type: "git",
+      #          url: "https://github.com/actions/setup-node",
+      #          ref: "v1.0.4",
+      #          branch: nil
+      #        },
+      #        metadata: { declaration_string: "actions/setup-node@master" }
+      #      }]
+      #   end
+      #
+      #   it { is_expected.to eq(expected_requirements) }
+      # end
+    end
+
+    context "when a dependency has a path based tag reference without semver" do
+      let(:service_pack_url) do
+        "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "github-monorepo-path-based"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "github-monorepo-path-based" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0",
+          version: "1.0.0",
+          requirements: [{
+             requirement: nil,
+             groups: [],
+             file: ".github/workflows/workflow.yml",
+             source: {
+               type: "git",
+               url: "https://github.com/gopidesupavan/monorepo-actions",
+               ref: "exec/1.0.0",
+               branch: nil
+             },
+             metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+           }],
+          package_manager: "github_actions"
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+           requirement: nil,
+           groups: [],
+           file: ".github/workflows/workflow.yml",
+           source: {
+             type: "git",
+             url: "https://github.com/gopidesupavan/monorepo-actions",
+             ref: "exec/2.0.0",
+             branch: nil
+           },
+           metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+         }]
+      end
+
+      it { is_expected.to eq(expected_requirements) }
+    end
   end
 end
