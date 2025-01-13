@@ -26,6 +26,37 @@ module Dependabot
         end
 
         def dependencies
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            return dependencies_with_prioritization
+          end
+
+          dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+
+          parsed.each do |details|
+            next if details["aliased"]
+
+            name = details["name"]
+            version = details["version"]
+
+            dependency_args = {
+              name: name,
+              version: version,
+              package_manager: "npm_and_yarn",
+              requirements: []
+            }
+
+            if details["dev"]
+              dependency_args[:subdependency_metadata] =
+                [{ production: !details["dev"] }]
+            end
+
+            dependency_set << Dependency.new(**dependency_args)
+          end
+
+          dependency_set
+        end
+
+        def dependencies_with_prioritization
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           # Separate dependencies into two categories: with specifiers and without specifiers.
