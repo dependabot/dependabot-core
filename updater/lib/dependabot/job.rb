@@ -428,6 +428,7 @@ module Dependabot
     sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
     def build_source(source_details)
       # Immediately normalize the source directory, ensure it starts with a "/"
+      # Uses Pathname#cleanpath to prevent users from maliciously using paths like ../.. to access other directories.
       directory, directories = clean_directories(source_details)
 
       Dependabot::Source.new(
