@@ -43,8 +43,8 @@ module Dependabot
             job: job,
             dependency_snapshot: dependency_snapshot
           ).run
-        rescue StandardError => e
-          handle_parser_error(e)
+        rescue Dependabot::DependencyFileNotParseable => e
+          handle_dependency_file_not_parseable_error(e)
           return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
         end
 
@@ -134,5 +134,20 @@ module Dependabot
       )
     end
     # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength
+
+    def handle_dependency_file_not_parseable_error(error)
+      error_details = Dependabot.updater_error_details(error)
+
+      service.record_update_job_error(
+        error_type: T.must(error_details).fetch(:"error-type"),
+        error_details: T.must(error_details)[:"error-detail"]
+      )
+      return unless Experiments.enabled?(:record_update_job_unknown_error)
+
+      service.record_update_job_unknown_error(
+        error_type: T.must(error_details).fetch(:"error-type"),
+        error_details: T.must(error_details)[:"error-detail"]
+      )
+    end
   end
 end
