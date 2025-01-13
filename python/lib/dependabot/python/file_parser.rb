@@ -242,13 +242,13 @@ module Dependabot
                                     dependency_files).dependency_set, T.nilable(PipfileFilesParser))
       end
 
-      sig { returns(T.nilable(PyprojectFilesParser))}
+      sig { returns(T.nilable(PyprojectFilesParser)) }
       def pyproject_file_dependencies
         @pyproject_file_dependencies ||= T.let(PyprojectFilesParser.new(dependency_files:
                                           dependency_files).dependency_set, T.nilable(PyprojectFilesParser))
       end
 
-      sig { returns(DependencySet)}
+      sig { returns(DependencySet) }
       def requirement_dependencies
         dependencies = DependencySet.new
         parsed_requirement_files.each do |dep|
@@ -319,7 +319,9 @@ module Dependabot
         end
       end
 
-      sig { params(marker: T.untyped, python_version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean) }
+      sig do
+        params(marker: T.untyped, python_version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean)
+      end
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
 
@@ -341,6 +343,10 @@ module Dependabot
         result
       end
 
+      sig do
+        params(condition: T.untyped,
+               python_version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean)
+      end
       def evaluate_condition(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
 
@@ -365,7 +371,8 @@ module Dependabot
         @setup_file_dependencies ||= T.let(
           SetupFileParser
           .new(dependency_files: dependency_files)
-          .dependency_set, T.untyped)
+          .dependency_set, T.untyped
+        )
       end
 
       sig { returns(T.untyped) }
@@ -473,7 +480,7 @@ module Dependabot
         @poetry_lock ||= T.let(get_original_file("poetry.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile))}
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def setup_file
         @setup_file ||= T.let(get_original_file("setup.py"), T.nilable(Dependabot::DependencyFile))
       end
@@ -483,7 +490,7 @@ module Dependabot
         @setup_cfg_file ||= T.let(get_original_file("setup.cfg"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      sig { returns(T::Array[Dependabot::Python::Requirement]) }
       def pip_compile_files
         @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
       end
