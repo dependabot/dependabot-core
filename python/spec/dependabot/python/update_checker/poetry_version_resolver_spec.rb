@@ -550,5 +550,32 @@ RSpec.describe namespace::PoetryVersionResolver do
         end
       end
     end
+
+    context "with a misconfigured pyproject.toml file" do
+      let(:response) do
+        "Creating virtualenv analysis-nlUUV3qa-py3.13 in pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        list index out of range"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a project is listed a dependency" do
+      let(:response) do
+        "Creating virtualenv kiota-serialization-multipart-GzD6BRdm-py3.13 in " \
+          "/home/dependabot/.cache/pypoetry/virtualenvs" \
+          "Updating dependencies" \
+          "Resolving dependencies..." \
+          "Path tmp/20250109-1637-dc4aky/json for kiota-serialization-json does not exist"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
