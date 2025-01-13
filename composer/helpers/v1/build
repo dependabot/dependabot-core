@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/composer/v1"
+mkdir -p "$install_dir"
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cp -r \
+  "$helpers_dir/bin" \
+  "$helpers_dir/src" \
+  "$helpers_dir/.php-cs-fixer.dist.php" \
+  "$helpers_dir/composer.json" \
+  "$helpers_dir/composer.lock" \
+  "$helpers_dir/phpstan.dist.neon" \
+  "$install_dir"
+
+cd "$install_dir"
+
+composer1 validate --no-check-publish
+composer1 install
+# php-cs-fixer 3.15 added support for PHP 8.2, but also requires composer/semver ^3.3, which conflicts with composer1.
+# So the older version of php-cs-fixer errors that it doesn't know about PHP 8.2 syntax which breaks the build.
+# So PHP_CS_FIXER_IGNORE_ENV disables that error until we get around to deprecating composer 1 support.
+PHP_CS_FIXER_IGNORE_ENV=true composer1 run lint -- --dry-run
+composer1 run stan
+
+# Composer caches source zips and repo metadata, none of which is useful. Save space in this layer
+rm -Rf ~/.composer/cache
