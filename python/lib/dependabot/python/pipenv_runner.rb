@@ -26,6 +26,7 @@ module Dependabot
         run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
+      sig { params(constraint: String).void }
       def run_upgrade_and_fetch_version(constraint)
         run_upgrade(constraint)
 
