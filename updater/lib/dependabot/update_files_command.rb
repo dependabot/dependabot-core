@@ -37,11 +37,16 @@ module Dependabot
         #
         # As above, we can remove the responsibility for handling fatal/job halting
         # errors from Dependabot::Updater entirely.
-        Dependabot::Updater.new(
-          service: service,
-          job: job,
-          dependency_snapshot: dependency_snapshot
-        ).run
+        begin
+          Dependabot::Updater.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot
+          ).run
+        rescue StandardError => e
+          handle_parser_error(e)
+          return service.mark_job_as_processed(Environment.job_definition["base_commit_sha"])
+        end
 
         # Wait for all PRs to be created
         service.wait_for_calls_to_finish
