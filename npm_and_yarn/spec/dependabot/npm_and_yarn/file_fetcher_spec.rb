@@ -379,6 +379,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: nil,
             headers: json_header
           )
+        stub_request(:get, File.join(url, "bun.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "packages/bun.lock?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404,
+            body: nil,
+            headers: json_header
+          )
         # FileFetcher will iterate trying to find `pnpm-lock.yaml` upwards in the folder tree
         stub_request(:get, File.join(url, "packages/pnpm-lock.yaml?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
@@ -484,6 +498,57 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         expect(file_fetcher_instance.ecosystem_versions).to match(
           { package_managers: { "pnpm" => an_instance_of(Integer) } }
         )
+      end
+    end
+  end
+
+  context "with a bun.lock but no package-lock.json file" do
+    before do
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_bun.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+      stub_request(:get, File.join(url, "bun.lock?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "bun_lock_content.json"),
+          headers: json_header
+        )
+    end
+
+    describe "fetching and parsing the bun.lock" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:bun_updates).and_return(enable_bun_updates)
+      end
+
+      context "when the experiment :bun_updates is inactive" do
+        let(:enable_bun_updates) { false }
+
+        it "does not fetch or parse the the bun.lock" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(package.json))
+          expect(file_fetcher_instance.ecosystem_versions)
+            .to match({ package_managers: { "unknown" => an_instance_of(Integer) } })
+        end
+      end
+
+      context "when the experiment :bun_updates is active" do
+        let(:enable_bun_updates) { true }
+
+        it "fetches and parses the bun.lock" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(%w(package.json bun.lock))
+          expect(file_fetcher_instance.ecosystem_versions)
+            .to match({ package_managers: { "bun" => an_instance_of(Integer) } })
+        end
       end
     end
   end
@@ -1271,6 +1336,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             "pnpm-lock.yaml?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
+            "bun.lock?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
         end
 
         it "fetches package.json from the workspace dependencies" do
@@ -1838,6 +1909,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             :get,
             "https://api.github.com/repos/gocardless/bump/contents/" \
             "pnpm-lock.yaml?ref=sha"
+          ).with(headers: { "Authorization" => "token token" })
+            .to_return(status: 404)
+          stub_request(
+            :get,
+            "https://api.github.com/repos/gocardless/bump/contents/" \
+            "bun.lock?ref=sha"
           ).with(headers: { "Authorization" => "token token" })
             .to_return(status: 404)
         end
