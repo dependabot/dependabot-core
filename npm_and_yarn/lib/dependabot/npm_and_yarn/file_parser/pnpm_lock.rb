@@ -49,7 +49,7 @@ module Dependabot
             dependency_args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
 
             specifiers = details["specifiers"]
-            if specifiers.any?
+            if specifiers&.any?
               dependencies_with_specifiers << dependency_args
             else
               dependencies_without_specifiers << dependency_args
