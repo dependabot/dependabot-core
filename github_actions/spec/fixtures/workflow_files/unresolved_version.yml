@@ -1,7 +1,0 @@
-on: [push]
-
-name: Integration
-jobs:
-  chore:
-    steps:
-    - uses: taiki-e/install-action@nextest
