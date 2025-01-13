@@ -28,6 +28,10 @@ module Dependabot
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
+          # Separate dependencies into two categories: with specifiers and without specifiers.
+          dependencies_with_specifiers = [] # Main dependencies with specifiers.
+          dependencies_without_specifiers = [] # Subdependencies without specifiers.
+
           parsed.each do |details|
             next if details["aliased"]
 
@@ -41,11 +45,23 @@ module Dependabot
               requirements: []
             }
 
-            if details["dev"]
-              dependency_args[:subdependency_metadata] =
-                [{ production: !details["dev"] }]
-            end
+            # Add metadata for subdependencies if marked as a dev dependency.
+            dependency_args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
 
+            specifiers = details["specifiers"]
+            if specifiers.any?
+              dependencies_with_specifiers << dependency_args
+            else
+              dependencies_without_specifiers << dependency_args
+            end
+          end
+
+          # Add prioritized dependencies to the dependency set.
+          dependencies_with_specifiers.each do |dependency_args|
+            dependency_set << Dependency.new(**dependency_args)
+          end
+
+          dependencies_without_specifiers.each do |dependency_args|
             dependency_set << Dependency.new(**dependency_args)
           end
 
