@@ -315,8 +315,8 @@ module Dependabot
           package_manager_run_command(NpmPackageManager::NAME, command, fingerprint: fingerprint)
         else
           Dependabot::SharedHelpers.run_shell_command(
-            "corepack npm #{command}",
-            fingerprint: "corepack npm #{fingerprint}"
+            "npm #{command}",
+            fingerprint: "npm #{fingerprint}"
           )
         end
       end
