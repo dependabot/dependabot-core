@@ -72,8 +72,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
   end
 
   after do
@@ -81,6 +79,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    end
+
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
@@ -646,6 +649,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       let(:project_name) { "pnpm/invalid_yaml" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns unexpected store response" do
+      let(:dependency_name) { "hexo" }
+      let(:version) { "7.3.1" }
+      let(:previous_version) { "^7.3.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "7.3.1",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^7.3.0",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unexpected_store" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
