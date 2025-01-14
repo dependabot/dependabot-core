@@ -366,10 +366,10 @@ module Dependabot
         end
       end
 
-      sig { returns(T.nilable(SetupFileParser)) }
+      sig { returns(DependencySet) }
       def setup_file_dependencies
         @setup_file_dependencies ||= T.let(SetupFileParser.new(dependency_files: dependency_files)
-                                    .dependency_set, T.nilable(SetupFileParser))
+                                    .dependency_set, T.nilable(DependencySet))
       end
 
       sig { returns(T.untyped) }
