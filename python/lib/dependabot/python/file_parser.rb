@@ -198,13 +198,14 @@ module Dependabot
         nil
       end
 
-      sig { params(package_manager: String, version: String).returns(T.nilable(T::Boolean)) }
+      sig { params(package_manager: String, version: String).void }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
+        return true if version.match?(/^\d+(?:\.\d+)*$/)
+
         Dependabot.logger.warn(
           "Detected #{package_manager} with malformed version #{version}"
         )
-        true if version.match?(/^\d+(?:\.\d+)*$/)
       end
 
       sig { returns(String) }
@@ -285,9 +286,9 @@ module Dependabot
         dependencies
       end
 
-      sig { params(name: String, version: String).returns(T::Boolean) }
+      sig { params(name: T.nilable(String), version: T.nilable(String)).returns(T::Boolean) }
       def old_pyyaml?(name, version)
-        major_version = version.split(".").first
+        major_version = version&.split(".")&.first
         return false unless major_version
 
         name == "pyyaml" && major_version < "6"
@@ -444,7 +445,7 @@ module Dependabot
         NameNormaliser.normalise_including_extras(name, extras)
       end
 
-      sig { override.void }
+      sig { override.returns(T.untyped) }
       def check_required_files
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
