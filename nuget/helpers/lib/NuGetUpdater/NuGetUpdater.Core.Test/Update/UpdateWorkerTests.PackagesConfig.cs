@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using NuGet;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Updater;
 
@@ -2282,13 +2283,13 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new ExperimentsManager(), new TestLogger());
+            var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
-            var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
-            Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails!.ToString());
+            var rawResult = JsonDocument.Parse(resultContents);
+            Assert.Equal("dependency_file_not_found", rawResult.RootElement.GetProperty("Error").GetProperty("error-type").GetString());
+            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets").NormalizePathToUnix(), rawResult.RootElement.GetProperty("Error").GetProperty("error-details").GetProperty("file-path").GetString());
         }
 
         [Fact]
@@ -2338,13 +2339,13 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new ExperimentsManager(), new TestLogger());
+            var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
-            var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
-            Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal("$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v$(VisualStudioVersion)/Some.Visual.Studio.Component.props", result.ErrorDetails!.ToString().NormalizePathToUnix());
+            var rawResult = JsonDocument.Parse(resultContents);
+            Assert.Equal("dependency_file_not_found", rawResult.RootElement.GetProperty("Error").GetProperty("error-type").GetString());
+            Assert.Equal("$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v$(VisualStudioVersion)/Some.Visual.Studio.Component.props", rawResult.RootElement.GetProperty("Error").GetProperty("error-details").GetProperty("file-path").GetString());
         }
 
         [Theory]
@@ -2424,8 +2425,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.AuthenticationFailure,
-                    ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                    Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 }
             );
         }
@@ -2555,8 +2555,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.Unknown,
-                    ErrorDetailsRegex = "Response status code does not indicate success",
+                    ErrorRegex = "Response status code does not indicate success",
                 }
             );
         }
@@ -2633,8 +2632,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.UpdateNotPossible,
-                    ErrorDetails = new[] { "Unrelated.Package.1.0.0" },
+                    Error = new UpdateNotPossible(["Unrelated.Package.1.0.0"]),
                 }
             );
         }

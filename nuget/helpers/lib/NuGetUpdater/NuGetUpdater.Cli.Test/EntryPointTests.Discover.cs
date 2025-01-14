@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Discover;
@@ -25,6 +26,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -83,6 +86,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -178,6 +183,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -251,6 +258,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -321,6 +330,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -398,6 +409,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     jobFilePath,
                     "--repo-root",
@@ -412,8 +425,7 @@ public partial class EntryPointTests
                 {
                     Path = "/",
                     Projects = [],
-                    ErrorType = ErrorType.Unknown,
-                    ErrorDetailsPattern = "JsonException",
+                    ErrorRegex = "Error deserializing job file contents",
                 }
             );
         }
@@ -445,6 +457,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     jobFilePath,
                     "--repo-root",
@@ -459,8 +473,7 @@ public partial class EntryPointTests
                 {
                     Path = "/",
                     Projects = [],
-                    ErrorType = ErrorType.BadRequirement,
-                    ErrorDetailsPattern = "not a valid requirement",
+                    Error = new Core.Run.ApiModel.BadRequirement("not a valid requirement"),
                 }
             );
         }
@@ -497,7 +510,7 @@ public partial class EntryPointTests
                         switch (args[i])
                         {
                             case "--job-path":
-                                var experimentsResult = await ExperimentsManager.FromJobFileAsync(args[i + 1]);
+                                var experimentsResult = await ExperimentsManager.FromJobFileAsync("TEST-JOB-ID", args[i + 1]);
                                 experimentsManager = experimentsResult.ExperimentsManager;
                                 break;
                             case "--output":
@@ -520,11 +533,38 @@ public partial class EntryPointTests
 
                 resultPath ??= Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
                 var resultJson = await File.ReadAllTextAsync(resultPath);
-                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                var serializerOptions = new JsonSerializerOptions()
+                {
+                    Converters = { new TestJobErrorBaseConverter() }
+                };
+                foreach (var converter in DiscoveryWorker.SerializerOptions.Converters)
+                {
+                    serializerOptions.Converters.Add(converter);
+                }
+                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, serializerOptions);
                 return resultObject!;
             });
 
             ValidateWorkspaceResult(expectedResult, actualResult, experimentsManager);
+        }
+
+        private class TestJobErrorBaseConverter : JsonConverter<Core.Run.ApiModel.JobErrorBase>
+        {
+            public override Core.Run.ApiModel.JobErrorBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(ref reader, options)!;
+                return dict["error-type"].GetString() switch
+                {
+                    "illformed_requirement" => new Core.Run.ApiModel.BadRequirement(dict["error-details"].GetProperty("message").GetString()!),
+                    "unknown_error" => new Core.Run.ApiModel.UnknownError(new Exception("Error deserializing job file contents"), "TEST-JOB-ID"),
+                    _ => throw new NotImplementedException($"Unknown error type: {dict["error-type"]}"),
+                };
+            }
+
+            public override void Write(Utf8JsonWriter writer, Core.Run.ApiModel.JobErrorBase value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

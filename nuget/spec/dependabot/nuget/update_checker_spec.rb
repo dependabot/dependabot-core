@@ -287,8 +287,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             CanUpdate: false,
             VersionComesFromMultiDependencyProperty: false,
             UpdatedDependencies: [],
-            ErrorType: "AuthenticationFailure",
-            ErrorDetails: "the-error-details"
+            Error: {
+              "error-type": "private_source_authentication_failure",
+              "error-details": {
+                source: "some-package-source"
+              }
+            }
           }
         )
       end

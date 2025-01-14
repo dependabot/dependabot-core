@@ -1,10 +1,10 @@
 namespace NuGetUpdater.Core;
 
-internal class MissingFileException : Exception
+internal class UnparseableFileException : Exception
 {
     public string FilePath { get; }
 
-    public MissingFileException(string filePath, string? message = null)
+    public UnparseableFileException(string message, string filePath)
         : base(message)
     {
         FilePath = filePath;

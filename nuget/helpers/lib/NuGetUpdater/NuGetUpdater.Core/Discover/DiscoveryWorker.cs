@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,7 +9,7 @@ using Microsoft.Build.Exceptions;
 
 using NuGet.Frameworks;
 
-using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
@@ -19,6 +18,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
 {
     public const string DiscoveryResultFileName = "./.dependabot/discovery.json";
 
+    private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.Ordinal); private readonly HashSet<string> _restoredMSBuildSdks = new(StringComparer.OrdinalIgnoreCase);
@@ -29,8 +29,9 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public DiscoveryWorker(ExperimentsManager experimentsManager, ILogger logger)
+    public DiscoveryWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
     {
+        _jobId = jobId;
         _experimentsManager = experimentsManager;
         _logger = logger;
     }
@@ -48,23 +49,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         {
             result = await RunAsync(repoRootPath, workspacePath);
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
-        {
-            result = new WorkspaceDiscoveryResult
-            {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(PathHelper.JoinPath(repoRootPath, workspacePath))) + ")",
-                Path = workspacePath,
-                Projects = [],
-            };
-        }
         catch (Exception ex)
         {
             result = new WorkspaceDiscoveryResult
             {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = ex.ToString(),
+                Error = JobErrorBase.ErrorFromException(ex, _jobId, PathHelper.JoinPath(repoRootPath, workspacePath)),
                 Path = workspacePath,
                 Projects = [],
             };
@@ -123,8 +112,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 DotNetToolsJson = null,
                 GlobalJson = null,
                 Projects = projectResults.Where(p => p.IsSuccess).OrderBy(p => p.FilePath).ToImmutableArray(),
-                ErrorType = failedProjectResult.ErrorType,
-                ErrorDetails = failedProjectResult.FilePath,
+                Error = failedProjectResult.Error,
                 IsSuccess = false,
             };
 
@@ -192,8 +180,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 ImportedFiles = ImmutableArray<string>.Empty,
                 AdditionalFiles = ImmutableArray<string>.Empty,
                 IsSuccess = false,
-                ErrorType = ErrorType.DependencyFileNotParseable,
-                ErrorDetails = "Failed to parse project file found at " + invalidProjectFile,
+                Error = new DependencyFileNotParseable(invalidProjectFile),
             }];
         }
         if (projects.IsEmpty)

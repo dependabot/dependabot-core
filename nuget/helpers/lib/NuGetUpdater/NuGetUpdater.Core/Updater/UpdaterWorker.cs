@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
@@ -10,6 +11,7 @@ namespace NuGetUpdater.Core;
 
 public class UpdaterWorker : IUpdaterWorker
 {
+    private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
     private readonly HashSet<string> _processedProjectPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -20,8 +22,9 @@ public class UpdaterWorker : IUpdaterWorker
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public UpdaterWorker(ExperimentsManager experimentsManager, ILogger logger)
+    public UpdaterWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
     {
+        _jobId = jobId;
         _experimentsManager = experimentsManager;
         _logger = logger;
     }
@@ -43,42 +46,15 @@ public class UpdaterWorker : IUpdaterWorker
         {
             result = await RunAsync(repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive);
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (Exception ex)
         {
             if (!Path.IsPathRooted(workspacePath) || !File.Exists(workspacePath))
             {
                 workspacePath = Path.GetFullPath(Path.Join(repoRootPath, workspacePath));
             }
-
             result = new()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", NuGetContext.GetPackageSourceUrls(workspacePath)) + ")",
-            };
-        }
-        catch (MissingFileException ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.MissingFile,
-                ErrorDetails = ex.FilePath,
-            };
-        }
-        catch (UpdateNotPossibleException ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.UpdateNotPossible,
-                ErrorDetails = ex.Dependencies,
-            };
-        }
-        catch (Exception ex)
-        {
-            result = new()
-            {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = ex.ToString(),
+                Error = JobErrorBase.ErrorFromException(ex, _jobId, workspacePath),
             };
         }
 
