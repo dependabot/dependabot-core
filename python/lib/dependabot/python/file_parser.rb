@@ -231,21 +231,21 @@ module Dependabot
         )
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
       end
 
-      sig { returns(T.nilable(PipfileFilesParser)) }
+      sig { returns(DependencySet) }
       def pipenv_dependencies
         @pipenv_dependencies ||= T.let(PipfileFilesParser.new(dependency_files:
-                                    dependency_files).dependency_set, T.nilable(PipfileFilesParser))
+                                    dependency_files).dependency_set, T.nilable(DependencySet))
       end
 
-      sig { returns(T.nilable(PyprojectFilesParser)) }
+      sig { returns(DependencySet) }
       def pyproject_file_dependencies
         @pyproject_file_dependencies ||= T.let(PyprojectFilesParser.new(dependency_files:
-                                          dependency_files).dependency_set, T.nilable(PyprojectFilesParser))
+                                          dependency_files).dependency_set, T.nilable(DependencySet))
       end
 
       sig { returns(DependencySet) }
