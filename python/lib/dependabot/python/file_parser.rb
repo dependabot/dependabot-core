@@ -231,7 +231,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      sig { returns(T.untyped) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
       end
