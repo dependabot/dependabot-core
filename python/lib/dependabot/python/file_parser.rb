@@ -17,7 +17,7 @@ require "dependabot/python/package_manager"
 
 module Dependabot
   module Python
-    class FileParser < Dependabot::FileParsers::Base
+    class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
       require_relative "file_parser/pipfile_files_parser"
       require_relative "file_parser/pyproject_files_parser"
