@@ -33,7 +33,7 @@ module Dependabot
           pipfile: "dev-packages",
           lockfile: "develop"
         }
-      ].freeze, T::Array[T::Hash[String, String]])
+      ].freeze, T::Array[T::Hash[T.untyped, T.untyped]])
       REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
         InstallationError RequirementsFileParseError InvalidMarker
         InvalidRequirement ValueError RecursionError
