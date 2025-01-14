@@ -413,6 +413,8 @@ module Dependabot
         end
 
         def error_details_from_captures(captures)
+          return {} unless captures.is_a?(Hash)
+
           required_dep_captures  = captures.fetch("required_dep")
           requiring_dep_captures = captures.fetch("requiring_dep")
           return {} unless required_dep_captures && requiring_dep_captures
@@ -549,11 +551,17 @@ module Dependabot
           npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
           return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
 
+          bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
+          return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
+
           root_yarn_lock = dependency_files_builder.root_yarn_lock
           return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
 
           root_pnpm_lock = dependency_files_builder.root_pnpm_lock
           return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
+
+          root_bun_lock = dependency_files_builder.root_bun_lock
+          return run_bun_checker(path: path, version: version) if root_bun_lock
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -579,6 +587,17 @@ module Dependabot
                   error_context: {}
                 )
               end
+            end
+          end
+        end
+
+        def run_bun_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_bun_command(
+                "update #{dependency.name}@#{version} --save-text-lockfile",
+                fingerprint: "update <dependency_name>@<version> --save-text-lockfile"
+              )
             end
           end
         end

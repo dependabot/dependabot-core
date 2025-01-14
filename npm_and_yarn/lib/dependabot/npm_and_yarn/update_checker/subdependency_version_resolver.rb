@@ -70,6 +70,8 @@ module Dependabot
                             run_yarn_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("pnpm-lock.yaml")
                             run_pnpm_updater(path, lockfile_name)
+                          elsif lockfile.name.end_with?("bun.lock")
+                            run_bun_updater(path, lockfile_name)
                           elsif !Helpers.npm8?(lockfile)
                             run_npm6_updater(path, lockfile_name)
                           else
@@ -148,6 +150,18 @@ module Dependabot
             Dir.chdir(path) do
               NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
 
+              { lockfile_name => File.read(lockfile_name) }
+            end
+          end
+        end
+
+        def run_bun_updater(path, lockfile_name)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_bun_command(
+                "update #{dependency.name} --save-text-lockfile",
+                fingerprint: "update <dependency_name> --save-text-lockfile"
+              )
               { lockfile_name => File.read(lockfile_name) }
             end
           end

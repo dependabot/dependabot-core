@@ -361,6 +361,35 @@ module Dependabot
         raise
       end
 
+      sig { returns(T.nilable(String)) }
+      def self.bun_version
+        version = run_bun_command("--version", fingerprint: "--version").strip
+        if version.include?("+")
+          version.split("+").first # Remove build info, if present
+        end
+      rescue StandardError => e
+        Dependabot.logger.error("Error retrieving Bun version: #{e.message}")
+        nil
+      end
+
+      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
+      def self.run_bun_command(command, fingerprint: nil)
+        full_command = "bun #{command}"
+
+        Dependabot.logger.info("Running bun command: #{full_command}")
+
+        result = Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: "bun #{fingerprint || command}"
+        )
+
+        Dependabot.logger.info("Command executed successfully: #{full_command}")
+        result
+      rescue StandardError => e
+        Dependabot.logger.error("Error running bun command: #{full_command}, Error: #{e.message}")
+        raise
+      end
+
       # Setup yarn and run a single yarn command returning stdout/stderr
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_yarn_command(command, fingerprint: nil)
@@ -505,6 +534,8 @@ module Dependabot
         ).returns(String)
       end
       def self.package_manager_run_command(name, command, fingerprint: nil)
+        return run_bun_command(command, fingerprint: fingerprint) if name == BunPackageManager::NAME
+
         full_command = "corepack #{name} #{command}"
 
         result = Dependabot::SharedHelpers.run_shell_command(
