@@ -33,7 +33,7 @@ module Dependabot
           pipfile: "dev-packages",
           lockfile: "develop"
         }
-      ].freeze, T::Array[T::Hash[T.untyped, T.untyped]])
+      ].freeze, T::Array[T::Hash[String, String]])
       REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
         InstallationError RequirementsFileParseError InvalidMarker
         InvalidRequirement ValueError RecursionError
@@ -320,7 +320,7 @@ module Dependabot
       end
 
       sig do
-        params(marker: T.untyped, python_version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean)
+        params(marker: T.untyped, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
       end
       def marker_satisfied?(marker, python_version)
         conditions = marker.split(/\s+(and|or)\s+/)
@@ -345,7 +345,7 @@ module Dependabot
 
       sig do
         params(condition: T.untyped,
-               python_version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean)
+               python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
       end
       def evaluate_condition(condition, python_version)
         operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
