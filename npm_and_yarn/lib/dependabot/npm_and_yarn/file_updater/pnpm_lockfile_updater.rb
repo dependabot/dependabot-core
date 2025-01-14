@@ -62,6 +62,13 @@ module Dependabot
 
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
 
+        # this intermittent issue is related with Node v20
+        ERR_INVALID_THIS = /ERR_INVALID_THIS/
+        URL_SEARCH_PARAMS = /URLSearchParams/
+
+        # A modules directory is present and is linked to a different store directory.
+        ERR_PNPM_UNEXPECTED_STORE = /ERR_PNPM_UNEXPECTED_STORE/
+
         # ERR_PNPM_UNSUPPORTED_PLATFORM
         ERR_PNPM_UNSUPPORTED_PLATFORM = /ERR_PNPM_UNSUPPORTED_PLATFORM/
         PLATFORM_PACAKGE_DEP = /Unsupported platform for (?<dep>.*)\: wanted/
@@ -206,7 +213,7 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
-          if error_message.match?(ERR_PNPM_INVALID_PACKAGE_JSON)
+          if error_message.match?(ERR_PNPM_INVALID_PACKAGE_JSON) || error_message.match?(ERR_PNPM_UNEXPECTED_STORE)
             msg = "Error while resolving package.json."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
@@ -232,6 +239,12 @@ module Dependabot
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
 
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
+
+          if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
+            msg = "Error while resolving dependencies."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
             raise_unsupported_platform_error(error_message,
