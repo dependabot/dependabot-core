@@ -29,6 +29,10 @@ module Dependabot
       PNPM_DEFAULT_VERSION = PNPM_V9
       PNPM_FALLBACK_VERSION = PNPM_V6
 
+      # BUN Version Constants
+      BUN_V1 = 1
+      BUN_DEFAULT_VERSION = BUN_V1
+
       # YARN Version Constants
       YARN_V3 = 3
       YARN_V2 = 2
@@ -157,6 +161,11 @@ module Dependabot
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
         PNPM_FALLBACK_VERSION
+      end
+
+      sig { params(_bun_lock: T.nilable(DependencyFile)).returns(Integer) }
+      def self.bun_version_numeric(_bun_lock)
+        BUN_DEFAULT_VERSION
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
