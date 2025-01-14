@@ -651,6 +651,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "with a dependency resolution that returns unexpected store response" do
+      let(:dependency_name) { "hexo" }
+      let(:version) { "7.3.1" }
+      let(:previous_version) { "^7.3.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "7.3.1",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^7.3.0",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unexpected_store" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "with a dependency resolution that returns unmet peer deps response" do
       let(:dependency_name) { "clsx" }
       let(:version) { "2.2.2" }
