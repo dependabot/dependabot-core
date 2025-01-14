@@ -198,14 +198,15 @@ module Dependabot
         nil
       end
 
-      sig { params(package_manager: String, version: String).void }
+      sig { params(package_manager: String, version: String).returns(T.nilable(T::Boolean)) }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
-        return true if version.match?(/^\d+(?:\.\d+)*$/)
-
-        Dependabot.logger.warn(
-          "Detected #{package_manager} with malformed version #{version}"
-        )
+        if version.match?(/^\d+(?:\.\d+)*$/)
+          true
+        else
+          Dependabot.logger.warn("Detected #{package_manager} with malformed version #{version}")
+          false
+        end
       end
 
       sig { returns(String) }
