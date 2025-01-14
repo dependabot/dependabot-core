@@ -81,8 +81,8 @@ module Dependabot
 
       sig { returns(Dependabot::Python::FileParser::PythonRequirementParser) }
       def python_requirement_parser
-        @python_requirement_parser ||= T.let(FileParser::PythonRequirementParser.new(dependency_files: dependency_files),
-                                             T.nilable(FileParser::PythonRequirementParser))
+        @python_requirement_parser ||= T.let(FileParser::PythonRequirementParser.new(dependency_files:
+                                         dependency_files), T.nilable(FileParser::PythonRequirementParser))
       end
 
       sig { returns(Ecosystem::VersionManager) }
