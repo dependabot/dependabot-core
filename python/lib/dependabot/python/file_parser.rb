@@ -198,14 +198,13 @@ module Dependabot
         nil
       end
 
-      sig { params(package_manager: String, version: String).void }
+      sig { params(package_manager: String, version: String).returns(T.nilable(T::Boolean)) }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
-        return true if version.match?(/^\d+(?:\.\d+)*$/)
-
         Dependabot.logger.warn(
           "Detected #{package_manager} with malformed version #{version}"
         )
+        true if version.match?(/^\d+(?:\.\d+)*$/)
       end
 
       sig { returns(String) }
@@ -366,13 +365,10 @@ module Dependabot
         end
       end
 
-      sig { void }
+      sig { returns(T.nilable(SetupFileParser)) }
       def setup_file_dependencies
-        @setup_file_dependencies ||= T.let(
-          SetupFileParser
-          .new(dependency_files: dependency_files)
-          .dependency_set, T.untyped
-        )
+        @setup_file_dependencies ||= T.let(SetupFileParser.new(dependency_files: dependency_files)
+                                    .dependency_set, T.nilable(SetupFileParser))
       end
 
       sig { returns(T.untyped) }
