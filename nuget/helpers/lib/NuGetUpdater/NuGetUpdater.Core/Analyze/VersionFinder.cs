@@ -113,11 +113,33 @@ internal static class VersionFinder
             ? versionRange.MinVersion
             : null;
 
-        return version => (currentVersion is null || version > currentVersion)
-            && versionRange.Satisfies(version)
-            && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version)
-            && !dependencyInfo.IgnoredVersions.Any(r => r.IsSatisfiedBy(version))
-            && !dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+        var safeVersions = dependencyInfo.Vulnerabilities.SelectMany(v => v.SafeVersions).ToList();
+        return version =>
+        {
+            if (safeVersions.Any())
+            {
+                // only consider these
+                if (safeVersions.Any(s => s.IsSatisfiedBy(version)))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            else
+            {
+                var versionGreaterThanCurrent = currentVersion is null || version > currentVersion;
+                var rangeSatisfies = versionRange.Satisfies(version);
+                var prereleaseTypeMatches = currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version;
+                var isIgnoredVersion = dependencyInfo.IgnoredVersions.Any(i => i.IsSatisfiedBy(version));
+                var isVulnerableVersion = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
+                return versionGreaterThanCurrent
+                    && rangeSatisfies
+                    && prereleaseTypeMatches
+                    && !isIgnoredVersion
+                    && !isVulnerableVersion;
+            }
+        };
     }
 
     internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion)
