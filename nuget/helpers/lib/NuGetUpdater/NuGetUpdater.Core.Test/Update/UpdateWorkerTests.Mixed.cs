@@ -1,5 +1,6 @@
 using System.Text.Json;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -16,8 +17,7 @@ public partial class UpdateWorkerTests
             using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
             var result = new UpdateOperationResult()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "<some package feed>",
+                Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
             };
             var resultFilePath = Path.Combine(temporaryDirectory.DirectoryPath, "update-result.json");
             await UpdaterWorker.WriteResultFile(result, resultFilePath, new TestLogger());
@@ -26,16 +26,22 @@ public partial class UpdateWorkerTests
             // raw result file should look like this:
             // {
             //   ...
-            //   "ErrorType": "AuthenticationFailure",
-            //   "ErrorDetails": "<some package feed>",
+            //   "Error": {
+            //     "error-type": "private_source_authentication_failure",
+            //     "error-details": {
+            //       "source": "<some package feed>"
+            //     }
+            //   }
             //   ...
             // }
             var jsonDocument = JsonDocument.Parse(resultContent);
-            var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
-            var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+            var error = jsonDocument.RootElement.GetProperty("Error");
+            var errorType = error.GetProperty("error-type");
+            var errorDetails = error.GetProperty("error-details");
+            var source = errorDetails.GetProperty("source");
 
-            Assert.Equal("AuthenticationFailure", errorType.GetString());
-            Assert.Equal("<some package feed>", errorDetails.GetString());
+            Assert.Equal("private_source_authentication_failure", errorType.GetString());
+            Assert.Equal("(<some package feed>)", source.GetString());
         }
 
         [Fact]

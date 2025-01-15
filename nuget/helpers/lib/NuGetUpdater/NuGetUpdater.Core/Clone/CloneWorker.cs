@@ -70,11 +70,12 @@ public class CloneWorker
         catch (HttpRequestException ex)
         when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
+            // this is a _very_ specific case we want to handle before the common error handling kicks in
             error = new JobRepoNotFound(ex.Message);
         }
         catch (Exception ex)
         {
-            error = new UnknownError(ex, _jobId);
+            error = JobErrorBase.ErrorFromException(ex, _jobId, repoContentsPath);
         }
 
         if (error is not null)

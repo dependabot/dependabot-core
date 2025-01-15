@@ -33,11 +33,11 @@ internal static class RunCommand
         command.SetHandler(async (jobPath, repoContentsPath, apiUrl, jobId, outputPath, baseCommitSha) =>
         {
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
-            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobPath.FullName);
+            var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId, jobPath.FullName);
             var logger = new ConsoleLogger();
-            var discoverWorker = new DiscoveryWorker(experimentsManager, logger);
-            var analyzeWorker = new AnalyzeWorker(experimentsManager, logger);
-            var updateWorker = new UpdaterWorker(experimentsManager, logger);
+            var discoverWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+            var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+            var updateWorker = new UpdaterWorker(jobId, experimentsManager, logger);
             var worker = new RunWorker(jobId, apiHandler, discoverWorker, analyzeWorker, updateWorker, logger);
             await worker.RunAsync(jobPath, repoContentsPath, baseCommitSha, outputPath);
         }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption, OutputPathOption, BaseCommitShaOption);

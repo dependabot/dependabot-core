@@ -1,9 +1,9 @@
 namespace NuGetUpdater.Core.Run.ApiModel;
 
-public record DependencyFileNotFound : JobErrorBase
+public record DependencyFileNotParseable : JobErrorBase
 {
-    public DependencyFileNotFound(string filePath, string? message = null)
-        : base("dependency_file_not_found")
+    public DependencyFileNotParseable(string filePath, string? message = null)
+        : base("dependency_file_not_parseable")
     {
         if (message is not null)
         {

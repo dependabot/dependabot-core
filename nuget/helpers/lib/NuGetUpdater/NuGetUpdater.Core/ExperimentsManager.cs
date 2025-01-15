@@ -1,6 +1,7 @@
 using System.Text.Json;
 
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core;
 
@@ -30,42 +31,28 @@ public record ExperimentsManager
         };
     }
 
-    public static async Task<(ExperimentsManager ExperimentsManager, NativeResult? ErrorResult)> FromJobFileAsync(string jobFilePath)
+    public static async Task<(ExperimentsManager ExperimentsManager, JobErrorBase? Error)> FromJobFileAsync(string jobId, string jobFilePath)
     {
         var experimentsManager = new ExperimentsManager();
-        NativeResult? errorResult = null;
+        JobErrorBase? error = null;
+        var jobFileContent = string.Empty;
         try
         {
-            var jobFileContent = await File.ReadAllTextAsync(jobFilePath);
+            jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
             experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
         }
-        catch (BadRequirementException ex)
-        {
-            errorResult = new NativeResult
-            {
-                ErrorType = ErrorType.BadRequirement,
-                ErrorDetails = ex.Message,
-            };
-        }
         catch (JsonException ex)
         {
-            errorResult = new NativeResult
-            {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = $"Error deserializing job file: {ex}: {File.ReadAllText(jobFilePath)}",
-            };
+            // this is a very specific case where we want to log the JSON contents for easier debugging
+            error = JobErrorBase.ErrorFromException(new NotSupportedException($"Error deserializing job file contents: {jobFileContent}", ex), jobId, Environment.CurrentDirectory); // TODO
         }
         catch (Exception ex)
         {
-            errorResult = new NativeResult
-            {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = ex.ToString(),
-            };
+            error = JobErrorBase.ErrorFromException(ex, jobId, Environment.CurrentDirectory); // TODO
         }
 
-        return (experimentsManager, errorResult);
+        return (experimentsManager, error);
     }
 
     private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName)
