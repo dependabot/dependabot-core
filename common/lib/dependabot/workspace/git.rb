@@ -73,8 +73,8 @@ module Dependabot
       def capture_failed_change_attempt(memo = nil, error = nil)
         return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
 
-        sha, diff = stash(memo)
-        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
+        sha = stash(memo)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, error: error)
       end
 
       private
@@ -112,7 +112,7 @@ module Dependabot
         ).strip
       end
 
-      sig { params(memo: T.nilable(String)).returns([String, String]) }
+      sig { params(memo: T.nilable(String)).returns(String) }
       def stash(memo = nil)
         msg = memo || "workspace change attempt"
         run_shell_command("git add --all --force .")
@@ -122,13 +122,7 @@ module Dependabot
           allow_unsafe_shell_command: true
         )
 
-        sha = last_stash_sha
-        diff = run_shell_command(
-          "git stash show --patch #{sha}",
-          fingerprint: "git stash show --patch <sha>"
-        )
-
-        [sha, diff]
+        last_stash_sha
       end
 
       sig { params(memo: T.nilable(String)).returns([String, String]) }
