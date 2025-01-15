@@ -14,7 +14,7 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          lockfile: DependencyFile,
+          lockfile: T.nilable(Dependabot::DependencyFile),
           language_version_manager: LanguageVersionManager
         )
           .void
@@ -57,7 +57,7 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
-      sig { returns(DependencyFile) }
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       attr_reader :lockfile
       sig { returns(LanguageVersionManager) }
       attr_reader :language_version_manager
@@ -82,7 +82,7 @@ module Dependabot
         else
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             section = keys.fetch(:lockfile)
-            return section if JSON.parse(T.must(lockfile.content))[section].keys.any?(dependency_name)
+            return section if JSON.parse(T.must(T.must(lockfile).content))[section].keys.any?(dependency_name)
           end
         end
       end
