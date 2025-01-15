@@ -33,7 +33,7 @@ module Dependabot
           pipfile: "dev-packages",
           lockfile: "develop"
         }
-      ].freeze, T::Array[T::Hash[T.untyped, T.untyped]])
+      ].freeze, T::Array[T::Hash[Symbol, String]])
       REQUIREMENT_FILE_EVALUATION_ERRORS = %w(
         InstallationError RequirementsFileParseError InvalidMarker
         InvalidRequirement ValueError RecursionError
@@ -198,7 +198,7 @@ module Dependabot
         nil
       end
 
-      sig { params(package_manager: String, version: String).returns(T.nilable(T::Boolean)) }
+      sig { params(package_manager: String, version: String).returns(T::Boolean) }
       def log_if_version_malformed(package_manager, version)
         # logs warning if malformed version is found
         if version.match?(/^\d+(?:\.\d+)*$/)
