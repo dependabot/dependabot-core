@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -11,6 +11,14 @@ module Dependabot
     class PipenvRunner
       extend T::Sig
 
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          lockfile: DependencyFile,
+          language_version_manager: LanguageVersionManager
+        )
+          .void
+      end
       def initialize(dependency:, lockfile:, language_version_manager:)
         @dependency = dependency
         @lockfile = lockfile
@@ -26,7 +34,7 @@ module Dependabot
         run(command, fingerprint: "pyenv exec pipenv upgrade --verbose <dependency_name><constraint>")
       end
 
-      sig { params(constraint: String).returns(T.untyped) }
+      sig { params(constraint: String).returns(String) }
       def run_upgrade_and_fetch_version(constraint)
         run_upgrade(constraint)
 
@@ -47,10 +55,14 @@ module Dependabot
 
       private
 
+      sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
+      sig { returns(DependencyFile) }
       attr_reader :lockfile
+      sig { returns(LanguageVersionManager) }
       attr_reader :language_version_manager
 
+      sig { params(updated_lockfile: T.untyped).returns(T.untyped) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
         deps = updated_lockfile[lockfile_section] || {}
 
@@ -63,21 +75,24 @@ module Dependabot
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end
 
+      sig { returns(String) }
       def lockfile_section
         if dependency.requirements.any?
-          dependency.requirements.first[:groups].first
+          T.must(dependency.requirements.first)[:groups].first
         else
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             section = keys.fetch(:lockfile)
-            return section if JSON.parse(lockfile.content)[section].keys.any?(dependency_name)
+            return section if JSON.parse(T.must(lockfile.content))[section].keys.any?(dependency_name)
           end
         end
       end
 
+      sig { returns(String) }
       def dependency_name
         dependency.metadata[:original_name] || dependency.name
       end
 
+      sig { returns(T::Hash[String, String]) }
       def pipenv_env_variables
         {
           "PIPENV_YES" => "true",        # Install new Python ver if needed
