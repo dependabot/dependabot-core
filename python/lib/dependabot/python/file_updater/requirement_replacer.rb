@@ -14,6 +14,8 @@ module Dependabot
       class RequirementReplacer
         PACKAGE_NOT_FOUND_ERROR = "PackageNotFoundError"
 
+        CERTIFICATE_VERIFY_FAILED = /CERTIFICATE_VERIFY_FAILED/
+
         def initialize(content:, dependency_name:, old_requirement:,
                        new_requirement:, new_hash_version: nil, index_urls: nil)
           @content          = content
@@ -153,6 +155,8 @@ module Dependabot
                 args: args
               )
             rescue SharedHelpers::HelperSubprocessFailed => e
+              requirement_error_handler(e)
+
               raise unless e.message.include?("PackageNotFoundError")
 
               next
@@ -192,6 +196,17 @@ module Dependabot
         def requirements_match(req1, req2)
           req1&.split(",")&.map { |r| r.gsub(/\s/, "") }&.sort ==
             req2&.split(",")&.map { |r| r.gsub(/\s/, "") }&.sort
+        end
+
+        public
+
+        def requirement_error_handler(error)
+          Dependabot.logger.warn(error.message)
+
+          return unless error.message.match?(CERTIFICATE_VERIFY_FAILED)
+
+          msg = "Error resolving dependency."
+          raise DependencyFileNotResolvable, msg
         end
       end
     end
