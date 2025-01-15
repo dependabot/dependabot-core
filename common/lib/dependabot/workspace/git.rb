@@ -56,9 +56,9 @@ module Dependabot
         return nil if changed_files(ignored_mode: "no").empty?
 
         debug("store_change - before: #{current_commit}")
-        sha, diff = commit(memo)
+        sha = commit(memo)
 
-        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo)
       ensure
         debug("store_change - after: #{current_commit}")
       end
@@ -125,10 +125,9 @@ module Dependabot
         last_stash_sha
       end
 
-      sig { params(memo: T.nilable(String)).returns([String, String]) }
+      sig { params(memo: T.nilable(String)).returns(String) }
       def commit(memo = nil)
         run_shell_command("git add #{path}")
-        diff = run_shell_command("git diff --cached .")
 
         msg = memo || "workspace change"
         run_shell_command(
@@ -137,7 +136,7 @@ module Dependabot
           allow_unsafe_shell_command: true
         )
 
-        [head_sha, diff]
+        head_sha
       end
 
       sig { params(sha: String).returns(String) }

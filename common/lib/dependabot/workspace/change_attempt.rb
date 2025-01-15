@@ -28,7 +28,7 @@ module Dependabot
           error: T.nilable(StandardError)
         ).void
       end
-      def initialize(workspace, id:, memo:, diff: nil, error: nil)
+      def initialize(workspace, id:, memo:, error: nil)
         @workspace = workspace
         @id = id
         @memo = memo
