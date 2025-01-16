@@ -68,11 +68,11 @@ module Dependabot
 
               dep.name + dep.requirements.first[:requirement].to_s
             end
-        ends
+        end
 
         sig { returns(T.untyped) }
         def extras_require_hash
-          @extras_require_hash = T.let(Hash, T.untyped)
+          @extras_require_hash = T.let(T.untyped, T.untyped)
           @extras_require_hash ||=
             begin
               hash = {}
