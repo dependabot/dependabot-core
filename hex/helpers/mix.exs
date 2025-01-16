@@ -12,7 +12,7 @@ defmodule DependabotCore.Mixfile do
   end
 
   def application do
-    [extra_applications: [:logger]]
+    [extra_applications: [:hex, :logger, :ssh]]
   end
 
   defp deps() do
