@@ -255,8 +255,8 @@ RSpec.describe Dependabot::Hex::FileParser do
       end
 
       context "with a tag (rather than a ref)" do
-        let(:mixfile_fixture_name) { "git_source_with_charlist" }
-        let(:lockfile_fixture_name) { "git_source_with_charlist" }
+        let(:mixfile_fixture_name) { "git_source_tag_can_update" }
+        let(:lockfile_fixture_name) { "git_source_tag_can_update" }
 
         it "includes the git dependency" do
           expect(dependencies.length).to eq(2)
@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "elixir"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.15.8"
+        expect(language.version.to_s).to eq "1.16.3"
       end
     end
   end

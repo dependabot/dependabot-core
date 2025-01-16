@@ -15,8 +15,8 @@ RUN apt-get update \
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.15.8
-ARG ELIXIR_CHECKSUM=62d33c51417191e027c9b6f0c46e11daeb236a7dda6f0746ec4dd53263531092
+ARG ELIXIR_VERSION=v1.16.3
+ARG ELIXIR_CHECKSUM=e8e81771bc6acd62a2c1bf1b31c3aa3d0a469415de3b243b99f3e2e2d639f5ea
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \

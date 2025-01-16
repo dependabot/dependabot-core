@@ -3,7 +3,7 @@ defmodule Parser do
     # This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
     Mix.ensure_application!(:hex)
 
-    Mix.Dep.load_on_environment([])
+    Mix.Dep.Converger.converge()
     |> Enum.flat_map(&parse_dep/1)
     |> Enum.map(&build_dependency(&1.opts[:lock], &1))
   end
