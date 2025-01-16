@@ -69,11 +69,11 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = poetry_root[type] || {}
+            deps_hash = T.must(poetry_root)[type] || {}
             dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
-          groups = poetry_root["group"] || {}
+          groups = T.must(poetry_root)["group"] || {}
           groups.each do |group, group_spec|
             dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
@@ -177,9 +177,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def missing_poetry_keys
-          package_mode = poetry_root.fetch("package-mode", true)
+          package_mode = T.must(poetry_root).fetch("package-mode", true)
           required_keys = package_mode ? %w(name version description authors) : []
-          required_keys.reject { |key| poetry_root.key?(key) }
+          required_keys.reject { |key| T.must(poetry_root).key?(key) }
         end
 
         sig { returns(T::Boolean) }
@@ -189,7 +189,7 @@ module Dependabot
             !parsed_pyproject.dig("build-system", "requires").nil?
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def poetry_root
           parsed_pyproject.dig("tool", "poetry")
         end
