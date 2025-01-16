@@ -377,6 +377,9 @@ module Dependabot
       # socket hang up error code
       SOCKET_HANG_UP = /socket hang up/
 
+      # ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC error
+      ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC = /ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC/
+
       # duplicate package error code
       DUPLICATE_PACKAGE = /Found duplicates/
 
@@ -407,7 +410,8 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_pnpm_error(error)
-        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS)
+        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS) ||
+           error.message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
 
           raise DependencyFileNotResolvable, "Error resolving dependency"
         end
@@ -415,7 +419,7 @@ module Dependabot
         ## Clean error message from ANSI escape codes
         return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
 
-        raise InconsistentRegistryResponse, "Error resolving dependency"
+        raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
       end
     end
   end
