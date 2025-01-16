@@ -20,7 +20,7 @@ module Dependabot
         # https://python-poetry.org/docs/dependency-specification/
         UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
 
-        sig { params(dependency_files: T.untyped).void }
+        sig { params(dependency_files: T::Array[Dependabot::Dependency]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
@@ -37,7 +37,7 @@ module Dependabot
 
         private
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependency_files
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -288,7 +288,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, poetry_lock.path
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[Dependabot::Dependency]) }
         def pyproject
           @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" }, T.untyped)
         end
