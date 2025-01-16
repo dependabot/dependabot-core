@@ -36,8 +36,17 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
     let(:is_transitive) { false }
     let(:result_output_path) { "/path/to/result.json" }
 
+    before do
+      ENV["DEPENDABOT_JOB_ID"] = "TEST-JOB-ID"
+    end
+
+    after do
+      ENV.delete("DEPENDABOT_JOB_ID")
+    end
+
     it "returns a properly formatted command with spaces on the path" do
-      expect(command).to eq("/path/to/NuGetUpdater.Cli update --job-path /path/to/job.json --repo-root /path/to/repo " \
+      expect(command).to eq("/path/to/NuGetUpdater.Cli update --job-id TEST-JOB-ID --job-path /path/to/job.json " \
+                            "--repo-root /path/to/repo " \
                             '--solution-or-project /path/to/repo/src/some\ project/some_project.csproj ' \
                             "--dependency Some.Package --new-version 1.2.3 --previous-version 1.2.2 " \
                             "--result-output-path /path/to/result.json")
@@ -92,8 +101,12 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
           .to receive(:run_shell_command)
           .and_wrap_original do |_original_method, *_args, &_block|
             result = {
-              ErrorType: "AuthenticationFailure",
-              ErrorDetails: "the-error-details"
+              Error: {
+                "error-type": "private_source_authentication_failure",
+                "error-details": {
+                  source: "some-url"
+                }
+              }
             }
             File.write(described_class.update_result_file_path, result.to_json)
           end
@@ -118,8 +131,13 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
           .to receive(:run_shell_command)
           .and_wrap_original do |_original_method, *_args, &_block|
             result = {
-              ErrorType: "MissingFile",
-              ErrorDetails: "the-error-details"
+              Error: {
+                "error-type": "dependency_file_not_found",
+                "error-details": {
+                  message: "some message",
+                  "file-path": "/some/file"
+                }
+              }
             }
             File.write(described_class.update_result_file_path, result.to_json)
           end
@@ -145,7 +163,7 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       # defaults to no error
       return nil
     rescue StandardError => e
-      return e.to_s
+      return e
     end
 
     context "when nothing is reported" do
@@ -154,61 +172,121 @@ RSpec.describe Dependabot::Nuget::NativeHelpers do
       it { is_expected.to be_nil }
     end
 
-    context "when the error is expclicitly none" do
+    context "when the error is expclicitly null" do
       let(:json) do
         {
-          ErrorType: "None"
+          Error: nil
         }.to_json
       end
 
       it { is_expected.to be_nil }
     end
 
-    context "when an authentication failure is encountered" do
+    context "when a dependency file was not found" do
       let(:json) do
         {
-          ErrorType: "AuthenticationFailure",
-          ErrorDetails: "(some-source)"
+          Error: {
+            "error-type": "dependency_file_not_found",
+            "error-details": {
+              message: "some message",
+              "file-path": "/some/file"
+            }
+          }
         }.to_json
       end
 
-      it { is_expected.to include(": (some-source)") }
+      it { is_expected.to be_a Dependabot::DependencyFileNotFound }
     end
 
-    context "when a file is missing" do
+    context "when a file is not parseable" do
       let(:json) do
         {
-          ErrorType: "MissingFile",
-          ErrorDetails: "some.file"
+          Error: {
+            "error-type": "dependency_file_not_parseable",
+            "error-details": {
+              message: "some message",
+              "file-path": "/some/file"
+            }
+          }
         }.to_json
       end
 
-      it { is_expected.to include("some.file not found") }
+      it { is_expected.to be_a Dependabot::DependencyFileNotParseable }
+    end
+
+    context "when a requirement cannot be parsed" do
+      let(:json) do
+        {
+          Error: {
+            "error-type": "illformed_requirement",
+            "error-details": {
+              message: "some message"
+            }
+          }
+        }.to_json
+      end
+
+      it { is_expected.to be_a Dependabot::BadRequirementError }
+    end
+
+    context "when an authenticated feed was rejected" do
+      let(:json) do
+        {
+          Error: {
+            "error-type": "private_source_authentication_failure",
+            "error-details": {
+              source: "some-url"
+            }
+          }
+        }.to_json
+      end
+
+      it { is_expected.to be_a Dependabot::PrivateSourceAuthenticationFailure }
     end
 
     context "when an update is not possible" do
       let(:json) do
         {
-          ErrorType: "UpdateNotPossible",
-          ErrorDetails: [
-            "dependency 1",
-            "dependency 2"
-          ]
+          Error: {
+            "error-type": "update_not_possible",
+            "error-details": {
+              dependencies: %w(dep1 dep2)
+            }
+          }
         }.to_json
       end
 
-      it { is_expected.to include("dependency 1, dependency 2") }
+      it { is_expected.to be_a Dependabot::UpdateNotPossible }
     end
 
-    context "when any other error is returned" do
+    context "when an unknown error is reported" do
       let(:json) do
         {
-          ErrorType: "Unknown",
-          ErrorDetails: "some error details"
+          Error: {
+            "error-type": "unknown_error",
+            "error-details": {
+              message: "some message"
+            }
+          }
         }.to_json
       end
 
-      it { is_expected.to include("some error details") }
+      it { is_expected.to be_a Dependabot::DependabotError }
+    end
+
+    context "when any other type of error is returned" do
+      let(:json) do
+        {
+          Error: {
+            "error-type": "some_error_type_that_is_not_handled",
+            "error-details": {
+              message: "some message"
+            }
+          }
+        }.to_json
+      end
+
+      it { is_expected.to be_a StandardError }
     end
   end
 end

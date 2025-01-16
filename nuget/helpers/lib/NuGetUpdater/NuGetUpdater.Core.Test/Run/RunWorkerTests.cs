@@ -1729,11 +1729,12 @@ public class RunWorkerTests
         experimentsManager ??= new ExperimentsManager();
         var testApiHandler = new TestApiHandler();
         var logger = new TestLogger();
-        discoveryWorker ??= new DiscoveryWorker(experimentsManager, logger);
-        analyzeWorker ??= new AnalyzeWorker(experimentsManager, logger);
-        updaterWorker ??= new UpdaterWorker(experimentsManager, logger);
+        var jobId = "TEST-JOB-ID";
+        discoveryWorker ??= new DiscoveryWorker(jobId, experimentsManager, logger);
+        analyzeWorker ??= new AnalyzeWorker(jobId, experimentsManager, logger);
+        updaterWorker ??= new UpdaterWorker(jobId, experimentsManager, logger);
 
-        var worker = new RunWorker(testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var worker = new RunWorker(jobId, testApiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
         var repoContentsPathDirectoryInfo = new DirectoryInfo(tempDirectory.DirectoryPath);
         var actualResult = await worker.RunAsync(job, repoContentsPathDirectoryInfo, "TEST-COMMIT-SHA");
         var actualApiMessages = testApiHandler.ReceivedMessages.ToArray();

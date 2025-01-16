@@ -1,0 +1,40 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "a2498b947ac9d8b5180fc2c11a812a21",
+    "packages": [
+        {
+            "name": "pear-pear.horde.org/horde_date",
+            "version": "2.4.1@stable",
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kotko/pear-pear.horde.org-horde_date/zipball/b582d702ad1d145af2074601cb73d5c009e1a29c",
+                "reference": "b582d702ad1d145af2074601cb73d5c009e1a29c",
+                "shasum": ""
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "Kotko Vladyslav",
+                    "email": "m@kotko.me"
+                }
+            ],
+            "time": "2021-02-22T05:58:09+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "pear-pear.horde.org/horde_date": 0
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "1.1.0"
+}

@@ -30,12 +30,6 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
-        dependencies_without_version = dependency_set.dependencies.select { |dep| dep.version.nil? }
-        unless dependencies_without_version.empty?
-          raise UnresolvableVersionError,
-                dependencies_without_version.map(&:name)
-        end
-
         dependency_set.dependencies
       end
 
@@ -117,9 +111,10 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile, string: String, hostname: String).returns(Dependabot::Dependency) }
       def github_dependency(file, string, hostname)
         details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
-        name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
+        repo_name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
         ref = details.fetch(REF_KEY)
         version = version_class.new(ref).to_s if version_class.correct?(ref)
+        name = version_class.path_based?(ref) ? string : repo_name
         Dependency.new(
           name: name,
           version: version,
@@ -128,7 +123,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: "https://#{hostname}/#{name}".downcase,
+              url: "https://#{hostname}/#{repo_name}".downcase,
               ref: ref,
               branch: nil
             },

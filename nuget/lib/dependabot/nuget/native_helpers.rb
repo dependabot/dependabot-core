@@ -12,6 +12,11 @@ module Dependabot
       extend T::Sig
 
       sig { returns(String) }
+      def self.job_id
+        ENV.fetch("DEPENDABOT_JOB_ID")
+      end
+
+      sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "nuget") unless helpers_root.nil?
@@ -66,6 +71,8 @@ module Dependabot
         command_parts = [
           exe_path,
           "discover",
+          "--job-id",
+          job_id,
           "--job-path",
           job_path,
           "--repo-root",
@@ -81,6 +88,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "discover",
+          "--job-id",
+          "<job-id>",
           "--job-path",
           "<job-path>",
           "--repo-root",
@@ -127,6 +136,8 @@ module Dependabot
         command_parts = [
           exe_path,
           "analyze",
+          "--job-id",
+          job_id,
           "--job-path",
           job_path,
           "--repo-root",
@@ -144,6 +155,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "analyze",
+          "--job-id",
+          "<job-id>",
           "--job-path",
           "<job-path>",
           "--discovery-file-path",
@@ -190,6 +203,8 @@ module Dependabot
         command_parts = [
           exe_path,
           "update",
+          "--job-id",
+          job_id,
           "--job-path",
           job_path,
           "--repo-root",
@@ -212,6 +227,8 @@ module Dependabot
         fingerprint = [
           exe_path,
           "update",
+          "--job-id",
+          "<job-id>",
           "--job-path",
           "<job-path>",
           "--repo-root",
@@ -290,27 +307,37 @@ module Dependabot
         puts output
       end
 
+      # rubocop:disable Metrics/AbcSize
       sig { params(json: T::Hash[String, T.untyped]).void }
       def self.ensure_no_errors(json)
-        error_type = T.let(json.fetch("ErrorType", nil), T.nilable(String))
-        error_details = json.fetch("ErrorDetails", nil)
+        error = T.let(json.fetch("Error", nil), T.nilable(T::Hash[String, T.untyped]))
+        return if error.nil?
+
+        error_type = T.let(error.fetch("error-type"), String)
+        error_details = T.let(error.fetch("error-details", {}), T::Hash[String, T.untyped])
+
         case error_type
-        when "None", nil
-          # no issue
-        when "DependencyFileNotParseable"
-          raise DependencyFileNotParseable, T.must(T.let(error_details, T.nilable(String)))
-        when "AuthenticationFailure"
-          raise PrivateSourceAuthenticationFailure, T.let(error_details, T.nilable(String))
-        when "MissingFile"
-          raise DependencyFileNotFound, T.let(error_details, T.nilable(String))
-        when "UpdateNotPossible"
-          raise UpdateNotPossible, T.let(error_details, T::Array[String])
-        when "Unknown"
-          raise DependabotError, T.let(error_details, String)
+        when "dependency_file_not_found"
+          file_path = T.let(error_details.fetch("file-path"), String)
+          message = T.let(error_details.fetch("message", nil), T.nilable(String))
+          raise DependencyFileNotFound.new(file_path, message)
+        when "dependency_file_not_parseable"
+          file_path = T.let(error_details.fetch("file-path"), String)
+          message = T.let(error_details.fetch("message", nil), T.nilable(String))
+          raise DependencyFileNotParseable.new(file_path, message)
+        when "illformed_requirement"
+          raise BadRequirementError, T.let(error_details.fetch("message"), String)
+        when "private_source_authentication_failure"
+          raise PrivateSourceAuthenticationFailure, T.let(error_details.fetch("source"), String)
+        when "update_not_possible"
+          raise UpdateNotPossible, T.let(error_details.fetch("dependencies"), T::Array[String])
+        when "unknown_error"
+          raise DependabotError, error_details.to_json
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end
       end
+      # rubocop:enable Metrics/AbcSize
     end
   end
 end

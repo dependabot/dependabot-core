@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "elixir"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.14.4"
+        expect(language.version.to_s).to eq "1.14.5"
       end
     end
   end

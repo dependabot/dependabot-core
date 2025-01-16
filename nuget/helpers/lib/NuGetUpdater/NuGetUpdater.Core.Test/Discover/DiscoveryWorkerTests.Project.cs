@@ -1263,5 +1263,113 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task PackagesManagedAndRemovedByTheSdkAreReported()
+        {
+            // To avoid a unit test that's tightly coupled to the installed SDK, some files are faked.
+            // First up, the `dotnet-package-correlation.json` is faked to have the appropriate shape to report a
+            // package replacement.  Doing this requires a temporary file and environment variable override.
+            using var tempDirectory = new TemporaryDirectory();
+            var packageCorrelationFile = Path.Combine(tempDirectory.DirectoryPath, "dotnet-package-correlation.json");
+            await File.WriteAllTextAsync(packageCorrelationFile, """
+                {
+                    "Runtimes": {
+                        "1.0.0": {
+                            "Packages": {
+                                "Dependabot.App.Core.Ref": "1.0.0",
+                                "Test.Only.Package": "1.0.0"
+                            }
+                        },
+                        "1.0.1": {
+                            "Packages": {
+                                "Dependabot.App.Core.Ref": "1.0.1",
+                                "Test.Only.Package": "1.0.99"
+                            }
+                        }
+                    }
+                }
+                """);
+            using var tempEnvironment = new TemporaryEnvironment([("DOTNET_PACKAGE_CORRELATION_FILE_PATH", packageCorrelationFile)]);
+
+            // The SDK package handling is detected in a very specific circumstance; an assembly being removed from the
+            // `@(References)` item group in the `_HandlePackageFileConflicts` target.  Since we don't want to involve
+            // the real SDK, we fake some required targets.
+            await TestDiscoveryAsync(
+                experimentsManager: new ExperimentsManager() { InstallDotnetSdks = true, UseDirectDiscovery = true },
+                packages: [],
+                workspacePath: "",
+                files:
+                [
+                    ("project.csproj", """
+                        <Project>
+                          <!-- note that the attribute `Sdk="Microsoft.NET.Sdk"` is missing because we don't want the real SDK interfering -->
+
+                          <!-- this allows custom targets to be injected for dependency detection -->
+                          <Import Project="$(CustomAfterMicrosoftCommonTargets)" Condition="Exists('$(CustomAfterMicrosoftCommonTargets)')" />
+
+                          <PropertyGroup>
+                            <TargetFramework>net8.0</TargetFramework>
+                          </PropertyGroup>
+
+                          <ItemGroup>
+                            <!-- we need a value in this item group with the appropriate metadata to simulate it having been added by NuGet -->
+                            <RuntimeCopyLocalItems Include="TestOnlyAssembly.dll" NuGetPackageId="Test.Only.Package" NuGetPackageVersion="1.0.0" />
+
+                            <!-- this represents the assemblies being extracted from the package -->
+                            <Reference Include="@(RuntimeCopyLocalItems)" />
+                          </ItemGroup>
+
+                          <Target Name="_HandlePackageFileConflicts">
+                            <!-- this target needs to exist for discovery to work -->
+                            <ItemGroup>
+                              <!-- this removal is what triggers the package lookup in the correlation file -->
+                              <Reference Remove="TestOnlyAssembly.dll" />
+
+                              <!-- this addition is what's used for the lookup -->
+                              <Reference Include="TestOnlyAssembly.dll" NuGetPackageId="Dependabot.App.Core.Ref" NuGetPackageVersion="1.0.1" />
+                            </ItemGroup>
+                          </Target>
+
+                          <Target Name="ResolveAssemblyReferences" DependsOnTargets="_HandlePackageFileConflicts">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+
+                          <Target Name="GenerateBuildDependencyFile">
+                            <!-- this target needs to exist for discovery to work -->
+                            <ItemGroup>
+                              <!-- this removal is what removes the regular package reference from the project -->
+                              <RuntimeCopyLocalItems Remove="TestOnlyAssembly.dll" />
+                            </ItemGroup>
+                          </Target>
+
+                          <Target Name="ResolvePackageAssets">
+                            <!-- this target needs to exist for discovery to work -->
+                          </Target>
+                        </Project>
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "project.csproj",
+                            Dependencies = [
+                                new("Test.Only.Package", "1.0.99", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                            ],
+                            Properties = [
+                                new("TargetFramework", "net8.0", "project.csproj")
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        }
+                    ]
+                }
+            );
+        }
     }
 }

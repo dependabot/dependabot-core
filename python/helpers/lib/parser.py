@@ -14,9 +14,9 @@ from pip._internal.req.constructors import (
 )
 
 from packaging.requirements import InvalidRequirement, Requirement
-# TODO: Replace 3p package `toml` with 3.11's new stdlib `tomllib` once we drop
-# support for Python 3.10.
-import toml
+# TODO: Replace 3p package `tomli` with 3.11's new stdlib `tomllib` once we
+#       drop support for Python 3.10.
+import tomli
 
 # Inspired by pips internal check:
 # https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
@@ -24,7 +24,8 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    project_toml = toml.load(pyproject_path)
+    with open(pyproject_path, "rb") as file:
+        project_toml = tomli.load(file)
 
     def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
         requirement_packages = []

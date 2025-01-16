@@ -69,6 +69,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
 
   def run_parser_test(&_block)
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    ENV["DEPENDABOT_JOB_ID"] = "TEST-JOB-ID"
     clean_common_files
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
 
@@ -89,6 +90,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
   ensure
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV.delete("DEPENDABOT_NUGET_CACHE_DISABLED")
+    ENV.delete("DEPENDABOT_JOB_ID")
     clean_common_files
   end
 
