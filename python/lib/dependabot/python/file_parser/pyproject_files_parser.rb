@@ -288,7 +288,7 @@ module Dependabot
           raise Dependabot::DependencyFileNotParseable, poetry_lock.path
         end
 
-        sig { returns(T::Array[Dependabot::Dependency]) }
+        sig { returns(T.untyped) }
         def pyproject
           @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" }, T.untyped)
         end
