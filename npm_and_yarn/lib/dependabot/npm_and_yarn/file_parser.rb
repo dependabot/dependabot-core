@@ -258,7 +258,19 @@ module Dependabot
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
-        return if workspace_package_names.include?(name)
+
+        workspace_name = nil
+
+        if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+          workspaces = workspace_package_names
+
+          return if workspaces.include?(name)
+
+          # Extract workspace name by finding the first match in workspace_package_names
+          workspace_name = workspaces.find do |workspace|
+            file.name.start_with?(workspace + "/")
+          end
+        end
 
         # TODO: Handle aliased packages:
         # https://github.com/dependabot/dependabot-core/pull/1115
@@ -271,6 +283,7 @@ module Dependabot
           name: name,
           version: converted_version,
           package_manager: ECOSYSTEM,
+          workspace: workspace_name,
           requirements: [{
             requirement: requirement_for(requirement),
             file: file.name,

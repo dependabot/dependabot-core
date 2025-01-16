@@ -53,7 +53,8 @@ module Dependabot
           name: dependency.name,
           version: version,
           requirements: dependency.requirements,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          workspace: dependency.workspace
         )
       end
 

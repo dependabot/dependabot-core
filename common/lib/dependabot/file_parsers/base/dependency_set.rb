@@ -156,6 +156,7 @@ module Dependabot
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
+              workspace: old_dep.workspace,
               metadata: old_dep.metadata,
               subdependency_metadata: subdependency_metadata
             )

@@ -48,6 +48,8 @@ module Dependabot
         ]
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -56,6 +58,30 @@ module Dependabot
         updated_files += updated_lockfiles
 
         if updated_files.none?
+
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            all_workspaces_present = dependencies.all? do |dependency|
+              !dependency.workspace.nil? && !dependency.workspace&.empty?
+            end
+
+            all_dev_dependencies = dependencies.all? do |dependency|
+              dependency.requirements.all? do |requirement|
+                requirement[:groups].include?("devDependencies")
+              end
+            end
+
+            if dependencies.any?(&:top_level?) &&
+               pnpm_locks.any? &&
+               all_workspaces_present &&
+               all_dev_dependencies
+              raise ToolFeatureNotSupported.new(
+                tool_name: PNPMPackageManager::NAME,
+                tool_type: "package_manager",
+                feature: "updating dev dependencies in workspaces"
+              )
+            end
+          end
+
           raise NoChangeError.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
@@ -72,6 +98,8 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 

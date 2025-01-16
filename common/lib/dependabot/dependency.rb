@@ -88,6 +88,9 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.untyped]) }
     attr_reader :metadata
 
+    sig { returns(T.nilable(String)) }
+    attr_reader :workspace
+
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
@@ -100,6 +103,7 @@ module Dependabot
         previous_version: T.nilable(String),
         previous_requirements: T.nilable(T::Array[T::Hash[T.any(Symbol, String), T.untyped]]),
         directory: T.nilable(String),
+        workspace: T.nilable(String),
         subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
         removed: T::Boolean,
         metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
@@ -107,7 +111,7 @@ module Dependabot
     end
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil, directory: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+                   workspace: nil, subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = T.let(
         case version
@@ -126,6 +130,8 @@ module Dependabot
       )
       @package_manager = package_manager
       @directory = directory
+      @workspace = workspace
+
       unless top_level? || subdependency_metadata == []
         @subdependency_metadata = T.let(
           subdependency_metadata&.map { |h| symbolize_keys(h) },
@@ -166,6 +172,7 @@ module Dependabot
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
         "directory" => directory,
+        "workspace" => workspace,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
         "removed" => removed? ? true : nil

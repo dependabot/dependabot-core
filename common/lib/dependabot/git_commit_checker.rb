@@ -478,6 +478,7 @@ module Dependabot
           candidate_dep = Dependency.new(
             name: dependency.name,
             version: dependency.version,
+            workspace: dependency.workspace,
             requirements: [],
             package_manager: dependency.package_manager
           )

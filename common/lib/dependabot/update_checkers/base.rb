@@ -233,6 +233,7 @@ module Dependabot
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager,
+          workspace: dependency.workspace,
           metadata: dependency.metadata,
           subdependency_metadata: dependency.subdependency_metadata
         )
@@ -250,6 +251,7 @@ module Dependabot
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
           package_manager: dependency.package_manager,
+          workspace: dependency.workspace,
           metadata: dependency.metadata,
           subdependency_metadata: dependency.subdependency_metadata
         )
