@@ -314,6 +314,10 @@ module Dependabot
       end
 
       # Run single npm command returning stdout/stderr.
+      #
+      # NOTE: Needs to be explicitly run through corepack to respect the
+      # `packageManager` setting in `package.json`, because corepack does not
+      # add shims for NPM.
       sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
       def self.run_npm_command(command, fingerprint: command)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
