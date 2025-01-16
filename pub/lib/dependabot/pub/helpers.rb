@@ -32,7 +32,7 @@ module Dependabot
       attr_reader :options
 
       def self.pub_helpers_path
-        File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
+        File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", "helpers/bin"), "pub")
       end
 
       def self.run_infer_sdk_versions(dir, url: nil)
@@ -235,6 +235,7 @@ module Dependabot
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
               "_PUB_TEST_SDK_VERSION" => sdk_versions["dart"]
             }
+
             command_dir = File.join(temp_dir, dependency_files.first&.directory)
 
             stdout, stderr, status = Open3.capture3(
@@ -244,11 +245,26 @@ module Dependabot
               stdin_data: stdin_data,
               chdir: command_dir
             )
-            raise Dependabot::DependabotError, "dependency_services failed: #{stderr}" unless status.success?
+
+            raise_error(stderr) unless status.success?
             return stdout unless block_given?
 
             yield command_dir
           end
+        end
+      end
+
+      def raise_error(stderr)
+        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
+          raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Git error")
+          raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("version solving failed")
+          raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
+          raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")
+        else
+          raise Dependabot::DependabotError, "dependency_services failed: #{stderr}"
         end
       end
 

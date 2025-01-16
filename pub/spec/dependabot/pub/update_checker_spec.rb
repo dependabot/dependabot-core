@@ -716,6 +716,67 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
+  context "when there is an error while running a subshell command" do
+    let(:status) { instance_double(Process::Status, success?: false) }
+
+    before do
+      allow(Open3).to receive(:capture3).with({}, "/tmp/flutter/bin/flutter", "--version", "--machine",
+                                              Hash).and_call_original
+      allow(Open3).to receive(:capture3).with({}, "/tmp/flutter/bin/flutter", "doctor", Hash).and_call_original
+      allow(Open3).to receive(:capture3).with({}, "git", "fetch", "origin", "refs/tags/3.24.1",
+                                              Hash).and_call_original
+      allow(Open3).to receive(:capture3).with({}, "git", "checkout", "refs/tags/3.24.1", Hash).and_call_original
+      allow(Open3).to receive(:capture3).with({}, "/opt/pub/infer_sdk_versions", String, Hash).and_call_original
+      allow(Open3).to receive(:capture3).with(Hash, String, "report", Hash).and_return(["", stderr, status])
+    end
+
+    context "with a git error" do
+      let(:stderr) { "Git error. Command: `git clone --mirror https://github.com/***`" }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::InvalidGitAuthToken)
+      end
+    end
+
+    context "when parsing the lockfile fails" do
+      let(:stderr) { "Failed parsing lock file" }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when version resolution fails" do
+      let(:stderr) do
+        "Because care_share_nepal depends on both freezed ^3.0.0-0.0.dev and freezed ^2.3.5, version solving failed."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when pubspec.yaml is missing" do
+      let(:stderr) do
+        "Could not find a file named \"pubspec.yaml\" in https://github.com/Iconica-Development"
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when dependency file has unsupported syntax" do
+      let(:stderr) do
+        "Unsupported operation: Encountered an alias node along [dependencies, isar, version]!"
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+  end
+
   context "with a git dependency" do
     include_context "with temp dir"
 

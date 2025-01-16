@@ -220,6 +220,14 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
     when Dependabot::ToolVersionNotSupported
       {
         "error-type": "tool_version_not_supported",
