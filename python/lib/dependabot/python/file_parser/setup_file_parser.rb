@@ -22,7 +22,7 @@ module Dependabot
 
         CLOSING_BRACKET = T.let({ "[" => "]", "{" => "}" }.freeze, T.any(T.untyped, T.untyped))
 
-        sig { params(dependency_files: T.untyped).void }
+        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
@@ -58,10 +58,10 @@ module Dependabot
 
         private
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]]))) }
         def parsed_setup_file
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
