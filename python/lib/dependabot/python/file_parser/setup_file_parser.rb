@@ -61,7 +61,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]]))) }
+        sig { returns(T.untyped) }
         def parsed_setup_file
           SharedHelpers.in_a_temporary_directory do
             write_temporary_dependency_files
