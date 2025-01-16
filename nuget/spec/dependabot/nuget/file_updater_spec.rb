@@ -92,6 +92,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   def run_update_test(&_block)
     # caching is explicitly required for these tests
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "false"
+    ENV["DEPENDABOT_JOB_ID"] = "TEST-JOB-ID"
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     clean_common_files
 
@@ -123,6 +124,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
   ensure
     Dependabot::Nuget::DiscoveryJsonReader.testonly_clear_caches
     ENV["DEPENDABOT_NUGET_CACHE_DISABLED"] = "true"
+    ENV.delete("DEPENDABOT_JOB_ID")
     clean_common_files
   end
 

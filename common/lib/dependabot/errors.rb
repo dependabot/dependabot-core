@@ -166,6 +166,7 @@ module Dependabot
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
@@ -178,6 +179,14 @@ module Dependabot
       {
         "error-type": "dependency_file_not_evaluatable",
         "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::GitDependenciesNotReachable
       {
@@ -294,6 +303,7 @@ module Dependabot
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
+  # rubocop:enable Metrics/AbcSize
 
   class DependabotError < StandardError
     extend T::Sig

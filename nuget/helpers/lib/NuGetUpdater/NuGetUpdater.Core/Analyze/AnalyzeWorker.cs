@@ -7,6 +7,7 @@ using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run.ApiModel;
 
 namespace NuGetUpdater.Core.Analyze;
 
@@ -16,6 +17,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
 {
     public const string AnalysisDirectoryName = "./.dependabot/analysis";
 
+    private readonly string _jobId;
     private readonly ExperimentsManager _experimentsManager;
     private readonly ILogger _logger;
 
@@ -25,8 +27,9 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         Converters = { new JsonStringEnumConverter(), new RequirementArrayConverter() },
     };
 
-    public AnalyzeWorker(ExperimentsManager experimentsManager, ILogger logger)
+    public AnalyzeWorker(string jobId, ExperimentsManager experimentsManager, ILogger logger)
     {
+        _jobId = jobId;
         _experimentsManager = experimentsManager;
         _logger = logger;
     }
@@ -48,26 +51,11 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         {
             analysisResult = await RunAsync(repoRoot, discovery, dependencyInfo);
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
-        {
-            var localPath = PathHelper.JoinPath(repoRoot, discovery.Path);
-            using var nugetContext = new NuGetContext(localPath);
-            analysisResult = new AnalysisResult
-            {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = "(" + string.Join("|", nugetContext.PackageSources.Select(s => s.Source)) + ")",
-                UpdatedVersion = string.Empty,
-                CanUpdate = false,
-                UpdatedDependencies = [],
-            };
-        }
         catch (Exception ex)
         {
             analysisResult = new AnalysisResult
             {
-                ErrorType = ErrorType.Unknown,
-                ErrorDetails = ex.ToString(),
+                Error = JobErrorBase.ErrorFromException(ex, _jobId, PathHelper.JoinPath(repoRoot, discovery.Path)),
                 UpdatedVersion = string.Empty,
                 CanUpdate = false,
                 UpdatedDependencies = [],
