@@ -105,12 +105,12 @@ module Dependabot
           []
         end
 
-        sig { params(requirements: T.untyped).returns(T.nilable(Python::Requirement)) }
+        sig { params(requirements: T.untyped).returns(T.untyped) }
         def check_requirements(requirements)
           requirements&.each do |dep|
             next unless dep["requirement"]
 
-            T.let(Python::Requirement.new(dep["requirement"].split(",")), Python::Requirement)
+            Python::Requirement.new(dep["requirement"].split(","))
           rescue Gem::Requirement::BadRequirementError => e
             raise Dependabot::DependencyFileNotEvaluatable, e.message
           end

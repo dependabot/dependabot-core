@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -19,6 +19,7 @@ module Dependabot
         3.8.20
       ).freeze
 
+      sig { params(python_requirement_parser: T.untyped).void }
       def initialize(python_requirement_parser:)
         @python_requirement_parser = python_requirement_parser
       end
@@ -33,20 +34,23 @@ module Dependabot
         )
       end
 
+      sig { returns(String) }
       def installed_version
         # Use `pyenv exec` to query the active Python version
         output, _status = SharedHelpers.run_shell_command("pyenv exec python --version")
         version = output.strip.split.last # Extract the version number (e.g., "3.13.1")
 
-        version
+        T.must(version)
       end
 
+      sig { returns(T.untyped) }
       def python_major_minor
-        @python_major_minor ||= T.must(Python::Version.new(python_version).segments[0..1]).join(".")
+        @python_major_minor ||= T.let(T.must(Python::Version.new(python_version).segments[0..1]).join("."), T.untyped)
       end
 
+      sig { returns(String) }
       def python_version
-        @python_version ||= python_version_from_supported_versions
+        @python_version ||= T.let(python_version_from_supported_versions, T.nilable(String))
       end
 
       sig { returns(String) }
@@ -81,10 +85,12 @@ module Dependabot
         raise ToolVersionNotSupported.new("Python", python_requirement_string, supported_versions)
       end
 
+      sig { returns(T.untyped) }
       def user_specified_python_version
         @python_requirement_parser.user_specified_requirements.first
       end
 
+      sig { returns(T.nilable(String)) }
       def python_version_matching_imputed_requirements
         compiled_file_python_requirement_markers =
           @python_requirement_parser.imputed_requirements.map do |r|
@@ -93,6 +99,7 @@ module Dependabot
         python_version_matching(compiled_file_python_requirement_markers)
       end
 
+      sig { params(requirements: T.untyped).returns(T.nilable(String)) }
       def python_version_matching(requirements)
         PRE_INSTALLED_PYTHON_VERSIONS.find do |version_string|
           version = Python::Version.new(version_string)
