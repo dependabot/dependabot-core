@@ -237,6 +237,8 @@ module Dependabot
         lockfile_parser.parse_set
       end
 
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(file: DependencyFile, type: T.untyped, name: String, requirement: String)
           .returns(T.nilable(Dependency))
@@ -292,6 +294,8 @@ module Dependabot
           }]
         )
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { override.void }
       def check_required_files
