@@ -50,6 +50,8 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -100,6 +102,8 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/MethodLength
 
       private
 
