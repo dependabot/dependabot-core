@@ -32,6 +32,7 @@ module Dependabot
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
 
         attr_reader :dependency
         attr_reader :dependency_files
@@ -91,12 +92,12 @@ module Dependabot
         def compile_file(filename)
           # Shell out to pip-compile.
           # This is slow, as pip-compile needs to do installs.
-          options = pip_compile_options(filename)
+          options, command = pip_compile_options(filename)
           options_fingerprint = pip_compile_options_fingerprint(options)
 
           run_pip_compile_command(
-            "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-            fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+            "#{command} -v #{options} -P #{dependency.name} #{filename}",
+            fingerprint: "#{command} -v #{options_fingerprint} -P <dependency_name> <filename>"
           )
 
           return true if dependency.top_level?
@@ -110,8 +111,8 @@ module Dependabot
           # update_not_possible.
           write_original_manifest_files
           run_pip_compile_command(
-            "pyenv exec pip-compile #{options} #{filename}",
-            fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+            "#{command} #{options} #{filename}",
+            fingerprint: "#{command} #{options_fingerprint} <filename>"
           )
 
           true
@@ -201,12 +202,12 @@ module Dependabot
               write_temporary_dependency_files(update_requirement: false)
 
               filenames_to_compile.each do |filename|
-                options = pip_compile_options(filename)
+                options, command = pip_compile_options(filename)
                 options_fingerprint = pip_compile_options_fingerprint(options)
 
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{options} #{filename}",
-                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+                  "#{command} #{options} #{filename}",
+                  fingerprint: "#{command} #{options_fingerprint} <filename>"
                 )
               end
 
@@ -251,7 +252,16 @@ module Dependabot
             options << "--output-file=#{requirements_file.name}"
           end
 
-          options.join(" ")
+          if (requirements_file = compiled_file_for_filename(filename))
+            if requirements_file.content.include?("uv pip compile")
+              options += uv_pip_compile_options_from_compiled_file(requirements_file)
+              command = "pyenv exec uv pip compile"
+            else
+              command = "pyenv exec pip-compile"
+            end
+          end
+
+          [options.join(" "), command]
         end
 
         def pip_compile_index_options
@@ -275,6 +285,32 @@ module Dependabot
           )
 
           run_command(command, fingerprint: fingerprint)
+        end
+
+        def uv_pip_compile_options_from_compiled_file(requirements_file)
+          options = ["--output-file=#{requirements_file.name}"]
+
+          options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
+
+          options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
+
+          options << "--no-annotate" unless requirements_file.content.include?("# via ")
+
+          options << "--pre" if requirements_file.content.include?("--pre")
+
+          options << "--no-strip-extras" if requirements_file.content.include?("--no-strip-extras")
+
+          if requirements_file.content.include?("--no-binary") || requirements_file.content.include?("--only-binary")
+            options << "--emit-build-options"
+          end
+
+          if (resolver = RESOLVER_REGEX.match(requirements_file.content))
+            options << "--resolver=#{resolver}"
+          end
+
+          options << "--universal" if requirements_file.content.include?("--universal")
+
+          options
         end
 
         def python_env

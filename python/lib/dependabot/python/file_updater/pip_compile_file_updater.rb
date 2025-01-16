@@ -96,13 +96,14 @@ module Dependabot
         def compile_file(filename)
           # Shell out to pip-compile, generate a new set of requirements.
           # This is slow, as pip-compile needs to do installs.
-          options = pip_compile_options(filename)
+
+          options, command = pip_compile_options(filename)
           options_fingerprint = pip_compile_options_fingerprint(options)
 
-          name_part = "pyenv exec pip-compile " \
+          name_part = "#{command} " \
                       "#{options} -P " \
                       "#{dependency.name}"
-          fingerprint_name_part = "pyenv exec pip-compile " \
+          fingerprint_name_part = "#{command} " \
                                   "#{options_fingerprint} -P " \
                                   "<dependency_name>"
 
@@ -453,10 +454,16 @@ module Dependabot
           options += pip_compile_index_options
 
           if (requirements_file = compiled_file_for_filename(filename))
-            options += pip_compile_options_from_compiled_file(requirements_file)
+            if requirements_file.content.include?("uv pip compile")
+              options += uv_pip_compile_options_from_compiled_file(requirements_file)
+              command = "pyenv exec uv pip compile"
+            else
+              options += pip_compile_options_from_compiled_file(requirements_file)
+              command = "pyenv exec pip-compile"
+            end
           end
 
-          options.join(" ")
+          [options.join(" "), command]
         end
 
         def pip_compile_options_from_compiled_file(requirements_file)
@@ -479,6 +486,30 @@ module Dependabot
           if (resolver = RESOLVER_REGEX.match(requirements_file.content))
             options << "--resolver=#{resolver}"
           end
+
+          options
+        end
+
+        def uv_pip_compile_options_from_compiled_file(requirements_file)
+          options = ["--output-file=#{requirements_file.name}"]
+
+          options << "--no-emit-index-url" if requirements_file.content.include?("index-url http")
+
+          options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
+
+          options << "--no-annotate" unless requirements_file.content.include?("# via ")
+
+          options << "--pre" if requirements_file.content.include?("--pre")
+
+          options << "--no-strip-extras" if requirements_file.content.include?("--no-strip-extras")
+
+          if requirements_file.content.include?("--no-binary") || requirements_file.content.include?("--only-binary")
+            options << "--emit-build-options"
+          end
+
+          # options skips the resolver option, as it has no effect for uv.
+
+          options << "--universal" if requirements_file.content.include?("--universal")
 
           options
         end
