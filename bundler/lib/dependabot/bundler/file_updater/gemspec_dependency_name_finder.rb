@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "parser/current"
@@ -8,13 +8,20 @@ module Dependabot
   module Bundler
     class FileUpdater
       class GemspecDependencyNameFinder
+        extend T::Sig
+
+        ChildNode = T.type_alias { T.nilable(T.any(Parser::AST::Node, Symbol, String)) }
+
+        sig { returns(String) }
         attr_reader :gemspec_content
 
+        sig { params(gemspec_content: String).void }
         def initialize(gemspec_content:)
           @gemspec_content = gemspec_content
         end
 
         # rubocop:disable Security/Eval
+        sig { returns(T.nilable(String)) }
         def dependency_name
           ast = Parser::CurrentRuby.parse(gemspec_content)
           dependency_name_node = find_dependency_name_node(ast)
@@ -30,6 +37,7 @@ module Dependabot
 
         private
 
+        sig { params(node: ChildNode).returns(T.nilable(Parser::AST::Node)) }
         def find_dependency_name_node(node)
           return unless node.is_a?(Parser::AST::Node)
           return node if declares_dependency_name?(node)
@@ -40,6 +48,7 @@ module Dependabot
           end
         end
 
+        sig { params(node: ChildNode).returns(T::Boolean) }
         def declares_dependency_name?(node)
           return false unless node.is_a?(Parser::AST::Node)
 
