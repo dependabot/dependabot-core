@@ -3,7 +3,6 @@
 
 require "dependabot/python/file_updater"
 require "dependabot/python/file_parser/setup_file_parser"
-require "sorbet-runtime"
 
 module Dependabot
   module Python
@@ -11,8 +10,6 @@ module Dependabot
       # Take a setup.py, parses it (carefully!) and then create a new, clean
       # setup.py using only the information which will appear in the lockfile.
       class SetupFileSanitizer
-        extend T::Sig
-
         def initialize(setup_file:, setup_cfg:)
           @setup_file = setup_file
           @setup_cfg = setup_cfg
@@ -42,7 +39,6 @@ module Dependabot
         end
 
         def install_requires_array
-          @install_requires_array = T.let(T.untyped, T.untyped)
           @install_requires_array ||=
             parsed_setup_file.dependencies.filter_map do |dep|
               next unless dep.requirements.first[:groups]
@@ -81,17 +77,18 @@ module Dependabot
         end
 
         def parsed_setup_file
-          @parsed_setup_file ||= Python::FileParser::SetupFileParser.new(
-            dependency_files: [
-              setup_file&.dup&.tap { |f| f.name = "setup.py" },
-              setup_cfg&.dup&.tap { |f| f.name = "setup.cfg" }
-            ].compact
-          ).dependency_set
+          @parsed_setup_file ||=
+            Python::FileParser::SetupFileParser.new(
+              dependency_files: [
+                setup_file&.dup&.tap { |f| f.name = "setup.py" },
+                setup_cfg&.dup&.tap { |f| f.name = "setup.cfg" }
+              ].compact
+            ).dependency_set
         end
 
         def package_name
           content = setup_file.content
-          match = T.must(content).match(/name\s*=\s*['"](?<package_name>[^'"]+)['"]/)
+          match = content.match(/name\s*=\s*['"](?<package_name>[^'"]+)['"]/)
           match ? match[:package_name] : "default_package_name"
         end
       end
