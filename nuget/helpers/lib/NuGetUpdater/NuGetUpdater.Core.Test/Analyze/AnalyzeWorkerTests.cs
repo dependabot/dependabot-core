@@ -4,6 +4,7 @@ using System.Text.Json;
 using NuGet;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -1015,8 +1016,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
         await AnalyzeWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, "Some.Dependency", new()
         {
-            ErrorType = ErrorType.AuthenticationFailure,
-            ErrorDetails = "<some package feed>",
+            Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
             UpdatedVersion = "",
             UpdatedDependencies = [],
         }, new TestLogger());
@@ -1025,16 +1025,23 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         // raw result file should look like this:
         // {
         //   ...
-        //   "ErrorType": "AuthenticationFailure",
+        //   "Error": {
+        //     "error-type": "private_source_authentication_failure",
+        //     "error-details": {
+        //       "source": "(<some package feed>)"
+        //     }
+        //   }
         //   "ErrorDetails": "<some package feed>",
         //   ...
         // }
         var jsonDocument = JsonDocument.Parse(discoveryContents);
-        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
-        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+        var error = jsonDocument.RootElement.GetProperty("Error");
+        var errorType = error.GetProperty("error-type");
+        var errorDetails = error.GetProperty("error-details");
+        var errorSource = errorDetails.GetProperty("source");
 
-        Assert.Equal("AuthenticationFailure", errorType.GetString());
-        Assert.Equal("<some package feed>", errorDetails.GetString());
+        Assert.Equal("private_source_authentication_failure", errorType.GetString());
+        Assert.Equal("(<some package feed>)", errorSource.GetString());
     }
 
     [Fact]
@@ -1110,8 +1117,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             },
             expectedResult: new()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 UpdatedVersion = string.Empty,
                 CanUpdate = false,
                 UpdatedDependencies = [],

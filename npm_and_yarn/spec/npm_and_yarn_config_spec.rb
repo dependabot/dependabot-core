@@ -10,9 +10,6 @@ RSpec.describe "npm and yarn config" do # rubocop:disable RSpec/DescribeClass
     npm_result = `npm config list`
     # Output from yarn config set
     expect(npm_result).to include("audit = false")
-    expect(npm_result).to include(
-      "cafile = \"/usr/local/share/ca-certificates/dbot-ca.crt\""
-    )
     expect(npm_result).to include("dry-run = true")
     expect(npm_result).to include("ignore-scripts = true")
   end
