@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dependabot-pyproject-toml-error"
+description = '''foo'''
+version = "0.0.1"
+requires-python = ">=3.12"
+license = { text = "GNU General Public License v3 or later (GPLv3+)" }
+classifiers = [
+    '''Development Status :: 4 - Beta''',
+    "Programming Language :: Python :: 3 :: Only",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    '''if __name__ == ['"]__main__['"]:''',
+]
