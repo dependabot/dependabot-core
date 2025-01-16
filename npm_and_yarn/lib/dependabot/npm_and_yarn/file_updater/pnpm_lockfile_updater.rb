@@ -18,6 +18,10 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @error_handler = PnpmErrorHandler.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files
+          )
         end
 
         def updated_pnpm_lock_content(pnpm_lock)
@@ -36,6 +40,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :repo_contents_path
         attr_reader :credentials
+        attr_reader :error_handler
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
@@ -46,12 +51,12 @@ module Dependabot
         UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
 
         # ERR_PNPM_FETCH ERROR CODES
-        ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):  - 401/
-        ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):  - 403/
-        ERR_PNPM_FETCH_404 = /ERR_PNPM_FETCH_404.*GET (?<dependency_url>.*):  - 404/
-        ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):  - 500/
-        ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):  - 502/
-        ERR_PNPM_FETCH_503 = /ERR_PNPM_FETCH_503.*GET (?<dependency_url>.*):  - 503/
+        ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_404 = /ERR_PNPM_FETCH_404.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_503 = /ERR_PNPM_FETCH_503.*GET (?<dependency_url>.*):/
 
         # ERR_PNPM_UNSUPPORTED_ENGINE
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
@@ -251,6 +256,8 @@ module Dependabot
                                              pnpm_lock)
           end
 
+          error_handler.handle_pnpm_error(error)
+
           raise
         end
         # rubocop:enable Metrics/AbcSize
@@ -358,6 +365,57 @@ module Dependabot
         def sanitize_message(message)
           message.gsub(/"|\[|\]|\}|\{/, "")
         end
+      end
+    end
+
+    class PnpmErrorHandler
+      extend T::Sig
+
+      # remote connection closed
+      ECONNRESET_ERROR = /ECONNRESET/
+
+      # socket hang up error code
+      SOCKET_HANG_UP = /socket hang up/
+
+      # duplicate package error code
+      DUPLICATE_PACKAGE = /Found duplicates/
+
+      ERR_PNPM_NO_VERSIONS = /ERR_PNPM_NO_VERSIONS/
+
+      # Initializes the YarnErrorHandler with dependencies and dependency files
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      # Handles errors with specific to yarn error codes
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_pnpm_error(error)
+        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS)
+
+          raise DependencyFileNotResolvable, "Error resolving dependency"
+        end
+
+        ## Clean error message from ANSI escape codes
+        return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
+
+        raise InconsistentRegistryResponse, "Error resolving dependency"
       end
     end
   end
