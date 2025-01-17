@@ -106,16 +106,73 @@ RSpec.describe Dependabot::Python::FileParser do
     end
 
     context "with markers" do
-      context "when including a < in the marker" do
+      context "when the marker <= 2.6" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("2.6")
+        end
+
         let(:requirements_fixture_name) { "markers.txt" }
 
-        it "parses only the >= marker" do
+        it "then the dependency version should be 1.0.4" do
           expect(dependencies.length).to eq(1)
 
           dependency = dependencies.first
 
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("distro")
+          expect(dependency.version).to eq("1.0.4")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.0.4",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "when the marker => 2.7" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("2.7")
+        end
+
+        let(:requirements_fixture_name) { "markers.txt" }
+
+        it "then the dependency version should be 1.3.0" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("distro")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "when there is a combination of multiple conditions with 'and' in a marker" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("3.13.1")
+        end
+
+        # python_version >= '3.0' and python_version <= '3.7'
+        let(:requirements_fixture_name) { "markers_with_combination_of_conditions.txt" }
+
+        it "then the dependency version should be 1.3.0" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("arrow")
           expect(dependency.version).to eq("1.3.0")
           expect(dependency.requirements).to eq(
             [{
@@ -147,6 +204,18 @@ RSpec.describe Dependabot::Python::FileParser do
               source: nil
             }]
           )
+        end
+      end
+
+      context "when the marker is malformed" do
+        before do
+          allow(parser).to receive(:python_raw_version).and_return("3.13.3")
+        end
+
+        let(:requirements_fixture_name) { "malformed_markers.txt" }
+
+        it "does not return any dependencies" do
+          expect(dependencies).to be_empty
         end
       end
     end

@@ -12,6 +12,7 @@ namespace NuGetUpdater.Core.Run;
 
 public class RunWorker
 {
+    private readonly string _jobId;
     private readonly IApiHandler _apiHandler;
     private readonly ILogger _logger;
     private readonly IDiscoveryWorker _discoveryWorker;
@@ -25,8 +26,9 @@ public class RunWorker
         Converters = { new JsonStringEnumConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
-    public RunWorker(IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
+    public RunWorker(string jobId, IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
     {
+        _jobId = jobId;
         _apiHandler = apiHandler;
         _logger = logger;
         _discoveryWorker = discoverWorker;
@@ -51,7 +53,7 @@ public class RunWorker
     private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
     {
         JobErrorBase? error = null;
-        string[] lastUsedPackageSourceUrls = []; // used for error reporting below
+        var currentDirectory = repoContentsPath.FullName; // used for error reporting below
         var runResult = new RunResult()
         {
             Base64DependencyFiles = [],
@@ -67,7 +69,7 @@ public class RunWorker
             foreach (var directory in job.GetAllDirectories())
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
-                lastUsedPackageSourceUrls = NuGetContext.GetPackageSourceUrls(localPath);
+                currentDirectory = localPath;
                 var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
@@ -82,22 +84,9 @@ public class RunWorker
                 BaseCommitSha = baseCommitSha,
             };
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
-        {
-            error = new PrivateSourceAuthenticationFailure(lastUsedPackageSourceUrls);
-        }
-        catch (MissingFileException ex)
-        {
-            error = new DependencyFileNotFound(ex.FilePath);
-        }
-        catch (UpdateNotPossibleException ex)
-        {
-            error = new UpdateNotPossible(ex.Dependencies);
-        }
         catch (Exception ex)
         {
-            error = new UnknownError(ex.ToString());
+            error = JobErrorBase.ErrorFromException(ex, _jobId, currentDirectory);
         }
 
         if (error is not null)
@@ -116,6 +105,8 @@ public class RunWorker
 
         _logger.Info("Discovery JSON content:");
         _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
+
+        // TODO: report errors
 
         // report dependencies
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
@@ -215,7 +206,7 @@ public class RunWorker
                         var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).FullyNormalizedRootedPath();
                         var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
                         // TODO: need to report if anything was actually updated
-                        if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
+                        if (updateResult.Error is null)
                         {
                             if (dependencyLocation != dependencyFilePath)
                             {

@@ -13,7 +13,18 @@ namespace NuGetUpdater.Core.Updater
                 getContent: () => File.ReadAllText(projectFilePath),
                 setContent: s => File.WriteAllText(projectFilePath, s),
                 nodeFinder: doc => doc.Descendants()
-                    .FirstOrDefault(e => e.Name == "Import" && e.GetAttributeValue("Project") == @"$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets")
+                    .Where(e => e.Name == "Import")
+                    .FirstOrDefault(e =>
+                    {
+                        var projectPath = e.GetAttributeValue("Project");
+                        if (projectPath is not null)
+                        {
+                            var projectFileName = Path.GetFileName(projectPath.NormalizePathToUnix());
+                            return projectFileName.Equals("Microsoft.WebApplication.targets", StringComparison.OrdinalIgnoreCase);
+                        }
+
+                        return false;
+                    })
                     as XmlNodeSyntax,
                 preProcessor: n =>
                 {

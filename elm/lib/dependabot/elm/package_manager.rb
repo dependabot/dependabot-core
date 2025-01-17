@@ -34,11 +34,11 @@ module Dependabot
       end
       def initialize(raw_version, requirement = nil)
         super(
-          PACKAGE_MANAGER,
-          Version.new(raw_version),
-          DEPRECATED_ELM_VERSIONS,
-          SUPPORTED_ELM_VERSIONS,
-          requirement,
+          name: PACKAGE_MANAGER,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_ELM_VERSIONS,
+          supported_versions: SUPPORTED_ELM_VERSIONS,
+          requirement: requirement,
        )
       end
 
