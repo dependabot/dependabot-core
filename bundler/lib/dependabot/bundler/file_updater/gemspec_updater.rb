@@ -19,7 +19,7 @@ module Dependabot
 
         sig { returns(String) }
         def updated_gemspec_content
-          content = T.let(gemspec.content, T.untyped)
+          content = T.let(T.must(gemspec.content), String)
 
           dependencies.each do |dependency|
             content = replace_gemspec_version_requirement(
