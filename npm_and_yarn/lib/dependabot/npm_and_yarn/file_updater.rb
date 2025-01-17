@@ -48,6 +48,7 @@ module Dependabot
         ]
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -88,6 +89,7 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
