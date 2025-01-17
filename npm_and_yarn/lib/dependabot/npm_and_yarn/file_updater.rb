@@ -63,10 +63,10 @@ module Dependabot
             # when there is no update in package.json
             no_package_json_update = package_files.empty?
             # handle the no change error for transitive dependency updates
-            if dependencies.length.positive? && all_transitive && no_package_json_update
+            if pnpm_locks.any? && dependencies.length.positive? && all_transitive && no_package_json_update
               raise ToolFeatureNotSupported.new(
-                tool_name: "npm_and_yarn",
-                tool_type: "ecosystem",
+                tool_name: "pnpm",
+                tool_type: "package_manager",
                 feature: "updating transitive dependencies"
               )
             end
