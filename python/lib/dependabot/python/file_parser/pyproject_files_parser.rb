@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -14,15 +14,18 @@ module Dependabot
   module Python
     class FileParser
       class PyprojectFilesParser
+        extend T::Sig
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
         UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
 
+        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -34,16 +37,18 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pyproject_dependencies
           if using_poetry?
             missing_keys = missing_poetry_keys
 
             if missing_keys.any?
               raise DependencyFileNotParseable.new(
-                pyproject.path,
-                "#{pyproject.path} is missing the following sections:\n" \
+                T.must(pyproject).path,
+                "#{T.must(pyproject).path} is missing the following sections:\n" \
                 "  * #{missing_keys.map { |key| "tool.poetry.#{key}" }.join("\n  * ")}\n"
               )
             end
@@ -54,25 +59,28 @@ module Dependabot
           end
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def poetry_dependencies
-          @poetry_dependencies ||= parse_poetry_dependencies
+          @poetry_dependencies ||= T.let(parse_poetry_dependencies, T.untyped)
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def parse_poetry_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = poetry_root[type] || {}
+            deps_hash = T.must(poetry_root)[type] || {}
             dependencies += parse_poetry_dependency_group(type, deps_hash)
           end
 
-          groups = poetry_root["group"] || {}
+          groups = T.must(poetry_root)["group"] || {}
           groups.each do |group, group_spec|
             dependencies += parse_poetry_dependency_group(group, group_spec["dependencies"])
           end
           dependencies
         end
 
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def pep621_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -107,6 +115,11 @@ module Dependabot
           dependencies
         end
 
+        sig do
+          params(type: String,
+                 deps_hash: T::Hash[String,
+                                    T.untyped]).returns(Dependabot::FileParsers::Base::DependencySet)
+        end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -126,11 +139,13 @@ module Dependabot
           dependencies
         end
 
+        sig { params(name: String, extras: T::Array[String]).returns(String) }
         def normalised_name(name, extras)
           NameNormaliser.normalise_including_extras(name, extras)
         end
 
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
+        sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
         def parse_requirements_from(req, type)
           [req].flatten.compact.filter_map do |requirement|
             next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
@@ -140,14 +155,14 @@ module Dependabot
             if requirement.is_a?(String)
               {
                 requirement: requirement,
-                file: pyproject.name,
+                file: T.must(pyproject).name,
                 source: nil,
                 groups: [type]
               }
             else
               {
                 requirement: requirement["version"],
-                file: pyproject.name,
+                file: T.must(pyproject).name,
                 source: requirement.fetch("source", nil),
                 groups: [type]
               }
@@ -155,26 +170,31 @@ module Dependabot
           end
         end
 
+        sig { returns(T.nilable(T::Boolean)) }
         def using_poetry?
           !poetry_root.nil?
         end
 
+        sig { returns(T::Array[String]) }
         def missing_poetry_keys
-          package_mode = poetry_root.fetch("package-mode", true)
+          package_mode = T.must(poetry_root).fetch("package-mode", true)
           required_keys = package_mode ? %w(name version description authors) : []
-          required_keys.reject { |key| poetry_root.key?(key) }
+          required_keys.reject { |key| T.must(poetry_root).key?(key) }
         end
 
+        sig { returns(T::Boolean) }
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
             !parsed_pyproject.dig("build-system", "requires").nil?
         end
 
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
         def poetry_root
           parsed_pyproject.dig("tool", "poetry")
         end
 
+        sig { returns(T.untyped) }
         def using_pdm?
           using_pep621? && pdm_lock
         end
@@ -182,6 +202,7 @@ module Dependabot
         # Create a DependencySet where each element has no requirement. Any
         # requirements will be added when combining the DependencySet with
         # other DependencySets.
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def lockfile_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -206,13 +227,16 @@ module Dependabot
           dependencies
         end
 
+        sig { returns(T::Array[T.nilable(String)]) }
         def production_dependency_names
-          @production_dependency_names ||= parse_production_dependency_names
+          @production_dependency_names ||= T.let(parse_production_dependency_names,
+                                                 T.nilable(T::Array[T.nilable(String)]))
         end
 
+        sig { returns(T::Array[T.nilable(String)]) }
         def parse_production_dependency_names
           SharedHelpers.in_a_temporary_directory do
-            File.write(pyproject.name, pyproject.content)
+            File.write(T.must(pyproject).name, T.must(pyproject).content)
             File.write(lockfile.name, lockfile.content)
 
             begin
@@ -232,6 +256,7 @@ module Dependabot
           end
         end
 
+        sig { params(dep_name: String).returns(T.untyped) }
         def version_from_lockfile(dep_name)
           return unless parsed_lockfile
 
@@ -240,6 +265,7 @@ module Dependabot
                          &.fetch("version", nil)
         end
 
+        sig { params(req: T.untyped).returns(T::Array[Dependabot::Python::Requirement]) }
         def check_requirements(req)
           requirement = req.is_a?(String) ? req : req["version"]
           Python::Requirement.requirements_array(requirement)
@@ -247,31 +273,37 @@ module Dependabot
           raise Dependabot::DependencyFileNotEvaluatable, e.message
         end
 
+        sig { params(name: String).returns(String) }
         def normalise(name)
           NameNormaliser.normalise(name)
         end
 
+        sig { returns(T.untyped) }
         def parsed_pyproject
-          @parsed_pyproject ||= TomlRB.parse(pyproject.content)
+          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.untyped)
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, pyproject.path
+          raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
         end
 
+        sig { returns(T.untyped) }
         def parsed_poetry_lock
-          @parsed_poetry_lock ||= TomlRB.parse(poetry_lock.content)
+          @parsed_poetry_lock ||= T.let(TomlRB.parse(T.must(poetry_lock).content), T.untyped)
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, poetry_lock.path
+          raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).path
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pyproject
-          @pyproject ||=
-            dependency_files.find { |f| f.name == "pyproject.toml" }
+          @pyproject ||= T.let(dependency_files.find { |f| f.name == "pyproject.toml" },
+                               T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { returns(T.untyped) }
         def lockfile
           poetry_lock
         end
 
+        sig { returns(T.untyped) }
         def parsed_pep621_dependencies
           SharedHelpers.in_a_temporary_directory do
             write_temporary_pyproject
@@ -279,29 +311,33 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "parse_pep621_dependencies",
-              args: [pyproject.name]
+              args: [T.must(pyproject).name]
             )
           end
         end
 
+        sig { returns(Integer) }
         def write_temporary_pyproject
-          path = pyproject.name
+          path = T.must(pyproject).name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
-          File.write(path, pyproject.content)
+          File.write(path, T.must(pyproject).content)
         end
 
+        sig { returns(T.untyped) }
         def parsed_lockfile
           parsed_poetry_lock if poetry_lock
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
-          @poetry_lock ||=
-            dependency_files.find { |f| f.name == "poetry.lock" }
+          @poetry_lock ||= T.let(dependency_files.find { |f| f.name == "poetry.lock" },
+                                 T.nilable(Dependabot::DependencyFile))
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pdm_lock
-          @pdm_lock ||=
-            dependency_files.find { |f| f.name == "pdm.lock" }
+          @pdm_lock ||= T.let(dependency_files.find { |f| f.name == "pdm.lock" },
+                              T.nilable(Dependabot::DependencyFile))
         end
       end
     end
