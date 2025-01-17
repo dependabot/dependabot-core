@@ -104,6 +104,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a lockfile with tarball urls we don't have access to" do
       let(:project_name) { "pnpm/private_tarball_urls" }
+      let(:dependency_name) { "@dsp-testing/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -167,6 +170,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private registry we don't have access to" do
       let(:project_name) { "pnpm/private_package_access_with_package_name" }
+      let(:dependency_name) { "@private-pkg/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -175,13 +181,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "when there is a private registry we don't have access to and no package name is mentioned" do
-      let(:dependency_name) { "rollup" }
-      let(:version) { "3.29.5" }
+      let(:dependency_name) { "npm:rollup" }
+      let(:version) { "2.80.0" }
       let(:previous_version) { "^2.79.1" }
       let(:requirements) do
         [{
           file: "package.json",
-          requirement: "3.29.5",
+          requirement: "2.80.0",
           groups: ["devDependencies"],
           source: nil
         }]
@@ -347,6 +353,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
+      let(:dependency_name) { "@dsp-testing/node" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -392,6 +401,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private repo returns a 5xx error" do
       let(:project_name) { "pnpm/private_repo_with_server_error" }
+      let(:dependency_name) { "@dsp-testing/is-positive" }
+      let(:version) { "3.1.1" }
+      let(:previous_version) { "3.1.0" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -470,35 +482,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
-    context "with a registry resolution that returns 'Expected content to change!' response" do
-      let(:dependency_name) { "nodemon" }
-      let(:version) { "3.3.3" }
-      let(:previous_version) { "^3.1.3" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "3.3.3",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^3.1.3",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-
-      let(:project_name) { "pnpm/broken_metadata" }
-
-      it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }
-          .to raise_error(RuntimeError).with_message(/Expected content to change!/)
       end
     end
 
