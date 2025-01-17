@@ -1196,4 +1196,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
   end
+
+  context "with a packageManager npm version not specified" do
+    let(:files) { project_dependency_files("npm/simple_with_package_manager_npm_no_version") }
+    let(:dependency_name) { "eslint" }
+    let(:version) { "9.8.0" }
+    let(:previous_version) { "^8.43.0" }
+    let(:requirements) do
+      [{
+         file: "package.json",
+         requirement: "^8.43.0",
+         groups: ["devDependencies"],
+         source: nil
+       }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+        expect(error.message)
+          .to include(
+                "Error while updating peer dependency."
+              )
+      end
+    end
+  end
 end

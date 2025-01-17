@@ -286,6 +286,9 @@ module Dependabot
           # the npm 7 rollout
           install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
+          # if npm version not specified in package.json, then we need to update it
+          update_package_manager_version(package_json.name)
+
           run_npm_install_lockfile_only(install_args)
 
           unless dependencies_in_current_package_json
@@ -295,6 +298,16 @@ module Dependabot
           end
 
           { lockfile_basename => File.read(lockfile_basename) }
+        end
+
+        def update_package_manager_version(file_path)
+          file_content = File.read(file_path)
+          package_json = JSON.parse(file_content)
+
+          if package_json['packageManager'] == 'npm'
+            package_json['packageManager'] = 'npm@8.1.0'
+            File.write(file_path, JSON.pretty_generate(package_json))
+          end
         end
 
         sig do
