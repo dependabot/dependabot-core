@@ -287,7 +287,7 @@ module Dependabot
           install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
           # if npm version not specified in package.json, then we need to update it
-          update_package_manager_version(package_json.name)
+          update_package_manager_version(T.must(package_json).name)
 
           run_npm_install_lockfile_only(install_args)
 
@@ -300,14 +300,15 @@ module Dependabot
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
+        sig { params(file_path: T.any(String, Tempfile, Pathname, File)).returns(T.nilable(Integer)) }
         def update_package_manager_version(file_path)
           file_content = File.read(file_path)
           package_json = JSON.parse(file_content)
 
-          if package_json['packageManager'] == 'npm'
-            package_json['packageManager'] = 'npm@8.1.0'
-            File.write(file_path, JSON.pretty_generate(package_json))
-          end
+          return unless package_json["packageManager"] == "npm"
+
+          package_json["packageManager"] = "npm@8.1.0"
+          File.write(file_path, JSON.pretty_generate(package_json))
         end
 
         sig do

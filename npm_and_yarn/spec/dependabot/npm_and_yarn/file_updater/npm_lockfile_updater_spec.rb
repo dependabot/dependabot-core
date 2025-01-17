@@ -1204,11 +1204,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     let(:previous_version) { "^8.43.0" }
     let(:requirements) do
       [{
-         file: "package.json",
-         requirement: "^8.43.0",
-         groups: ["devDependencies"],
-         source: nil
-       }]
+        file: "package.json",
+        requirement: "^8.43.0",
+        groups: ["devDependencies"],
+        source: nil
+      }]
     end
     let(:previous_requirements) { requirements }
 
@@ -1216,8 +1216,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
         expect(error.message)
           .to include(
-                "Error while updating peer dependency."
-              )
+            "Error while updating peer dependency."
+          )
       end
     end
   end
