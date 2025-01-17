@@ -113,6 +113,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a lockfile with tarball urls we don't have access to" do
       let(:project_name) { "pnpm/private_package_access" }
+      let(:dependency_name) { "@private-pkg/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -200,18 +203,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "when there is a unsupported engine response (pnpm) from registry" do
-      let(:dependency_name) { "eslint" }
-      let(:version) { "9.9.0" }
-      let(:previous_version) { "8.32.0" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "9.9.0",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
 
       it "raises a helpful error" do
