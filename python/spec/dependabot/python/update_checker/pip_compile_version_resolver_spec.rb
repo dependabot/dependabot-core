@@ -475,7 +475,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           end
         end
 
-        context "when dealing with subprocess-exited-with-error error" do
+        context "when dealing with an installation error" do
           let(:exception_message) do
             "pip._internal.exceptions.InstallationError: Could not install requirement" \
               " rugby-[FILTERED_REPO]@ https://****@github.com/compute-cloud/a300cfb3a4070c923246dd4.zip " \
