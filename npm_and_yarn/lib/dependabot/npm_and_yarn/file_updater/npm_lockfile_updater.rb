@@ -286,8 +286,10 @@ module Dependabot
           # the npm 7 rollout
           install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
-          # if npm version not specified in package.json, then we need to update it
-          update_package_manager_version(T.must(package_json).name)
+          # If npm version is not specified in package.json, then we need to update it
+          if package_json&.content&.include?("\"packageManager\": \"npm\"")
+            update_package_manager_version(T.must(package_json).name)
+          end
 
           run_npm_install_lockfile_only(install_args)
 
