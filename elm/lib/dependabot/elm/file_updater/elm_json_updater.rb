@@ -54,8 +54,8 @@ module Dependabot
           updated_req = dependency.requirements.find { |r| r.fetch(:file) == filename }
                                   &.fetch(:requirement)
 
-          old_req = dependency.previous_requirements.find { |r| r.fetch(:file) == filename }
-                              &.fetch(:requirement)
+          old_req = T.must(dependency.previous_requirements).find { |r| r.fetch(:file) == filename }
+                     .fetch(:requirement)
 
           return T.must(content) unless old_req
 
