@@ -123,8 +123,8 @@ module Dependabot
 
           if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
             Helpers.run_pnpm_command(
-              "pnpm update #{dependency_updates}  --lockfile-only --no-save -r",
-              fingerprint: "pnpm update <dependency_updates>  --lockfile-only --no-save -r"
+              "update #{dependency_updates}  --lockfile-only --no-save -r",
+              fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
             )
           else
             Helpers.run_pnpm_command(
