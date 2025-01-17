@@ -37,6 +37,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :credentials
         attr_reader :repo_contents_path
+        attr_reader :error_handler
 
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
           @dependency               = dependency
@@ -44,6 +45,7 @@ module Dependabot
           @credentials              = credentials
           @repo_contents_path       = repo_contents_path
           @build_isolation = true
+          @error_handler = PipCompileErrorHandler.new
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -185,6 +187,8 @@ module Dependabot
           raise Dependabot::OutOfDisk if message.end_with?("[Errno 28] No space left on device")
 
           raise Dependabot::OutOfMemory if message.end_with?("MemoryError")
+
+          error_handler.handle_pipcompile_error(message)
 
           raise
         end
@@ -492,6 +496,23 @@ module Dependabot
         def setup_cfg_files
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
+      end
+    end
+
+    class PipCompileErrorHandler
+      SUBPROCESS_ERROR = /subprocess-exited-with-error/
+
+      INSTALLATION_ERROR = /InstallationError/
+
+      INSTALLATION_SUBPROCESS_ERROR = /InstallationSubprocessError/
+
+      HASH_MISMATCH = /HashMismatch/
+
+      def handle_pipcompile_error(error)
+        return unless error.match?(SUBPROCESS_ERROR) || error.match?(INSTALLATION_ERROR) ||
+                      error.match?(INSTALLATION_SUBPROCESS_ERROR) || error.match?(HASH_MISMATCH)
+
+        raise DependencyFileNotResolvable, "Error resolving dependency"
       end
     end
   end
