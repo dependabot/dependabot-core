@@ -48,6 +48,7 @@ module Dependabot
         ]
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -56,6 +57,22 @@ module Dependabot
         updated_files += updated_lockfiles
 
         if updated_files.none?
+
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            # when all dependencies are transitive
+            all_transitive = dependencies.none?(&:top_level?)
+            # when there is no update in package.json
+            no_package_json_update = package_files.empty?
+            # handle the no change error for transitive dependency updates
+            if pnpm_locks.any? && dependencies.length.positive? && all_transitive && no_package_json_update
+              raise ToolFeatureNotSupported.new(
+                tool_name: "pnpm",
+                tool_type: "package_manager",
+                feature: "updating transitive dependencies"
+              )
+            end
+          end
+
           raise NoChangeError.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
@@ -72,6 +89,7 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
