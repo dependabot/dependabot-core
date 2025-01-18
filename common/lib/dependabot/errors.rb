@@ -33,6 +33,15 @@ module Dependabot
           "supported-versions": error.supported_versions
         }
       }
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::BranchNotFound
       {
         "error-type": "branch_not_found",
@@ -103,6 +112,15 @@ module Dependabot
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotEvaluatable
       {
         "error-type": "dependency_file_not_evaluatable",
@@ -149,11 +167,6 @@ module Dependabot
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
       }
-    when Dependabot::UnresolvableVersionError
-      {
-        "error-type": "unresolvable_version",
-        "error-detail": { dependencies: error.dependencies }
-      }
     when Dependabot::NotImplemented
       {
         "error-type": "not_implemented",
@@ -171,9 +184,19 @@ module Dependabot
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotResolvable
       {
         "error-type": "dependency_file_not_resolvable",
@@ -183,6 +206,14 @@ module Dependabot
       {
         "error-type": "dependency_file_not_evaluatable",
         "error-detail": { message: error.message }
+      }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::GitDependenciesNotReachable
       {
@@ -296,9 +327,11 @@ module Dependabot
       }
     end
   end
+
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
+  # rubocop:enable Metrics/AbcSize
 
   class DependabotError < StandardError
     extend T::Sig
@@ -485,6 +518,35 @@ module Dependabot
     end
   end
 
+  class ToolFeatureNotSupported < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :tool_name, :tool_type, :feature
+
+    sig do
+      params(
+        tool_name: String,
+        tool_type: String,
+        feature: String
+      ).void
+    end
+    def initialize(tool_name:, tool_type:, feature:)
+      @tool_name = tool_name
+      @tool_type = tool_type
+      @feature = feature
+      super(build_message)
+    end
+
+    private
+
+    sig { returns(String) }
+    def build_message
+      "Dependabot doesn't support the feature '#{feature}' for #{tool_name} (#{tool_type}). " \
+        "Please refer to the documentation for supported features."
+    end
+  end
+
   class DependencyFileNotFound < DependabotError
     extend T::Sig
 
@@ -667,23 +729,6 @@ module Dependabot
       @dependencies = dependencies
 
       msg = "The following dependencies could not be updated: #{@dependencies.join(', ')}"
-      super(msg)
-    end
-  end
-
-  class UnresolvableVersionError < DependabotError
-    extend T::Sig
-
-    sig { returns(T::Array[String]) }
-    attr_reader :dependencies
-
-    sig { params(dependencies: T::Array[String]).void }
-    def initialize(dependencies)
-      @dependencies = dependencies
-
-      msg = "Unable to determine semantic version from tags or commits for dependencies. " \
-            "Dependencies must have a tag or commit that references a semantic version. " \
-            "Affected dependencies: #{@dependencies.join(', ')}"
       super(msg)
     end
   end

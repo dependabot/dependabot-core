@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DotNetPackageCorrelation\DotNetPackageCorrelation.csproj" />
     <ProjectReference Include="..\NuGetProjects\NuGet.CommandLine\NuGet.CommandLine.csproj" />
   </ItemGroup>
 
@@ -30,5 +31,7 @@
     <InternalsVisibleTo Include="NuGetUpdater.Cli.Test" />
     <InternalsVisibleTo Include="NuGetUpdater.Core.Test" />
   </ItemGroup>
+
+  <Import Project="EnsureDotNetPackageCorrelation.targets" />
 
 </Project>

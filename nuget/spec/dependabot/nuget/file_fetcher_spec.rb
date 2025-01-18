@@ -260,8 +260,12 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
             Projects: [],
             GlobalJson: nil,
             DotNetToolsJson: nil,
-            ErrorType: "AuthenticationFailure",
-            ErrorDetails: "the-error-details"
+            Error: {
+              "error-type": "private_source_authentication_failure",
+              "error-details": {
+                source: "some-package-source"
+              }
+            }
           }
         ) do
           expect { fetched_file_paths }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)

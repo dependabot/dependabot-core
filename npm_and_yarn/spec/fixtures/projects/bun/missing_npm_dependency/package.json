@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "this-does-not-exist": "npm:this-does-not-exist-qubqwub1ubw@^99999.0.0"
+  }
+}

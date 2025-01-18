@@ -57,8 +57,15 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
     foreach ($globalJsonRelativePath in $globalJsonRelativePaths) {
         $globalJsonPath = "$rootDir/$globalJsonRelativePath"
         $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
+        if ("sdk" -notin $globalJson.PSobject.Properties.Name) {
+            continue
+        }
+        if ("version" -notin $globalJson.sdk.PSobject.Properties.Name) {
+            continue
+        }
+
         $sdkVersion = $globalJson.sdk.version
-        if (-Not ($sdkVersion -in $installedSdks)) {
+        if (($Null -ne $sdkVersion) -And (-Not ($sdkVersion -in $installedSdks))) {
             $installedSdks += $sdkVersion
             Write-Host "Installing SDK $sdkVersion as specified in $globalJsonRelativePath"
             & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
