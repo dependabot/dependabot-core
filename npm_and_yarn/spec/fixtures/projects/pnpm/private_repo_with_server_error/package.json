@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@dsp-testing/is-positive": "3.1.0"
+    "@dsp-testing/is-positive": "^3.1.0"
   }
 }

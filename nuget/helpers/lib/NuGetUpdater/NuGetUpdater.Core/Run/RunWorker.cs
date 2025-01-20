@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -164,15 +166,7 @@ public class RunWorker
                         continue;
                     }
 
-                    var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
-                    var dependencyInfo = new DependencyInfo()
-                    {
-                        Name = dependency.Name,
-                        Version = dependency.Version!,
-                        IsVulnerable = false,
-                        IgnoredVersions = ignoredVersions,
-                        Vulnerabilities = [],
-                    };
+                    var dependencyInfo = GetDependencyInfo(job, dependency);
                     var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     // TODO: log analysisResult
                     if (analysisResult.CanUpdate)
@@ -312,6 +306,30 @@ public class RunWorker
             .Cast<Requirement>()
             .ToImmutableArray();
         return ignoredVersions;
+    }
+
+    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency)
+    {
+        var dependencyVersion = NuGetVersion.Parse(dependency.Version!);
+        var securityAdvisories = job.SecurityAdvisories.Where(s => s.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var isVulnerable = securityAdvisories.Any(s => (s.AffectedVersions ?? []).Any(v => v.IsSatisfiedBy(dependencyVersion)));
+        var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
+        var vulnerabilities = securityAdvisories.Select(s => new SecurityVulnerability()
+        {
+            DependencyName = dependency.Name,
+            PackageManager = "nuget",
+            VulnerableVersions = s.AffectedVersions ?? [],
+            SafeVersions = s.SafeVersions.ToImmutableArray(),
+        }).ToImmutableArray();
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = dependency.Name,
+            Version = dependencyVersion.ToString(),
+            IsVulnerable = isVulnerable,
+            IgnoredVersions = ignoredVersions,
+            Vulnerabilities = vulnerabilities,
+        };
+        return dependencyInfo;
     }
 
     internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)

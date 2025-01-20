@@ -105,7 +105,7 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_pnpm_updater
+              run_pnpm_update_packages
 
               write_final_package_json_files
 
@@ -116,15 +116,22 @@ module Dependabot
           end
         end
 
-        def run_pnpm_updater
+        def run_pnpm_update_packages
           dependency_updates = dependencies.map do |d|
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
-          )
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            Helpers.run_pnpm_command(
+              "update #{dependency_updates}  --lockfile-only --no-save -r",
+              fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
+            )
+          else
+            Helpers.run_pnpm_command(
+              "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
+              fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
+            )
+          end
         end
 
         def run_pnpm_install
