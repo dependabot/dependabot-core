@@ -2021,6 +2021,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with an unparseable package.json file" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/"
+      )
+    end
+    let(:file_fetcher) { described_class.new(source: source, credentials: credentials) }
+    let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
+
+    before do
+      allow(file_fetcher).to receive(:pnpm_workspace_yaml).and_return(pnpm_workspace_yaml)
+    end
+
+    context "when pnpm_workspace_yaml is nil" do
+      let(:pnpm_workspace_yaml) { nil }
+
+      it "returns an empty hash" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({})
+      end
+    end
+
+    context "when pnpm_workspace_yaml is present" do
+      context "when the content is valid YAML" do
+        let(:content) { "---\npackages:\n  - 'packages/*'\n" }
+
+        it "parses the YAML content" do
+          expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*"] })
+        end
+      end
+    end
+
+    context "when pnpm_workspace_yaml is present with aliases" do
+      let(:content) { "---\npackages:\n  - &default 'packages/*'\n  - *default\n" }
+      let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
+
+      it "parses the YAML content with aliases" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*", "packages/*"] })
+      end
+    end
+  end
+
   context "with package.json file just including a dummy string" do
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
