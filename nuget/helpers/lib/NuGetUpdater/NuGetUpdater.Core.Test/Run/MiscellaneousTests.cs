@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
@@ -27,6 +29,16 @@ public class MiscellaneousTests
         var actualRequirementsStrings = string.Join("|", actualRequirements.Select(r => r.ToString()));
         var expectedRequirementsStrings = string.Join("|", expectedRequirements.Select(r => r.ToString()));
         Assert.Equal(expectedRequirementsStrings, actualRequirementsStrings);
+    }
+
+    [Theory]
+    [MemberData(nameof(DependencyInfoFromJobData))]
+    public void DependencyInfoFromJob(Job job, Dependency dependency, DependencyInfo expectedDependencyInfo)
+    {
+        var actualDependencyInfo = RunWorker.GetDependencyInfo(job, dependency);
+        var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
+        var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
+        Assert.Equal(expectedString, actualString);
     }
 
     public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
@@ -79,6 +91,55 @@ public class MiscellaneousTests
             new Requirement[]
             {
                 new IndividualRequirement(">", NuGetVersion.Parse("0.0.0"))
+            }
+        ];
+    }
+
+    public static IEnumerable<object[]> DependencyInfoFromJobData()
+    {
+        yield return
+        [
+            // job
+            new Job()
+            {
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo"
+                },
+                SecurityAdvisories = [
+                    new()
+                    {
+                        DependencyName = "Some.Dependency",
+                        AffectedVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")],
+                        PatchedVersions = [Requirement.Parse("= 1.1.0")],
+                        UnaffectedVersions = [Requirement.Parse("= 1.2.0")]
+                    },
+                    new()
+                    {
+                        DependencyName = "Unrelated.Dependency",
+                        AffectedVersions = [Requirement.Parse(">= 1.0.0, < 99.99.99")]
+                    }
+                ]
+            },
+            // dependency
+            new Dependency("Some.Dependency", "1.0.0", DependencyType.PackageReference),
+            // expectedDependencyInfo
+            new DependencyInfo()
+            {
+                Name = "Some.Dependency",
+                Version = "1.0.0",
+                IsVulnerable = true,
+                IgnoredVersions = [],
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Dependency",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")],
+                        SafeVersions = [Requirement.Parse("= 1.1.0"), Requirement.Parse("= 1.2.0")],
+                    }
+                ]
             }
         ];
     }
