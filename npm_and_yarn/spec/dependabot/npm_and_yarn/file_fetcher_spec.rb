@@ -2021,7 +2021,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with an unparseable package.json file" do
+  context "with an pnpm_workspace_yaml" do
     let(:source) do
       Dependabot::Source.new(
         provider: "github",
