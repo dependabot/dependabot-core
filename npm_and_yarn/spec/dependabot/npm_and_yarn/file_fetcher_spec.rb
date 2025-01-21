@@ -2044,22 +2044,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "when pnpm_workspace_yaml is present" do
-      context "when the content is valid YAML" do
-        let(:content) { "---\npackages:\n  - 'packages/*'\n" }
+    context "when the content is valid YAML" do
+      let(:content) { "---\npackages:\n  - 'packages/*'\n" }
 
-        it "parses the YAML content" do
-          expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*"] })
-        end
+      it "parses the YAML content" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*"] })
       end
     end
 
-    context "when pnpm_workspace_yaml is present with aliases" do
+    context "when the content contains valid alias" do
       let(:content) { "---\npackages:\n  - &default 'packages/*'\n  - *default\n" }
       let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
 
       it "parses the YAML content with aliases" do
         expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*", "packages/*"] })
+      end
+    end
+
+    context "when the content contains invalid alias (BadAlias)" do
+      let(:content) { "---\npackages:\n  - &id 'packages/*'\n  - *id" } # Invalid alias reference
+
+      before do
+        allow(YAML).to receive(:safe_load).and_raise(Psych::BadAlias)
+      end
+
+      it "raises a DependencyFileNotParseable error" do
+        expect do
+          file_fetcher.send(:parsed_pnpm_workspace_yaml)
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end
