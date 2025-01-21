@@ -32,7 +32,7 @@ module Dependabot
       attr_reader :options
 
       def self.pub_helpers_path
-        File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", "helpers/bin"), "pub")
+        File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
       end
 
       def self.run_infer_sdk_versions(dir, url: nil)
@@ -235,7 +235,6 @@ module Dependabot
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
               "_PUB_TEST_SDK_VERSION" => sdk_versions["dart"]
             }
-
             command_dir = File.join(temp_dir, dependency_files.first&.directory)
 
             stdout, stderr, status = Open3.capture3(
@@ -245,7 +244,6 @@ module Dependabot
               stdin_data: stdin_data,
               chdir: command_dir
             )
-
             raise_error(stderr) unless status.success?
             return stdout unless block_given?
 
