@@ -2036,7 +2036,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       allow(file_fetcher).to receive(:pnpm_workspace_yaml).and_return(pnpm_workspace_yaml)
     end
 
-    context "when the content is nil" do
+    context "when it's content is nil" do
       let(:pnpm_workspace_yaml) { nil }
 
       it "returns an empty hash" do
@@ -2044,7 +2044,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "when the content is valid YAML" do
+    context "when it's content is valid YAML" do
       let(:content) { "---\npackages:\n  - 'packages/*'\n" }
 
       it "parses the YAML content" do
@@ -2052,7 +2052,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "when the content contains valid alias" do
+    context "when it's content contains valid alias" do
       let(:content) { "---\npackages:\n  - &default 'packages/*'\n  - *default\n" }
       let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
 
@@ -2061,7 +2061,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
-    context "when the content contains invalid alias (BadAlias)" do
+    context "when it's content contains invalid alias (BadAlias)" do
       let(:content) { "---\npackages:\n  - &id 'packages/*'\n  - *id" } # Invalid alias reference
 
       before do
