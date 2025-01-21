@@ -90,6 +90,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(0) }
       end
 
+      context "with pnpm `catalog:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("yarn/workspace_requirements_catalog") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
       context "with a package-lock.json" do
         let(:npm_fallback_version_above_v6_enabled) { false }
 

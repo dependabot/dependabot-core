@@ -212,7 +212,7 @@ module Dependabot
             next unless requirement.is_a?(String)
 
             # Skip dependencies using Yarn workspace cross-references as requirements
-            next if requirement.start_with?("workspace:")
+            next if requirement.start_with?("workspace:", "catalog:")
 
             requirement = "*" if requirement == ""
             dep = build_dependency(
