@@ -2021,7 +2021,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
-  context "with an pnpm_workspace_yaml" do
+  context "with a pnpm_workspace_yaml" do
     let(:source) do
       Dependabot::Source.new(
         provider: "github",
@@ -2036,7 +2036,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       allow(file_fetcher).to receive(:pnpm_workspace_yaml).and_return(pnpm_workspace_yaml)
     end
 
-    context "when pnpm_workspace_yaml is nil" do
+    context "when the content is nil" do
       let(:pnpm_workspace_yaml) { nil }
 
       it "returns an empty hash" do
