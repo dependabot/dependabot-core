@@ -135,7 +135,7 @@ module Dependabot
       def package_json
         # Declare the instance variable with T.let and the correct type
         @package_json ||= T.let(
-          T.must(dependency_files.find { |f| f.name.end_with?(MANIFEST_FILENAME) }),
+          T.must(dependency_files.find { |f| f.name == MANIFEST_FILENAME }),
           T.nilable(Dependabot::DependencyFile)
         )
       end
