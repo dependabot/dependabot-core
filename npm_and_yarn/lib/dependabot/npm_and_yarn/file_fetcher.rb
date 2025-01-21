@@ -645,8 +645,8 @@ module Dependabot
       def parsed_pnpm_workspace_yaml
         return {} unless pnpm_workspace_yaml
 
-        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content))
-      rescue Psych::SyntaxError
+        YAML.safe_load(T.must(T.must(pnpm_workspace_yaml).content), aliases: true)
+      rescue Psych::SyntaxError, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, T.must(pnpm_workspace_yaml).path
       end
 
