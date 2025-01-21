@@ -1,4 +1,4 @@
-version: 2
+tab version: 2
 updates:
   - package-ecosystem: "bundler"
     directories:
@@ -72,7 +72,7 @@ updates:
     groups:
       all-actions:
         patterns: [ "*" ]
-  - package-ecosystem: "gomod"
+  esc- package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
       interval: "weekly"
@@ -112,7 +112,7 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      - dependency-name: "npm"
+     tab - dependency-name: "npm"
         update-types: [ "version-update:semver-major" ]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
