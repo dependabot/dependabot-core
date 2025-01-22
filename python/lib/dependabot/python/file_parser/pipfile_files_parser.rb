@@ -129,7 +129,7 @@ module Dependabot
           end
         end
 
-        sig { params(obj: T.any(String, T::Hash(String,T.untyped)).returns(T.nilable(String)) }
+        sig { params(obj: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(String)) }
         def version_from_hash_or_string(obj)
           case obj
           when String then obj.strip
@@ -144,7 +144,7 @@ module Dependabot
           req["version"]
         end
 
-        sig { params(req: T.any(String, T::Hash[String,T.untyped])).returns(T::Boolean) }
+        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
         def git_or_path_requirement?(req)
           return false unless req.is_a?(Hash)
 
@@ -153,7 +153,7 @@ module Dependabot
 
         sig { params(name: String, extras: T::Array[String]).returns(String) }
         def normalised_name(name, extras = [])
-          NameNormaliser.normalise_including_extras(name,extras)
+          NameNormaliser.normalise_including_extras(name, extras)
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
@@ -166,7 +166,7 @@ module Dependabot
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed_pipfile_lock
           @parsed_pipfile_lock ||= T.let(JSON.parse(T.must(T.must(pipfile_lock).content)),
-                            T.nilable(T::Hash[String, T.untyped]))
+                                         T.nilable(T::Hash[String, T.untyped]))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, T.must(pipfile_lock).path
         end
