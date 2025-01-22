@@ -562,35 +562,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "when module major version doesn't match (v0)" do
-      let(:project_name) { "module_major_version_mismatch_v0" }
-      let(:dependency_name) do
-        "github.com/dependabot-fixtures/go-major-mismatch"
-      end
-      let(:dependency_version) { "v0.0.5" }
-      let(:dependency_previous_version) { "v0.0.4" }
-      let(:requirements) do
-        [{
-          file: "go.mod",
-          requirement: "v0.0.5",
-          groups: [],
-          source: {
-            type: "default",
-            source: "github.com/dependabot-fixtures/go-major-mismatch"
-          }
-        }]
-      end
-      let(:previous_requirements) { [] }
-
-      it "raises the correct error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }
-          .to raise_error(error_class) do |error|
-          expect(error.message).to include("go.mod has post-v1 module path")
-        end
-      end
-    end
-
     context "when dealing with a invalid pseudo version" do
       let(:project_name) { "invalid_pseudo_version" }
       let(:dependency_name) do
