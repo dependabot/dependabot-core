@@ -30,19 +30,27 @@ function Get-GlobalJsonForSdkInstall([string] $repoRoot, [string[]] $updateDirec
     $repoRootParent = Split-Path -Parent $repoRoot
     $globalJsonPaths = @()
     foreach ($updateDirectory in $updateDirectories) {
-        $candidateDir = Convert-Path "$repoRoot/$updateDirectory"
-        if (Test-Path $candidateDir) {
-            while ($true) {
-                $globalJsonPath = Join-Path $candidateDir "global.json"
-                if (Test-Path $globalJsonPath) {
-                    $repoRelativeGlobalJsonPath = [System.IO.Path]::GetRelativePath($repoRoot, $globalJsonPath).Replace("\", "/")
-                    $globalJsonPaths += $repoRelativeGlobalJsonPath
-                }
+        if (-not (Test-Path "$repoRoot/$updateDirectory")) {
+            # directory doesn't exist
+            continue
+        }
 
-                $candidateDir = Split-Path -Parent $candidateDir
-                if ($null -eq $candidateDir -or `
-                    $candidateDir -eq $repoRootParent) {
-                    break
+        # $updateDirectory might be a recursive wildcard like "/**"; this takes care of that
+        $candidateDirs = Convert-Path "$repoRoot/$updateDirectory"
+        foreach ($candidateDir in $candidateDirs) {
+            if (Test-Path $candidateDir -PathType Container) {
+                while ($true) {
+                    $globalJsonPath = Join-Path $candidateDir "global.json"
+                    if (Test-Path $globalJsonPath) {
+                        $repoRelativeGlobalJsonPath = [System.IO.Path]::GetRelativePath($repoRoot, $globalJsonPath).Replace("\", "/")
+                        $globalJsonPaths += $repoRelativeGlobalJsonPath
+                    }
+
+                    $candidateDir = Split-Path -Parent $candidateDir
+                    if ($null -eq $candidateDir -or `
+                        $candidateDir -eq $repoRootParent) {
+                        break
+                    }
                 }
             }
         }
