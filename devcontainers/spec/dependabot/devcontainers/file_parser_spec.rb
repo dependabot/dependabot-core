@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "node"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "18.20.5"
+        expect(language.version.to_s).to eq "18.20.6"
       end
     end
   end
