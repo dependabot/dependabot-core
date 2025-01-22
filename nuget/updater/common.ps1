@@ -1,5 +1,31 @@
+function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirectories, [string[]] $installedSdks) {
+    $sdksToInstall = @()
+    $globalJsonPaths = Get-GlobalJsonForSdkInstall -repoRoot $repoRoot -updateDirectories $updateDirectories
+    foreach ($globalJsonPath in $globalJsonPaths) {
+        $resolvedGlobalJsonPath = Convert-Path "$repoRoot/$globalJsonPath"
+        $globalJson = Get-Content $resolvedGlobalJsonPath | ConvertFrom-Json
+        if (@($globalJson.PSobject.Properties).Count -eq 0) {
+            continue
+        }
+        if ("sdk" -notin $globalJson.PSobject.Properties.Name) {
+            continue
+        }
+        if ("version" -notin $globalJson.sdk.PSobject.Properties.Name) {
+            continue
+        }
+
+        $sdkVersion = $globalJson.sdk.version
+        if (($null -ne $sdkVersion) -and (-not ($sdkVersion -in $installedSdks)) -and (-not ($sdkVersion -in $installedSdks))) {
+            $installedSdks += $sdkVersion
+            $sdksToInstall += $sdkVersion
+        }
+    }
+
+    return ,$sdksToInstall
+}
+
 # Walk from each update directory to the root reporting all global.json files.
-function Get-DirectoriesForSdkInstall([string] $repoRoot, [string[]]$updateDirectories) {
+function Get-GlobalJsonForSdkInstall([string] $repoRoot, [string[]] $updateDirectories) {
     $repoRoot = Convert-Path $repoRoot
     $repoRootParent = Split-Path -Parent $repoRoot
     $globalJsonPaths = @()
@@ -50,26 +76,10 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
         $candidateDirectories += $job.source.directories
     }
 
-    $globalJsonRelativePaths = Get-DirectoriesForSdkInstall `
-        -repoRoot $rootDir `
-        -updateDirectories $candidateDirectories
-
-    foreach ($globalJsonRelativePath in $globalJsonRelativePaths) {
-        $globalJsonPath = "$rootDir/$globalJsonRelativePath"
-        $globalJson = Get-Content $globalJsonPath | ConvertFrom-Json
-        if ("sdk" -notin $globalJson.PSobject.Properties.Name) {
-            continue
-        }
-        if ("version" -notin $globalJson.sdk.PSobject.Properties.Name) {
-            continue
-        }
-
-        $sdkVersion = $globalJson.sdk.version
-        if (($Null -ne $sdkVersion) -And (-Not ($sdkVersion -in $installedSdks))) {
-            $installedSdks += $sdkVersion
-            Write-Host "Installing SDK $sdkVersion as specified in $globalJsonRelativePath"
-            & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
-        }
+    $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -updateDirectories $candidateDirectories -installedSdks $installedSdks
+    foreach ($sdkVersion in $sdksToInstall) {
+        Write-Host "Installing SDK $sdkVersion"
+        & $dotnetInstallScriptPath --version $sdkVersion --install-dir $dotnetInstallDir
     }
 
     # report the final set
