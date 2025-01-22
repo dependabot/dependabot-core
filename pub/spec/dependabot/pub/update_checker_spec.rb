@@ -720,13 +720,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:status) { instance_double(Process::Status, success?: false) }
 
     before do
-      allow(Open3).to receive(:capture3).with({}, "/tmp/flutter/bin/flutter", "--version", "--machine",
-                                              Hash).and_call_original
-      allow(Open3).to receive(:capture3).with({}, "/tmp/flutter/bin/flutter", "doctor", Hash).and_call_original
-      allow(Open3).to receive(:capture3).with({}, "git", "fetch", "origin", "refs/tags/3.24.1",
-                                              Hash).and_call_original
-      allow(Open3).to receive(:capture3).with({}, "git", "checkout", "refs/tags/3.24.1", Hash).and_call_original
-      allow(Open3).to receive(:capture3).with({}, "/opt/pub/infer_sdk_versions", String, Hash).and_call_original
+      allow(Open3).to receive(:capture3).and_call_original
       allow(Open3).to receive(:capture3).with(Hash, String, "report", Hash).and_return(["", stderr, status])
     end
 
