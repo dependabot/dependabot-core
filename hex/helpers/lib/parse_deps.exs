@@ -1,6 +1,9 @@
 defmodule Parser do
   def run do
-    Mix.Dep.load_on_environment([])
+    # This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
+    Mix.ensure_application!(:hex)
+
+    Mix.Dep.Converger.converge()
     |> Enum.flat_map(&parse_dep/1)
     |> Enum.map(&build_dependency(&1.opts[:lock], &1))
   end
@@ -82,7 +85,7 @@ defmodule Parser do
     |> empty_str_to_nil()
   end
 
-  defp maybe_regex_to_str(s), do: if Regex.regex?(s), do: Regex.source(s), else: s
+  defp maybe_regex_to_str(s), do: if(Regex.regex?(s), do: Regex.source(s), else: s)
   defp empty_str_to_nil(""), do: nil
   defp empty_str_to_nil(s), do: s
 
@@ -99,6 +102,7 @@ defmodule Parser do
   end
 end
 
-dependencies = :erlang.term_to_binary({:ok, Parser.run()})
-
-IO.write(:stdio, dependencies)
+{:ok, Parser.run()}
+|> :erlang.term_to_binary()
+|> Base.encode64()
+|> IO.write()

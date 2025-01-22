@@ -2,6 +2,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 
 using Xunit;
@@ -571,7 +572,7 @@ public partial class UpdateWorkerTests
             //
             // do the update
             //
-            UpdaterWorker worker = new(new ExperimentsManager(), new TestLogger());
+            UpdaterWorker worker = new("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(tempDirectory.DirectoryPath, projectPath, "Some.Package", "1.0.0", "1.1.0", isTransitive: false);
 
             //
@@ -3482,8 +3483,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.AuthenticationFailure,
-                    ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                    Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 }
             );
         }

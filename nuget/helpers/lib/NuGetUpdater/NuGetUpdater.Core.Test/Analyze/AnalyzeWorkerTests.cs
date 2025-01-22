@@ -4,6 +4,7 @@ using System.Text.Json;
 using NuGet;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -464,6 +465,61 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 IgnoredVersions = [Requirement.Parse("> 1.1.*")],
                 IsVulnerable = false,
                 Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "1.1.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "1.1.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task SafeVersionsPropertyIsHonored()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"), // initially this
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net8.0"), // should update to this due to `SafeVersions`
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.0", "net8.0"), // this should not be considered
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        PackageManager = "nuget",
+                        VulnerableVersions = [Requirement.Parse(">= 1.0.0, < 1.1.0")],
+                        SafeVersions = [Requirement.Parse("= 1.1.0")]
+                    }
+                ],
             },
             expectedResult: new()
             {
@@ -1015,8 +1071,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync([]);
         await AnalyzeWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, "Some.Dependency", new()
         {
-            ErrorType = ErrorType.AuthenticationFailure,
-            ErrorDetails = "<some package feed>",
+            Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
             UpdatedVersion = "",
             UpdatedDependencies = [],
         }, new TestLogger());
@@ -1025,16 +1080,23 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         // raw result file should look like this:
         // {
         //   ...
-        //   "ErrorType": "AuthenticationFailure",
+        //   "Error": {
+        //     "error-type": "private_source_authentication_failure",
+        //     "error-details": {
+        //       "source": "(<some package feed>)"
+        //     }
+        //   }
         //   "ErrorDetails": "<some package feed>",
         //   ...
         // }
         var jsonDocument = JsonDocument.Parse(discoveryContents);
-        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
-        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+        var error = jsonDocument.RootElement.GetProperty("Error");
+        var errorType = error.GetProperty("error-type");
+        var errorDetails = error.GetProperty("error-details");
+        var errorSource = errorDetails.GetProperty("source");
 
-        Assert.Equal("AuthenticationFailure", errorType.GetString());
-        Assert.Equal("<some package feed>", errorDetails.GetString());
+        Assert.Equal("private_source_authentication_failure", errorType.GetString());
+        Assert.Equal("(<some package feed>)", errorSource.GetString());
     }
 
     [Fact]
@@ -1110,8 +1172,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
             },
             expectedResult: new()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 UpdatedVersion = string.Empty,
                 CanUpdate = false,
                 UpdatedDependencies = [],

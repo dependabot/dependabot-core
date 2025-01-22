@@ -1,3 +1,6 @@
+# This is necessary because we can't specify :extra_applications to have :hex in other mixfiles.
+Mix.ensure_application!(:hex)
+
 dependency =
   System.argv()
   |> List.first()
@@ -23,9 +26,8 @@ System.cmd(
   ]
 )
 
-lockfile_content =
-  "mix.lock"
-  |> File.read()
-  |> :erlang.term_to_binary()
-
-IO.write(:stdio, lockfile_content)
+"mix.lock"
+|> File.read()
+|> :erlang.term_to_binary()
+|> Base.encode64()
+|> IO.write()

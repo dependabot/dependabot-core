@@ -317,5 +317,15 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
 
       it { is_expected.to be(true) }
     end
+
+    context "with corepack returning a additional info with version string" do
+      let(:requirement) { Gem::Requirement.new("4.6.0") }
+      let(:version_string) do
+        "Corepack is about to download " \
+          "https://repo.yarnpkg.com/4.6.0/packages/yarnpkg-cli/bin/yarn.js\n4.6.0"
+      end
+
+      it { is_expected.to be(true) }
+    end
   end
 end

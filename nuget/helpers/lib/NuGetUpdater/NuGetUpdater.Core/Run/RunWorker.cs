@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using NuGet.Versioning;
+
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -53,7 +55,7 @@ public class RunWorker
     private async Task<RunResult> RunWithErrorHandlingAsync(Job job, DirectoryInfo repoContentsPath, string baseCommitSha)
     {
         JobErrorBase? error = null;
-        string[] lastUsedPackageSourceUrls = []; // used for error reporting below
+        var currentDirectory = repoContentsPath.FullName; // used for error reporting below
         var runResult = new RunResult()
         {
             Base64DependencyFiles = [],
@@ -69,7 +71,7 @@ public class RunWorker
             foreach (var directory in job.GetAllDirectories())
             {
                 var localPath = PathHelper.JoinPath(repoContentsPath.FullName, directory);
-                lastUsedPackageSourceUrls = NuGetContext.GetPackageSourceUrls(localPath);
+                currentDirectory = localPath;
                 var result = await RunForDirectory(job, repoContentsPath, directory, baseCommitSha, experimentsManager);
                 foreach (var dependencyFile in result.Base64DependencyFiles)
                 {
@@ -84,26 +86,9 @@ public class RunWorker
                 BaseCommitSha = baseCommitSha,
             };
         }
-        catch (HttpRequestException ex)
-        when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
-        {
-            error = new PrivateSourceAuthenticationFailure(lastUsedPackageSourceUrls);
-        }
-        catch (BadRequirementException ex)
-        {
-            error = new BadRequirement(ex.Message);
-        }
-        catch (MissingFileException ex)
-        {
-            error = new DependencyFileNotFound("file not found", ex.FilePath);
-        }
-        catch (UpdateNotPossibleException ex)
-        {
-            error = new UpdateNotPossible(ex.Dependencies);
-        }
         catch (Exception ex)
         {
-            error = new UnknownError(ex, _jobId);
+            error = JobErrorBase.ErrorFromException(ex, _jobId, currentDirectory);
         }
 
         if (error is not null)
@@ -122,6 +107,8 @@ public class RunWorker
 
         _logger.Info("Discovery JSON content:");
         _logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
+
+        // TODO: report errors
 
         // report dependencies
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
@@ -179,15 +166,7 @@ public class RunWorker
                         continue;
                     }
 
-                    var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
-                    var dependencyInfo = new DependencyInfo()
-                    {
-                        Name = dependency.Name,
-                        Version = dependency.Version!,
-                        IsVulnerable = false,
-                        IgnoredVersions = ignoredVersions,
-                        Vulnerabilities = [],
-                    };
+                    var dependencyInfo = GetDependencyInfo(job, dependency);
                     var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
                     // TODO: log analysisResult
                     if (analysisResult.CanUpdate)
@@ -221,7 +200,7 @@ public class RunWorker
                         var dependencyFilePath = Path.Join(discoveryResult.Path, project.FilePath).FullyNormalizedRootedPath();
                         var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, dependencyFilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: false);
                         // TODO: need to report if anything was actually updated
-                        if (updateResult.ErrorType is null || updateResult.ErrorType == ErrorType.None)
+                        if (updateResult.Error is null)
                         {
                             if (dependencyLocation != dependencyFilePath)
                             {
@@ -327,6 +306,30 @@ public class RunWorker
             .Cast<Requirement>()
             .ToImmutableArray();
         return ignoredVersions;
+    }
+
+    internal static DependencyInfo GetDependencyInfo(Job job, Dependency dependency)
+    {
+        var dependencyVersion = NuGetVersion.Parse(dependency.Version!);
+        var securityAdvisories = job.SecurityAdvisories.Where(s => s.DependencyName.Equals(dependency.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var isVulnerable = securityAdvisories.Any(s => (s.AffectedVersions ?? []).Any(v => v.IsSatisfiedBy(dependencyVersion)));
+        var ignoredVersions = GetIgnoredRequirementsForDependency(job, dependency.Name);
+        var vulnerabilities = securityAdvisories.Select(s => new SecurityVulnerability()
+        {
+            DependencyName = dependency.Name,
+            PackageManager = "nuget",
+            VulnerableVersions = s.AffectedVersions ?? [],
+            SafeVersions = s.SafeVersions.ToImmutableArray(),
+        }).ToImmutableArray();
+        var dependencyInfo = new DependencyInfo()
+        {
+            Name = dependency.Name,
+            Version = dependencyVersion.ToString(),
+            IsVulnerable = isVulnerable,
+            IgnoredVersions = ignoredVersions,
+            Vulnerabilities = vulnerabilities,
+        };
+        return dependencyInfo;
     }
 
     internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string pathToContents)

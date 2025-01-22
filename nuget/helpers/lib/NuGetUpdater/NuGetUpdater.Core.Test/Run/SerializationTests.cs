@@ -523,9 +523,17 @@ public class SerializationTests
 
         yield return
         [
-            new DependencyFileNotFound("some message", "/some/file"),
+            new DependencyFileNotFound("/some/file", "some message"),
             """
             {"data":{"error-type":"dependency_file_not_found","error-details":{"message":"some message","file-path":"/some/file"}}}
+            """
+        ];
+
+        yield return
+        [
+            new DependencyFileNotParseable("/some/file", "some message"),
+            """
+            {"data":{"error-type":"dependency_file_not_parseable","error-details":{"message":"some message","file-path":"/some/file"}}}
             """
         ];
 
