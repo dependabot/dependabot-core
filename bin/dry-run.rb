@@ -276,7 +276,7 @@ option_parse = OptionParser.new do |opts|
   end
 
   opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
-    $options[:updater_options] = { enable_beta_ecosystems: true }
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 end
 # rubocop:enable Metrics/BlockLength
