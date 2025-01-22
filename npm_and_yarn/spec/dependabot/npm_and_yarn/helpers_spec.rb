@@ -323,6 +323,19 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(result).to eq("10.8.2")
       end
     end
+
+    context "when corepack is not used for bun" do
+      it "falls back to the local version of the package manager" do
+        # Mock for `local_package_manager_version("bun")`
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "bun -v",
+          fingerprint: "bun -v"
+        ).and_return("1.1.39")
+
+        result = described_class.install("bun", "1.1.39")
+        expect(result).to eq("1.1.39")
+      end
+    end
   end
 
   describe "::npm8?" do

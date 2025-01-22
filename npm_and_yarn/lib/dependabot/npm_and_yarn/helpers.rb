@@ -40,6 +40,9 @@ module Dependabot
       YARN_DEFAULT_VERSION = YARN_V3
       YARN_FALLBACK_VERSION = YARN_V1
 
+      # corepack supported package managers
+      SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
+
       # Determines the npm version depends to the feature flag
       # If the feature flag is enabled, we are going to use the minimum version npm 8
       # Otherwise, we are going to use old versionining npm 6
@@ -484,6 +487,8 @@ module Dependabot
           .returns(String)
       end
       def self.package_manager_install(name, version, env: {})
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot::SharedHelpers.run_shell_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
@@ -494,6 +499,8 @@ module Dependabot
       # Prepare the package manager for use by using corepack
       sig { params(name: String, version: String).returns(String) }
       def self.package_manager_activate(name, version)
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot::SharedHelpers.run_shell_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare <name>@<version> --activate"
@@ -565,6 +572,11 @@ module Dependabot
           dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
           dependency
         end
+      end
+
+      sig { params(name: String).returns(T::Boolean) }
+      def self.corepack_supported_package_manager?(name)
+        SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
     end
   end
