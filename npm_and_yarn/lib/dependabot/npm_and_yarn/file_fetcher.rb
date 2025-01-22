@@ -213,7 +213,7 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def bun_version
-        return @bun_version = nil unless allow_beta_ecosystems? || Experiments.enabled?(:bun_updates)
+        return @bun_version = nil unless allow_beta_ecosystems?
 
         @bun_version ||= T.let(
           package_manager_helper.setup(BunPackageManager::NAME),

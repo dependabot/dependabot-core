@@ -130,7 +130,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def allow_beta_ecosystems?
-        !!options["enable_beta_ecosystems"]
+        Experiments.enabled?(:enable_beta_ecosystems)
       end
 
       sig { returns(T::Array[DependencyFile]) }
