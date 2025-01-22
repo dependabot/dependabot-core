@@ -565,18 +565,18 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
     context "when module major version doesn't match (v0)" do
       let(:project_name) { "module_major_version_mismatch_v0" }
       let(:dependency_name) do
-        "github.com/jenkins-x/jx-api"
+        "github.com/dependabot-fixtures/module_major_version_mismatch_v1"
       end
-      let(:dependency_version) { "v0.0.25" }
-      let(:dependency_previous_version) { "v0.0.24" }
+      let(:dependency_version) { "v0.0.2" }
+      let(:dependency_previous_version) { "v0.0.1" }
       let(:requirements) do
         [{
           file: "go.mod",
-          requirement: "v0.0.25",
+          requirement: "v0.0.2",
           groups: [],
           source: {
             type: "default",
-            source: "github.com/jenkins-x/jx-api"
+            source: "github.com/dependabot-fixtures/module_major_version_mismatch_v1"
           }
         }]
       end
