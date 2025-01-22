@@ -68,7 +68,7 @@ module Dependabot
                   version: dependency_version(dep_name, req, T.must(group)),
                   requirements: [{
                     requirement: req.is_a?(String) ? req : req["version"],
-                    file: pipfile.name,
+                    file: T.must(pipfile).name,
                     source: nil,
                     groups: [group]
                   }],
@@ -114,7 +114,10 @@ module Dependabot
           dependencies
         end
 
-        sig { params(dep_name: String, requirement: T.any(String, Hash), group: String).returns(T.nilable(String)) }
+        sig do
+          params(dep_name: String, requirement: T.any(String, T::Hash[String, T.untyped]),
+                 group: String).returns(T.nilable(String))
+        end
         def dependency_version(dep_name, requirement, group)
           req = version_from_hash_or_string(requirement)
 
@@ -124,8 +127,8 @@ module Dependabot
 
             version = version_from_hash_or_string(details)
             version&.gsub(/^===?/, "")
-          elsif req.start_with?("==") && !req.include?("*")
-            req.strip.gsub(/^===?/, "")
+          elsif T.must(req).start_with?("==") && !T.must(req).include?("*")
+            T.must(req).strip.gsub(/^===?/, "")
           end
         end
 
