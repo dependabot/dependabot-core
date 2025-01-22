@@ -140,7 +140,7 @@ module Dependabot
           end
         end
 
-        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
+        sig { params(req: T.any(String, T::Hash[String, T.untyped])).returns(T.any(T::Boolean, String)) }
         def specifies_version?(req)
           return true if req.is_a?(String)
 
