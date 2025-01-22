@@ -1,4 +1,4 @@
 github.com/alecthomas/jsonschema v0.0.0-20190504002508-159cbd5dba26 h1:b/CA15BzZIj8xNKnBxUwUmXt3USfJjb4Gl9eJIfMLtE=
 github.com/alecthomas/jsonschema v0.0.0-20190504002508-159cbd5dba26/go.mod h1:qpebaTNSsyUn5rPSJMsfqEtDw71TTggXM6stUDI16HA=
-github.com/dependabot-fixtures/module_major_version_mismatch_v1 v0.0.1 h1:AQiIbeUUR88vrP6Q0gQMdyJfmNY46rx5TBrQFDdYIuk=
-github.com/dependabot-fixtures/module_major_version_mismatch_v1 v0.0.1/go.mod h1:dUz/xcUHDmYFwrB1Qz7yx3URb9tLWZSDh5biKqhBe0g=
+github.com/dependabot-fixtures/module_major_version_mismatch_v1 v1.0.1 h1:AQiIbeUUR88vrP6Q0gQMdyJfmNY46rx5TBrQFDdYIuk=
+github.com/dependabot-fixtures/module_major_version_mismatch_v1 v1.0.1/go.mod h1:dUz/xcUHDmYFwrB1Qz7yx3URb9tLWZSDh5biKqhBe0g=
