@@ -526,11 +526,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     describe "fetching and parsing the bun.lock" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:bun_updates).and_return(enable_bun_updates)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_beta_ecosystems).and_return(enable_beta_ecosystems)
       end
 
-      context "when the experiment :bun_updates is inactive" do
-        let(:enable_bun_updates) { false }
+      context "when the experiment :enable_beta_ecosystems is inactive" do
+        let(:enable_beta_ecosystems) { false }
 
         it "does not fetch or parse the the bun.lock" do
           expect(file_fetcher_instance.files.map(&:name))
@@ -540,8 +541,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "when the experiment :bun_updates is active" do
-        let(:enable_bun_updates) { true }
+      context "when the experiment :enable_beta_ecosystems is active" do
+        let(:enable_beta_ecosystems) { true }
 
         it "fetches and parses the bun.lock" do
           expect(file_fetcher_instance.files.map(&:name))
