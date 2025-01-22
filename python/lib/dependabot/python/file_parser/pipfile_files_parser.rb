@@ -132,7 +132,7 @@ module Dependabot
           end
         end
 
-        sig { params(obj: T.any(String, T::Hash[String, T.untyped])).returns(T.nilable(String)) }
+        sig { params(obj: T.any(String, T::Array[String], T::Hash[String, T.untyped])).returns(T.nilable(String)) }
         def version_from_hash_or_string(obj)
           case obj
           when String then obj.strip
