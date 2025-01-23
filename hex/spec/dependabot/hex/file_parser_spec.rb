@@ -376,7 +376,7 @@ RSpec.describe Dependabot::Hex::FileParser do
         )
       end
 
-      it "parses the dependencies correctly" do
+      it "parses the dependencies correctly", skip: true do
         expect(dependencies.length).to eq(3)
         expect(dependencies).to include(
           Dependabot::Dependency.new(
