@@ -486,6 +486,21 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
         expect(requirement.constraints).to eq(["= 7.5.0"])
       end
+
+      context "when package manager lockfile does not exist" do
+        let(:lockfiles) { {} }
+
+        it "returns a requirement for npm with the correct constraints" do
+          # NOTE: This is a regression test for a previous bug where calling
+          # helper.package_manager will mutate helper's internal state and break
+          # subsequent calls to helper.find_engine_constraints_as_requirement.
+          expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::NpmPackageManager)
+
+          requirement = helper.find_engine_constraints_as_requirement("npm")
+          expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+          expect(requirement.constraints).to eq([">= 6.0.0", "< 8.0.0"])
+        end
+      end
     end
 
     context "when the engines field does not contain the specified package manager" do
