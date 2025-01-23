@@ -453,6 +453,11 @@ module Dependabot
 
         resolution_deps = resolution_objects.flat_map(&:to_a)
                                             .map do |path, value|
+          # skip dependencies that contain invalid values such as inline comments, null, etc.
+          # These values are usually in form of string arrays, so we can skip these deps.
+
+          next unless value.is_a?(String)
+
           convert_dependency_path_to_name(path, value)
         end
 
