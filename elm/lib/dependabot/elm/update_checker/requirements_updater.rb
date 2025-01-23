@@ -19,7 +19,7 @@ module Dependabot
                  latest_resolvable_version: T.nilable(T.any(String, Integer, Dependabot::Version))).void
         end
         def initialize(requirements:, latest_resolvable_version:)
-          @requirements = T.let(requirements, T.untyped)
+          @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.nilable(String)]])
 
           return unless latest_resolvable_version
           return unless version_class.correct?(latest_resolvable_version)
