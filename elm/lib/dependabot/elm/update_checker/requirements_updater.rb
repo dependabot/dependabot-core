@@ -70,7 +70,7 @@ module Dependabot
           "#{minimum} <= v < #{major + 1}.0.0"
         end
 
-        sig { params(version: String).returns(String) }
+        sig { params(version: Dependabot::Elm::Version).returns(String) }
         def require_exactly(version)
           "#{version} <= v <= #{version}"
         end
