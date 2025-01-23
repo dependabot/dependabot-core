@@ -61,6 +61,24 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
     )
   end
 
+  let(:bun_lockfile) do
+    instance_double(
+      Dependabot::DependencyFile,
+      name: "bun.lock",
+      content: <<~LOCKFILE
+        lockfileVersion: 1.1.39
+
+        dependencies:
+          lodash:
+            specifier: ^4.17.20
+            version: 4.17.21
+            resolution:
+              integrity: sha512-abc123
+              tarball: https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz
+      LOCKFILE
+    )
+  end
+
   let(:lockfiles) { { npm: npm_lockfile, yarn: yarn_lockfile, pnpm: pnpm_lockfile } }
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:detector) { described_class.new(lockfiles, package_json) }
@@ -85,6 +103,14 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerDetector do
 
       it "returns pnpm as the package manager" do
         expect(detector.detect_package_manager).to eq("pnpm")
+      end
+    end
+
+    context "when bun lock file exists and npm lockfile is absent" do
+      let(:lockfiles) { { bun: bun_lockfile } }
+
+      it "returns bun as the package manager" do
+        expect(detector.detect_package_manager).to eq("bun")
       end
     end
 
