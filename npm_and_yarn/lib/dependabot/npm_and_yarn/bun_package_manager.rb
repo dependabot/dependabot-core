@@ -39,7 +39,7 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        supported_versions.all? { |supported| supported > version }
+        false
       end
     end
   end

@@ -46,20 +46,8 @@ RSpec.describe Dependabot::NpmAndYarn::BunPackageManager do
   end
 
   describe "#unsupported?" do
-    context "when version is the minimum supported version" do
-      let(:detected_version) { Dependabot::NpmAndYarn::BunPackageManager::MIN_SUPPORTED_VERSION.to_s }
-
-      it "returns false" do
-        expect(package_manager.unsupported?).to be false
-      end
-    end
-
-    context "when version is unsupported" do
-      let(:raw_version) { "1.1.38" }
-
-      it "returns true" do
-        expect(package_manager.unsupported?).to be true
-      end
+    it "returns false" do
+      expect(package_manager.unsupported?).to be false
     end
   end
 end

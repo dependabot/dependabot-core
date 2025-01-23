@@ -59,14 +59,16 @@ module Dependabot
       T.any(
         T.class_of(Dependabot::NpmAndYarn::NpmPackageManager),
         T.class_of(Dependabot::NpmAndYarn::YarnPackageManager),
-        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager)
+        T.class_of(Dependabot::NpmAndYarn::PNPMPackageManager),
+        T.class_of(Dependabot::NpmAndYarn::BunPackageManager)
       )
     end
 
     PACKAGE_MANAGER_CLASSES = T.let({
       NpmPackageManager::NAME => NpmPackageManager,
       YarnPackageManager::NAME => YarnPackageManager,
-      PNPMPackageManager::NAME => PNPMPackageManager
+      PNPMPackageManager::NAME => PNPMPackageManager,
+      BunPackageManager::NAME => BunPackageManager
     }.freeze, T::Hash[String, NpmAndYarnPackageManagerClassType])
 
     # Error malformed version number string
