@@ -72,7 +72,7 @@ module Dependabot
         end
 
         sig { void }
-        def perform # rubocop:disable Metrics/AbcSize
+        def perform
           # This guards against any jobs being performed where the data is malformed, this should not happen unless
           # there was is defect in the service and we emitted a payload where the job and configuration data objects
           # were out of sync.
@@ -100,24 +100,37 @@ module Dependabot
             # so users are informed this group is no longer actionable by Dependabot.
             warn_group_is_empty(job_group)
             close_pull_request(reason: :dependency_group_empty, group: job_group)
-          else
-            Dependabot.logger.info("Updating the '#{job_group.name}' group")
-
-            # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
-            # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
-            dependency_snapshot.groups.each do |group|
-              next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
-
-              dependency_snapshot.mark_group_handled(group)
-            end
-
-            if dependency_change.nil?
-              Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
-              return
-            end
-
-            upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
+            return
           end
+
+          process_group_dependencies(job_group)
+        end
+
+        sig { params(job_group: Dependabot::DependencyGroup).void }
+        def process_group_dependencies(job_group)
+          Dependabot.logger.info("Updating the '#{job_group.name}' group")
+
+          existing_pr_dependencies = Set.new
+
+          # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
+          # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
+          dependency_snapshot.groups.each do |group|
+            # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
+            # are not also in the PR of the group being checked, preventing erroneous PR closures
+            group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
+            existing_pr_dependencies.merge(group_pr_deps)
+
+            next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
+
+            dependency_snapshot.mark_group_handled(group, existing_pr_dependencies)
+          end
+
+          if dependency_change.nil?
+            Dependabot.logger.info("Nothing could update for Dependency Group: '#{job_group.name}'")
+            return
+          end
+
+          upsert_pull_request_with_error_handling(T.must(dependency_change), job_group)
         end
 
         private
