@@ -1069,6 +1069,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
     end
+
+    context "when package dep contains verbose data but are fetchable" do
+      before do
+        file_url = File.join(url, "mocks/sprintf-js/package.json?ref=sha")
+        stub_request(:get, file_url)
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "package_json_verbose_content.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches package.json from path dependency" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name))
+          .to include("mocks/sprintf-js/package.json")
+        path_file = file_fetcher_instance.files
+                                         .find { |f| f.name == "mocks/sprintf-js/package.json" }
+        expect(path_file.support_file?).to be(true)
+      end
+    end
   end
 
   context "with a lerna.json file" do
