@@ -16,7 +16,7 @@ module Dependabot
 
         sig do
           params(requirements: T.untyped,
-                 latest_resolvable_version: T.nilable(T.any(String, Integer, Gem::Version))).void
+                 latest_resolvable_version: T.nilable(T.any(String, Integer, Dependabot::Version))).void
         end
         def initialize(requirements:, latest_resolvable_version:)
           @requirements = T.let(requirements, T.untyped)
@@ -51,7 +51,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Version)) }
         attr_reader :latest_resolvable_version
 
-        sig { params(old_req: T.nilable(String), new_version: T.untyped).returns(T.untyped) }
+        sig { params(old_req: T.nilable(String), new_version: T.untyped).returns(String) }
         def update_requirement(old_req, new_version)
           if requirement_class.new(old_req).satisfied_by?(new_version)
             old_req
@@ -70,7 +70,7 @@ module Dependabot
           "#{minimum} <= v < #{major + 1}.0.0"
         end
 
-        sig { params(version: T.untyped).returns(String) }
+        sig { params(version: String).returns(String) }
         def require_exactly(version)
           "#{version} <= v <= #{version}"
         end
