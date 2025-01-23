@@ -85,6 +85,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
