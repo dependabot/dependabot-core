@@ -315,8 +315,9 @@ module Dependabot
         else
           return true if dep["markers"].include?("<")
           return false if dep["markers"].include?(">")
+          return false if dep["requirement"].nil?
 
-          dep["requirement"]&.include?("<")
+          dep["requirement"].include?("<")
         end
       end
 

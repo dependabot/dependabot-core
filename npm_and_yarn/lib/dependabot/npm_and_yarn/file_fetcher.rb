@@ -453,6 +453,15 @@ module Dependabot
 
         resolution_deps = resolution_objects.flat_map(&:to_a)
                                             .map do |path, value|
+          # skip dependencies that contain invalid values such as inline comments, null, etc.
+
+          unless value.is_a?(String)
+            Dependabot.logger.warn("File fetcher: Skipping dependency \"#{path}\" " \
+                                   "with value: \"#{value}\"")
+
+            next
+          end
+
           convert_dependency_path_to_name(path, value)
         end
 
