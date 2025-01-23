@@ -526,11 +526,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     describe "fetching and parsing the bun.lock" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?)
-        allow(Dependabot::Experiments).to receive(:enabled?).with(:bun_updates).and_return(enable_bun_updates)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_beta_ecosystems).and_return(enable_beta_ecosystems)
       end
 
-      context "when the experiment :bun_updates is inactive" do
-        let(:enable_bun_updates) { false }
+      context "when the experiment :enable_beta_ecosystems is inactive" do
+        let(:enable_beta_ecosystems) { false }
 
         it "does not fetch or parse the the bun.lock" do
           expect(file_fetcher_instance.files.map(&:name))
@@ -540,8 +541,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "when the experiment :bun_updates is active" do
-        let(:enable_bun_updates) { true }
+      context "when the experiment :enable_beta_ecosystems is active" do
+        let(:enable_beta_ecosystems) { true }
 
         it "fetches and parses the bun.lock" do
           expect(file_fetcher_instance.files.map(&:name))
@@ -2017,6 +2018,61 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name))
             .to include("other_package/package.json")
         end
+      end
+    end
+  end
+
+  context "with a pnpm_workspace_yaml" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: "gocardless/bump",
+        directory: "/"
+      )
+    end
+    let(:file_fetcher) { described_class.new(source: source, credentials: credentials) }
+    let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
+
+    before do
+      allow(file_fetcher).to receive(:pnpm_workspace_yaml).and_return(pnpm_workspace_yaml)
+    end
+
+    context "when it's content is nil" do
+      let(:pnpm_workspace_yaml) { nil }
+
+      it "returns an empty hash" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({})
+      end
+    end
+
+    context "when it's content is valid YAML" do
+      let(:content) { "---\npackages:\n  - 'packages/*'\n" }
+
+      it "parses the YAML content" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*"] })
+      end
+    end
+
+    context "when it's content contains valid alias" do
+      let(:content) { "---\npackages:\n  - &default 'packages/*'\n  - *default\n" }
+      let(:pnpm_workspace_yaml) { Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: content) }
+
+      it "parses the YAML content with aliases" do
+        expect(file_fetcher.send(:parsed_pnpm_workspace_yaml)).to eq({ "packages" => ["packages/*", "packages/*"] })
+      end
+    end
+
+    context "when it's content contains invalid alias (BadAlias)" do
+      let(:content) { "---\npackages:\n  - &id 'packages/*'\n  - *id" } # Invalid alias reference
+
+      before do
+        allow(YAML).to receive(:safe_load).and_raise(Psych::BadAlias)
+      end
+
+      it "raises a DependencyFileNotParseable error" do
+        expect do
+          file_fetcher.send(:parsed_pnpm_workspace_yaml)
+        end.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
   end

@@ -396,13 +396,13 @@ RSpec.describe Dependabot::Hex::FileParser do
             name: "plug",
             version: "1.3.6",
             requirements: [{
-              requirement: "1.3.6",
-              file: "apps/dependabot_web/mix.exs",
+              requirement: "~> 1.3.0",
+              file: "apps/dependabot_business/mix.exs",
               groups: [],
               source: nil
             }, {
-              requirement: "~> 1.3.0",
-              file: "apps/dependabot_business/mix.exs",
+              requirement: "1.3.6",
+              file: "apps/dependabot_web/mix.exs",
               groups: [],
               source: nil
             }],
@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "elixir"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "1.16.3"
+        expect(language.version.to_s).to eq "1.18.1"
       end
     end
   end

@@ -1,7 +1,7 @@
 defmodule DependencyHelper do
   def main() do
-    IO.read(:stdio, :all)
-    |> Jason.decode!()
+    IO.read(:stdio, :eof)
+    |> JSON.decode!()
     |> run()
     |> case do
       {output, 0} ->
@@ -35,7 +35,7 @@ defmodule DependencyHelper do
 
   defp encode_and_write(content) do
     content
-    |> Jason.encode!()
+    |> JSON.encode!()
     |> IO.write()
   end
 
@@ -69,16 +69,7 @@ defmodule DependencyHelper do
         script
       ] ++ args
 
-    System.cmd(
-      "mix",
-      args,
-      cd: dir,
-      env: %{
-        "MIX_EXS" => nil,
-        "MIX_LOCK" => nil,
-        "MIX_DEPS" => nil
-      }
-    )
+    System.cmd("mix", args, cd: dir, env: %{"MIX_EXS" => nil})
   end
 
   defp set_credentials([]), do: :ok
