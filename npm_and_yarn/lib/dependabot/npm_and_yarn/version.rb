@@ -80,6 +80,10 @@ module Dependabot
           # Matches @ followed by x.y.z (digits separated by dots)
           if (match = version.match(/@(\d+\.\d+\.\d+)/))
             version = match[1] # Just "4.5.3"
+
+          # Extract version in case the output contains Corepack verbose data
+          elsif version.include?("Corepack")
+            version = T.must(T.must(version.tr("\n", " ").match(/(\d+\.\d+\.\d+)/))[-1])
           end
           version = version&.gsub(/^v/, "")
         end
