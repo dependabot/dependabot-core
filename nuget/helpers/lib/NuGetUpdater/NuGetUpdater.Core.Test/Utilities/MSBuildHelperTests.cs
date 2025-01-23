@@ -1442,6 +1442,14 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new UpdateNotPossible(["Some.Package"]),
         ];
+
+        yield return
+        [
+            // output
+            "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
     }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()

@@ -924,6 +924,7 @@ internal static partial class MSBuildHelper
         ThrowOnUnauthenticatedFeed(output);
         ThrowOnMissingFile(output);
         ThrowOnMissingPackages(output);
+        ThrowOnUnresolvableDependencies(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -958,6 +959,16 @@ internal static partial class MSBuildHelper
         if (missingPackages.Length > 0)
         {
             throw new UpdateNotPossibleException(missingPackages);
+        }
+    }
+
+    private static void ThrowOnUnresolvableDependencies(string output)
+    {
+        var unresolvablePackagePattern = new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'");
+        var match = unresolvablePackagePattern.Match(output);
+        if (match.Success)
+        {
+            throw new UpdateNotPossibleException([$"{match.Groups["PackageName"].Value}.{match.Groups["PackageVersion"].Value}"]);
         }
     }
 
