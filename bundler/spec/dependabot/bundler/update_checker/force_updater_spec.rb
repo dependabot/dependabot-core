@@ -264,6 +264,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::ForceUpdater do
       end
     end
 
+    context "when a gem has corresponding invalid gem info" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+      let(:dependency_files) { bundler_project_dependency_files("invalid_gem_information_in_gemfile") }
+      let(:target_version) { String(nil) }
+      let(:dependency_name) { "navbar" }
+      let(:requirements) do
+        [{
+          file: "Gemfile",
+          requirement: "0.1.0",
+          groups: [:default],
+          source: nil
+        }]
+      end
+
+      it "raises a resolvability error" do
+        expect { updater.updated_dependencies }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
     context "when peer dependencies in the Gemfile should update together, but not unlock git gems too" do
       let(:dependency_files) { bundler_project_dependency_files("top_level_update_with_git_gems") }
       let(:target_version) { "5.12.0" }
