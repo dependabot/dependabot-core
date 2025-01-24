@@ -159,8 +159,6 @@ RUN apt-get update \
     tzdata \
     # Needed to build `gssapi`/`krb5`
     libkrb5-dev \
-    # Install libgdal
-    libgdal-dev \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
@@ -180,53 +178,22 @@ COPY --from=python-3.13 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 # Copy the output of the build script, it should be identical across Python versions
 COPY --from=python-3.13 /opt/python/ /opt/python/
 
+# Install pyenv and the required Python version
+RUN pyenv install --skip-existing $PY_3_13
+
+# Set the Python version globally or locally
 RUN pyenv global $PY_3_13
 
+# Rehash pyenv to make sure the shims are updated
+RUN pyenv rehash
+
+# Set the PYENV_VERSION environment variable
+ENV PYENV_VERSION $PY_3_13
+
+# Install certifi using pyenv
+RUN pyenv exec pip install certifi
 
 USER root
-
-# Update CA certificates to fix SSL errors
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
-
-# Install OpenSSL and development libraries
-RUN apt-get install -y openssl libssl-dev
-
-# Install build dependencies
-RUN apt-get install -y \
-    build-essential \
-    python3-dev \
-    wget \
-    curl \
-    cmake \
-    autoconf \
-    automake \
-    libtool \
-    libgdal-dev \
-    gdal-bin \
-    python3-numpy \
-    libcurl4-openssl-dev \
-    libgeos-dev \
-    libproj-dev \
-    zlib1g-dev
-
-# Download and extract GDAL source
-RUN wget --no-check-certificate https://github.com/OSGeo/gdal/releases/download/v3.10.1/gdal-3.10.1.tar.gz && \
-    tar -xzf gdal-3.10.1.tar.gz && \
-    cd gdal-3.10.1 && \
-    cmake . && \
-    make -j$(nproc) && \
-    make install
-
-
-# Install Python bindings for GDAL
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
-RUN python3 -m pip install pip-system-certs
-#RUN python3 -m pip install --upgrade pip
-#RUN python3 -m pip install --upgrade python
-#RUN python3 -m pyenv install $PY_3_13
-#RUN pip3 install GDAL==3.10.1
-#RUN pip3 install certifi
-
-# Set the REQUESTS_CA_BUNDLE environment variable to use certifi's CA bundle
-#RUN echo "export REQUESTS_CA_BUNDLE=$(python3 -c 'import certifi; print(certifi.where())')" >> /etc/environment
-
+# Set the SSL_CERT_FILE environment variable using a shell command
+RUN export SSL_CERT_FILE=$(pyenv exec python -m certifi) && \
+    echo "SSL_CERT_FILE=$SSL_CERT_FILE" >> /etc/environment
