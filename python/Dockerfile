@@ -159,8 +159,6 @@ RUN apt-get update \
     tzdata \
     # Needed to build `gssapi`/`krb5`
     libkrb5-dev \
-    # To fix
-    python-is-python3 \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
@@ -180,59 +178,84 @@ COPY --from=python-3.13 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 # Copy the output of the build script, it should be identical across Python versions
 COPY --from=python-3.13 /opt/python/ /opt/python/
 
-# Set the Python version globally or locally
+# Set pyenv global Python version
 RUN pyenv global $PY_3_13
 
-# Set the environment variable PYTHONHTTPSVERIFY
-ENV PYTHONHTTPSVERIFY=0
+# Set Python version to $PY_3_13
+ENV PYENV_VERSION=$PY_3_13
 
-# Rehash pyenv to make sure the shims are updated
-RUN pyenv rehash
-
-# Set the PYENV_VERSION environment variable
-ENV PYENV_VERSION $PY_3_13
-
-# Install certifi using pyenv
-RUN pyenv exec pip install certifi
+# Set PYTHONPATH explicitly
+ENV PYTHONPATH="/opt/pyenv/versions/3.13.1/lib/python3.13/site-packages"
 
 USER root
 
-# Set the SSL_CERT_FILE environment variable using a shell command
-RUN SSL_CERT_FILE=$(pyenv exec python -m certifi) && \
-    echo "SSL_CERT_FILE=$SSL_CERT_FILE" >> /etc/environment && \
-    export SSL_CERT_FILE
-
-# Install necessary build tools and libraries
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    software-properties-common \
+    build-essential \
+    python3-dev \
+    python3-distutils \
+    gfortran \
+    libatlas-base-dev \
+    liblapack-dev \
+    libopenblas-dev \
+    libsqlite3-dev \
+    libjpeg-dev \
+    libproj-dev \
+    libgeos-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
     wget \
     curl \
-    cmake \
-    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    && apt-get update && apt-get install -y \
-    gdal-bin \
-    libgdal-dev \
-    build-essential \
-    python3-gdal \
-    && apt-get clean
+    libssl-dev
 
-# Download and extract GDAL source
-RUN wget https://github.com/OSGeo/gdal/releases/download/v3.10.1/gdal-3.10.1.tar.gz && \
-    tar -xzf gdal-3.10.1.tar.gz && \
-    cd gdal-3.10.1 && \
-    cmake . && \
+# Install dependencies for building GDAL
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libgif-dev \
+    liblzma-dev \
+    libnetcdf-dev \
+    libhdf5-serial-dev \
+    libhdf4-alt-dev \
+    libpq-dev \
+    libxerces-c-dev \
+    libspatialite-dev \
+    libwebp-dev \
+    libpoppler-dev \
+    libpoppler-private-dev \
+    libfreexl-dev \
+    libgeotiff-dev \
+    liblcms2-dev \
+    libpodofo-dev \
+    swig \
+    cmake \
+    python3-numpy
+
+# Install Python bindings for GDAL
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+# Install pip, setuptools, and wheel
+RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Download and build GDAL from source using CMake
+WORKDIR /tmp
+RUN wget --no-check-certificate http://download.osgeo.org/gdal/3.10.1/gdal-3.10.1.tar.gz && \
+    tar -xvf gdal-3.10.1.tar.gz
+
+WORKDIR /tmp/gdal-3.10.1
+RUN mkdir build && cd build && \
+    cmake .. -DBUILD_PYTHON_BINDINGS=ON -DGDAL_BUILD_OPTIONAL_DRIVERS=ON -DCMAKE_EXE_LINKER_FLAGS="-lssl -lcrypto" && \
     make -j$(nproc) && \
-    make install
+    make install && \
+    ldconfig
 
 # Set GDAL environment variables
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# Install the latest versions of pip, setuptools, and wheel
-RUN pyenv exec pip install --upgrade pip setuptools wheel
+# Set PIP_NO_SSL_VERIFY to true to disable SSL verification for pip
+ENV PIP_NO_SSL_VERIFY=true
 
-# Copy the README.md file from the project directory to the container
-COPY python/README.md /opt/python/lib/README.md
-
-#RUN pyenv exec pip install gdal==3.9.3
-#RUN pyenv exec pip install psycopg==3.2.4
+WORKDIR /home/dependabot/dependabot-updater
+# Install numpy and GDAL Python bindings, ensuring the version matches the installed libgdal
+RUN python3 -m pip install --no-cache-dir --prefer-binary gdal==3.10.1 numpy
