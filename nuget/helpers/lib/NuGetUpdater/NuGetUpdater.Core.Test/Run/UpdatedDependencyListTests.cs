@@ -94,7 +94,15 @@ public class UpdatedDependencyListTests
                 {
                     Name = "System.Text.Json",
                     Version = "6.0.0",
-                    Requirements = [],
+                    Requirements =
+                    [
+                        new ReportedRequirement()
+                        {
+                            Requirement = "6.0.0",
+                            File = "/src/c/project.csproj",
+                            Groups = ["dependencies"],
+                        }
+                    ],
                 },
                 new ReportedDependency()
                 {
