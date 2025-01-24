@@ -347,7 +347,7 @@ internal static class PackageReferenceUpdater
                 projectDirectory,
                 experimentsManager
             );
-            MSBuildHelper.ThrowOnUnauthenticatedFeed(stdout);
+            MSBuildHelper.ThrowOnError(stdout);
             if (exitCode != 0)
             {
                 logger.Warn($"    Transitive dependency [{dependencyName}/{newDependencyVersion}] was not added.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");

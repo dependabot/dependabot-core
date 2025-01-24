@@ -114,7 +114,7 @@ internal static class SdkProjectDiscovery
                     var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
                     return (exitCode, stdOut, stdErr);
                 }, logger, retainMSBuildSdks: true);
-                MSBuildHelper.ThrowOnUnauthenticatedFeed(stdOut);
+                MSBuildHelper.ThrowOnError(stdOut);
                 if (stdOut.Contains("""error MSB4057: The target "GenerateBuildDependencyFile" does not exist in the project."""))
                 {
                     // this can happen if it's a non-SDK-style project; totally normal, not worth examining the binlog
