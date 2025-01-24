@@ -66,6 +66,12 @@ module Dependabot
           /Out of diskspace/
         ].freeze, T::Array[Regexp])
 
+        GO_LANG = "Go"
+
+        AMBIGUOUS_ERROR_MESSAGE = /ambiguous import: found package (?<package>.*) in multiple modules/
+
+        GO_VERSION_MISMATCH = /requires go (?<current_ver>.*) .*running go (?<req_ver>.*);/
+
         GO_MOD_VERSION = /^go 1\.\d+(\.\d+)?$/
 
         sig do
@@ -292,6 +298,8 @@ module Dependabot
           write_go_mod(body)
         end
 
+        # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(stderr: String).returns(T.noreturn) }
         def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
           stderr = stderr.gsub(Dir.getwd, "")
@@ -323,10 +331,21 @@ module Dependabot
             raise Dependabot::OutOfDisk.new, error_message
           end
 
+          if (matches = stderr.match(AMBIGUOUS_ERROR_MESSAGE))
+            raise Dependabot::DependencyFileNotResolvable, matches[:package]
+          end
+
+          if (matches = stderr.match(GO_VERSION_MISMATCH))
+            raise Dependabot::ToolVersionNotSupported.new(GO_LANG, T.must(matches[:current_ver]),
+                                                          T.must(matches[:req_ver]))
+          end
+
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { params(message: String, regex: Regexp).returns(String) }
         def filter_error_message(message:, regex:)

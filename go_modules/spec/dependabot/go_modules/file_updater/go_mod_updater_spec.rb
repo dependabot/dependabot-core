@@ -953,6 +953,35 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("write error. Out of diskspace")
         end
       end
+
+      it "detects 'ambiguous package'" do
+        stderr = <<~ERROR
+          go: downloading google.golang.org/grpc v1.70.0
+          go: github.com/terraform-linters/tflint imports
+                  github.com/terraform-linters/tflint/cmd imports
+                  github.com/terraform-linters/tflint-ruleset-terraform/rules imports
+                  github.com/hashicorp/go-getter imports
+                  cloud.google.com/go/storage imports
+                  google.golang.org: ambiguous import: found package google.golang.org/grpc/stats/otl in multiple modules:
+                  google.golang.org/grpc v1.69.2 (/home/dependabot/go/pkg/mod/stats/opentelemetry)
+        ERROR
+
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+
+      it "detects 'ToolVersionNotSupported'" do
+        stderr = <<~ERROR
+          go: downloading google.golang.org/grpc v1.67.3
+          go: downloading google.golang.org/grpc v1.70.0
+          go: google.golang.org/grpc/stats/otl@v0.0.0-87961b3 requires go >= 1.22.7 (running go 1.22.5; CUAIN=local+auto)
+        ERROR
+
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::ToolVersionNotSupported)
+      end
     end
   end
 end
