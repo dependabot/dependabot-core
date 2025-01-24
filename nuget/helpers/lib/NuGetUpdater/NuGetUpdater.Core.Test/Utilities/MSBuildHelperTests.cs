@@ -1,7 +1,8 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
-using NuGet.Build.Tasks;
-
+using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -1365,6 +1366,91 @@ public class MSBuildHelperTests : TestBase
         Assert.Equal("4.9.2", resolvedDependencies[2].Version);
     }
     #endregion
+
+    [Theory]
+    [MemberData(nameof(GenerateErrorFromToolOutputTestData))]
+    public async Task GenerateErrorFromToolOutput(string output, JobErrorBase? expectedError)
+    {
+        Exception? exception = null;
+        try
+        {
+            MSBuildHelper.ThrowOnError(output);
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+        }
+
+        if (expectedError is null)
+        {
+            Assert.Null(exception);
+        }
+        else
+        {
+            Assert.NotNull(exception);
+            using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test-feed" value="http://localhost/test-feed" />
+                  </packageSources>
+                </configuration>
+                """)]);
+            var actualError = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
+            if (actualError is DependencyFileNotFound notFound)
+            {
+                // normalize default message for the test
+                actualError = new DependencyFileNotFound(notFound.Details["file-path"].ToString()!, "test message");
+            }
+
+            var actualErrorJson = JsonSerializer.Serialize(actualError, RunWorker.SerializerOptions);
+            var expectedErrorJson = JsonSerializer.Serialize(expectedError, RunWorker.SerializerOptions);
+            Assert.Equal(expectedErrorJson, actualErrorJson);
+        }
+    }
+
+    public static IEnumerable<object?[]> GenerateErrorFromToolOutputTestData()
+    {
+        yield return
+        [
+            // output
+            "Everything was good.",
+            // expectedError
+            null,
+        ];
+
+        yield return
+        [
+            // output
+            "Response status code does not indicate success: 403",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The imported file \"some.file\" does not exist",
+            // expectedError
+            new DependencyFileNotFound("some.file", "test message"),
+        ];
+
+        yield return
+        [
+            // output
+            "Package 'Some.Package' is not found on source",
+            // expectedError
+            new UpdateNotPossible(["Some.Package"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+    }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {

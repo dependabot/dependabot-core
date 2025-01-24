@@ -903,21 +903,6 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnUnauthenticatedFeed(string stdout)
-    {
-        var unauthorizedMessageSnippets = new string[]
-        {
-            "The plugin credential provider could not acquire credentials",
-            "401 (Unauthorized)",
-            "error NU1301: Unable to load the service index for source",
-            "Response status code does not indicate success: 403",
-        };
-        if (unauthorizedMessageSnippets.Any(stdout.Contains))
-        {
-            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
-        }
-    }
-
     internal static string? GetMissingFile(string output)
     {
         var missingFilePatterns = new[]
@@ -934,7 +919,30 @@ internal static partial class MSBuildHelper
         return null;
     }
 
-    internal static void ThrowOnMissingFile(string output)
+    internal static void ThrowOnError(string output)
+    {
+        ThrowOnUnauthenticatedFeed(output);
+        ThrowOnMissingFile(output);
+        ThrowOnMissingPackages(output);
+        ThrowOnUnresolvableDependencies(output);
+    }
+
+    private static void ThrowOnUnauthenticatedFeed(string stdout)
+    {
+        var unauthorizedMessageSnippets = new string[]
+        {
+            "The plugin credential provider could not acquire credentials",
+            "401 (Unauthorized)",
+            "error NU1301: Unable to load the service index for source",
+            "Response status code does not indicate success: 403",
+        };
+        if (unauthorizedMessageSnippets.Any(stdout.Contains))
+        {
+            throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.Unauthorized);
+        }
+    }
+
+    private static void ThrowOnMissingFile(string output)
     {
         var missingFile = GetMissingFile(output);
         if (missingFile is not null)
@@ -943,14 +951,24 @@ internal static partial class MSBuildHelper
         }
     }
 
-    internal static void ThrowOnMissingPackages(string output)
+    private static void ThrowOnMissingPackages(string output)
     {
-        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^'].*)' is not found on source");
+        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^']*)' is not found on source");
         var matchCollection = missingPackagesPattern.Matches(output);
         var missingPackages = matchCollection.Select(m => m.Groups["PackageName"].Value).Distinct().ToArray();
         if (missingPackages.Length > 0)
         {
             throw new UpdateNotPossibleException(missingPackages);
+        }
+    }
+
+    private static void ThrowOnUnresolvableDependencies(string output)
+    {
+        var unresolvablePackagePattern = new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'");
+        var match = unresolvablePackagePattern.Match(output);
+        if (match.Success)
+        {
+            throw new UpdateNotPossibleException([$"{match.Groups["PackageName"].Value}.{match.Groups["PackageVersion"].Value}"]);
         }
     }
 
