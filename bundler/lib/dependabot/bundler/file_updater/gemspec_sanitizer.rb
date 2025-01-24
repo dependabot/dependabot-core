@@ -112,13 +112,12 @@ module Dependabot
             )
           end
 
-          sig { params(node: T.untyped).void }
+          sig { params(node: ParserNode).void }
           def replace_version_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
             return replace_constant(node) if node_assigns_to_version_constant?(node)
 
-            # debugger
             node.children.each { |child| replace_version_assignments(child) }
           end
 
@@ -133,7 +132,7 @@ module Dependabot
             end
           end
 
-          sig { params(node: T.untyped).void }
+          sig { params(node: ParserNode).void }
           def replace_file_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
