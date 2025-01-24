@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -68,16 +68,21 @@ module Dependabot
           /(#{REGULAR_NAMESPACED_DECLARATION_REGEX}|#{KOTLIN_MAP_NAMESPACED_DECLARATION_REGEX})/
         # rubocop:enable Layout/LineLength
 
+        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
 
+        sig do
+          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
+            .returns(T.nilable(T::Hash[T.untyped, T.untyped]))
+        end
         def property_details(property_name:, callsite_buildfile:)
           # If the root project was specified, just look in the top-level
           # buildfile
           if property_name.start_with?("rootProject.")
             property_name = property_name.sub("rootProject.", "")
-            return properties(top_level_buildfile).fetch(property_name, nil)
+            return properties(T.must(top_level_buildfile)).fetch(property_name, nil)
           end
 
           # If this project was specified strip the specifier
@@ -99,6 +104,9 @@ module Dependabot
           nil
         end
 
+        sig do
+          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile).returns(T.any(NilClass, String))
+        end
         def property_value(property_name:, callsite_buildfile:)
           property_details(
             property_name: property_name,
@@ -108,10 +116,12 @@ module Dependabot
 
         private
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
+        sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
         def properties(buildfile)
-          @properties ||= {}
+          @properties ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
           return @properties[buildfile.name] if @properties[buildfile.name]
 
           @properties[buildfile.name] = {}
@@ -128,6 +138,7 @@ module Dependabot
           @properties[buildfile.name]
         end
 
+        sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
         def fetch_single_property_declarations(buildfile)
           properties = {}
 
@@ -148,6 +159,7 @@ module Dependabot
           properties
         end
 
+        sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
         def fetch_kotlin_block_property_declarations(buildfile)
           properties = {}
 
@@ -178,6 +190,7 @@ module Dependabot
           properties
         end
 
+        sig { params(buildfile: Dependabot::DependencyFile).returns(T::Hash[T.untyped, T.untyped]) }
         def fetch_multi_property_declarations(buildfile)
           properties = {}
 
@@ -202,14 +215,17 @@ module Dependabot
           properties
         end
 
+        sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
         def prepared_content(buildfile)
           # Remove any comments
-          buildfile.content
-                   .gsub(%r{(?<=^|\s)//.*$}, "\n")
-                   .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+          T.must(buildfile.content)
+           .gsub(%r{(?<=^|\s)//.*$}, "\n")
+           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
         end
 
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def top_level_buildfile
+          @top_level_buildfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @top_level_buildfile ||= dependency_files.find do |f|
             SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
           end
