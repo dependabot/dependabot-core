@@ -159,6 +159,8 @@ RUN apt-get update \
     tzdata \
     # Needed to build `gssapi`/`krb5`
     libkrb5-dev \
+    # To fix
+    python-is-python3 \
   && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
@@ -178,11 +180,11 @@ COPY --from=python-3.13 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 # Copy the output of the build script, it should be identical across Python versions
 COPY --from=python-3.13 /opt/python/ /opt/python/
 
-# Install pyenv and the required Python version
-RUN pyenv install --skip-existing $PY_3_13
-
 # Set the Python version globally or locally
 RUN pyenv global $PY_3_13
+
+# Set the environment variable PYTHONHTTPSVERIFY
+ENV PYTHONHTTPSVERIFY=0
 
 # Rehash pyenv to make sure the shims are updated
 RUN pyenv rehash
@@ -194,6 +196,43 @@ ENV PYENV_VERSION $PY_3_13
 RUN pyenv exec pip install certifi
 
 USER root
+
 # Set the SSL_CERT_FILE environment variable using a shell command
-RUN export SSL_CERT_FILE=$(pyenv exec python -m certifi) && \
-    echo "SSL_CERT_FILE=$SSL_CERT_FILE" >> /etc/environment
+RUN SSL_CERT_FILE=$(pyenv exec python -m certifi) && \
+    echo "SSL_CERT_FILE=$SSL_CERT_FILE" >> /etc/environment && \
+    export SSL_CERT_FILE
+
+# Install necessary build tools and libraries
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    wget \
+    curl \
+    cmake \
+    && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+    && apt-get update && apt-get install -y \
+    gdal-bin \
+    libgdal-dev \
+    build-essential \
+    python3-gdal \
+    && apt-get clean
+
+# Download and extract GDAL source
+RUN wget https://github.com/OSGeo/gdal/releases/download/v3.10.1/gdal-3.10.1.tar.gz && \
+    tar -xzf gdal-3.10.1.tar.gz && \
+    cd gdal-3.10.1 && \
+    cmake . && \
+    make -j$(nproc) && \
+    make install
+
+# Set GDAL environment variables
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# Install the latest versions of pip, setuptools, and wheel
+RUN pyenv exec pip install --upgrade pip setuptools wheel
+
+# Copy the README.md file from the project directory to the container
+COPY python/README.md /opt/python/lib/README.md
+
+#RUN pyenv exec pip install gdal==3.9.3
+#RUN pyenv exec pip install psycopg==3.2.4
