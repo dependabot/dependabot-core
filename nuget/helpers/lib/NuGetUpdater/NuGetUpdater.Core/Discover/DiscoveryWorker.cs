@@ -262,7 +262,8 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             }
         }
 
-        return expandedProjects.ToImmutableArray();
+        var result = expandedProjects.OrderBy(p => p).ToImmutableArray();
+        return result;
     }
 
     private static IEnumerable<string> ExpandItemGroupFilesFromProject(string projectPath, params string[] itemTypes)
