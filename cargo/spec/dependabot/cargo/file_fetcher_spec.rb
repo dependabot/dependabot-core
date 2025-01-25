@@ -656,6 +656,25 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
             .to eq(["file"])
         end
       end
+
+      context "with a glob that has a wild card '*' but no directory information specified" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_workspace_with_no_path.json"
+          )
+        end
+
+        it "fetches the workspace dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(Cargo.toml
+                 .cargo/config.toml)
+            )
+          expect(file_fetcher_instance.files.map(&:type).uniq)
+            .to eq(["file"])
+        end
+      end
     end
   end
 
