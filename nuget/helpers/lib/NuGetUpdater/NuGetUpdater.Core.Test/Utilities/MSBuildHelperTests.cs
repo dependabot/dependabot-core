@@ -1450,6 +1450,30 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new UpdateNotPossible(["Some.Package.1.2.3"]),
         ];
+
+        yield return
+        [
+            // output
+            "Could not install package 'Some.Package 1.2.3'. You are trying to install this package into a project that targets 'SomeFramework'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find a version of 'Some.Package' that is compatible with 'Some.Other.Package 4.5.6 constraint: Some.Package (>= 1.2.3)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "the following error(s) may be blocking the current package operation: 'Some.Package 1.2.3 constraint: Some.Other.Package (>= 4.5.6)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
     }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
