@@ -70,7 +70,7 @@ module Dependabot
         return true if normalized_constraint.nil? || normalized_constraint.empty?
 
         # Split the expression by logical OR (`||`) into groups
-        normalized_constraint.split(/\s*\|\|\s*/).reject(&:empty?).all? do |or_group|
+        normalized_constraint.split("||").reject(&:empty?).all? do |or_group|
           or_group.split(/\s+/).reject(&:empty?).all? do |and_constraint|
             and_constraint.match?(VALID_CONSTRAINT_REGEX)
           end
@@ -131,7 +131,7 @@ module Dependabot
         return nil unless valid_constraint_expression?(normalized_constraint)
 
         # Parse valid constraints
-        normalized_constraint.split(/\s*\|\|\s*/).flat_map do |or_group|
+        normalized_constraint.split("||").flat_map do |or_group|
           or_group.strip.split(/\s+/).map(&:strip)
         end.then do |normalized_constraints| # rubocop:disable Style/MultilineBlockChain
           to_ruby_constraints_with_versions(normalized_constraints)
