@@ -382,6 +382,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           end
         end
       end
+
+      context "when dealing with v1 format" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v1") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.find { |d| d.name == "fetch-factory" }).to have_attributes(
+            name: "fetch-factory",
+            version: "0.0.1"
+          )
+          expect(dependencies.find { |d| d.name == "etag" }).to have_attributes(
+            name: "etag",
+            version: "1.8.1"
+          )
+          expect(dependencies.length).to eq(17)
+        end
+      end
     end
   end
 
