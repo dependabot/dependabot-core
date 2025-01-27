@@ -429,13 +429,27 @@ module Dependabot
         return if @package_json.nil?
 
         version_selector = VersionSelector.new
-        engine_versions = version_selector.setup(@package_json, name)
+        engine_versions = version_selector.setup(@package_json, name, dependabot_versions(name))
 
         return if engine_versions.empty?
 
         version = engine_versions[name]
         Dependabot.logger.info("Returned (#{MANIFEST_ENGINES_KEY}) info \"#{name}\" : \"#{version}\"")
         version
+      end
+
+      sig { params(name: String).returns(T.nilable(T::Array[Dependabot::Version])) }
+      def dependabot_versions(name)
+        case name
+        when "npm"
+          NpmPackageManager::SUPPORTED_VERSIONS
+        when "yarn"
+          YarnPackageManager::SUPPORTED_VERSIONS
+        when "bun"
+          BunPackageManager::SUPPORTED_VERSIONS
+        when "pnpm"
+          PNPMPackageManager::SUPPORTED_VERSIONS
+        end
       end
     end
   end

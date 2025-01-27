@@ -81,14 +81,17 @@ module Dependabot
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.
       # @return [T::Array[String]] The list of unique Ruby-compatible constraints.
       sig do
-        params(constraint_expression: T.nilable(String))
+        params(
+          constraint_expression: T.nilable(String),
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        )
           .returns(T.nilable(T::Array[String]))
       end
-      def self.extract_constraints(constraint_expression)
+      def self.extract_constraints(constraint_expression, dependabot_versions = nil)
         normalized_constraint = constraint_expression&.strip
         return [] if normalized_constraint.nil? || normalized_constraint.empty?
 
-        parsed_constraints = parse_constraints(normalized_constraint)
+        parsed_constraints = parse_constraints(normalized_constraint, dependabot_versions)
 
         return nil unless parsed_constraints
 
@@ -98,12 +101,18 @@ module Dependabot
       # Find the highest version from the given constraint expression.
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.
       # @return [T.nilable(String)] The highest version, or nil if no versions are available.
-      sig { params(constraint_expression: T.nilable(String)).returns(T.nilable(String)) }
-      def self.find_highest_version_from_constraint_expression(constraint_expression)
+      sig do
+        params(
+          constraint_expression: T.nilable(String),
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        )
+          .returns(T.nilable(String))
+      end
+      def self.find_highest_version_from_constraint_expression(constraint_expression, dependabot_versions = nil)
         normalized_constraint = constraint_expression&.strip
         return nil if normalized_constraint.nil? || normalized_constraint.empty?
 
-        parsed_constraints = parse_constraints(normalized_constraint)
+        parsed_constraints = parse_constraints(normalized_constraint, dependabot_versions)
 
         return nil unless parsed_constraints
 
@@ -118,10 +127,13 @@ module Dependabot
       #   - `[]` if the constraint expression is valid but represents "no constraints"
       #   - An array of hashes for valid constraints with details about the constraint and version
       sig do
-        params(constraint_expression: T.nilable(String))
+        params(
+          constraint_expression: T.nilable(String),
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        )
           .returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]]))
       end
-      def self.parse_constraints(constraint_expression)
+      def self.parse_constraints(constraint_expression, dependabot_versions = nil)
         normalized_constraint = constraint_expression&.strip
 
         # Return an empty array for valid "no constraints" (nil or empty input)
@@ -134,14 +146,19 @@ module Dependabot
         normalized_constraint.split("||").flat_map do |or_group|
           or_group.strip.split(/\s+/).map(&:strip)
         end.then do |normalized_constraints| # rubocop:disable Style/MultilineBlockChain
-          to_ruby_constraints_with_versions(normalized_constraints)
+          to_ruby_constraints_with_versions(normalized_constraints, dependabot_versions)
         end.uniq { |parsed| parsed[:constraint] } # Ensure uniqueness based on `:constraint` # rubocop:disable Style/MultilineBlockChain
       end
 
-      sig { params(constraints: T::Array[String]).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
-      def self.to_ruby_constraints_with_versions(constraints)
+      sig do
+        params(
+          constraints: T::Array[String],
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        ).returns(T::Array[T::Hash[Symbol, T.nilable(String)]])
+      end
+      def self.to_ruby_constraints_with_versions(constraints, dependabot_versions = [])
         constraints.filter_map do |constraint|
-          parsed = to_ruby_constraint_with_version(constraint)
+          parsed = to_ruby_constraint_with_version(constraint, dependabot_versions)
           parsed if parsed && parsed[:constraint] # Only include valid constraints
         end.uniq
       end
@@ -160,8 +177,14 @@ module Dependabot
       #  to_ruby_constraint_with_version("^1.2.3") # => { constraint: ">=1.2.3 <2.0.0", version: "1.2.3" }
       #  to_ruby_constraint_with_version("*")      # => { constraint: nil, version: nil }
       #  to_ruby_constraint_with_version("invalid") # => nil
-      sig { params(constraint: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
-      def self.to_ruby_constraint_with_version(constraint)
+      sig do
+        params(
+          constraint: String,
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version])
+        )
+          .returns(T.nilable(T::Hash[Symbol, T.nilable(String)]))
+      end
+      def self.to_ruby_constraint_with_version(constraint, dependabot_versions = [])
         return nil if constraint.empty?
 
         case constraint
@@ -197,9 +220,12 @@ module Dependabot
             end
           { constraint: ruby_constraint, version: full_version }
         when GREATER_THAN_EQUAL_REGEX # Greater than or equal, e.g., ">=1.2.3"
-          return unless Regexp.last_match
+          return unless Regexp.last_match && Regexp.last_match(1)
 
-          { constraint: ">=#{Regexp.last_match(1)}", version: nil }
+          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
+            version >= Version.new(constraint)
+          end
+          { constraint: ">=#{Regexp.last_match(1)}", version: found_version }
         when LESS_THAN_EQUAL_REGEX # Less than or equal, e.g., "<=1.2.3"
           return unless Regexp.last_match
 
@@ -208,15 +234,42 @@ module Dependabot
         when GREATER_THAN_REGEX # Greater than, e.g., ">1.2.3"
           return unless Regexp.last_match
 
-          { constraint: ">#{Regexp.last_match(1)}", version: nil }
+          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
+            version > Version.new(constraint)
+          end
+
+          { constraint: ">#{Regexp.last_match(1)}", version: found_version }
         when LESS_THAN_REGEX # Less than, e.g., "<1.2.3"
           return unless Regexp.last_match
 
-          { constraint: "<#{Regexp.last_match(1)}", version: nil }
+          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
+            version < Version.new(constraint)
+          end
+
+          { constraint: "<#{Regexp.last_match(1)}", version: found_version }
         when WILDCARD_REGEX # Wildcard
-          { constraint: nil, version: nil } # Explicitly valid but no specific constraint
+          { constraint: nil, version: dependabot_versions&.max } # Explicitly valid but no specific constraint
         end
       end
+
+      sig do
+        params(
+          dependabot_versions: T.nilable(T::Array[Dependabot::Version]),
+          constraint_version: String,
+          condition: T.proc.params(version: Dependabot::Version, constraint: Dependabot::Version).returns(T::Boolean)
+        )
+          .returns(T.nilable(Dependabot::Version))
+      end
+      def self.satisfying_version(dependabot_versions, constraint_version, &condition)
+        return unless dependabot_versions&.any?
+
+        # Returns the highest version that satisfies the condition, or nil if none.
+        dependabot_versions
+          .sort
+          .reverse
+          .find { |version| condition.call(version, Version.new(constraint_version)) } # rubocop:disable Performance/RedundantBlockCall
+      end
+
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
