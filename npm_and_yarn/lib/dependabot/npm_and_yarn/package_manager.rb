@@ -190,7 +190,7 @@ module Dependabot
       end
 
       sig { params(name: String).returns(T.nilable(Requirement)) }
-      def find_engine_constraints_as_requirement(name)
+      def find_engine_constraints_as_requirement(name) # rubocop:disable Metrics/PerceivedComplexity
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
         return nil unless @engines.is_a?(Hash) && @engines[name]
