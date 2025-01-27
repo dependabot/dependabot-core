@@ -31,7 +31,6 @@ module Dependabot
             version = content["lockfileVersion"]
             raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
             raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
-            raise_invalid!("unsupported 'lockfileVersion' = #{version}") unless version.zero?
 
             T.let(content, T.untyped)
           end
