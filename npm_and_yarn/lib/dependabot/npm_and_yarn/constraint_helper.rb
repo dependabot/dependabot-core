@@ -118,7 +118,7 @@ module Dependabot
 
         parsed_constraints
           .filter_map { |parsed| parsed[:version] } # Extract all versions
-          .max_by { |version| Version.new(version) } # Find the highest version
+          .max_by { |version| Version.new(version) }
       end
 
       # Parse all constraints (split by logical OR `||`) and convert to Ruby-compatible constraints.
@@ -143,11 +143,12 @@ module Dependabot
         return nil unless valid_constraint_expression?(normalized_constraint)
 
         # Parse valid constraints
-        normalized_constraint.split("||").flat_map do |or_group|
+        constraints = normalized_constraint.split("||").flat_map do |or_group|
           or_group.strip.split(/\s+/).map(&:strip)
         end.then do |normalized_constraints| # rubocop:disable Style/MultilineBlockChain
           to_ruby_constraints_with_versions(normalized_constraints, dependabot_versions)
         end.uniq { |parsed| parsed[:constraint] } # Ensure uniqueness based on `:constraint` # rubocop:disable Style/MultilineBlockChain
+        constraints
       end
 
       sig do
@@ -220,35 +221,43 @@ module Dependabot
             end
           { constraint: ruby_constraint, version: full_version }
         when GREATER_THAN_EQUAL_REGEX # Greater than or equal, e.g., ">=1.2.3"
+
           return unless Regexp.last_match && Regexp.last_match(1)
 
-          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
-            version >= Version.new(constraint)
+          found_version = highest_matching_version(
+            dependabot_versions,
+            T.must(Regexp.last_match(1))
+          ) do |version, constraint_version|
+            version >= Version.new(constraint_version)
           end
-          { constraint: ">=#{Regexp.last_match(1)}", version: found_version }
+          { constraint: ">=#{Regexp.last_match(1)}", version: found_version&.to_s }
         when LESS_THAN_EQUAL_REGEX # Less than or equal, e.g., "<=1.2.3"
           return unless Regexp.last_match
 
           full_version = Regexp.last_match(1)
           { constraint: "<=#{full_version}", version: full_version }
         when GREATER_THAN_REGEX # Greater than, e.g., ">1.2.3"
-          return unless Regexp.last_match
+          return unless Regexp.last_match && Regexp.last_match(1)
 
-          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
-            version > Version.new(constraint)
+          found_version = highest_matching_version(
+            dependabot_versions,
+            T.must(Regexp.last_match(1))
+          ) do |version, constraint_version|
+            version > Version.new(constraint_version)
           end
-
-          { constraint: ">#{Regexp.last_match(1)}", version: found_version }
+          { constraint: ">#{Regexp.last_match(1)}", version: found_version&.to_s }
         when LESS_THAN_REGEX # Less than, e.g., "<1.2.3"
-          return unless Regexp.last_match
+          return unless Regexp.last_match && Regexp.last_match(1)
 
-          found_version = satisfying_version(dependabot_versions, T.must(Regexp.last_match(1))) do |version, constraint|
-            version < Version.new(constraint)
+          found_version = highest_matching_version(
+            dependabot_versions,
+            T.must(Regexp.last_match(1))
+          ) do |version, constraint_version|
+            version < Version.new(constraint_version)
           end
-
-          { constraint: "<#{Regexp.last_match(1)}", version: found_version }
+          { constraint: "<#{Regexp.last_match(1)}", version: found_version&.to_s }
         when WILDCARD_REGEX # Wildcard
-          { constraint: nil, version: dependabot_versions&.max } # Explicitly valid but no specific constraint
+          { constraint: nil, version: dependabot_versions&.max&.to_s } # Explicitly valid but no specific constraint
         end
       end
 
@@ -260,7 +269,7 @@ module Dependabot
         )
           .returns(T.nilable(Dependabot::Version))
       end
-      def self.satisfying_version(dependabot_versions, constraint_version, &condition)
+      def self.highest_matching_version(dependabot_versions, constraint_version, &condition)
         return unless dependabot_versions&.any?
 
         # Returns the highest version that satisfies the condition, or nil if none.

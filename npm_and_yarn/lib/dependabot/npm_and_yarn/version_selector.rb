@@ -29,14 +29,17 @@ module Dependabot
         # Return an empty hash if no engine versions are specified
         return {} if engine_versions.nil?
 
-        # Select engine versions matching the provided name and satisfying SemVer constraints
-        # This adheres to SemVer specifications, ensuring the highest valid version is chosen.
-        version = engine_versions.select do |engine, value|
-          engine.to_s.match(name) &&
-            ConstraintHelper.find_highest_version_from_constraint_expression(value, dependabot_versions)
+        versions = {}
+
+        engine_versions.each do |engine, value|
+          next unless engine.to_s.match(name)
+
+          versions[name] = ConstraintHelper.find_highest_version_from_constraint_expression(
+            value, dependabot_versions
+          )
         end
 
-        version
+        versions
       end
     end
   end

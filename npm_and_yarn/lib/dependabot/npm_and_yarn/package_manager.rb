@@ -429,6 +429,7 @@ module Dependabot
         return if @package_json.nil?
 
         version_selector = VersionSelector.new
+
         engine_versions = version_selector.setup(@package_json, name, dependabot_versions(name))
 
         return if engine_versions.empty?
