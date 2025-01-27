@@ -178,84 +178,65 @@ COPY --from=python-3.13 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 # Copy the output of the build script, it should be identical across Python versions
 COPY --from=python-3.13 /opt/python/ /opt/python/
 
-# Set pyenv global Python version
 RUN pyenv global $PY_3_13
 
-# Set Python version to $PY_3_13
-ENV PYENV_VERSION=$PY_3_13
 
-# Set PYTHONPATH explicitly
-ENV PYTHONPATH="/opt/pyenv/versions/3.13.1/lib/python3.13/site-packages"
+# For ARM64-based systems, use the ARM-specific Miniconda installer
+#RUN curl -sSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -o miniconda.sh \
+#  && bash miniconda.sh -b -p /opt/conda \
+#  && rm miniconda.sh \
+#  && /opt/conda/bin/conda init
+#
+## Install GDAL via Conda
+#RUN /opt/conda/bin/conda install -c conda-forge gdal=3.10.1
 
 USER root
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    curl \
     build-essential \
-    python3-dev \
-    python3-distutils \
-    gfortran \
-    libatlas-base-dev \
-    liblapack-dev \
-    libopenblas-dev \
-    libsqlite3-dev \
-    libjpeg-dev \
+    cmake \
     libproj-dev \
     libgeos-dev \
-    libcurl4-openssl-dev \
-    libxml2-dev \
-    wget \
-    curl \
-    libssl-dev
-
-# Install dependencies for building GDAL
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libgif-dev \
-    liblzma-dev \
-    libnetcdf-dev \
-    libhdf5-serial-dev \
-    libhdf4-alt-dev \
-    libpq-dev \
-    libxerces-c-dev \
     libspatialite-dev \
-    libwebp-dev \
+    libsqlite3-dev \
     libpoppler-dev \
-    libpoppler-private-dev \
+    libcurl4-openssl-dev \
+    libspatialite7 \
+    libtiff-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libnetcdf-dev \
+    libhdf5-dev \
     libfreexl-dev \
-    libgeotiff-dev \
-    liblcms2-dev \
-    libpodofo-dev \
-    swig \
-    cmake \
-    python3-numpy
+    libwebp-dev \
+    python3 \
+    python3-dev \
+    python3-pip \
+    git \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-# Install Python bindings for GDAL
+# Clone GDAL source code
+RUN git clone https://github.com/OSGeo/gdal.git /usr/local/src/gdal \
+  && cd /usr/local/src/gdal \
+  && git checkout v3.10.1
+
+# Build and install GDAL using CMake
+RUN cd /usr/local/src/gdal \
+  && mkdir build \
+  && cd build \
+  && cmake .. \
+  && make -j"$(nproc)" \
+  && make install \
+  && ldconfig
+
+# Verify GDAL installation
+RUN gdalinfo --version
+
+# Install GDAL Python bindings with pip
+USER dependabot
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
-
-# Install pip, setuptools, and wheel
-RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel
-
-# Download and build GDAL from source using CMake
-WORKDIR /tmp
-RUN wget --no-check-certificate http://download.osgeo.org/gdal/3.10.1/gdal-3.10.1.tar.gz && \
-    tar -xvf gdal-3.10.1.tar.gz
-
-WORKDIR /tmp/gdal-3.10.1
-RUN mkdir build && cd build && \
-    cmake .. -DBUILD_PYTHON_BINDINGS=ON -DGDAL_BUILD_OPTIONAL_DRIVERS=ON -DCMAKE_EXE_LINKER_FLAGS="-lssl -lcrypto" && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig
-
-# Set GDAL environment variables
-ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
-ENV C_INCLUDE_PATH=/usr/include/gdal
-
-# Set PIP_NO_SSL_VERIFY to true to disable SSL verification for pip
-ENV PIP_NO_SSL_VERIFY=true
-
-WORKDIR /home/dependabot/dependabot-updater
-# Install numpy and GDAL Python bindings, ensuring the version matches the installed libgdal
-RUN python3 -m pip install --no-cache-dir --prefer-binary gdal==3.10.1 numpy
+RUN python3 -m pip install gdal==3.10.1
