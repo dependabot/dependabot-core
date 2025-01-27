@@ -55,7 +55,9 @@ module Dependabot
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
-        updated_files += updated_pnpm_workspace_files
+        if Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog)
+          updated_files += updated_pnpm_workspace_files
+        end
         updated_files += updated_lockfiles
 
         if updated_files.none?
