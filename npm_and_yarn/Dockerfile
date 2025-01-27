@@ -10,7 +10,7 @@ ARG PNPM_VERSION=9.15.3
 ARG YARN_VERSION=4.5.3
 
 # Check for updates at https://github.com/oven-sh/bun/releases
-ARG BUN_VERSION=1.1.39
+ARG BUN_VERSION=1.2
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=20
