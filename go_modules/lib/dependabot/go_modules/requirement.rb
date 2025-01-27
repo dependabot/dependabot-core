@@ -39,7 +39,7 @@ module Dependabot
           raise BadRequirementError, msg
         end
 
-        return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
+        return DefaultPrereleaseRequirement if matches[1] == ">=" && matches[2] == "0"
 
         [matches[1] || "=", Version.new(matches[2])]
       end
