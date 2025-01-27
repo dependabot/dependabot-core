@@ -198,13 +198,31 @@ module Dependabot
         raw_constraint = @engines[name].to_s.strip
         return nil if raw_constraint.empty?
 
-        constraints = ConstraintHelper.extract_constraints(raw_constraint)
+        if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
+          constraints = ConstraintHelper.extract_constraints(raw_constraint)
 
-        unless constraints
-          Dependabot.logger.warn(
-            "Unrecognized constraint format for #{name}: #{raw_constraint}"
-          )
-          return nil
+          # When constraints are invalid we return constraints array nil
+          if constraints.nil?
+            Dependabot.logger.warn(
+              "Unrecognized constraint format for #{name}: #{raw_constraint}"
+            )
+          end
+        else
+          raw_constraints = raw_constraint.split
+          constraints = raw_constraints.map do |constraint|
+            case constraint
+            when /^\d+$/
+              ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
+            when /^\d+\.\d+$/
+              ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
+            when /^\d+\.\d+\.\d+$/
+              "=#{constraint}"
+            else
+              Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
+              constraint
+            end
+          end
+
         end
 
         Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
