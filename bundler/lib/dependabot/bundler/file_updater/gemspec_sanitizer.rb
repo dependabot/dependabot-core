@@ -121,7 +121,7 @@ module Dependabot
             node.children.each { |child| replace_version_assignments(child) }
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).void }
+          sig { params(node: ParserNode).void }
           def replace_version_constant_references(node)
             return unless node.is_a?(Parser::AST::Node)
 
@@ -152,7 +152,7 @@ module Dependabot
             end
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_to_version_constant?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -165,7 +165,7 @@ module Dependabot
             node_interpolates_version_constant?(node.children.last)
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_files_to_var?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -175,7 +175,7 @@ module Dependabot
             node_dynamically_lists_files?(node.children[2])
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_dynamically_lists_files?(node)
             return false unless node.is_a?(Parser::AST::Node)
 
@@ -184,7 +184,7 @@ module Dependabot
             node.type == :block && node.children.first&.type == :send
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_assigns_require_paths?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -193,7 +193,7 @@ module Dependabot
             node.children[1] == :require_paths=
           end
 
-          sig { params(node: T.nilable(T.any(Parser::AST::Node, Symbol, String))).void }
+          sig { params(node: ParserNode).void }
           def replace_file_reads(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -203,7 +203,7 @@ module Dependabot
             node.children.each { |child| replace_file_reads(child) }
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_reads_a_file?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -213,7 +213,7 @@ module Dependabot
             node.children[1] == :read
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_uses_readlines?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -223,7 +223,7 @@ module Dependabot
             node.children[1] == :readlines
           end
 
-          sig { params(node: T.nilable(T.any(Parser::AST::Node, Symbol, String))).void }
+          sig { params(node: ParserNode).void }
           def replace_json_parses(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -232,7 +232,7 @@ module Dependabot
             node.children.each { |child| replace_json_parses(child) }
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_parses_json?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -242,7 +242,7 @@ module Dependabot
             node.children[1] == :parse
           end
 
-          sig { params(node: T.nilable(T.any(Parser::AST::Node, Symbol, String))).void }
+          sig { params(node: ParserNode).void }
           def remove_find_dot_find_args(node)
             return unless node.is_a?(Parser::AST::Node)
             return if node.children[1] == :version=
@@ -251,7 +251,7 @@ module Dependabot
             node.children.each { |child| remove_find_dot_find_args(child) }
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_calls_find_dot_find?(node)
             return false unless node.is_a?(Parser::AST::Node)
             return false unless node.children.first.is_a?(Parser::AST::Node)
@@ -277,7 +277,7 @@ module Dependabot
             end
           end
 
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T::Boolean) }
+          sig { params(node: ParserNode).returns(T::Boolean) }
           def node_includes_heredoc?(node)
             !!find_heredoc_end_range(node)
           end
@@ -287,7 +287,7 @@ module Dependabot
           #
           # Returns a Parser::Source::Range identifying the location of the end
           #   of the heredoc, or nil if no heredoc was found.
-          sig { params(node: T.nilable(Parser::AST::Node)).returns(T.nilable(Parser::Source::Range)) }
+          sig { params(node: ParserNode).returns(T.nilable(Parser::Source::Range)) }
           def find_heredoc_end_range(node)
             return unless node.is_a?(Parser::AST::Node)
 
