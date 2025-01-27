@@ -109,7 +109,7 @@ module Dependabot
 
         parsed_constraints
           .filter_map { |parsed| parsed[:version] } # Extract all versions
-          .max_by { |version| Gem::Version.new(version) } # Find the highest version
+          .max_by { |version| Version.new(version) } # Find the highest version
       end
 
       # Parse all constraints (split by logical OR `||`) and convert to Ruby-compatible constraints.
