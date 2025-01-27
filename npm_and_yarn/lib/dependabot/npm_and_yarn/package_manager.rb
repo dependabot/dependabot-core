@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
 require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
+require "dependabot/npm_and_yarn/constraint_helper"
 
 module Dependabot
   module NpmAndYarn
@@ -197,19 +198,13 @@ module Dependabot
         raw_constraint = @engines[name].to_s.strip
         return nil if raw_constraint.empty?
 
-        raw_constraints = raw_constraint.split
-        constraints = raw_constraints.map do |constraint|
-          case constraint
-          when /^\d+$/
-            ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
-          when /^\d+\.\d+$/
-            ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
-          when /^\d+\.\d+\.\d+$/
-            "=#{constraint}"
-          else
-            Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
-            constraint
-          end
+        constraints = ConstraintHelper.extract_constraints(raw_constraint)
+
+        unless constraints
+          Dependabot.logger.warn(
+            "Unrecognized constraint format for #{name}: #{raw_constraint}"
+          )
+          return nil
         end
 
         Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")

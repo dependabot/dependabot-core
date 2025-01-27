@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/constraint_helper"
 
 module Dependabot
   module NpmAndYarn
@@ -21,7 +22,9 @@ module Dependabot
 
         # Only keep matching specs versions i.e. "20.21.2", "7.1.2",
         # Additional specs can be added later
-        version = engine_versions.select { |engine, value| engine.to_s.match(name) && valid_extracted_version?(value) }
+        version = engine_versions.select do |engine, value|
+          engine.to_s.match(name) && ConstraintHelper.find_highest_version_from_constraint_expression(value)
+        end
 
         version
       end
