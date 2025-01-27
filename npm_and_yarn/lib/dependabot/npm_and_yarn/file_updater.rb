@@ -19,6 +19,7 @@ module Dependabot
       require_relative "file_updater/yarn_lockfile_updater"
       require_relative "file_updater/pnpm_lockfile_updater"
       require_relative "file_updater/bun_lockfile_updater"
+      require_relative "file_updater/pnpm_workspace_updater"
 
       class NoChangeError < StandardError
         extend T::Sig
@@ -54,6 +55,7 @@ module Dependabot
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
+        updated_files += updated_pnpm_workspace_files
         updated_files += updated_lockfiles
 
         if updated_files.none?
@@ -270,6 +272,16 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_pnpm_workspace_files
+        package_files.filter_map do |file|
+          updated_content = updated_pnpm_workspace_content(file)
+          next if updated_content == file.content
+
+          updated_file(file: file, content: updated_content)
+        end
+      end
+
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -406,6 +418,19 @@ module Dependabot
             package_json: file,
             dependencies: dependencies
           ).updated_package_json.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T.any(String, Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater))
+      end
+      def updated_pnpm_workspace_content(file)
+        @updated_pnpm_workspace_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+        @updated_pnpm_workspace_content[file.name] ||=
+          PnpmWorkspaceUpdater.new(
+            workspace_file: file,
+            dependencies: dependencies
+          )
       end
     end
   end

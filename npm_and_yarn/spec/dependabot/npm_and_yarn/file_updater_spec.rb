@@ -99,6 +99,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           "npm-shrinkwrap.json",
           "yarn.lock",
           "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
           "subdirectory/package.json",
           "subdirectory/package-lock.json",
           "subdirectory/npm-shrinkwrap.json",
