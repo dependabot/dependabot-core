@@ -180,16 +180,6 @@ COPY --from=python-3.13 /opt/python/ /opt/python/
 
 RUN pyenv global $PY_3_13
 
-
-# For ARM64-based systems, use the ARM-specific Miniconda installer
-#RUN curl -sSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -o miniconda.sh \
-#  && bash miniconda.sh -b -p /opt/conda \
-#  && rm miniconda.sh \
-#  && /opt/conda/bin/conda init
-#
-## Install GDAL via Conda
-#RUN /opt/conda/bin/conda install -c conda-forge gdal=3.10.1
-
 USER root
 
 RUN apt-get update && apt-get install -y \
@@ -232,11 +222,3 @@ RUN cd /usr/local/src/gdal \
   && make -j"$(nproc)" \
   && make install \
   && ldconfig
-
-# Verify GDAL installation
-RUN gdalinfo --version
-
-# Install GDAL Python bindings with pip
-USER dependabot
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
-RUN python3 -m pip install gdal==3.10.1

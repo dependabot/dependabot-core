@@ -3,7 +3,6 @@ import json
 import plette
 import traceback
 import ssl
-import urllib.request
 from poetry.factory import Factory
 
 
