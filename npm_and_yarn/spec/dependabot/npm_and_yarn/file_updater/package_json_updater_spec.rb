@@ -206,6 +206,61 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
     end
 
+    context "when updating multiple dependencies that results in 'package.json' update only once" do
+      before do
+        Dependabot::Experiments.register(:avoid_duplicate_updates_package_json, true)
+      end
+
+      after do
+        Dependabot::Experiments.register(:avoid_duplicate_updates_package_json, false)
+      end
+
+      let(:project_name) { "npm8/simple_with_multiple_deps" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "cross-spawn",
+            version: "^7.0.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^7.0.6",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^7.0.2",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          ),
+          Dependabot::Dependency.new(
+            name: "dep-spawn",
+            version: "^6.0.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^6.0.2",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^6.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        ]
+      end
+
+      it "updates both dependency declarations" do
+        expect { updated_package_json }
+          .to raise_error("Expected content to change!")
+      end
+    end
+
     context "when the dependency is specified as both dev and runtime" do
       let(:dependency) do
         Dependabot::Dependency.new(
