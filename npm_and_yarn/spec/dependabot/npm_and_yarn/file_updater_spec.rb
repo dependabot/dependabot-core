@@ -4149,19 +4149,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:dependency_name) { "prettier" }
           let(:requirements) do
             [{
-               file: "pnpm-workspace.yaml",
-               requirement: "3.3.3",
-               groups: ["dependencies"],
-               source: nil
-             }]
+              file: "pnpm-workspace.yaml",
+              requirement: "3.3.3",
+              groups: ["dependencies"],
+              source: nil
+            }]
           end
-          let(:previous_requirements)  do
+          let(:previous_requirements) do
             [{
-               file: "pnpm-workspace.yaml",
-               requirement: "3.3.0",
-               groups: ["dependencies"],
-               source: nil
-             }]
+              file: "pnpm-workspace.yaml",
+              requirement: "3.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
           end
 
           it "updates the workspace" do
