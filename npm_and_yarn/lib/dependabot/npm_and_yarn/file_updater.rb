@@ -44,6 +44,7 @@ module Dependabot
           %r{^(?:.*/)?npm-shrinkwrap\.json$},
           %r{^(?:.*/)?yarn\.lock$},
           %r{^(?:.*/)?pnpm-lock\.yaml$},
+          %r{^(?:.*/)?pnpm-workspace\.yaml$},
           %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
           %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
@@ -213,6 +214,15 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pnpm_workspace
+        @pnpm_workspace ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def bun_locks
         @bun_locks ||= T.let(
           filtered_dependency_files
@@ -276,7 +286,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_pnpm_workspace_files
-        package_files.filter_map do |file|
+        pnpm_workspace.filter_map do |file|
           updated_content = updated_pnpm_workspace_content(file)
           next if updated_content == file.content
 
@@ -432,7 +442,7 @@ module Dependabot
           PnpmWorkspaceUpdater.new(
             workspace_file: file,
             dependencies: dependencies
-          )
+          ).updated_pnpm_workspace.content
       end
     end
   end
