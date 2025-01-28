@@ -3829,6 +3829,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         updated_files.find { |f| f.name == "pnpm-lock.yaml" }
       end
 
+      let(:updated_pnpm_workspace) do
+        updated_files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
       let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
       let(:files) { project_dependency_files(project_name) }
 
@@ -4135,6 +4139,228 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
           expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
+        end
+      end
+
+      context "with pnpm catalog protocol" do
+        context "when individual dependency needs updating" do
+          let(:project_name) { "pnpm/catalog_prettier" }
+
+          let(:dependency_name) { "prettier" }
+          let(:version) { "3.3.3" }
+          let(:previous_version) { "3.3.0" }
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+
+            expect(updated_pnpm_workspace.content).to include("prettier: 3.3.3")
+          end
+        end
+
+        context "when updating multiple dependencies in catalogs" do
+          let(:project_name) { "pnpm/catalogs_all_examples" }
+
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "react",
+                version: "18.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.2.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "18.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.2.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react",
+                version: "16.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^16.2.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^16.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "16.2.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^16.2.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^16.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react-icons",
+                version: "4.3.1",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "4.3.1",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "4.3.14",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            ]
+          end
+
+          it "updates the workspace file" do
+            expect(updated_pnpm_workspace.content).to include("react-icons: 4.3.14")
+            expect(updated_pnpm_workspace.content).to include("react: ^18.2.0")
+            expect(updated_pnpm_workspace.content).to include("react-dom: ^18.2.0")
+            expect(updated_pnpm_workspace.content).to include("react: ^16.2.0")
+            expect(updated_pnpm_workspace.content).to include("react-dom: ^16.2.0")
+          end
+        end
+
+        context "when updating multiple dependencies with valid yaml" do
+          let(:project_name) { "pnpm/catalogs_valid_yaml" }
+
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "prettier",
+                version: "3.3.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "3.3.3",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "3.3.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "express",
+                version: "4.15.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "4.21.2",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "4.15.2",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "is-even",
+                version: "0.1.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "1.0.0",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "0.1.2",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react",
+                version: "18.0.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.2.3",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              ),
+              Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "18.0.0",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.2.3",
+                  groups: [],
+                  source: nil
+                }],
+                previous_requirements: [{
+                  file: "pnpm-workspace.yaml",
+                  requirement: "^18.0.0",
+                  groups: [],
+                  source: nil
+                }]
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+
+            expect(updated_pnpm_workspace.content).to include("prettier: \"3.3.3\"")
+            expect(updated_pnpm_workspace.content).to include("\"express\": 4.21.2")
+            expect(updated_pnpm_workspace.content).to include("is-even: '1.0.0'")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.3\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '^18.2.3'")
+          end
         end
       end
     end
