@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/yarn_package_manager"
 require "dependabot/npm_and_yarn/pnpm_package_manager"
 require "dependabot/npm_and_yarn/bun_package_manager"
 require "dependabot/npm_and_yarn/language"
+require "dependabot/npm_and_yarn/constraint_helper"
 
 module Dependabot
   module NpmAndYarn
@@ -189,7 +190,7 @@ module Dependabot
       end
 
       sig { params(name: String).returns(T.nilable(Requirement)) }
-      def find_engine_constraints_as_requirement(name)
+      def find_engine_constraints_as_requirement(name) # rubocop:disable Metrics/PerceivedComplexity
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
         return nil unless @engines.is_a?(Hash) && @engines[name]
@@ -197,19 +198,31 @@ module Dependabot
         raw_constraint = @engines[name].to_s.strip
         return nil if raw_constraint.empty?
 
-        raw_constraints = raw_constraint.split
-        constraints = raw_constraints.map do |constraint|
-          case constraint
-          when /^\d+$/
-            ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
-          when /^\d+\.\d+$/
-            ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
-          when /^\d+\.\d+\.\d+$/
-            "=#{constraint}"
-          else
-            Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
-            constraint
+        if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
+          constraints = ConstraintHelper.extract_constraints(raw_constraint)
+
+          # When constraints are invalid we return constraints array nil
+          if constraints.nil?
+            Dependabot.logger.warn(
+              "Unrecognized constraint format for #{name}: #{raw_constraint}"
+            )
           end
+        else
+          raw_constraints = raw_constraint.split
+          constraints = raw_constraints.map do |constraint|
+            case constraint
+            when /^\d+$/
+              ">=#{constraint}.0.0 <#{constraint.to_i + 1}.0.0"
+            when /^\d+\.\d+$/
+              ">=#{constraint} <#{constraint.split('.').first.to_i + 1}.0.0"
+            when /^\d+\.\d+\.\d+$/
+              "=#{constraint}"
+            else
+              Dependabot.logger.warn("Unrecognized constraint format for #{name}: #{constraint}")
+              constraint
+            end
+          end
+
         end
 
         Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
@@ -434,13 +447,28 @@ module Dependabot
         return if @package_json.nil?
 
         version_selector = VersionSelector.new
-        engine_versions = version_selector.setup(@package_json, name)
+
+        engine_versions = version_selector.setup(@package_json, name, dependabot_versions(name))
 
         return if engine_versions.empty?
 
         version = engine_versions[name]
         Dependabot.logger.info("Returned (#{MANIFEST_ENGINES_KEY}) info \"#{name}\" : \"#{version}\"")
         version
+      end
+
+      sig { params(name: String).returns(T.nilable(T::Array[Dependabot::Version])) }
+      def dependabot_versions(name)
+        case name
+        when "npm"
+          NpmPackageManager::SUPPORTED_VERSIONS
+        when "yarn"
+          YarnPackageManager::SUPPORTED_VERSIONS
+        when "bun"
+          BunPackageManager::SUPPORTED_VERSIONS
+        when "pnpm"
+          PNPMPackageManager::SUPPORTED_VERSIONS
+        end
       end
     end
   end
