@@ -165,6 +165,8 @@ module Dependabot
       REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
     }.freeze, T::Hash[String, Regexp])
 
+    YN0086_DEPS_RESOLUTION_FAILED = /peer dependencies are incorrectly met/
+
     # registry returns malformed response
     REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
 
@@ -350,6 +352,13 @@ module Dependabot
           else
             Dependabot::DependencyNotFound.new(message)
           end
+        }
+      },
+      "YN0086" => {
+        message: "deps resolution failed",
+        handler: lambda { |message, _error, _params|
+          msg = message.match(YN0086_DEPS_RESOLUTION_FAILED)
+          Dependabot::DependencyFileNotResolvable.new(msg || message)
         }
       }
     }.freeze, T::Hash[String, {
