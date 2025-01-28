@@ -4147,8 +4147,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:project_name) { "pnpm/catalog_prettier" }
 
           let(:dependency_name) { "prettier" }
-          let(:version) { "3.3.3" }
-          let(:previous_version) { "3.3.0" }
+          let(:requirements) do
+            [{
+               file: "pnpm-workspace.yaml",
+               requirement: "3.3.3",
+               groups: ["dependencies"],
+               source: nil
+             }]
+          end
+          let(:previous_requirements)  do
+            [{
+               file: "pnpm-workspace.yaml",
+               requirement: "3.3.0",
+               groups: ["dependencies"],
+               source: nil
+             }]
+          end
 
           it "updates the workspace" do
             expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
@@ -4185,13 +4199,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 package_manager: "npm_and_yarn",
                 requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^18.2.0",
+                  requirement: "18.2.0",
                   groups: [],
                   source: nil
                 }],
                 previous_requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^18.0.0",
+                  requirement: "18.0.0",
                   groups: [],
                   source: nil
                 }]
@@ -4202,13 +4216,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 package_manager: "npm_and_yarn",
                 requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^16.2.0",
+                  requirement: "16.2.0",
                   groups: [],
                   source: nil
                 }],
                 previous_requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^16.0.0",
+                  requirement: "16.0.0",
                   groups: [],
                   source: nil
                 }]
@@ -4219,13 +4233,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 package_manager: "npm_and_yarn",
                 requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^16.2.0",
+                  requirement: "16.2.0",
                   groups: [],
                   source: nil
                 }],
                 previous_requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "^16.0.0",
+                  requirement: "16.0.0",
                   groups: [],
                   source: nil
                 }]
@@ -4236,13 +4250,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 package_manager: "npm_and_yarn",
                 requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "4.3.1",
+                  requirement: "4.3.14",
                   groups: [],
                   source: nil
                 }],
                 previous_requirements: [{
                   file: "pnpm-workspace.yaml",
-                  requirement: "4.3.14",
+                  requirement: "4.3.1",
                   groups: [],
                   source: nil
                 }]
@@ -4252,9 +4266,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "updates the workspace file" do
             expect(updated_pnpm_workspace.content).to include("react-icons: 4.3.14")
-            expect(updated_pnpm_workspace.content).to include("react: ^18.2.0")
-            expect(updated_pnpm_workspace.content).to include("react-dom: ^18.2.0")
-            expect(updated_pnpm_workspace.content).to include("react: ^16.2.0")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.0\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '18.2.0'")
+            expect(updated_pnpm_workspace.content).to include("react: 16.2.0")
             expect(updated_pnpm_workspace.content).to include("react-dom: ^16.2.0")
           end
         end
