@@ -55,8 +55,6 @@ module Dependabot
             content = update_dependency_versions(T.must(content), dependency)
           end
 
-          raise "Expected content to change!" if content == workspace_file.content
-
           content
         end
 
@@ -66,7 +64,7 @@ module Dependabot
             content = replace_version_in_content(
               content: content,
               dependency: dependency,
-              old_requirement: old_requirement(dependency, requirement),
+              old_requirement: T.must(old_requirement(dependency, requirement)),
               new_requirement: requirement
             )
           end
@@ -129,7 +127,7 @@ module Dependabot
         end
         def old_requirement(dependency, new_requirement)
           matching_req = dependency.previous_requirements
-                                   .select { |r| r[:file] == workspace_file.name }
+                                   .select
                                    .find { |r| r[:groups] == new_requirement.groups }
 
           return nil if matching_req.nil?
