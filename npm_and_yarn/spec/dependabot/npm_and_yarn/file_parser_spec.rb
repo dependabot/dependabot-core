@@ -91,7 +91,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       end
 
       context "with pnpm `catalog:` requirements and no lockfile" do
-        let(:files) { project_dependency_files("yarn/workspace_requirements_catalog") }
+        let(:files) { project_dependency_files("pnpm/workspace_requirements_catalog") }
 
         its(:length) { is_expected.to eq(0) }
       end
