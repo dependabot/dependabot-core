@@ -96,6 +96,7 @@ module Dependabot
 
       private
 
+      sig { returns(T.nilable(T::Boolean)) }
       def enable_pnpm_workspace_catalog?
         pnpm_workspace_yml && Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog)
       end
