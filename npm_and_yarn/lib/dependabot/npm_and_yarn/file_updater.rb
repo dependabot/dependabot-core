@@ -290,7 +290,7 @@ module Dependabot
           updated_content = updated_pnpm_workspace_content(file)
           next if updated_content == file.content
 
-          updated_file(file: file, content: updated_content)
+          updated_file(file: file, content: T.must(updated_content))
         end
       end
 
@@ -434,7 +434,7 @@ module Dependabot
 
       sig do
         params(file: Dependabot::DependencyFile)
-          .returns(T.any(String, Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater))
+          .returns(T.nilable(String))
       end
       def updated_pnpm_workspace_content(file)
         @updated_pnpm_workspace_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))

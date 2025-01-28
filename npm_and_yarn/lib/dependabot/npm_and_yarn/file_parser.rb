@@ -240,7 +240,7 @@ module Dependabot
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
       def workspace_catalog_dependencies
         dependency_set = DependencySet.new
-        workspace_config = YAML.safe_load(pnpm_workspace_yml.content, aliases: true)
+        workspace_config = YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true)
 
         workspace_config["catalog"]&.each do |name, version|
           dep = build_dependency(

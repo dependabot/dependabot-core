@@ -126,9 +126,7 @@ module Dependabot
                  new_requirement: DependencyRequirement).returns(T.nilable(DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
-          matching_req = dependency.previous_requirements
-                                   .select
-                                   .find { |r| r[:groups] == new_requirement.groups }
+          matching_req = T.must(dependency.previous_requirements).find { |r| r[:groups] == new_requirement.groups }
 
           return nil if matching_req.nil?
 
