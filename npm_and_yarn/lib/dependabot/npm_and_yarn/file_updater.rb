@@ -11,7 +11,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "file_updater/package_json_updater"
