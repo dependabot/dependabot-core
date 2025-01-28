@@ -54,6 +54,7 @@ module Dependabot
 
       private
 
+      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
@@ -88,6 +89,7 @@ module Dependabot
           end
         end
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
       def parse_terragrunt_files(dependency_set)
