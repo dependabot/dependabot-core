@@ -2,11 +2,19 @@ import hashin
 import json
 import plette
 import traceback
+import ssl
+import urllib.request
 from poetry.factory import Factory
 
 
 def get_dependency_hash(dependency_name, dependency_version, algorithm,
                         index_url=hashin.DEFAULT_INDEX_URL):
+    # Disable SSL verification
+    # As we are working in a trusted environment
+    # --index-url https://pypi.org/simple --trusted-host pypi.org
+    # --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+    # just want to bypass SSL verification
+    ssl._create_default_https_context = ssl._create_unverified_context
     try:
         hashes = hashin.get_package_hashes(
             dependency_name,
