@@ -20,14 +20,15 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          /^Pipfile$/,
-          /^Pipfile\.lock$/,
-          /.*\.txt$/,
-          /.*\.in$/,
-          /^setup\.py$/,
-          /^setup\.cfg$/,
-          /^pyproject\.toml$/,
-          /^pyproject\.lock$/
+          /^.*Pipfile$/,             # Match Pipfile at any level
+          /^.*Pipfile\.lock$/,       # Match Pipfile.lock at any level
+          /^.*\.txt$/,               # Match any .txt files (e.g., requirements.txt) at any level
+          /^.*\.in$/,                # Match any .in files at any level
+          /^.*setup\.py$/,           # Match setup.py at any level
+          /^.*setup\.cfg$/,          # Match setup.cfg at any level
+          /^.*pyproject\.toml$/,     # Match pyproject.toml at any level
+          /^.*pyproject\.lock$/,     # Match pyproject.lock at any level
+          /^.*poetry\.lock$/ # Match poetry.lock at any level
         ]
       end
 

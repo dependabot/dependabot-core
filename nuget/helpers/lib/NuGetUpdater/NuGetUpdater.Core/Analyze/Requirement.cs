@@ -52,10 +52,10 @@ public abstract class Requirement
 
     public static Requirement Parse(string requirement)
     {
-        var specificParts = requirement.Split(',');
+        var specificParts = requirement.Split(',').Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
         if (specificParts.Length == 1)
         {
-            return IndividualRequirement.ParseIndividual(requirement);
+            return IndividualRequirement.ParseIndividual(specificParts[0]);
         }
 
         var specificRequirements = specificParts.Select(IndividualRequirement.ParseIndividual).ToArray();
@@ -116,7 +116,14 @@ public class IndividualRequirement : Requirement
             : [requirement[..(splitIndex + 1)].Trim(), requirement[(splitIndex + 1)..].Trim()];
 
         var op = parts.Length == 1 ? "=" : parts[0];
-        var version = NuGetVersion.Parse(parts[^1]);
+        var versionString = parts[^1];
+
+        // allow for single character wildcards; may be asterisk (NuGet-style: 1.*) or a single letter (alternate style: 1.x)
+        var versionParts = versionString.Split('.');
+        var recreatedVersionParts = versionParts.Select(vp => vp.Length == 1 && (vp == "*" || char.IsAsciiLetter(vp[0])) ? "0" : vp).ToArray();
+
+        var rebuiltVersionString = string.Join(".", recreatedVersionParts);
+        var version = NuGetVersion.Parse(rebuiltVersionString);
 
         return new IndividualRequirement(op, version);
     }

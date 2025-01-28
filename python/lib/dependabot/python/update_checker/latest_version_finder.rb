@@ -159,10 +159,7 @@ module Dependabot
         end
 
         def wants_prerelease?
-          if dependency.version
-            version = version_class.new(dependency.version.tr("+", "."))
-            return version.prerelease?
-          end
+          return version_class.new(dependency.version).prerelease? if dependency.version
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
@@ -175,6 +172,8 @@ module Dependabot
         def available_versions
           @available_versions ||=
             index_urls.flat_map do |index_url|
+              validate_index(index_url)
+
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
 
               index_response = registry_response_for_dependency(index_url)
@@ -282,6 +281,15 @@ module Dependabot
 
         def requirement_class
           dependency.requirement_class
+        end
+
+        def validate_index(index_url)
+          sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+
+          return if index_url&.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
+
+          raise Dependabot::DependencyFileNotResolvable,
+                "Invalid URL: #{sanitized_url}"
         end
       end
     end

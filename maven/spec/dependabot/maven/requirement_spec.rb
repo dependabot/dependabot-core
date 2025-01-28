@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Maven::Requirement do
     context "with a pre-release version" do
       let(:requirement_string) { "1.3.alpha" }
 
-      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.a")) }
+      it { is_expected.to be_satisfied_by(Gem::Version.new("1.3.alpha")) }
     end
 
     context "with a version that wouldn't be a valid Gem::Version" do

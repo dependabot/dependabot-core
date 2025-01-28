@@ -113,7 +113,7 @@ function flattenAllDependencies(manifest) {
   );
 }
 
-// NOTE: Re-used in npm 7 updater
+// NOTE: Reused in npm 7 updater
 function installArgs(
   depName,
   desiredVersion,

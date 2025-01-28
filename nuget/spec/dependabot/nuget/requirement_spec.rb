@@ -66,6 +66,12 @@ RSpec.describe Dependabot::Nuget::Requirement do
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
       end
 
+      context "when an empty string follows a comma" do
+        let(:requirement_string) { ">= 1.40.0, " }
+
+        it { is_expected.to eq(Gem::Requirement.new(">= 1.40.0")) }
+      end
+
       context "when including a * in the lower bound" do
         let(:requirement_string) { "[2.1.*,3.0.0)" }
 

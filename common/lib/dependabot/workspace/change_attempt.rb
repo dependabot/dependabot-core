@@ -8,9 +8,6 @@ module Dependabot
     class ChangeAttempt
       extend T::Sig
 
-      sig { returns(T.nilable(String)) }
-      attr_reader :diff
-
       sig { returns(T.nilable(StandardError)) }
       attr_reader :error
 
@@ -28,15 +25,13 @@ module Dependabot
           workspace: Dependabot::Workspace::Base,
           id: String,
           memo: T.nilable(String),
-          diff: T.nilable(String),
           error: T.nilable(StandardError)
         ).void
       end
-      def initialize(workspace, id:, memo:, diff: nil, error: nil)
+      def initialize(workspace, id:, memo:, error: nil)
         @workspace = workspace
         @id = id
         @memo = memo
-        @diff = diff
         @error = error
       end
 

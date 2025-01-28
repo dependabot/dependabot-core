@@ -2,6 +2,11 @@ dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/depe
 stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
 pr-created expected.json
 
+dependabot update -f input-pr-exists.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'Pull request already exists for dependency-a with latest version 1.2.5'
+! stdout create_pull_request
+! stdout update_pull_request
+
 dependabot update -f input-rebase-old.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
 stderr 'updated \| dependency-a \( from 1.2.3 to 1.2.5 \)'
 pr-updated expected.json
@@ -38,6 +43,20 @@ job:
     hostname: example.com
     api-endpoint: https://example.com/api/v3
     repo: dependabot/smoke-tests
+
+-- input-pr-exists.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.5
+        directory: "/"
 
 -- input-rebase-old.yml --
 job:

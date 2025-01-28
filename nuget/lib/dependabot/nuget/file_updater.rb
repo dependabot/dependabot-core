@@ -4,9 +4,9 @@
 require "dependabot/dependency_file"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/nuget/native_discovery/native_dependency_details"
-require "dependabot/nuget/native_discovery/native_discovery_json_reader"
-require "dependabot/nuget/native_discovery/native_workspace_discovery"
+require "dependabot/nuget/discovery/dependency_details"
+require "dependabot/nuget/discovery/discovery_json_reader"
+require "dependabot/nuget/discovery/workspace_discovery"
 require "dependabot/nuget/native_helpers"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
@@ -19,33 +19,56 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          %r{^[^/]*\.([a-z]{2})?proj$},
-          /^packages\.config$/i,
-          /^app\.config$/i,
-          /^web\.config$/i,
-          /^global\.json$/i,
-          /^dotnet-tools\.json$/i,
-          /^Directory\.Build\.props$/i,
-          /^Directory\.Build\.targets$/i,
-          /^Packages\.props$/i
+          /.*\.([a-z]{2})?proj$/, # Matches files with any extension like .csproj, .vbproj, etc., in any directory
+          /packages\.lock\.json/,         # Matches packages.lock.json in any directory
+          /packages\.config$/i,           # Matches packages.config in any directory
+          /app\.config$/i,                # Matches app.config in any directory
+          /web\.config$/i,                # Matches web.config in any directory
+          /global\.json$/i,               # Matches global.json in any directory
+          /dotnet-tools\.json$/i,         # Matches dotnet-tools.json in any directory
+          /Directory\.Build\.props$/i,    # Matches Directory.Build.props in any directory
+          /Directory\.Build\.targets$/i,  # Matches Directory.Build.targets in any directory
+          /Directory\.targets$/i,         # Matches Directory.targets in any directory or root directory
+          /Packages\.props$/i, # Matches Packages.props in any directory
+          /.*\.nuspec$/, # Matches any .nuspec files in any directory
+          %r{^\.config/dotnet-tools\.json$} # Matches .config/dotnet-tools.json in only root directory
         ]
+      end
+
+      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
+      def self.differs_in_more_than_blank_lines?(original_content, updated_content)
+        # Compare the line counts of the original and updated content, but ignore lines only containing white-space.
+        # This prevents false positives when there are trailing empty lines in the original content, for example.
+        original_lines = (original_content&.lines || []).map(&:strip).reject(&:empty?)
+        updated_lines = updated_content.lines.map(&:strip).reject(&:empty?)
+
+        # if the line count differs, then something changed
+        return true unless original_lines.count == updated_lines.count
+
+        # check each line pair, ignoring blanks (filtered above)
+        original_lines.zip(updated_lines).any? { |pair| pair[0] != pair[1] }
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         base_dir = "/"
-        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+        all_updated_files = SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           dependencies.each do |dependency|
             try_update_projects(dependency) || try_update_json(dependency)
           end
           updated_files = dependency_files.filter_map do |f|
-            updated_content = File.read(dependency_file_path(f))
+            dependency_file_path = DiscoveryJsonReader.dependency_file_path(
+              repo_contents_path: T.must(repo_contents_path),
+              dependency_file: f
+            )
+            dependency_file_path = File.join(repo_contents_path, dependency_file_path)
+            updated_content = File.read(dependency_file_path)
             next if updated_content == f.content
 
             normalized_content = normalize_content(f, updated_content)
             next if normalized_content == f.content
 
-            next if only_deleted_lines?(f.content, normalized_content)
+            next unless FileUpdater.differs_in_more_than_blank_lines?(f.content, normalized_content)
 
             puts "The contents of file [#{f.name}] were updated."
 
@@ -53,9 +76,18 @@ module Dependabot
           end
           updated_files
         end
+
+        raise UpdateNotPossible, dependencies.map(&:name) if all_updated_files.empty?
+
+        all_updated_files
       end
 
       private
+
+      sig { returns(String) }
+      def job_file_path
+        ENV.fetch("DEPENDABOT_JOB_PATH")
+      end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def try_update_projects(dependency)
@@ -65,7 +97,11 @@ module Dependabot
         # run update for each project file
         project_files.each do |project_file|
           project_dependencies = project_dependencies(project_file)
-          proj_path = dependency_file_path(project_file)
+          dependency_file_path = DiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: project_file
+          )
+          proj_path = dependency_file_path
 
           next unless project_dependencies.any? { |dep| dep.name.casecmp?(dependency.name) }
 
@@ -92,7 +128,11 @@ module Dependabot
 
           # We just need to feed the updater a project file, grab the first
           project_file = T.must(project_files.first)
-          proj_path = dependency_file_path(project_file)
+          dependency_file_path = DiscoveryJsonReader.dependency_file_path(
+            repo_contents_path: T.must(repo_contents_path),
+            dependency_file: project_file
+          )
+          proj_path = dependency_file_path
 
           return false unless repo_contents_path
 
@@ -105,9 +145,9 @@ module Dependabot
 
       sig { params(dependency: Dependency, proj_path: String).void }
       def call_nuget_updater_tool(dependency, proj_path)
-        NativeHelpers.run_nuget_updater_tool(repo_root: T.must(repo_contents_path), proj_path: proj_path,
-                                             dependency: dependency, is_transitive: !dependency.top_level?,
-                                             credentials: credentials)
+        NativeHelpers.run_nuget_updater_tool(job_path: job_file_path, repo_root: T.must(repo_contents_path),
+                                             proj_path: proj_path, dependency: dependency,
+                                             is_transitive: !dependency.top_level?, credentials: credentials)
 
         # Tests need to track how many times we call the tooling updater to ensure we don't recurse needlessly
         # Ideally we should find a way to not run this code in prod
@@ -128,10 +168,13 @@ module Dependabot
         @update_tooling_calls
       end
 
-      sig { returns(T.nilable(NativeWorkspaceDiscovery)) }
+      sig { returns(T.nilable(WorkspaceDiscovery)) }
       def workspace
-        discovery_json_reader = NativeDiscoveryJsonReader.get_discovery_from_dependency_files(dependency_files)
-        discovery_json_reader.workspace_discovery
+        dependency_file_paths = dependency_files.map do |f|
+          DiscoveryJsonReader.dependency_file_path(repo_contents_path: T.must(repo_contents_path),
+                                                   dependency_file: f)
+        end
+        DiscoveryJsonReader.load_discovery_for_dependency_file_paths(dependency_file_paths).workspace_discovery
       end
 
       sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[String]) }
@@ -139,7 +182,7 @@ module Dependabot
         workspace&.projects&.find { |p| p.file_path == project_file.name }&.referenced_project_paths || []
       end
 
-      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[NativeDependencyDetails]) }
+      sig { params(project_file: Dependabot::DependencyFile).returns(T::Array[DependencyDetails]) }
       def project_dependencies(project_file)
         workspace&.projects&.find do |p|
           full_project_file_path = File.join(project_file.directory, project_file.name)
@@ -147,12 +190,12 @@ module Dependabot
         end&.dependencies || []
       end
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def global_json_dependencies
         workspace&.global_json&.dependencies || []
       end
 
-      sig { returns(T::Array[NativeDependencyDetails]) }
+      sig { returns(T::Array[DependencyDetails]) }
       def dotnet_tools_json_dependencies
         workspace&.dotnet_tools_json&.dependencies || []
       end
@@ -188,17 +231,6 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { params(dependency_file: Dependabot::DependencyFile).returns(String) }
-      def dependency_file_path(dependency_file)
-        if dependency_file.directory.start_with?(T.must(repo_contents_path))
-          File.join(dependency_file.directory, dependency_file.name)
-        else
-          file_directory = dependency_file.directory
-          file_directory = file_directory[1..-1] if file_directory.start_with?("/")
-          File.join(repo_contents_path || "", file_directory, dependency_file.name)
-        end
-      end
-
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def project_files
         dependency_files.select { |df| df.name.match?(/\.(cs|vb|fs)proj$/) }
@@ -216,14 +248,6 @@ module Dependabot
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
-      end
-
-      sig { params(original_content: T.nilable(String), updated_content: String).returns(T::Boolean) }
-      def only_deleted_lines?(original_content, updated_content)
-        original_lines = original_content&.lines || []
-        updated_lines = updated_content.lines
-
-        original_lines.count > updated_lines.count
       end
     end
   end

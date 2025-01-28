@@ -48,8 +48,8 @@ public static partial class BindingRedirectResolver
                 return false;
             }
 
-            dict.TryGetValue("PublicKeyToken", out var publicKeyToken);
-            dict.TryGetValue("Culture", out var culture);
+            var publicKeyToken = dict.GetValueOrDefault("PublicKeyToken", "null");
+            var culture = dict.GetValueOrDefault("Culture", "neutral");
 
             assemblyInfo = new AssemblyWrapper(name, version, publicKeyToken, culture);
             return true;
@@ -63,7 +63,7 @@ public static partial class BindingRedirectResolver
     /// </summary>
     private class AssemblyWrapper : Runtime_IAssembly
     {
-        public AssemblyWrapper(string name, Version version, string? publicKeyToken = null, string? culture = null)
+        public AssemblyWrapper(string name, Version version, string publicKeyToken, string culture)
         {
             Name = name;
             Version = version;
@@ -73,8 +73,8 @@ public static partial class BindingRedirectResolver
 
         public string Name { get; }
         public Version Version { get; }
-        public string? PublicKeyToken { get; }
-        public string? Culture { get; }
+        public string PublicKeyToken { get; }
+        public string Culture { get; }
         public IEnumerable<Runtime_IAssembly> ReferencedAssemblies { get; } = Enumerable.Empty<AssemblyWrapper>();
     }
 

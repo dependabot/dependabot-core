@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/pull_request_creator"
 require "dependabot/dependency_change"
 require "dependabot/job"
+require "dependabot/pull_request"
 
 RSpec.describe Dependabot::DependencyChange do
   subject(:dependency_change) do
@@ -114,7 +115,8 @@ RSpec.describe Dependabot::DependencyChange do
           dependency_group: nil,
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
-          ignore_conditions: []
+          ignore_conditions: [],
+          notices: []
         )
 
       expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
@@ -141,7 +143,8 @@ RSpec.describe Dependabot::DependencyChange do
             dependency_group: group,
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
-            ignore_conditions: []
+            ignore_conditions: [],
+            notices: []
           )
 
         expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")
@@ -297,11 +300,15 @@ RSpec.describe Dependabot::DependencyChange do
       end
       let(:existing_pull_requests) do
         [
-          updated_dependencies.map do |dep|
-            { "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "directory" => dep.directory }
-          end
+          Dependabot::PullRequest.new(
+            updated_dependencies.map do |dep|
+              Dependabot::PullRequest::Dependency.new(
+                name: dep.name,
+                version: dep.version,
+                directory: dep.directory
+              )
+            end
+          )
         ]
       end
       let(:dependency_change) do
@@ -319,10 +326,14 @@ RSpec.describe Dependabot::DependencyChange do
       context "when there's no directory in an existing PR that otherwise matches" do
         let(:existing_pull_requests) do
           [
-            updated_dependencies.map do |dep|
-              { "dependency-name" => dep.name,
-                "dependency-version" => dep.version }
-            end
+            Dependabot::PullRequest.new(
+              updated_dependencies.map do |dep|
+                Dependabot::PullRequest::Dependency.new(
+                  name: dep.name,
+                  version: dep.version
+                )
+              end
+            )
           ]
         end
 

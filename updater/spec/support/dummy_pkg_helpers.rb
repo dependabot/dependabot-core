@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "dependabot/ecosystem"
 require "dependabot/dependency_file"
 
 # This module provides some shortcuts for working with our two mock RubyGems packages:
@@ -60,5 +61,32 @@ module DummyPkgHelpers
 
   def updated_bundler_files_hash(fixture: "bundler")
     updated_bundler_files(fixture: fixture).map(&:to_h)
+  end
+
+  # Stub Ecosystem::VersionManager
+  class StubPackageManager < Dependabot::Ecosystem::VersionManager
+    def initialize(name:, version:, deprecated_versions: [], supported_versions: [])
+      super(
+        name: name,
+        detected_version: Dependabot::Version.new(version),
+        version: Dependabot::Version.new(version),
+        deprecated_versions: deprecated_versions,
+        supported_versions: supported_versions
+      )
+    end
+
+    sig { override.returns(T::Boolean) }
+    def deprecated?
+      # If the version is unsupported, the unsupported error is getting raised separately.
+      return false if unsupported?
+
+      deprecated_versions.include?(version)
+    end
+
+    sig { override.returns(T::Boolean) }
+    def unsupported?
+      # Check if the version is not supported
+      supported_versions.all? { |supported| supported > version }
+    end
   end
 end

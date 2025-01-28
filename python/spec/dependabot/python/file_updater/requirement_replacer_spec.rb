@@ -89,6 +89,20 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementReplacer do
         it { is_expected.to include("Flask-SQLAlchemy\n") }
         it { is_expected.to include("zope.SQLAlchemy\n") }
       end
+
+      context "when requirement check returns unexpected exception" do
+        subject(:req_replacer) { replacer.requirement_error_handler(exception) }
+
+        let(:exception) { Exception.new(response) }
+
+        context "with a registry that results in failed certificate error" do
+          let(:response) { "CERTIFICATE_VERIFY_FAILED" }
+
+          it "raises a helpful error" do
+            expect { req_replacer }.to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+      end
     end
   end
 end

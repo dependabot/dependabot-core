@@ -8,22 +8,22 @@ internal static class DotNetToolsJsonUpdater
         string dependencyName,
         string previousDependencyVersion,
         string newDependencyVersion,
-        Logger logger)
+        ILogger logger)
     {
         if (!MSBuildHelper.TryGetDotNetToolsJsonPath(repoRootPath, workspacePath, out var dotnetToolsJsonPath))
         {
-            logger.Log("  No dotnet-tools.json file found.");
+            logger.Info("  No dotnet-tools.json file found.");
             return;
         }
 
         var dotnetToolsJsonFile = DotNetToolsJsonBuildFile.Open(repoRootPath, dotnetToolsJsonPath, logger);
 
-        logger.Log($"  Updating [{dotnetToolsJsonFile.RelativePath}] file.");
+        logger.Info($"  Updating [{dotnetToolsJsonFile.RelativePath}] file.");
 
         var containsDependency = dotnetToolsJsonFile.GetDependencies().Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
         if (!containsDependency)
         {
-            logger.Log($"    Dependency [{dependencyName}] not found.");
+            logger.Info($"    Dependency [{dependencyName}] not found.");
             return;
         }
 
@@ -39,7 +39,7 @@ internal static class DotNetToolsJsonUpdater
 
             if (await dotnetToolsJsonFile.SaveAsync())
             {
-                logger.Log($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
+                logger.Info($"    Saved [{dotnetToolsJsonFile.RelativePath}].");
             }
         }
     }

@@ -36,6 +36,7 @@
 # - pub
 # - swift
 # - devcontainers
+# - dotnet_sdk
 
 # rubocop:disable Style/GlobalVars
 
@@ -55,6 +56,7 @@ $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
+$LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
 $LOAD_PATH << "./github_actions/lib"
@@ -100,6 +102,7 @@ require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/devcontainers"
 require "dependabot/docker"
+require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
@@ -270,6 +273,10 @@ option_parse = OptionParser.new do |opts|
   opts.on("--pull-request",
           "Output pull request information metadata: title, description") do
     $options[:pull_request] = true
+  end
+
+  opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 end
 # rubocop:enable Metrics/BlockLength

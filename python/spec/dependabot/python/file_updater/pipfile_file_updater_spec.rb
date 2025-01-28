@@ -472,6 +472,65 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
       end
     end
 
+    context "when the Pipfile included an environment variable source" do
+      let(:pipfile_fixture_name) { "environment_variable_verify_ssl_false" }
+      let(:lockfile_fixture_name) { "environment_variable_verify_ssl_false.lock" }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new({
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }),
+          Dependabot::Credential.new({
+            "type" => "python_index",
+            "index-url" => "https://pypi.org/simple"
+          })
+        ]
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "2.18.4",
+          previous_version: "2.18.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==2.18.4",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==2.18.0",
+            file: "Pipfile",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "updates both files correctly" do
+        expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
+
+        updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
+        updated_pipfile = updated_files.find { |f| f.name == "Pipfile" }
+        json_lockfile = JSON.parse(updated_lockfile.content)
+
+        expect(updated_pipfile.content)
+          .to include("pypi.org/${ENV_VAR}")
+        expect(json_lockfile["default"]["requests"]["version"])
+          .to eq("==2.18.4")
+        expect(json_lockfile["_meta"]["sources"])
+          .to eq([{ "url" => "https://pypi.org/${ENV_VAR}",
+                    "verify_ssl" => true }])
+        expect(updated_lockfile.content)
+          .not_to include("pypi.org/simple")
+        expect(json_lockfile["develop"]["pytest"]["version"]).to eq("==3.4.0")
+      end
+    end
+
     context "with a requirements.txt" do
       let(:dependency_files) { [pipfile, lockfile, requirements_file] }
 

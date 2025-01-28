@@ -12,6 +12,11 @@ module Dependabot
       extend T::Sig
 
       sig { returns(String) }
+      def self.job_id
+        ENV.fetch("DEPENDABOT_JOB_ID")
+      end
+
+      sig { returns(String) }
       def self.native_helpers_root
         helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "nuget") unless helpers_root.nil?
@@ -28,8 +33,7 @@ module Dependabot
           "--project-tfms",
           *project_tfms,
           "--package-tfms",
-          *package_tfms,
-          "--verbose"
+          *package_tfms
         ]
         command = Shellwords.join(command_parts)
 
@@ -39,8 +43,7 @@ module Dependabot
           "--project-tfms",
           "<project-tfms>",
           "--package-tfms",
-          "<package-tfms>",
-          "--verbose"
+          "<package-tfms>"
         ].join(" ")
 
         puts "running NuGet updater:\n" + command
@@ -56,20 +59,28 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, workspace_path: String, output_path: String).returns([String, String])
+        params(
+          job_path: String,
+          repo_root: String,
+          workspace_path: String,
+          output_path: String
+        ).returns([String, String])
       end
-      def self.get_nuget_discover_tool_command(repo_root:, workspace_path:, output_path:)
+      def self.get_nuget_discover_tool_command(job_path:, repo_root:, workspace_path:, output_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "discover",
+          "--job-id",
+          job_id,
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--workspace",
           workspace_path,
           "--output",
-          output_path,
-          "--verbose"
+          output_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -77,13 +88,16 @@ module Dependabot
         fingerprint = [
           exe_path,
           "discover",
+          "--job-id",
+          "<job-id>",
+          "--job-path",
+          "<job-path>",
           "--repo-root",
           "<repo-root>",
           "--workspace",
           "<path-to-workspace>",
           "--output",
-          "<path-to-output>",
-          "--verbose"
+          "<path-to-output>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -91,14 +105,16 @@ module Dependabot
 
       sig do
         params(
+          job_path: String,
           repo_root: String,
           workspace_path: String,
           output_path: String,
           credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_discover_tool(repo_root:, workspace_path:, output_path:, credentials:)
-        (command, fingerprint) = get_nuget_discover_tool_command(repo_root: repo_root,
+      def self.run_nuget_discover_tool(job_path:, repo_root:, workspace_path:, output_path:, credentials:)
+        (command, fingerprint) = get_nuget_discover_tool_command(job_path: job_path,
+                                                                 repo_root: repo_root,
                                                                  workspace_path: workspace_path,
                                                                  output_path: output_path)
 
@@ -111,15 +127,19 @@ module Dependabot
       end
 
       sig do
-        params(repo_root: String, discovery_file_path: String, dependency_file_path: String,
+        params(job_path: String, repo_root: String, discovery_file_path: String, dependency_file_path: String,
                analysis_folder_path: String).returns([String, String])
       end
-      def self.get_nuget_analyze_tool_command(repo_root:, discovery_file_path:, dependency_file_path:,
+      def self.get_nuget_analyze_tool_command(job_path:, repo_root:, discovery_file_path:, dependency_file_path:,
                                               analysis_folder_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "analyze",
+          "--job-id",
+          job_id,
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--discovery-file-path",
@@ -127,8 +147,7 @@ module Dependabot
           "--dependency-file-path",
           dependency_file_path,
           "--analysis-folder-path",
-          analysis_folder_path,
-          "--verbose"
+          analysis_folder_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -136,13 +155,16 @@ module Dependabot
         fingerprint = [
           exe_path,
           "analyze",
+          "--job-id",
+          "<job-id>",
+          "--job-path",
+          "<job-path>",
           "--discovery-file-path",
           "<discovery-file-path>",
           "--dependency-file-path",
           "<dependency-file-path>",
           "--analysis-folder-path",
-          "<analysis_folder_path>",
-          "--verbose"
+          "<analysis_folder_path>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -150,13 +172,14 @@ module Dependabot
 
       sig do
         params(
-          repo_root: String, discovery_file_path: String, dependency_file_path: String,
+          job_path: String, repo_root: String, discovery_file_path: String, dependency_file_path: String,
           analysis_folder_path: String, credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_analyze_tool(repo_root:, discovery_file_path:, dependency_file_path:,
+      def self.run_nuget_analyze_tool(job_path:, repo_root:, discovery_file_path:, dependency_file_path:,
                                       analysis_folder_path:, credentials:)
-        (command, fingerprint) = get_nuget_analyze_tool_command(repo_root: repo_root,
+        (command, fingerprint) = get_nuget_analyze_tool_command(job_path: job_path,
+                                                                repo_root: repo_root,
                                                                 discovery_file_path: discovery_file_path,
                                                                 dependency_file_path: dependency_file_path,
                                                                 analysis_folder_path: analysis_folder_path)
@@ -171,14 +194,19 @@ module Dependabot
 
       # rubocop:disable Metrics/MethodLength
       sig do
-        params(repo_root: String, proj_path: String, dependency: Dependency,
+        params(job_path: String, repo_root: String, proj_path: String, dependency: Dependency,
                is_transitive: T::Boolean, result_output_path: String).returns([String, String])
       end
-      def self.get_nuget_updater_tool_command(repo_root:, proj_path:, dependency:, is_transitive:, result_output_path:)
+      def self.get_nuget_updater_tool_command(job_path:, repo_root:, proj_path:, dependency:, is_transitive:,
+                                              result_output_path:)
         exe_path = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command_parts = [
           exe_path,
           "update",
+          "--job-id",
+          job_id,
+          "--job-path",
+          job_path,
           "--repo-root",
           repo_root,
           "--solution-or-project",
@@ -191,8 +219,7 @@ module Dependabot
           dependency.previous_version,
           is_transitive ? "--transitive" : nil,
           "--result-output-path",
-          result_output_path,
-          "--verbose"
+          result_output_path
         ].compact
 
         command = Shellwords.join(command_parts)
@@ -200,6 +227,10 @@ module Dependabot
         fingerprint = [
           exe_path,
           "update",
+          "--job-id",
+          "<job-id>",
+          "--job-path",
+          "<job-path>",
           "--repo-root",
           "<repo-root>",
           "--solution-or-project",
@@ -212,8 +243,7 @@ module Dependabot
           "<previous-version>",
           is_transitive ? "--transitive" : nil,
           "--result-output-path",
-          "<result-output-path>",
-          "--verbose"
+          "<result-output-path>"
         ].compact.join(" ")
 
         [command, fingerprint]
@@ -227,6 +257,7 @@ module Dependabot
 
       sig do
         params(
+          job_path: String,
           repo_root: String,
           proj_path: String,
           dependency: Dependency,
@@ -234,15 +265,18 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential]
         ).void
       end
-      def self.run_nuget_updater_tool(repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
-        (command, fingerprint) = get_nuget_updater_tool_command(repo_root: repo_root, proj_path: proj_path,
-                                                                dependency: dependency, is_transitive: is_transitive,
+      def self.run_nuget_updater_tool(job_path:, repo_root:, proj_path:, dependency:, is_transitive:, credentials:)
+        (command, fingerprint) = get_nuget_updater_tool_command(job_path: job_path, repo_root: repo_root,
+                                                                proj_path: proj_path, dependency: dependency,
+                                                                is_transitive: is_transitive,
                                                                 result_output_path: update_result_file_path)
 
         puts "running NuGet updater:\n" + command
 
         NuGetConfigCredentialHelpers.patch_nuget_config_for_action(credentials) do
-          output = SharedHelpers.run_shell_command(command, allow_unsafe_shell_command: true, fingerprint: fingerprint)
+          output = SharedHelpers.run_shell_command(command,
+                                                   allow_unsafe_shell_command: true,
+                                                   fingerprint: fingerprint)
           puts output
 
           result_contents = File.read(update_result_file_path)
@@ -252,21 +286,58 @@ module Dependabot
         end
       end
 
+      sig { void }
+      def self.install_dotnet_sdks
+        return unless Dependabot::Experiments.enabled?(:nuget_install_dotnet_sdks)
+
+        # environment variables are required and the following will generate an actionable error message if they're not
+        _dependabot_job_path = ENV.fetch("DEPENDABOT_JOB_PATH")
+        _dependabot_repo_contents_path = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH")
+        _dotnet_install_script_path = ENV.fetch("DOTNET_INSTALL_SCRIPT_PATH")
+        _dotnet_install_dir = ENV.fetch("DOTNET_INSTALL_DIR")
+
+        # this environment variable is directly used
+        dependabot_home = ENV.fetch("DEPENDABOT_HOME")
+
+        command = [
+          "pwsh",
+          "#{dependabot_home}/dependabot-updater/bin/install-sdks.ps1"
+        ].join(" ")
+        output = SharedHelpers.run_shell_command(command)
+        puts output
+      end
+
+      # rubocop:disable Metrics/AbcSize
       sig { params(json: T::Hash[String, T.untyped]).void }
       def self.ensure_no_errors(json)
-        error_type = T.let(json.fetch("ErrorType", nil), T.nilable(String))
-        error_details = T.let(json.fetch("ErrorDetails", nil), T.nilable(String))
+        error = T.let(json.fetch("Error", nil), T.nilable(T::Hash[String, T.untyped]))
+        return if error.nil?
+
+        error_type = T.let(error.fetch("error-type"), String)
+        error_details = T.let(error.fetch("error-details", {}), T::Hash[String, T.untyped])
+
         case error_type
-        when "None", nil
-          # no issue
-        when "AuthenticationFailure"
-          raise PrivateSourceAuthenticationFailure, error_details
-        when "MissingFile"
-          raise DependencyFileNotFound, error_details
+        when "dependency_file_not_found"
+          file_path = T.let(error_details.fetch("file-path"), String)
+          message = T.let(error_details.fetch("message", nil), T.nilable(String))
+          raise DependencyFileNotFound.new(file_path, message)
+        when "dependency_file_not_parseable"
+          file_path = T.let(error_details.fetch("file-path"), String)
+          message = T.let(error_details.fetch("message", nil), T.nilable(String))
+          raise DependencyFileNotParseable.new(file_path, message)
+        when "illformed_requirement"
+          raise BadRequirementError, T.let(error_details.fetch("message"), String)
+        when "private_source_authentication_failure"
+          raise PrivateSourceAuthenticationFailure, T.let(error_details.fetch("source"), String)
+        when "update_not_possible"
+          raise UpdateNotPossible, T.let(error_details.fetch("dependencies"), T::Array[String])
+        when "unknown_error"
+          raise DependabotError, error_details.to_json
         else
           raise "Unexpected error type from native tool: #{error_type}: #{error_details}"
         end
       end
+      # rubocop:enable Metrics/AbcSize
     end
   end
 end

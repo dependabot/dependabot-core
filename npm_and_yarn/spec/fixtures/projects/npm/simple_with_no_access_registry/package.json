@@ -1,0 +1,13 @@
+{
+  "name": "xyz",
+  "version": "0.1.0",
+  "main": "index.js",
+  "author": "abc",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+  },
+  "dependencies": {
+    "@gcorevideo/rtckit": "^0.61.0"
+  }
+}

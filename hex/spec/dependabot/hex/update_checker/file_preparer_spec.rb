@@ -204,17 +204,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
             'ref: "v1.2.1"}'
           )
         end
-
-        context "when there are single quotes" do
-          let(:mixfile_fixture_name) { "git_source_with_charlist" }
-
-          it "updates the pin" do
-            expect(prepared_mixfile.content).to include(
-              '{:phoenix, ">= 0", github: "dependabot-fixtures/phoenix", ' \
-              "ref: 'v1.2.1'}"
-            )
-          end
-        end
       end
     end
 

@@ -8,6 +8,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
 require "sorbet-runtime"
+require "dependabot/docker/package_manager"
 
 module Dependabot
   module Docker
@@ -42,6 +43,18 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: DockerPackageManager.new
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
+      # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
@@ -71,11 +84,20 @@ module Dependabot
         end
 
         manifest_files.each do |file|
+          if file.content && T.must(file.content).start_with?("\uFEFF")
+            # 0xFEFF is the encoding for the byte order mark (BOM).  If a YAML file is loaded with a BOM it will parse
+            # successfully, but will only load the first line.  To prevent this nearly empty object from being returned,
+            # the BOM is manually detected and reported as a parse error.
+            file_path = Pathname.new(file.directory).join(file.name).cleanpath.to_path
+            msg = "The file appears to have been saved with a byte order mark (BOM).  This will prevent proper parsing."
+            raise Dependabot::DependencyFileNotParseable.new(file_path, msg)
+          end
           dependency_set += workfile_file_dependencies(file)
         end
 
         dependency_set.dependencies
       end
+      # rubocop:enable Metrics/AbcSize
 
       private
 

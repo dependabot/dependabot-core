@@ -740,6 +740,63 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
     end
 
+    context "when there is a pyproject.toml file with build system require dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "table_build_system_requires.toml" }
+
+      context "when updating a dependency inside" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "1.2.3",
+            requirements: [{
+              file: "pyproject.toml",
+              requirement: "~=1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        let(:pypi_url) { "https://pypi.org/simple/requests/" }
+        let(:pypi_response) do
+          fixture("pypi", "pypi_simple_response_requests.html")
+        end
+
+        context "when dealing with a library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+        end
+      end
+
+      context "when updating a dependency in an additional requirements file" do
+        let(:dependency_files) { super().append(requirements_file) }
+
+        let(:dependency) { requirements_dependency }
+
+        it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
+          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
+        end
+      end
+    end
+
     context "when there were multiple requirements" do
       let(:dependency) do
         Dependabot::Dependency.new(

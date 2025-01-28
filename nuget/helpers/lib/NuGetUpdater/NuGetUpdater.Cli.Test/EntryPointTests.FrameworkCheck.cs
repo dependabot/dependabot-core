@@ -28,7 +28,6 @@ public partial class EntryPointTests
             args.AddRange(projectTfms.Split(' ', StringSplitOptions.TrimEntries));
             args.Add("--package-tfms");
             args.AddRange(packageTfms.Split(' ', StringSplitOptions.TrimEntries));
-            args.Add("--verbose");
 
             var actual = await Program.Main(args.ToArray());
 

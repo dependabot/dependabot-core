@@ -68,6 +68,49 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
   it_behaves_like "a dependency file updater"
 
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "action.yml",
+          "action.yaml",
+          "foo/bar/action.yml",
+          "foo/bar/action.yaml",
+          ".github/workflows/main.yml",
+          ".github/workflows/ci-test.yaml",
+          ".github/workflows/action.yml",
+          ".github/workflows/123-foo.yml",
+          "/.github/workflows/workflow.yml",
+          "/.github/workflows/123-foo-bar.yml"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          "some_random_file.rb",
+          "requirements.txt",
+          "package-lock.json",
+          "package.json"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -480,6 +523,88 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
             expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
           end
         end
+      end
+
+      context "with a path based tag with semver" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_monorepo_path_based_semver.yml")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0",
+            version: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
+            previous_version: nil,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "run/v3.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "run/v2.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/first/run@run/v2.0.0" }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/first/run@run/v3.0.0\n" }
+      end
+
+      context "with a path based tag with without semver" do
+        let(:workflow_file_body) do
+          fixture("workflow_files", "workflow_monorepo_path_based_without_semver.yml")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0",
+            version: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
+            previous_version: nil,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "exec/2.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/gopidesupavan/monorepo-actions",
+                ref: "exec/1.0.0",
+                branch: nil
+              },
+              metadata: { declaration_string: "gopidesupavan/monorepo-actions/second/exec@exec/1.0.0" }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        its(:content) { is_expected.to include "gopidesupavan/monorepo-actions/second/exec@exec/2.0.0\n" }
       end
     end
   end

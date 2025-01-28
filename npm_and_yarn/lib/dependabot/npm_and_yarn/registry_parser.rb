@@ -45,7 +45,11 @@ module Dependabot
                      resolved_url
                    end
 
-        T.must(T.must(url_base[/@.*/]).gsub("%2F", "/").split("/")[0..1]).join("/")
+        package_name = url_base.gsub("%2F", "/").match(%r{@.*/})
+
+        return T.must(url_base.gsub("%2F", "/").split("/").last) unless package_name
+
+        "#{package_name}#{T.must(url_base.gsub('%2F', '/').split('/').last)}"
       end
 
       private

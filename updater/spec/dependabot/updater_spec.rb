@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot.logger)
           .to receive(:info)
           .with("Found no dependencies to update after filtering " \
-                "allowed updates")
+                "allowed updates in /")
         updater.run
       end
     end
@@ -2028,6 +2028,44 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
+      context "when Dependabot::PrivateSourceAuthenticationFailure is raised with Unauthenticated message" do
+        it "doesn't report the error to the service" do
+          checker = stub_update_checker
+          error = Dependabot::PrivateSourceAuthenticationFailure.new("npm.fury.io")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service).not_to receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::PrivateSourceAuthenticationFailure.new("npm.fury.io")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "private_source_authentication_failure",
+              error_details: { source: "npm.fury.io" },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
       context "when Dependabot::GitDependenciesNotReachable is raised" do
         it "doesn't report the error to the service" do
           checker = stub_update_checker
@@ -2059,6 +2097,44 @@ RSpec.describe Dependabot::Updater do
             .with(
               error_type: "git_dependencies_not_reachable",
               error_details: { "dependency-urls": ["https://example.com"] },
+              dependency: an_instance_of(Dependabot::Dependency)
+            )
+
+          updater.run
+        end
+      end
+
+      context "when URI::InvalidURIError is raised" do
+        it "doesn't report the error to the service" do
+          checker = stub_update_checker
+          error = URI::InvalidURIError.new("https://registry.yarnpkg.com}/")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service).not_to receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = URI::InvalidURIError.new("https://registry.yarnpkg.com}/")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service
+          updater = build_updater(service: service, job: job)
+
+          expect(service)
+            .to receive(:record_update_job_error)
+            .with(
+              error_type: "dependency_file_not_resolvable",
+              error_details: { message: "https://registry.yarnpkg.com}/" },
               dependency: an_instance_of(Dependabot::Dependency)
             )
 
@@ -2626,7 +2702,8 @@ RSpec.describe Dependabot::Updater do
       mark_job_as_processed: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
-      increment_metric: nil
+      increment_metric: nil,
+      record_ecosystem_meta: nil
     )
     allow(api_client).to receive(:is_a?).with(Dependabot::ApiClient).and_return(true)
 

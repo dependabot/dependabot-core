@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "opentelemetry/sdk"
+require "opentelemetry-metrics-sdk"
 
 module Dependabot
   module OpenTelemetry
@@ -10,6 +11,9 @@ module Dependabot
 
     module Attributes
       JOB_ID = "dependabot.job.id"
+      WARN_TYPE = "dependabot.job.warn_type"
+      WARN_TITLE = "dependabot.job.warn_title"
+      WARN_DESCRIPTION = "dependabot.job.warn_description"
       ERROR_TYPE = "dependabot.job.error_type"
       ERROR_DETAILS = "dependabot.job.error_details"
       METRIC = "dependabot.metric"
@@ -30,6 +34,7 @@ module Dependabot
       puts "OpenTelemetry is enabled, configuring..."
 
       require "opentelemetry/exporter/otlp"
+      require "opentelemetry-exporter-otlp-metrics"
 
       # OpenTelemetry instrumentation expects the related gem to be loaded.
       # While most are already loaded by this point in initialization, some are not.
@@ -87,6 +92,26 @@ module Dependabot
       end
 
       current_span.add_event(error_type, attributes: attributes)
+    end
+
+    sig do
+      params(
+        job_id: T.any(String, Integer),
+        warn_type: T.any(String, Symbol),
+        warn_title: String,
+        warn_description: String
+      ).void
+    end
+    def self.record_update_job_warning(job_id:, warn_type:, warn_title:, warn_description:)
+      current_span = ::OpenTelemetry::Trace.current_span
+
+      attributes = {
+        Attributes::JOB_ID => job_id,
+        Attributes::WARN_TYPE => warn_type,
+        Attributes::WARN_TITLE => warn_title,
+        Attributes::WARN_DESCRIPTION => warn_description
+      }
+      current_span.add_event(warn_type, attributes: attributes)
     end
 
     sig do

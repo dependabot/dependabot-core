@@ -51,8 +51,9 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "raises an error" do
         expect { dependencies }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
           expect(boom.message).to eq(
-            "Failed to convert file: parse config: [:18,1-1: Argument or block definition required; " \
-            "An argument or block definition is required here.]"
+            "Failed to convert file: parse config: [STDIN:1,17-18: Unclosed configuration block; " \
+            "There is no closing brace for this block before the end of the file. " \
+            "This may be caused by incorrect brace nesting elsewhere in this file.]"
           )
         end
       end
@@ -869,6 +870,18 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when the overridden module does not include source" do
+      let(:files) { project_dependency_files("child_module_with_no_source") }
+
+      it "has the module with no source" do
+        module_dependency = dependencies.find { |d| d.name == "babbel/cloudfront-bucket/aws" }
+
+        expect(module_dependency).not_to be_nil
+        expect(module_dependency.version).to eq("2.2.0")
+        expect(module_dependency.requirements.first[:source][:module_identifier]).to eq("babbel/cloudfront-bucket/aws")
+      end
+    end
+
     context "with a toplevel provider" do
       let(:files) { project_dependency_files("provider") }
 
@@ -1017,6 +1030,26 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       it "returns the correct source type" do
         expect(source_type).to eq(:registry)
+      end
+    end
+  end
+
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:files) { project_dependency_files("registry") }
+
+    it "has the correct name" do
+      expect(ecosystem.name).to eq "terraform"
+    end
+
+    describe "#package_manager" do
+      subject(:package_manager) { ecosystem.package_manager }
+
+      it "returns the correct package manager" do
+        expect(package_manager.name).to eq "terraform"
+        expect(package_manager.requirement).to be_nil
+        expect(package_manager.version.to_s).to eq "1.10.0"
       end
     end
   end

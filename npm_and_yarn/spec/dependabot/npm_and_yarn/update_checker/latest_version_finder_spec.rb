@@ -473,7 +473,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           allow(version_finder).to receive(:sleep).and_return(true)
         end
 
-        it { is_expected.to be_nil }
+        it "raises an error" do
+          expect { version_finder.latest_version_from_registry }
+            .to raise_error do |err|
+              expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+            end
+        end
       end
 
       context "when the request 200s with a bad body" do
@@ -726,7 +731,37 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }
-          .to raise_error(described_class::RegistryError)
+          .to raise_error(Dependabot::RegistryError)
+      end
+    end
+
+    context "when the npm link returns 200 but invalid JSON object in body" do
+      before do
+        body = fixture("npm_responses", "200_with_invalid_json.json")
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 200, body: body)
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when the npm link returns 200 but valid JSON object in body" do
+      before do
+        body = fixture("npm_responses", "200_with_valid_json.json")
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 200, body: body)
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .not_to raise_error
       end
     end
 
@@ -742,7 +777,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       it "raises an error" do
         expect { version_finder.latest_version_from_registry }
           .to raise_error do |err|
-            expect(err.class).to eq(described_class::RegistryError)
+            expect(err.class).to eq(Dependabot::RegistryError)
             expect(err.status).to eq(404)
           end
       end
@@ -809,7 +844,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
           it "raises an error" do
             expect { version_finder.latest_version_from_registry }
-              .to raise_error(described_class::RegistryError)
+              .to raise_error(Dependabot::RegistryError)
           end
         end
       end
@@ -863,6 +898,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the npm registry package lookup returns a 404 error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 404, body: '{"error":"Not found"}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(Dependabot::RegistryError)
+            expect(err.status).to eq(404)
+          end
+      end
+    end
+
     context "when the dependency has been deprecated" do
       let(:registry_response) do
         fixture("npm_responses", "etag_deprecated.json")
@@ -870,6 +922,38 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
       it "picks the latest dist-tags version" do
         expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when the npm registry package lookup returns a 500 error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 500, body: '{"error":"Not found"}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+          end
+      end
+    end
+
+    context "when the npm registry uri is invalid and lookup returns a bad URI error" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_return(status: 500, body: '{"error":"bad URI(is not URI?): "https://registry.npmjs.org/\"/webpack""}')
+
+        allow(version_finder).to receive(:sleep).and_return(true)
+      end
+
+      it "raises an error" do
+        expect { version_finder.latest_version_from_registry }
+          .to raise_error do |err|
+            expect(err.class).to eq(Dependabot::DependencyFileNotResolvable)
+          end
       end
     end
   end

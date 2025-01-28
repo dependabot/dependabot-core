@@ -34,8 +34,7 @@ module Dependabot
         RefreshGroupUpdatePullRequest,
         CreateSecurityUpdatePullRequest,
         RefreshSecurityUpdatePullRequest,
-        RefreshVersionUpdatePullRequest,
-        UpdateAllVersions
+        RefreshVersionUpdatePullRequest
       ].freeze
 
       def self.class_for(job:)

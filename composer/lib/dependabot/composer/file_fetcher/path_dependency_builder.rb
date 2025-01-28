@@ -17,7 +17,7 @@ module Dependabot
         end
 
         def dependency_file
-          filename = File.join(path, "composer.json")
+          filename = File.join(path, PackageManager::MANIFEST_FILENAME)
 
           # Current we just return `nil` if a path dependency can't be built.
           # In future we may wish to change that to a raise. (We'll get errors

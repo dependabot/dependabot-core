@@ -287,5 +287,89 @@ public partial class UpdateWorkerTests
                 ]
             );
         }
+
+        [Fact]
+        public async Task UpdateSingleDependencyWithTrailingComma()
+        {
+            await TestUpdateForProject("Some.DotNet.Tool", "1.0.0", "1.1.0",
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "13.0.3", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.0.0", "net8.0"),
+                    MockNuGetPackage.CreateDotNetToolPackage("Some.DotNet.Tool", "1.1.0", "net8.0"),
+                ],
+                // initial
+                projectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                additionalFiles:
+                [
+                    (".config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.0.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ],
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ],
+                            }
+                          }
+                        }
+                        """)
+                ],
+                // expected
+                expectedProjectContents: """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="13.0.3" />
+                      </ItemGroup>
+                    </Project>
+                    """,
+                // expected files no longer have trailing commas in the json
+                additionalFilesExpected:
+                [
+                    (".config/dotnet-tools.json", """
+                        {
+                          "version": 1,
+                          "isRoot": true,
+                          "tools": {
+                            "some.dotnet.tool": {
+                              "version": "1.1.0",
+                              "commands": [
+                                "some.dotnet.tool"
+                              ]
+                            },
+                            "some-other-tool": {
+                              "version": "2.1.3",
+                              "commands": [
+                                "some-other-tool"
+                              ]
+                            }
+                          }
+                        }
+                        """)
+                ]
+            );
+        }
     }
 }

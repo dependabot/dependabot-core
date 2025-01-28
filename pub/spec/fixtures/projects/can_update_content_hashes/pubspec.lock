@@ -6,8 +6,8 @@ packages:
     description:
       name: collection
       url: "https://pub.dartlang.org"
-      sha256: "7223b6b1e0fea267664cee3fb78fa1d02f88163bb96b63b58810a3bf8ff802c1"
+      sha256: "6d4193120997ecfd09acf0e313f13dc122b119e5eca87ef57a7d065ec9183762"
     source: hosted
-    version: "1.14.13"
+    version: "1.15.0"
 sdks:
   dart: ">=2.12.0 <3.0.0"

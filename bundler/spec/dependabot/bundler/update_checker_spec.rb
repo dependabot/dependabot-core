@@ -1339,7 +1339,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             .to_return(status: 401)
         end
 
-        it "raises a helpful error", :bundler_v2_only do
+        it "raises a helpful error" do
           expect { checker.latest_resolvable_version }
             .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
@@ -1383,11 +1383,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_name) { "guard-bundler" }
       let(:current_version) { "2.2.1" }
 
-      context "when using bundler v1", :bundler_v1_only do
-        it { is_expected.to eq(Gem::Version.new("2.2.1")) }
-      end
-
-      context "when using bundler v2", :bundler_v2_only do
+      context "when using bundler v2" do
         it { is_expected.to eq(Gem::Version.new("3.0.0")) }
       end
     end

@@ -58,13 +58,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     files.find { |f| f.name == "package-lock.json" }
   end
 
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
+
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
 
   describe "npm 6 specific" do
     # NOTE: This is no longer failing in npm 8
     context "with a corrupted npm lockfile (version missing)" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/version_missing") }
 
       it "raises a helpful error" do
@@ -80,6 +103,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     # NOTE: This spec takes forever to run using npm 8
     context "when a git src dependency doesn't have a valid package.json" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/git_missing_version") }
 
       let(:dependency_name) { "raven-js" }
@@ -121,6 +145,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when dealing with git sub-dependency with invalid from that is updating from an npm5 lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm5/git_sub_dep_invalid") }
 
       it "cleans up from field and successfully updates" do
@@ -133,6 +158,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
     # NOTE: This no longer raises in npm 8
     context "when there is a private git dep we don't have access to" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/github_dependency_private") }
 
       let(:dependency_name) { "strict-uri-encode" }
@@ -153,6 +179,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when there is a dep hosted in github registry and no auth token is provided" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm/simple_with_github_with_no_auth_token") }
 
       let(:dependency_name) { "@Codertocat/hello-world-npm" }
@@ -172,6 +199,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when there is a dep hosted in github registry and invalid auth token is provided" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm/simple_with_github_with_invalid_auth_token") }
 
       let(:dependency_name) { "@Codertocat/hello-world-npm" }
@@ -366,6 +394,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
+      let(:npm_fallback_version_above_v6_enabled) { false } if npm_version == "npm6"
       let(:files) { project_dependency_files("#{npm_version}/simple") }
 
       it "has details of the updated item" do
@@ -453,6 +482,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     describe "#{npm_version} errors" do
+      let(:npm_fallback_version_above_v6_enabled) { false } if npm_version == "npm6"
       context "with a sub dependency name that can't be found" do
         let(:files) { project_dependency_files("#{npm_version}/github_sub_dependency_name_missing") }
 
@@ -688,6 +718,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   context "when updating a git source dependency that is not pinned to a hash" do
     subject(:parsed_lock_file) { JSON.parse(updated_npm_lock_content) }
 
+    let(:npm_fallback_version_above_v6_enabled) { false }
     let(:files) { project_dependency_files("npm6/ghpr_no_hash_pinning") }
     let(:dependency_name) { "npm6-dependency" }
     let(:version) { "HEAD" }
@@ -769,26 +800,279 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "with a dependency with no access and E401 error" do
-      let(:response) { "code E401\nnpm ERR! Incorrect or missing password.\nnpm ERR!" }
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+      npm ERR! code E401
+      npm ERR! Incorrect or missing password.
+      npm ERR! If you were trying to login, change your password, create an
+      npm ERR! authentication token or enable two-factor authentication then
+      npm ERR! that means you likely typed your password in incorrectly.
+      npm ERR! Please try again, or recover your password at:
+      npm ERR!     https://www.npmjs.com/forgot
+      npm ERR!
+      npm ERR! If you were doing some other operation then your saved credentials are
+      npm ERR! probably out of date. To correct this please try logging in again with:
+      npm ERR!     npm login
+
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs" \
+      "/2024-07-30T08_39_47_480Z-debug-0.log"
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
           expect(error.message)
             .to include(
-              "code E401"
+              "The following source could not be reached as it requires authentication " \
+              "(and any provided details were invalid or lacked the required permissions): www.npmjs.com"
+            )
+        end
+      end
+    end
+
+    context "with a dependency with no access and E403 error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+      npm ERR! code E403
+      npm ERR! 403 403 Forbidden - GET https://a0us.jfrog.io/a0us/api/npm/npm/execa
+      npm ERR! 403 In most cases, you or one of your dependencies are requesting
+      npm ERR! 403 a package version that is forbidden by your security policy, or
+      npm ERR! 403 on a server you do not have access to.
+
+      npm ERR! A complete log of this run can be found in: /home/dependabot/.npm/_logs" \
+      "/2024-07-30T13_02_59_179Z-debug-0.log"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication (and " \
+              "any provided details were invalid or lacked the required permissions): a0us.jfrog.io"
+            )
+        end
+      end
+    end
+
+    context "with a dependency with no access and E403 error" do
+      let(:response) do
+        "https://artifactory3-eu1.moneysupermarket.com/artifactory/api/npm/npm-repo/@aws-sdk%2fclient-s3" \
+          ": Request \"https://artifactory3-eu1.moneysupermarket.com/artifactory/" \
+          "api/npm/npm-repo/@aws-sdk%2fclient-s3\" returned a 403"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication (and any provided" \
+              " details were invalid or lacked the required permissions): artifactory3-eu1.moneysupermarket.com"
             )
         end
       end
     end
 
     context "with a registry with access that results in eai access code failure" do
-      let(:response) { "\n. request to https://registry.npmjs.org/next failed, reason: getaddrinfo EAI_AGAIN ." }
+      let(:response) do
+        "\n. request to https://registry.npmjs.org/next failed, reason: " \
+          "getaddrinfo EAI_AGAIN ."
+      end
 
       it "raises a helpful error" do
         expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
           expect(error.message)
             .to include(
               "Network Error. Access to https://registry.npmjs.org/next failed"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in socket hang up error" do
+      let(:response) { "https://registry.npm.xyz.org/qs: socket hang up" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://registry.npm.xyz.org/qs"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in empty reply from server error" do
+      let(:response) do
+        "Error while executing:
+      /home/dependabot/bin/git ls-remote -h -t https://gitlab.dti.state.de.us/kpatel/sample-library
+
+      fatal: unable to access 'https://gitlab.dti.state.de.us/kpatel/sample-library/': Empty reply from server
+
+      exited with error code: 128"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://gitlab.dti.state.de.us/kpatel/sample-library/"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in empty reply from server error" do
+      let(:response) { "https://npm.fontawesome.com/@fortawesome%2freact-fontawesome: authentication required" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include(
+              "The following source could not be reached as it requires authentication " \
+              "(and any provided details were invalid or lacked the required permissions): " \
+              "npm.fontawesome.com"
+            )
+        end
+      end
+    end
+
+    context "with a registry with access that results in variation of socket hang up error" do
+      let(:response) { "request to https://nexus.xyz.com/repository/npm-js/ejs failed,reason: socket hang up" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://nexus.xyz.com/repository/npm-js/ejs"
+            )
+        end
+      end
+    end
+
+    context "with a response with package not found error" do
+      let(:response) do
+        "Couldn't find package \"leemons-plugin-client-manager-frontend:" \
+          "-react-private@1.0.0\" required by \"leemons-app@0.0.1\" on the \"npm\" registry."
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with package not found error" do
+      let(:response) do
+        "Couldn't find package \"animated\" on the \"npm\" registry."
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with EUNSUPPORTEDPROTOCOL error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code EUNSUPPORTEDPROTOCOL
+        npm ERR! Unsupported URL Type \"link:\": link:dayjs/plugin/relativeTime"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with 500 Internal Server error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! code E500
+        npm ERR! 500 Internal Server Error - GET https://registry.npmjs.org/get-intrinsic"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a response with Unable to resolve reference error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Unable to resolve reference $eslint"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a registry with access that results in ESOCKETTIMEDOUT error" do
+      let(:response) { "https://npm.pkg.github.com/@group%2ffe-release: ESOCKETTIMEDOUT" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message)
+            .to include(
+              "https://npm.pkg.github.com/@group/fe-release"
+            )
+        end
+      end
+    end
+
+    context "with a package.json file with invalid entry" do
+      let(:response) { "premature close" }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message)
+            .to include(
+              "Error parsing your package.json manifest"
+            )
+        end
+      end
+    end
+
+    context "with a package-lock.json file with empty package object" do
+      let(:response) { "Object for dependency \"anymatch\" is empty.\nSomething went wrong." }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Object for dependency \"anymatch\" is empty"
+            )
+        end
+      end
+    end
+
+    context "with a npm error response that returns a git checkout error" do
+      let(:response) do
+        "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75
+      fatal: reference is not a tree: 8cb9036b503920679c95528fa584d3e973b64f75"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Command failed: git checkout 8cb9036b503920679c95528fa584d3e973b64f75"
+            )
+        end
+      end
+    end
+
+    context "with a npm error response that invalid version error" do
+      let(:response) do
+        "npm WARN using --force Recommended protections disabled.
+        npm ERR! Invalid Version: ^8.0.1
+
+        npm ERR! A complete log of this run can be found in: " \
+        "/home/dependabot/.npm/_logs/2024-09-12T06_08_54_947Z-debug-0.log"
+      end
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message)
+            .to include(
+              "Found invalid version \"^8.0.1\" while updating"
             )
         end
       end
@@ -815,6 +1099,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "with a registry package lookup that returns a 404" do
+    let(:files) { project_dependency_files("npm/simple_with_no_access_registry") }
+    let(:dependency_name) { "@gcorevideo/rtckit" }
+    let(:version) { "3.3.1" }
+    let(:previous_version) { "^3.3.0" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^3.3.0",
+        groups: ["dependencies"],
+        source: {
+          type: "registry",
+          url: "http://npmrepo.nl"
+        }
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    it "raises a helpful error" do
+      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    end
+  end
+
   context "with a dependency with nested aliases not supported" do
     let(:files) { project_dependency_files("npm/simple_with_nested_deps") }
     let(:dependency_name) { "express" }
@@ -830,8 +1137,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
     let(:previous_requirements) { requirements }
 
-    it "raises a helpful error" do
-      expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+    context "when npm version is 6" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
+      it "raises a helpful error" do
+        expect { updated_npm_lock_content }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when npm version is 8" do
+      let(:npm_fallback_version_above_v6_enabled) { true }
+
+      it "do not raises an error" do
+        expect(updated_npm_lock_content).not_to be_nil
+      end
     end
   end
 

@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/utils"
 require "dependabot/version"
 
 # Terraform pre-release versions use 1.0.1-rc1 syntax, which Gem::Version

@@ -1,0 +1,15 @@
+{
+  "name": "package-manager-unparseable",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "UNLICENSED",
+  "owner": "foo",
+  "engines": {
+    "node": "^18.12.1",
+    "yarn": "<=1.9.1",
+    "npm": "3.9.1",
+    "pnpm": "8.9.1"
+  },
+  "private": true,
+  "packageManager": "pnpm"
+}

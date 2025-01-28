@@ -1,0 +1,26 @@
+{
+  "name": "xyz",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "license": "Creative Commons Attribution Non Commercial 3.0",
+  "dependencies": {
+    "@radix-ui/react-context-menu": "^2.2.3",
+    "ahqstore-types": "link:src-ahqstore-types\\pkg"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abc/xyz"
+  },
+  "author": {
+    "name": "abc Softwares",
+    "email": "abc@xyz.com",
+    "url": "https://github.com/abc"
+  }
+}

@@ -38,7 +38,7 @@ module Dependabot
       def check_required_files
         return if elm_json_files.any?
 
-        raise "No elm.json"
+        raise "No #{MANIFEST_FILE}"
       end
 
       def updated_elm_json_content(file)
@@ -49,7 +49,7 @@ module Dependabot
       end
 
       def elm_json_files
-        dependency_files.select { |f| f.name.end_with?("elm.json") }
+        dependency_files.select { |f| f.name.end_with?(MANIFEST_FILE) }
       end
     end
   end

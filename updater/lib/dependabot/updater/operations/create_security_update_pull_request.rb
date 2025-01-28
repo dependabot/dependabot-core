@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
+require "dependabot/notices"
 
 # This class implements our strategy for updating a single, insecure dependency
 # to a secure version. We attempt to make the smallest version update possible,
@@ -12,6 +13,7 @@ module Dependabot
       class CreateSecurityUpdatePullRequest
         extend T::Sig
         include SecurityUpdateHelpers
+        include PullRequestHelpers
 
         sig { params(job: Job).returns(T::Boolean) }
         def self.applies_to?(job:)
@@ -42,7 +44,9 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = T.let([], T::Array[T::Array[T::Hash[String, String]]])
+          @created_pull_requests = T.let([], T::Array[PullRequest])
+          # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+          @notices = T.let([], T::Array[Dependabot::Notice])
         end
 
         # TODO: We currently tolerate multiple dependencies for this operation
@@ -54,6 +58,10 @@ module Dependabot
         sig { void }
         def perform
           Dependabot.logger.info("Starting security update job for #{job.source.repo}")
+
+          # Retrieve the list of initial notices from dependency snapshot
+          @notices = dependency_snapshot.notices
+          # More notices can be added during the update process
 
           target_dependencies = dependency_snapshot.job_dependencies
 
@@ -74,8 +82,11 @@ module Dependabot
         attr_reader :dependency_snapshot
         sig { returns(Dependabot::Updater::ErrorHandler) }
         attr_reader :error_handler
-        sig { returns(T::Array[T::Array[T::Hash[String, String]]]) }
+        sig { returns(T::Array[PullRequest]) }
         attr_reader :created_pull_requests
+        # A list of notices that will be used in PR messages and/or sent to the dependabot github alerts.
+        sig { returns(T::Array[Dependabot::Notice]) }
+        attr_reader :notices
 
         sig { params(dependency: Dependabot::Dependency).void }
         def check_and_create_pr_with_error_handling(dependency)
@@ -89,6 +100,8 @@ module Dependabot
           )
         rescue StandardError => e
           error_handler.handle_dependency_error(error: e, dependency: dependency)
+        ensure
+          service.record_ecosystem_meta(dependency_snapshot.ecosystem)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -152,11 +165,11 @@ module Dependabot
             # request)
             record_pull_request_exists_for_security_update(existing_pr)
 
-            deps = existing_pr.map do |dep|
-              if dep.fetch("dependency-removed", false)
-                "#{dep.fetch('dependency-name')}@removed"
+            deps = existing_pr.dependencies.map do |dep|
+              if dep.removed?
+                "#{dep.name}@removed"
               else
-                "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+                "#{dep.name}@#{dep.version}"
               end
             end
 
@@ -169,8 +182,14 @@ module Dependabot
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
             updated_dependencies: updated_deps,
-            change_source: checker.dependency
+            change_source: checker.dependency,
+            # Sending notices to the pr message builder to be used in the PR message if show_in_pr is true
+            notices: @notices
           )
+
+          # Send warning alerts to the API if any warning notices are present.
+          # Note that only notices with notice.show_alert set to true will be sent.
+          record_warning_notices(notices) if notices.any?
 
           create_pull_request(dependency_change)
         rescue Dependabot::AllVersionsIgnored
@@ -243,29 +262,19 @@ module Dependabot
           return false if latest_version.nil?
 
           job.existing_pull_requests
-             .select { |pr| pr.count == 1 }
-             .map(&:first)
-             .select { |pr| pr && pr.fetch("dependency-name") == checker.dependency.name }
-             .any? { |pr| pr && pr.fetch("dependency-version", nil) == latest_version }
+             .any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) } ||
+            created_pull_requests.any? { |pr| pr.contains_dependency?(checker.dependency.name, latest_version) }
         end
 
         sig do
           params(updated_dependencies: T::Array[Dependabot::Dependency])
-            .returns(T.nilable(T::Array[T::Hash[String, String]]))
+            .returns(T.nilable(PullRequest))
         end
         def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
-          )
+          new_pr = PullRequest.create_from_updated_dependencies(updated_dependencies)
 
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          job.existing_pull_requests.find { |pr| pr == new_pr } ||
+            created_pull_requests.find { |pr| pr == new_pr }
         end
 
         sig { params(checker: Dependabot::UpdateCheckers::Base).returns(Symbol) }
@@ -289,18 +298,7 @@ module Dependabot
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            create_pull_request_for_dependency(dep)
-          end
-        end
-
-        sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, String]) }
-        def create_pull_request_for_dependency(dependency)
-          {
-            "dependency-name" => dependency.name,
-            "dependency-version" => dependency.version,
-            "dependency-removed" => dependency.removed? ? true : nil
-          }.compact
+          created_pull_requests << PullRequest.create_from_updated_dependencies(dependency_change.updated_dependencies)
         end
       end
     end

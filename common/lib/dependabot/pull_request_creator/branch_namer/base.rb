@@ -40,12 +40,12 @@ module Dependabot
         end
         def initialize(dependencies:, files:, target_branch:, separator: "/",
                        prefix: "dependabot", max_length: nil)
-          @dependencies  = dependencies
-          @files         = files
-          @target_branch = target_branch
-          @separator     = separator
-          @prefix        = prefix
-          @max_length    = max_length
+          @dependencies      = dependencies
+          @files             = files
+          @target_branch     = target_branch
+          @separator         = separator
+          @prefix            = prefix
+          @max_length        = max_length
         end
 
         sig { overridable.returns(String) }

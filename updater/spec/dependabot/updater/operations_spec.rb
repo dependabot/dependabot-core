@@ -12,22 +12,6 @@ RSpec.describe Dependabot::Updater::Operations do
       Dependabot::Experiments.reset!
     end
 
-    it "returns nil if no operation matches" do
-      # We always expect jobs that update a pull request to specify their
-      # existing dependency changes, a job with this set of conditions
-      # should never exist.
-      source = instance_double(Dependabot::Source, directory: "/.", directories: nil)
-      job = instance_double(Dependabot::Job,
-                            source: source,
-                            security_updates_only?: false,
-                            updating_a_pull_request?: true,
-                            dependencies: [],
-                            dependency_groups: [],
-                            is_a?: true)
-
-      expect(described_class.class_for(job: job)).to be_nil
-    end
-
     it "returns the UpdateAllVersions class when the Job is for a fresh, non-security update with no dependencies" do
       source = instance_double(Dependabot::Source, directory: "/.", directories: nil)
       job = instance_double(Dependabot::Job,
@@ -38,7 +22,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             dependency_groups: [],
                             is_a?: true)
 
-      expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::UpdateAllVersions)
+      expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
     end
 
     it "returns the GroupUpdateAllVersions class when the Job is for a fresh, version update with no dependencies" do

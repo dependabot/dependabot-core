@@ -13,7 +13,9 @@ module Dependabot
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        []
+        [
+          /^.*/
+        ]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
