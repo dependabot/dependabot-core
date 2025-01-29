@@ -182,9 +182,32 @@ RUN pyenv global $PY_3_13
 
 USER root
 
+#RUN apt-get update && apt-get install -y \
+#    software-properties-common \
+#    build-essential \
+#    cmake \
+#    libproj-dev \
+#    libgeos-dev \
+#    libspatialite-dev \
+#    libsqlite3-dev \
+#    libpoppler-dev \
+#    libcurl4-openssl-dev \
+#    libspatialite7 \
+#    libtiff-dev \
+#    libjpeg-dev \
+#    zlib1g-dev \
+#    libpng-dev \
+#    libnetcdf-dev \
+#    libhdf5-dev \
+#    libfreexl-dev \
+#    libwebp-dev \
+#    python3-dev \
+#    python3-pip \
+#  && apt-get clean \
+#  && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && apt-get install -y \
     software-properties-common \
-    curl \
     build-essential \
     cmake \
     libproj-dev \
@@ -202,12 +225,8 @@ RUN apt-get update && apt-get install -y \
     libhdf5-dev \
     libfreexl-dev \
     libwebp-dev \
-    python3 \
-    python3-dev \
-    python3-pip \
-    git \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Clone GDAL source code
 RUN git clone https://github.com/OSGeo/gdal.git /usr/local/src/gdal \

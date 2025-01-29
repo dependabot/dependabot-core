@@ -8,11 +8,10 @@ from poetry.factory import Factory
 
 def get_dependency_hash(dependency_name, dependency_version, algorithm,
                         index_url=hashin.DEFAULT_INDEX_URL):
-    # Disable SSL verification
-    # As we are working in a trusted environment
-    # --index-url https://pypi.org/simple --trusted-host pypi.org
-    # --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
-    ssl._create_default_https_context = ssl._create_unverified_context
+
+    if index_url == hashin.DEFAULT_INDEX_URL:
+        # Disable SSL verification for the default index url "https://pypi.org/simple"
+        ssl._create_default_https_context = ssl._create_unverified_context
     try:
         hashes = hashin.get_package_hashes(
             dependency_name,
@@ -23,7 +22,7 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm,
         return json.dumps({"result": hashes["hashes"]})
     except hashin.PackageNotFoundError as e:
         return json.dumps({
-            "error": repr(e),
+            "error": repr(e + " " + dependency_name),
             "error_class:": e.__class__.__name__,
             "trace:": ''.join(traceback.format_stack())
         })
