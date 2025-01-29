@@ -203,8 +203,18 @@ module Dependabot
         rescue URI::InvalidURIError
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
-               Excon::Error::TooManyRedirects
-          raise if central_repo_urls.include?(repository_details["url"])
+               Excon::Error::TooManyRedirects => e
+
+          if central_repo_urls.include?(repository_details["url"])
+            response_status = response&.status || 0
+            response_body = if response
+                              "RegistryError: #{response.status} response status with body #{response.body}"
+                            else
+                              "RegistryError: #{e.message}"
+                            end
+
+            raise RegistryError.new(response_status, response_body)
+          end
 
           nil
         end
