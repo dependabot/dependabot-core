@@ -6,7 +6,6 @@ require "dependabot/job"
 require "dependabot/opentelemetry"
 require "sorbet-runtime"
 require "dependabot/errors"
-require "debug"
 
 # Provides a client to access the internal Dependabot Service's API
 #

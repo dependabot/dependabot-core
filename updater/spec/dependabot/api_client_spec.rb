@@ -217,7 +217,13 @@ RSpec.describe Dependabot::ApiClient do
 
     context "when API returns a 400 Bad Request" do
       let(:body) do
-        '{"errors":[{"status":400,"title":"Bad Request","detail":"The request contains invalid or unauthorized changes"}]}'
+        <<~ERROR
+          { "errors": [{
+            "status": 400,
+            "title": "Bad Request",
+            "detail": "The request contains invalid or unauthorized changes"}]
+          }
+        ERROR
       end
 
       before do
