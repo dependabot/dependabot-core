@@ -6,6 +6,26 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_updater/pnpm_workspace_updater"
 
+def create_workspace_dependency(name:, version:, required_version:, previous_required_version:)
+  Dependabot::Dependency.new(
+    name: name,
+    version: version,
+    package_manager: "npm_and_yarn",
+    requirements: [{
+      file: "pnpm-workspace.yaml",
+      requirement: required_version,
+      groups: [],
+      source: nil
+    }],
+    previous_requirements: [{
+      file: "pnpm-workspace.yaml",
+      requirement: previous_required_version,
+      groups: [],
+      source: nil
+    }]
+  )
+end
+
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
   let(:pnpm_workspace_updater) do
     described_class.new(
@@ -22,22 +42,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
   let(:dependencies) { [dependency] }
   let(:dependency) do
-    Dependabot::Dependency.new(
+    create_workspace_dependency(
       name: "prettier",
       version: "3.3.0",
-      package_manager: "npm_and_yarn",
-      requirements: [{
-        file: "pnpm-workspace.yaml",
-        requirement: "3.3.3",
-        groups: ["dependencies"],
-        source: nil
-      }],
-      previous_requirements: [{
-        file: "pnpm-workspace.yaml",
-        requirement: "3.3.0",
-        groups: ["dependencies"],
-        source: nil
-      }]
+      required_version: "3.3.3",
+      previous_required_version: "3.3.0"
     )
   end
 
@@ -50,39 +59,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalog_multiple" }
       let(:dependencies) do
         [
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "prettier",
             version: "3.3.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^3.3.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^3.3.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^3.3.3",
+            previous_required_version: "^3.3.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "left-pad",
             version: "1.0.1",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^1.0.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^1.0.1",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^1.0.3",
+            previous_required_version: "^1.0.1"
           )
         ]
       end
@@ -95,39 +82,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_react" }
       let(:dependencies) do
         [
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react-dom",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           )
         ]
       end
@@ -140,73 +105,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_multiple_reacts" }
       let(:dependencies) do
         [
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react-dom",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react",
             version: "16.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^16.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^16.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^16.2.3",
+            previous_required_version: "^16.0.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react-dom",
             version: "16.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^16.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^16.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^16.2.3",
+            previous_required_version: "^16.0.0"
           )
         ]
       end
@@ -222,90 +143,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_valid_yaml" }
       let(:dependencies) do
         [
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "prettier",
             version: "3.3.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "3.3.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "3.3.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "3.3.3",
+            previous_required_version: "3.3.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "express",
             version: "4.15.2",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "4.21.2",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "4.15.2",
-              groups: [],
-              source: nil
-            }]
+            required_version: "4.21.2",
+            previous_required_version: "4.15.2"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "is-even",
             version: "0.1.2",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "1.0.0",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "0.1.2",
-              groups: [],
-              source: nil
-            }]
+            required_version: "1.0.0",
+            previous_required_version: "0.1.2"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           ),
-          Dependabot::Dependency.new(
+          create_workspace_dependency(
             name: "react-dom",
             version: "18.0.0",
-            package_manager: "npm_and_yarn",
-            requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.2.3",
-              groups: [],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "pnpm-workspace.yaml",
-              requirement: "^18.0.0",
-              groups: [],
-              source: nil
-            }]
+            required_version: "^18.2.3",
+            previous_required_version: "^18.0.0"
           )
         ]
       end

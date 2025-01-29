@@ -15,12 +15,9 @@ end
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater
       class PnpmWorkspaceUpdater
         extend T::Sig
-
-        require_relative "npmrc_builder"
-        require_relative "package_json_updater"
 
         sig do
           params(
