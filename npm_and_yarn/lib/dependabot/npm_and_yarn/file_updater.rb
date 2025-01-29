@@ -11,7 +11,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "file_updater/package_json_updater"
@@ -19,6 +19,7 @@ module Dependabot
       require_relative "file_updater/yarn_lockfile_updater"
       require_relative "file_updater/pnpm_lockfile_updater"
       require_relative "file_updater/bun_lockfile_updater"
+      require_relative "file_updater/pnpm_workspace_updater"
 
       class NoChangeError < StandardError
         extend T::Sig
@@ -43,6 +44,7 @@ module Dependabot
           %r{^(?:.*/)?npm-shrinkwrap\.json$},
           %r{^(?:.*/)?yarn\.lock$},
           %r{^(?:.*/)?pnpm-lock\.yaml$},
+          %r{^(?:.*/)?pnpm-workspace\.yaml$},
           %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
           %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
@@ -54,6 +56,9 @@ module Dependabot
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
+        if Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog)
+          updated_files += updated_pnpm_workspace_files
+        end
         updated_files += updated_lockfiles
 
         if updated_files.none?
@@ -209,6 +214,15 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pnpm_workspace
+        @pnpm_workspace ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def bun_locks
         @bun_locks ||= T.let(
           filtered_dependency_files
@@ -264,6 +278,16 @@ module Dependabot
       def updated_manifest_files
         package_files.filter_map do |file|
           updated_content = updated_package_json_content(file)
+          next if updated_content == file.content
+
+          updated_file(file: file, content: T.must(updated_content))
+        end
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_pnpm_workspace_files
+        pnpm_workspace.filter_map do |file|
+          updated_content = updated_pnpm_workspace_content(file)
           next if updated_content == file.content
 
           updated_file(file: file, content: T.must(updated_content))
@@ -406,6 +430,19 @@ module Dependabot
             package_json: file,
             dependencies: dependencies
           ).updated_package_json.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T.nilable(String))
+      end
+      def updated_pnpm_workspace_content(file)
+        @updated_pnpm_workspace_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+        @updated_pnpm_workspace_content[file.name] ||=
+          PnpmWorkspaceUpdater.new(
+            workspace_file: file,
+            dependencies: dependencies
+          ).updated_pnpm_workspace.content
       end
     end
   end
