@@ -524,6 +524,18 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with an invalid repository url specified" do
+      let(:dependency_files) { project_dependency_files("invalid_repository_url") }
+
+      before do
+        stub_request(:get, maven_central_metadata_url).to_raise(Excon::Error::Timeout)
+      end
+
+      it "raises a helpful error" do
+        expect { latest_version_details }.to raise_error(Dependabot::RegistryError)
+      end
+    end
+
     context "with a custom repository" do
       let(:pom_fixture_name) { "custom_repositories_pom.xml" }
 
