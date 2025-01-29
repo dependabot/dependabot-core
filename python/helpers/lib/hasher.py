@@ -10,8 +10,8 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm,
                         index_url=hashin.DEFAULT_INDEX_URL):
 
     if index_url == hashin.DEFAULT_INDEX_URL:
-        # Disable SSL verification for the default index url
-        ssl._create_default_https_context = ssl._create_unverified_context
+        # use the stdlib ssl context when using the default index
+        ssl._create_default_https_context = ssl._create_stdlib_context
     try:
         hashes = hashin.get_package_hashes(
             dependency_name,
