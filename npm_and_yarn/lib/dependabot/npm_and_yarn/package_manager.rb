@@ -323,7 +323,7 @@ module Dependabot
       end
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
-      def package_manager_by_name(name) # rubocop:disable Metrics/PerceivedComplexity
+      def package_manager_by_name(name)
         Dependabot.logger.info("Resolving package manager for: #{name || 'default'}")
 
         name = ensure_valid_package_manager(name)
@@ -332,7 +332,7 @@ module Dependabot
         detected_version = detect_version(name)
 
         # if we have a detected version, we check if it is deprecated or unsupported
-        if detected_version && !detected_version.empty?
+        if detected_version
           package_manager = package_manager_class.new(
             detected_version: detected_version.to_s
           )
