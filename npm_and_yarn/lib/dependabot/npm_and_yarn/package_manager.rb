@@ -332,7 +332,7 @@ module Dependabot
         detected_version = detect_version(name)
 
         # if we have a detected version, we check if it is deprecated or unsupported
-        unless detected_version&.empty?
+        if detected_version && !detected_version.empty?
           package_manager = package_manager_class.new(
             detected_version: detected_version.to_s
           )
