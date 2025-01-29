@@ -302,23 +302,28 @@ module Dependabot
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
-        # we prioritize version mentioned in "packageManager" instead of "engines"
+        # Prioritize version mentioned in "packageManager" instead of "engines"
         if @manifest_package_manager&.start_with?("#{name}@")
           detected_version = @manifest_package_manager.split("@").last.to_s
         end
 
-        # if "packageManager" have no version specified, we check if we can extract "engines" information
-        detected_version = check_engine_version(name) if !detected_version || detected_version.empty?
+        # If "packageManager" has no version specified, check if we can extract "engines" information
+        detected_version ||= check_engine_version(name) if detected_version.to_s.empty?
 
-        # if "packageManager" and "engines" both are not present, we check if we can infer the version
-        # from the manifest file lockfileVersion
-        detected_version = guessed_version(name) if !detected_version || detected_version.empty?
+        # If neither "packageManager" nor "engines" have versions, infer version from lockfileVersion
+        detected_version ||= guessed_version(name) if detected_version.to_s.empty?
 
-        detected_version&.to_s
+        # Strip and validate version format
+        detected_version_string = detected_version.to_s.strip
+
+        # Ensure detected_version is neither "0" nor invalid format
+        return if detected_version_string == "0" || !detected_version_string.match?(ConstraintHelper::VERSION_REGEX)
+
+        detected_version_string
       end
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
-      def package_manager_by_name(name)
+      def package_manager_by_name(name) # rubocop:disable Metrics/PerceivedComplexity
         Dependabot.logger.info("Resolving package manager for: #{name || 'default'}")
 
         name = ensure_valid_package_manager(name)
@@ -327,7 +332,7 @@ module Dependabot
         detected_version = detect_version(name)
 
         # if we have a detected version, we check if it is deprecated or unsupported
-        if detected_version
+        unless detected_version&.empty?
           package_manager = package_manager_class.new(
             detected_version: detected_version.to_s
           )
@@ -345,7 +350,7 @@ module Dependabot
         end
 
         package_manager_class.new(
-          detected_version: detected_version.to_s,
+          detected_version: detected_version,
           raw_version: installed_version,
           requirement: package_manager_requirement
         )
