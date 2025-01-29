@@ -94,7 +94,7 @@ module Dependabot
         sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
         def config_variable_sources(credentials)
           @config_variable_sources = T.let([], T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @config_variable_sources ||=
+          @config_variable_sources =
             credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
               {
                 "name" => "dependabot-inserted-index-#{i}",
