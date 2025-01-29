@@ -18,6 +18,8 @@ module Dependabot
       # Matches semantic versions:
       VERSION = T.let("#{DIGIT}(?:\\.#{DIGIT}){0,2}#{PRERELEASE}#{BUILD_METADATA}".freeze, String)
 
+      VERSION_REGEX = T.let(/\A#{VERSION}\z/o, Regexp)
+
       # SemVer regex: major.minor.patch[-prerelease][+build]
       SEMVER_REGEX = /^(?<version>\d+\.\d+\.\d+)(?:-(?<prerelease>[a-zA-Z0-9.-]+))?(?:\+(?<build>[a-zA-Z0-9.-]+))?$/
 
