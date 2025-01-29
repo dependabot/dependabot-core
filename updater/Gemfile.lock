@@ -405,6 +405,7 @@ GEM
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
     webrick (1.8.2)
+    zeitwerk (2.7.1)
 
 PLATFORMS
   ruby
@@ -460,6 +461,7 @@ DEPENDENCIES
   vcr (~> 6.1)
   webmock (~> 3.18)
   webrick (>= 1.7)
+  zeitwerk (~> 2.7)
 
 BUNDLED WITH
    2.6.3
