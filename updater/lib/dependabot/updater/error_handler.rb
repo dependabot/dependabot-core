@@ -81,7 +81,7 @@ module Dependabot
           dependency: T.untyped,
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(String)
+          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
@@ -132,7 +132,7 @@ module Dependabot
         params(
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(String)
+          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
         ).void
       end
       def log_job_error(error:, error_type:, error_detail: nil)
@@ -149,10 +149,10 @@ module Dependabot
 
       private
 
-      sig { returns(T.untyped) }
+      sig { returns(Service) }
       attr_reader :service
 
-      sig { returns(T.untyped) }
+      sig { returns(Job) }
       attr_reader :job
 
       # This method accepts an error class and returns an appropriate `error_details` hash
@@ -214,7 +214,7 @@ module Dependabot
         service.record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
       end
 
-      sig { params(error: StandardError).returns(T.nilable(String)) }
+      sig { params(error: StandardError).returns(T.nilable(T::Array[String])) }
       def extract_fingerprint(error)
         if error.respond_to?(:sentry_context)
           context = T.unsafe(error).sentry_context
