@@ -54,9 +54,8 @@ module Dependabot
         end
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[Dependency]) }
-      def parse
+      def parse # rubocop:disable Metrics/PerceivedComplexity
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
@@ -80,7 +79,6 @@ module Dependabot
           dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(Ecosystem) }
       def ecosystem
