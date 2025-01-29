@@ -22,7 +22,7 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm,
         return json.dumps({"result": hashes["hashes"]})
     except hashin.PackageNotFoundError as e:
         return json.dumps({
-            "error": repr(e + " " + dependency_name),
+            "error": repr(e),
             "error_class:": e.__class__.__name__,
             "trace:": ''.join(traceback.format_stack())
         })
