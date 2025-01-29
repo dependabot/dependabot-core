@@ -182,30 +182,6 @@ RUN pyenv global $PY_3_13
 
 USER root
 
-#RUN apt-get update && apt-get install -y \
-#    software-properties-common \
-#    build-essential \
-#    cmake \
-#    libproj-dev \
-#    libgeos-dev \
-#    libspatialite-dev \
-#    libsqlite3-dev \
-#    libpoppler-dev \
-#    libcurl4-openssl-dev \
-#    libspatialite7 \
-#    libtiff-dev \
-#    libjpeg-dev \
-#    zlib1g-dev \
-#    libpng-dev \
-#    libnetcdf-dev \
-#    libhdf5-dev \
-#    libfreexl-dev \
-#    libwebp-dev \
-#    python3-dev \
-#    python3-pip \
-#  && apt-get clean \
-#  && rm -rf /var/lib/apt/lists/*
-
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     build-essential \
