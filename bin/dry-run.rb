@@ -37,6 +37,7 @@
 # - swift
 # - devcontainers
 # - dotnet_sdk
+# - bun
 
 # rubocop:disable Style/GlobalVars
 
@@ -63,6 +64,7 @@ $LOAD_PATH << "./github_actions/lib"
 $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./hex/lib"
+$LOAD_PATH << "./javascript/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
@@ -109,6 +111,7 @@ require "dependabot/github_actions"
 require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/hex"
+require "dependabot/javascript"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"

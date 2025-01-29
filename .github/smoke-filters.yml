@@ -38,6 +38,9 @@ gradle:
 hex:
   - *common
   - 'hex/**'
+javascript:
+  - *common
+  - 'javascript/**'
 maven:
   - *common
   - 'maven/**'
