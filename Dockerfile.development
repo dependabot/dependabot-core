@@ -1,0 +1,38 @@
+ARG FROM_IMAGE=ghcr.io/dependabot/dependabot-updater-core
+FROM $FROM_IMAGE
+
+# Temporarily switch to root user in order to install packages
+USER root
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    vim \
+    strace \
+    ltrace \
+    gdb \
+    shellcheck \
+    # Required for updater/ development
+    libgit2-dev \
+    cmake \
+    pkg-config \
+  && rm -rf /var/lib/apt/lists/*
+USER dependabot
+
+RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
+  echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
+
+WORKDIR $DEPENDABOT_HOME
+
+RUN cd dependabot-updater \
+  && bundle config unset without \
+  && bundle install \
+  && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
+  && rm .bundle/bin/bundle # let RubyGems manage Bundler
+
+ENV PATH="${DEPENDABOT_HOME}/dependabot-updater/.bundle/bin:$PATH"
+
+# Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
+RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
+
+# Declare pass-through environment variables used for debugging
+ENV LOCAL_GITHUB_ACCESS_TOKEN="" \
+  LOCAL_CONFIG_VARIABLES=""

@@ -1,0 +1,322 @@
+[
+  {
+    "name": "FSharp.Compiler.Tools.Nuget",
+    "path": "src/FSharp.Compiler.Tools.Nuget",
+    "sha": "822f92e909a443386d9bffc4fc606dce62a585c3",
+    "size": 0,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/FSharp.Compiler.Tools.Nuget?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/tree/master/src/FSharp.Compiler.Tools.Nuget",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/trees/822f92e909a443386d9bffc4fc606dce62a585c3",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/FSharp.Compiler.Tools.Nuget?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/trees/822f92e909a443386d9bffc4fc606dce62a585c3",
+      "html": "https://github.com/fsharp/fsharp/tree/master/src/FSharp.Compiler.Tools.Nuget"
+    }
+  },
+  {
+    "name": "Another.sln",
+    "path": "src/Another.sln",
+    "sha": "033b789a8b0639af562271728bc5ffc3ad81a6e5",
+    "size": 12,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/Another.sln?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/Another.sln",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/Another.sln",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/Another.sln?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+      "html": "https://github.com/fsharp/fsharp/blob/master/Another.sln"
+    }
+  },
+  {
+    "name": "FSharp.sln",
+    "path": "src/FSharp.sln",
+    "sha": "033b789a8b0639af562271728bc5ffc3ad81a6e5",
+    "size": 14844,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/FSharp.sln?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/FSharp.sln",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/FSharp.sln",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/FSharp.sln?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/033b789a8b0639af562271728bc5ffc3ad81a6e5",
+      "html": "https://github.com/fsharp/fsharp/blob/master/FSharp.sln"
+    }
+  },
+  {
+    "name": "ISSUE_TEMPLATE.md",
+    "path": "src/ISSUE_TEMPLATE.md",
+    "sha": "452ecef05def95e27e3cc3b6098255bf4cbac2d5",
+    "size": 895,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/ISSUE_TEMPLATE.md?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/ISSUE_TEMPLATE.md",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/452ecef05def95e27e3cc3b6098255bf4cbac2d5",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/ISSUE_TEMPLATE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/ISSUE_TEMPLATE.md?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/452ecef05def95e27e3cc3b6098255bf4cbac2d5",
+      "html": "https://github.com/fsharp/fsharp/blob/master/ISSUE_TEMPLATE.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "src/LICENSE",
+    "sha": "20daa663dc5f68e020241cde1932510235f6a9c4",
+    "size": 1105,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/LICENSE?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/20daa663dc5f68e020241cde1932510235f6a9c4",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/20daa663dc5f68e020241cde1932510235f6a9c4",
+      "html": "https://github.com/fsharp/fsharp/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "License.txt",
+    "path": "src/License.txt",
+    "sha": "c35b1079d3c59b514e5a9f54eb92a912abe9b1a6",
+    "size": 1106,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/License.txt?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/License.txt",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/c35b1079d3c59b514e5a9f54eb92a912abe9b1a6",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/License.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/License.txt?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/c35b1079d3c59b514e5a9f54eb92a912abe9b1a6",
+      "html": "https://github.com/fsharp/fsharp/blob/master/License.txt"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "src/Makefile",
+    "sha": "40f9dfd01a885008d02396fa0bd984194cb6ab33",
+    "size": 6499,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/Makefile?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/Makefile",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/40f9dfd01a885008d02396fa0bd984194cb6ab33",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/Makefile?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/40f9dfd01a885008d02396fa0bd984194cb6ab33",
+      "html": "https://github.com/fsharp/fsharp/blob/master/Makefile"
+    }
+  },
+  {
+    "name": "NuGet.Config",
+    "path": "src/NuGet.Config",
+    "sha": "b353132ecf9b4ee712f5527319f3c6c59a581578",
+    "size": 1367,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/NuGet.Config?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/NuGet.Config",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/NuGet.Config",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/NuGet.Config?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+      "html": "https://github.com/fsharp/fsharp/blob/master/NuGet.Config"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "src/README.md",
+    "sha": "69fce4b29607c88f146efb6ac0dfec6f899f2f1a",
+    "size": 16250,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/README.md?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/69fce4b29607c88f146efb6ac0dfec6f899f2f1a",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/README.md?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/69fce4b29607c88f146efb6ac0dfec6f899f2f1a",
+      "html": "https://github.com/fsharp/fsharp/blob/master/README.md"
+    }
+  },
+  {
+    "name": "RoslynPackageVersion.txt",
+    "path": "src/RoslynPackageVersion.txt",
+    "sha": "834f2629538327723c074ed4c3addca9888f0256",
+    "size": 6,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/RoslynPackageVersion.txt?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/RoslynPackageVersion.txt",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/834f2629538327723c074ed4c3addca9888f0256",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/RoslynPackageVersion.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/RoslynPackageVersion.txt?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/834f2629538327723c074ed4c3addca9888f0256",
+      "html": "https://github.com/fsharp/fsharp/blob/master/RoslynPackageVersion.txt"
+    }
+  },
+  {
+    "name": "appveyor.yml",
+    "path": "src/appveyor.yml",
+    "sha": "ed4f94e8ad1c0189f8c2c85a0cb2fffc44575e17",
+    "size": 245,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/appveyor.yml?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/appveyor.yml",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/ed4f94e8ad1c0189f8c2c85a0cb2fffc44575e17",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/appveyor.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/appveyor.yml?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/ed4f94e8ad1c0189f8c2c85a0cb2fffc44575e17",
+      "html": "https://github.com/fsharp/fsharp/blob/master/appveyor.yml"
+    }
+  },
+  {
+    "name": "attributions.md",
+    "path": "src/attributions.md",
+    "sha": "eaed2975a4e26500e83eb7a29f5c3e0d1aaf0733",
+    "size": 8403,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/attributions.md?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/attributions.md",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/eaed2975a4e26500e83eb7a29f5c3e0d1aaf0733",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/attributions.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/attributions.md?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/eaed2975a4e26500e83eb7a29f5c3e0d1aaf0733",
+      "html": "https://github.com/fsharp/fsharp/blob/master/attributions.md"
+    }
+  },
+  {
+    "name": "build-everything.proj",
+    "path": "src/build-everything.proj",
+    "sha": "afdd0655a1a0c4338adb42c0ba8cef25483d5020",
+    "size": 11681,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/build-everything.proj?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/build-everything.proj",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/afdd0655a1a0c4338adb42c0ba8cef25483d5020",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/build-everything.proj",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/build-everything.proj?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/afdd0655a1a0c4338adb42c0ba8cef25483d5020",
+      "html": "https://github.com/fsharp/fsharp/blob/master/build-everything.proj"
+    }
+  },
+  {
+    "name": "build-nuget-packages.proj",
+    "path": "src/build-nuget-packages.proj",
+    "sha": "2aab5455e933e113b1fd286930942e325ddd337e",
+    "size": 1023,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/build-nuget-packages.proj?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/build-nuget-packages.proj",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/2aab5455e933e113b1fd286930942e325ddd337e",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/build-nuget-packages.proj",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/build-nuget-packages.proj?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/2aab5455e933e113b1fd286930942e325ddd337e",
+      "html": "https://github.com/fsharp/fsharp/blob/master/build-nuget-packages.proj"
+    }
+  },
+  {
+    "name": "build.bat",
+    "path": "src/build.bat",
+    "sha": "a9b0e5b9cd2991cad838348bfe1facb9fa50b1b7",
+    "size": 5990,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/build.bat?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/build.bat",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/a9b0e5b9cd2991cad838348bfe1facb9fa50b1b7",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/build.bat",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/build.bat?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/a9b0e5b9cd2991cad838348bfe1facb9fa50b1b7",
+      "html": "https://github.com/fsharp/fsharp/blob/master/build.bat"
+    }
+  },
+  {
+    "name": "build",
+    "path": "src/build",
+    "sha": "3a884009baafe1ec4d655189714146b2962c0261",
+    "size": 0,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/build?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/tree/master/src/build",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/trees/3a884009baafe1ec4d655189714146b2962c0261",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/build?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/trees/3a884009baafe1ec4d655189714146b2962c0261",
+      "html": "https://github.com/fsharp/fsharp/tree/master/src/build"
+    }
+  },
+  {
+    "name": "lib",
+    "path": "src/lib",
+    "sha": "a4982be5a6dea526e6642d52d1bb17ac5e4b9631",
+    "size": 0,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/lib?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/tree/master/src/lib",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/trees/a4982be5a6dea526e6642d52d1bb17ac5e4b9631",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/lib?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/trees/a4982be5a6dea526e6642d52d1bb17ac5e4b9631",
+      "html": "https://github.com/fsharp/fsharp/tree/master/src/lib"
+    }
+  },
+  {
+    "name": "mono",
+    "path": "src/mono",
+    "sha": "47ae5d23f6c6da52aa583febee882aafe66ae246",
+    "size": 0,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/mono?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/tree/master/src/mono",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/trees/47ae5d23f6c6da52aa583febee882aafe66ae246",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/mono?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/trees/47ae5d23f6c6da52aa583febee882aafe66ae246",
+      "html": "https://github.com/fsharp/fsharp/tree/master/src/mono"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "src/tests",
+    "sha": "ffeda668028c063bb014d304a2a7edcba871ce93",
+    "size": 0,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/tests?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/tree/master/src/tests",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/trees/ffeda668028c063bb014d304a2a7edcba871ce93",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/tests?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/trees/ffeda668028c063bb014d304a2a7edcba871ce93",
+      "html": "https://github.com/fsharp/fsharp/tree/master/src/tests"
+    }
+  },
+  {
+    "name": "verify-translations.cmd",
+    "path": "src/verify-translations.cmd",
+    "sha": "6717de0f778c42088d20af8571167bb733134fa5",
+    "size": 94,
+    "url": "https://api.github.com/repos/fsharp/fsharp/contents/src/verify-translations.cmd?ref=master",
+    "html_url": "https://github.com/fsharp/fsharp/blob/master/verify-translations.cmd",
+    "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/6717de0f778c42088d20af8571167bb733134fa5",
+    "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/verify-translations.cmd",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fsharp/fsharp/contents/src/verify-translations.cmd?ref=master",
+      "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/6717de0f778c42088d20af8571167bb733134fa5",
+      "html": "https://github.com/fsharp/fsharp/blob/master/verify-translations.cmd"
+    }
+  }
+]

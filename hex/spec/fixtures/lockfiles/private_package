@@ -1,0 +1,3 @@
+%{
+  "example_package_a": {:hex, :example_package_a, "1.0.0", "cbfa4a7c5aeb769e0c166bb30031607381fc20fb426af448b4dc931cd5bf3591", [:mix], [], "hexpm:dependabot"},
+}

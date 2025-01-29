@@ -1,0 +1,6 @@
+{
+    "name": "docs.github.com",
+    "features": {
+        "sshd": "latest"
+    }
+}

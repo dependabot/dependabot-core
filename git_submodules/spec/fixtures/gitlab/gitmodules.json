@@ -1,0 +1,10 @@
+{
+    "blob_id": "0eba9dff767611060181e0423a1de2941d27efc8",
+    "commit_id": "eb38397cb6ae669219e6bc18ad19981fff18ea29",
+    "content": "W3N1Ym1vZHVsZSAiYWJvdXQvZG9jdW1lbnRzIl0KICBwYXRoID0gYWJvdXQv\nZG9jdW1lbnRzCiAgdXJsID0gaHR0cHM6Ly9naXRodWIuY29tL2V4YW1wbGUv\nZG9jdW1lbnRzLmdpdAogIGJyYW5jaCA9IGdoLXBhZ2VzCltzdWJtb2R1bGUg\nIm1hbmlmZXN0byJdCiAgcGF0aCA9IG1hbmlmZXN0bwogIHVybCA9IGh0dHBz\nOi8vZ2l0aHViLmNvbS9leGFtcGxlL21hbmlmZXN0by5naXQK\n",
+    "encoding": "base64",
+    "file_name": ".gitmodules",
+    "file_path": ".gitmodules",
+    "ref": "master",
+    "size": "19"
+}

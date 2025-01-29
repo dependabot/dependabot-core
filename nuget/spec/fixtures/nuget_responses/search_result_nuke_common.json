@@ -1,0 +1,233 @@
+{
+    "@context": {
+        "@base": "https://api.nuget.org/v3/registration3/",
+        "@vocab": "http://schema.nuget.org/schema#"
+    },
+    "data": [
+        {
+            "@id": "https://api.nuget.org/v3/registration3/nuke.common/index.json",
+            "@type": "Package",
+            "authors": [
+                "Matthias Koch, Sebastian Karasek"
+            ],
+            "description": "Cross-platform build automation system",
+            "iconUrl": "https://raw.githubusercontent.com/nuke-build/nuke/master/icon.png",
+            "id": "Nuke.Common",
+            "licenseUrl": "https://github.com/nuke-build/nuke/blob/master/LICENSE",
+            "projectUrl": "https://nuke.build/",
+            "registration": "https://api.nuget.org/v3/registration3/nuke.common/index.json",
+            "summary": "",
+            "tags": [
+                "build",
+                "automation",
+                "continuous-integration",
+                "tools",
+                "orchestration"
+            ],
+            "title": "Nuke.Common",
+            "totalDownloads": 21550,
+            "verified": true,
+            "version": "0.9.0",
+            "versions": [
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.191.json",
+                    "downloads": 304,
+                    "version": "0.1.191"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.228.json",
+                    "downloads": 113,
+                    "version": "0.1.228"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.230.json",
+                    "downloads": 175,
+                    "version": "0.1.230"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.277.json",
+                    "downloads": 456,
+                    "version": "0.1.277"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.328.json",
+                    "downloads": 100,
+                    "version": "0.1.328"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.337.json",
+                    "downloads": 458,
+                    "version": "0.1.337"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.340.json",
+                    "downloads": 275,
+                    "version": "0.1.340"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.362.json",
+                    "downloads": 126,
+                    "version": "0.1.362"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.371.json",
+                    "downloads": 268,
+                    "version": "0.1.371"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.378.json",
+                    "downloads": 97,
+                    "version": "0.1.378"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.384.json",
+                    "downloads": 94,
+                    "version": "0.1.384"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.385.json",
+                    "downloads": 318,
+                    "version": "0.1.385"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.389.json",
+                    "downloads": 218,
+                    "version": "0.1.389"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.394.json",
+                    "downloads": 249,
+                    "version": "0.1.394"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.414.json",
+                    "downloads": 999,
+                    "version": "0.1.414"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.430.json",
+                    "downloads": 80,
+                    "version": "0.1.430"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.434.json",
+                    "downloads": 573,
+                    "version": "0.1.434"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.442.json",
+                    "downloads": 320,
+                    "version": "0.1.442"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.454.json",
+                    "downloads": 1613,
+                    "version": "0.1.454"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.1.458.json",
+                    "downloads": 1505,
+                    "version": "0.1.458"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.2.0.json",
+                    "downloads": 185,
+                    "version": "0.2.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.2.10.json",
+                    "downloads": 973,
+                    "version": "0.2.10"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.3.1.json",
+                    "downloads": 973,
+                    "version": "0.3.1"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.4.0.json",
+                    "downloads": 2172,
+                    "version": "0.4.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.5.0.json",
+                    "downloads": 346,
+                    "version": "0.5.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.5.2.json",
+                    "downloads": 64,
+                    "version": "0.5.2"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.5.3.json",
+                    "downloads": 3655,
+                    "version": "0.5.3"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.0-alpha0107.json",
+                    "downloads": 46,
+                    "version": "0.6.0-alpha0107"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.0-alpha0109.json",
+                    "downloads": 73,
+                    "version": "0.6.0-alpha0109"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.0.json",
+                    "downloads": 449,
+                    "version": "0.6.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.1.json",
+                    "downloads": 454,
+                    "version": "0.6.1"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.2-beta0001.json",
+                    "downloads": 36,
+                    "version": "0.6.2-beta0001"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.6.2.json",
+                    "downloads": 842,
+                    "version": "0.6.2"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.7.0-alpha0048.json",
+                    "downloads": 30,
+                    "version": "0.7.0-alpha0048"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.7.0.json",
+                    "downloads": 257,
+                    "version": "0.7.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.8.0.json",
+                    "downloads": 464,
+                    "version": "0.8.0"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.9.0-alpha0020.json",
+                    "downloads": 30,
+                    "version": "0.9.0-alpha0020"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.9.0-alpha0023.json",
+                    "downloads": 32,
+                    "version": "0.9.0-alpha0023"
+                },
+                {
+                    "@id": "https://api.nuget.org/v3/registration3/nuke.common/0.9.0.json",
+                    "downloads": 18,
+                    "version": "0.9.0"
+                }
+            ]
+        }
+    ],
+    "index": "v3-lucene2-v2v3-20171018",
+    "lastReopen": "2018-09-23T18:31:38.3625148Z",
+    "totalHits": 1
+}

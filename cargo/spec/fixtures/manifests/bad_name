@@ -1,0 +1,7 @@
+[package]
+name = "hello_world; curl 'http://example.com'"
+version = "0.1.0"
+authors = ["Your Name <you@example.com>"]
+
+[dependencies]
+rand = { git = "https://github.com/rust-lang-nursery/rand.git" }

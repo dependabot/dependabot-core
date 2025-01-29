@@ -1,0 +1,11 @@
+{
+    "message": "Validation Failed",
+    "errors": [
+        {
+            "resource": "PullRequest",
+            "code": "invalid",
+            "field": "base"
+        }
+    ],
+    "documentation_url": " https://developer.github.com/v3/pulls/#create-a-pull-request"
+}

@@ -1,0 +1,37 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr security_update_not_needed
+stdout '{"data":{"error-type":"security_update_not_needed","error-details":{"dependency-name":"dependency-a"}},"type":"record_update_job_error"}'
+
+# The security update is not needed because 1.2.3 is not vulnerable according to the advisory given.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.0.0
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

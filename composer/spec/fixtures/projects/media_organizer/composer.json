@@ -1,0 +1,31 @@
+{
+  "name": "aensley/media-organizer",
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://github.com/aensley/media-organizer/",
+  "description": "Organize images and videos (or any files) into date-based folders.",
+  "keywords": ["media", "image", "video", "jpg", "mp4"],
+  "authors": [
+    {
+      "name": "Andrew Ensley",
+      "homepage": "https://andrewensley.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": { "Aensley\\": "src/Aensley" }
+  },
+  "require": {
+    "php": ">=5.6.0"
+  },
+  "require-dev": {
+    "codacy/coverage": "dev-master",
+    "codeclimate/php-test-reporter": "dev-master",
+    "phpunit/phpcov": "dev-master",
+    "satooshi/php-coveralls": "~v1.0.0",
+    "monolog/monolog": "~1.0"
+  },
+  "suggest": {
+    "monolog/monolog": "Advanced logging options",
+    "bramus/monolog-colored-line-formatter": "Colored log output in bash"
+  }
+}

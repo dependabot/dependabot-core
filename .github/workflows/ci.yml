@@ -1,0 +1,127 @@
+name: Specs
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bundler, name: bundler, ecosystem: bundler }
+          - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: common, name: common, ecosystem: common}
+          - { path: composer, name: composer, ecosystem: composer }
+          - { path: docker, name: docker, ecosystem: docker }
+          - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
+          - { path: elm, name: elm, ecosystem: elm }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: github_actions, ecosystem: github-actions }
+          - { path: go_modules, name: go_module, ecosystem: gomod }
+          - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: hex, name: hex, ecosystem: mix }
+          - { path: maven, name: maven, ecosystem: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
+          - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pub, name: pub, ecosystem: pub }
+          - { path: python, name: python, ecosystem: pip }
+          - { path: python, name: python_slow, ecosystem: pip }
+          - { path: swift, name: swift, ecosystem: swift }
+          - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
+          - { path: terraform, name: terraform, ecosystem: terraform }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: changes
+        with:
+          token: '' # use git commands to avoid excessive rate limit usage
+          filters: .github/ci-filters.yml
+
+      - name: Build ecosystem image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        run: script/build ${{ matrix.suite.path }}
+
+      - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        run: |
+          docker run \
+            --pull never \
+            --env "CI=true" \
+            --env "RAISE_ON_WARNINGS=true" \
+            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            --env "SUITE_NAME=${{ matrix.suite.name }}" \
+            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
+            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+
+  updater:
+    env:
+      DOCKER_BUILDKIT: 1
+    name: Updater
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+      # using bundler as the test updater
+      - name: Build ecosystem image
+        run: script/build bundler
+      - name: Run updater tests
+        env:
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: script/ci-test-updater
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    env:
+      BUNDLE_GEMFILE: updater/Gemfile
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ruby/setup-ruby@2a18b06812b0e15bb916e1df298d3e740422c47e # v1.203.0
+        with:
+          bundler-cache: true
+      - run: ./bin/lint
+      # yamllint is installed in GitHub Actions base runner image: https://github.com/adrienverge/yamllint/pull/588
+      - run: yamllint .
+
+  integration:
+    env:
+      DOCKER_BUILDKIT: 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+      - name: Build ecosystem image
+        run: script/build silent
+      - name: Setup Go
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version: 1.22
+      - name: Download Dependabot CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
+          tar xzvf *.tar.gz >/dev/null 2>&1
+          ./dependabot --version
+      - name: Run integration tests
+        env:
+          PATH: ${{ github.workspace }}:$PATH
+        run: |
+          cd silent/tests
+          go test ./...

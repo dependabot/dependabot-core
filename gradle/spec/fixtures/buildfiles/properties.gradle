@@ -1,0 +1,26 @@
+buildscript {
+    ext.kotlin_version = '1.2.61'
+}
+
+allprojects {
+    repositories {
+        maven { url 'https://maven.fabric.io/public' }
+        maven { url "https://jitpack.io" }
+        google()
+        jcenter()
+    }
+}
+
+ext {
+    compileSdkVersion = 27
+    buildToolsVersion = '27.0.3'
+
+    //Support
+    supportVersion = '27.1.1'
+
+    // commentedVersion = '27.1.1'
+
+    findPropertyVersion = project.findProperty('findPropertyVersion') ?: '27.1.1'
+
+    hasPropertyVersion = project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'27.1.1'
+}

@@ -1,0 +1,14 @@
+{
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://composer.dependabot.com/"
+        },
+        {
+            "packagist.org": false
+        }
+    ],
+    "require": {
+        "dependabot/dummy-pkg-a": "*"
+    }
+}

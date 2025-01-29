@@ -1,0 +1,18 @@
+{
+  "name": "pom.xml",
+  "path": "pom.xml",
+  "sha": "5e65c9c171f071ee8a49d2003a911706d9429b80",
+  "size": 829,
+  "url": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/pom.xml?ref=main",
+  "html_url": "https://github.com/soulus13/dependabot-maven-test/blob/main/pom.xml",
+  "git_url": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/5e65c9c171f071ee8a49d2003a911706d9429b80",
+  "download_url": "https://raw.githubusercontent.com/soulus13/dependabot-maven-test/main/pom.xml",
+  "type": "file",
+  "content": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHByb2pl\nY3QgeG1sbnM9Imh0dHA6Ly9tYXZlbi5hcGFjaGUub3JnL1BPTS80LjAuMCIK\nICAgICAgICAgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hN\nTFNjaGVtYS1pbnN0YW5jZSIKICAgICAgICAgeHNpOnNjaGVtYUxvY2F0aW9u\nPSJodHRwOi8vbWF2ZW4uYXBhY2hlLm9yZy9QT00vNC4wLjAgaHR0cDovL21h\ndmVuLmFwYWNoZS5vcmcveHNkL21hdmVuLTQuMC4wLnhzZCI+CiAgICA8bW9k\nZWxWZXJzaW9uPjQuMC4wPC9tb2RlbFZlcnNpb24+CgogICAgPGdyb3VwSWQ+\nb3JnLmV4YW1wbGU8L2dyb3VwSWQ+CiAgICA8YXJ0aWZhY3RJZD5tYXZlbi10\nZXN0PC9hcnRpZmFjdElkPgogICAgPHZlcnNpb24+MS4wLVNOQVBTSE9UPC92\nZXJzaW9uPgoKICAgIDxwcm9wZXJ0aWVzPgogICAgICAgIDxtYXZlbi5jb21w\naWxlci5zb3VyY2U+ODwvbWF2ZW4uY29tcGlsZXIuc291cmNlPgogICAgICAg\nIDxtYXZlbi5jb21waWxlci50YXJnZXQ+ODwvbWF2ZW4uY29tcGlsZXIudGFy\nZ2V0PgogICAgICAgIDxwcm9qZWN0LmJ1aWxkLnNvdXJjZUVuY29kaW5nPlVU\nRi04PC9wcm9qZWN0LmJ1aWxkLnNvdXJjZUVuY29kaW5nPgogICAgPC9wcm9w\nZXJ0aWVzPgoKICAgIDxtb2R1bGVzPgogICAgICAgIDxtb2R1bGU+c3VibW9k\ndWxlLW9uZTwvbW9kdWxlPgogICAgICAgIDxtb2R1bGU+c3VibW9kdWxlLXRo\ncmVlL3NvbWUtb3RoZXItbmFtZS54bWw8L21vZHVsZT4KICAgICAgICA8bW9k\ndWxlPnN1Ym1vZHVsZS10d28vbm90cG9tLnhtbDwvbW9kdWxlPgogICAgPC9t\nb2R1bGVzPgoKPC9wcm9qZWN0Pg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/pom.xml?ref=main",
+    "git": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/5e65c9c171f071ee8a49d2003a911706d9429b80",
+    "html": "https://github.com/soulus13/dependabot-maven-test/blob/main/pom.xml"
+  }
+}

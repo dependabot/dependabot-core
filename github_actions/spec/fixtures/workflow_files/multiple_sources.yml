@@ -1,0 +1,11 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: actions/checkout@v2.1.0
+
+  acceptance:
+    steps:
+    - uses: actions/checkout@master

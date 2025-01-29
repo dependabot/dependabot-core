@@ -1,0 +1,11 @@
+{
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://github.com/dependabot/composer-not-found"
+        }
+    ],
+    "require": {
+        "dependabot/dummy-pkg-a": "*"
+    }
+}

@@ -1,0 +1,7 @@
+[package]
+name = "feature_dependency"
+version = "0.1.0"
+authors = ["Dependabot <support@dependabot.com>"]
+
+[dependencies.gtk]
+features = ["v3_18"]

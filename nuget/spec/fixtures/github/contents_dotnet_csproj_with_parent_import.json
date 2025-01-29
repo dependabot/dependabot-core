@@ -1,0 +1,18 @@
+{
+  "name": "GraphQL.Common.csproj",
+  "path": "src/GraphQL.Common/GraphQL.Common.csproj",
+  "sha": "7a3cb437a1035eadceb6f49a71fafe11c7ebfbec",
+  "size": 474,
+  "url": "https://api.github.com/repos/graphql-dotnet/graphql-client/contents/src/GraphQL.Common/GraphQL.Common.csproj?ref=master",
+  "html_url": "https://github.com/graphql-dotnet/graphql-client/blob/master/src/GraphQL.Common/GraphQL.Common.csproj",
+  "git_url": "https://api.github.com/repos/graphql-dotnet/graphql-client/git/blobs/7a3cb437a1035eadceb6f49a71fafe11c7ebfbec",
+  "download_url": "https://raw.githubusercontent.com/graphql-dotnet/graphql-client/master/src/GraphQL.Common/GraphQL.Common.csproj",
+  "type": "file",
+  "content": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPFByb2pl\nY3QgU2RrPSJNaWNyb3NvZnQuTkVULlNkayI+CgoJPEltcG9ydCBQcm9qZWN0\nPSIuLi9zcmMucHJvcHMiIC8+CgoJPFByb3BlcnR5R3JvdXA+CgkJPERlc2Ny\naXB0aW9uPkNvbW1vbiBHcmFwaFFMIGNsYXNzZXM8L0Rlc2NyaXB0aW9uPgoJ\nPC9Qcm9wZXJ0eUdyb3VwPgoKCTxQcm9wZXJ0eUdyb3VwPgoJCTxUYXJnZXRG\ncmFtZXdvcmtzPm5ldHN0YW5kYXJkMS4wO25ldHN0YW5kYXJkMi4wPC9UYXJn\nZXRGcmFtZXdvcmtzPgoJPC9Qcm9wZXJ0eUdyb3VwPgoKCTxJdGVtR3JvdXA+\nCgkJPFBhY2thZ2VSZWZlcmVuY2UgSW5jbHVkZT0iTWljcm9zb2Z0LkNTaGFy\ncCIgVmVyc2lvbj0iNC40LjEiIC8+CgkJPFBhY2thZ2VSZWZlcmVuY2UgSW5j\nbHVkZT0iTmV3dG9uc29mdC5Kc29uIiBWZXJzaW9uPSIxMS4wLjIiIC8+Cgk8\nL0l0ZW1Hcm91cD4KCjwvUHJvamVjdD4K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/graphql-dotnet/graphql-client/contents/src/GraphQL.Common/GraphQL.Common.csproj?ref=master",
+    "git": "https://api.github.com/repos/graphql-dotnet/graphql-client/git/blobs/7a3cb437a1035eadceb6f49a71fafe11c7ebfbec",
+    "html": "https://github.com/graphql-dotnet/graphql-client/blob/master/src/GraphQL.Common/GraphQL.Common.csproj"
+  }
+}

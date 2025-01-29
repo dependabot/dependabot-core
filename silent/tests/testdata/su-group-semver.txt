@@ -1,0 +1,90 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+pr-created expected-group.json
+pr-created expected-individual.json
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-group.json --
+{
+  "dependency-a": { "version": "1.2.4" },
+  "dependency-b": { "version": "1.2.4" },
+  "dependency-c": { "version": "1.2.3" }
+}
+
+-- expected-individual.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" },
+  "dependency-c": { "version": "2.0.0" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.3.0"
+  ]
+}
+
+-- dependency-c --
+{
+  "versions": [
+    "1.2.3",
+    "2.0.0"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependencies:
+    - dependency-a
+    - dependency-b
+    - dependency-c
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+    - dependency-name: dependency-b
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+    - dependency-name: dependency-c
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true
+  dependency-groups:
+    - name: dev
+      applies-to: security-updates
+      rules:
+        update-types:
+          - minor
+          - patch

@@ -1,0 +1,18 @@
+{
+    "name": "Gemfile",
+    "path": "Gemfile",
+    "sha": "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "size": 291,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/Gemfile",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/Gemfile?token=ABF4KfGg6a7sE1n1i2rrhUvqAKRhIkPiks5WD8X5wA%3D%3D",
+    "type": "file",
+    "content": "IyBmcm96ZW5fc3RyaW5nX2xpdGVyYWw6IHRydWUKc291cmNlICJodHRwczov\nL3J1YnlnZW1zLm9yZyIKCmdlbXNwZWMKCmdlbSAiYnVzaW5lc3MiLCAifj4g\nMS40LjAiCmdlbSAic3RhdGVzbWFuIiwgIn4+IDEuMi4wIgo=\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/Gemfile?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+        "html": "https://github.com/gocardless/bump/blob/master/Gemfile"
+    }
+}

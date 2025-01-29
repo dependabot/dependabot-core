@@ -1,0 +1,14 @@
+[package]
+name = "feature_dependency"
+version = "0.1.0"
+authors = ["Dependabot <support@dependabot.com>"]
+
+[dependencies.gtk]
+version = "0.3.0"
+features = ["v3_18"]
+
+[dependencies.pango]
+version = "0.3.0"
+
+[dependencies]
+time = "0.1.12"

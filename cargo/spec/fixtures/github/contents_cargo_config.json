@@ -1,0 +1,18 @@
+{
+  "name": "config",
+  "path": ".cargo/config.toml",
+  "sha": "f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+  "size": 942,
+  "url": "https://api.github.com/repos/denoland/deno/contents/.cargo/config.toml?ref=main",
+  "html_url": "https://github.com/denoland/deno/blob/main/.cargo/config.toml",
+  "git_url": "https://api.github.com/repos/denoland/deno/git/blobs/f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+  "download_url": "https://raw.githubusercontent.com/denoland/deno/main/.cargo/config.toml",
+  "type": "file",
+  "content": "W3RhcmdldC54ODZfNjQtcGMtd2luZG93cy1tc3ZjXQpydXN0ZmxhZ3MgPSBb\nIi1DIiwgInRhcmdldC1mZWF0dXJlPStjcnQtc3RhdGljIl0KClt0YXJnZXQu\nJ2NmZyhhbGwod2luZG93cywgZGVidWdfYXNzZXJ0aW9ucykpJ10KcnVzdGZs\nYWdzID0gWwogICItQyIsCiAgInRhcmdldC1mZWF0dXJlPStjcnQtc3RhdGlj\nIiwKICAiLUMiLAogICMgaW5jcmVhc2UgdGhlIHN0YWNrIHNpemUgdG8gcHJl\ndmVudCBvdmVyZmxvd2luZyB0aGUKICAjIHN0YWNrIGluIGRlYnVnIHdoZW4g\nbGF1bmNoaW5nIHN1YiBjb21tYW5kcwogICJsaW5rLWFyZz0vU1RBQ0s6NDE5\nNDMwNCIsCl0KClt0YXJnZXQueDg2XzY0LWFwcGxlLWRhcndpbl0KcnVzdGZs\nYWdzID0gWwogICItQyIsCiAgImxpbmstYXJncz0td2Vha19mcmFtZXdvcmsg\nTWV0YWwgLXdlYWtfZnJhbWV3b3JrIE1ldGFsUGVyZm9ybWFuY2VTaGFkZXJz\nIC13ZWFrX2ZyYW1ld29yayBRdWFydHpDb3JlIC13ZWFrX2ZyYW1ld29yayBD\nb3JlR3JhcGhpY3MiLApdCgpbdGFyZ2V0LmFhcmNoNjQtYXBwbGUtZGFyd2lu\nXQpydXN0ZmxhZ3MgPSBbCiAgIi1DIiwKICAibGluay1hcmdzPS1mdXNlLWxk\nPWxsZCAtd2Vha19mcmFtZXdvcmsgTWV0YWwgLXdlYWtfZnJhbWV3b3JrIE1l\ndGFsUGVyZm9ybWFuY2VTaGFkZXJzIC13ZWFrX2ZyYW1ld29yayBRdWFydHpD\nb3JlIC13ZWFrX2ZyYW1ld29yayBDb3JlR3JhcGhpY3MiLApdCgpbdGFyZ2V0\nLidjZmcoYWxsKCkpJ10KcnVzdGZsYWdzID0gWwogICItRCIsCiAgImNsaXBw\neTo6YWxsIiwKICAiLUQiLAogICJjbGlwcHk6OmF3YWl0X2hvbGRpbmdfcmVm\nY2VsbF9yZWYiLAogICItRCIsCiAgImNsaXBweTo6bWlzc2luZ19zYWZldHlf\nZG9jIiwKICAiLUQiLAogICJjbGlwcHk6OnVuZG9jdW1lbnRlZF91bnNhZmVf\nYmxvY2tzIiwKICAiLS1jZmciLAogICJ0b2tpb191bnN0YWJsZSIsCl0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/denoland/deno/contents/.cargo/config.toml?ref=main",
+    "git": "https://api.github.com/repos/denoland/deno/git/blobs/f5b2f124bcc904afbb03e2e72cbaef7152d1077e",
+    "html": "https://github.com/denoland/deno/blob/main/.cargo/config.toml"
+  }
+}

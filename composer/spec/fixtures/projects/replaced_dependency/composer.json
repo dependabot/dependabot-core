@@ -1,0 +1,51 @@
+{
+    "name": "wnx/laravel-stats",
+    "description": "Get insights about your Laravel Project",
+    "homepage": "https://github.com/stefanzweifel/laravel-stats",
+    "keywords": ["laravel", "wnx", "statistics", "stats"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Stefan Zweifel",
+            "email": "hello@stefanzweifel.io",
+            "homepage": "https://stefanzweifel.io",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "illuminate/console": "5.5.*",
+        "illuminate/support": "5.5.*",
+        "phploc/phploc": "^4.0",
+        "symfony/finder": "^3.3"
+    },
+    "require-dev": {
+        "laravel/browser-kit-testing": "^2.0",
+        "laravel/dusk": "^2.0",
+        "orchestra/testbench": "^3.5",
+        "phpunit/phpunit": "6.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wnx\\LaravelStats\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wnx\\LaravelStats\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Wnx\\LaravelStats\\StatsServiceProvider"
+            ]
+        }
+    }
+}

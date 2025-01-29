@@ -1,0 +1,4 @@
+source "https://rubygems.org"
+
+gem "business", "~> 1.4.0"   # Business time
+gem "statesman", "~> 1.2.0"  # State machine

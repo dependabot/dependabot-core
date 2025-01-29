@@ -1,0 +1,18 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "etag": {
+      "version": "1.8.1",
+      "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
+      "integrity": "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc="
+    },
+    "test-missing-dep-version-npm-package": {
+      "version": "github:dependabot-fixtures/test-missing-dep-version-npm-package#f56186c1643a9a09a86dfe09b1890921330c28bb",
+      "from": "github:dependabot-fixtures/test-missing-dep-version-npm-package#v1.0.2",
+      "requires": {
+        "etag": "^1.8.1"
+      }
+    }
+  }
+}

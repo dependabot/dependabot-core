@@ -1,0 +1,55 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 create_pull_request
+stderr 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+stderr 'created \| dependency-b \( from 1.2.3 to 1.2.5 \)'
+pr-created expected-1.json
+pr-created expected-2.json
+
+# When Dependabot goes to update dependency-a it will also bump dependency-b to the same version.
+# This test checks what the behavior is when not using grouped updates.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3", "depends-on": "dependency-b" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- expected-1.json --
+{
+  "dependency-a": { "version": "1.2.5", "depends-on": "dependency-b" },
+  "dependency-b": { "version": "1.2.5" }
+}
+
+-- expected-2.json --
+{
+  "dependency-a": { "version": "1.2.3", "depends-on": "dependency-b" },
+  "dependency-b": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests

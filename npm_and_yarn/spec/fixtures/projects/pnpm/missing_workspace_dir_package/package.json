@@ -1,0 +1,9 @@
+{
+  "name": "name",
+  "dependencies": {
+    "example": "file:../npm/pkg"
+  },
+  "devDependencies": {
+    "webpack": "^5.93.0"
+  }
+}

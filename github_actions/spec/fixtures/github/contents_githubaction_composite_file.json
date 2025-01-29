@@ -1,0 +1,18 @@
+{
+  "name": "action.yml",
+  "path": "action.yml",
+  "sha": "37371fc877bfbfefc715f1dac0e1166e6c9d380c",
+  "size": 1179,
+  "url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/action.yml?ref=main",
+  "html_url": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/action.yml",
+  "git_url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/37371fc877bfbfefc715f1dac0e1166e6c9d380c",
+  "download_url": "https://raw.githubusercontent.com/JonasAlfredsson/checkout-qemu-buildx/main/action.yml",
+  "type": "file",
+  "content": "bmFtZTogJ0NoZWNrb3V0IFFFTVUgQnVpbGR4JwpkZXNjcmlwdGlvbjogJ0No\nZWNrcyBvdXQgdGhlIHJlcG9zaXRvcnksIGNvbmZpZ3VyZXMgUUVNVSBhbmQg\nRG9ja2VyIEJ1aWxkeCBmb3IgYWxsIGF2YWlsYWJsZSBhcmNoaXRlY3R1cmVz\nIGJlZm9yZSBsb2dnaW5nIGluIHRvIERvY2tlckh1YicKYXV0aG9yOiAnSm9u\nYXNBbGZyZWRzc29uJwpicmFuZGluZzoKICBpY29uOiAnbGlmZS1idW95Jwog\nIGNvbG9yOiAnYmx1ZScKCmlucHV0czoKICBzaG91bGRfbG9naW46CiAgICBk\nZXNjcmlwdGlvbjogJ0Jvb2xlYW4gc3RhdGluZyBpZiB3ZSBzaG91bGQgbG9n\naW4gdG8gRG9ja2VySHViIG9yIG5vdCcKICAgICMgV2h5IHN0cmluZz8gLT4g\naHR0cHM6Ly9naXRodWIuY29tL2FjdGlvbnMvcnVubmVyL2lzc3Vlcy8xNDgz\nCiAgICB0eXBlOiBzdHJpbmcKICAgIHJlcXVpcmVkOiBmYWxzZQogICAgZGVm\nYXVsdDogJ3RydWUnCiAgdXNlcm5hbWU6CiAgICBkZXNjcmlwdGlvbjogJ1Vz\nZXJuYW1lIHVzZWQgdG8gbG9naW4gdG8gRG9ja2VySHViJwogICAgdHlwZTog\nc3RyaW5nCiAgICByZXF1aXJlZDogZmFsc2UKICBwYXNzd29yZDoKICAgIGRl\nc2NyaXB0aW9uOiAnUGFzc3dvcmQgb3IgcGVyc29uYWwgYWNjZXNzIHRva2Vu\nIHVzZWQgdG8gbG9naW4gdG8gRG9ja2VySHViJwogICAgdHlwZTogc3RyaW5n\nCiAgICByZXF1aXJlZDogZmFsc2UKCnJ1bnM6CiAgdXNpbmc6ICJjb21wb3Np\ndGUiCiAgc3RlcHM6CiAgICAtIG5hbWU6IENoZWNrb3V0IHRoZSByZXBvc2l0\nb3J5CiAgICAgIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjIuNC4wCgogICAg\nLSBuYW1lOiBTZXQgdXAgUUVNVSBlbnZpcm9ubWVudAogICAgICB1c2VzOiBk\nb2NrZXIvc2V0dXAtcWVtdS1hY3Rpb25AdjEuMi4wCgogICAgLSBuYW1lOiBT\nZXQgdXAgRG9ja2VyIEJ1aWxkeAogICAgICB1c2VzOiBkb2NrZXIvc2V0dXAt\nYnVpbGR4LWFjdGlvbkB2MS42LjAKCiAgICAtIG5hbWU6IExvZ2luIHRvIERv\nY2tlckh1YgogICAgICBpZjogJHt7IGZyb21KU09OKGlucHV0cy5zaG91bGRf\nbG9naW4pIH19CiAgICAgIHVzZXM6IGRvY2tlci9sb2dpbi1hY3Rpb25AdjEu\nMTIuMAogICAgICB3aXRoOgogICAgICAgIHVzZXJuYW1lOiAke3sgaW5wdXRz\nLnVzZXJuYW1lIH19CiAgICAgICAgcGFzc3dvcmQ6ICR7eyBpbnB1dHMucGFz\nc3dvcmQgfX0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/action.yml?ref=main",
+    "git": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/37371fc877bfbfefc715f1dac0e1166e6c9d380c",
+    "html": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/action.yml"
+  }
+}

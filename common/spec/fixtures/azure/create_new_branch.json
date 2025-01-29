@@ -1,0 +1,9 @@
+{
+    "refUpdates":[
+        {
+            "name": "refs/heads/dependabot/npm_and_yarn/business-1.5.0-temp",
+            "oldObjectId": "0000000000000000000000000000000000000000",
+            "newObjectId": "newcommitsha"
+        }
+    ]
+}

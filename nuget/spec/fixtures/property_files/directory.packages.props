@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="build\dependencies.props" />
+  <PropertyGroup Label="Package Versions">
+    <SystemSearchEngineVersion>3.0.0-alpha1-10221</SystemSearchEngineVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="System.Lycos" Version="$(SystemSearchEngineVersion)" />
+    <PackageVersion Include="System.AskJeeves" Version="2.2.2" />
+    <PackageVersion Include="System.Google" Version="$(SystemSearchEngineVersion)" />
+    <PackageVersion Include="System.WebCrawler" Version="1.1.1" />
+  </ItemGroup>
+</Project>

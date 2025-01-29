@@ -1,0 +1,31 @@
+{
+    "name": "tsufeki/kayo-json-mapper",
+    "description": "Map JSON data to PHP objects",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "tsufeki",
+            "email": "tsufeki@ymail.com"
+        }
+    ],
+    "require": {
+        "phpdocumentor/type-resolver": "^0.5 || ^0.4",
+        "phpdocumentor/reflection-docblock": "^4.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.4",
+        "phpstan/phpstan": "^0.9",
+        "php-coveralls/php-coveralls": "^2.0",
+        "phpstan/phpstan-phpunit": "^0.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tsufeki\\KayoJsonMapper\\": "src/Tsufeki/KayoJsonMapper/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\Tsufeki\\KayoJsonMapper\\": "tests/Tsufeki/KayoJsonMapper/"
+        }
+    }
+}

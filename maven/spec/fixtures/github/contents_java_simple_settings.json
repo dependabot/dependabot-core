@@ -1,0 +1,18 @@
+{
+  "name": "settings.gradle",
+  "path": "settings.gradle",
+  "sha": "e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+  "size": 15,
+  "url": "https://api.github.com/repos/Samourai-Wallet/samourai-wallet-android/contents/settings.gradle?ref=develop",
+  "html_url": "https://github.com/Samourai-Wallet/samourai-wallet-android/blob/develop/settings.gradle",
+  "git_url": "https://api.github.com/repos/Samourai-Wallet/samourai-wallet-android/git/blobs/e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+  "download_url": "https://raw.githubusercontent.com/Samourai-Wallet/samourai-wallet-android/develop/settings.gradle",
+  "type": "file",
+  "content": "aW5jbHVkZSAnOmFwcCcK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/Samourai-Wallet/samourai-wallet-android/contents/settings.gradle?ref=develop",
+    "git": "https://api.github.com/repos/Samourai-Wallet/samourai-wallet-android/git/blobs/e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+    "html": "https://github.com/Samourai-Wallet/samourai-wallet-android/blob/develop/settings.gradle"
+  }
+}

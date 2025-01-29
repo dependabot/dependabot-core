@@ -1,0 +1,13 @@
+<Project Sdk="Foo.Bar/1.1.1;X;Foo.Bar/1.1.1;Y;Foo.Bar/1.1.1">
+
+  <Sdk Version="1.1.1" Name="Foo.Bar" />
+  <Sdk Name="Foo.Bar" Version="1.1.1" />
+
+  <PropertyGroup>
+    <Description>MSBuild SDKs Galore!</Description>
+  </PropertyGroup>
+
+  <Import Project="X" Version="1.1.1" Sdk="Foo.Bar" />
+  <Import Sdk="Foo.Bar" Project="Y" Version="1.1.1" />
+
+</Project>

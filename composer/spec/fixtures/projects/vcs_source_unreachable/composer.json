@@ -1,0 +1,12 @@
+{
+  "require": {
+      "jazz/phpunit-test-extension": "1.2.2",
+      "symfony/polyfill-mbstring": "1.0.1"
+  },
+  "repositories": [
+    {
+        "type": "vcs",
+        "url": "git@github.com:dependabot-fixtures/this-repo-does-not-exist.git"
+    }
+  ]
+}

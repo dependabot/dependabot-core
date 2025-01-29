@@ -1,0 +1,41 @@
+{
+    "type": "application",
+    "source-directories": [
+        "src",
+        "vendor/elm-mdc/src"
+    ],
+    "elm-version": "0.19.0",
+    "dependencies": {
+        "direct": {
+            "elm/browser": "1.0.1",
+            "elm/core": "1.0.2",
+            "elm/html": "1.0.0",
+            "elm/http": "1.0.0",
+            "elm/regex": "1.0.0",
+            "elm/svg": "1.0.1",
+            "elm/time": "1.0.0",
+            "elm/url": "1.0.0",
+            "elm-community/basics-extra": "4.0.0",
+            "elm-community/json-extra": "4.0.0",
+            "justinmimbs/date": "3.1.2",
+            "justinmimbs/time-extra": "1.1.0",
+            "myrho/elm-round": "1.0.4",
+            "truqu/elm-md5": "1.1.0"
+        },
+        "indirect": {
+            "elm/json": "1.0.0",
+            "elm/parser": "1.1.0",
+            "elm/virtual-dom": "1.0.2",
+            "rtfeldman/elm-iso8601-date-strings": "1.1.2",
+            "zwilias/elm-utf-tools": "2.0.1"
+        }
+    },
+    "test-dependencies": {
+        "direct": {
+            "elm-explorations/test": "1.2.0"
+        },
+        "indirect": {
+            "elm/random": "1.0.0"
+        }
+    }
+}

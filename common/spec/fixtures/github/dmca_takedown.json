@@ -1,0 +1,8 @@
+{
+  "message": "Repository access blocked",
+  "block": {
+    "reason": "dmca",
+    "created_at": "2019-05-17T21:32:24Z",
+    "html_url": "https://github.com/github/dmca/blob/master/2019/05/2019-05-16-Daplie.md"
+  }
+}

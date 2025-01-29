@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+eval_gemfile("backend/Gemfile")
+
+gem "business", "~> 1.4.0"

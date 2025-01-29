@@ -1,0 +1,12 @@
+{
+    "message": "Validation Failed",
+    "errors": [
+        {
+            "resource": "Issue",
+            "code": "invalid",
+            "field": "milestone",
+            "value": 7
+        }
+    ],
+    "documentation_url": "https://developer.github.com/v3/issues/#edit-an-issue"
+}

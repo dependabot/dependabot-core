@@ -1,0 +1,7 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81

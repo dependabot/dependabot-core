@@ -1,0 +1,18 @@
+{
+  "name": "Nancy.csproj",
+  "path": "src/Nancy/Nancy.csproj",
+  "sha": "b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "size": 1345,
+  "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+  "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj",
+  "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Nancy/Nancy.csproj",
+  "type": "file",
+  "content": "PFByb2plY3QgU2RrPSJNaWNyb3NvZnQuTkVULlNkayI+CiAgPEltcG9ydCBQ\ncm9qZWN0PSIuL2NvbW1vbnByb3BzMi5wcm9wcyIgLz4KCiAgPFByb3BlcnR5\nR3JvdXA+CiAgICA8VGFyZ2V0RnJhbWV3b3JrPm5ldHN0YW5kYXJkMi4wPC9U\nYXJnZXRGcmFtZXdvcms+CiAgPC9Qcm9wZXJ0eUdyb3VwPgo8L1Byb2plY3Q+\nCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Nancy/Nancy.csproj?ref=master",
+    "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+    "html": "https://github.com/NancyFx/Nancy/blob/master/src/Nancy/Nancy.csproj"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "main.go",
+  "path": "main.go",
+  "sha": "d040121111e637338dbfbb72f57b7cced03ae440",
+  "size": 924,
+  "url": "https://api.github.com/repos/gohugoio/hugo/contents/main.go?ref=master",
+  "html_url": "https://github.com/gohugoio/hugo/blob/master/main.go",
+  "git_url": "https://api.github.com/repos/gohugoio/hugo/git/blobs/d040121111e637338dbfbb72f57b7cced03ae440",
+  "download_url": "https://raw.githubusercontent.com/gohugoio/hugo/master/main.go",
+  "type": "file",
+  "content": "Ly8gQ29weXJpZ2h0IDIwMTUgVGhlIEh1Z28gQXV0aG9ycy4gQWxsIHJpZ2h0\ncyByZXNlcnZlZC4KLy8KLy8gTGljZW5zZWQgdW5kZXIgdGhlIEFwYWNoZSBM\naWNlbnNlLCBWZXJzaW9uIDIuMCAodGhlICJMaWNlbnNlIik7Ci8vIHlvdSBt\nYXkgbm90IHVzZSB0aGlzIGZpbGUgZXhjZXB0IGluIGNvbXBsaWFuY2Ugd2l0\naCB0aGUgTGljZW5zZS4KLy8gWW91IG1heSBvYnRhaW4gYSBjb3B5IG9mIHRo\nZSBMaWNlbnNlIGF0Ci8vIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNl\ncy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGlj\nYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8v\nIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVk\nIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBP\nUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBp\nbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBs\nYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRp\nb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKcGFja2FnZSBtYWluCgppbXBvcnQg\nKAoJInJ1bnRpbWUiCgoJIm9zIgoKCSJnaXRodWIuY29tL2dvaHVnb2lvL2h1\nZ28vY29tbWFuZHMiCikKCmZ1bmMgbWFpbigpIHsKCglydW50aW1lLkdPTUFY\nUFJPQ1MocnVudGltZS5OdW1DUFUoKSkKCXJlc3AgOj0gY29tbWFuZHMuRXhl\nY3V0ZShvcy5BcmdzWzE6XSkKCglpZiByZXNwLkVyciAhPSBuaWwgewoJCWlm\nIHJlc3AuSXNVc2VyRXJyb3IoKSB7CgkJCXJlc3AuQ21kLlByaW50bG4oIiIp\nCgkJCXJlc3AuQ21kLlByaW50bG4ocmVzcC5DbWQuVXNhZ2VTdHJpbmcoKSkK\nCQl9CgkJb3MuRXhpdCgtMSkKCX0KCn0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gohugoio/hugo/contents/main.go?ref=master",
+    "git": "https://api.github.com/repos/gohugoio/hugo/git/blobs/d040121111e637338dbfbb72f57b7cced03ae440",
+    "html": "https://github.com/gohugoio/hugo/blob/master/main.go"
+  }
+}

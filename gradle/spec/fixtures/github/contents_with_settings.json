@@ -1,0 +1,162 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "2b090260d5bcf1d2173382b0f995bb3831c9ceae",
+    "size": 284,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/2b090260d5bcf1d2173382b0f995bb3831c9ceae",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/2b090260d5bcf1d2173382b0f995bb3831c9ceae",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": "build.gradle",
+    "path": "build.gradle",
+    "sha": "0afdaae747b6214483ae3670fd5cbafacf14c678",
+    "size": 2707,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/build.gradle?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/build.gradle",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/0afdaae747b6214483ae3670fd5cbafacf14c678",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/build.gradle?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/0afdaae747b6214483ae3670fd5cbafacf14c678",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/build.gradle"
+    }
+  },
+  {
+    "name": "data",
+    "path": "data",
+    "sha": "35ed28e708d2153c61342c8f48214c3b866cd8cc",
+    "size": 0,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/data?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/tree/master/data",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/trees/35ed28e708d2153c61342c8f48214c3b866cd8cc",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/data?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/trees/35ed28e708d2153c61342c8f48214c3b866cd8cc",
+      "html": "https://github.com/chriswk/isharelib2/tree/master/data"
+    }
+  },
+  {
+    "name": "gradle.properties",
+    "path": "gradle.properties",
+    "sha": "59785828444fa1f9d36c3a88b1dc54e31e5ce773",
+    "size": 602,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/gradle.properties?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/gradle.properties",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/59785828444fa1f9d36c3a88b1dc54e31e5ce773",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/gradle.properties",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/gradle.properties?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/59785828444fa1f9d36c3a88b1dc54e31e5ce773",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/gradle.properties"
+    }
+  },
+  {
+    "name": "gradle",
+    "path": "gradle",
+    "sha": "81d903c9486606a9f9eeadb547539d9ae5596e9f",
+    "size": 0,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/gradle?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/tree/master/gradle",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/trees/81d903c9486606a9f9eeadb547539d9ae5596e9f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/gradle?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/trees/81d903c9486606a9f9eeadb547539d9ae5596e9f",
+      "html": "https://github.com/chriswk/isharelib2/tree/master/gradle"
+    }
+  },
+  {
+    "name": "gradlew",
+    "path": "gradlew",
+    "sha": "91a7e269e19dfc62e27137a0b57ef3e430cee4fd",
+    "size": 5080,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/gradlew?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/gradlew",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/91a7e269e19dfc62e27137a0b57ef3e430cee4fd",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/gradlew",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/gradlew?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/91a7e269e19dfc62e27137a0b57ef3e430cee4fd",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/gradlew"
+    }
+  },
+  {
+    "name": "gradlew.bat",
+    "path": "gradlew.bat",
+    "sha": "aec99730b4e8fcd90b57a0e8e01544fea7c31a89",
+    "size": 2404,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/gradlew.bat?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/gradlew.bat",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/aec99730b4e8fcd90b57a0e8e01544fea7c31a89",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/gradlew.bat",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/gradlew.bat?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/aec99730b4e8fcd90b57a0e8e01544fea7c31a89",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/gradlew.bat"
+    }
+  },
+  {
+    "name": "settings.gradle",
+    "path": "settings.gradle",
+    "sha": "cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+    "size": 185,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/settings.gradle?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/blob/master/settings.gradle",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+    "download_url": "https://raw.githubusercontent.com/chriswk/isharelib2/master/settings.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/settings.gradle?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/blobs/cbc2afee9c9e1a0849ceade9d3b166dcea5e5a64",
+      "html": "https://github.com/chriswk/isharelib2/blob/master/settings.gradle"
+    }
+  },
+  {
+    "name": "src",
+    "path": "src",
+    "sha": "1ed20ac01ce6c596cdc9f47a63adce644a1c725d",
+    "size": 0,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/src?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/tree/master/src",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/trees/1ed20ac01ce6c596cdc9f47a63adce644a1c725d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/src?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/trees/1ed20ac01ce6c596cdc9f47a63adce644a1c725d",
+      "html": "https://github.com/chriswk/isharelib2/tree/master/src"
+    }
+  },
+  {
+    "name": "web",
+    "path": "web",
+    "sha": "25374a47393bed93fd11b5afbd1820a0c516efaf",
+    "size": 0,
+    "url": "https://api.github.com/repos/chriswk/isharelib2/contents/web?ref=master",
+    "html_url": "https://github.com/chriswk/isharelib2/tree/master/web",
+    "git_url": "https://api.github.com/repos/chriswk/isharelib2/git/trees/25374a47393bed93fd11b5afbd1820a0c516efaf",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/chriswk/isharelib2/contents/web?ref=master",
+      "git": "https://api.github.com/repos/chriswk/isharelib2/git/trees/25374a47393bed93fd11b5afbd1820a0c516efaf",
+      "html": "https://github.com/chriswk/isharelib2/tree/master/web"
+    }
+  }
+]

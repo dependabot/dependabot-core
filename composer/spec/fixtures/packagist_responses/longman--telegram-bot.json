@@ -1,0 +1,1522 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "longman/telegram-bot": [
+            {
+                "name": "longman/telegram-bot",
+                "description": "PHP Telegram bot",
+                "keywords": [
+                    "api",
+                    "bot",
+                    "telegram"
+                ],
+                "homepage": "https://github.com/php-telegram-bot/core",
+                "version": "0.80.0",
+                "version_normalized": "0.80.0.0",
+                "license": [
+                    "MIT"
+                ],
+                "authors": [
+                    {
+                        "name": "Avtandil Kikabidze aka LONGMAN",
+                        "email": "akalongman@gmail.com",
+                        "homepage": "http://longman.me",
+                        "role": "Developer"
+                    },
+                    {
+                        "name": "Armando Lüscher",
+                        "email": "armando@noplanman.ch",
+                        "homepage": "https://noplanman.ch",
+                        "role": "Developer"
+                    },
+                    {
+                        "name": "PHP Telegram Bot Team",
+                        "homepage": "https://github.com/php-telegram-bot/core/graphs/contributors",
+                        "role": "Developer"
+                    }
+                ],
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "94d770215c5c758bf2faba3ad96ad528d9d5a3d8"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/94d770215c5c758bf2faba3ad96ad528d9d5a3d8",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "94d770215c5c758bf2faba3ad96ad528d9d5a3d8"
+                },
+                "type": "library",
+                "funding": [
+                    {
+                        "url": "https://github.com/php-telegram-bot/core#donate",
+                        "type": "custom"
+                    },
+                    {
+                        "url": "https://github.com/noplanman",
+                        "type": "github"
+                    },
+                    {
+                        "url": "https://ko-fi.com/phptelegrambot",
+                        "type": "ko_fi"
+                    },
+                    {
+                        "url": "https://liberapay.com/PHP-Telegram-Bot",
+                        "type": "liberapay"
+                    },
+                    {
+                        "url": "https://opencollective.com/php-telegram-bot",
+                        "type": "open_collective"
+                    },
+                    {
+                        "url": "https://www.patreon.com/phptelegrambot",
+                        "type": "patreon"
+                    },
+                    {
+                        "url": "https://tidelift.com/funding/github/packagist/longman/telegram-bot",
+                        "type": "tidelift"
+                    }
+                ],
+                "time": "2022-11-09T19:09:30+00:00",
+                "autoload": {
+                    "psr-4": {
+                        "Longman\\TelegramBot\\": "src"
+                    }
+                },
+                "require": {
+                    "php": "^7.3|^8.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "psr/log": "^1.1|^2.0|^3.0",
+                    "guzzlehttp/guzzle": "^6.0|^7.0"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^9.5",
+                    "squizlabs/php_codesniffer": "^3.6",
+                    "dms/phpunit-arraysubset-asserts": "^0.2",
+                    "monolog/monolog": "^2.1"
+                },
+                "support": {
+                    "issues": "https://github.com/php-telegram-bot/core/issues",
+                    "source": "https://github.com/php-telegram-bot/core"
+                }
+            },
+            {
+                "version": "0.79.0",
+                "version_normalized": "0.79.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "097177ca85627bfa5d0d9e679714a0b1353d49de"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/097177ca85627bfa5d0d9e679714a0b1353d49de",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "097177ca85627bfa5d0d9e679714a0b1353d49de"
+                },
+                "time": "2022-09-04T13:22:41+00:00"
+            },
+            {
+                "version": "0.78.0",
+                "version_normalized": "0.78.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f3fe5ed3b62995ac6ee282cbdd670634329961f7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f3fe5ed3b62995ac6ee282cbdd670634329961f7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f3fe5ed3b62995ac6ee282cbdd670634329961f7"
+                },
+                "time": "2022-07-03T12:23:17+00:00"
+            },
+            {
+                "version": "0.77.1",
+                "version_normalized": "0.77.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "627c19955749dd36bf690e8f84b98e31fc32aa67"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/627c19955749dd36bf690e8f84b98e31fc32aa67",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "627c19955749dd36bf690e8f84b98e31fc32aa67"
+                },
+                "time": "2022-04-24T21:16:17+00:00"
+            },
+            {
+                "version": "0.77.0",
+                "version_normalized": "0.77.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "0eea94ea6f038b2ba62f4c499949179e7916cfce"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/0eea94ea6f038b2ba62f4c499949179e7916cfce",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0eea94ea6f038b2ba62f4c499949179e7916cfce"
+                },
+                "time": "2022-04-24T15:41:45+00:00"
+            },
+            {
+                "version": "0.76.1",
+                "version_normalized": "0.76.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "ba430516d3525f322c8285befd3433a63eae30bf"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/ba430516d3525f322c8285befd3433a63eae30bf",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ba430516d3525f322c8285befd3433a63eae30bf"
+                },
+                "time": "2022-03-30T19:20:33+00:00"
+            },
+            {
+                "version": "0.76.0",
+                "version_normalized": "0.76.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "4f2f6e731086b34c3064148169ca87edb82978ea"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/4f2f6e731086b34c3064148169ca87edb82978ea",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "4f2f6e731086b34c3064148169ca87edb82978ea"
+                },
+                "time": "2022-03-20T16:08:53+00:00"
+            },
+            {
+                "version": "0.75.0",
+                "version_normalized": "0.75.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "13879c499af126d9211751597fd2aaf7a1bcb094"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/13879c499af126d9211751597fd2aaf7a1bcb094",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "13879c499af126d9211751597fd2aaf7a1bcb094"
+                },
+                "time": "2021-12-29T05:36:01+00:00",
+                "require": {
+                    "php": "^7.3|^8.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "psr/log": "^1.1",
+                    "guzzlehttp/guzzle": "^6.0|^7.0"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^9.5",
+                    "squizlabs/php_codesniffer": "^3.5",
+                    "dms/phpunit-arraysubset-asserts": "^0.2",
+                    "monolog/monolog": "^2.1"
+                }
+            },
+            {
+                "version": "0.74.0",
+                "version_normalized": "0.74.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "6d62ea1ca64c60ad83468715f9938bd1a95c3a09"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/6d62ea1ca64c60ad83468715f9938bd1a95c3a09",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "6d62ea1ca64c60ad83468715f9938bd1a95c3a09"
+                },
+                "time": "2021-06-26T18:15:19+00:00"
+            },
+            {
+                "version": "0.73.1",
+                "version_normalized": "0.73.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "163ca3bd6048f7ab0491f4116a2eb74e2310f032"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/163ca3bd6048f7ab0491f4116a2eb74e2310f032",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "163ca3bd6048f7ab0491f4116a2eb74e2310f032"
+                },
+                "time": "2021-06-20T08:46:33+00:00"
+            },
+            {
+                "version": "0.73.0",
+                "version_normalized": "0.73.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "ed2df605b2f7fa77db527ef70dc5cec7cd4fdf75"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/ed2df605b2f7fa77db527ef70dc5cec7cd4fdf75",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ed2df605b2f7fa77db527ef70dc5cec7cd4fdf75"
+                },
+                "time": "2021-06-14T13:56:42+00:00"
+            },
+            {
+                "version": "0.72.0",
+                "version_normalized": "0.72.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "b6ea355a4d16e8b1879b6a485d664a6a5a9c6ea3"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/b6ea355a4d16e8b1879b6a485d664a6a5a9c6ea3",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b6ea355a4d16e8b1879b6a485d664a6a5a9c6ea3"
+                },
+                "time": "2021-04-16T21:55:37+00:00"
+            },
+            {
+                "version": "0.71.0",
+                "version_normalized": "0.71.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "9ca6158f9fe6cf5aa06f9c46377b3c1164bdf444"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/9ca6158f9fe6cf5aa06f9c46377b3c1164bdf444",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9ca6158f9fe6cf5aa06f9c46377b3c1164bdf444"
+                },
+                "time": "2021-03-05T13:53:31+00:00"
+            },
+            {
+                "version": "0.70.1",
+                "version_normalized": "0.70.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "2093cffa2a8e0497d12183178e17cadcc1d0f6d5"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/2093cffa2a8e0497d12183178e17cadcc1d0f6d5",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2093cffa2a8e0497d12183178e17cadcc1d0f6d5"
+                },
+                "time": "2020-12-25T20:07:09+00:00"
+            },
+            {
+                "version": "0.70.0",
+                "version_normalized": "0.70.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "7ecda69fd071f9fdb75511ff35130b6e1923aaec"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/7ecda69fd071f9fdb75511ff35130b6e1923aaec",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7ecda69fd071f9fdb75511ff35130b6e1923aaec"
+                },
+                "time": "2020-12-21T20:33:09+00:00"
+            },
+            {
+                "version": "0.64.0",
+                "version_normalized": "0.64.0.0",
+                "authors": [
+                    {
+                        "name": "Avtandil Kikabidze aka LONGMAN",
+                        "email": "akalongman@gmail.com",
+                        "homepage": "http://longman.me",
+                        "role": "Developer"
+                    },
+                    {
+                        "name": "PHP Telegram Bot Team",
+                        "homepage": "https://github.com/php-telegram-bot/core/graphs/contributors",
+                        "role": "Developer"
+                    }
+                ],
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "fb55e78e980dfabef4bed606c2385f6897dd2d84"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/fb55e78e980dfabef4bed606c2385f6897dd2d84",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fb55e78e980dfabef4bed606c2385f6897dd2d84"
+                },
+                "time": "2020-10-03T23:57:43+00:00",
+                "autoload": {
+                    "psr-4": {
+                        "Longman\\TelegramBot\\": "src/"
+                    }
+                },
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "psr/log": "^1.1",
+                    "guzzlehttp/guzzle": "^6.3|^7.1"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^8.5",
+                    "squizlabs/php_codesniffer": "^3.5",
+                    "dms/phpunit-arraysubset-asserts": "^0.1",
+                    "monolog/monolog": "^2.1"
+                }
+            },
+            {
+                "version": "0.63.1",
+                "version_normalized": "0.63.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "1cf5d1fd38c81df7650358d1ae85a16957db5d22"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/1cf5d1fd38c81df7650358d1ae85a16957db5d22",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "1cf5d1fd38c81df7650358d1ae85a16957db5d22"
+                },
+                "funding": [
+                    {
+                        "url": "https://github.com/php-telegram-bot/core",
+                        "type": "custom"
+                    },
+                    {
+                        "url": "https://github.com/noplanman",
+                        "type": "github"
+                    },
+                    {
+                        "url": "https://ko-fi.com/phptelegrambot",
+                        "type": "ko_fi"
+                    },
+                    {
+                        "url": "https://liberapay.com/PHP-Telegram-Bot",
+                        "type": "liberapay"
+                    },
+                    {
+                        "url": "https://opencollective.com/php-telegram-bot",
+                        "type": "open_collective"
+                    },
+                    {
+                        "url": "https://www.patreon.com/phptelegrambot",
+                        "type": "patreon"
+                    },
+                    {
+                        "url": "https://tidelift.com/funding/github/packagist/longman/telegram-bot",
+                        "type": "tidelift"
+                    }
+                ],
+                "time": "2020-06-24T12:05:37+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "psr/log": "^1.1",
+                    "guzzlehttp/guzzle": "^6.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^8.4",
+                    "squizlabs/php_codesniffer": "^3.4",
+                    "dms/phpunit-arraysubset-asserts": "^0.1.0",
+                    "monolog/monolog": "^2.0"
+                }
+            },
+            {
+                "version": "0.63.0",
+                "version_normalized": "0.63.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "fb0f340578d9f77fd1fd77ac28098a7a18f5ad5e"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/fb0f340578d9f77fd1fd77ac28098a7a18f5ad5e",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fb0f340578d9f77fd1fd77ac28098a7a18f5ad5e"
+                },
+                "time": "2020-06-16T22:08:51+00:00"
+            },
+            {
+                "version": "0.62.0",
+                "version_normalized": "0.62.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "78024d7bc55cebf3987247b465a1009b5186060a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/78024d7bc55cebf3987247b465a1009b5186060a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "78024d7bc55cebf3987247b465a1009b5186060a"
+                },
+                "time": "2020-04-08T14:41:20+00:00"
+            },
+            {
+                "version": "0.61.1",
+                "version_normalized": "0.61.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "85d52f67b5ecf3ac81471fbcfacc37f61abb0c8e"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/85d52f67b5ecf3ac81471fbcfacc37f61abb0c8e",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "85d52f67b5ecf3ac81471fbcfacc37f61abb0c8e"
+                },
+                "time": "2019-11-23T21:48:39+00:00",
+                "funding": "__unset"
+            },
+            {
+                "version": "0.61.0",
+                "version_normalized": "0.61.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "8588b97de32b7e4ca0a8c4659eb2642d31142ed6"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/8588b97de32b7e4ca0a8c4659eb2642d31142ed6",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "8588b97de32b7e4ca0a8c4659eb2642d31142ed6"
+                },
+                "time": "2019-11-02T00:34:57+00:00"
+            },
+            {
+                "version": "0.60.0",
+                "version_normalized": "0.60.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "46646884f5c05f1161f10605a0705aa24df3e583"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/46646884f5c05f1161f10605a0705aa24df3e583",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "46646884f5c05f1161f10605a0705aa24df3e583"
+                },
+                "time": "2019-08-16T15:10:43+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "psr/log": "^1.1",
+                    "monolog/monolog": "^1.24",
+                    "guzzlehttp/guzzle": "^6.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.5|^7.5|^8.1",
+                    "squizlabs/php_codesniffer": "^3.4"
+                }
+            },
+            {
+                "version": "0.59.1",
+                "version_normalized": "0.59.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f55fd1c2eb75b4f8e9ab468066ce96acba9e6b68"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f55fd1c2eb75b4f8e9ab468066ce96acba9e6b68",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f55fd1c2eb75b4f8e9ab468066ce96acba9e6b68"
+                },
+                "time": "2019-07-18T15:02:31+00:00"
+            },
+            {
+                "version": "0.59.0",
+                "version_normalized": "0.59.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "80f626f2b1520c9b81831fa8cb7e55558c674341"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/80f626f2b1520c9b81831fa8cb7e55558c674341",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "80f626f2b1520c9b81831fa8cb7e55558c674341"
+                },
+                "time": "2019-07-07T20:34:46+00:00"
+            },
+            {
+                "version": "0.58.0",
+                "version_normalized": "0.58.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "8d1ed51fc98ebaa3698af97f18fbe21c8a7504be"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/8d1ed51fc98ebaa3698af97f18fbe21c8a7504be",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "8d1ed51fc98ebaa3698af97f18fbe21c8a7504be"
+                },
+                "time": "2019-06-26T16:43:59+00:00"
+            },
+            {
+                "version": "0.57.0",
+                "version_normalized": "0.57.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f2fe6e322d961153b82c39f699edbedb5311d328"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f2fe6e322d961153b82c39f699edbedb5311d328",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f2fe6e322d961153b82c39f699edbedb5311d328"
+                },
+                "time": "2019-06-01T09:42:08+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "monolog/monolog": "^1.24",
+                    "guzzlehttp/guzzle": "^6.3"
+                }
+            },
+            {
+                "version": "0.56.0",
+                "version_normalized": "0.56.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "695e63a7916204643f151b120cfbabfbcf66d0bc"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/695e63a7916204643f151b120cfbabfbcf66d0bc",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "695e63a7916204643f151b120cfbabfbcf66d0bc"
+                },
+                "time": "2019-04-15T00:19:31+00:00",
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.5|^7.4|^8.1",
+                    "squizlabs/php_codesniffer": "^3.4"
+                }
+            },
+            {
+                "version": "0.55.1",
+                "version_normalized": "0.55.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "2cfb8a7ea21fa244b1063ffe0f7250c4af30fcdf"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/2cfb8a7ea21fa244b1063ffe0f7250c4af30fcdf",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2cfb8a7ea21fa244b1063ffe0f7250c4af30fcdf"
+                },
+                "time": "2019-01-06T20:07:04+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "monolog/monolog": "^1.23",
+                    "guzzlehttp/guzzle": "^6.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.5|^7.4",
+                    "squizlabs/php_codesniffer": "^3.3"
+                }
+            },
+            {
+                "version": "0.55.0",
+                "version_normalized": "0.55.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "55698b27e30a723b145ea66b880372e86a8d92e4"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/55698b27e30a723b145ea66b880372e86a8d92e4",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "55698b27e30a723b145ea66b880372e86a8d92e4"
+                },
+                "time": "2018-12-20T10:08:10+00:00"
+            },
+            {
+                "version": "0.54.1",
+                "version_normalized": "0.54.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "7701428356a70b0b5d88404248a060ca1c43c6ba"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/7701428356a70b0b5d88404248a060ca1c43c6ba",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7701428356a70b0b5d88404248a060ca1c43c6ba"
+                },
+                "time": "2018-10-23T16:50:28+00:00"
+            },
+            {
+                "version": "0.54.0",
+                "version_normalized": "0.54.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "64bcd925e65dbdca94f21638b69b24dfea99d046"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/64bcd925e65dbdca94f21638b69b24dfea99d046",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "64bcd925e65dbdca94f21638b69b24dfea99d046"
+                },
+                "time": "2018-07-21T00:43:38+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-mbstring": "*",
+                    "monolog/monolog": "^1.23",
+                    "guzzlehttp/guzzle": "^6.3"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.5|^7.2",
+                    "squizlabs/php_codesniffer": "^3.3"
+                }
+            },
+            {
+                "version": "0.53.0",
+                "version_normalized": "0.53.0.0",
+                "authors": [
+                    {
+                        "name": "Avtandil Kikabidze aka LONGMAN",
+                        "email": "akalongman@gmail.com",
+                        "homepage": "http://longman.me",
+                        "role": "Developer"
+                    }
+                ],
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "ed50346851088a13f2af27e067d3f595b900b55f"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/ed50346851088a13f2af27e067d3f595b900b55f",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ed50346851088a13f2af27e067d3f595b900b55f"
+                },
+                "time": "2018-03-31T22:35:18+00:00",
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.5|^7.0",
+                    "squizlabs/php_codesniffer": "^3.2"
+                }
+            },
+            {
+                "version": "0.52.0",
+                "version_normalized": "0.52.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f7cac58dcf4efd766f4737f40bba473ced0d4cc8"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f7cac58dcf4efd766f4737f40bba473ced0d4cc8",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f7cac58dcf4efd766f4737f40bba473ced0d4cc8"
+                },
+                "time": "2018-01-07T23:39:21+00:00",
+                "require": {
+                    "php": "^5.5|^7.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-mbstring": "*",
+                    "monolog/monolog": "^1.22",
+                    "guzzlehttp/guzzle": "^6.2"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "^4.8|^5.7|^6.1",
+                    "squizlabs/php_codesniffer": "^2.8"
+                }
+            },
+            {
+                "version": "0.51.0",
+                "version_normalized": "0.51.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "3e7af92ff356c3dd999c85f18d4acf33894407de"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/3e7af92ff356c3dd999c85f18d4acf33894407de",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "3e7af92ff356c3dd999c85f18d4acf33894407de"
+                },
+                "time": "2017-12-05T11:39:05+00:00"
+            },
+            {
+                "version": "0.50.0",
+                "version_normalized": "0.50.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "54823db1306a791830a7915072f03ff84fd7c4f3"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/54823db1306a791830a7915072f03ff84fd7c4f3",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "54823db1306a791830a7915072f03ff84fd7c4f3"
+                },
+                "time": "2017-10-17T12:09:43+00:00"
+            },
+            {
+                "description": "PHP telegram bot",
+                "version": "0.49.0",
+                "version_normalized": "0.49.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "04de592d06843e05f200dff4fa77360123343580"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/04de592d06843e05f200dff4fa77360123343580",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "04de592d06843e05f200dff4fa77360123343580"
+                },
+                "time": "2017-09-17T14:44:32+00:00"
+            },
+            {
+                "version": "0.48.0",
+                "version_normalized": "0.48.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "8fbc070b002cd39e016527a92ede7c21cf85e73a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/8fbc070b002cd39e016527a92ede7c21cf85e73a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "8fbc070b002cd39e016527a92ede7c21cf85e73a"
+                },
+                "time": "2017-08-26T18:18:20+00:00"
+            },
+            {
+                "version": "0.47.1",
+                "version_normalized": "0.47.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "e7303ed0702a3340b6344eb47270a8801bb564d6"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/e7303ed0702a3340b6344eb47270a8801bb564d6",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e7303ed0702a3340b6344eb47270a8801bb564d6"
+                },
+                "time": "2017-08-06T15:28:26+00:00"
+            },
+            {
+                "version": "0.47.0",
+                "version_normalized": "0.47.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "75d992c3d2d13305593c72cdaa8fdbdc01901b45"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/75d992c3d2d13305593c72cdaa8fdbdc01901b45",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "75d992c3d2d13305593c72cdaa8fdbdc01901b45"
+                },
+                "time": "2017-08-06T11:24:13+00:00"
+            },
+            {
+                "version": "0.46.0",
+                "version_normalized": "0.46.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "fae82d961b0d10138f836b6c7ec43bf39ef3d445"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/fae82d961b0d10138f836b6c7ec43bf39ef3d445",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fae82d961b0d10138f836b6c7ec43bf39ef3d445"
+                },
+                "time": "2017-07-15T21:21:54+00:00"
+            },
+            {
+                "version": "0.45.0",
+                "version_normalized": "0.45.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "6d1075280c5df13d02cca0893433138ea927e6b4"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/6d1075280c5df13d02cca0893433138ea927e6b4",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "6d1075280c5df13d02cca0893433138ea927e6b4"
+                },
+                "time": "2017-06-25T09:25:56+00:00"
+            },
+            {
+                "version": "0.44.1",
+                "version_normalized": "0.44.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "e522050a5e2ac73a4c0fa47705896da0df37de3a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/e522050a5e2ac73a4c0fa47705896da0df37de3a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e522050a5e2ac73a4c0fa47705896da0df37de3a"
+                },
+                "time": "2017-04-25T21:28:23+00:00"
+            },
+            {
+                "version": "0.44.0",
+                "version_normalized": "0.44.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "0bdd7a73f8766af980a2fd59c1b3886b28a916fb"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/0bdd7a73f8766af980a2fd59c1b3886b28a916fb",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0bdd7a73f8766af980a2fd59c1b3886b28a916fb"
+                },
+                "time": "2017-04-25T18:35:02+00:00"
+            },
+            {
+                "version": "0.43.0",
+                "version_normalized": "0.43.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "9d4d020fed98f4f0f57eb30c690c3a382b73ca26"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/9d4d020fed98f4f0f57eb30c690c3a382b73ca26",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9d4d020fed98f4f0f57eb30c690c3a382b73ca26"
+                },
+                "time": "2017-04-17T11:24:07+00:00"
+            },
+            {
+                "homepage": "https://github.com/akalongman/php-telegram-bot",
+                "version": "0.42.0",
+                "version_normalized": "0.42.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "25d74af0f47393f1784ab5f02f3fcffaf03d06ff"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/25d74af0f47393f1784ab5f02f3fcffaf03d06ff",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "25d74af0f47393f1784ab5f02f3fcffaf03d06ff"
+                },
+                "time": "2017-04-09T20:11:46+00:00",
+                "require": {
+                    "php": ">=5.5.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "ext-mbstring": "*",
+                    "monolog/monolog": "^1.19",
+                    "guzzlehttp/guzzle": "~6.0"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "~4.8",
+                    "squizlabs/php_codesniffer": "~2.5"
+                },
+                "support": {
+                    "issues": "https://github.com/akalongman/php-telegram-bot/issues",
+                    "source": "https://github.com/akalongman/php-telegram-bot"
+                }
+            },
+            {
+                "version": "0.41.0",
+                "version_normalized": "0.41.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "3fdc3c10cf2101c6ffb87e486eb1f65c057b4f7a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/3fdc3c10cf2101c6ffb87e486eb1f65c057b4f7a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "3fdc3c10cf2101c6ffb87e486eb1f65c057b4f7a"
+                },
+                "time": "2017-03-25T16:48:06+00:00"
+            },
+            {
+                "version": "0.40.1",
+                "version_normalized": "0.40.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "b0833a890be48c8f32dda6e2eb8143fc8aab5d70"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/b0833a890be48c8f32dda6e2eb8143fc8aab5d70",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b0833a890be48c8f32dda6e2eb8143fc8aab5d70"
+                },
+                "time": "2017-03-07T08:55:09+00:00"
+            },
+            {
+                "version": "0.40.0",
+                "version_normalized": "0.40.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "2649b143f4743e5b7c75d161dabf5098e4116765"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/2649b143f4743e5b7c75d161dabf5098e4116765",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2649b143f4743e5b7c75d161dabf5098e4116765"
+                },
+                "time": "2017-02-20T21:48:11+00:00"
+            },
+            {
+                "version": "0.39.0",
+                "version_normalized": "0.39.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "518e9dd861f3dafcf6272856043e941bc59fa6dc"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/518e9dd861f3dafcf6272856043e941bc59fa6dc",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "518e9dd861f3dafcf6272856043e941bc59fa6dc"
+                },
+                "time": "2017-01-20T22:51:43+00:00"
+            },
+            {
+                "version": "0.38.1",
+                "version_normalized": "0.38.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "1c54e2c0e3eaa6eb335671edc02164d03e14147b"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/1c54e2c0e3eaa6eb335671edc02164d03e14147b",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "1c54e2c0e3eaa6eb335671edc02164d03e14147b"
+                },
+                "time": "2016-12-25T13:14:23+00:00"
+            },
+            {
+                "version": "0.38.0",
+                "version_normalized": "0.38.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "112a61b41224a96b5202a350f904239845ddc741"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/112a61b41224a96b5202a350f904239845ddc741",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "112a61b41224a96b5202a350f904239845ddc741"
+                },
+                "time": "2016-12-25T04:05:50+00:00"
+            },
+            {
+                "version": "0.37.1",
+                "version_normalized": "0.37.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "4b2edc594ead9cd2f9067d9791d69af1f56c2737"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/4b2edc594ead9cd2f9067d9791d69af1f56c2737",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "4b2edc594ead9cd2f9067d9791d69af1f56c2737"
+                },
+                "time": "2016-12-24T11:55:47+00:00"
+            },
+            {
+                "version": "0.37",
+                "version_normalized": "0.37.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "904d42d33f8c28292e4863d4d220c50ee9a39a7d"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/904d42d33f8c28292e4863d4d220c50ee9a39a7d",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "904d42d33f8c28292e4863d4d220c50ee9a39a7d"
+                },
+                "time": "2016-12-13T22:33:23+00:00"
+            },
+            {
+                "version": "0.36",
+                "version_normalized": "0.36.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "ef9e39444ca917e952591f4042417749233ebe98"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/ef9e39444ca917e952591f4042417749233ebe98",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ef9e39444ca917e952591f4042417749233ebe98"
+                },
+                "time": "2016-11-25T20:40:52+00:00"
+            },
+            {
+                "version": "0.35",
+                "version_normalized": "0.35.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "d97f386209ccb5ab802ee55a20f8c7b5306a1595"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/d97f386209ccb5ab802ee55a20f8c7b5306a1595",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "d97f386209ccb5ab802ee55a20f8c7b5306a1595"
+                },
+                "time": "2016-07-30T08:36:15+00:00",
+                "require": {
+                    "php": ">=5.5.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "monolog/monolog": "^1.19",
+                    "guzzlehttp/guzzle": "~6.0"
+                }
+            },
+            {
+                "version": "0.34",
+                "version_normalized": "0.34.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "e8400d6646fe14f0974237da5dc1377af0404bea"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/e8400d6646fe14f0974237da5dc1377af0404bea",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e8400d6646fe14f0974237da5dc1377af0404bea"
+                },
+                "time": "2016-07-01T21:11:38+00:00"
+            },
+            {
+                "version": "0.33",
+                "version_normalized": "0.33.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "0ebd95c40797ffff2faefd58e3734ca905f1606b"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/0ebd95c40797ffff2faefd58e3734ca905f1606b",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0ebd95c40797ffff2faefd58e3734ca905f1606b"
+                },
+                "time": "2016-05-29T14:42:56+00:00",
+                "require": {
+                    "php": ">=5.5.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*",
+                    "monolog/monolog": "^1.19"
+                }
+            },
+            {
+                "version": "0.32",
+                "version_normalized": "0.32.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "e5b6d415f94afd664dae1239062f1145467e44d7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/e5b6d415f94afd664dae1239062f1145467e44d7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e5b6d415f94afd664dae1239062f1145467e44d7"
+                },
+                "time": "2016-05-13T17:59:55+00:00",
+                "require": {
+                    "php": ">=5.5.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*"
+                }
+            },
+            {
+                "version": "0.31",
+                "version_normalized": "0.31.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "a29336e726d610a6507e678fffa3e330b74a83f4"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/a29336e726d610a6507e678fffa3e330b74a83f4",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "a29336e726d610a6507e678fffa3e330b74a83f4"
+                },
+                "time": "2016-04-19T22:38:14+00:00"
+            },
+            {
+                "version": "0.30",
+                "version_normalized": "0.30.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "3b97af626a64d9fd0c62de171fc9264a87328348"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/3b97af626a64d9fd0c62de171fc9264a87328348",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "3b97af626a64d9fd0c62de171fc9264a87328348"
+                },
+                "time": "2016-04-12T05:16:55+00:00"
+            },
+            {
+                "version": "0.29",
+                "version_normalized": "0.29.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "999ee2e7b154be1c9fb2f6ea9cc3d1d640303a80"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/999ee2e7b154be1c9fb2f6ea9cc3d1d640303a80",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "999ee2e7b154be1c9fb2f6ea9cc3d1d640303a80"
+                },
+                "time": "2016-03-22T18:41:50+00:00",
+                "require-dev": {
+                    "phpunit/phpunit": "~4.1",
+                    "phpspec/phpspec": "~2.1",
+                    "squizlabs/php_codesniffer": "~2.3"
+                }
+            },
+            {
+                "version": "0.28.0",
+                "version_normalized": "0.28.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "6312cc2abe6effedb6af1e12cb1b79cf1edf0728"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/6312cc2abe6effedb6af1e12cb1b79cf1edf0728",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "6312cc2abe6effedb6af1e12cb1b79cf1edf0728"
+                },
+                "time": "2016-02-15T10:44:45+00:00"
+            },
+            {
+                "version": "0.27.0",
+                "version_normalized": "0.27.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f11c153c590df266e7d528230dd82b30573c1c61"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f11c153c590df266e7d528230dd82b30573c1c61",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f11c153c590df266e7d528230dd82b30573c1c61"
+                },
+                "time": "2016-01-24T16:39:39+00:00"
+            },
+            {
+                "version": "0.26.0",
+                "version_normalized": "0.26.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "adcc20418100a294221c2586a6eae5232c174911"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/adcc20418100a294221c2586a6eae5232c174911",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "adcc20418100a294221c2586a6eae5232c174911"
+                },
+                "time": "2016-01-05T17:12:01+00:00"
+            },
+            {
+                "version": "0.25.0",
+                "version_normalized": "0.25.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "d203e1131c53704f10f7a73040e5bc1341f7a0d9"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/d203e1131c53704f10f7a73040e5bc1341f7a0d9",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "d203e1131c53704f10f7a73040e5bc1341f7a0d9"
+                },
+                "time": "2016-01-05T01:14:40+00:00"
+            },
+            {
+                "version": "0.24.0",
+                "version_normalized": "0.24.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "56bf8fc8bd4172f55dbd6577e919bb57f0b8bf8d"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/56bf8fc8bd4172f55dbd6577e919bb57f0b8bf8d",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "56bf8fc8bd4172f55dbd6577e919bb57f0b8bf8d"
+                },
+                "time": "2015-12-20T09:57:11+00:00"
+            },
+            {
+                "version": "0.23.0",
+                "version_normalized": "0.23.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f9a90f355ccea9785b94c24232c3af464f1b0678"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f9a90f355ccea9785b94c24232c3af464f1b0678",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f9a90f355ccea9785b94c24232c3af464f1b0678"
+                },
+                "time": "2015-12-09T08:18:45+00:00"
+            },
+            {
+                "version": "0.22.0",
+                "version_normalized": "0.22.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "5d3a1209afdfab9d59e9ac6678c4e6e037dfd1a3"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/5d3a1209afdfab9d59e9ac6678c4e6e037dfd1a3",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "5d3a1209afdfab9d59e9ac6678c4e6e037dfd1a3"
+                },
+                "time": "2015-11-24T20:45:46+00:00"
+            },
+            {
+                "version": "0.21.0",
+                "version_normalized": "0.21.0.0",
+                "authors": [
+                    {
+                        "name": "Avtandil Kikabidze aka LONGMAN",
+                        "email": "akalongman@gmail.com",
+                        "homepage": "http://longman.ge",
+                        "role": "Developer"
+                    }
+                ],
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "89413a16f28ae9865f486722a1f514ca79fe90a0"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/89413a16f28ae9865f486722a1f514ca79fe90a0",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "89413a16f28ae9865f486722a1f514ca79fe90a0"
+                },
+                "time": "2015-10-20T22:04:04+00:00",
+                "require": {
+                    "php": ">=5.4.0",
+                    "ext-pdo": "*",
+                    "ext-curl": "*"
+                },
+                "require-dev": {
+                    "phpunit/phpunit": "4.1.*",
+                    "phpspec/phpspec": "~2.1",
+                    "squizlabs/php_codesniffer": "2.3.*"
+                }
+            },
+            {
+                "version": "0.20.1",
+                "version_normalized": "0.20.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "f4b203bd31ad6735e4618ee83fa0e3b9153754b9"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/f4b203bd31ad6735e4618ee83fa0e3b9153754b9",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f4b203bd31ad6735e4618ee83fa0e3b9153754b9"
+                },
+                "time": "2015-10-13T20:38:56+00:00"
+            },
+            {
+                "version": "0.18.0",
+                "version_normalized": "0.18.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "2be7b3c3ea50961620d1aca46474d9f8bc4f5e15"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/2be7b3c3ea50961620d1aca46474d9f8bc4f5e15",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2be7b3c3ea50961620d1aca46474d9f8bc4f5e15"
+                },
+                "time": "2015-10-02T22:00:38+00:00"
+            },
+            {
+                "version": "0.17.2",
+                "version_normalized": "0.17.2.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "441f32de735fc9577cd75be9bfed83c98ca9ae56"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/441f32de735fc9577cd75be9bfed83c98ca9ae56",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "441f32de735fc9577cd75be9bfed83c98ca9ae56"
+                },
+                "time": "2015-09-21T21:49:58+00:00"
+            },
+            {
+                "version": "0.17.1",
+                "version_normalized": "0.17.1.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "e65b0663d0c6fb8e4f6c5eb46854c8a33ba28efb"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/e65b0663d0c6fb8e4f6c5eb46854c8a33ba28efb",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e65b0663d0c6fb8e4f6c5eb46854c8a33ba28efb"
+                },
+                "time": "2015-09-15T19:13:17+00:00"
+            },
+            {
+                "version": "0.17.0",
+                "version_normalized": "0.17.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "606cf1218b06532932605843f3fb7115bd4d7c12"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/606cf1218b06532932605843f3fb7115bd4d7c12",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "606cf1218b06532932605843f3fb7115bd4d7c12"
+                },
+                "time": "2015-09-08T20:43:17+00:00"
+            },
+            {
+                "version": "0.16.0",
+                "version_normalized": "0.16.0.0",
+                "source": {
+                    "url": "https://github.com/php-telegram-bot/core.git",
+                    "type": "git",
+                    "reference": "85b16d60a361f97f249689ff3d1f27bb0475f6a1"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/php-telegram-bot/core/zipball/85b16d60a361f97f249689ff3d1f27bb0475f6a1",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "85b16d60a361f97f249689ff3d1f27bb0475f6a1"
+                },
+                "time": "2015-09-03T06:16:04+00:00"
+            }
+        ]
+    },
+    "security-advisories": []
+}

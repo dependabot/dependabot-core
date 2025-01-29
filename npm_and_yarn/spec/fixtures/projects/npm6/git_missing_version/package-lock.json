@@ -1,0 +1,12 @@
+{
+  "name": "github-test",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "raven-js": {
+      "version": "github:getsentry/raven-js#c2b377e7a254264fd4a1fe328e4e3cfc9e245570",
+      "from": "github:getsentry/raven-js#3.23.1"
+    }
+  }
+}

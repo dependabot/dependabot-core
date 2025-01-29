@@ -1,0 +1,18 @@
+{
+  "name": "NuGet.Config",
+  "path": "NuGet.Config",
+  "sha": "b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "size": 1367,
+  "url": "https://api.github.com/repos/fsharp/fsharp/contents/NuGet.Config?ref=master",
+  "html_url": "https://github.com/fsharp/fsharp/blob/master/NuGet.Config",
+  "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/NuGet.Config",
+  "type": "file",
+  "content": "77u/PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPGNv\nbmZpZ3VyYXRpb24+CiAgCiAgPHNvbHV0aW9uPgogICAgPGFkZCBrZXk9ImRp\nc2FibGVTb3VyY2VDb250cm9sSW50ZWdyYXRpb24iIHZhbHVlPSJ0cnVlIiAv\nPgogIDwvc29sdXRpb24+CiAgPHBhY2thZ2VTb3VyY2VzPiAgCgogICAgPGNs\nZWFyIC8+CiAgICA8YWRkIGtleT0iYXBpLm51Z2V0Lm9yZyIgdmFsdWU9Imh0\ndHBzOi8vYXBpLm51Z2V0Lm9yZy92My9pbmRleC5qc29uIiAvPgoKICAgIDwh\nLS0gCiAgICA8YWRkIGtleT0iYXJ0aWZhY3RzIiB2YWx1ZT0iLi9hcnRpZmFj\ndHMiIC8+CiAgICA8YWRkIGtleT0iYXJ0aWZhY3RzIiB2YWx1ZT0iLi9hcnRp\nZmFjdHMvNC4yIiAvPgogICAgPGFkZCBrZXk9Im15Z2V0Lm9yZyBmc2hhcnAt\nZGFpbHkiIHZhbHVlPSJodHRwczovL3d3dy5teWdldC5vcmcvRi9mc2hhcnAt\nZGFpbHkvYXBpL3YzL2luZGV4Lmpzb24iIC8+CiAgICA8YWRkIGtleT0ibXln\nZXQub3JnIHJvc2x5bi1tYXN0ZXItbmlnaHRseSIgdmFsdWU9Imh0dHBzOi8v\nZG90bmV0Lm15Z2V0Lm9yZy9GL3Jvc2x5bi1tYXN0ZXItbmlnaHRseS9hcGkv\ndjMvaW5kZXguanNvbiIgLz4KICAgIDxhZGQga2V5PSJkb3RuZXQtY29yZSIg\ndmFsdWU9Imh0dHBzOi8vZG90bmV0Lm15Z2V0Lm9yZy9GL2RvdG5ldC1jb3Jl\nL2FwaS92My9pbmRleC5qc29uIiAvPgogICAgPGFkZCBrZXk9Im15Z2V0Lm9y\nZyBkb3RuZXQtYnVpbGR0b29scyIgdmFsdWU9Imh0dHBzOi8vZG90bmV0Lm15\nZ2V0Lm9yZy9GL2RvdG5ldC1idWlsZHRvb2xzL2FwaS92My9pbmRleC5qc29u\nIiAvPgogICAgPGFkZCBrZXk9Im15Z2V0Lm9yZyByb3NseW4tdG9vbHMiIHZh\nbHVlPSJodHRwczovL2RvdG5ldC5teWdldC5vcmcvRi9yb3NseW4tdG9vbHMv\nYXBpL3YzL2luZGV4Lmpzb24iIC8+CiAgICA8YWRkIGtleT0iYXBpLm51Z2V0\nLm9yZyIgdmFsdWU9Imh0dHBzOi8vYXBpLm51Z2V0Lm9yZy92My9pbmRleC5q\nc29uIiAvPgogICAgPGFkZCBrZXk9Im15Z2V0Lm9yZyByb3NseW4gdG9vbHMi\nIHZhbHVlPSJodHRwczovL2RvdG5ldC5teWdldC5vcmcvRi9yb3NseW4tdG9v\nbHMvYXBpL3YzL2luZGV4Lmpzb24iIC8+CiAgICA8YWRkIGtleT0ibXlnZXQu\nb3JnIHJvc2x5biIgdmFsdWU9Imh0dHBzOi8vZG90bmV0Lm15Z2V0Lm9yZy9G\nL3Jvc2x5bi9hcGkvdjMvaW5kZXguanNvbiIgLz4KICAgIDxhZGQga2V5PSJt\neWdldC5vcmcgc3ltcmVhZGVyLWNvbnZlcnRlciIgdmFsdWU9Imh0dHBzOi8v\nZG90bmV0Lm15Z2V0Lm9yZy9GL3N5bXJlYWRlci1jb252ZXJ0ZXIvYXBpL3Yz\nL2luZGV4Lmpzb24iIC8+CiAgLS0+CiAgPC9wYWNrYWdlU291cmNlcz4gIAoK\nPC9jb25maWd1cmF0aW9uPgo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/fsharp/fsharp/contents/NuGet.Config?ref=master",
+    "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+    "html": "https://github.com/fsharp/fsharp/blob/master/NuGet.Config"
+  }
+}

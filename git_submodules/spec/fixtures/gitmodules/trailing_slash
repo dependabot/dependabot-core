@@ -1,0 +1,4 @@
+[submodule "about/documents"]
+  path = about/documents/
+  url = git@github.com:example/documents.git
+  branch = gh-pages

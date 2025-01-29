@@ -1,0 +1,18 @@
+{
+  "name": "pnpm-lock.yaml",
+  "path": "pnpm-lock.yaml",
+  "sha": "480ff6af70fbd95d24ca75130d88d5f130411e32",
+  "size": 426,
+  "url": "https://api.github.com/repos/org/repo/contents/pnpm-lock.yaml?ref=main",
+  "html_url": "https://github.com/org/repo/blob/main/pnpm-lock.yaml",
+  "git_url": "https://api.github.com/repos/org/repo/git/blobs/480ff6af70fbd95d24ca75130d88d5f130411e32",
+  "download_url": "https://raw.githubusercontent.com/org/repo/main/pnpm-lock.yaml",
+  "type": "file",
+  "content": "bG9ja2ZpbGVWZXJzaW9uOiAnNi4wJwoKc2V0dGluZ3M6CiAgYXV0b0luc3Rh\nbGxQZWVyczogdHJ1ZQogIGV4Y2x1ZGVMaW5rc0Zyb21Mb2NrZmlsZTogZmFs\nc2UKCmRlcGVuZGVuY2llczoKICAnQGJyYWludHJlZS9zYW5pdGl6ZS11cmwn\nOgogICAgc3BlY2lmaWVyOiAnNS4wJwogICAgdmVyc2lvbjogNS4wLjIKCnBh\nY2thZ2VzOgoKICAvQGJyYWludHJlZS9zYW5pdGl6ZS11cmxANS4wLjI6CiAg\nICByZXNvbHV0aW9uOiB7aW50ZWdyaXR5OiBzaGE1MTItTkJFSmxIV3JoUXVj\nTGhaR0h0U3hNMmxvU2FOVU1hakM3S09ZSkx5ZmNkVy82Z29Wb2ZmMkhvWUkz\nYno4WUNETjB3S0dieHRVTDBneDJkdkhwdm5XbHc9PX0KICAgIGRlcHJlY2F0\nZWQ6IFBvdGVudGlhbCBYU1MgdnVsbmVyYWJpbGl0eSBwYXRjaGVkIGluIHY2\nLjAuMC4KICAgIGRldjogZmFsc2UK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/org/repo/contents/pnpm-lock.yaml?ref=main",
+    "git": "https://api.github.com/repos/org/repo/git/blobs/480ff6af70fbd95d24ca75130d88d5f130411e32",
+    "html": "https://github.com/org/repo/blob/main/pnpm-lock.yaml"
+  }
+}

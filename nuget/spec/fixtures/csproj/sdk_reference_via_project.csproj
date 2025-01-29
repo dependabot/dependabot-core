@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk;Awesome.Sdk/1.2.3;Prototype.Sdk/0.1.0-beta">
+
+  <PropertyGroup>
+    <Description>Very simple project using a custom SDK.</Description>
+  </PropertyGroup>
+
+</Project>

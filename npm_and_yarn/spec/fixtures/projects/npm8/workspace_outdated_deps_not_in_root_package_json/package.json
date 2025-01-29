@@ -1,0 +1,8 @@
+{
+  "name": "lens-monorepo",
+  "private": true,
+
+  "workspaces": [
+    "bump-version-for-cron"
+  ]
+}

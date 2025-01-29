@@ -1,0 +1,524 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.mockito</groupId>
+  <artifactId>mockito-core</artifactId>
+  <version>2.11.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.7.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>1.7.4</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
+      <version>2.6</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+  <name>mockito-core</name>
+  <packaging>jar</packaging>
+  <url>https://github.com/mockito/mockito</url>
+  <description>Mockito mock objects library core API and implementation</description>
+  <licenses>
+    <license>
+      <name>The MIT License</name>
+      <url>https://github.com/mockito/mockito/blob/master/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/mockito/mockito.git</url>
+  </scm>
+  <issueManagement>
+    <url>https://github.com/mockito/mockito/issues</url>
+    <system>GitHub issues</system>
+  </issueManagement>
+  <ciManagement>
+    <url>https://travis-ci.org/mockito/mockito</url>
+    <system>TravisCI</system>
+  </ciManagement>
+  <developers>
+    <developer>
+      <id>szczepiq</id>
+      <name>Szczepan Faber</name>
+      <roles>
+        <role>Core developer</role>
+      </roles>
+      <url>https://github.com/szczepiq</url>
+    </developer>
+    <developer>
+      <id>bric3</id>
+      <name>Brice Dutheil</name>
+      <roles>
+        <role>Core developer</role>
+      </roles>
+      <url>https://github.com/bric3</url>
+    </developer>
+    <developer>
+      <id>raphw</id>
+      <name>Rafael Winterhalter</name>
+      <roles>
+        <role>Core developer</role>
+      </roles>
+      <url>https://github.com/raphw</url>
+    </developer>
+    <developer>
+      <id>TimvdLippe</id>
+      <name>Tim van der Lippe</name>
+      <roles>
+        <role>Core developer</role>
+      </roles>
+      <url>https://github.com/TimvdLippe</url>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name>Szczepan Faber</name>
+      <url>https://github.com/mockitoguy</url>
+    </contributor>
+    <contributor>
+      <name>continuous-delivery-drone</name>
+      <url>https://github.com/continuous-delivery-drone</url>
+    </contributor>
+    <contributor>
+      <name>Marcin Zajączkowski</name>
+      <url>https://github.com/szpak</url>
+    </contributor>
+    <contributor>
+      <name>Pascal Schumacher</name>
+      <url>https://github.com/PascalSchumacher</url>
+    </contributor>
+    <contributor>
+      <name>Igor Czechowski</name>
+      <url>https://github.com/iczechowski</url>
+    </contributor>
+    <contributor>
+      <name>Bartosz Bańkowski</name>
+      <url>https://github.com/bbankowski</url>
+    </contributor>
+    <contributor>
+      <name>Allon Murienik</name>
+      <url>https://github.com/mureinik</url>
+    </contributor>
+    <contributor>
+      <name>Christian Schwarz</name>
+      <url>https://github.com/ChristianSchwarz</url>
+    </contributor>
+    <contributor>
+      <name>Lukasz Szewc</name>
+      <url>https://github.com/lukasz-szewc</url>
+    </contributor>
+    <contributor>
+      <name>Marcin Grzejszczak</name>
+      <url>https://github.com/marcingrzejszczak</url>
+    </contributor>
+    <contributor>
+      <name>Erhard Pointl</name>
+      <url>https://github.com/epeee</url>
+    </contributor>
+    <contributor>
+      <name>shipkit.org automated bot</name>
+      <url>https://github.com/shipkit-org</url>
+    </contributor>
+    <contributor>
+      <name>Tim Perry</name>
+      <url>https://github.com/pimterry</url>
+    </contributor>
+    <contributor>
+      <name>David J. M. Karlsen</name>
+      <url>https://github.com/davidkarlsen</url>
+    </contributor>
+    <contributor>
+      <name>Dawud-xx</name>
+      <url>https://github.com/Dawud-xx</url>
+    </contributor>
+    <contributor>
+      <name>Lovro Pandžić</name>
+      <url>https://github.com/lpandzic</url>
+    </contributor>
+    <contributor>
+      <name>Werner Beroux</name>
+      <url>https://github.com/wernight</url>
+    </contributor>
+    <contributor>
+      <name>Tsuyoshi Murakami</name>
+      <url>https://github.com/tmurakami</url>
+    </contributor>
+    <contributor>
+      <name>jerzykrlk</name>
+      <url>https://github.com/jerzykrlk</url>
+    </contributor>
+    <contributor>
+      <name>alberskib</name>
+      <url>https://github.com/alberskib</url>
+    </contributor>
+    <contributor>
+      <name>Joseph Walton</name>
+      <url>https://github.com/josephw</url>
+    </contributor>
+    <contributor>
+      <name>Michal Kordas</name>
+      <url>https://github.com/mkordas</url>
+    </contributor>
+    <contributor>
+      <name>Kamil Szymański</name>
+      <url>https://github.com/kamilszymanski</url>
+    </contributor>
+    <contributor>
+      <name>Hynek Mlnařík</name>
+      <url>https://github.com/hmlnarik</url>
+    </contributor>
+    <contributor>
+      <name>Hugh Hamill</name>
+      <url>https://github.com/hughwphamill</url>
+    </contributor>
+    <contributor>
+      <name>Hans Joachim Desserud</name>
+      <url>https://github.com/hansjoachim</url>
+    </contributor>
+    <contributor>
+      <name>Gunnar Wagenknecht</name>
+      <url>https://github.com/guw</url>
+    </contributor>
+    <contributor>
+      <name>Dmytro Chyzhykov</name>
+      <url>https://github.com/ffbit</url>
+    </contributor>
+    <contributor>
+      <name>ianparkinson</name>
+      <url>https://github.com/ianparkinson</url>
+    </contributor>
+    <contributor>
+      <name>dmac100</name>
+      <url>https://github.com/dmac100</url>
+    </contributor>
+    <contributor>
+      <name>Vineet Kumar</name>
+      <url>https://github.com/vin</url>
+    </contributor>
+    <contributor>
+      <name>Urs Metz</name>
+      <url>https://github.com/UrsMetz</url>
+    </contributor>
+    <contributor>
+      <name>Tarnowski Jan</name>
+      <url>https://github.com/tarnowskijan</url>
+    </contributor>
+    <contributor>
+      <name>Stephan Schroevers</name>
+      <url>https://github.com/Stephan202</url>
+    </contributor>
+    <contributor>
+      <name>Serge Bishyr</name>
+      <url>https://github.com/SeriyBg</url>
+    </contributor>
+    <contributor>
+      <name>Roman Elizarov</name>
+      <url>https://github.com/elizarov</url>
+    </contributor>
+    <contributor>
+      <name>Roland Hauser</name>
+      <url>https://github.com/SourcePond</url>
+    </contributor>
+    <contributor>
+      <name>Michał Borek</name>
+      <url>https://github.com/michalborek</url>
+    </contributor>
+    <contributor>
+      <name>Michael Pinnegar</name>
+      <url>https://github.com/Jazzepi</url>
+    </contributor>
+    <contributor>
+      <name>Marius Volkhart</name>
+      <url>https://github.com/MariusVolkhart</url>
+    </contributor>
+    <contributor>
+      <name>Lucas Cavalcanti</name>
+      <url>https://github.com/lucascs</url>
+    </contributor>
+    <contributor>
+      <name>Leonardo Carrasco</name>
+      <url>https://github.com/thesnowgoose</url>
+    </contributor>
+    <contributor>
+      <name>Krzysztof Wolny</name>
+      <url>https://github.com/vanta</url>
+    </contributor>
+    <contributor>
+      <name>Jeffrey Falgout</name>
+      <url>https://github.com/JeffreyFalgout</url>
+    </contributor>
+    <contributor>
+      <name>Emory Merryman</name>
+      <url>https://github.com/AFnRFCb7</url>
+    </contributor>
+    <contributor>
+      <name>Clark Brewer</name>
+      <url>https://github.com/brewerc</url>
+    </contributor>
+    <contributor>
+      <name>Carlos Aguayo</name>
+      <url>https://github.com/carlosaguayo</url>
+    </contributor>
+    <contributor>
+      <name>yyvess</name>
+      <url>https://github.com/yyvess</url>
+    </contributor>
+    <contributor>
+      <name>wuwen</name>
+      <url>https://github.com/wuwen5</url>
+    </contributor>
+    <contributor>
+      <name>test111</name>
+      <url>https://github.com/tradingreason</url>
+    </contributor>
+    <contributor>
+      <name>shipkit-org</name>
+      <url>https://github.com/shipkit-org</url>
+    </contributor>
+    <contributor>
+      <name>Wojtek Wilk</name>
+      <url>https://github.com/wwilk</url>
+    </contributor>
+    <contributor>
+      <name>Vivian Pennel</name>
+      <url>https://github.com/Vp3n</url>
+    </contributor>
+    <contributor>
+      <name>Tom Ball</name>
+      <url>https://github.com/tomball</url>
+    </contributor>
+    <contributor>
+      <name>Tokuhiro Matsuno</name>
+      <url>https://github.com/tokuhirom</url>
+    </contributor>
+    <contributor>
+      <name>Tim Cooke</name>
+      <url>https://github.com/trcooke</url>
+    </contributor>
+    <contributor>
+      <name>Stuart Blair</name>
+      <url>https://github.com/stuartblair</url>
+    </contributor>
+    <contributor>
+      <name>Simen Bekkhus</name>
+      <url>https://github.com/SimenB</url>
+    </contributor>
+    <contributor>
+      <name>Scott Markwell</name>
+      <url>https://github.com/smarkwell</url>
+    </contributor>
+    <contributor>
+      <name>Roi Atalla</name>
+      <url>https://github.com/ra4king</url>
+    </contributor>
+    <contributor>
+      <name>Radim Kubacki</name>
+      <url>https://github.com/radimk</url>
+    </contributor>
+    <contributor>
+      <name>Philipp Jardas</name>
+      <url>https://github.com/phjardas</url>
+    </contributor>
+    <contributor>
+      <name>Oliver Gierke</name>
+      <url>https://github.com/olivergierke</url>
+    </contributor>
+    <contributor>
+      <name>Myrle Krantz</name>
+      <url>https://github.com/myrle-krantz</url>
+    </contributor>
+    <contributor>
+      <name>Matt Dean</name>
+      <url>https://github.com/mattbdean</url>
+    </contributor>
+    <contributor>
+      <name>Markus Wüstenberg</name>
+      <url>https://github.com/markuswustenberg</url>
+    </contributor>
+    <contributor>
+      <name>Maciej Kuster</name>
+      <url>https://github.com/NagRock</url>
+    </contributor>
+    <contributor>
+      <name>MEDDAH Julien</name>
+      <url>https://github.com/MeddahJ</url>
+    </contributor>
+    <contributor>
+      <name>Ludovic Meurillon</name>
+      <url>https://github.com/LudoMeurillon</url>
+    </contributor>
+    <contributor>
+      <name>Ludovic Chane</name>
+      <url>https://github.com/ludochane</url>
+    </contributor>
+    <contributor>
+      <name>Krisztian Milesz</name>
+      <url>https://github.com/mileszk</url>
+    </contributor>
+    <contributor>
+      <name>José Paumard</name>
+      <url>https://github.com/JosePaumard</url>
+    </contributor>
+    <contributor>
+      <name>Jonathan Lloyd</name>
+      <url>https://github.com/lloydjm77</url>
+    </contributor>
+    <contributor>
+      <name>Johnny Lim</name>
+      <url>https://github.com/izeye</url>
+    </contributor>
+    <contributor>
+      <name>Jesse Englert</name>
+      <url>https://github.com/jpenglert</url>
+    </contributor>
+    <contributor>
+      <name>Jeremy Rickard</name>
+      <url>https://github.com/jrrickard</url>
+    </contributor>
+    <contributor>
+      <name>Ivan Vershinin</name>
+      <url>https://github.com/vershinin</url>
+    </contributor>
+    <contributor>
+      <name>Igor Kostenko</name>
+      <url>https://github.com/isanych</url>
+    </contributor>
+    <contributor>
+      <name>Igor Conrado Alves de Lima</name>
+      <url>https://github.com/igorcadelima</url>
+    </contributor>
+    <contributor>
+      <name>Gaëtan Muller</name>
+      <url>https://github.com/MGaetan89</url>
+    </contributor>
+    <contributor>
+      <name>Felix Dekker</name>
+      <url>https://github.com/FWDekker</url>
+    </contributor>
+    <contributor>
+      <name>Evgeny Astafyev</name>
+      <url>https://github.com/astafev</url>
+    </contributor>
+    <contributor>
+      <name>Eugene Ivakhno</name>
+      <url>https://github.com/eugene-ivakhno</url>
+    </contributor>
+    <contributor>
+      <name>Erik Bakker</name>
+      <url>https://github.com/eamelink</url>
+    </contributor>
+    <contributor>
+      <name>Dmitriy Zaitsev</name>
+      <url>https://github.com/DmitriyZaitsev</url>
+    </contributor>
+    <contributor>
+      <name>Divyansh Gupta</name>
+      <url>https://github.com/divyansh-gupta</url>
+    </contributor>
+    <contributor>
+      <name>Dennis Cheung</name>
+      <url>https://github.com/hkdennis2k</url>
+    </contributor>
+    <contributor>
+      <name>David Xia</name>
+      <url>https://github.com/davidxia</url>
+    </contributor>
+    <contributor>
+      <name>David Gageot</name>
+      <url>https://github.com/dgageot</url>
+    </contributor>
+    <contributor>
+      <name>Christian Persson</name>
+      <url>https://github.com/Saser</url>
+    </contributor>
+    <contributor>
+      <name>Bruno Krebs</name>
+      <url>https://github.com/brunokrebs</url>
+    </contributor>
+    <contributor>
+      <name>Ben Yu</name>
+      <url>https://github.com/fluentfuture</url>
+    </contributor>
+    <contributor>
+      <name>Bartosz Miller</name>
+      <url>https://github.com/BartoszMiller</url>
+    </contributor>
+    <contributor>
+      <name>Ariel Isaac</name>
+      <url>https://github.com/Ariel-Isaacm</url>
+    </contributor>
+    <contributor>
+      <name>Arend v. Reinersdorff</name>
+      <url>https://github.com/arend-von-reinersdorff</url>
+    </contributor>
+    <contributor>
+      <name>André Gonçalves</name>
+      <url>https://github.com/andrerigon</url>
+    </contributor>
+    <contributor>
+      <name>Andrey</name>
+      <url>https://github.com/andreyrmg</url>
+    </contributor>
+    <contributor>
+      <name>Andrei Solntsev</name>
+      <url>https://github.com/asolntsev</url>
+    </contributor>
+    <contributor>
+      <name>Alex Simkin</name>
+      <url>https://github.com/SimY4</url>
+    </contributor>
+    <contributor>
+      <name>Alberto Scotto</name>
+      <url>https://github.com/alb-i986</url>
+    </contributor>
+    <contributor>
+      <name>philipa</name>
+      <url>https://github.com/philipa</url>
+    </contributor>
+    <contributor>
+      <name>paulduffin</name>
+      <url>https://github.com/paulduffin</url>
+    </contributor>
+    <contributor>
+      <name>mgrafl</name>
+      <url>https://github.com/mgrafl</url>
+    </contributor>
+    <contributor>
+      <name>geoffschoeman</name>
+      <url>https://github.com/geoffschoeman</url>
+    </contributor>
+    <contributor>
+      <name>bruceeddy</name>
+      <url>https://github.com/bruceeddy</url>
+    </contributor>
+    <contributor>
+      <name>ashleyfrieze</name>
+      <url>https://github.com/ashleyfrieze</url>
+    </contributor>
+    <contributor>
+      <name>VChirp</name>
+      <url>https://github.com/VChirp</url>
+    </contributor>
+    <contributor>
+      <name>Nirvanall</name>
+      <url>https://github.com/Nirvanall</url>
+    </contributor>
+    <contributor>
+      <name>LiamClark</name>
+      <url>https://github.com/LiamClark</url>
+    </contributor>
+    <contributor>
+      <name>L-KID</name>
+      <url>https://github.com/L-KID</url>
+    </contributor>
+  </contributors>
+</project>

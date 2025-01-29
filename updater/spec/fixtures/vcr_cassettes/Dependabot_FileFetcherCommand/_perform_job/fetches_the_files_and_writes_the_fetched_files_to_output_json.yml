@@ -1,0 +1,294 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 20 Aug 2020 15:19:20 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"05138d3b8df2fc6f68facbbc84776e4d"
+      Last-Modified:
+      - Wed, 27 May 2020 11:17:06 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '42'
+      X-Ratelimit-Reset:
+      - '1597938283'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - FED9:4A5A:67DBD2:F5E8C6:5F3E9478
+    body:
+      encoding: ASCII-8BIT
+      string: '{"id":267290099,"node_id":"MDEwOlJlcG9zaXRvcnkyNjcyOTAwOTk=","name":"dependabot-test-ruby-package","full_name":"dependabot-fixtures/dependabot-test-ruby-package","private":false,"owner":{"login":"dependabot-fixtures","id":44116593,"node_id":"MDEyOk9yZ2FuaXphdGlvbjQ0MTE2NTkz","avatar_url":"https://avatars0.githubusercontent.com/u/44116593?v=4","gravatar_id":"","url":"https://api.github.com/users/dependabot-fixtures","html_url":"https://github.com/dependabot-fixtures","followers_url":"https://api.github.com/users/dependabot-fixtures/followers","following_url":"https://api.github.com/users/dependabot-fixtures/following{/other_user}","gists_url":"https://api.github.com/users/dependabot-fixtures/gists{/gist_id}","starred_url":"https://api.github.com/users/dependabot-fixtures/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/dependabot-fixtures/subscriptions","organizations_url":"https://api.github.com/users/dependabot-fixtures/orgs","repos_url":"https://api.github.com/users/dependabot-fixtures/repos","events_url":"https://api.github.com/users/dependabot-fixtures/events{/privacy}","received_events_url":"https://api.github.com/users/dependabot-fixtures/received_events","type":"Organization","site_admin":false},"html_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package","description":"A
+        ruby gem for testing dependabot","fork":false,"url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package","forks_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/forks","keys_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/keys{/key_id}","collaborators_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/collaborators{/collaborator}","teams_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/teams","hooks_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/hooks","issue_events_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/issues/events{/number}","events_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/events","assignees_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/assignees{/user}","branches_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/branches{/branch}","tags_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/tags","blobs_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs{/sha}","git_tags_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/tags{/sha}","git_refs_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/refs{/sha}","trees_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/trees{/sha}","statuses_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/statuses/{sha}","languages_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/languages","stargazers_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/stargazers","contributors_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contributors","subscribers_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/subscribers","subscription_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/subscription","commits_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/commits{/sha}","git_commits_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/commits{/sha}","comments_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/comments{/number}","issue_comment_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/issues/comments{/number}","contents_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/{+path}","compare_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/compare/{base}...{head}","merges_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/merges","archive_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/{archive_format}{/ref}","downloads_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/downloads","issues_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/issues{/number}","pulls_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/pulls{/number}","milestones_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/milestones{/number}","notifications_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/notifications{?since,all,participating}","labels_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/labels{/name}","releases_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/releases{/id}","deployments_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/deployments","created_at":"2020-05-27T10:32:22Z","updated_at":"2020-05-27T11:17:06Z","pushed_at":"2020-05-27T11:23:26Z","git_url":"git://github.com/dependabot-fixtures/dependabot-test-ruby-package.git","ssh_url":"git@github.com:dependabot-fixtures/dependabot-test-ruby-package.git","clone_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package.git","svn_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package","homepage":null,"size":1,"stargazers_count":0,"watchers_count":0,"language":"Ruby","has_issues":true,"has_projects":true,"has_downloads":true,"has_wiki":true,"has_pages":false,"forks_count":0,"mirror_url":null,"archived":false,"disabled":false,"open_issues_count":0,"license":null,"forks":0,"open_issues":0,"watchers":0,"default_branch":"master","temp_clone_token":null,"organization":{"login":"dependabot-fixtures","id":44116593,"node_id":"MDEyOk9yZ2FuaXphdGlvbjQ0MTE2NTkz","avatar_url":"https://avatars0.githubusercontent.com/u/44116593?v=4","gravatar_id":"","url":"https://api.github.com/users/dependabot-fixtures","html_url":"https://github.com/dependabot-fixtures","followers_url":"https://api.github.com/users/dependabot-fixtures/followers","following_url":"https://api.github.com/users/dependabot-fixtures/following{/other_user}","gists_url":"https://api.github.com/users/dependabot-fixtures/gists{/gist_id}","starred_url":"https://api.github.com/users/dependabot-fixtures/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/dependabot-fixtures/subscriptions","organizations_url":"https://api.github.com/users/dependabot-fixtures/orgs","repos_url":"https://api.github.com/users/dependabot-fixtures/repos","events_url":"https://api.github.com/users/dependabot-fixtures/events{/privacy}","received_events_url":"https://api.github.com/users/dependabot-fixtures/received_events","type":"Organization","site_admin":false},"network_count":0,"subscribers_count":0}'
+  recorded_at: Thu, 20 Aug 2020 15:19:20 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/refs/heads/master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 20 Aug 2020 15:19:20 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"65d96789fd44ca17a64d185184c47a55"
+      Last-Modified:
+      - Wed, 27 May 2020 11:17:06 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '41'
+      X-Ratelimit-Reset:
+      - '1597938283'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '237'
+      X-Github-Request-Id:
+      - FEDA:29AB:71BB21:FD5860:5F3E9478
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/master","node_id":"MDM6UmVmMjY3MjkwMDk5OnJlZnMvaGVhZHMvbWFzdGVy","url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/refs/heads/master","object":{"sha":"1c6331732c41e4557a16dacb82534f1d1c831848","type":"commit","url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/commits/1c6331732c41e4557a16dacb82534f1d1c831848"}}'
+  recorded_at: Thu, 20 Aug 2020 15:19:20 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/?ref=1c6331732c41e4557a16dacb82534f1d1c831848
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 20 Aug 2020 15:19:21 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"7b44807c792639c3b05064b3493694c6b4cce370"
+      Last-Modified:
+      - Wed, 27 May 2020 11:17:06 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '40'
+      X-Ratelimit-Reset:
+      - '1597938284'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '496'
+      X-Github-Request-Id:
+      - FEDB:549C:3517BB:8B1654:5F3E9479
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":".gitignore","path":".gitignore","sha":"c111b331371ae211d3bc2e3a9e34ad2a7d6b3982","size":6,"url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/.gitignore?ref=1c6331732c41e4557a16dacb82534f1d1c831848","html_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/.gitignore","git_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c111b331371ae211d3bc2e3a9e34ad2a7d6b3982","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/dependabot-test-ruby-package/1c6331732c41e4557a16dacb82534f1d1c831848/.gitignore","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/.gitignore?ref=1c6331732c41e4557a16dacb82534f1d1c831848","git":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c111b331371ae211d3bc2e3a9e34ad2a7d6b3982","html":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/.gitignore"}},{"name":"README.md","path":"README.md","sha":"f71de17053d17a9a5d135b3bfff3f6aa4409dc4b","size":85,"url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/README.md?ref=1c6331732c41e4557a16dacb82534f1d1c831848","html_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/README.md","git_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/f71de17053d17a9a5d135b3bfff3f6aa4409dc4b","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/dependabot-test-ruby-package/1c6331732c41e4557a16dacb82534f1d1c831848/README.md","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/README.md?ref=1c6331732c41e4557a16dacb82534f1d1c831848","git":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/f71de17053d17a9a5d135b3bfff3f6aa4409dc4b","html":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/README.md"}},{"name":"dependabot-test-ruby-package.gemspec","path":"dependabot-test-ruby-package.gemspec","sha":"c5fd208850ed1bf1334b4b9cd4910950bed0c497","size":383,"url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/dependabot-test-ruby-package.gemspec?ref=1c6331732c41e4557a16dacb82534f1d1c831848","html_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec","git_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c5fd208850ed1bf1334b4b9cd4910950bed0c497","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/dependabot-test-ruby-package/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec","type":"file","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/dependabot-test-ruby-package.gemspec?ref=1c6331732c41e4557a16dacb82534f1d1c831848","git":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c5fd208850ed1bf1334b4b9cd4910950bed0c497","html":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec"}}]'
+  recorded_at: Thu, 20 Aug 2020 15:19:21 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/dependabot-test-ruby-package.gemspec?ref=1c6331732c41e4557a16dacb82534f1d1c831848
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 20 Aug 2020 15:19:21 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"c5fd208850ed1bf1334b4b9cd4910950bed0c497"
+      Last-Modified:
+      - Wed, 27 May 2020 10:39:57 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '39'
+      X-Ratelimit-Reset:
+      - '1597938283'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '703'
+      X-Github-Request-Id:
+      - FEDC:455E:E95A4A:1861D80:5F3E9479
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"dependabot-test-ruby-package.gemspec","path":"dependabot-test-ruby-package.gemspec","sha":"c5fd208850ed1bf1334b4b9cd4910950bed0c497","size":383,"url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/dependabot-test-ruby-package.gemspec?ref=1c6331732c41e4557a16dacb82534f1d1c831848","html_url":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec","git_url":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c5fd208850ed1bf1334b4b9cd4910950bed0c497","download_url":"https://raw.githubusercontent.com/dependabot-fixtures/dependabot-test-ruby-package/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec","type":"file","content":"IyBmcm96ZW5fc3RyaW5nX2xpdGVyYWw6IHRydWUKCkdlbTo6U3BlY2lmaWNh\ndGlvbi5uZXcgZG8gfHNwZWN8CiAgc3BlYy5uYW1lICAgICA9ICdkZXBlbmRh\nYm90LXRlc3QtcnVieS1wYWNrYWdlJwogIHNwZWMudmVyc2lvbiAgPSAnMS4w\nLjEnCiAgc3BlYy5zdW1tYXJ5ICA9ICdBIGR1bW15IHBhY2thZ2UgZm9yIHRl\nc3RpbmcgRGVwZW5kYWJvdCcKICBzcGVjLmF1dGhvciAgID0gJ0RlcGVuZGFi\nb3QnCiAgc3BlYy5saWNlbnNlICA9ICdNSVQnCiAgc3BlYy5lbWFpbCAgICA9\nICdub3JlcGx5QGdpdGh1Yi5jb20nCiAgc3BlYy5ob21lcGFnZSA9ICdodHRw\nOi8vZ2l0aHViLmNvbS9kZXBlbmRhYm90LWZpeHR1cmVzL2RlcGVuZGFib3Qt\ndGVzdC1ydWJ5LXBhY2thZ2UnCmVuZAo=\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/contents/dependabot-test-ruby-package.gemspec?ref=1c6331732c41e4557a16dacb82534f1d1c831848","git":"https://api.github.com/repos/dependabot-fixtures/dependabot-test-ruby-package/git/blobs/c5fd208850ed1bf1334b4b9cd4910950bed0c497","html":"https://github.com/dependabot-fixtures/dependabot-test-ruby-package/blob/1c6331732c41e4557a16dacb82534f1d1c831848/dependabot-test-ruby-package.gemspec"}}'
+  recorded_at: Thu, 20 Aug 2020 15:19:21 GMT
+recorded_with: VCR 6.0.0

@@ -1,0 +1,722 @@
+[
+  {
+    "name": ".asf.yaml",
+    "path": ".asf.yaml",
+    "sha": "ab980e0c3fb2b3ef40e2dae888601e15608849b5",
+    "size": 2423,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.asf.yaml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.asf.yaml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/ab980e0c3fb2b3ef40e2dae888601e15608849b5",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.asf.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.asf.yaml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/ab980e0c3fb2b3ef40e2dae888601e15608849b5",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.asf.yaml"
+    }
+  },
+  {
+    "name": ".codecov.yml",
+    "path": ".codecov.yml",
+    "sha": "149042367ab18c0367e14ffebaeeb5ddecb29308",
+    "size": 911,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.codecov.yml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.codecov.yml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/149042367ab18c0367e14ffebaeeb5ddecb29308",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.codecov.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.codecov.yml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/149042367ab18c0367e14ffebaeeb5ddecb29308",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.codecov.yml"
+    }
+  },
+  {
+    "name": ".dockerignore",
+    "path": ".dockerignore",
+    "sha": "e79b8f6e1e78f7360eef973fd002d51b94c62902",
+    "size": 1218,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.dockerignore?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.dockerignore",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/e79b8f6e1e78f7360eef973fd002d51b94c62902",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.dockerignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.dockerignore?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/e79b8f6e1e78f7360eef973fd002d51b94c62902",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.dockerignore"
+    }
+  },
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "dc17b28420db6d2dcb6a4b700e9993e66cb8962a",
+    "size": 1365,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.editorconfig?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.editorconfig",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/dc17b28420db6d2dcb6a4b700e9993e66cb8962a",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.editorconfig?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/dc17b28420db6d2dcb6a4b700e9993e66cb8962a",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.editorconfig"
+    }
+  },
+  {
+    "name": ".flaskenv",
+    "path": ".flaskenv",
+    "sha": "5ed928d76a51a842e06bafd362c548e570555db0",
+    "size": 839,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.flaskenv?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.flaskenv",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/5ed928d76a51a842e06bafd362c548e570555db0",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.flaskenv",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.flaskenv?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/5ed928d76a51a842e06bafd362c548e570555db0",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.flaskenv"
+    }
+  },
+  {
+    "name": ".fossa.yml",
+    "path": ".fossa.yml",
+    "sha": "974aa72e7da636ccf7f60da1f2b61e32a4a374fd",
+    "size": 1176,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.fossa.yml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.fossa.yml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/974aa72e7da636ccf7f60da1f2b61e32a4a374fd",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.fossa.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.fossa.yml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/974aa72e7da636ccf7f60da1f2b61e32a4a374fd",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.fossa.yml"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "79f44a6b263773835c3690f3014e08ac5b08fcea",
+    "size": 27,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitattributes?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.gitattributes",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/79f44a6b263773835c3690f3014e08ac5b08fcea",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitattributes?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/79f44a6b263773835c3690f3014e08ac5b08fcea",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "52fcc57aeb19a7d59f425cbcede2270b6cdb6413",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.github?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/.github",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/52fcc57aeb19a7d59f425cbcede2270b6cdb6413",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.github?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/52fcc57aeb19a7d59f425cbcede2270b6cdb6413",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "a23cbb9ba5a6e630dc77f64ee203f34936570c51",
+    "size": 2003,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/a23cbb9ba5a6e630dc77f64ee203f34936570c51",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/a23cbb9ba5a6e630dc77f64ee203f34936570c51",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".gitmodules",
+    "path": ".gitmodules",
+    "sha": "bf3f8a1b37ea785c58bfbbb3d2c23e6dbe67dd6f",
+    "size": 1985,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitmodules?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.gitmodules",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/bf3f8a1b37ea785c58bfbbb3d2c23e6dbe67dd6f",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.gitmodules",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.gitmodules?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/bf3f8a1b37ea785c58bfbbb3d2c23e6dbe67dd6f",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.gitmodules"
+    }
+  },
+  {
+    "name": ".markdownlint.json",
+    "path": ".markdownlint.json",
+    "sha": "dcc40721cea282bde13a400dd6130900df229c1c",
+    "size": 52,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.markdownlint.json?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.markdownlint.json",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/dcc40721cea282bde13a400dd6130900df229c1c",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.markdownlint.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.markdownlint.json?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/dcc40721cea282bde13a400dd6130900df229c1c",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.markdownlint.json"
+    }
+  },
+  {
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "9e0318456deeabeeaa5367673c5493cce2301db0",
+    "size": 3248,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.pre-commit-config.yaml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/9e0318456deeabeeaa5367673c5493cce2301db0",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.pre-commit-config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.pre-commit-config.yaml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/9e0318456deeabeeaa5367673c5493cce2301db0",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.pre-commit-config.yaml"
+    }
+  },
+  {
+    "name": ".pylintrc",
+    "path": ".pylintrc",
+    "sha": "08e44d3fae390fa4a1318f7e45c5700b3cb07877",
+    "size": 14279,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.pylintrc?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.pylintrc",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/08e44d3fae390fa4a1318f7e45c5700b3cb07877",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.pylintrc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.pylintrc?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/08e44d3fae390fa4a1318f7e45c5700b3cb07877",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.pylintrc"
+    }
+  },
+  {
+    "name": ".rat-excludes",
+    "path": ".rat-excludes",
+    "sha": "f50d6a3862082fdc8443397dbdc8ce16de3288c0",
+    "size": 861,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.rat-excludes?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/.rat-excludes",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/f50d6a3862082fdc8443397dbdc8ce16de3288c0",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/.rat-excludes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/.rat-excludes?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/f50d6a3862082fdc8443397dbdc8ce16de3288c0",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/.rat-excludes"
+    }
+  },
+  {
+    "name": "CHANGELOG.md",
+    "path": "CHANGELOG.md",
+    "sha": "55656a16ab6ac6282c7c2a9cd9a92158dad5a88c",
+    "size": 426589,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CHANGELOG.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/CHANGELOG.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/55656a16ab6ac6282c7c2a9cd9a92158dad5a88c",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/CHANGELOG.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CHANGELOG.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/55656a16ab6ac6282c7c2a9cd9a92158dad5a88c",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/CHANGELOG.md"
+    }
+  },
+  {
+    "name": "CODE_OF_CONDUCT.md",
+    "path": "CODE_OF_CONDUCT.md",
+    "sha": "a328cf44d770647d74e53d52e6adb8877988cd2f",
+    "size": 12805,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CODE_OF_CONDUCT.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/CODE_OF_CONDUCT.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/a328cf44d770647d74e53d52e6adb8877988cd2f",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/CODE_OF_CONDUCT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CODE_OF_CONDUCT.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/a328cf44d770647d74e53d52e6adb8877988cd2f",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/CODE_OF_CONDUCT.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "94573f2a9e3f420d720248e1074bb17fac27c1c6",
+    "size": 75361,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CONTRIBUTING.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/94573f2a9e3f420d720248e1074bb17fac27c1c6",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/CONTRIBUTING.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/94573f2a9e3f420d720248e1074bb17fac27c1c6",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "Dockerfile",
+    "path": "Dockerfile",
+    "sha": "3f6152e763abd390c94ed7eb6f08805ae26b4bac",
+    "size": 5141,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/Dockerfile?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/Dockerfile",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/3f6152e763abd390c94ed7eb6f08805ae26b4bac",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/Dockerfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/Dockerfile?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/3f6152e763abd390c94ed7eb6f08805ae26b4bac",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/Dockerfile"
+    }
+  },
+  {
+    "name": "INSTALL.md",
+    "path": "INSTALL.md",
+    "sha": "afe091241f8acf5d077bd9c562bb0973e1a776af",
+    "size": 978,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/INSTALL.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/INSTALL.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/afe091241f8acf5d077bd9c562bb0973e1a776af",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/INSTALL.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/INSTALL.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/afe091241f8acf5d077bd9c562bb0973e1a776af",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/INSTALL.md"
+    }
+  },
+  {
+    "name": "LICENSE.txt",
+    "path": "LICENSE.txt",
+    "sha": "56313ab5a54a163e7d46224cb5470a814c3a2436",
+    "size": 11585,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/LICENSE.txt?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/LICENSE.txt",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/56313ab5a54a163e7d46224cb5470a814c3a2436",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/LICENSE.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/LICENSE.txt?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/56313ab5a54a163e7d46224cb5470a814c3a2436",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/LICENSE.txt"
+    }
+  },
+  {
+    "name": "MANIFEST.in",
+    "path": "MANIFEST.in",
+    "sha": "4d7a98b2a7ac8c82f6d58df5fbd6db697c28c5b2",
+    "size": 1113,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/MANIFEST.in?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/MANIFEST.in",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/4d7a98b2a7ac8c82f6d58df5fbd6db697c28c5b2",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/MANIFEST.in",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/MANIFEST.in?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/4d7a98b2a7ac8c82f6d58df5fbd6db697c28c5b2",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/MANIFEST.in"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "Makefile",
+    "sha": "14e7bb17efdac01eae897ba455bb4b287f30a719",
+    "size": 3291,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/Makefile?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/Makefile",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/14e7bb17efdac01eae897ba455bb4b287f30a719",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/Makefile?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/14e7bb17efdac01eae897ba455bb4b287f30a719",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/Makefile"
+    }
+  },
+  {
+    "name": "NOTICE",
+    "path": "NOTICE",
+    "sha": "32faddf7066d7e199991b0259e4b05faea5951c5",
+    "size": 169,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/NOTICE?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/NOTICE",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/32faddf7066d7e199991b0259e4b05faea5951c5",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/NOTICE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/NOTICE?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/32faddf7066d7e199991b0259e4b05faea5951c5",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/NOTICE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "8c13452d18d6cbd0e86bc9e30b6a0c62c9dc72e3",
+    "size": 11793,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/README.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/8c13452d18d6cbd0e86bc9e30b6a0c62c9dc72e3",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/8c13452d18d6cbd0e86bc9e30b6a0c62c9dc72e3",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/README.md"
+    }
+  },
+  {
+    "name": "RELEASING",
+    "path": "RELEASING",
+    "sha": "b1618af4d26d477767b0071e92e4a2ea63f045d4",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/RELEASING?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/RELEASING",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/b1618af4d26d477767b0071e92e4a2ea63f045d4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/RELEASING?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/b1618af4d26d477767b0071e92e4a2ea63f045d4",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/RELEASING"
+    }
+  },
+  {
+    "name": "RESOURCES",
+    "path": "RESOURCES",
+    "sha": "2c6a7ba6e7f2a1051a89bcb785decb523fb01d4d",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/RESOURCES?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/RESOURCES",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/2c6a7ba6e7f2a1051a89bcb785decb523fb01d4d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/RESOURCES?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/2c6a7ba6e7f2a1051a89bcb785decb523fb01d4d",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/RESOURCES"
+    }
+  },
+  {
+    "name": "UPDATING.md",
+    "path": "UPDATING.md",
+    "sha": "e133bf257c8c9fdf10574f5bdce6cf7f7ae1bf58",
+    "size": 59308,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/UPDATING.md?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/UPDATING.md",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/e133bf257c8c9fdf10574f5bdce6cf7f7ae1bf58",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/UPDATING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/UPDATING.md?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/e133bf257c8c9fdf10574f5bdce6cf7f7ae1bf58",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/UPDATING.md"
+    }
+  },
+  {
+    "name": "docker-compose-non-dev.yml",
+    "path": "docker-compose-non-dev.yml",
+    "sha": "785472e7c6a1c150978f0656342fd98761052053",
+    "size": 3012,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker-compose-non-dev.yml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/docker-compose-non-dev.yml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/785472e7c6a1c150978f0656342fd98761052053",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/docker-compose-non-dev.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker-compose-non-dev.yml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/785472e7c6a1c150978f0656342fd98761052053",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/docker-compose-non-dev.yml"
+    }
+  },
+  {
+    "name": "docker-compose.yml",
+    "path": "docker-compose.yml",
+    "sha": "3f9c99f21fea74882e2ba2702234af3e793bc049",
+    "size": 5184,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker-compose.yml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/docker-compose.yml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/3f9c99f21fea74882e2ba2702234af3e793bc049",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/docker-compose.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker-compose.yml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/3f9c99f21fea74882e2ba2702234af3e793bc049",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/docker-compose.yml"
+    }
+  },
+  {
+    "name": "docker",
+    "path": "docker",
+    "sha": "378b47d500db2c3d7378c4e12632e1a4c0cc9db5",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/docker",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/378b47d500db2c3d7378c4e12632e1a4c0cc9db5",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docker?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/378b47d500db2c3d7378c4e12632e1a4c0cc9db5",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/docker"
+    }
+  },
+  {
+    "name": "dockerize.Dockerfile",
+    "path": "dockerize.Dockerfile",
+    "sha": "4a3fa1b6f25ddedb45821728fc75de75f5ff0929",
+    "size": 363,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/dockerize.Dockerfile?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/dockerize.Dockerfile",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/4a3fa1b6f25ddedb45821728fc75de75f5ff0929",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/dockerize.Dockerfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/dockerize.Dockerfile?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/4a3fa1b6f25ddedb45821728fc75de75f5ff0929",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/dockerize.Dockerfile"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "c392f0e790ae8df54eb1b9527852c71d67631428",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docs?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/docs",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/c392f0e790ae8df54eb1b9527852c71d67631428",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/docs?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/c392f0e790ae8df54eb1b9527852c71d67631428",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/docs"
+    }
+  },
+  {
+    "name": "helm",
+    "path": "helm",
+    "sha": "30cb509191a10934fb310c5fcfe31c2c08ee5cc0",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/helm?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/helm",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/30cb509191a10934fb310c5fcfe31c2c08ee5cc0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/helm?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/30cb509191a10934fb310c5fcfe31c2c08ee5cc0",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/helm"
+    }
+  },
+  {
+    "name": "lintconf.yaml",
+    "path": "lintconf.yaml",
+    "sha": "5a7c114c6d18c090f2b28f5d591fb1332943c995",
+    "size": 1793,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/lintconf.yaml?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/lintconf.yaml",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/5a7c114c6d18c090f2b28f5d591fb1332943c995",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/lintconf.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/lintconf.yaml?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/5a7c114c6d18c090f2b28f5d591fb1332943c995",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/lintconf.yaml"
+    }
+  },
+  {
+    "name": "pytest.ini",
+    "path": "pytest.ini",
+    "sha": "fdb50114d8d185d218623dcfe7594a734423cff0",
+    "size": 861,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/pytest.ini?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/pytest.ini",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/fdb50114d8d185d218623dcfe7594a734423cff0",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/pytest.ini",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/pytest.ini?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/fdb50114d8d185d218623dcfe7594a734423cff0",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/pytest.ini"
+    }
+  },
+  {
+    "name": "requirements",
+    "path": "requirements",
+    "sha": "fc1e875f1117a33f3362997d815d867d63388833",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/requirements?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/requirements",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/fc1e875f1117a33f3362997d815d867d63388833",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/requirements?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/fc1e875f1117a33f3362997d815d867d63388833",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/requirements"
+    }
+  },
+  {
+    "name": "scripts",
+    "path": "scripts",
+    "sha": "d3ab73567da9cc18f26c70d644bc7d495ad43473",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/scripts?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/scripts",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/d3ab73567da9cc18f26c70d644bc7d495ad43473",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/scripts?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/d3ab73567da9cc18f26c70d644bc7d495ad43473",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/scripts"
+    }
+  },
+  {
+    "name": "setup.cfg",
+    "path": "setup.cfg",
+    "sha": "fc98b22708a4c3f5dfbc6bf61fb44b1242f535e0",
+    "size": 2241,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/setup.cfg?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/setup.cfg",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/fc98b22708a4c3f5dfbc6bf61fb44b1242f535e0",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/setup.cfg",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/setup.cfg?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/fc98b22708a4c3f5dfbc6bf61fb44b1242f535e0",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/setup.cfg"
+    }
+  },
+  {
+    "name": "setup.py",
+    "path": "setup.py",
+    "sha": "060ea19732b9bb84a8b4923c6f92b6f444ce191d",
+    "size": 7340,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/setup.py?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/setup.py",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/060ea19732b9bb84a8b4923c6f92b6f444ce191d",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/setup.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/setup.py?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/060ea19732b9bb84a8b4923c6f92b6f444ce191d",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/setup.py"
+    }
+  },
+  {
+    "name": "superset-embedded-sdk",
+    "path": "superset-embedded-sdk",
+    "sha": "666b3d88ad63800522299fe20e3690cc8803a01a",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-embedded-sdk?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/superset-embedded-sdk",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/666b3d88ad63800522299fe20e3690cc8803a01a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-embedded-sdk?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/666b3d88ad63800522299fe20e3690cc8803a01a",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/superset-embedded-sdk"
+    }
+  },
+  {
+    "name": "superset-frontend",
+    "path": "superset-frontend",
+    "sha": "6951cfef1aa1fe96d7a54e94ae5e0aa70b5beaed",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-frontend?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/superset-frontend",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/6951cfef1aa1fe96d7a54e94ae5e0aa70b5beaed",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-frontend?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/6951cfef1aa1fe96d7a54e94ae5e0aa70b5beaed",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/superset-frontend"
+    }
+  },
+  {
+    "name": "superset-websocket",
+    "path": "superset-websocket",
+    "sha": "6abbeed2d3317ccc74b1df2659b11361cafa706e",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-websocket?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/superset-websocket",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/6abbeed2d3317ccc74b1df2659b11361cafa706e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset-websocket?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/6abbeed2d3317ccc74b1df2659b11361cafa706e",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/superset-websocket"
+    }
+  },
+  {
+    "name": "superset",
+    "path": "superset",
+    "sha": "80dfebdf43901123b43ef065b11d9d02dff804a8",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/superset",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/80dfebdf43901123b43ef065b11d9d02dff804a8",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/superset?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/80dfebdf43901123b43ef065b11d9d02dff804a8",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/superset"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "tests",
+    "sha": "3c0fd6da76ac85f3340fee8d8d76feba5c8371a9",
+    "size": 0,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/tests?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/tree/master/tests",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/3c0fd6da76ac85f3340fee8d8d76feba5c8371a9",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/tests?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/trees/3c0fd6da76ac85f3340fee8d8d76feba5c8371a9",
+      "html": "https://github.com/SylinaZhang/superset-3/tree/master/tests"
+    }
+  },
+  {
+    "name": "tox.ini",
+    "path": "tox.ini",
+    "sha": "c63fa947df6f41b692c8989a08cf32201cf33f6a",
+    "size": 5406,
+    "url": "https://api.github.com/repos/SylinaZhang/superset-3/contents/tox.ini?ref=master",
+    "html_url": "https://github.com/SylinaZhang/superset-3/blob/master/tox.ini",
+    "git_url": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/c63fa947df6f41b692c8989a08cf32201cf33f6a",
+    "download_url": "https://raw.githubusercontent.com/SylinaZhang/superset-3/master/tox.ini",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/SylinaZhang/superset-3/contents/tox.ini?ref=master",
+      "git": "https://api.github.com/repos/SylinaZhang/superset-3/git/blobs/c63fa947df6f41b692c8989a08cf32201cf33f6a",
+      "html": "https://github.com/SylinaZhang/superset-3/blob/master/tox.ini"
+    }
+  }
+]

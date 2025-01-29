@@ -1,0 +1,610 @@
+[
+  {
+    "sha": "43e609f3153f28311ff5325903a696d4f753b695",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-04T17:08:17Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-04T17:08:17Z"
+      },
+      "message": "chore(api-client): Version bump\n\nJust bumping",
+      "tree": {
+        "sha": "90e2b844c96001953178af86858b95f7737e2910",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/90e2b844c96001953178af86858b95f7737e2910"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/43e609f3153f28311ff5325903a696d4f753b695",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/43e609f3153f28311ff5325903a696d4f753b695",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/43e609f3153f28311ff5325903a696d4f753b695",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/43e609f3153f28311ff5325903a696d4f753b695/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/23a445c2f3902b70dcb3dff136b09ed24c37fd05"
+      }
+    ]
+  },
+  {
+    "sha": "23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-12-04T17:04:45Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-04T17:04:45Z"
+      },
+      "message": "feat(api-client): Delete payment data (#95)\n\nMore detail",
+      "tree": {
+        "sha": "1d728ad34adc4593cb04416cc067ba1000c81434",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/1d728ad34adc4593cb04416cc067ba1000c81434"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaJYAtCRBK7hj4Ov3rIwAAdHIIAEW2YpqS9ofiElZ6xQUoEb2h\nZdpQ3WIJzdrF9vs5FHINgt8N1eDlxDaIGef+REvWZoqv5lbEPr2FMAxuUFaLxltq\n+MznwF+61r5QaUot+NSI1QhF4vlWOYF83JBlISzbXKZ0kxOxVHf51uBq+dhTFQRe\nPWQz7/SPHQaXe81oxrU617SAxwcIEeuuwXa1SfnPj8/tZhPkl61n0BIPKsVHfmoN\nZr4XoSlvRh7809qRs+Du0xcZmtd5VwfA3WvgKi3F06NBctcrX7nP3jqbRCF7u+Sz\nZCsyYPI9SvYGGvTqHaJSNDRD8G+ykpv7mczT1ruAQSW6e1DCp2OseKbfJ9B3oQY=\n=Xh4l\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 1d728ad34adc4593cb04416cc067ba1000c81434\nparent d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512407085 +0100\ncommitter GitHub <noreply@github.com> 1512407085 +0100\n\nfeat(api-client): Delete payment data (#95)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/23a445c2f3902b70dcb3dff136b09ed24c37fd05",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/23a445c2f3902b70dcb3dff136b09ed24c37fd05/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/d8cf1eb9f0195c6a9b8b352767a31960ef5c87a4"
+      }
+    ]
+  },
+  {
+    "sha": "d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "commit": {
+      "author": {
+        "name": "AndyLnd",
+        "email": "andy.bialystock@gmail.com",
+        "date": "2017-12-01T12:33:29Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-01T12:33:29Z"
+      },
+      "message": " feat(react-ui-kit): added shakebox (#86)\n\nShake it out",
+      "tree": {
+        "sha": "0623550f03ef10d0005471703940f273290fb013",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/0623550f03ef10d0005471703940f273290fb013"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/d0e6098d0b37a71d724216a6965b43eaa463c126",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaIUwZCRBK7hj4Ov3rIwAAdHIIAHWKtq76yD8J/847EBxuiVGv\nlgdpVyKe6Qp2CZ4+bPBJShrPVCxGCPJ7rRznwNSTBNJq5sFW77kM4JeitNSbey55\neEsD8py1mBcwiUQX2x+tHr8vSapzd4KpO5tT1lat0hH4MpQmNmL0Jy6e5S5EF61n\nYKOsP3f5/u6kzqwQZ0ZkmLwEhaVAk235sBfDmX7LB1hmjLjoNEl8LjbcAvgMKp8k\nZF75lVFyt4rrMpgAKDKvnk3snWbTU0XOAQ+Kuse0mJ5eZkq0K1a9HT5E4q54MGTq\n0+YJEPAyixKQtg3zzimZyRCjnjiaTUmxN44yBu3brlfBnKDkX4SQiFIdiyJXi2M=\n=oB5s\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree 0623550f03ef10d0005471703940f273290fb013\nparent 93592a0a5ab7b7587a456b427ba7f9b29eb066ac\nauthor AndyLnd <andy.bialystock@gmail.com> 1512131609 +0100\ncommitter GitHub <noreply@github.com> 1512131609 +0100\n\n feat(react-ui-kit): added shakebox (#86)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/d0e6098d0b37a71d724216a6965b43eaa463c126",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/d0e6098d0b37a71d724216a6965b43eaa463c126/comments",
+    "author": {
+      "login": "AndyLnd",
+      "id": 1122618,
+      "avatar_url": "https://avatars0.githubusercontent.com/u/1122618?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/AndyLnd",
+      "html_url": "https://github.com/AndyLnd",
+      "followers_url": "https://api.github.com/users/AndyLnd/followers",
+      "following_url": "https://api.github.com/users/AndyLnd/following{/other_user}",
+      "gists_url": "https://api.github.com/users/AndyLnd/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/AndyLnd/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/AndyLnd/subscriptions",
+      "organizations_url": "https://api.github.com/users/AndyLnd/orgs",
+      "repos_url": "https://api.github.com/users/AndyLnd/repos",
+      "events_url": "https://api.github.com/users/AndyLnd/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/AndyLnd/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/93592a0a5ab7b7587a456b427ba7f9b29eb066ac",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/93592a0a5ab7b7587a456b427ba7f9b29eb066ac"
+      }
+    ]
+  },
+  {
+    "sha": "32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-01T11:00:17Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-12-01T11:00:17Z"
+      },
+      "message": "chore: Bump api-client\n\nNew API client",
+      "tree": {
+        "sha": "250b31bc18466de566375c4e27db23430726a3d9",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/250b31bc18466de566375c4e27db23430726a3d9"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/32b34bca98b5e139d3cdc377af251f8e5088b852",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/32b34bca98b5e139d3cdc377af251f8e5088b852",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/32b34bca98b5e139d3cdc377af251f8e5088b852/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6a1bba587856ef631c180f5ea7a0f19486980681",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6a1bba587856ef631c180f5ea7a0f19486980681",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/6a1bba587856ef631c180f5ea7a0f19486980681"
+      }
+    ]
+  },
+  {
+    "sha": "753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-12-01T10:15:49Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-12-01T10:15:49Z"
+      },
+      "message": "chore: Remove getPaymentPlan (#90)\n\nThis removes something",
+      "tree": {
+        "sha": "e4e3c1c47edb2343c2365c19085aab5d217b7610",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/e4e3c1c47edb2343c2365c19085aab5d217b7610"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaISvVCRBK7hj4Ov3rIwAAdHIIAJKG7bjLddWO0X98gSsOXOLy\n1SUHuAVH8Iw00qvIylRyMsl8VdYZ/ZGbhp0yYxc8O5J23BgTFITO+ECSS810qlVW\nfHpsY4BVsso4ayJwljuurkkLp9X0V85rzUq/u+8AucF9ElU+byiHxTyYOsnPB3Nz\ngn/PfSa8BxL2ArSrN5LgJgy+kQn35iu/wumZaGw31XYLxC9Z2DRcSxfwB4AjxGlp\nFuhFnvonHKTIsPg4GM6AFTfadZ6g1gr7mpuee5TEuy5ziffh0hJuZCfj5C+g8a/X\nEFmdPAr8XyjzwEZpSBlBVJRaqEC2YrPZMZrkDzGhJD2PhDocw6KJr8XQDdOaZu8=\n=gzY+\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree e4e3c1c47edb2343c2365c19085aab5d217b7610\nparent 6402631f60c785414943c9bb7f4630d29340635f\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512123349 +0100\ncommitter GitHub <noreply@github.com> 1512123349 +0100\n\nchore: Remove getPaymentPlan (#90)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/753b3116c2b5dcc172c62179b94c1282104e8ab0",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/753b3116c2b5dcc172c62179b94c1282104e8ab0/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "6402631f60c785414943c9bb7f4630d29340635f",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/6402631f60c785414943c9bb7f4630d29340635f",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/6402631f60c785414943c9bb7f4630d29340635f"
+      }
+    ]
+  },
+  {
+    "sha": "73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "commit": {
+      "author": {
+        "name": "Benny Neugebauer",
+        "email": "bn@bennyn.de",
+        "date": "2017-11-30T17:38:45Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-11-30T17:38:45Z"
+      },
+      "message": "fix: Persisting non-temporary clients (#85)\n\nNon-temporary things should be persisted",
+      "tree": {
+        "sha": "0f09cc0262e7bac8d6c5242d6c2d64bc0017416d",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/0f09cc0262e7bac8d6c5242d6c2d64bc0017416d"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/73b009dd96c5724faccadb1fa3a27bc5bf34fdc5/comments",
+    "author": {
+      "login": "bennyn",
+      "id": 469989,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/469989?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/bennyn",
+      "html_url": "https://github.com/bennyn",
+      "followers_url": "https://api.github.com/users/bennyn/followers",
+      "following_url": "https://api.github.com/users/bennyn/following{/other_user}",
+      "gists_url": "https://api.github.com/users/bennyn/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/bennyn/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/bennyn/subscriptions",
+      "organizations_url": "https://api.github.com/users/bennyn/orgs",
+      "repos_url": "https://api.github.com/users/bennyn/repos",
+      "events_url": "https://api.github.com/users/bennyn/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/bennyn/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b3833212e8bc837e2cb9daaad766799548fb447d",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b3833212e8bc837e2cb9daaad766799548fb447d",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b3833212e8bc837e2cb9daaad766799548fb447d"
+      }
+    ]
+  },
+  {
+    "sha": "15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-11-30T16:42:55Z"
+      },
+      "committer": {
+        "name": "Michael Koppen",
+        "email": "michael.koppen@googlemail.com",
+        "date": "2017-11-30T16:42:55Z"
+      },
+      "message": "chore(api-client): Version 0.2.12",
+      "tree": {
+        "sha": "9abfc831f97aef1626a41acbfc56c42264d4e2b1",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/9abfc831f97aef1626a41acbfc56c42264d4e2b1"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/15e12159bc86b7ac050bc94d70fcfeccfe1871aa",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/15e12159bc86b7ac050bc94d70fcfeccfe1871aa/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee"
+      }
+    ]
+  },
+  {
+    "sha": "63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "commit": {
+      "author": {
+        "name": "Michael Koppen",
+        "email": "yserz@users.noreply.github.com",
+        "date": "2017-11-30T16:12:19Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2017-11-30T16:12:19Z"
+      },
+      "message": "feat: Payment plan endpoints (#83)",
+      "tree": {
+        "sha": "d54daa2757609c496498113538df81ec1692e07a",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/d54daa2757609c496498113538df81ec1692e07a"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsBcBAABCAAQBQJaIC3jCRBK7hj4Ov3rIwAAdHIIAKUockstZPbo83qrUZY87i4X\nC/ckDPtBoHlR+hN9O3mEo/Vq65unQ+JwStZpT+H8oQYCxnsgMhWGGanXdedBThtI\nE+S8a1+kL+OLyB6CkGDBZoNE3TnhdY/pJ9MfYNX1hHONy/UNnJqhWvEjcsSlhIXM\ngfPBNypf1TJ1o8ogAvoJMg8TjEIv3n1LM2RYYdH0qeMDzJfYqn2CRovplUaxJW84\nBrIASQIPdShpythK3niKrBYDOeCe4aqmPQJ8Kgwjx/O7H50xYAikEtAC27UgGt4t\nnecnVi/asSnH7gnPYl/A+VSRW8jsmid9jc2mV6jF9AI08Ypo2Tfm6VZDr7LPEbY=\n=r5qb\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree d54daa2757609c496498113538df81ec1692e07a\nparent ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93\nauthor Michael Koppen <Yserz@users.noreply.github.com> 1512058339 +0100\ncommitter GitHub <noreply@github.com> 1512058339 +0100\n\nfeat: Payment plan endpoints (#83)\n\n"
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/63aa0162daedfbcdb93ad99b16d1692cbbbf50ee/comments",
+    "author": {
+      "login": "Yserz",
+      "id": 1138344,
+      "avatar_url": "https://avatars2.githubusercontent.com/u/1138344?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/Yserz",
+      "html_url": "https://github.com/Yserz",
+      "followers_url": "https://api.github.com/users/Yserz/followers",
+      "following_url": "https://api.github.com/users/Yserz/following{/other_user}",
+      "gists_url": "https://api.github.com/users/Yserz/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/Yserz/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/Yserz/subscriptions",
+      "organizations_url": "https://api.github.com/users/Yserz/orgs",
+      "repos_url": "https://api.github.com/users/Yserz/repos",
+      "events_url": "https://api.github.com/users/Yserz/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/Yserz/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "avatar_url": "https://avatars3.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/ac3ae593ec5cdcb5b911c1cc3b5e459f354d8f93"
+      }
+    ]
+  }
+]

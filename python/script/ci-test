@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e
+
+pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics
+
+bundle install
+bundle exec turbo_tests --verbose

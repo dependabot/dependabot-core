@@ -1,0 +1,18 @@
+[
+  {
+    "name": "dependency.zip",
+    "path": "artifact/dependency.zip",
+    "sha": "5c7b3419e0056515122b981f1566ebe22c208251",
+    "size": 11,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/artifact/dependency.zip?ref=5c7b3419e0056515122b981f1566ebe22c208251",
+    "html_url": "https://github.com/gocardless/bump/blob/15eebf3376360773b3a743d5e419cc67e1bfb99c/artifact/dependency.zip",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/2c3d0fefcb583cdaef2026c0e0b8b81ded83b038",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/15eebf3376360773b3a743d5e419cc67e1bfb99c/artifact/dependency.zip",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/artifact/dependency.zip?ref=15eebf3376360773b3a743d5e419cc67e1bfb99c",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/2c3d0fefcb583cdaef2026c0e0b8b81ded83b038",
+      "html": "https://github.com/gocardless/bump/blob/15eebf3376360773b3a743d5e419cc67e1bfb99c/artifact/dependency.zip"
+    }
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "name": "setup-test-missing-dep-name-npm-package",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "test-missing-dep-name-npm-package": {
+      "version": "github:dependabot-fixtures/test-missing-dep-name-npm-package#1be88e036981a8511eacf3f20e0a21507349988d",
+      "from": "github:dependabot-fixtures/test-missing-dep-name-npm-package#v1.0.0"
+    }
+  }
+}

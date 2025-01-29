@@ -1,0 +1,7 @@
+[package]
+name = "dependabot" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+authors = ["support@dependabot.com"]
+
+[dependencies]
+utf8-ranges = { git = "https://github.com/BurntSushi/utf8-ranges", tag = "0.1.3" }

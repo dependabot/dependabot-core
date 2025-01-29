@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\bin\$(Configuration)\Windows.Storage.Streams.dll">
+      <Link>lib\Windows.Storage.Streams.dll</Link>
+    </Content>
+    <Content Include="..\bin\$(Configuration)\Windows.Storage.Streams.pdb">
+      <Link>lib\Windows.Storage.Streams.pdb</Link>
+    </Content>
+    <Content Include="..\bin\$(Configuration)\Windows.Storage.Streams.pdbx">
+      <Link>lib\Windows.Storage.Streams.pdbx</Link>
+    </Content>
+    <Content Include="..\bin\$(Configuration)\Windows.Storage.Streams.pe">
+      <Link>lib\Windows.Storage.Streams.pe</Link>
+    </Content>
+    <Content Include="..\bin\$(Configuration)\Windows.Storage.Streams.xml">
+      <Link>lib\Windows.Storage.Streams.xml</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="lib\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Dependency Include="nanoFramework.CoreLibrary">
+      <Version>[1.0.0-preview062]</Version>
+    </Dependency>
+    <DevelopmentDependency Include="nanoFramework.CoreExtra">
+      <Version>[1.0.0-preview061]</Version>
+    </DevelopmentDependency>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>43cd93bb-c6c4-4f8e-b1ed-406469d9db42</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <NuProjPath>..\packages\NuProj.0.20.4-beta\tools\</NuProjPath>
+  </PropertyGroup>
+  <Import Project="$(NuProjPath)\NuProj.props" Condition="Exists('$(NuProjPath)\NuProj.props')" />
+  <PropertyGroup Label="Configuration">
+    <Id>nanoFramework.Windows.Storage.Streams</Id>
+    <Version>$(GitVersion_NuGetVersionV2)</Version>
+    <Title>nanoFramework.Windows.Storage.Streams</Title>
+    <Authors>nanoFramework project contributors</Authors>
+    <Owners>nanoFramework project contributors</Owners>
+    <Summary>Windows.Storage.Streams assembly for nanoFramework C# projects</Summary>
+    <Description>This package includes the Windows.Storage.Streams assembly for nanoFramework C# projects</Description>
+    <ReleaseNotes>
+    </ReleaseNotes>
+    <ProjectUrl>https://github.com/nanoframework/lib-Windows.Storage.Streams</ProjectUrl>
+    <LicenseUrl>
+    </LicenseUrl>
+    <Copyright>Copyright (c) 2017 The nanoFramework project contributors</Copyright>
+    <Tags>nanoFramework C# csharp netmf netnf Windows.Storage.Streams</Tags>
+    <IconUrl>https://secure.gravatar.com/avatar/97d0e092247f0716db6d4b47b7d1d1ad</IconUrl>
+    <GenerateSymbolPackage>false</GenerateSymbolPackage>
+  </PropertyGroup>
+  <Import Project="$(NuProjPath)\NuProj.targets" />
+</Project>

@@ -1,0 +1,70 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/gocardless/bump/contents/util/util/.mvn?ref=sha
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - Octokit Ruby Gem 4.21.0
+      accept:
+      - application/vnd.github.v3+json
+      content-type:
+      - application/json
+      accept-encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 401
+      message: Unauthorized
+    headers:
+      server:
+      - GitHub.com
+      date:
+      - Tue, 29 Jun 2021 11:51:46 GMT
+      content-type:
+      - application/json; charset=utf-8
+      content-length:
+      - '80'
+      x-github-media-type:
+      - github.v3; format=json
+      x-ratelimit-limit:
+      - '60'
+      x-ratelimit-remaining:
+      - '59'
+      x-ratelimit-reset:
+      - '1624971106'
+      x-ratelimit-used:
+      - '1'
+      x-ratelimit-resource:
+      - core
+      access-control-expose-headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, Deprecation,
+        Sunset
+      access-control-allow-origin:
+      - "*"
+      strict-transport-security:
+      - max-age=31536000; includeSubdomains; preload
+      x-frame-options:
+      - deny
+      x-content-type-options:
+      - nosniff
+      x-xss-protection:
+      - '0'
+      referrer-policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      content-security-policy:
+      - default-src 'none'
+      vary:
+      - Accept-Encoding, Accept, X-Requested-With
+      x-github-request-id:
+      - D141:7BEC:C7F7A:CC746:60DB0952
+    body:
+      encoding: UTF-8
+      string: '{"message":"Bad credentials","documentation_url":"https://docs.github.com/rest"}'
+  recorded_at: Tue, 29 Jun 2021 11:51:47 GMT
+recorded_with: VCR 6.0.0

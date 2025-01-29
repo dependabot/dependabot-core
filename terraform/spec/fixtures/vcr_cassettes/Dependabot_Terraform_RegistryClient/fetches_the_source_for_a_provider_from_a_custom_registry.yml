@@ -1,0 +1,31 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://terraform.example.org/.well-known/terraform.json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: '{"modules.v1":"/v1/modules/","providers.v1":"/v1/providers/"}'
+  recorded_at: Fri, 28 May 2021 22:53:39 GMT
+- request:
+    method: get
+    uri: https://terraform.example.org/v1/providers/hashicorp/ciscoasa/1.2.0
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: '{"id":"hashicorp/ciscoasa/1.2.0","owner":"hashicorp","namespace":"hashicorp","name":"ciscoasa","alias":"ciscoasa","version":"1.2.0","tag":"v1.2.0","description":"terraform-provider-ciscoasa","source":"https://github.com/hashicorp/terraform-provider-ciscoasa","published_at":"2019-06-11T19:06:48Z","downloads":6072,"tier":"official","logo_url":"/images/providers/cisco.svg?3","versions":["1.0.0","1.1.0","1.2.0"],"docs":[{"id":"16751","title":"overview","path":"website/docs/index.html.markdown","slug":"index","category":"overview","subcategory":""},{"id":"16752","title":"access_in_rules","path":"website/docs/r/access_in_rules.html.markdown","slug":"access_in_rules","category":"resources","subcategory":""},{"id":"16753","title":"access_out_rules","path":"website/docs/r/access_out_rules.html.markdown","slug":"access_out_rules","category":"resources","subcategory":""},{"id":"16754","title":"acl","path":"website/docs/r/acl.html.markdown","slug":"acl","category":"resources","subcategory":""},{"id":"16755","title":"network_object","path":"website/docs/r/network_object.html.markdown","slug":"network_object","category":"resources","subcategory":""},{"id":"16756","title":"network_object_group","path":"website/docs/r/network_object_group.html.markdown","slug":"network_object_group","category":"resources","subcategory":""},{"id":"16757","title":"network_service_group","path":"website/docs/r/network_service_group.html.markdown","slug":"network_service_group","category":"resources","subcategory":""},{"id":"16758","title":"static_route","path":"website/docs/r/static_route.html.markdown","slug":"static_route","category":"resources","subcategory":""}]}'
+  recorded_at: Fri, 28 May 2021 22:53:39 GMT
+recorded_with: VCR 6.0.0

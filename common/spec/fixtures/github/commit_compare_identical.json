@@ -1,0 +1,175 @@
+{
+  "url": "https://api.github.com/repos/golang/text/compare/v0.3.0...v0.3.0",
+  "html_url": "https://github.com/golang/text/compare/v0.3.0...v0.3.0",
+  "permalink_url": "https://github.com/golang/text/compare/golang:f21a4df...golang:f21a4df",
+  "diff_url": "https://github.com/golang/text/compare/v0.3.0...v0.3.0.diff",
+  "patch_url": "https://github.com/golang/text/compare/v0.3.0...v0.3.0.patch",
+  "base_commit": {
+    "sha": "f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "node_id": "MDY6Q29tbWl0Mjc1MjIyOTU6ZjIxYTRkZmI1ZTM4ZjU4OTUzMDFkYzI2NWE4ZGVmMDIzNjVjYzNkMA==",
+    "commit": {
+      "author": {
+        "name": "Marcel van Lohuizen",
+        "email": "mpvl@golang.org",
+        "date": "2017-12-09T17:05:50Z"
+      },
+      "committer": {
+        "name": "Marcel van Lohuizen",
+        "email": "mpvl@golang.org",
+        "date": "2017-12-14T13:08:43Z"
+      },
+      "message": "all: upgrade to CLDR 32\n\nChange-Id: I80ba02e97f8c9a6bc364cf8679b90aee13a1ce23\nReviewed-on: https://go-review.googlesource.com/82905\nRun-TryBot: Marcel van Lohuizen <mpvl@golang.org>\nTryBot-Result: Gobot Gobot <gobot@golang.org>\nReviewed-by: Nigel Tao <nigeltao@golang.org>",
+      "tree": {
+        "sha": "d495a1fe53fe3fd1794be36b4a4c8d835254db7b",
+        "url": "https://api.github.com/repos/golang/text/git/trees/d495a1fe53fe3fd1794be36b4a4c8d835254db7b"
+      },
+      "url": "https://api.github.com/repos/golang/text/git/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/golang/text/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "html_url": "https://github.com/golang/text/commit/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "comments_url": "https://api.github.com/repos/golang/text/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0/comments",
+    "author": {
+      "login": "mpvl",
+      "id": 6445383,
+      "node_id": "MDQ6VXNlcjY0NDUzODM=",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/6445383?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/mpvl",
+      "html_url": "https://github.com/mpvl",
+      "followers_url": "https://api.github.com/users/mpvl/followers",
+      "following_url": "https://api.github.com/users/mpvl/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mpvl/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/mpvl/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mpvl/subscriptions",
+      "organizations_url": "https://api.github.com/users/mpvl/orgs",
+      "repos_url": "https://api.github.com/users/mpvl/repos",
+      "events_url": "https://api.github.com/users/mpvl/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/mpvl/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "mpvl",
+      "id": 6445383,
+      "node_id": "MDQ6VXNlcjY0NDUzODM=",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/6445383?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/mpvl",
+      "html_url": "https://github.com/mpvl",
+      "followers_url": "https://api.github.com/users/mpvl/followers",
+      "following_url": "https://api.github.com/users/mpvl/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mpvl/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/mpvl/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mpvl/subscriptions",
+      "organizations_url": "https://api.github.com/users/mpvl/orgs",
+      "repos_url": "https://api.github.com/users/mpvl/repos",
+      "events_url": "https://api.github.com/users/mpvl/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/mpvl/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d5f0155fc124972d018bea023348f2bd9e1d341e",
+        "url": "https://api.github.com/repos/golang/text/commits/d5f0155fc124972d018bea023348f2bd9e1d341e",
+        "html_url": "https://github.com/golang/text/commit/d5f0155fc124972d018bea023348f2bd9e1d341e"
+      }
+    ]
+  },
+  "merge_base_commit": {
+    "sha": "f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "node_id": "MDY6Q29tbWl0Mjc1MjIyOTU6ZjIxYTRkZmI1ZTM4ZjU4OTUzMDFkYzI2NWE4ZGVmMDIzNjVjYzNkMA==",
+    "commit": {
+      "author": {
+        "name": "Marcel van Lohuizen",
+        "email": "mpvl@golang.org",
+        "date": "2017-12-09T17:05:50Z"
+      },
+      "committer": {
+        "name": "Marcel van Lohuizen",
+        "email": "mpvl@golang.org",
+        "date": "2017-12-14T13:08:43Z"
+      },
+      "message": "all: upgrade to CLDR 32\n\nChange-Id: I80ba02e97f8c9a6bc364cf8679b90aee13a1ce23\nReviewed-on: https://go-review.googlesource.com/82905\nRun-TryBot: Marcel van Lohuizen <mpvl@golang.org>\nTryBot-Result: Gobot Gobot <gobot@golang.org>\nReviewed-by: Nigel Tao <nigeltao@golang.org>",
+      "tree": {
+        "sha": "d495a1fe53fe3fd1794be36b4a4c8d835254db7b",
+        "url": "https://api.github.com/repos/golang/text/git/trees/d495a1fe53fe3fd1794be36b4a4c8d835254db7b"
+      },
+      "url": "https://api.github.com/repos/golang/text/git/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/golang/text/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "html_url": "https://github.com/golang/text/commit/f21a4dfb5e38f5895301dc265a8def02365cc3d0",
+    "comments_url": "https://api.github.com/repos/golang/text/commits/f21a4dfb5e38f5895301dc265a8def02365cc3d0/comments",
+    "author": {
+      "login": "mpvl",
+      "id": 6445383,
+      "node_id": "MDQ6VXNlcjY0NDUzODM=",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/6445383?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/mpvl",
+      "html_url": "https://github.com/mpvl",
+      "followers_url": "https://api.github.com/users/mpvl/followers",
+      "following_url": "https://api.github.com/users/mpvl/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mpvl/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/mpvl/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mpvl/subscriptions",
+      "organizations_url": "https://api.github.com/users/mpvl/orgs",
+      "repos_url": "https://api.github.com/users/mpvl/repos",
+      "events_url": "https://api.github.com/users/mpvl/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/mpvl/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "mpvl",
+      "id": 6445383,
+      "node_id": "MDQ6VXNlcjY0NDUzODM=",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/6445383?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/mpvl",
+      "html_url": "https://github.com/mpvl",
+      "followers_url": "https://api.github.com/users/mpvl/followers",
+      "following_url": "https://api.github.com/users/mpvl/following{/other_user}",
+      "gists_url": "https://api.github.com/users/mpvl/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/mpvl/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/mpvl/subscriptions",
+      "organizations_url": "https://api.github.com/users/mpvl/orgs",
+      "repos_url": "https://api.github.com/users/mpvl/repos",
+      "events_url": "https://api.github.com/users/mpvl/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/mpvl/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "d5f0155fc124972d018bea023348f2bd9e1d341e",
+        "url": "https://api.github.com/repos/golang/text/commits/d5f0155fc124972d018bea023348f2bd9e1d341e",
+        "html_url": "https://github.com/golang/text/commit/d5f0155fc124972d018bea023348f2bd9e1d341e"
+      }
+    ]
+  },
+  "status": "identical",
+  "ahead_by": 0,
+  "behind_by": 0,
+  "total_commits": 0,
+  "commits": [
+
+  ],
+  "files": [
+
+  ]
+}

@@ -1,0 +1,25 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr 'dependency_file_not_parseable'
+stdout '{"data":{"error-type":"dependency_file_not_parseable","error-details":{"file-path":"/manifest.json","message":"/manifest.json not parseable"}},"type":"record_update_job_error"}'
+
+-- manifest.json --
+This isn't JSON
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests

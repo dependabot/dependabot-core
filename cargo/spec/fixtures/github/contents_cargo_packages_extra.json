@@ -1,0 +1,66 @@
+[
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+    "size": 520,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/.editorconfig?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/blob/master/.editorconfig",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/blobs/efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+    "download_url": "https://raw.githubusercontent.com/runconduit/conduit/master/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/.editorconfig?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/blobs/efa361610e9f290ecbd18d4cb1b15a7a2c1ddc4f",
+      "html": "https://github.com/runconduit/conduit/blob/master/.editorconfig"
+    }
+  },
+  {
+    "name": "sub_crate",
+    "path": "packages/sub_crate",
+    "sha": "ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+      "html": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate"
+    }
+  },
+  {
+    "name": "sub_crate2",
+    "path": "packages/sub_crate2",
+    "sha": "ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate2?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate2",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/packages/sub_crate2?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+      "html": "https://github.com/runconduit/conduit/tree/master/packages/sub_crate2"
+    }
+  },
+  {
+    "name": "unused-package",
+    "path": "packages/unused-package",
+    "sha": "ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "size": 0,
+    "url": "https://api.github.com/repos/runconduit/conduit/contents/packages/unused-package?ref=master",
+    "html_url": "https://github.com/runconduit/conduit/tree/master/packages/unused-package",
+    "git_url": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/runconduit/conduit/contents/packages/unused-package?ref=master",
+      "git": "https://api.github.com/repos/runconduit/conduit/git/trees/ba6d444175c8da426302e44f499e4639ebfcfe44",
+      "html": "https://github.com/runconduit/conduit/tree/master/packages/unused-package"
+    }
+  }
+]

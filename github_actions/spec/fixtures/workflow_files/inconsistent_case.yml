@@ -1,0 +1,8 @@
+on:
+  pull_request:
+
+jobs:
+  test:
+    steps:
+      - uses: actions/checkout@v1
+      - uses: Actions/checkout@v2

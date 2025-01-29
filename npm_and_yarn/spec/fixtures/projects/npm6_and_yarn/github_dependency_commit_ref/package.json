@@ -1,0 +1,9 @@
+{
+  "name": "bump-test",
+  "version": "0.0.1",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "@reach/router": "reach/router#2675f56127c921474b275ff91fbdad8ec33cbd74"
+  }
+}

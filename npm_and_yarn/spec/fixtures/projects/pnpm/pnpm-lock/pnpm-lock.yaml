@@ -1,0 +1,21 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  is-positive:
+    specifier: 3.1.0
+    version: 3.1.0
+  left-pad:
+    specifier: ^1.0.1
+    version: 1.0.1
+
+packages:
+
+  /is-positive@3.1.0:
+    resolution: {integrity: sha512-8ND1j3y9/HP94TOvGzr69/FgbkX2ruOldhLEsTWwcJVfo4oRjwemJmJxt7RJkKYH8tz7vYBP9JcKQY8CLuJ90Q==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /left-pad@1.0.1:
+    resolution: {integrity: sha512-Q6Zx9Ntd6ORhdi3F0jYodrEU+Nrp/mRAOSnj6oHy+WEF67GiIIs/TjsQhY6+L67VVSwzl+qhqwHj7JfRrXV8dw==}
+    deprecated: use String.prototype.padStart()
+    dev: false

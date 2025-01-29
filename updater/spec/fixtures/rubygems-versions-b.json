@@ -1,0 +1,59 @@
+[
+  {
+    "authors": "Dependabot",
+    "built_at": "2017-06-08T00:00:00.000Z",
+    "created_at": "2017-06-08T11:17:36.474Z",
+    "description": "",
+    "downloads_count": 3115,
+    "metadata": {},
+    "number": "1.2.0",
+    "summary": "A dummy package for testing Dependabot",
+    "platform": "ruby",
+    "rubygems_version": ">= 0",
+    "ruby_version": ">= 0",
+    "prerelease": false,
+    "licenses": [
+      "MIT"
+    ],
+    "requirements": [],
+    "sha": "51b99c7db0d39924d690e19282f63d1fba9cc002ef55a139d9b6a4b0469399a1"
+  },
+  {
+    "authors": "Dependabot",
+    "built_at": "2017-06-08T00:00:00.000Z",
+    "created_at": "2017-06-08T11:08:53.333Z",
+    "description": "",
+    "downloads_count": 1562,
+    "metadata": {},
+    "number": "1.1.0",
+    "summary": "A dummy package for testing Dependabot",
+    "platform": "ruby",
+    "rubygems_version": ">= 0",
+    "ruby_version": ">= 0",
+    "prerelease": false,
+    "licenses": [
+      "MIT"
+    ],
+    "requirements": [],
+    "sha": "c8725691239b43d5f4c343b64d30afae6dd25ff1a79cca4d80534804c638b113"
+  },
+  {
+    "authors": "Dependabot",
+    "built_at": "2017-06-08T00:00:00.000Z",
+    "created_at": "2017-06-08T11:08:20.605Z",
+    "description": "",
+    "downloads_count": 1569,
+    "metadata": {},
+    "number": "1.0.0",
+    "summary": "A dummy package for testing Dependabot",
+    "platform": "ruby",
+    "rubygems_version": ">= 0",
+    "ruby_version": ">= 0",
+    "prerelease": false,
+    "licenses": [
+      "MIT"
+    ],
+    "requirements": [],
+    "sha": "0147d64042d5ab109d185f54957fcfb88f1ff9158651944ff75c6c82d47ab444"
+  }
+]

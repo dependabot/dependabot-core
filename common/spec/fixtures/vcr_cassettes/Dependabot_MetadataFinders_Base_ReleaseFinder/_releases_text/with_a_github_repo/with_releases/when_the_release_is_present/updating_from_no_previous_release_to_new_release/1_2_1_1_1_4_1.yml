@@ -1,0 +1,108 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/actions/checkout/releases?per_page=100
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 10 Jun 2020 16:05:44 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"69fc436233cd6658dd4b8d963178de87"
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval,
+        X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '58'
+      X-Ratelimit-Reset:
+      - '1591808113'
+      Accept-Ranges:
+      - bytes
+      Transfer-Encoding:
+      - chunked
+      X-Github-Request-Id:
+      - F70E:2C263:982434:B60A4B:5EE104D8
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"url":"https://api.github.com/repos/actions/checkout/releases/26954742","assets_url":"https://api.github.com/repos/actions/checkout/releases/26954742/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/26954742/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v2.2.0","id":26954742,"node_id":"MDc6UmVsZWFzZTI2OTU0NzQy","tag_name":"v2.2.0","target_commitish":"master","name":"v2.2.0","draft":false,"author":{"login":"ericsciple","id":12102068,"node_id":"MDQ6VXNlcjEyMTAyMDY4","avatar_url":"https://avatars1.githubusercontent.com/u/12102068?v=4","gravatar_id":"","url":"https://api.github.com/users/ericsciple","html_url":"https://github.com/ericsciple","followers_url":"https://api.github.com/users/ericsciple/followers","following_url":"https://api.github.com/users/ericsciple/following{/other_user}","gists_url":"https://api.github.com/users/ericsciple/gists{/gist_id}","starred_url":"https://api.github.com/users/ericsciple/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/ericsciple/subscriptions","organizations_url":"https://api.github.com/users/ericsciple/orgs","repos_url":"https://api.github.com/users/ericsciple/repos","events_url":"https://api.github.com/users/ericsciple/events{/privacy}","received_events_url":"https://api.github.com/users/ericsciple/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2020-05-27T16:37:40Z","published_at":"2020-05-27T16:39:19Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v2.2.0","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v2.2.0","body":"[Fetch
+        all history for all tags and branches when fetch-depth=0](https://github.com/actions/checkout/pull/258)"},{"url":"https://api.github.com/repos/actions/checkout/releases/26674383","assets_url":"https://api.github.com/repos/actions/checkout/releases/26674383/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/26674383/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v2.1.1","id":26674383,"node_id":"MDc6UmVsZWFzZTI2Njc0Mzgz","tag_name":"v2.1.1","target_commitish":"master","name":"v2.1.1","draft":false,"author":{"login":"ericsciple","id":12102068,"node_id":"MDQ6VXNlcjEyMTAyMDY4","avatar_url":"https://avatars1.githubusercontent.com/u/12102068?v=4","gravatar_id":"","url":"https://api.github.com/users/ericsciple","html_url":"https://github.com/ericsciple","followers_url":"https://api.github.com/users/ericsciple/followers","following_url":"https://api.github.com/users/ericsciple/following{/other_user}","gists_url":"https://api.github.com/users/ericsciple/gists{/gist_id}","starred_url":"https://api.github.com/users/ericsciple/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/ericsciple/subscriptions","organizations_url":"https://api.github.com/users/ericsciple/orgs","repos_url":"https://api.github.com/users/ericsciple/repos","events_url":"https://api.github.com/users/ericsciple/events{/privacy}","received_events_url":"https://api.github.com/users/ericsciple/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2020-05-19T14:27:02Z","published_at":"2020-05-19T14:37:26Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v2.1.1","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v2.1.1","body":"Changes
+        to support GHES ([here](https://github.com/actions/checkout/pull/236) and
+        [here](https://github.com/actions/checkout/pull/248))"},{"url":"https://api.github.com/repos/actions/checkout/releases/25148908","assets_url":"https://api.github.com/repos/actions/checkout/releases/25148908/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/25148908/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v2.1.0","id":25148908,"node_id":"MDc6UmVsZWFzZTI1MTQ4OTA4","tag_name":"v2.1.0","target_commitish":"01aecccf739ca6ff86c0539fbc67a7a5007bbc81","name":"v2.1.0","draft":false,"author":{"login":"ericsciple","id":12102068,"node_id":"MDQ6VXNlcjEyMTAyMDY4","avatar_url":"https://avatars1.githubusercontent.com/u/12102068?v=4","gravatar_id":"","url":"https://api.github.com/users/ericsciple","html_url":"https://github.com/ericsciple","followers_url":"https://api.github.com/users/ericsciple/followers","following_url":"https://api.github.com/users/ericsciple/following{/other_user}","gists_url":"https://api.github.com/users/ericsciple/gists{/gist_id}","starred_url":"https://api.github.com/users/ericsciple/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/ericsciple/subscriptions","organizations_url":"https://api.github.com/users/ericsciple/orgs","repos_url":"https://api.github.com/users/ericsciple/repos","events_url":"https://api.github.com/users/ericsciple/events{/privacy}","received_events_url":"https://api.github.com/users/ericsciple/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2020-03-27T17:12:15Z","published_at":"2020-04-02T20:06:15Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v2.1.0","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v2.1.0","body":"-
+        [Group output](https://github.com/actions/checkout/pull/191)\r\n- [Changes
+        to support GHES alpha release](https://github.com/actions/checkout/pull/199)\r\n-
+        [Persist core.sshCommand for submodules](https://github.com/actions/checkout/pull/184)\r\n-
+        [Add support ssh](https://github.com/actions/checkout/pull/163)\r\n- [Convert
+        submodule SSH URL to HTTPS, when not using SSH](https://github.com/actions/checkout/pull/179)\r\n-
+        [Add submodule support](https://github.com/actions/checkout/pull/157)\r\n-
+        [Follow proxy settings](https://github.com/actions/checkout/pull/144)\r\n-
+        [Fix ref for pr closed event when a pr is merged](https://github.com/actions/checkout/pull/141)\r\n-
+        [Fix issue checking detached when git less than 2.22](https://github.com/actions/checkout/pull/128)\r\n"},{"url":"https://api.github.com/repos/actions/checkout/releases/22199885","assets_url":"https://api.github.com/repos/actions/checkout/releases/22199885/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/22199885/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v2.0.0","id":22199885,"node_id":"MDc6UmVsZWFzZTIyMTk5ODg1","tag_name":"v2.0.0","target_commitish":"master","name":"v2.0.0","draft":false,"author":{"login":"ericsciple","id":12102068,"node_id":"MDQ6VXNlcjEyMTAyMDY4","avatar_url":"https://avatars1.githubusercontent.com/u/12102068?v=4","gravatar_id":"","url":"https://api.github.com/users/ericsciple","html_url":"https://github.com/ericsciple","followers_url":"https://api.github.com/users/ericsciple/followers","following_url":"https://api.github.com/users/ericsciple/following{/other_user}","gists_url":"https://api.github.com/users/ericsciple/gists{/gist_id}","starred_url":"https://api.github.com/users/ericsciple/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/ericsciple/subscriptions","organizations_url":"https://api.github.com/users/ericsciple/orgs","repos_url":"https://api.github.com/users/ericsciple/repos","events_url":"https://api.github.com/users/ericsciple/events{/privacy}","received_events_url":"https://api.github.com/users/ericsciple/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2019-12-13T05:00:48Z","published_at":"2019-12-13T05:05:33Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v2.0.0","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v2.0.0","body":"-
+        Improved fetch performance\r\n  - The default behavior now fetches only the
+        commit being checked-out\r\n- Script authenticated git commands\r\n  - Persists
+        the input `token` in the local git config\r\n  - Enables your scripts to run
+        authenticated git commands\r\n  - Post-job cleanup removes the token\r\n  -
+        Opt out by setting the input `persist-credentials: false`\r\n- Creates a local
+        branch\r\n  - No longer detached HEAD when checking out a branch\r\n  - A
+        local branch is created with the corresponding upstream branch set\r\n- Improved
+        layout\r\n  - The input `path` is always relative to $GITHUB_WORKSPACE\r\n  -
+        Aligns better with container actions, where $GITHUB_WORKSPACE gets mapped
+        in\r\n- Fallback to REST API download\r\n  - When Git 2.18 or higher is not
+        in the PATH, the REST API will be used to download the files\r\n- Removed
+        input `submodules`\r\n"},{"url":"https://api.github.com/repos/actions/checkout/releases/21933299","assets_url":"https://api.github.com/repos/actions/checkout/releases/21933299/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/21933299/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v2-beta","id":21933299,"node_id":"MDc6UmVsZWFzZTIxOTMzMjk5","tag_name":"v2-beta","target_commitish":"master","name":"v2
+        beta","draft":false,"author":{"login":"ericsciple","id":12102068,"node_id":"MDQ6VXNlcjEyMTAyMDY4","avatar_url":"https://avatars1.githubusercontent.com/u/12102068?v=4","gravatar_id":"","url":"https://api.github.com/users/ericsciple","html_url":"https://github.com/ericsciple","followers_url":"https://api.github.com/users/ericsciple/followers","following_url":"https://api.github.com/users/ericsciple/following{/other_user}","gists_url":"https://api.github.com/users/ericsciple/gists{/gist_id}","starred_url":"https://api.github.com/users/ericsciple/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/ericsciple/subscriptions","organizations_url":"https://api.github.com/users/ericsciple/orgs","repos_url":"https://api.github.com/users/ericsciple/repos","events_url":"https://api.github.com/users/ericsciple/events{/privacy}","received_events_url":"https://api.github.com/users/ericsciple/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2019-12-12T19:36:15Z","published_at":"2019-12-03T15:35:24Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v2-beta","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v2-beta","body":"-
+        Improved fetch performance\r\n  - The default behavior now fetches only the
+        SHA being checked-out\r\n- Script authenticated git commands\r\n  - Persists
+        `with.token` in the local git config\r\n  - Enables your scripts to run authenticated
+        git commands\r\n  - Post-job cleanup removes the token.\r\n- Creates a local
+        branch\r\n  - No longer detached HEAD when checking out a branch\r\n  - A
+        local branch is created with the corresponding upstream branch set\r\n- Improved
+        layout\r\n  - `with.path` is always relative to `github.workspace`\r\n  -
+        Aligns better with container actions, where `github.workspace` gets mapped
+        in\r\n- Removed input `submodules`"},{"url":"https://api.github.com/repos/actions/checkout/releases/19014144","assets_url":"https://api.github.com/repos/actions/checkout/releases/19014144/assets","upload_url":"https://uploads.github.com/repos/actions/checkout/releases/19014144/assets{?name,label}","html_url":"https://github.com/actions/checkout/releases/tag/v1.0.0","id":19014144,"node_id":"MDc6UmVsZWFzZTE5MDE0MTQ0","tag_name":"v1.0.0","target_commitish":"master","name":"v1.0.0","draft":false,"author":{"login":"damccorm","id":42773683,"node_id":"MDQ6VXNlcjQyNzczNjgz","avatar_url":"https://avatars2.githubusercontent.com/u/42773683?v=4","gravatar_id":"","url":"https://api.github.com/users/damccorm","html_url":"https://github.com/damccorm","followers_url":"https://api.github.com/users/damccorm/followers","following_url":"https://api.github.com/users/damccorm/following{/other_user}","gists_url":"https://api.github.com/users/damccorm/gists{/gist_id}","starred_url":"https://api.github.com/users/damccorm/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/damccorm/subscriptions","organizations_url":"https://api.github.com/users/damccorm/orgs","repos_url":"https://api.github.com/users/damccorm/repos","events_url":"https://api.github.com/users/damccorm/events{/privacy}","received_events_url":"https://api.github.com/users/damccorm/received_events","type":"User","site_admin":true},"prerelease":false,"created_at":"2019-07-26T01:30:48Z","published_at":"2019-08-01T12:59:53Z","assets":[],"tarball_url":"https://api.github.com/repos/actions/checkout/tarball/v1.0.0","zipball_url":"https://api.github.com/repos/actions/checkout/zipball/v1.0.0","body":""}]'
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 16:05:44 GMT
+recorded_with: VCR 5.0.0

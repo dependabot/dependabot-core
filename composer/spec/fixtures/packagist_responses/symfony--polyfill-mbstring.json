@@ -1,0 +1,823 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "symfony/polyfill-mbstring": [
+            {
+                "name": "symfony/polyfill-mbstring",
+                "description": "Symfony polyfill for the Mbstring extension",
+                "keywords": [
+                    "mbstring",
+                    "compatibility",
+                    "portable",
+                    "polyfill",
+                    "shim"
+                ],
+                "homepage": "https://symfony.com",
+                "version": "v1.27.0",
+                "version_normalized": "1.27.0.0",
+                "license": [
+                    "MIT"
+                ],
+                "authors": [
+                    {
+                        "name": "Nicolas Grekas",
+                        "email": "p@tchwork.com"
+                    },
+                    {
+                        "name": "Symfony Community",
+                        "homepage": "https://symfony.com/contributors"
+                    }
+                ],
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/8ad114f6b39e2c98a8b0e3bd907732c207c2b534",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534"
+                },
+                "type": "library",
+                "funding": [
+                    {
+                        "url": "https://symfony.com/sponsor",
+                        "type": "custom"
+                    },
+                    {
+                        "url": "https://github.com/fabpot",
+                        "type": "github"
+                    },
+                    {
+                        "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                        "type": "tidelift"
+                    }
+                ],
+                "time": "2022-11-03T14:55:06+00:00",
+                "autoload": {
+                    "files": [
+                        "bootstrap.php"
+                    ],
+                    "psr-4": {
+                        "Symfony\\Polyfill\\Mbstring\\": ""
+                    }
+                },
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.27-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "require": {
+                    "php": ">=7.1"
+                },
+                "suggest": {
+                    "ext-mbstring": "For best performance"
+                },
+                "provide": {
+                    "ext-mbstring": "*"
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.27.0"
+                }
+            },
+            {
+                "version": "v1.26.0",
+                "version_normalized": "1.26.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e"
+                },
+                "time": "2022-05-24T11:49:31+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.26-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.26.0"
+                }
+            },
+            {
+                "version": "v1.25.0",
+                "version_normalized": "1.25.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0abb51d2f102e00a4eefcf46ba7fec406d245825",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825"
+                },
+                "time": "2021-11-30T18:21:41+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.23-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.25.0"
+                }
+            },
+            {
+                "version": "v1.24.0",
+                "version_normalized": "1.24.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.24.0"
+                }
+            },
+            {
+                "version": "v1.23.1",
+                "version_normalized": "1.23.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9174a3d80210dca8daa7f31fec659150bbeabfc6",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6"
+                },
+                "time": "2021-05-27T12:26:48+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.1"
+                },
+                "provide": "__unset"
+            },
+            {
+                "version": "v1.23.0",
+                "version_normalized": "1.23.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2df51500adbaebdc4c38dea4c89a2e131c45c8a1",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1"
+                },
+                "time": "2021-05-27T09:27:20+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.0"
+                }
+            },
+            {
+                "version": "v1.22.1",
+                "version_normalized": "1.22.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "5232de97ee3b75b0360528dae24e73db49566ab1"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/5232de97ee3b75b0360528dae24e73db49566ab1",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "5232de97ee3b75b0360528dae24e73db49566ab1"
+                },
+                "time": "2021-01-22T09:19:47+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.22-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.22.1"
+                }
+            },
+            {
+                "version": "v1.22.0",
+                "version_normalized": "1.22.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "f377a3dd1fde44d37b9831d68dc8dea3ffd28e13"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/f377a3dd1fde44d37b9831d68dc8dea3ffd28e13",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f377a3dd1fde44d37b9831d68dc8dea3ffd28e13"
+                },
+                "time": "2021-01-07T16:49:33+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.22.0"
+                }
+            },
+            {
+                "version": "v1.20.0",
+                "version_normalized": "1.20.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "39d483bdf39be819deabf04ec872eb0b2410b531"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/39d483bdf39be819deabf04ec872eb0b2410b531",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "39d483bdf39be819deabf04ec872eb0b2410b531"
+                },
+                "time": "2020-10-23T14:02:19+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.20-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.20.0"
+                }
+            },
+            {
+                "version": "v1.19.0",
+                "version_normalized": "1.19.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "b5f7b932ee6fa802fc792eabd77c4c88084517ce"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/b5f7b932ee6fa802fc792eabd77c4c88084517ce",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b5f7b932ee6fa802fc792eabd77c4c88084517ce"
+                },
+                "time": "2020-10-23T09:01:57+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.19-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.19.0"
+                }
+            },
+            {
+                "version": "v1.18.1",
+                "version_normalized": "1.18.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "a6977d63bf9a0ad4c65cd352709e230876f9904a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/a6977d63bf9a0ad4c65cd352709e230876f9904a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "a6977d63bf9a0ad4c65cd352709e230876f9904a"
+                },
+                "time": "2020-07-14T12:35:20+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.18-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.18.1"
+                }
+            },
+            {
+                "version": "v1.18.0",
+                "version_normalized": "1.18.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.17.1",
+                "version_normalized": "1.17.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7110338d81ce1cbc3e273136e4574663627037a7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7110338d81ce1cbc3e273136e4574663627037a7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7110338d81ce1cbc3e273136e4574663627037a7"
+                },
+                "time": "2020-06-06T08:46:27+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.17-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                }
+            },
+            {
+                "version": "v1.17.0",
+                "version_normalized": "1.17.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "fa79b11539418b02fc5e1897267673ba2c19419c"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fa79b11539418b02fc5e1897267673ba2c19419c",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fa79b11539418b02fc5e1897267673ba2c19419c"
+                },
+                "time": "2020-05-12T16:47:27+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.17-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.17.0"
+                }
+            },
+            {
+                "version": "v1.16.0",
+                "version_normalized": "1.16.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "a54881ec0ab3b2005c406aed0023c062879031e7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/a54881ec0ab3b2005c406aed0023c062879031e7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "a54881ec0ab3b2005c406aed0023c062879031e7"
+                },
+                "time": "2020-05-08T16:50:20+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.15.0",
+                "version_normalized": "1.15.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "81ffd3a9c6d707be22e3012b827de1c9775fc5ac"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/81ffd3a9c6d707be22e3012b827de1c9775fc5ac",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "81ffd3a9c6d707be22e3012b827de1c9775fc5ac"
+                },
+                "time": "2020-03-09T19:04:49+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.15-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.15.0"
+                }
+            },
+            {
+                "version": "v1.14.0",
+                "version_normalized": "1.14.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "34094cfa9abe1f0f14f48f490772db7a775559f2"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/34094cfa9abe1f0f14f48f490772db7a775559f2",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "34094cfa9abe1f0f14f48f490772db7a775559f2"
+                },
+                "time": "2020-01-13T11:15:53+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.14-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                },
+                "funding": "__unset"
+            },
+            {
+                "version": "v1.13.2",
+                "version_normalized": "1.13.2.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "ed92f9e64b32efc1d218410146737c5ca796f267"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/ed92f9e64b32efc1d218410146737c5ca796f267",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ed92f9e64b32efc1d218410146737c5ca796f267"
+                },
+                "time": "2020-01-13T11:02:47+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.13-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.13.2"
+                }
+            },
+            {
+                "version": "v1.13.1",
+                "version_normalized": "1.13.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7b4aab9743c30be783b73de055d24a39cf4b954f"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7b4aab9743c30be783b73de055d24a39cf4b954f",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7b4aab9743c30be783b73de055d24a39cf4b954f"
+                },
+                "time": "2019-11-27T14:18:11+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.13.0",
+                "version_normalized": "1.13.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.13.0"
+                }
+            },
+            {
+                "version": "v1.12.0",
+                "version_normalized": "1.12.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "b42a2f66e8f1b15ccf25652c3424265923eb4f17"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/b42a2f66e8f1b15ccf25652c3424265923eb4f17",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b42a2f66e8f1b15ccf25652c3424265923eb4f17"
+                },
+                "time": "2019-08-06T08:03:45+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.12-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.12.0"
+                }
+            },
+            {
+                "version": "v1.11.0",
+                "version_normalized": "1.11.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "fe5e94c604826c35a32fa832f35bd036b6799609"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fe5e94c604826c35a32fa832f35bd036b6799609",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fe5e94c604826c35a32fa832f35bd036b6799609"
+                },
+                "time": "2019-02-06T07:57:58+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.11-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.10.0",
+                "version_normalized": "1.10.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "c79c051f5b3a46be09205c73b80b346e4153e494"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/c79c051f5b3a46be09205c73b80b346e4153e494",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "c79c051f5b3a46be09205c73b80b346e4153e494"
+                },
+                "time": "2018-09-21T13:07:52+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.9-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.9.0",
+                "version_normalized": "1.9.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "d0cd638f4634c16d8df4508e847f14e9e43168b8"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/d0cd638f4634c16d8df4508e847f14e9e43168b8",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "d0cd638f4634c16d8df4508e847f14e9e43168b8"
+                },
+                "time": "2018-08-06T14:22:27+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.9.0"
+                }
+            },
+            {
+                "version": "v1.8.0",
+                "version_normalized": "1.8.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "3296adf6a6454a050679cde90f95350ad604b171"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/3296adf6a6454a050679cde90f95350ad604b171",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "3296adf6a6454a050679cde90f95350ad604b171"
+                },
+                "time": "2018-04-26T10:06:28+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.8-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.7.0",
+                "version_normalized": "1.7.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/78be803ce01e55d3491c1397cf1c64beb9c1b63b",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b"
+                },
+                "time": "2018-01-30T19:27:44+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.7-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.6.0",
+                "version_normalized": "1.6.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"
+                },
+                "time": "2017-10-11T12:05:26+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.6-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.5.0",
+                "version_normalized": "1.5.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7c8fae0ac1d216eb54349e6a8baa57d515fe8803",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803"
+                },
+                "time": "2017-06-14T15:44:48+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.5-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.4.0",
+                "version_normalized": "1.4.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/f29dca382a6485c3cbe6379f0c61230167681937",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937"
+                },
+                "time": "2017-06-09T14:24:12+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.4-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.3.1",
+                "version_normalized": "1.3.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dee1c8b1e040d7dec299e4133c8105538cb2e5c7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7"
+                },
+                "time": "2017-05-29T17:37:41+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.3-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.3.0",
+                "version_normalized": "1.3.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/e79d363049d1c2128f133a2667e4f4190904f7f4",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4"
+                },
+                "time": "2016-11-14T01:06:16+00:00"
+            },
+            {
+                "version": "v1.2.0",
+                "version_normalized": "1.2.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "dff51f72b0706335131b00a7f49606168c582594"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dff51f72b0706335131b00a7f49606168c582594",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "dff51f72b0706335131b00a7f49606168c582594"
+                },
+                "time": "2016-05-18T14:26:46+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.2-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.1.1",
+                "version_normalized": "1.1.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "1289d16209491b584839022f29257ad859b8532d"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/1289d16209491b584839022f29257ad859b8532d",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "1289d16209491b584839022f29257ad859b8532d"
+                },
+                "time": "2016-01-20T09:13:37+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.1-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.1.0",
+                "version_normalized": "1.1.0.0"
+            },
+            {
+                "version": "v1.0.1",
+                "version_normalized": "1.0.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/49ff736bd5d41f45240cec77b44967d76e0c3d25",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25"
+                },
+                "time": "2015-11-20T09:19:13+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.0-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.0.0",
+                "version_normalized": "1.0.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0b6a8940385311a24e060ec1fe35680e17c74497",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497"
+                },
+                "time": "2015-11-04T20:28:58+00:00",
+                "suggest": "__unset"
+            }
+        ]
+    },
+    "security-advisories": []
+}
