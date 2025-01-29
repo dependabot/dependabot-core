@@ -210,7 +210,7 @@ module Dependabot
             response_body = if response
                               "RegistryError: #{response.status} response status with body #{response.body}"
                             else
-                              "Registry error: #{e.message}"
+                              "RegistryError: #{e.message}"
                             end
 
             raise RegistryError.new(response_status, response_body)
