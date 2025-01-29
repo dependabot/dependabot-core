@@ -6,26 +6,6 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_updater/pnpm_workspace_updater"
 
-def create_workspace_dependency(name:, version:, required_version:, previous_required_version:)
-  Dependabot::Dependency.new(
-    name: name,
-    version: version,
-    package_manager: "npm_and_yarn",
-    requirements: [{
-      file: "pnpm-workspace.yaml",
-      requirement: required_version,
-      groups: [],
-      source: nil
-    }],
-    previous_requirements: [{
-      file: "pnpm-workspace.yaml",
-      requirement: previous_required_version,
-      groups: [],
-      source: nil
-    }]
-  )
-end
-
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
   let(:pnpm_workspace_updater) do
     described_class.new(
@@ -42,7 +22,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
   let(:dependencies) { [dependency] }
   let(:dependency) do
-    create_workspace_dependency(
+    create_dependency(
+      file: "pnpm-workspace.yaml",
       name: "prettier",
       version: "3.3.0",
       required_version: "3.3.3",
@@ -59,13 +40,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalog_multiple" }
       let(:dependencies) do
         [
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "prettier",
             version: "3.3.0",
             required_version: "^3.3.3",
             previous_required_version: "^3.3.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "left-pad",
             version: "1.0.1",
             required_version: "^1.0.3",
@@ -82,13 +65,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_react" }
       let(:dependencies) do
         [
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react",
             version: "18.0.0",
             required_version: "^18.2.3",
             previous_required_version: "^18.0.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react-dom",
             version: "18.0.0",
             required_version: "^18.2.3",
@@ -105,25 +90,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_multiple_reacts" }
       let(:dependencies) do
         [
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react",
             version: "18.0.0",
             required_version: "^18.2.3",
             previous_required_version: "^18.0.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react-dom",
             version: "18.0.0",
             required_version: "^18.2.3",
             previous_required_version: "^18.0.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react",
             version: "16.0.0",
             required_version: "^16.2.3",
             previous_required_version: "^16.0.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react-dom",
             version: "16.0.0",
             required_version: "^16.2.3",
@@ -143,31 +132,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       let(:project_name) { "pnpm/catalogs_valid_yaml" }
       let(:dependencies) do
         [
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "prettier",
             version: "3.3.0",
             required_version: "3.3.3",
             previous_required_version: "3.3.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "express",
             version: "4.15.2",
             required_version: "4.21.2",
             previous_required_version: "4.15.2"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "is-even",
             version: "0.1.2",
             required_version: "1.0.0",
             previous_required_version: "0.1.2"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react",
             version: "18.0.0",
             required_version: "^18.2.3",
             previous_required_version: "^18.0.0"
           ),
-          create_workspace_dependency(
+          create_dependency(
+            file: "pnpm-workspace.yaml",
             name: "react-dom",
             version: "18.0.0",
             required_version: "^18.2.3",
