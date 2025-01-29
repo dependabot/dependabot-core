@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -1094,6 +1095,46 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DiscoveryReportsDependencyFileNotParseable(bool useDirectDiscovery)
+    {
+        var experimentsManager = new ExperimentsManager() { UseDirectDiscovery = useDirectDiscovery };
+        await TestDiscoveryAsync(
+            experimentsManager: experimentsManager,
+            workspacePath: "",
+            files:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                  ("project2.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference: Include="Some.Package2" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [],
+                Error = new DependencyFileNotParseable("project2.csproj"),
+            });
+    }
+
     [Fact]
     public async Task ResultFileHasCorrectShapeForAuthenticationFailure()
     {
@@ -1101,8 +1142,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         var discoveryResultPath = Path.Combine(temporaryDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
         await DiscoveryWorker.WriteResultsAsync(temporaryDirectory.DirectoryPath, discoveryResultPath, new()
         {
-            ErrorType = ErrorType.AuthenticationFailure,
-            ErrorDetails = "<some package feed>",
+            Error = new PrivateSourceAuthenticationFailure(["<some package feed>"]),
             Path = "/",
             Projects = [],
         });
@@ -1111,16 +1151,22 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         // raw result file should look like this:
         // {
         //   ...
-        //   "ErrorType": "AuthenticationFailure",
-        //   "ErrorDetails": "<some package feed>",
+        //   "Error": {
+        //     "error-type": "private_source_authentication_failure",
+        //     "error-detail": {
+        //       "source": "(<some package feed>)"
+        //     }
+        //   }
         //   ...
         // }
         var jsonDocument = JsonDocument.Parse(discoveryContents);
-        var errorType = jsonDocument.RootElement.GetProperty("ErrorType");
-        var errorDetails = jsonDocument.RootElement.GetProperty("ErrorDetails");
+        var error = jsonDocument.RootElement.GetProperty("Error");
+        var errorType = error.GetProperty("error-type");
+        var errorDetail = error.GetProperty("error-details");
+        var errorSource = errorDetail.GetProperty("source");
 
-        Assert.Equal("AuthenticationFailure", errorType.GetString());
-        Assert.Equal("<some package feed>", errorDetails.GetString());
+        Assert.Equal("private_source_authentication_failure", errorType.GetString());
+        Assert.Equal("(<some package feed>)", errorSource.GetString());
     }
 
     [Theory]
@@ -1195,8 +1241,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             ],
             expectedResult: new()
             {
-                ErrorType = ErrorType.AuthenticationFailure,
-                ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 Path = "",
                 Projects = [],
             }

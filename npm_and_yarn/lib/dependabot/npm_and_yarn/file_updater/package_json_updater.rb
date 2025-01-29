@@ -37,8 +37,13 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
+        # rubocop:disable Metrics/PerceivedComplexity
+
         sig { returns(T.nilable(String)) }
         def updated_package_json_content
+          # checks if we are updating single dependency in package.json
+          unique_deps_count = dependencies.map(&:name).to_a.uniq.compact.length
+
           dependencies.reduce(package_json.content.dup) do |content, dep|
             updated_requirements(dep)&.each do |new_req|
               old_req = old_requirement(dep, new_req)
@@ -50,7 +55,25 @@ module Dependabot
                 new_req: new_req
               )
 
-              raise "Expected content to change!" if content == new_content
+              if Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) &&
+                 (content == new_content && unique_deps_count > 1)
+
+                # (we observed that) package.json does not always contains the same dependencies compared to
+                # "dependencies" list, for example, dependencies object can contain same name dependency "dep"=> "1.0.0"
+                # and "dev" => "1.0.1" while package.json can only contain "dep" => "1.0.0",the other dependency is
+                # not present in package.json so we don't have to update it, this is most likely (as observed)
+                # a transitive dependency which only needs update in lockfile, So we avoid throwing exception and let
+                # the update continue.
+
+                Dependabot.logger.info("experiment: avoid_duplicate_updates_package_json.
+                Updating package.json for #{dep.name} ")
+
+                raise "Expected content to change!"
+              end
+
+              if !Dependabot::Experiments.enabled?(:avoid_duplicate_updates_package_json) && (content == new_content)
+                raise "Expected content to change!"
+              end
 
               content = new_content
             end
@@ -69,7 +92,7 @@ module Dependabot
             content
           end
         end
-
+        # rubocop:enable Metrics/PerceivedComplexity
         sig do
           params(
             dependency: Dependabot::Dependency,

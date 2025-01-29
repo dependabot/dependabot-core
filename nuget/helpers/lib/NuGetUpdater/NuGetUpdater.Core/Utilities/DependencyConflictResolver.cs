@@ -395,7 +395,6 @@ public class PackageManager
                                     if (await AreAllParentsCompatibleAsync(existingPackages, existingPackage, targetFramework, projectDirectory, logger) == true)
                                     {
                                         existingPackage.CurrentVersion = dependencyOldVersion;
-                                        string NewVersion = dependency.CurrentVersion;
                                         existingPackage.NewVersion = dependency.CurrentVersion;
                                         await UpdateVersion(existingPackages, existingPackage, targetFramework, projectDirectory, logger);
                                     }
@@ -591,12 +590,6 @@ public class PackageManager
         if (CurrentVersion == latestVersion)
         {
             return null;
-        }
-
-        // If the current version of the parent is less than the current version of the dependency
-        else if (CurrentVersion < currentVersionDependency)
-        {
-            return currentVersionDependency;
         }
 
         // Loop from the current version to the latest version, use next patch as a limit (unless there's a limit) so it doesn't look for versions that don't exist

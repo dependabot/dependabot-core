@@ -56,9 +56,9 @@ module Dependabot
         return nil if changed_files(ignored_mode: "no").empty?
 
         debug("store_change - before: #{current_commit}")
-        sha, diff = commit(memo)
+        sha = commit(memo)
 
-        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo)
       ensure
         debug("store_change - after: #{current_commit}")
       end
@@ -73,8 +73,8 @@ module Dependabot
       def capture_failed_change_attempt(memo = nil, error = nil)
         return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
 
-        sha, diff = stash(memo)
-        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
+        sha = stash(memo)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, error: error)
       end
 
       private
@@ -87,7 +87,7 @@ module Dependabot
 
       sig { returns(String) }
       def head_sha
-        run_shell_command("git rev-parse HEAD").strip
+        run_shell_command("git rev-parse HEAD", stderr_to_stdout: false).strip
       end
 
       sig { returns(String) }
@@ -112,7 +112,7 @@ module Dependabot
         ).strip
       end
 
-      sig { params(memo: T.nilable(String)).returns([String, String]) }
+      sig { params(memo: T.nilable(String)).returns(String) }
       def stash(memo = nil)
         msg = memo || "workspace change attempt"
         run_shell_command("git add --all --force .")
@@ -122,19 +122,12 @@ module Dependabot
           allow_unsafe_shell_command: true
         )
 
-        sha = last_stash_sha
-        diff = run_shell_command(
-          "git stash show --patch #{sha}",
-          fingerprint: "git stash show --patch <sha>"
-        )
-
-        [sha, diff]
+        last_stash_sha
       end
 
-      sig { params(memo: T.nilable(String)).returns([String, String]) }
+      sig { params(memo: T.nilable(String)).returns(String) }
       def commit(memo = nil)
         run_shell_command("git add #{path}")
-        diff = run_shell_command("git diff --cached .")
 
         msg = memo || "workspace change"
         run_shell_command(
@@ -143,7 +136,7 @@ module Dependabot
           allow_unsafe_shell_command: true
         )
 
-        [head_sha, diff]
+        head_sha
       end
 
       sig { params(sha: String).returns(String) }

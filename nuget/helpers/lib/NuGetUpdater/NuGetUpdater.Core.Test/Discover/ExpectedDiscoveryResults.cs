@@ -12,6 +12,7 @@ public record ExpectedWorkspaceDiscoveryResult : NativeResult
     public int? ExpectedProjectCount { get; init; }
     public ExpectedDependencyDiscoveryResult? GlobalJson { get; init; }
     public ExpectedDependencyDiscoveryResult? DotNetToolsJson { get; init; }
+    public string? ErrorRegex { get; init; } = null;
 }
 
 public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryResult
@@ -21,6 +22,7 @@ public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryRes
     public required ImmutableArray<string> ReferencedProjectPaths { get; init; }
     public required ImmutableArray<string> ImportedFiles { get; init; }
     public required ImmutableArray<string> AdditionalFiles { get; init; }
+    public string? ErrorDetails { get; init; }
 }
 
 public record ExpectedDependencyDiscoveryResult : IDiscoveryResultWithDependencies

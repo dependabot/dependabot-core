@@ -1,14 +1,16 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.24.0
+ARG COREPACK_VERSION=0.30.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=9.15.0
+ARG PNPM_VERSION=9.15.4
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
-ARG YARN_VERSION=4.1.1
+ARG YARN_VERSION=4.5.3
 
+# Check for updates at https://github.com/oven-sh/bun/releases
+ARG BUN_VERSION=1.2
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=20
@@ -26,6 +28,7 @@ RUN mkdir -p /etc/apt/keyrings \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g corepack@$COREPACK_VERSION \
+  && npm install -g corepack@$COREPACK_VERSION bun@$BUN_VERSION \
   && rm -rf ~/.npm
 
 USER dependabot

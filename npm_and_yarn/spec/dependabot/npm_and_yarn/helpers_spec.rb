@@ -92,29 +92,29 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
     end
 
-    it "returns flattened list of dependencies populated with :all_versions metadata" do
-      dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-      dependency_set << foo_a << bar_a << foo_c << bar_c << foo_b << bar_b
-
-      expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq([
-        Dependabot::Dependency.new(
-          name: "foo",
-          version: "0.0.1",
-          requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
-          package_manager: "npm_and_yarn",
-          metadata: { all_versions: [foo_a, foo_c, foo_b] }
-        ),
-        Dependabot::Dependency.new(
-          name: "bar",
-          version: "0.2.1",
-          requirements: (bar_a.requirements + bar_c.requirements + bar_b.requirements).uniq,
-          package_manager: "npm_and_yarn",
-          metadata: { all_versions: [bar_a, bar_c, bar_b] }
-        )
-      ])
-    end
-
     context "when dependencies in set already have :all_versions metadata" do
+      it "returns flattened list of dependencies populated with :all_versions metadata" do
+        dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependency_set << foo_a << bar_a << foo_c << bar_c << foo_b << bar_b
+
+        expect(described_class.dependencies_with_all_versions_metadata(dependency_set)).to eq([
+          Dependabot::Dependency.new(
+            name: "foo",
+            version: "0.0.1",
+            requirements: (foo_a.requirements + foo_c.requirements + foo_b.requirements).uniq,
+            package_manager: "npm_and_yarn",
+            metadata: { all_versions: [foo_a, foo_c, foo_b] }
+          ),
+          Dependabot::Dependency.new(
+            name: "bar",
+            version: "0.2.1",
+            requirements: (bar_a.requirements + bar_c.requirements + bar_b.requirements).uniq,
+            package_manager: "npm_and_yarn",
+            metadata: { all_versions: [bar_a, bar_c, bar_b] }
+          )
+        ])
+      end
+
       it "correctly merges existing metadata into new metadata" do
         dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
         dependency_set << foo_a
@@ -323,6 +323,19 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(result).to eq("10.8.2")
       end
     end
+
+    context "when corepack is not used for bun" do
+      it "falls back to the local version of the package manager" do
+        # Mock for `local_package_manager_version("bun")`
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "bun -v",
+          fingerprint: "bun -v"
+        ).and_return("1.1.39")
+
+        result = described_class.install("bun", "1.1.39")
+        expect(result).to eq("1.1.39")
+      end
+    end
   end
 
   describe "::npm8?" do
@@ -338,6 +351,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     context "when the feature flag :enable_corepack_for_npm_and_yarn is enabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_v6_deprecation_warning).and_return(true)
       end
 
       it "returns true if lockfileVersion is 3 or higher" do
@@ -360,11 +374,17 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     context "when the feature flag :enable_corepack_for_npm_and_yarn is disabled" do
       before do
         allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_corepack_for_npm_and_yarn).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:npm_v6_deprecation_warning)
+          .and_return(true)
       end
 
       context "when :npm_fallback_version_above_v6 is enabled" do
         before do
           allow(Dependabot::Experiments).to receive(:enabled?).with(:npm_fallback_version_above_v6).and_return(true)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:npm_v6_deprecation_warning)
+            .and_return(true)
         end
 
         it "returns true if lockfileVersion is 2 or higher" do

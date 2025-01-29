@@ -274,6 +274,10 @@ option_parse = OptionParser.new do |opts|
           "Output pull request information metadata: title, description") do
     $options[:pull_request] = true
   end
+
+  opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
+    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
+  end
 end
 # rubocop:enable Metrics/BlockLength
 

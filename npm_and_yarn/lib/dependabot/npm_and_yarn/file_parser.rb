@@ -110,7 +110,8 @@ module Dependabot
         {
           npm: package_lock || shrinkwrap,
           yarn: yarn_lock,
-          pnpm: pnpm_lock
+          pnpm: pnpm_lock,
+          bun: bun_lock
         }
       end
 
@@ -142,49 +143,56 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def shrinkwrap
         @shrinkwrap ||= T.let(dependency_files.find do |f|
-          f.name == NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME
+          f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def package_lock
         @package_lock ||= T.let(dependency_files.find do |f|
-          f.name == NpmPackageManager::LOCKFILE_NAME
+          f.name.end_with?(NpmPackageManager::LOCKFILE_NAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def yarn_lock
         @yarn_lock ||= T.let(dependency_files.find do |f|
-          f.name == YarnPackageManager::LOCKFILE_NAME
+          f.name.end_with?(YarnPackageManager::LOCKFILE_NAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def pnpm_lock
         @pnpm_lock ||= T.let(dependency_files.find do |f|
-          f.name == PNPMPackageManager::LOCKFILE_NAME
+          f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME)
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def bun_lock
+        @bun_lock ||= T.let(dependency_files.find do |f|
+          f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def npmrc
         @npmrc ||= T.let(dependency_files.find do |f|
-          f.name == NpmPackageManager::RC_FILENAME
+          f.name.end_with?(NpmPackageManager::RC_FILENAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def yarnrc
         @yarnrc ||= T.let(dependency_files.find do |f|
-          f.name == YarnPackageManager::RC_FILENAME
+          f.name.end_with?(YarnPackageManager::RC_FILENAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
       sig { returns(T.nilable(DependencyFile)) }
       def yarnrc_yml
         @yarnrc_yml ||= T.let(dependency_files.find do |f|
-          f.name == YarnPackageManager::RC_YML_FILENAME
+          f.name.end_with?(YarnPackageManager::RC_YML_FILENAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
@@ -204,7 +212,7 @@ module Dependabot
             next unless requirement.is_a?(String)
 
             # Skip dependencies using Yarn workspace cross-references as requirements
-            next if requirement.start_with?("workspace:")
+            next if requirement.start_with?("workspace:", "catalog:")
 
             requirement = "*" if requirement == ""
             dep = build_dependency(

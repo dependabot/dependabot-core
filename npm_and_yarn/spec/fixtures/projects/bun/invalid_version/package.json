@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "fetch-factory": "^0.0.1"
+  },
+  "devDependencies": {
+    "etag" : "^.0.0" // previous: "^1.0.0"
+  }
+}

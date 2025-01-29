@@ -33,6 +33,15 @@ module Dependabot
           "supported-versions": error.supported_versions
         }
       }
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::BranchNotFound
       {
         "error-type": "branch_not_found",
@@ -76,6 +85,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
@@ -83,6 +97,11 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
@@ -98,6 +117,15 @@ module Dependabot
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotEvaluatable
       {
         "error-type": "dependency_file_not_evaluatable",
@@ -161,9 +189,19 @@ module Dependabot
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotResolvable
       {
         "error-type": "dependency_file_not_resolvable",
@@ -174,10 +212,26 @@ module Dependabot
         "error-type": "dependency_file_not_evaluatable",
         "error-detail": { message: error.message }
       }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
       }
     when Dependabot::ToolVersionNotSupported
       {
@@ -286,9 +340,11 @@ module Dependabot
       }
     end
   end
+
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
+  # rubocop:enable Metrics/AbcSize
 
   class DependabotError < StandardError
     extend T::Sig
@@ -472,6 +528,35 @@ module Dependabot
       msg = "Dependabot detected the following #{tool_name} requirement for your project: '#{detected_version}'." \
             "\n\nCurrently, the following #{tool_name} versions are supported in Dependabot: #{supported_versions}."
       super(msg)
+    end
+  end
+
+  class ToolFeatureNotSupported < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :tool_name, :tool_type, :feature
+
+    sig do
+      params(
+        tool_name: String,
+        tool_type: String,
+        feature: String
+      ).void
+    end
+    def initialize(tool_name:, tool_type:, feature:)
+      @tool_name = tool_name
+      @tool_type = tool_type
+      @feature = feature
+      super(build_message)
+    end
+
+    private
+
+    sig { returns(String) }
+    def build_message
+      "Dependabot doesn't support the feature '#{feature}' for #{tool_name} (#{tool_type}). " \
+        "Please refer to the documentation for supported features."
     end
   end
 

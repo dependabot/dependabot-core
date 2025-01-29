@@ -2,3 +2,6 @@
 	path = nuget/helpers/lib/NuGet.Client
 	url = https://github.com/NuGet/NuGet.Client
 	branch = release-6.12.x
+[submodule "nuget/helpers/lib/dotnet-core"]
+	path = nuget/helpers/lib/dotnet-core
+	url = https://github.com/dotnet/core

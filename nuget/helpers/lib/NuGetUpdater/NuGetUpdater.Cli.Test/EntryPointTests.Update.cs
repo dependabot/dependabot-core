@@ -19,6 +19,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -122,6 +124,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -202,6 +206,8 @@ public partial class EntryPointTests
             await Run(path =>
                 [
                     "update",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -361,6 +367,8 @@ public partial class EntryPointTests
             IEnumerable<string> executableArgs = [
                 executableName,
                 "update",
+                "--job-id",
+                "TEST-JOB-ID",
                 "--job-path",
                 Path.Combine(tempDir.DirectoryPath, "job.json"),
                 "--repo-root",
@@ -382,7 +390,7 @@ public partial class EntryPointTests
                 workingDirectory = Path.Join(workingDirectory, workingDirectoryPath);
             }
 
-            var (exitCode, output, error) = await ProcessEx.RunAsync("dotnet", executableArgs, workingDirectory: workingDirectory);
+            var (exitCode, output, error) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(executableArgs, workingDirectory, new ExperimentsManager() { InstallDotnetSdks = false });
             Assert.True(exitCode == 0, $"Error running update on unsupported SDK.\nSTDOUT:\n{output}\nSTDERR:\n{error}");
 
             // verify project update

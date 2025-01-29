@@ -31,10 +31,10 @@ module Dependabot
       end
       def initialize(raw_version)
         super(
-          NAME,
-          Version.new(raw_version),
-          SUPPORTED_VERSIONS,
-          DEPRECATED_VERSIONS
+          name: NAME,
+          version: Version.new(raw_version),
+          deprecated_versions: DEPRECATED_VERSIONS,
+          supported_versions: SUPPORTED_VERSIONS
        )
       end
 

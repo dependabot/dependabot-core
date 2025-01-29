@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using NuGet;
 
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Updater;
 using NuGetUpdater.Core.Updater;
 
@@ -1969,7 +1970,7 @@ public partial class UpdateWorkerTests
                         <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
                       </PropertyGroup>
                       <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-                      <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                      <Import Project="$(VSToolsPath)\SomeSubPath\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                       <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
                             Other similar extension points exist, see Microsoft.Common.targets.
                       <Target Name="BeforeBuild">
@@ -2050,7 +2051,7 @@ public partial class UpdateWorkerTests
                         <VSToolsPath Condition="'$(VSToolsPath)' == ''">C:\some\path\that\does\not\exist</VSToolsPath>
                       </PropertyGroup>
                       <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-                      <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+                      <Import Project="$(VSToolsPath)\SomeSubPath\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
                       <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
                             Other similar extension points exist, see Microsoft.Common.targets.
                       <Target Name="BeforeBuild">
@@ -2282,25 +2283,83 @@ public partial class UpdateWorkerTests
             await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
             var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
 
-            var worker = new UpdaterWorker(new ExperimentsManager(), new TestLogger());
+            var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
             await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
 
             var resultContents = await File.ReadAllTextAsync(resultOutputPath);
-            var result = JsonSerializer.Deserialize<UpdateOperationResult>(resultContents, UpdaterWorker.SerializerOptions)!;
-            Assert.Equal(ErrorType.MissingFile, result.ErrorType);
-            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets"), result.ErrorDetails!.ToString());
+            var rawResult = JsonDocument.Parse(resultContents);
+            Assert.Equal("dependency_file_not_found", rawResult.RootElement.GetProperty("Error").GetProperty("error-type").GetString());
+            Assert.Equal(Path.Combine(temporaryDirectory.DirectoryPath, "this.file.does.not.exist.targets").NormalizePathToUnix(), rawResult.RootElement.GetProperty("Error").GetProperty("error-details").GetProperty("file-path").GetString());
         }
 
         [Fact]
-        public async Task ReportsPrivateSourceAuthenticationFailure()
+        public async Task MissingVisualStudioComponentTargetsAreReportedAsMissingFiles()
         {
-            static (int, string) TestHttpHandler(string uriString)
+            using var temporaryDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+                [
+                    ("project.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Some.Visual.Studio.Component.props" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="Some.Package, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                              <HintPath>packages\Some.Package.1.0.0\lib\net45\Some.Package.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("packages.config", """
+                        <packages>
+                          <package id="Some.Package" version="1.0.0" targetFramework="net45" />
+                        </packages>
+                        """),
+                    ("NuGet.Config", """
+                        <configuration>
+                          <packageSources>
+                            <clear />
+                            <add key="private_feed" value="packages" />
+                          </packageSources>
+                        </configuration>
+                        """)
+                ]
+            );
+            MockNuGetPackage[] packages =
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.1.0", "net45"),
+            ];
+            await MockNuGetPackagesInDirectory(packages, Path.Combine(temporaryDirectory.DirectoryPath, "packages"));
+            var resultOutputPath = Path.Combine(temporaryDirectory.DirectoryPath, "result.json");
+
+            var worker = new UpdaterWorker("TEST-JOB-ID", new ExperimentsManager(), new TestLogger());
+            await worker.RunAsync(temporaryDirectory.DirectoryPath, "project.csproj", "Some.Package", "1.0.0", "1.1.0", isTransitive: false, resultOutputPath: resultOutputPath);
+
+            var resultContents = await File.ReadAllTextAsync(resultOutputPath);
+            var rawResult = JsonDocument.Parse(resultContents);
+            Assert.Equal("dependency_file_not_found", rawResult.RootElement.GetProperty("Error").GetProperty("error-type").GetString());
+            Assert.Equal("$(MSBuildExtensionsPath32)/Microsoft/VisualStudio/v$(VisualStudioVersion)/Some.Visual.Studio.Component.props", rawResult.RootElement.GetProperty("Error").GetProperty("error-details").GetProperty("file-path").GetString());
+        }
+
+        [Theory]
+        [InlineData(401)]
+        [InlineData(403)]
+        public async Task ReportsPrivateSourceAuthenticationFailure(int httpStatusCode)
+        {
+            (int, string) TestHttpHandler(string uriString)
             {
                 var uri = new Uri(uriString, UriKind.Absolute);
                 var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
                 return uri.PathAndQuery switch
                 {
-                    _ => (401, "{}"), // everything is unauthorized
+                    _ => (httpStatusCode, "{}"), // everything is unauthorized
                 };
             }
             using var http = TestHttpServer.CreateTestStringServer(TestHttpHandler);
@@ -2366,8 +2425,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.AuthenticationFailure,
-                    ErrorDetails = $"({http.BaseUrl.TrimEnd('/')}/index.json)",
+                    Error = new PrivateSourceAuthenticationFailure([$"{http.BaseUrl.TrimEnd('/')}/index.json"]),
                 }
             );
         }
@@ -2497,8 +2555,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.Unknown,
-                    ErrorDetailsRegex = "Response status code does not indicate success",
+                    ErrorRegex = "Response status code does not indicate success",
                 }
             );
         }
@@ -2575,8 +2632,7 @@ public partial class UpdateWorkerTests
                     """,
                 expectedResult: new()
                 {
-                    ErrorType = ErrorType.UpdateNotPossible,
-                    ErrorDetails = new[] { "Unrelated.Package.1.0.0" },
+                    Error = new UpdateNotPossible(["Unrelated.Package.1.0.0"]),
                 }
             );
         }

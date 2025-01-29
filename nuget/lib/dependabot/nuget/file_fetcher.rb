@@ -26,6 +26,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        NativeHelpers.install_dotnet_sdks
         discovery_json_reader = DiscoveryJsonReader.run_discovery_in_directory(
           repo_contents_path: T.must(repo_contents_path),
           directory: directory,

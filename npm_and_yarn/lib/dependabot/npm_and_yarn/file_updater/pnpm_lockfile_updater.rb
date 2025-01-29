@@ -18,6 +18,10 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @error_handler = PnpmErrorHandler.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files
+          )
         end
 
         def updated_pnpm_lock_content(pnpm_lock)
@@ -36,6 +40,7 @@ module Dependabot
         attr_reader :dependency_files
         attr_reader :repo_contents_path
         attr_reader :credentials
+        attr_reader :error_handler
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
@@ -46,12 +51,12 @@ module Dependabot
         UNAUTHORIZED_PACKAGE = /ERR_PNPM_FETCH_401[ [^:print:]]+GET (?<dependency_url>.*): Unauthorized - 401/
 
         # ERR_PNPM_FETCH ERROR CODES
-        ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):  - 401/
-        ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):  - 403/
-        ERR_PNPM_FETCH_404 = /ERR_PNPM_FETCH_404.*GET (?<dependency_url>.*):  - 404/
-        ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):  - 500/
-        ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):  - 502/
-        ERR_PNPM_FETCH_503 = /ERR_PNPM_FETCH_503.*GET (?<dependency_url>.*):  - 503/
+        ERR_PNPM_FETCH_401 = /ERR_PNPM_FETCH_401.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_403 = /ERR_PNPM_FETCH_403.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_404 = /ERR_PNPM_FETCH_404.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_500 = /ERR_PNPM_FETCH_500.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_502 = /ERR_PNPM_FETCH_502.*GET (?<dependency_url>.*):/
+        ERR_PNPM_FETCH_503 = /ERR_PNPM_FETCH_503.*GET (?<dependency_url>.*):/
 
         # ERR_PNPM_UNSUPPORTED_ENGINE
         ERR_PNPM_UNSUPPORTED_ENGINE = /ERR_PNPM_UNSUPPORTED_ENGINE/
@@ -61,6 +66,13 @@ module Dependabot
         ERR_PNPM_TARBALL_INTEGRITY = /ERR_PNPM_TARBALL_INTEGRITY/
 
         ERR_PNPM_PATCH_NOT_APPLIED = /ERR_PNPM_PATCH_NOT_APPLIED/
+
+        # this intermittent issue is related with Node v20
+        ERR_INVALID_THIS = /ERR_INVALID_THIS/
+        URL_SEARCH_PARAMS = /URLSearchParams/
+
+        # A modules directory is present and is linked to a different store directory.
+        ERR_PNPM_UNEXPECTED_STORE = /ERR_PNPM_UNEXPECTED_STORE/
 
         # ERR_PNPM_UNSUPPORTED_PLATFORM
         ERR_PNPM_UNSUPPORTED_PLATFORM = /ERR_PNPM_UNSUPPORTED_PLATFORM/
@@ -78,12 +90,22 @@ module Dependabot
         ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND = /ERR_PNPM_LINKED_PKG_DIR_NOT_FOUND*.*Could not install from \"(?<dir>.*)\" /
         ERR_PNPM_WORKSPACE_PKG_NOT_FOUND = /ERR_PNPM_WORKSPACE_PKG_NOT_FOUND/
 
+        # Unparsable package.json file
+        ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
+
+        # Unparsable lockfile
+        ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE = /ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE/
+        ERR_PNPM_OUTDATED_LOCKFILE = /ERR_PNPM_OUTDATED_LOCKFILE/
+
+        # Peer dependencies configuration error
+        ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
+
         def run_pnpm_update(pnpm_lock:)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_pnpm_updater
+              run_pnpm_update_packages
 
               write_final_package_json_files
 
@@ -94,15 +116,22 @@ module Dependabot
           end
         end
 
-        def run_pnpm_updater
+        def run_pnpm_update_packages
           dependency_updates = dependencies.map do |d|
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-            fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
-          )
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            Helpers.run_pnpm_command(
+              "update #{dependency_updates}  --lockfile-only --no-save -r",
+              fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
+            )
+          else
+            Helpers.run_pnpm_command(
+              "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
+              fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
+            )
+          end
         end
 
         def run_pnpm_install
@@ -196,14 +225,45 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, msg
           end
 
+          if error_message.match?(ERR_PNPM_INVALID_PACKAGE_JSON) || error_message.match?(ERR_PNPM_UNEXPECTED_STORE)
+            msg = "Error while resolving package.json."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]
+            .each do |regexp|
+            next unless error_message.match?(regexp)
+
+            error_msg = T.let("Error while resolving pnpm-lock.yaml file.", String)
+
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, error_msg
+          end
+
+          if error_message.match?(ERR_PNPM_PEER_DEP_ISSUES)
+            msg = "Missing or invalid configuration while installing peer dependencies."
+
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
           raise_patch_dependency_error(error_message) if error_message.match?(ERR_PNPM_PATCH_NOT_APPLIED)
 
           raise_unsupported_engine_error(error_message, pnpm_lock) if error_message.match?(ERR_PNPM_UNSUPPORTED_ENGINE)
+
+          if error_message.match?(ERR_INVALID_THIS) && error_message.match?(URL_SEARCH_PARAMS)
+            msg = "Error while resolving dependencies."
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyFileNotResolvable, msg
+          end
 
           if error_message.match?(ERR_PNPM_UNSUPPORTED_PLATFORM)
             raise_unsupported_platform_error(error_message,
                                              pnpm_lock)
           end
+
+          error_handler.handle_pnpm_error(error)
 
           raise
         end
@@ -312,6 +372,61 @@ module Dependabot
         def sanitize_message(message)
           message.gsub(/"|\[|\]|\}|\{/, "")
         end
+      end
+    end
+
+    class PnpmErrorHandler
+      extend T::Sig
+
+      # remote connection closed
+      ECONNRESET_ERROR = /ECONNRESET/
+
+      # socket hang up error code
+      SOCKET_HANG_UP = /socket hang up/
+
+      # ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC error
+      ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC = /ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC/
+
+      # duplicate package error code
+      DUPLICATE_PACKAGE = /Found duplicates/
+
+      ERR_PNPM_NO_VERSIONS = /ERR_PNPM_NO_VERSIONS/
+
+      # Initializes the YarnErrorHandler with dependencies and dependency files
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          dependency_files: T::Array[Dependabot::DependencyFile]
+        ).void
+      end
+      def initialize(dependencies:, dependency_files:)
+        @dependencies = dependencies
+        @dependency_files = dependency_files
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      attr_reader :dependencies
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      public
+
+      # Handles errors with specific to yarn error codes
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
+      def handle_pnpm_error(error)
+        if error.message.match?(DUPLICATE_PACKAGE) || error.message.match?(ERR_PNPM_NO_VERSIONS) ||
+           error.message.match?(ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC)
+
+          raise DependencyFileNotResolvable, "Error resolving dependency"
+        end
+
+        ## Clean error message from ANSI escape codes
+        return unless error.message.match?(ECONNRESET_ERROR) || error.message.match?(SOCKET_HANG_UP)
+
+        raise InconsistentRegistryResponse, "Inconsistent registry response while resolving dependency"
       end
     end
   end

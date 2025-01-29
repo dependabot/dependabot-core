@@ -167,8 +167,6 @@ module Dependabot
         def mix_env
           {
             "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
-            "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
-            "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
             "MIX_QUIET" => "1"
           }
         end

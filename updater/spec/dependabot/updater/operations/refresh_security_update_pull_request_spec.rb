@@ -158,6 +158,10 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       .and_return(stub_dependency_change)
 
     allow(mock_service).to receive(:close_pull_request)
+
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
   end
 
   after do
@@ -243,7 +247,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         end
 
         it "creates a pull request with deprecation notice" do
-          allow(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).and_return([{
+          allow(Dependabot::Notice).to receive(:generate_deprecation_notice).and_return([{
             mode: "WARN",
             type: "bundler_deprecated_warn",
             package_manager_name: "bundler",

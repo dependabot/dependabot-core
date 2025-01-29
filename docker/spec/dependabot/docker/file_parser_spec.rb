@@ -677,6 +677,14 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
+
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.name).to eq("docker")
+          expect(ecosystem.package_manager.name).to eq("docker")
+
+          expect(ecosystem.package_manager.deprecated?).to be false
+          expect(ecosystem.package_manager.unsupported?).to be false
         end
       end
     end

@@ -148,18 +148,15 @@ internal static partial class PackagesConfigUpdater
 
                     if (exitCodeAgain != 0)
                     {
-                        MSBuildHelper.ThrowOnMissingFile(fullOutput);
-                        MSBuildHelper.ThrowOnMissingFile(restoreOutput);
-                        MSBuildHelper.ThrowOnMissingPackages(restoreOutput);
+                        MSBuildHelper.ThrowOnError(fullOutput);
+                        MSBuildHelper.ThrowOnError(restoreOutput);
                         throw new Exception($"Unable to restore.\nOutput:\n${restoreOutput}\n");
                     }
 
                     goto doRestore;
                 }
 
-                MSBuildHelper.ThrowOnUnauthenticatedFeed(fullOutput);
-                MSBuildHelper.ThrowOnMissingFile(fullOutput);
-                MSBuildHelper.ThrowOnMissingPackages(fullOutput);
+                MSBuildHelper.ThrowOnError(fullOutput);
                 throw new Exception(fullOutput);
             }
         }

@@ -150,6 +150,17 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
       end
     end
 
+    context "when using bun.lock" do
+      let(:project_name) { "bun/simple_v0" }
+
+      it do
+        expect(files_requiring_update).to contain_exactly(
+          project_dependency_file("package.json"),
+          project_dependency_file("bun.lock")
+        )
+      end
+    end
+
     context "with multiple dependencies" do
       let(:project_name) { "npm6_and_yarn/nested_dependency_update" }
       let(:updated_dependencies) { [dependency, other_dependency] }

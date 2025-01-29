@@ -8,6 +8,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
 require "sorbet-runtime"
+require "dependabot/docker/package_manager"
 
 module Dependabot
   module Docker
@@ -41,6 +42,17 @@ module Dependabot
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: DockerPackageManager.new
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
 
       # rubocop:disable Metrics/AbcSize
       sig { override.returns(T::Array[Dependabot::Dependency]) }

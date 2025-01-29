@@ -9,6 +9,8 @@ using NuGet.Versioning;
 
 using NuGetUpdater.Core.Utilities;
 
+using Semver;
+
 using LoggerProperty = Microsoft.Build.Logging.StructuredLogger.Property;
 
 namespace NuGetUpdater.Core.Discover;
@@ -48,15 +50,15 @@ internal static class SdkProjectDiscovery
     {
         if (experimentsManager.UseDirectDiscovery)
         {
-            return await DiscoverWithBinLogAsync(repoRootPath, workspacePath, startingProjectPath, logger);
+            return await DiscoverWithBinLogAsync(repoRootPath, workspacePath, startingProjectPath, experimentsManager, logger);
         }
         else
         {
-            return await DiscoverWithTempProjectAsync(repoRootPath, workspacePath, startingProjectPath, logger);
+            return await DiscoverWithTempProjectAsync(repoRootPath, workspacePath, startingProjectPath, experimentsManager, logger);
         }
     }
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithBinLogAsync(string repoRootPath, string workspacePath, string startingProjectPath, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithBinLogAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         // N.b., there are many paths used in this function.  The MSBuild binary log always reports fully qualified paths, so that's what will be used
         // throughout until the very end when the appropriate kind of relative path is returned.
@@ -72,6 +74,9 @@ internal static class SdkProjectDiscovery
         Dictionary<string, HashSet<string>> topLevelPackagesPerProject = new(PathComparer.Instance);
         //         projectPath, packageNames
 
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject = new(PathComparer.Instance);
+        //         projectPath        tfm           packageName, packageVersion
+
         Dictionary<string, Dictionary<string, string>> resolvedProperties = new(PathComparer.Instance);
         //         projectPath        propertyName, propertyValue
 
@@ -84,7 +89,7 @@ internal static class SdkProjectDiscovery
         Dictionary<string, HashSet<string>> additionalFiles = new(PathComparer.Instance);
         //         projectPath, additionalFiles
 
-        var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, logger);
+        var tfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(repoRootPath, startingProjectPath, experimentsManager, logger);
         foreach (var tfm in tfms)
         {
             // create a binlog
@@ -92,7 +97,7 @@ internal static class SdkProjectDiscovery
             try
             {
                 // TODO: once the updater image has all relevant SDKs installed, we won't have to sideline global.json anymore
-                var (exitCode, stdOut, stdErr) = await MSBuildHelper.SidelineGlobalJsonAsync(startingProjectDirectory, repoRootPath, async () =>
+                var (exitCode, stdOut, stdErr) = await MSBuildHelper.HandleGlobalJsonAsync(startingProjectDirectory, repoRootPath, experimentsManager, async () =>
                 {
                     // the built-in target `GenerateBuildDependencyFile` forces resolution of all NuGet packages, but doesn't invoke a full build
                     var dependencyDiscoveryTargetsPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "DependencyDiscovery.targets");
@@ -102,13 +107,14 @@ internal static class SdkProjectDiscovery
                         startingProjectPath,
                         "/t:_DiscoverDependencies",
                         $"/p:TargetFramework={tfm}",
-                        $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath};CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
+                        $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={dependencyDiscoveryTargetsPath}",
+                        $"/p:CustomAfterMicrosoftCommonTargets={dependencyDiscoveryTargetsPath}",
                         $"/bl:{binLogPath}"
                     };
-                    var (exitCode, stdOut, stdErr) = await ProcessEx.RunAsync("dotnet", args, workingDirectory: startingProjectDirectory);
+                    var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, startingProjectDirectory, experimentsManager);
                     return (exitCode, stdOut, stdErr);
                 }, logger, retainMSBuildSdks: true);
-                MSBuildHelper.ThrowOnUnauthenticatedFeed(stdOut);
+                MSBuildHelper.ThrowOnError(stdOut);
                 if (stdOut.Contains("""error MSB4057: The target "GenerateBuildDependencyFile" does not exist in the project."""))
                 {
                     // this can happen if it's a non-SDK-style project; totally normal, not worth examining the binlog
@@ -163,7 +169,7 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject);
+                            ProcessResolvedPackageReference(namedNode, packagesPerProject, topLevelPackagesPerProject, experimentsManager);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -202,6 +208,70 @@ internal static class SdkProjectDiscovery
                                 }
                             }
                             break;
+                        case Target target when target.Name == "_HandlePackageFileConflicts":
+                            // this only works if we've installed the exact SDK required
+                            if (experimentsManager.InstallDotnetSdks)
+                            {
+                                var projectEvaluation = GetNearestProjectEvaluation(target);
+                                if (projectEvaluation is null)
+                                {
+                                    break;
+                                }
+
+                                var removedReferences = target.Children.OfType<RemoveItem>().FirstOrDefault(r => r.Name == "Reference");
+                                var addedReferences = target.Children.OfType<AddItem>().FirstOrDefault(r => r.Name == "Reference");
+                                if (removedReferences is null || addedReferences is null)
+                                {
+                                    break;
+                                }
+
+                                foreach (var removedAssembly in removedReferences.Children.OfType<Item>())
+                                {
+                                    var removedPackageName = GetChildMetadataValue(removedAssembly, "NuGetPackageId");
+                                    var removedFileName = Path.GetFileName(removedAssembly.Name);
+                                    if (removedPackageName is null || removedFileName is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var existingProjectPackagesByTfm = packagesPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var existingProjectPackages = existingProjectPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    if (!existingProjectPackages.ContainsKey(removedPackageName))
+                                    {
+                                        continue;
+                                    }
+
+                                    var correspondingAddedFile = addedReferences.Children.OfType<Item>()
+                                        .FirstOrDefault(i => removedFileName.Equals(Path.GetFileName(i.Name), StringComparison.OrdinalIgnoreCase));
+                                    if (correspondingAddedFile is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var runtimePackageName = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageId");
+                                    var runtimePackageVersion = GetChildMetadataValue(correspondingAddedFile, "NuGetPackageVersion");
+                                    if (runtimePackageName is null ||
+                                        runtimePackageVersion is null ||
+                                        !SemVersion.TryParse(runtimePackageVersion, out var parsedRuntimePackageVersion))
+                                    {
+                                        continue;
+                                    }
+
+                                    var packageMapper = DotNetPackageCorrelationManager.GetPackageMapper();
+                                    var replacementPackageVersion = packageMapper.GetPackageVersionThatShippedWithOtherPackage(runtimePackageName, parsedRuntimePackageVersion, removedPackageName);
+                                    if (replacementPackageVersion is null)
+                                    {
+                                        continue;
+                                    }
+
+                                    var packagesPerThisProject = packagesReplacedBySdkPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(PathComparer.Instance));
+                                    var packagesPerTfm = packagesPerThisProject.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                                    packagesPerTfm[removedPackageName] = replacementPackageVersion.ToString();
+                                    var relativeProjectPath = Path.GetRelativePath(repoRootPath, projectEvaluation.ProjectFile).NormalizePathToUnix();
+                                    logger.Info($"Re-added SDK managed package [{removedPackageName}/{replacementPackageVersion}] to project [{relativeProjectPath}]");
+                                }
+                            }
+                            break;
                     }
                 }, takeChildrenSnapshot: true);
             }
@@ -227,6 +297,33 @@ internal static class SdkProjectDiscovery
         {
             // gather some project-level information
             var packagesByTfm = packagesPerProject[projectPath];
+            if (packagesReplacedBySdkPerProject.TryGetValue(projectPath, out var packagesReplacedBySdk))
+            {
+                var consolidatedPackagesByTfm = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+                // copy the first dictionary
+                foreach (var kvp in packagesByTfm)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    consolidatedPackagesByTfm[tfm] = packages;
+                }
+
+                // merge in the second
+                foreach (var kvp in packagesReplacedBySdk)
+                {
+                    var tfm = kvp.Key;
+                    var packages = kvp.Value;
+                    var replacedPackages = consolidatedPackagesByTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                    foreach (var packagePair in packages)
+                    {
+                        replacedPackages[packagePair.Key] = packagePair.Value;
+                    }
+                }
+
+                packagesByTfm = consolidatedPackagesByTfm;
+            }
+
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
             var doc = XDocument.Load(projectPath);
             var localPropertyDefinitionElements = doc.Root!.XPathSelectElements("/Project/PropertyGroup/*");
@@ -287,7 +384,8 @@ internal static class SdkProjectDiscovery
     private static void ProcessResolvedPackageReference(
         NamedNode node,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
-        Dictionary<string, HashSet<string>> topLevelPackagesPerProject
+        Dictionary<string, HashSet<string>> topLevelPackagesPerProject,
+        ExperimentsManager experimentsManager
     )
     {
         var doRemoveOperation = node is RemoveItem;
@@ -411,7 +509,7 @@ internal static class SdkProjectDiscovery
         return property.Value;
     }
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithTempProjectAsync(string repoRootPath, string workspacePath, string projectPath, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverWithTempProjectAsync(string repoRootPath, string workspacePath, string projectPath, ExperimentsManager experimentsManager, ILogger logger)
     {
         // Determine which targets and props files contribute to the build.
         var (buildFiles, projectTargetFrameworks) = await MSBuildHelper.LoadBuildFilesAndTargetFrameworksAsync(repoRootPath, projectPath);
@@ -476,7 +574,7 @@ internal static class SdkProjectDiscovery
                     dependencies = dependencies
                         .Select(d => d with { TargetFrameworks = tfms })
                         .ToImmutableArray();
-                    var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, logger);
+                    var transitiveDependencies = await GetTransitiveDependencies(repoRootPath, projectPath, tfms, dependencies, experimentsManager, logger);
                     ImmutableArray<Dependency> allDependencies = dependencies.Concat(transitiveDependencies).Concat(sdkDependencies)
                         .OrderBy(d => d.Name)
                         .ToImmutableArray();
@@ -514,12 +612,19 @@ internal static class SdkProjectDiscovery
         return results.ToImmutable();
     }
 
-    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(string repoRootPath, string projectPath, ImmutableArray<string> tfms, ImmutableArray<Dependency> directDependencies, ILogger logger)
+    private static async Task<ImmutableArray<Dependency>> GetTransitiveDependencies(
+        string repoRootPath,
+        string projectPath,
+        ImmutableArray<string> tfms,
+        ImmutableArray<Dependency> directDependencies,
+        ExperimentsManager experimentsManager,
+        ILogger logger
+    )
     {
         Dictionary<string, Dependency> transitiveDependencies = new(StringComparer.OrdinalIgnoreCase);
         foreach (var tfm in tfms)
         {
-            var tfmDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, directDependencies, logger);
+            var tfmDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(repoRootPath, projectPath, tfm, directDependencies, experimentsManager, logger);
             foreach (var dependency in tfmDependencies.Where(d => d.IsTransitive))
             {
                 if (!transitiveDependencies.TryGetValue(dependency.Name, out var existingDependency))

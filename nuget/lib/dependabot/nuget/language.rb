@@ -12,7 +12,11 @@ module Dependabot
 
       sig { params(language: String, raw_version: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, raw_version, requirement = nil)
-        super(language, Version.new(raw_version), [], [], requirement)
+        super(
+          name: language,
+          version: Version.new(raw_version),
+          requirement: requirement,
+       )
       end
     end
 
@@ -28,7 +32,10 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          name: language,
+          requirement: requirement,
+       )
       end
     end
 
@@ -44,7 +51,10 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          name: language,
+          requirement: requirement,
+       )
       end
     end
 
@@ -60,7 +70,10 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          name: language,
+          requirement: requirement,
+       )
       end
     end
 
@@ -75,7 +88,10 @@ module Dependabot
 
       sig { params(language: String, requirement: T.nilable(Requirement)).void }
       def initialize(language, requirement = nil)
-        super(language, Version.new(nil), [], [], requirement)
+        super(
+          name: language,
+          requirement: requirement,
+       )
       end
     end
   end
