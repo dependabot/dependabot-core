@@ -10,7 +10,7 @@ def get_dependency_hash(dependency_name, dependency_version, algorithm,
                         index_url=hashin.DEFAULT_INDEX_URL):
 
     if index_url == hashin.DEFAULT_INDEX_URL:
-        # Disable SSL verification for the default index url "https://pypi.org/simple"
+        # Disable SSL verification for the default index url
         ssl._create_default_https_context = ssl._create_unverified_context
     try:
         hashes = hashin.get_package_hashes(
