@@ -367,6 +367,7 @@ GEM
     yard-sorbet (0.9.0)
       sorbet-runtime
       yard
+    zeitwerk (2.7.1)
 
 PLATFORMS
   aarch64-linux
@@ -413,6 +414,7 @@ DEPENDENCIES
   vcr (~> 6.1)
   webmock (~> 3.18)
   webrick (>= 1.7)
+  zeitwerk (~> 2.7)
 
 BUNDLED WITH
    2.6.3
