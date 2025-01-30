@@ -1,10 +1,10 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.30.0
+ARG COREPACK_VERSION=0.31.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=9.15.4
+ARG PNPM_VERSION=10.1
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.5.3
