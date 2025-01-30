@@ -220,6 +220,11 @@ module Dependabot
           "file-path": error.file_path
         }
       }
+    when Dependabot::DependencyFileNotSupported
+      {
+        "error-type": "dependency_file_not_supported",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
@@ -615,6 +620,8 @@ module Dependabot
   class DependencyFileNotEvaluatable < DependabotError; end
 
   class DependencyFileNotResolvable < DependabotError; end
+
+  class DependencyFileNotSupported < DependabotError; end
 
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
