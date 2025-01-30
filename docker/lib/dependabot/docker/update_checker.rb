@@ -300,15 +300,28 @@ module Dependabot
         "library/#{dependency.name}"
       end
 
+      # Defaults from https://github.com/deitch/docker_registry2/blob/bfde04144f0b7fd63c156a1aca83efe19ee78ffd/lib/registry/registry.rb#L26-L27
+      DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS = 2
+      DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS = 5
+
       def docker_registry_client
         @docker_registry_client ||=
           DockerRegistry2::Registry.new(
             "https://#{registry_hostname}",
             user: registry_credentials&.fetch("username", nil),
             password: registry_credentials&.fetch("password", nil),
-            read_timeout: 10,
+            read_timeout: docker_read_timeout_in_seconds,
+            open_timeout: docker_open_timeout_in_seconds,
             http_options: { proxy: ENV.fetch("HTTPS_PROXY", nil) }
           )
+      end
+
+      def docker_open_timeout_in_seconds
+        ENV.fetch("DEPENDABOT_DOCKER_OPEN_TIMEOUT_IN_SECONDS", DEFAULT_DOCKER_OPEN_TIMEOUT_IN_SECONDS).to_i
+      end
+
+      def docker_read_timeout_in_seconds
+        ENV.fetch("DEPENDABOT_DOCKER_READ_TIMEOUT_IN_SECONDS", DEFAULT_DOCKER_READ_TIMEOUT_IN_SECONDS).to_i
       end
 
       def sort_tags(candidate_tags, version_tag)
