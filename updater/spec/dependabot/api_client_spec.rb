@@ -214,6 +214,28 @@ RSpec.describe Dependabot::ApiClient do
              end)
       end
     end
+
+    context "when API returns a 400 Bad Request" do
+      let(:body) do
+        <<~ERROR
+          { "errors": [{
+            "status": 400,
+            "title": "Bad Request",
+            "detail": "The request contains invalid or unauthorized changes"}]
+          }
+        ERROR
+      end
+
+      before do
+        stub_request(:post, create_pull_request_url).to_return(status: 400, body: body)
+      end
+
+      it "raises the correct error" do
+        expect do
+          client.create_pull_request(dependency_change, base_commit)
+        end.to raise_error(Dependabot::DependencyFileNotSupported)
+      end
+    end
   end
 
   describe "update_pull_request" do

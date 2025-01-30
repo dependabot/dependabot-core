@@ -1729,6 +1729,15 @@ public class RunWorkerTests
             ],
             job: new Job()
             {
+                AllowedUpdates = [new() { UpdateType = UpdateType.Security }],
+                SecurityAdvisories =
+                [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        AffectedVersions = [Requirement.Parse("= 1.0.0")]
+                    }
+                ],
                 Source = new()
                 {
                     Provider = "github",
