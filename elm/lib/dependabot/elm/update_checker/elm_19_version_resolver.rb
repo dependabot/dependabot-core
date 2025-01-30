@@ -15,6 +15,8 @@ module Dependabot
   module Elm
     class UpdateChecker
       class Elm19VersionResolver
+        extend T::Sig
+
         class UnrecoverableState < StandardError; end
 
         def initialize(dependency:, dependency_files:)
@@ -177,16 +179,19 @@ module Dependabot
             ).parse
         end
 
+        sig { returns(T.nilable(Dependabot::Elm::Version)) }
         def current_version
           return unless dependency.version
 
           version_class.new(dependency.version)
         end
 
+        sig { returns(T.class_of(Dependabot::Elm::Version)) }
         def version_class
           dependency.version_class
         end
 
+        sig { returns(T.class_of(Dependabot::Elm::Requirement)) }
         def requirement_class
           dependency.requirement_class
         end
