@@ -119,7 +119,7 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
-    sig { params(group: Dependabot::DependencyGroup, excluding_dependencies: T::Hash[Symbol, T::Set[String]]).void }
+    sig { params(group: Dependabot::DependencyGroup, excluding_dependencies: T::Hash[String, T::Set[String]]).void }
     def mark_group_handled(group, excluding_dependencies = {})
       Dependabot.logger.info("Marking group '#{group.name}' as handled.")
 
@@ -134,10 +134,10 @@ module Dependabot
         # also add dependencies that might be in the group, as a rebase would add them;
         # this avoids individual PR creation that immediately is superseded by a group PR supersede
         current_dependencies = group.dependencies.map(&:name).reject do |dep|
-          excluding_dependencies[directory].include?(dep)
+          excluding_dependencies[directory]&.include?(dep)
         end
 
-        add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.map do |dep|
+        add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
           dep["dependency-name"]
         end))
       end
