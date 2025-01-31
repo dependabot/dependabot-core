@@ -4159,7 +4159,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the workspace" do
-            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml pnpm-lock.yaml))
             expect(updated_pnpm_workspace.content).to include("prettier: 3.3.3")
           end
         end
