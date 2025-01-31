@@ -123,12 +123,18 @@ module Dependabot
     def mark_group_handled(group, excluding_dependencies = {})
       Dependabot.logger.info("Marking group '#{group.name}' as handled.")
 
+      enable = Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+
       directories.each do |directory|
         @current_directory = directory
 
         # add the existing dependencies in the group so individual updates don't try to update them
-        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group).filter do |dep|
-          !dep["directory"] || dep["directory"] == directory
+        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+
+        if enable
+          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+            !dep["directory"] || dep["directory"] == directory
+          end
         end
 
         # also add dependencies that might be in the group, as a rebase would add them;
