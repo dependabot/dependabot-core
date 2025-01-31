@@ -4266,6 +4266,40 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(updated_pnpm_workspace.content).to include("react: \"^18.2.3\"")
             expect(updated_pnpm_workspace.content).to include("react-dom: '^18.2.3'")
           end
+
+          context "when updating workspace catalog entries" do
+            let(:project_name) { "pnpm/catalog_prettier" }
+            let(:dependency_name) { "prettier" }
+            let(:version) { "3.3.3" }
+            let(:previous_version) { "3.3.0" }
+            let(:requirements) do
+              [{
+                file: "pnpm-workspace.yaml",
+                requirement: "3.3.3",
+                groups: ["catalog"],
+                source: nil
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                file: "pnpm-workspace.yaml",
+                requirement: "3.3.0",
+                groups: ["catalog"],
+                source: nil
+              }]
+            end
+
+            it "uses pnpm install for catalog updates" do
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+                .with("install --lockfile-only")
+                .ordered
+
+              expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+                .with(/update.*--lockfile-only/)
+
+              updated_files
+            end
+          end
         end
       end
     end
