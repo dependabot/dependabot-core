@@ -4290,12 +4290,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
 
             it "uses pnpm install for catalog updates" do
-              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-                .with("install --lockfile-only")
-                .ordered
-
               expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
                 .with(/update.*--lockfile-only/)
+
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+                .with("install --lockfile-only")
 
               updated_files
             end
