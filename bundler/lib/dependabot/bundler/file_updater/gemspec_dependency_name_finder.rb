@@ -10,7 +10,7 @@ module Dependabot
       class GemspecDependencyNameFinder
         extend T::Sig
 
-        ChildNode = T.type_alias { T.nilable(T.any(Parser::AST::Node, Symbol, String)) }
+        ChildNode = T.type_alias { T.nilable(T.any(Parser::AST::Node, Symbol, String, Integer, Float)) }
 
         sig { returns(String) }
         attr_reader :gemspec_content
