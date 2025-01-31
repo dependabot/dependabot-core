@@ -715,7 +715,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         files.find { |f| f.name == "pnpm-workspace.yaml" }
       end
 
-      context "uses pnpm update followed by install for non catalog dependencies" do
+      context "when pnpm updates followed by install for non catalog dependencies" do
         let(:is_catalog) { true }
 
         it "uses pnpm update followed by install" do
