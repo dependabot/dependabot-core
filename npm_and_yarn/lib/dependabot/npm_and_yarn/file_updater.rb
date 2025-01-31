@@ -335,7 +335,7 @@ module Dependabot
           )
         end
 
-        update_pnpm_locks
+        updated_files.concat(update_pnpm_locks)
 
         bun_locks.each do |bun_lock|
           next unless bun_lock_changed?(bun_lock)
@@ -379,7 +379,7 @@ module Dependabot
           is_catalog: T::Boolean
         ).returns(String)
       end
-      def updated_pnpm_lock_content(pnpm_lock, is_catalog: true)
+      def updated_pnpm_lock_content(pnpm_lock, is_catalog: false)
         @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_pnpm_lock_content[pnpm_lock.name] ||=
           pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock, is_catalog)
