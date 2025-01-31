@@ -4142,7 +4142,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "with pnpm catalog protocol" do
+      describe "pnpm catalog protocol" do
         context "when individual dependency needs updating" do
           let(:project_name) { "pnpm/catalog_prettier" }
           let(:dependency_name) { "prettier" }
