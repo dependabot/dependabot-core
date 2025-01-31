@@ -225,8 +225,10 @@ module Dependabot
 
         end
 
-        Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-        Requirement.new(constraints)
+        if constraints
+          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
+          Requirement.new(constraints)
+        end
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
