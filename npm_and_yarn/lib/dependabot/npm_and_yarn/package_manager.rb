@@ -225,7 +225,7 @@ module Dependabot
 
         end
 
-        if constraints
+        if constraints && !constraints.empty?
           Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
           Requirement.new(constraints)
         end
