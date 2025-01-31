@@ -119,31 +119,47 @@ module Dependabot
       @dependency_group_engine.find_group(name: T.must(job.dependency_group_to_refresh))
     end
 
-    sig { params(group: Dependabot::DependencyGroup, excluding_dependencies: T::Hash[String, T::Set[String]]).void }
+    # rubocop:disable Metrics/PerceivedComplexity
+    sig do
+      params(
+        group: Dependabot::DependencyGroup,
+        excluding_dependencies: T::Hash[String, T::Set[String]]
+      )
+        .void
+    end
     def mark_group_handled(group, excluding_dependencies = {})
       Dependabot.logger.info("Marking group '#{group.name}' as handled.")
 
       directories.each do |directory|
         @current_directory = directory
 
-        # add the existing dependencies in the group so individual updates don't try to update them
-        dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
+        if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
+          # add the existing dependencies in the group so individual updates don't try to update them
+          dependencies_in_existing_prs = dependencies_in_existing_pr_for_group(group)
 
-        dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
-          !dep["directory"] || dep["directory"] == directory
+          dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
+            !dep["directory"] || dep["directory"] == directory
+          end
+
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          current_dependencies = group.dependencies.map(&:name).reject do |dep|
+            excluding_dependencies[directory]&.include?(dep)
+          end
+
+          add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
+            dep["dependency-name"]
+          end))
+        else
+          # add the existing dependencies in the group so individual updates don't try to update them
+          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+          # also add dependencies that might be in the group, as a rebase would add them;
+          # this avoids individual PR creation that immediately is superseded by a group PR supersede
+          add_handled_dependencies(group.dependencies.map(&:name))
         end
-
-        # also add dependencies that might be in the group, as a rebase would add them;
-        # this avoids individual PR creation that immediately is superseded by a group PR supersede
-        current_dependencies = group.dependencies.map(&:name).reject do |dep|
-          excluding_dependencies[directory]&.include?(dep)
-        end
-
-        add_handled_dependencies(current_dependencies.concat(dependencies_in_existing_prs.filter_map do |dep|
-          dep["dependency-name"]
-        end))
       end
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(dependency_names: T.any(String, T::Array[String])).void }
     def add_handled_dependencies(dependency_names)
