@@ -94,7 +94,7 @@ module Dependabot
       }
     when Dependabot::PrivateSourceBadResponse
       {
-        "error-type": "private_source_response_error",
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Octokit::Unauthorized
@@ -177,7 +177,7 @@ module Dependabot
       }
     when Dependabot::PrivateSourceBadResponse
       {
-        "error-type": "private_source_response_error",
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Dependabot::GitDependenciesNotReachable
@@ -277,7 +277,7 @@ module Dependabot
       }
     when Dependabot::PrivateSourceBadResponse
       {
-        "error-type": "private_source_response_error",
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Dependabot::DependencyNotFound
