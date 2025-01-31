@@ -4269,24 +4269,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           context "when updating workspace catalog entries" do
             let(:project_name) { "pnpm/catalog_prettier" }
-            let(:dependency_name) { "prettier" }
-            let(:version) { "3.3.3" }
-            let(:previous_version) { "3.3.0" }
-            let(:requirements) do
-              [{
-                file: "pnpm-workspace.yaml",
-                requirement: "3.3.3",
-                groups: ["catalog"],
-                source: nil
-              }]
-            end
-            let(:previous_requirements) do
-              [{
-                file: "pnpm-workspace.yaml",
-                requirement: "3.3.0",
-                groups: ["catalog"],
-                source: nil
-              }]
+
+            let(:dependencies) do
+              [
+                create_dependency(
+                  file: "pnpm-workspace.yaml",
+                  name: "prettier",
+                  version: "3.3.0",
+                  required_version: "3.3.3",
+                  previous_required_version: "3.3.0"
+                )
+              ]
             end
 
             it "uses pnpm install for catalog updates" do
