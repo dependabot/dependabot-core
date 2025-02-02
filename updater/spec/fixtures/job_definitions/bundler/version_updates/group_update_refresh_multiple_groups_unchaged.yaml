@@ -1,0 +1,77 @@
+job:
+  package-manager: bundler
+  source:
+    provider: github
+    repo: dependabot/dependabot-bug-version-types
+    branch:
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    directories:
+      - "/"
+  dependencies:
+    - "dummy-pkg-a"
+  existing-pull-requests: []
+  existing-group-pull-requests:
+    - dependency-group-name: major
+      dependencies:
+        - dependency-name: dummy-pkg-a
+          dependency-version: 2.0.0
+          directory: "/"
+    - dependency-group-name: minor
+      dependencies:
+        - dependency-name: dummy-pkg-b
+          dependency-version: 1.2.0
+          directory: "/"
+  updating-a-pull-request: true
+  lockfile-only: false
+  update-subdependencies: false
+  ignore-conditions: []
+  requirements-update-strategy: null
+  allowed-updates:
+    - dependency-type: direct
+      update-type: all
+  credentials-metadata:
+    - type: git_source
+      host: github.com
+  security-advisories: []
+  security-updates-only: false
+  max-updater-run-time: 2700
+  vendor-dependencies: false
+  repo-private: false
+  proxy-log-response-body-on-auth-failure: true
+  reject-external-code: false
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  dependency-group-to-refresh: major
+  dependency-groups:
+    - name: major
+      rules:
+        patterns:
+          - "dummy-pkg-a"
+        update-types:
+          - "major"
+    - name: minor
+      rules:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+  experiments:
+    dependency-change-validation: true
+    enable-file-parser-python-local: true
+    enable-fix-for-pnpm-no-change-error: true
+    enable-record-ecosystem-meta: true
+    enable-shared-helpers-command-timeout: true
+    lead-security-dependency: true
+    move-job-token: true
+    npm-v6-deprecation-warning: true
+    npm-v6-unsupported-error: true
+    nuget-native-analysis: true
+    nuget-use-direct-discovery: true
+    proxy-cached: true
+    python-3-8-deprecation-warning: true
+    record-ecosystem-versions: true
+    record-update-job-unknown-error: true

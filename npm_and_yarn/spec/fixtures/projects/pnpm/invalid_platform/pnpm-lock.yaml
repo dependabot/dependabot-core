@@ -1,0 +1,39 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  node-adodb:
+    specifier: ^5.0.0
+    version: 5.0.0
+
+packages:
+
+  /arch@2.1.1:
+    resolution: {integrity: sha512-BLM56aPo9vLLFVa8+/+pJLnrZ7QGGTVHWsCwieAWT9o9K8UeGaQbzZbGoabWLOo2ksBCztoXdqBZBplqLDDCSg==}
+    dev: false
+
+  /debug@4.1.1:
+    resolution: {integrity: sha512-pYAIzeRo8J6KPEaJ0VWOh5Pzkbw/RetuzehGM7QRRX5he4fPHx2rdKMB256ehJCkX+XRQm16eZLqLNS8RSZXZw==}
+    deprecated: Debug versions >=3.2.0 <3.2.7 || >=4 <4.3.1 have a low-severity ReDos regression when used in a Node.js environment. It is recommended you upgrade to 3.2.7 or 4.3.1. (https://github.com/visionmedia/debug/issues/797)
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+    dependencies:
+      ms: 2.1.1
+    dev: false
+
+  /ms@2.1.1:
+    resolution: {integrity: sha512-tgp+dl5cGk28utYktBsrFqA7HKgrhgPsg6Z/EfhWI4gl1Hwq8B/GmY/0oXZ6nF8hDVesS/FpnYaD/kOWhYQvyg==}
+    dev: false
+
+  /node-adodb@5.0.0:
+    resolution: {integrity: sha512-z9aXqVbsa6owSWPRxOzIqNzmelHmdJvUtq91WvkO6qo73UebiAm84CED6XROLC/gfBtY7YbTgdaBxA5Lr6eyMw==}
+    engines: {node: '>=6.0.0'}
+    os: [win32]
+    dependencies:
+      arch: 2.1.1
+      debug: 4.1.1
+    transitivePeerDependencies:
+      - supports-color
+    dev: false

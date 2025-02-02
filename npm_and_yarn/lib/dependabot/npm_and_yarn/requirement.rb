@@ -1,24 +1,29 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module NpmAndYarn
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
-      LATEST_REQUIREMENT = "latest"
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
-        return ["=", nil] if obj.is_a?(String) && obj.strip == LATEST_REQUIREMENT
+        return ["=", nil] if obj.is_a?(String) && Version::VERSION_TAGS.include?(obj.strip)
         return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
@@ -28,11 +33,12 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", NpmAndYarn::Version.new(matches[2])]
+        [matches[1] || "=", NpmAndYarn::Version.new(T.must(matches[2]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
@@ -47,9 +53,9 @@ module Dependabot
       end
 
       def initialize(*requirements)
-        requirements = requirements.flatten.
-                       flat_map { |req_string| req_string.split(",").map(&:strip) }.
-                       flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
+        requirements = requirements.flatten
+                                   .flat_map { |req_string| req_string.split(",").map(&:strip) }
+                                   .flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
 
         super(requirements)
       end

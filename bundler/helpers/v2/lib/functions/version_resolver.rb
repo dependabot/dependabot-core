@@ -1,11 +1,14 @@
+# typed: true
 # frozen_string_literal: true
 
 module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
-    attr_reader :dependency_name, :dependency_requirements,
-                :gemfile_name, :lockfile_name
+    attr_reader :dependency_name
+    attr_reader :dependency_requirements
+    attr_reader :gemfile_name
+    attr_reader :lockfile_name
 
     def initialize(dependency_name:, dependency_requirements:,
                    gemfile_name:, lockfile_name:)
@@ -81,10 +84,10 @@ module Functions
       # subdependencies
       return [] unless lockfile
 
-      all_deps =  ::Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s).uniq
-      top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+      all_deps =  ::Bundler::LockfileParser.new(lockfile)
+                                           .specs.map { |x| x.name.to_s }.uniq
+      top_level = build_definition([]).dependencies
+                                      .map { |x| x.name.to_s }
 
       all_deps - top_level
     end
@@ -104,8 +107,8 @@ module Functions
     def unlock_yanked_gem(dependencies_to_unlock, error)
       raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
 
-      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                 named_captures["name"]
+      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX)
+                      .named_captures["name"]
       raise if dependencies_to_unlock.include?(gem_name)
 
       dependencies_to_unlock << gem_name
@@ -126,7 +129,7 @@ module Functions
     def fetcher_class(dep)
       return unless dep.source.is_a?(::Bundler::Source::Rubygems)
 
-      dep.source.fetchers.first.fetchers.first.class.to_s
+      dep.source.fetchers.first.send(:fetchers).first.class.to_s
     end
 
     def ruby_version

@@ -1,0 +1,99 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=3 'create_pull_request'
+pr-created foo/expected-group.json bar/expected-group.json
+pr-created foo/expected-individual.json
+pr-created bar/expected-individual.json
+
+# Tests that the related dependencies are updated together, and the others get individual PRs.
+
+-- foo/manifest.json --
+{
+  "related-a": { "version": "1.2.3" },
+  "related-b": { "version": "1.2.3" },
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- bar/manifest.json --
+{
+  "related-c": { "version": "1.2.3" },
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- foo/expected-group.json --
+{
+  "related-a": { "version": "1.2.5" },
+  "related-b": { "version": "1.2.5" },
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- bar/expected-group.json --
+{
+  "related-c": { "version": "1.2.5" },
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- foo/expected-individual.json --
+{
+  "related-a": { "version": "1.2.3" },
+  "related-b": { "version": "1.2.3" },
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- bar/expected-individual.json --
+{
+  "related-c": { "version": "1.2.3" },
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- related-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- related-b --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- related-c --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+      - "/foo"
+      - "/bar"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependency-groups:
+    - name: related
+      rules:
+        patterns:
+          - "related-*"

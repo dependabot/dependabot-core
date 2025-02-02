@@ -1,6 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
+pushd helpers
+go test ./...
+popd
 bundle install
-bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec
+bundle exec turbo_tests --verbose

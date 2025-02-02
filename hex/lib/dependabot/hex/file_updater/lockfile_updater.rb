@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/hex/file_updater"
@@ -40,7 +41,9 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
         def dependency
           # For now, we'll only ever be updating a single dep for Elixir
@@ -52,7 +55,7 @@ module Dependabot
           return content if content.start_with?("%{\"")
 
           # Substitute back old file beginning and ending
-          content.sub(/\A%\{\n  "/, "%{\"").sub(/\},\n\}/, "}}")
+          content.sub(/\A%\{\n  "/, "%{\"").sub("},\n}", "}}")
         end
 
         def write_temporary_dependency_files
@@ -85,8 +88,8 @@ module Dependabot
         end
 
         def lock_mixfile_dependency_versions(mixfile_content, filename)
-          dependencies.
-            reduce(mixfile_content.dup) do |content, dep|
+          dependencies
+            .reduce(mixfile_content.dup) do |content, dep|
               # Run on the updated mixfile content, so we're updating from the
               # updated requirements
               req_details = dep.requirements.find { |r| r[:file] == filename }
@@ -111,8 +114,6 @@ module Dependabot
         def mix_env
           {
             "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
-            "MIX_LOCK" => File.join(NativeHelpers.hex_helpers_dir, "mix.lock"),
-            "MIX_DEPS" => File.join(NativeHelpers.hex_helpers_dir, "deps"),
             "MIX_QUIET" => "1"
           }
         end

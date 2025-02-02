@@ -1,27 +1,45 @@
+# typed: true
 # frozen_string_literal: true
 
+require "digest"
 require "json"
 require "open3"
-require "digest"
+require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/logger"
-require "dependabot/shared_helpers"
 require "dependabot/pub/requirement"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Pub
     module Helpers
+      include Kernel
+
+      extend T::Sig
+      extend T::Helpers
+
+      abstract!
+
+      sig { returns(T::Array[Dependabot::Credential]) }
+      attr_reader :credentials
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      attr_reader :dependency_files
+
+      sig { returns(T::Hash[Symbol, T.untyped]) }
+      attr_reader :options
+
       def self.pub_helpers_path
         File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
       end
 
-      def self.run_infer_sdk_versions(url: nil)
-        stdout, _, status = Open3.capture3(
-          {},
-          File.join(pub_helpers_path, "infer_sdk_versions"),
-          *("--flutter-releases-url=#{url}" if url)
-        )
+      def self.run_infer_sdk_versions(dir, url: nil)
+        env = {}
+        cmd = File.join(pub_helpers_path, "infer_sdk_versions")
+        opts = url ? "--flutter-releases-url=#{url}" : ""
+        stdout, _, status = Open3.capture3(env, cmd, opts, chdir: dir)
         return nil unless status.success?
 
         JSON.parse(stdout)
@@ -33,26 +51,48 @@ module Dependabot
         JSON.parse(run_dependency_services("list"))["dependencies"]
       end
 
+      def repository_url(dependency)
+        source = dependency.requirements&.first&.dig(:source)
+        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+      end
+
+      def fetch_package_listing(dependency)
+        # Because we get the security_advisories as a set of constraints, we
+        # fetch the list of all versions and filter them to a list of vulnerable
+        # versions.
+        #
+        # Ideally we would like the helper to be the only one doing requests to
+        # the repository. But this should work for now:
+        response = Dependabot::RegistryClient.get(url: "#{repository_url(dependency)}/api/packages/#{dependency.name}")
+        JSON.parse(response.body)
+      end
+
+      def available_versions(dependency)
+        fetch_package_listing(dependency)["versions"].map do |v|
+          Dependabot::Pub::Version.new(v["version"])
+        end
+      end
+
       def dependency_services_report
         sha256 = Digest::SHA256.new
         dependency_files.each do |f|
-          sha256 << (f.path + "\n" + f.content + "\n")
+          sha256 << (f.path + "\n" + T.must(f.content) + "\n")
         end
         hash = sha256.hexdigest
 
         cache_file = "/tmp/report-#{hash}-pid-#{Process.pid}.json"
         return JSON.parse(File.read(cache_file)) if File.file?(cache_file)
 
-        report = JSON.parse(run_dependency_services("report"))["dependencies"]
+        report = JSON.parse(run_dependency_services("report", stdin_data: ""))["dependencies"]
         File.write(cache_file, JSON.generate(report))
         report
       end
 
       def dependency_services_apply(dependency_changes)
-        run_dependency_services("apply", stdin_data: dependencies_to_json(dependency_changes)) do
+        run_dependency_services("apply", stdin_data: dependencies_to_json(dependency_changes)) do |temp_dir|
           dependency_files.map do |f|
             updated_file = f.dup
-            updated_file.content = File.read(f.name)
+            updated_file.content = File.read(File.join(temp_dir, f.name))
             updated_file
           end
         end
@@ -106,28 +146,29 @@ module Dependabot
       ## Detects the right flutter release to use for the pubspec.yaml.
       ## Then checks it out if it is not already.
       ## Returns the sdk versions
-      def ensure_right_flutter_release
-        @ensure_right_flutter_release ||= begin
-          versions = Helpers.run_infer_sdk_versions url: options[:flutter_releases_url]
-          flutter_ref =
-            if versions
-              Dependabot.logger.info(
-                "Installing the Flutter SDK version: #{versions['flutter']} " \
-                "from channel #{versions['channel']} with Dart #{versions['dart']}"
-              )
-              "refs/tags/#{versions['flutter']}"
-            else
-              Dependabot.logger.info(
-                "Failed to infer the flutter version. Attempting to use latest stable release."
-              )
-              # Choose the 'stable' version if the tool failed to infer a version.
-              "stable"
-            end
+      def ensure_right_flutter_release(dir)
+        versions = Helpers.run_infer_sdk_versions(
+          File.join(dir, dependency_files.first&.directory),
+          url: options[:flutter_releases_url]
+        )
+        flutter_ref =
+          if versions
+            Dependabot.logger.info(
+              "Installing the Flutter SDK version: #{versions['flutter']} " \
+              "from channel #{versions['channel']} with Dart #{versions['dart']}"
+            )
+            "refs/tags/#{versions['flutter']}"
+          else
+            Dependabot.logger.info(
+              "Failed to infer the flutter version. Attempting to use latest stable release."
+            )
+            # Choose the 'stable' version if the tool failed to infer a version.
+            "stable"
+          end
 
-          check_out_flutter_ref flutter_ref
-          run_flutter_doctor
-          run_flutter_version
-        end
+        check_out_flutter_ref flutter_ref
+        run_flutter_doctor
+        run_flutter_version
       end
 
       def run_flutter_doctor
@@ -176,36 +217,52 @@ module Dependabot
       end
 
       def run_dependency_services(command, stdin_data: nil)
-        SharedHelpers.in_a_temporary_directory do
+        SharedHelpers.in_a_temporary_directory do |temp_dir|
           dependency_files.each do |f|
-            in_path_name = File.join(Dir.pwd, f.directory, f.name)
+            in_path_name = File.join(temp_dir, f.directory, f.name)
             FileUtils.mkdir_p File.dirname(in_path_name)
             File.write(in_path_name, f.content)
           end
-          sdk_versions = ensure_right_flutter_release
+          sdk_versions = ensure_right_flutter_release(temp_dir)
           SharedHelpers.with_git_configured(credentials: credentials) do
             env = {
               "CI" => "true",
               "PUB_ENVIRONMENT" => "dependabot",
               "FLUTTER_ROOT" => "/tmp/flutter",
+              "DART_ROOT" => "/tmp/flutter/bin/cache/dart-sdk",
               "PUB_HOSTED_URL" => options[:pub_hosted_url],
               # This variable will make the solver run assuming that Dart SDK version.
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
               "_PUB_TEST_SDK_VERSION" => sdk_versions["dart"]
             }
-            Dir.chdir File.join(Dir.pwd, dependency_files.first.directory) do
-              stdout, stderr, status = Open3.capture3(
-                env.compact,
-                File.join(Helpers.pub_helpers_path, "dependency_services"),
-                command,
-                stdin_data: stdin_data
-              )
-              raise Dependabot::DependabotError, "dependency_services failed: #{stderr}" unless status.success?
-              return stdout unless block_given?
+            command_dir = File.join(temp_dir, dependency_files.first&.directory)
 
-              yield
-            end
+            stdout, stderr, status = Open3.capture3(
+              env.compact,
+              File.join(Helpers.pub_helpers_path, "dependency_services"),
+              command,
+              stdin_data: stdin_data,
+              chdir: command_dir
+            )
+            raise_error(stderr) unless status.success?
+            return stdout unless block_given?
+
+            yield command_dir
           end
+        end
+      end
+
+      def raise_error(stderr)
+        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
+          raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Git error")
+          raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("version solving failed")
+          raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
+          raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")
+        else
+          raise Dependabot::DependabotError, "dependency_services failed: #{stderr}"
         end
       end
 
@@ -270,18 +327,18 @@ module Dependabot
             }
           end
         end
-        Dependency.new(**params)
+        Dependency.new(**T.unsafe(params))
       end
 
       # expects "auto" to already have been resolved to one of the other
       # strategies.
       def constraint_field_from_update_strategy(requirements_update_strategy)
         case requirements_update_strategy
-        when "widen_ranges"
+        when RequirementsUpdateStrategy::WidenRanges
           "constraintWidened"
-        when "bump_versions"
+        when RequirementsUpdateStrategy::BumpVersions
           "constraintBumped"
-        when "bump_versions_if_necessary"
+        when RequirementsUpdateStrategy::BumpVersionsIfNecessary
           "constraintBumpedIfNeeded"
         end
       end

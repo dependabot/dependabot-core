@@ -1,13 +1,25 @@
+# typed: true
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
+require "dependabot/requirement"
 require "dependabot/utils"
 
 module Dependabot
   module Bundler
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
+      sig { params(req: T::Hash[Symbol, String], version: Gem::Version).returns(T::Boolean) }
+      def self.satisfied_by?(req, version)
+        new(req[:requirement]).satisfied_by?(version)
+      end
+
       # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
@@ -25,5 +37,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils.
-  register_requirement_class("bundler", Dependabot::Bundler::Requirement)
+Dependabot::Utils
+  .register_requirement_class("bundler", Dependabot::Bundler::Requirement)

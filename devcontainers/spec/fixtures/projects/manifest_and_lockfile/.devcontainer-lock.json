@@ -1,0 +1,14 @@
+{
+  "features": {
+    "ghcr.io/codspace/versioning/bar:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/codspace/versioning/bar@sha256:0eb80a7a45ea6ac6d2057798608be4cacb3d3667d4818118e17acc5037d687d4",
+      "integrity": "sha256:0eb80a7a45ea6ac6d2057798608be4cacb3d3667d4818118e17acc5037d687d4"
+    },
+    "ghcr.io/codspace/versioning/foo:1": {
+      "version": "1.1.0",
+      "resolved": "ghcr.io/codspace/versioning/foo@sha256:80d2d7b58afeaf907451c6f4e24de47b09a327a24a21a2d3323b7abf76d14be5",
+      "integrity": "sha256:80d2d7b58afeaf907451c6f4e24de47b09a327a24a21a2d3323b7abf76d14be5"
+    }
+  }
+}

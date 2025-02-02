@@ -1,0 +1,23 @@
+{
+    "type": "application",
+    "source-directories": [
+        "src"
+    ],
+    "elm-version": "<= 0.19.1",
+    "dependencies": {
+        "direct": {
+            "elm/html": "1.0.0",
+            "elm/browser": "1.0.2"
+        },
+        "indirect": {
+            "elm/parser": "1.0.0",
+            "elm/time": "1.0.0"
+        }
+    },
+    "test-dependencies": {
+        "direct": {
+            "elm-explorations/test": "1.2.2"
+        },
+        "indirect": {}
+    }
+}

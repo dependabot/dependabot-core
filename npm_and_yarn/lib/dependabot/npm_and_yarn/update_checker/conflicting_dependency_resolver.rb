@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -64,7 +65,8 @@ module Dependabot
 
         private
 
-        attr_reader :dependency_files, :credentials
+        attr_reader :dependency_files
+        attr_reader :credentials
       end
     end
   end

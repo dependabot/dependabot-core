@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "open3"
@@ -7,9 +8,8 @@ require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
-require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/authed_url_builder"
 
@@ -26,19 +26,23 @@ module Dependabot
         INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
         WARNINGS = /\s*# WARNING:.*\Z/m
         UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @index_urls = index_urls
+          @build_isolation = true
         end
 
         def updated_dependency_files
-          return @updated_dependency_files if @update_already_attempted
-
-          @update_already_attempted = true
           @updated_dependency_files ||= fetch_updated_dependency_files
         end
 
@@ -66,31 +70,10 @@ module Dependabot
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
-            Helpers.install_required_python(python_version)
+            language_version_manager.install_required_python
 
             filenames_to_compile.each do |filename|
-              # Shell out to pip-compile, generate a new set of requirements.
-              # This is slow, as pip-compile needs to do installs.
-              options = pip_compile_options(filename)
-              options_fingerprint = pip_compile_options_fingerprint(options)
-
-              name_part = "pyenv exec pip-compile " \
-                          "#{options} -P " \
-                          "#{dependency.name}"
-              fingerprint_name_part = "pyenv exec pip-compile " \
-                                      "#{options_fingerprint} -P " \
-                                      "<dependency_name>"
-
-              version_part = "#{dependency.version} #{filename}"
-              fingerprint_version_part = "<dependency_version> <filename>"
-
-              # Don't escape pyenv `dep-name==version` syntax
-              run_pip_compile_command(
-                "#{SharedHelpers.escape_command(name_part)}==" \
-                "#{SharedHelpers.escape_command(version_part)}",
-                allow_unsafe_shell_command: true,
-                fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
-              )
+              compile_file(filename)
             end
 
             # Remove any .python-version file before parsing the reqs
@@ -110,6 +93,44 @@ module Dependabot
           end
         end
 
+        def compile_file(filename)
+          # Shell out to pip-compile, generate a new set of requirements.
+          # This is slow, as pip-compile needs to do installs.
+          options = pip_compile_options(filename)
+          options_fingerprint = pip_compile_options_fingerprint(options)
+
+          name_part = "pyenv exec pip-compile " \
+                      "#{options} -P " \
+                      "#{dependency.name}"
+          fingerprint_name_part = "pyenv exec pip-compile " \
+                                  "#{options_fingerprint} -P " \
+                                  "<dependency_name>"
+
+          version_part = "#{dependency.version} #{filename}"
+          fingerprint_version_part = "<dependency_version> <filename>"
+
+          # Don't escape pyenv `dep-name==version` syntax
+          run_pip_compile_command(
+            "#{SharedHelpers.escape_command(name_part)}==" \
+            "#{SharedHelpers.escape_command(version_part)}",
+            allow_unsafe_shell_command: true,
+            fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          retry_count ||= 0
+          retry_count += 1
+          if compilation_error?(e) && retry_count <= 1
+            @build_isolation = false
+            retry
+          end
+
+          raise
+        end
+
+        def compilation_error?(error)
+          error.message.include?(NATIVE_COMPILATION_ERROR)
+        end
+
         def update_manifest_files
           dependency_files.filter_map do |file|
             next unless file.name.end_with?(".in")
@@ -125,15 +146,15 @@ module Dependabot
 
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
-          old_reqs = dependency.previous_requirements.
-                     reject { |r| updated_filenames.include?(r[:file]) }
-          new_reqs = dependency.requirements.
-                     reject { |r| updated_filenames.include?(r[:file]) }
+          old_reqs = dependency.previous_requirements
+                               .reject { |r| updated_filenames.include?(r[:file]) }
+          new_reqs = dependency.requirements
+                               .reject { |r| updated_filenames.include?(r[:file]) }
 
           return [] if new_reqs.none?
 
-          files = dependency_files.
-                  reject { |file| updated_filenames.include?(file.name) }
+          files = dependency_files
+                  .reject { |file| updated_filenames.include?(file.name) }
 
           args = dependency.to_h
           args = args.keys.to_h { |k| [k.to_sym, args[k]] }
@@ -148,35 +169,26 @@ module Dependabot
         end
 
         def run_command(cmd, env: python_env, allow_unsafe_shell_command: false, fingerprint:)
-          start = Time.now
-          command = if allow_unsafe_shell_command
-                      cmd
-                    else
-                      SharedHelpers.escape_command(cmd)
-                    end
-          stdout, process = Open3.capture2e(env, command)
-          time_taken = Time.now - start
-
-          return stdout if process.success?
+          SharedHelpers.run_shell_command(
+            cmd,
+            env: env,
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            fingerprint: fingerprint,
+            stderr_to_stdout: true
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          stdout = e.message
 
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
 
-          raise SharedHelpers::HelperSubprocessFailed.new(
-            message: stdout,
-            error_context: {
-              command: command,
-              fingerprint: fingerprint,
-              time_taken: time_taken,
-              process_exit_value: process.to_s
-            }
-          )
+          raise
         end
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -210,7 +222,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version))
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -230,9 +242,9 @@ module Dependabot
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
-            SetupFileSanitizer.
-            new(setup_file: file, setup_cfg: setup_cfg(file)).
-            sanitized_content
+            SetupFileSanitizer
+            .new(setup_file: file, setup_cfg: setup_cfg(file))
+            .sanitized_content
         end
 
         def setup_cfg(file)
@@ -244,8 +256,8 @@ module Dependabot
         def freeze_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = dependency.previous_requirements.
-                    find { |r| r[:file] == file.name }
+          old_req = dependency.previous_requirements
+                              .find { |r| r[:file] == file.name }
 
           return file.content unless old_req
           return file.content if old_req == "==#{dependency.version}"
@@ -254,17 +266,18 @@ module Dependabot
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
-            new_requirement: "==#{dependency.version}"
+            new_requirement: "==#{dependency.version}",
+            index_urls: @index_urls
           ).updated_content
         end
 
         def update_dependency_requirement(file)
           return file.content unless file.name.end_with?(".in")
 
-          old_req = dependency.previous_requirements.
-                    find { |r| r[:file] == file.name }
-          new_req = dependency.requirements.
-                    find { |r| r[:file] == file.name }
+          old_req = dependency.previous_requirements
+                              .find { |r| r[:file] == file.name }
+          new_req = dependency.requirements
+                              .find { |r| r[:file] == file.name }
           return file.content unless old_req&.fetch(:requirement)
           return file.content if old_req == new_req
 
@@ -272,7 +285,8 @@ module Dependabot
             content: file.content,
             dependency_name: dependency.name,
             old_requirement: old_req[:requirement],
-            new_requirement: new_req[:requirement]
+            new_requirement: new_req[:requirement],
+            index_urls: @index_urls
           ).updated_content
         end
 
@@ -302,9 +316,9 @@ module Dependabot
             next update_count += 1 if updated_content.include?(original_line)
 
             line_to_update =
-              updated_content.lines.
-              select { |l| l.start_with?("-e") }.
-              at(update_count)
+              updated_content.lines
+                             .select { |l| l.start_with?("-e") }
+                             .at(update_count)
             raise "Mismatch in editable requirements!" unless line_to_update
 
             content = content.gsub(line_to_update, original_line)
@@ -342,8 +356,8 @@ module Dependabot
               ).sort.join(hash_separator(mtch.to_s))
             )
 
-            updated_content_with_hashes = updated_content_with_hashes.
-                                          gsub(mtch.to_s, updated_string)
+            updated_content_with_hashes = updated_content_with_hashes
+                                          .gsub(mtch.to_s, updated_string)
           end
           updated_content_with_hashes
         end
@@ -378,11 +392,32 @@ module Dependabot
         end
 
         def package_hashes_for(name:, version:, algorithm:)
-          SharedHelpers.run_helper_subprocess(
-            command: "pyenv exec python #{NativeHelpers.python_helper_path}",
-            function: "get_dependency_hash",
-            args: [name, version, algorithm]
-          ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+          index_urls = @index_urls || [nil]
+          hashes = []
+
+          index_urls.each do |index_url|
+            args = [name, version, algorithm]
+            args << index_url if index_url
+
+            begin
+              native_helper_hashes = T.cast(
+                SharedHelpers.run_helper_subprocess(
+                  command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                  function: "get_dependency_hash",
+                  args: args
+                ),
+                T::Array[T::Hash[String, String]]
+              ).map { |h| "--hash=#{algorithm}:#{h['hash']}" }
+
+              hashes.concat(native_helper_hashes)
+            rescue SharedHelpers::HelperSubprocessFailed => e
+              raise unless e.error_class.include?("PackageNotFoundError")
+
+              next
+            end
+          end
+
+          hashes
         end
 
         def hash_separator(requirement_string)
@@ -390,15 +425,15 @@ module Dependabot
           return unless requirement_string.match?(hash_regex)
 
           current_separator =
-            requirement_string.
-            match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/).
-            named_captures.fetch("separator")
+            requirement_string
+            .match(/#{hash_regex}((?<separator>\s*\\?\s*?)#{hash_regex})*/)
+            .named_captures.fetch("separator")
 
           default_separator =
-            requirement_string.
-            match(RequirementParser::HASH).
-            pre_match.match(/(?<separator>\s*\\?\s*?)\z/).
-            named_captures.fetch("separator")
+            requirement_string
+            .match(RequirementParser::HASH)
+            .pre_match.match(/(?<separator>\s*\\?\s*?)\z/)
+            .named_captures.fetch("separator")
 
           current_separator || default_separator
         end
@@ -414,7 +449,7 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          options = ["--build-isolation"]
+          options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
           if (requirements_file = compiled_file_for_filename(filename))
@@ -441,16 +476,20 @@ module Dependabot
 
           options << "--strip-extras" if requirements_file.content.include?("--strip-extras")
 
+          if (resolver = RESOLVER_REGEX.match(requirements_file.content))
+            options << "--resolver=#{resolver}"
+          end
+
           options
         end
 
         def pip_compile_index_options
-          credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |cred|
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .map do |cred|
               authed_url = AuthedUrlBuilder.authed_url(credential: cred)
 
-              if cred["replaces-base"]
+              if cred.replaces_base?
                 "--index-url=#{authed_url}"
               else
                 "--extra-index-url=#{authed_url}"
@@ -464,9 +503,9 @@ module Dependabot
 
         def filenames_to_compile
           files_from_reqs =
-            dependency.requirements.
-            map { |r| r[:file] }.
-            select { |fn| fn.end_with?(".in") }
+            dependency.requirements
+                      .map { |r| r[:file] }
+                      .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
             pip_compile_files.map(&:name).select do |fn|
@@ -481,12 +520,12 @@ module Dependabot
 
         def compiled_file_for_filename(filename)
           compiled_file =
-            compiled_files.
-            find { |f| f.content.match?(output_file_regex(filename)) }
+            compiled_files
+            .find { |f| f.content.match?(output_file_regex(filename)) }
 
           compiled_file ||=
-            compiled_files.
-            find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
+            compiled_files
+            .find { |f| f.name == filename.gsub(/\.in$/, ".txt") }
 
           compiled_file
         end
@@ -512,12 +551,12 @@ module Dependabot
         # If the files we need to update require one another then we need to
         # update them in the right order
         def order_filenames_for_compilation(filenames)
-          ordered_filenames = []
+          ordered_filenames = T.let([], T::Array[String])
 
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=
-              remaining_filenames.
-              reject do |fn|
+              remaining_filenames
+              .reject do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
                 unupdated_reqs.intersect?(filenames)
               end
@@ -545,41 +584,6 @@ module Dependabot
             end
         end
 
-        def python_version
-          @python_version ||=
-            user_specified_python_version ||
-            python_version_matching_imputed_requirements ||
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-        end
-
-        def user_specified_python_version
-          return unless python_requirement_parser.user_specified_requirements.any?
-
-          user_specified_requirements =
-            python_requirement_parser.user_specified_requirements.
-            map { |r| Python::Requirement.requirements_array(r) }
-          python_version_matching(user_specified_requirements)
-        end
-
-        def python_version_matching_imputed_requirements
-          compiled_file_python_requirement_markers =
-            python_requirement_parser.imputed_requirements.map do |r|
-              Dependabot::Python::Requirement.new(r)
-            end
-          python_version_matching(compiled_file_python_requirement_markers)
-        end
-
-        def python_version_matching(requirements)
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
-            version = Python::Version.new(version_string)
-            requirements.all? do |req|
-              next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
-
-              req.satisfied_by?(version)
-            end
-          end
-        end
-
         def python_requirement_parser
           @python_requirement_parser ||=
             FileParser::PythonRequirementParser.new(
@@ -587,8 +591,11 @@ module Dependabot
             )
         end
 
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def setup_files

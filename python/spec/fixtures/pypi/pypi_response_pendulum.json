@@ -2,7 +2,7 @@
     "info": {
         "author": "Sébastien Eustace",
         "author_email": "sebastien@eustace.io",
-        "bugtrack_url": "",
+        "bugtrack_url": null,
         "classifiers": [
             "License :: OSI Approved :: MIT License",
             "Programming Language :: Python :: 2",

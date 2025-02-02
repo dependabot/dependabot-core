@@ -101,7 +101,7 @@ function findConflictingParentDependencies(
   checkedEntries = new Set(),
   conflictingParents = new Map()
 ) {
-  // Prevent infinte loops for circular dependencies by only checking each
+  // Prevent infinite loops for circular dependencies by only checking each
   // lockfile entry once
   const checkedEntry = [dependency, requirement].join("@");
   if (checkedEntries.has(checkedEntry)) {

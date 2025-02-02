@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
@@ -57,15 +58,17 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials,
-                    :composer_platform_extensions
+        attr_reader :dependencies
+        attr_reader :dependency_files
+        attr_reader :credentials
+        attr_reader :composer_platform_extensions
 
         def generate_updated_lockfile_content
           base_directory = dependency_files.first.directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
 
-            updated_content = run_update_helper.fetch("composer.lock")
+            updated_content = run_update_helper.fetch(PackageManager::LOCKFILE_FILENAME)
 
             updated_content = post_process_lockfile(updated_content)
             raise "Expected content to change!" if lockfile.content == updated_content
@@ -137,8 +140,8 @@ module Dependabot
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
             missing_extensions =
-              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              error.message.scan(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -148,8 +151,8 @@ module Dependabot
                 !initial_platform.empty? &&
                 implicit_platform_reqs_satisfiable?(error.message)
             missing_extensions =
-              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
-              map do |extension_string|
+              error.message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
                 name, requirement = extension_string.strip.split(" ", 2)
                 { name: name, requirement: requirement }
               end
@@ -170,17 +173,8 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR).
-                             named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
-
-          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
-            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE).
-                             named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
-          end
+          dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
+          raise Dependabot::GitDependenciesNotReachable, dependency_url if dependency_url
 
           # NOTE: This matches an error message from composer plugins used to install ACF PRO
           # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
@@ -205,17 +199,9 @@ module Dependabot
           raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
 
           if error.message.include?("403 Forbidden")
-            source = error.message.match(%r{https?://(?<source>[^/]+)/}).
-                     named_captures.fetch("source")
+            source = error.message.match(%r{https?://(?<source>[^/]+)/})
+                          .named_captures.fetch("source")
             raise PrivateSourceAuthenticationFailure, source
-          end
-
-          # NOTE: This error is raised by composer v1
-          if error.message.include?("Argument 1 passed to Composer")
-            msg = "One of your Composer plugins is not compatible with the " \
-                  "latest version of Composer. Please update Composer and " \
-                  "try running `composer update` to debug further."
-            raise DependencyFileNotResolvable, msg
           end
 
           # NOTE: This error is raised by composer v2 and includes helpful
@@ -237,8 +223,8 @@ module Dependabot
 
         def implicit_platform_reqs_satisfiable?(message)
           missing_extensions =
-            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX).
-            map do |extension_string|
+            message.scan(MISSING_IMPLICIT_PLATFORM_REQ_REGEX)
+                   .map do |extension_string|
               name, requirement = extension_string.strip.split(" ", 2)
               { name: name, requirement: requirement }
             end
@@ -250,15 +236,21 @@ module Dependabot
         end
 
         def write_temporary_dependency_files
+          artifact_dependencies.each do |file|
+            path = file.name
+            FileUtils.mkdir_p(Pathname.new(path).dirname)
+            File.write(file.name, file.content)
+          end
+
           path_dependencies.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(file.name, file.content)
           end
 
-          File.write("composer.json", locked_composer_json_content)
-          File.write("composer.lock", lockfile.content)
-          File.write("auth.json", auth_json.content) if auth_json
+          File.write(PackageManager::MANIFEST_FILENAME, locked_composer_json_content)
+          File.write(PackageManager::LOCKFILE_FILENAME, lockfile.content)
+          File.write(PackageManager::AUTH_FILENAME, auth_json.content) if auth_json
         end
 
         def locked_composer_json_content
@@ -288,8 +280,8 @@ module Dependabot
             next content unless Composer::Version.correct?(updated_req)
 
             old_req =
-              dep.requirements.find { |r| r[:file] == "composer.json" }&.
-              fetch(:requirement)
+              dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
+                 &.fetch(:requirement)
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -316,10 +308,10 @@ module Dependabot
               next unless req.start_with?("dev-")
               next if req.include?("#")
 
-              commit_sha = parsed_lockfile.
-                           fetch(keys[:lockfile], []).
-                           find { |d| d["name"] == name }&.
-                           dig("source", "reference")
+              commit_sha = parsed_lockfile
+                           .fetch(keys[:lockfile], [])
+                           .find { |d| d["name"] == name }
+                           &.dig("source", "reference")
               updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
@@ -330,13 +322,13 @@ module Dependabot
         end
 
         def git_dependency_reference_error(error)
-          ref = error.message.match(/checkout '(?<ref>.*?)'/).
-                named_captures.fetch("ref")
+          ref = error.message.match(/checkout '(?<ref>.*?)'/)
+                     .named_captures.fetch("ref")
           dependency_name =
-            JSON.parse(lockfile.content).
-            values_at("packages", "packages-dev").flatten(1).
-            find { |dep| dep.dig("source", "reference") == ref }&.
-            fetch("name")
+            JSON.parse(lockfile.content)
+                .values_at("packages", "packages-dev").flatten(1)
+                .find { |dep| dep.dig("source", "reference") == ref }
+                &.fetch("name")
 
           raise unless dependency_name
 
@@ -358,9 +350,9 @@ module Dependabot
 
               updated_object = JSON.parse(content)
               updated_object_package =
-                updated_object.
-                fetch(package_type).
-                find { |d| d["name"] == details["name"] }
+                updated_object
+                .fetch(package_type)
+                .find { |d| d["name"] == details["name"] }
 
               next unless updated_object_package
 
@@ -368,9 +360,9 @@ module Dependabot
               updated_object_package["extra"]["patches_applied"] = patches
 
               content =
-                JSON.pretty_generate(updated_object, indent: "    ").
-                gsub(/\[\n\n\s*\]/, "[]").
-                gsub(/\}\z/, "}\n")
+                JSON.pretty_generate(updated_object, indent: "    ")
+                    .gsub(/\[\n\n\s*\]/, "[]")
+                    .gsub(/\}\z/, "}\n")
             end
           end
           content
@@ -379,11 +371,11 @@ module Dependabot
         def replace_content_hash(content)
           existing_hash = JSON.parse(content).fetch("content-hash")
           SharedHelpers.in_a_temporary_directory do
-            File.write("composer.json", updated_composer_json_content)
+            File.write(PackageManager::MANIFEST_FILENAME, updated_composer_json_content)
 
             content_hash =
               SharedHelpers.run_helper_subprocess(
-                command: "php #{php_helper_path}",
+                command: "#{Language::NAME} #{php_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
@@ -405,15 +397,15 @@ module Dependabot
             updated_object.delete("platform-overrides")
           end
 
-          JSON.pretty_generate(updated_object, indent: "    ").
-            gsub(/\[\n\n\s*\]/, "[]").
-            gsub(/\}\z/, "}\n")
+          JSON.pretty_generate(updated_object, indent: "    ")
+              .gsub(/\[\n\n\s*\]/, "[]")
+              .gsub(/\}\z/, "}\n")
         end
 
         def version_for_reqs(requirements)
           req_arrays =
-            requirements.
-            map { |str| Composer::Requirement.requirements_array(str) }
+            requirements
+            .map { |str| Composer::Requirement.requirements_array(str) }
           potential_versions =
             req_arrays.flatten.map do |req|
               op, version = req.requirements.first
@@ -425,8 +417,8 @@ module Dependabot
             end
 
           version =
-            potential_versions.
-            find do |v|
+            potential_versions
+            .find do |v|
               req_arrays.all? { |reqs| reqs.any? { |r| r.satisfied_by?(v) } }
             end
           raise "No matching version for #{requirements}!" unless version
@@ -453,38 +445,38 @@ module Dependabot
         end
 
         def credentials_env
-          credentials.
-            select { |c| c.fetch("type") == "php_environment_variable" }.
-            to_h { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }
+          credentials
+            .select { |c| c.fetch("type") == "php_environment_variable" }
+            .to_h { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }
         end
 
         def git_credentials
-          credentials.
-            select { |cred| cred.fetch("type") == "git_source" }.
-            select { |cred| cred["password"] }
+          credentials
+            .select { |cred| cred.fetch("type") == "git_source" }
+            .select { |cred| cred["password"] }
         end
 
         def registry_credentials
-          credentials.
-            select { |cred| cred.fetch("type") == "composer_repository" }.
-            select { |cred| cred["password"] }
+          credentials
+            .select { |cred| cred.fetch("type") == PackageManager::REPOSITORY_KEY }
+            .select { |cred| cred["password"] }
         end
 
         def initial_platform
-          platform_php = parsed_composer_json.dig("config", "platform", "php")
+          platform_php = Helpers.capture_platform_php(parsed_composer_json)
 
           platform = {}
-          platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
+          platform[Language::NAME] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
           # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
-          requirement_php = parsed_composer_json.dig("require", "php")
+          requirement_php = Helpers.php_constraint(parsed_composer_json)
           return platform unless requirement_php.is_a?(String)
           return platform unless requirement_valid?(requirement_php)
 
-          platform["php"] ||= []
-          platform["php"] << requirement_php
+          platform[Language::NAME] ||= []
+          platform[Language::NAME] << requirement_php
           platform
         end
 
@@ -505,21 +497,26 @@ module Dependabot
 
         def composer_json
           @composer_json ||=
-            dependency_files.find { |f| f.name == "composer.json" }
+            dependency_files.find { |f| f.name == PackageManager::MANIFEST_FILENAME }
         end
 
         def lockfile
           @lockfile ||=
-            dependency_files.find { |f| f.name == "composer.lock" }
+            dependency_files.find { |f| f.name == PackageManager::LOCKFILE_FILENAME }
         end
 
         def auth_json
-          @auth_json ||= dependency_files.find { |f| f.name == "auth.json" }
+          @auth_json ||= dependency_files.find { |f| f.name == PackageManager::AUTH_FILENAME }
+        end
+
+        def artifact_dependencies
+          @artifact_dependencies ||=
+            dependency_files.select { |f| f.name.end_with?(".zip", ".gitkeep") }
         end
 
         def path_dependencies
           @path_dependencies ||=
-            dependency_files.select { |f| f.name.end_with?("/composer.json") }
+            dependency_files.select { |f| f.name.end_with?("/#{PackageManager::MANIFEST_FILENAME}") }
         end
       end
     end

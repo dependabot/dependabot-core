@@ -1,45 +1,83 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
+require "dependabot/file_updaters/artifact_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
+      extend T::Sig
+
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
+      require_relative "file_updater/pnpm_lockfile_updater"
+      require_relative "file_updater/bun_lockfile_updater"
+      require_relative "file_updater/pnpm_workspace_updater"
 
       class NoChangeError < StandardError
+        extend T::Sig
+
+        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        def raven_context
+        sig { returns(T::Hash[Symbol, T.untyped]) }
+        def sentry_context
           { extra: @error_context }
         end
       end
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          /^package\.json$/,
-          /^package-lock\.json$/,
-          /^npm-shrinkwrap\.json$/,
-          /^yarn\.lock$/
+          %r{^(?:.*/)?package\.json$},
+          %r{^(?:.*/)?package-lock\.json$},
+          %r{^(?:.*/)?npm-shrinkwrap\.json$},
+          %r{^(?:.*/)?yarn\.lock$},
+          %r{^(?:.*/)?pnpm-lock\.yaml$},
+          %r{^(?:.*/)?pnpm-workspace\.yaml$},
+          %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
+          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
+        if Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog)
+          updated_files += updated_pnpm_workspace_files
+        end
         updated_files += updated_lockfiles
 
         if updated_files.none?
+
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
+            # when all dependencies are transitive
+            all_transitive = dependencies.none?(&:top_level?)
+            # when there is no update in package.json
+            no_package_json_update = package_files.empty?
+            # handle the no change error for transitive dependency updates
+            if pnpm_locks.any? && dependencies.length.positive? && all_transitive && no_package_json_update
+              raise ToolFeatureNotSupported.new(
+                tool_name: "pnpm",
+                tool_type: "package_manager",
+                feature: "updating transitive dependencies"
+              )
+            end
+          end
+
           raise NoChangeError.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
@@ -56,16 +94,20 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
+      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
       def vendor_updated_files(updated_files)
-        base_dir = updated_files.first.directory
-        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        base_dir = T.must(updated_files.first).directory
+        pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
+          updated_files << file
         end
-        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
-        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+        T.unsafe(vendor_updater).updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
+        end
+        install_state_updater.updated_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
 
@@ -73,18 +115,23 @@ module Dependabot
       end
 
       # Dynamically fetch the vendor cache folder from yarn
+      sig { returns(String) }
       def vendor_cache_dir
-        return @vendor_cache_dir if defined?(@vendor_cache_dir)
-
-        @vendor_cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
+        @vendor_cache_dir ||= T.let(
+          Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache"),
+          T.nilable(String)
+        )
       end
 
+      sig { returns(String) }
       def install_state_path
-        return @install_state_path if defined?(@install_state_path)
-
-        @install_state_path = Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz")
+        @install_state_path ||= T.let(
+          Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz"),
+          T.nilable(String)
+        )
       end
 
+      sig { returns(Dependabot::FileUpdaters::VendorUpdater) }
       def vendor_updater
         Dependabot::FileUpdaters::VendorUpdater.new(
           repo_contents_path: repo_contents_path,
@@ -92,23 +139,26 @@ module Dependabot
         )
       end
 
+      sig { returns(Dependabot::FileUpdaters::ArtifactUpdater) }
       def install_state_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: install_state_path
+          target_directory: install_state_path
         )
       end
 
+      sig { returns(Dependabot::FileUpdaters::ArtifactUpdater) }
       def pnp_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: "./"
+          target_directory: "./"
         )
       end
 
+      sig { returns(T::Array[DependencyFile]) }
       def filtered_dependency_files
-        @filtered_dependency_files ||=
-          if dependencies.select(&:top_level?).any?
+        @filtered_dependency_files ||= T.let(
+          if dependencies.any?(&:top_level?)
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: dependencies
@@ -118,13 +168,16 @@ module Dependabot
               dependency_files: dependency_files,
               updated_dependencies: dependencies
             ).files_requiring_update
-          end
+          end, T.nilable(T::Array[DependencyFile])
+        )
       end
 
+      sig { override.void }
       def check_required_files
-        raise "No package.json!" unless get_original_file("package.json")
+        raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
       def error_context(updated_files:)
         {
           dependencies: dependencies.map(&:to_h),
@@ -133,52 +186,117 @@ module Dependabot
         }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_locks
-        @package_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("package-lock.json") }
+        @package_locks ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("package-lock.json") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def yarn_locks
-        @yarn_locks ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("yarn.lock") }
+        @yarn_locks ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("yarn.lock") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pnpm_locks
+        @pnpm_locks ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-lock.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def pnpm_workspace
+        @pnpm_workspace ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def bun_locks
+        @bun_locks ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("bun.lock") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def shrinkwraps
-        @shrinkwraps ||=
-          filtered_dependency_files.
-          select { |f| f.name.end_with?("npm-shrinkwrap.json") }
+        @shrinkwraps ||= T.let(
+          filtered_dependency_files
+          .select { |f| f.name.end_with?("npm-shrinkwrap.json") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def package_files
-        @package_files ||=
+        @package_files ||= T.let(
           filtered_dependency_files.select do |f|
             f.name.end_with?("package.json")
-          end
+          end, T.nilable(T::Array[DependencyFile])
+        )
       end
 
+      sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Boolean) }
       def yarn_lock_changed?(yarn_lock)
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
       end
 
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(T::Boolean) }
+      def pnpm_lock_changed?(pnpm_lock)
+        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
+      end
+
+      sig { params(bun_lock: Dependabot::DependencyFile).returns(T::Boolean) }
+      def bun_lock_changed?(bun_lock)
+        bun_lock.content != updated_bun_lock_content(bun_lock)
+      end
+
+      sig { params(package_lock: Dependabot::DependencyFile).returns(T::Boolean) }
       def package_lock_changed?(package_lock)
         package_lock.content != updated_lockfile_content(package_lock)
       end
 
+      sig { params(shrinkwrap: Dependabot::DependencyFile).returns(T::Boolean) }
       def shrinkwrap_changed?(shrinkwrap)
         shrinkwrap.content != updated_lockfile_content(shrinkwrap)
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_manifest_files
         package_files.filter_map do |file|
           updated_content = updated_package_json_content(file)
           next if updated_content == file.content
 
-          updated_file(file: file, content: updated_content)
+          updated_file(file: file, content: T.must(updated_content))
         end
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_pnpm_workspace_files
+        pnpm_workspace.filter_map do |file|
+          updated_content = updated_pnpm_workspace_content(file)
+          next if updated_content == file.content
+
+          updated_file(file: file, content: T.must(updated_content))
+        end
+      end
+
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_lockfiles
         updated_files = []
 
@@ -191,12 +309,30 @@ module Dependabot
           )
         end
 
+        pnpm_locks.each do |pnpm_lock|
+          next unless pnpm_lock_changed?(pnpm_lock)
+
+          updated_files << updated_file(
+            file: pnpm_lock,
+            content: updated_pnpm_lock_content(pnpm_lock)
+          )
+        end
+
+        bun_locks.each do |bun_lock|
+          next unless bun_lock_changed?(bun_lock)
+
+          updated_files << updated_file(
+            file: bun_lock,
+            content: updated_bun_lock_content(bun_lock)
+          )
+        end
+
         package_locks.each do |package_lock|
           next unless package_lock_changed?(package_lock)
 
           updated_files << updated_file(
             file: package_lock,
-            content: updated_lockfile_content(package_lock)
+            content: T.must(updated_lockfile_content(package_lock))
           )
         end
 
@@ -205,31 +341,78 @@ module Dependabot
 
           updated_files << updated_file(
             file: shrinkwrap,
-            content: updated_lockfile_content(shrinkwrap)
+            content: T.must(updated_lockfile_content(shrinkwrap))
           )
         end
 
         updated_files
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
 
+      sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
       def updated_yarn_lock_content(yarn_lock)
-        @updated_yarn_lock_content ||= {}
+        @updated_yarn_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_yarn_lock_content[yarn_lock.name] ||=
           yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
       end
 
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
+      def updated_pnpm_lock_content(pnpm_lock)
+        @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+        @updated_pnpm_lock_content[pnpm_lock.name] ||=
+          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock)
+      end
+
+      sig { params(bun_lock: Dependabot::DependencyFile).returns(String) }
+      def updated_bun_lock_content(bun_lock)
+        @updated_bun_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+        @updated_bun_lock_content[bun_lock.name] ||=
+          bun_lockfile_updater.updated_bun_lock_content(bun_lock)
+      end
+
+      sig { returns(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater) }
       def yarn_lockfile_updater
-        @yarn_lockfile_updater ||=
+        @yarn_lockfile_updater ||= T.let(
           YarnLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
             credentials: credentials
-          )
+          ),
+          T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
+        )
       end
 
+      sig { returns(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater) }
+      def pnpm_lockfile_updater
+        @pnpm_lockfile_updater ||= T.let(
+          PnpmLockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
+        )
+      end
+
+      sig { returns(Dependabot::NpmAndYarn::FileUpdater::BunLockfileUpdater) }
+      def bun_lockfile_updater
+        @bun_lockfile_updater ||= T.let(
+          BunLockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::NpmAndYarn::FileUpdater::BunLockfileUpdater)
+        )
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_lockfile_content(file)
-        @updated_lockfile_content ||= {}
+        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_lockfile_content[file.name] ||=
           NpmLockfileUpdater.new(
             lockfile: file,
@@ -239,17 +422,31 @@ module Dependabot
           ).updated_lockfile.content
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_package_json_content(file)
-        @updated_package_json_content ||= {}
+        @updated_package_json_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_package_json_content[file.name] ||=
           PackageJsonUpdater.new(
             package_json: file,
             dependencies: dependencies
           ).updated_package_json.content
       end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T.nilable(String))
+      end
+      def updated_pnpm_workspace_content(file)
+        @updated_pnpm_workspace_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+        @updated_pnpm_workspace_content[file.name] ||=
+          PnpmWorkspaceUpdater.new(
+            workspace_file: file,
+            dependencies: dependencies
+          ).updated_pnpm_workspace.content
+      end
     end
   end
 end
 
-Dependabot::FileUpdaters.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)
+Dependabot::FileUpdaters
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::FileUpdater)

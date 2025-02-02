@@ -7,9 +7,11 @@ require "uri"
 require "json"
 require "rubygems/package"
 require "bundler"
-require "./common/lib/dependabot/version"
+require "./common/lib/dependabot"
 require "yaml"
 
+# ./dependabot-core.gemspec is purposefully excluded from this list
+# because it's an empty gem as a placeholder to prevent namesquatting.
 GEMSPECS = %w(
   common/dependabot-common.gemspec
   go_modules/dependabot-go_modules.gemspec
@@ -29,6 +31,10 @@ GEMSPECS = %w(
   python/dependabot-python.gemspec
   pub/dependabot-pub.gemspec
   omnibus/dependabot-omnibus.gemspec
+  silent/dependabot-silent.gemspec
+  swift/dependabot-swift.gemspec
+  devcontainers/dependabot-devcontainers.gemspec
+  dotnet_sdk/dependabot-dotnet_sdk.gemspec
 ).freeze
 
 def run_command(command)
@@ -120,7 +126,7 @@ end
 def rubygems_release_exists?(name, version)
   uri = URI.parse("https://rubygems.org/api/v1/versions/#{name}.json")
   response = Net::HTTP.get_response(uri)
-  abort "Gem #{name} doesn't exist on rubygems" if response.code != "200"
+  return false if response.code != "200"
 
   body = JSON.parse(response.body)
   existing_versions = body.map { |b| b["number"] }

@@ -5,7 +5,7 @@ const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
 const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const fixDuplicates = require("./fix-duplicates");
-const { LightweightAdd, LightweightInstall } = require("./helpers");
+const { LightweightInstall, LOCKFILE_ENTRY_REGEX } = require("./helpers");
 const { parse } = require("./lockfile-parser");
 const stringify =
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
@@ -21,43 +21,10 @@ function recoverVersionComments(oldLockfile, newLockfile) {
     .replace(nodeRegex, () => oldMatch(nodeRegex) || "");
 }
 
-// Installs exact version and returns lockfile entry
-async function getLockfileEntryForUpdate(depName, depVersion) {
-  const directory = fs.mkdtempSync(`${os.tmpdir()}${path.sep}`);
-  const readFile = (fileName) =>
-    fs.readFileSync(path.join(directory, fileName)).toString();
-
-  const flags = {
-    ignoreScripts: true,
-    ignoreWorkspaceRootCheck: true,
-    ignoreEngines: true,
-    ignorePlatform: true,
-  };
-  const reporter = new EventReporter();
-  const config = new Config(reporter);
-  await config.init({
-    cwd: directory,
-    nonInteractive: true,
-    enableDefaultRc: true,
-    extraneousYarnrcFiles: [".yarnrc"],
-  });
-
-  // Empty lockfile
-  const lockfile = await Lockfile.fromDirectory(directory, reporter);
-
-  const arg = [`${depName}@${depVersion}`];
-  await new LightweightAdd(arg, flags, config, reporter, lockfile).init();
-
-  const lockfileObject = await parse(directory);
-  const noHeader = true;
-  const enableLockfileVersions = false;
-  return stringify(lockfileObject, noHeader, enableLockfileVersions);
-}
-
 async function updateDependencyFile(
   directory,
   lockfileName,
-  updatedDependency
+  dependencies
 ) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
@@ -76,23 +43,27 @@ async function updateDependencyFile(
     enableDefaultRc: true,
     extraneousYarnrcFiles: [".yarnrc"],
   });
+  const noHeader = !Boolean(originalYarnLock.match(/^# THIS IS AN AU/m));
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
-  const depName = updatedDependency && updatedDependency.name;
-  const depVersion = updatedDependency && updatedDependency.version;
 
   // SubDependencyVersionResolver relies on the install finding the latest
   // version of a sub-dependency that's been removed from the lockfile
   // YarnLockFileUpdater passes a specific version to be updated
-  if (depName && depVersion) {
-    const lockfileEntryForUpdate = await getLockfileEntryForUpdate(
-      depName,
-      depVersion
+  const lockfileObject = await parse(directory);
+  for (const [entry, pkg] of Object.entries(lockfileObject)) {
+    const [_, depName] = entry.match(
+      LOCKFILE_ENTRY_REGEX
     );
-    const lockfileContent = `${originalYarnLock}\n${lockfileEntryForUpdate}`;
-
-    const dedupedYarnLock = fixDuplicates(lockfileContent, depName);
-    fs.writeFileSync(path.join(directory, lockfileName), dedupedYarnLock);
+    if (dependencies.some(dependency => dependency.name === depName)) {
+      delete lockfileObject[entry];
+    }
   }
+
+  let newLockFileContent = await stringify(lockfileObject, noHeader, config.enableLockfileVersions);
+  for (const dependency of dependencies) {
+    newLockFileContent = fixDuplicates(newLockFileContent, dependency.name);
+  }
+  fs.writeFileSync(path.join(directory, lockfileName), newLockFileContent);
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
   const install = new LightweightInstall(flags, config, reporter, lockfile);

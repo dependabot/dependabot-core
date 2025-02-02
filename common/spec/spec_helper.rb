@@ -1,13 +1,32 @@
+# typed: true
 # frozen_string_literal: true
 
 require "rspec/its"
+require "rspec/sorbet"
 require "webmock/rspec"
 require "vcr"
 require "debug"
 require "simplecov"
-require "simplecov-console"
+require "simplecov_json_formatter"
 require "stackprof"
 require "uri"
+
+# SimpleCov _must_ be started before any dependabot code is loaded
+SimpleCov.start do
+  command_name "test-process-#{ENV.fetch('TEST_ENV_NUMBER', 1)}"
+  add_filter "/spec/"
+  if ENV["CI"]
+    formatter SimpleCov::Formatter::SimpleFormatter
+  else
+    formatter SimpleCov::Formatter::MultiFormatter.new([
+      SimpleCov::Formatter::SimpleFormatter,
+      SimpleCov::Formatter::HTMLFormatter
+    ])
+  end
+  enable_coverage :branch
+  primary_coverage :branch
+  minimum_coverage line: 0, branch: 0
+end
 
 require "dependabot/dependency_file"
 require "dependabot/experiments"
@@ -15,32 +34,16 @@ require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
 require_relative "warning_monkey_patch"
 
-if ENV["COVERAGE"]
-  SimpleCov::Formatter::Console.output_style = "block"
-  SimpleCov.formatter = if ENV["CI"]
-                          SimpleCov::Formatter::Console
-                        else
-                          SimpleCov::Formatter::HTMLFormatter
-                        end
-
-  SimpleCov.start do
-    add_filter "/spec/"
-
-    enable_coverage :branch
-    minimum_coverage line: 80, branch: 70
-    # TODO: Enable minimum coverage per file once outliers have been increased
-    # minimum_coverage_by_file 80
-    refuse_coverage_drop
-  end
-end
-
-Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
-Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
+ENV["GIT_AUTHOR_NAME"] = "dependabot-ci"
+ENV["GIT_AUTHOR_EMAIL"] = "no-reply@github.com"
+ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
+ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
 
 RSpec.configure do |config|
   config.color = true
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
+  config.expect_with(:rspec) { |expectations| expectations.max_formatted_output_length = 1000 }
   config.raise_errors_for_deprecations!
   config.example_status_persistence_file_path = ".rspec_status"
 
@@ -64,6 +67,8 @@ RSpec.configure do |config|
     end
   end
 end
+
+RSpec::Sorbet.allow_doubles!
 
 VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
@@ -90,13 +95,40 @@ VCR.configure do |config|
   end
 
   # Let's you set default VCR mode with VCR=all for re-recording
-  # episodes. :once is VCR default
-  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :once
+  # episodes. We use :none here to avoid recording new cassettes
+  # in CI if it doesn't already exist for a test
+  record_mode = ENV["VCR"] ? ENV["VCR"].to_sym : :none
   config.default_cassette_options = { record: record_mode }
 end
 
 def fixture(*name)
   File.read(File.join("spec", "fixtures", File.join(*name)))
+end
+
+# Creates a temporary directory and writes the provided files into it.
+#
+# @param files [DependencyFile] the files to be written into the temporary directory
+def write_tmp_repo(files,
+                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
+  FileUtils.mkdir_p(tmp_dir_path)
+  tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
+  tmp_repo_path = Pathname.new(tmp_repo).expand_path
+  FileUtils.mkpath(tmp_repo_path)
+
+  files.each do |file|
+    path = tmp_repo_path.join(file.name)
+    FileUtils.mkpath(path.dirname)
+    File.write(path, file.content)
+  end
+
+  Dir.chdir(tmp_repo_path) do
+    Dependabot::SharedHelpers.run_shell_command("git init")
+    Dependabot::SharedHelpers.run_shell_command("git add --all")
+    Dependabot::SharedHelpers.run_shell_command("git commit -m init")
+  end
+
+  tmp_repo_path.to_s
 end
 
 # Creates a temporary directory and copies in any files from the specified
@@ -107,13 +139,14 @@ end
 # @param project [String] the project directory, located in
 # "spec/fixtures/projects"
 # @return [String] the path to the new temp repo.
-def build_tmp_repo(project, path: "projects")
+def build_tmp_repo(project,
+                   path: "projects",
+                   tmp_dir_path: Dependabot::Utils::BUMP_TMP_DIR_PATH,
+                   tmp_dir_prefix: Dependabot::Utils::BUMP_TMP_FILE_PREFIX)
   project_path = File.expand_path(File.join("spec/fixtures", path, project))
 
-  tmp_dir = Dependabot::Utils::BUMP_TMP_DIR_PATH
-  prefix = Dependabot::Utils::BUMP_TMP_FILE_PREFIX
-  FileUtils.mkdir_p(tmp_dir)
-  tmp_repo = Dir.mktmpdir(prefix, tmp_dir)
+  FileUtils.mkdir_p(tmp_dir_path)
+  tmp_repo = Dir.mktmpdir(tmp_dir_prefix, tmp_dir_path)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
   FileUtils.mkpath(tmp_repo_path)
 
@@ -148,14 +181,6 @@ def project_dependency_files(project, directory: "/")
   end
 end
 
-def capture_stderr
-  previous_stderr = $stderr
-  $stderr = StringIO.new
-  yield
-ensure
-  $stderr = previous_stderr
-end
-
 # Spec helper to provide GitHub credentials if set via an environment variable
 def github_credentials
   if ENV["DEPENDABOT_TEST_ACCESS_TOKEN"].nil? && ENV["LOCAL_GITHUB_ACCESS_TOKEN"].nil?
@@ -167,5 +192,22 @@ def github_credentials
       "username" => "x-access-token",
       "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
+  end
+end
+
+# Load a command from the fixtures/commands directory
+def command_fixture(name)
+  path = File.join("spec", "fixtures", "commands", name)
+  raise "Command fixture '#{name}' does not exist" unless File.exist?(path)
+
+  File.expand_path(path)
+end
+
+# Define an anonymous subclass of Dependabot::Requirement for testing purposes
+TestRequirement = Class.new(Dependabot::Requirement) do
+  # Initialize with comma-separated requirement constraints
+  def initialize(constraint_string)
+    requirements = constraint_string.split(",").map(&:strip)
+    super(requirements)
   end
 end

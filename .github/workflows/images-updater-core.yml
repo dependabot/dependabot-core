@@ -1,7 +1,7 @@
 name: Updater-Core image
 env:
   UPDATER_CORE_IMAGE: "ghcr.io/dependabot/dependabot-updater-core"
-on:
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - main
@@ -9,15 +9,21 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 jobs:
   push-updater-core-image:
-    name: Push dependabot-updater-core image to docker hub
+    name: Push dependabot-updater-core image to GHCR
     runs-on: ubuntu-latest
     if: github.repository == 'dependabot/dependabot-core'
     permissions:
       contents: read
+      id-token: write
       packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+
+      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+
       - name: Build dependabot-updater-core image
         run: script/build common
       - name: Log in to GHCR
@@ -26,9 +32,11 @@ jobs:
       - name: Push latest image
         run: |
           docker push "$UPDATER_CORE_IMAGE:latest"
+          cosign sign --yes $(cosign triangulate --type=digest "$UPDATER_CORE_IMAGE:latest")
+
       - name: Push tagged image
         if: contains(github.ref, 'refs/tags')
         run: |
-          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
           docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
           docker push "$UPDATER_CORE_IMAGE:$VERSION"

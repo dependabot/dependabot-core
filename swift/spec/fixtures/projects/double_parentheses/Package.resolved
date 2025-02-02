@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-crypto.git",
+      "state" : {
+        "revision" : "60f13f60c4d093691934dc6cfdf5f508ada1f894",
+        "version" : "2.6.0"
+      }
+    }
+  ],
+  "version" : 2
+}

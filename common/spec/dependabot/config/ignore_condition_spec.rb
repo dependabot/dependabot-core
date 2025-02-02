@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
@@ -9,14 +10,16 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_version) { "1.2.3" }
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
   let(:security_updates_only) { false }
+  let(:package_manager) { "dummy" }
 
   describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
         requirements: [],
-        package_manager: "npm_and_yarn",
+        package_manager: package_manager,
         version: dependency_version
       )
     end
@@ -25,18 +28,18 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     def expect_allowed(versions)
       reqs = ignored_versions.map { |v| Gem::Requirement.new(v.split(",").map(&:strip)) }
       versions.each do |v|
-        version = Gem::Version.new(v)
+        version = Dependabot::Utils.version_class_for_package_manager(package_manager).new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
-        expect(ignored).to eq(false), "Expected #{v} to be allowed, but was ignored"
+        expect(ignored).to be(false), "Expected #{v} to be allowed, but was ignored"
       end
     end
 
     def expect_ignored(versions)
       reqs = ignored_versions.map { |v| Gem::Requirement.new(v.split(",").map(&:strip)) }
       versions.each do |v|
-        version = Gem::Version.new(v)
+        version = Dependabot::Version.new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
-        expect(ignored).to eq(true), "Expected #{v} to be ignored, but was allowed"
+        expect(ignored).to be(true), "Expected #{v} to be ignored, but was allowed"
       end
     end
 
@@ -267,6 +270,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
@@ -274,6 +278,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_minor_versions" do
           let(:update_types) { ["version-update:semver-minor"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
@@ -281,8 +286,27 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
+          end
+        end
+      end
+
+      context "with a semver dependency, but according to another package manager" do
+        let(:dependency_version) { "v11.0.14" }
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "ignores expected versions" do
+            expect_allowed(["11"])
+            expect_ignored(["17"])
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 12.a"])
           end
         end
       end
@@ -292,16 +316,19 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
+
           it { is_expected.to eq([]) }
         end
 
         context "with ignore_minor_versions" do
           let(:update_types) { ["version-update:semver-minor"] }
+
           it { is_expected.to eq([]) }
         end
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
+
           it { is_expected.to eq([]) }
         end
       end
@@ -310,7 +337,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:security_updates_only) { true }
         let(:update_types) { %w(version-update:semver-major version-update:semver-patch) }
 
-        it "allows all " do
+        it "allows all" do
           expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end

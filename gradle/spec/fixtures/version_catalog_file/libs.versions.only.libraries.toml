@@ -1,0 +1,22 @@
+[versions]
+corektx = "1.7.0"
+lifecycleRuntime = "2.3.1"
+composeUi = "1.2.0"
+jUnitVersion = "4.13.2"
+androidxJunit = "1.1.3"
+espresso = "3.5.0"
+
+[libraries]
+corektx = { module = "androidx.core:core-ktx", version.ref = "corektx" }
+lifecycleRuntimeKtx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntime" }
+
+compose-activity = { module = "androidx.activity:activity-compose", version = "1.3.1" }
+compose-ui = { module = "androidx.compose.ui:ui", version.ref = "composeUi" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "composeUi" }
+
+test-junit = { module = "junit:junit", version.ref = "jUnitVersion" }
+test-andoridx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
+test-compose-ui = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeUi" }
+test-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "composeUi" }
+test-compose-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeUi" }
+test-espresso-Core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }

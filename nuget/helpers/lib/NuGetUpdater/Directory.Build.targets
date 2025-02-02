@@ -1,0 +1,17 @@
+<Project>
+  <ItemGroup>
+    <!--
+    The NuGetUpdater.Core project needs to reference `Microsoft.Build.*`, et al. packages, but they require some
+    special handling. The documentation explains that:
+
+    https://learn.microsoft.com/en-us/visualstudio/msbuild/find-and-use-msbuild-versions?view=vs-2022#use-nuget-packages-preferred
+
+    The `ExcludeAssets` attribute doesn't do what we'd like through a <ProjectReference> element, so to get around that
+    we're adding the packages to _all_ projects so they all get the `ExcludeAssets` behavior.  For more information see
+    this: https://github.com/dotnet/sdk/issues/42708
+    -->
+    <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

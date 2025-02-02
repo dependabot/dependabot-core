@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -18,6 +19,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
   describe ".new" do
     context "with no argument" do
       subject { described_class.new }
+
       it { is_expected.to be_a(described_class) }
       its(:dependencies) { is_expected.to eq([]) }
     end
@@ -28,13 +30,13 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       it { is_expected.to be_a(described_class) }
       its(:dependencies) { is_expected.to eq([dependency]) }
 
-      context "that contains non-dependency objects" do
+      context "when an argument contains non-dependency objects" do
         subject { described_class.new([dependency, :a]) }
 
         it "raises a helpful error" do
-          expect { described_class.new(:a) }.
-            to raise_error(ArgumentError) do |error|
-              expect(error.message).to include("array of Dependency objects")
+          expect { described_class.new(:a) }
+            .to raise_error(TypeError) do |error|
+              expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
             end
         end
       end
@@ -44,16 +46,16 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       subject { described_class.new(dependency) }
 
       it "raises a helpful error" do
-        expect { described_class.new(:a) }.
-          to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq "must be an array of Dependency objects"
+        expect { described_class.new(:a) }
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type T::Array[Dependabot::Dependency]")
           end
       end
     end
   end
 
   describe "<<" do
-    subject { dependency_set << dependency }
+    subject(:set_of_dependencies) { dependency_set << dependency }
 
     it { is_expected.to be_a(described_class) }
     its(:dependencies) { is_expected.to eq([dependency]) }
@@ -61,7 +63,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
     context "when a dependency already exists in the set" do
       before { dependency_set << existing_dependency }
 
-      context "and is identical to the one being added" do
+      context "when identical to the one being added" do
         let(:existing_dependency) { dependency }
 
         it { is_expected.to be_a(described_class) }
@@ -82,23 +84,24 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
             )
           end
 
-          context "acting case-sensitively" do
+          context "when acting case-sensitively" do
             let(:dependency_set) { described_class.new(case_sensitive: true) }
 
             it { is_expected.to be_a(described_class) }
+
             its(:dependencies) do
               is_expected.to eq([existing_dependency, dependency])
             end
           end
 
-          context "acting case-insensitively (the default)" do
+          context "when acting case-insensitively (the default)" do
             it { is_expected.to be_a(described_class) }
             its(:dependencies) { is_expected.to eq([existing_dependency]) }
           end
         end
       end
 
-      context "and is different to the one being added" do
+      context "when different to the one being added" do
         let(:existing_dependency) do
           Dependabot::Dependency.new(
             name: "statesman",
@@ -110,12 +113,13 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         end
 
         it { is_expected.to be_a(described_class) }
+
         its(:dependencies) do
-          is_expected.to match_array([existing_dependency, dependency])
+          is_expected.to contain_exactly(existing_dependency, dependency)
         end
       end
 
-      context "and is identical, but with different requirements" do
+      context "when identical but with different requirements" do
         let(:existing_dependency) do
           Dependabot::Dependency.new(
             name: "business",
@@ -129,18 +133,16 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         it { is_expected.to be_a(described_class) }
 
         it "has a single dependency with the combined requirements" do
-          expect(subject.dependencies.count).to eq(1)
-          expect(subject.dependencies.first.requirements).
-            to match_array(
-              [
-                { requirement: "1", file: "a", groups: nil, source: nil },
-                { requirement: "1", file: "b", groups: nil, source: nil }
-              ]
+          expect(set_of_dependencies.dependencies.count).to eq(1)
+          expect(set_of_dependencies.dependencies.first.requirements)
+            .to contain_exactly(
+              { requirement: "1", file: "a", groups: nil, source: nil },
+              { requirement: "1", file: "b", groups: nil, source: nil }
             )
         end
       end
 
-      context "and is identical, but with different subdependency_metadata" do
+      context "when identical but with different subdependency_metadata" do
         let(:existing_subdependency_metadata) { [{ npm_bundled: true }] }
         let(:subdependency_metadata) { [{ npm_bundled: false }] }
         let(:existing_dependency) do
@@ -165,18 +167,18 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         it { is_expected.to be_a(described_class) }
 
         it "has a single dependency with the merged subdependency_metadata" do
-          expect(subject.dependencies.count).to eq(1)
-          expect(subject.dependencies.first.subdependency_metadata).
-            to eq([{ npm_bundled: true }, { npm_bundled: false }])
+          expect(set_of_dependencies.dependencies.count).to eq(1)
+          expect(set_of_dependencies.dependencies.first.subdependency_metadata)
+            .to eq([{ npm_bundled: true }, { npm_bundled: false }])
         end
 
         context "when existing dependency has no subdependency_metadata" do
           let(:existing_subdependency_metadata) { nil }
 
           it "has a single dependency with the merged subdependency_metadata" do
-            expect(subject.dependencies.count).to eq(1)
-            expect(subject.dependencies.first.subdependency_metadata).
-              to eq([{ npm_bundled: false }])
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata)
+              .to eq([{ npm_bundled: false }])
           end
         end
 
@@ -184,9 +186,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           let(:subdependency_metadata) { [] }
 
           it "has a single dependency with the merged subdependency_metadata" do
-            expect(subject.dependencies.count).to eq(1)
-            expect(subject.dependencies.first.subdependency_metadata).
-              to eq([{ npm_bundled: true }])
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata)
+              .to eq([{ npm_bundled: true }])
           end
         end
 
@@ -195,8 +197,8 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           let(:subdependency_metadata) { [] }
 
           it "has a single dependency with no subdependency_metadata" do
-            expect(subject.dependencies.count).to eq(1)
-            expect(subject.dependencies.first.subdependency_metadata).to be_nil
+            expect(set_of_dependencies.dependencies.count).to eq(1)
+            expect(set_of_dependencies.dependencies.first.subdependency_metadata).to be_nil
           end
         end
       end
@@ -206,29 +208,29 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       let(:dependency) { :a }
 
       it "raises a helpful error" do
-        expect { dependency_set << dependency }.
-          to raise_error(ArgumentError) do |error|
-            expect(error.message).to eq("must be a Dependency object")
+        expect { dependency_set << dependency }
+          .to raise_error(TypeError) do |error|
+            expect(error.message).to include("Expected type Dependabot::Dependency")
           end
       end
     end
   end
 
   describe "+" do
-    subject { dependency_set + described_class.new([dependency]) }
+    subject(:plus_dependencies) { dependency_set + described_class.new([dependency]) }
 
     it { is_expected.to be_a(described_class) }
     its(:dependencies) { is_expected.to eq([dependency]) }
 
-    it "delegates to << " do
+    it "delegates to <<" do
       expect(dependency_set).to receive(:<<).with(dependency).and_call_original
-      subject
+      plus_dependencies
     end
 
     context "with a non-dependency-set" do
       it "raises a helpful error" do
-        expect { dependency_set + [dependency] }.
-          to raise_error(ArgumentError) do |error|
+        expect { dependency_set + [dependency] }
+          .to raise_error(ArgumentError) do |error|
             expect(error.message).to eq("must be a DependencySet")
           end
       end
@@ -301,7 +303,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       expect(dependency_set.dependency_for_name("foo")).to eq(
         Dependabot::Dependency.new(
           name: "foo",
-          version: "1.0",
+          version: "1.1",
           requirements: (
             foo_v1.requirements +
             foo_sha.requirements +
@@ -325,7 +327,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       expect(combined_set.dependency_for_name("foo")).to eq(
         Dependabot::Dependency.new(
           name: "foo",
-          version: "1.0",
+          version: "1.1",
           requirements: (
             foo_v1.requirements +
             foo_sha.requirements +
@@ -348,7 +350,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       ])
     end
 
-    context "and the same version is added multiple times" do
+    context "when the same version is added multiple times" do
       it "combines each into the the existing version" do
         dependency_set = described_class.new << foo_v1_1 << foo_v1_1_alt << foo_sha
 

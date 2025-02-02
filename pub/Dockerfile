@@ -6,7 +6,7 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
 # https://dart.dev/get-dart/archive
-ARG DART_VERSION=2.19.0
+ARG DART_VERSION=3.5.0
 
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
@@ -26,4 +26,7 @@ RUN DART_ARCH=${TARGETARCH} \
 USER dependabot
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
-COPY --chown=dependabot:dependabot pub /home/dependabot/pub
+
+COPY --chown=dependabot:dependabot pub $DEPENDABOT_HOME/pub
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

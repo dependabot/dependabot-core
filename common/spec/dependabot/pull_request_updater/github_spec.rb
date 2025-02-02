@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -52,39 +53,39 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
-  let(:branch_url) { watched_repo_url + "/branches/" + branch_name }
+  let(:branch_url) { watched_repo_url + "/branches/" + CGI.escape(branch_name) }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
   let(:branch_name) { "dependabot/ruby/business-1.5.0" }
 
   before do
-    stub_request(:get, pull_request_url).
-      to_return(status: 200,
-                body: fixture("github", "pull_request.json"),
-                headers: json_header)
-    stub_request(:get, branch_url).
-      to_return(status: 200,
-                body: fixture("github", "branch.json"),
-                headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/trees").
-      to_return(status: 200,
-                body: fixture("github", "create_tree.json"),
-                headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/commits").
-      to_return(status: 200,
-                body: fixture("github", "create_commit.json"),
-                headers: json_header)
-    stub_request(:get, "#{watched_repo_url}/git/commits/old_pr_sha").
-      to_return(status: 200,
-                body: fixture("github", "git_commit.json"),
-                headers: json_header)
-    stub_request(:patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}").
-      to_return(status: 200,
-                body: fixture("github", "update_ref.json"),
-                headers: json_header)
-    stub_request(:post, "#{watched_repo_url}/git/blobs").
-      to_return(status: 200,
-                body: fixture("github", "create_blob.json"),
-                headers: json_header)
+    stub_request(:get, pull_request_url)
+      .to_return(status: 200,
+                 body: fixture("github", "pull_request.json"),
+                 headers: json_header)
+    stub_request(:get, branch_url)
+      .to_return(status: 200,
+                 body: fixture("github", "branch.json"),
+                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/git/trees")
+      .to_return(status: 200,
+                 body: fixture("github", "create_tree.json"),
+                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/git/commits")
+      .to_return(status: 200,
+                 body: fixture("github", "create_commit.json"),
+                 headers: json_header)
+    stub_request(:get, "#{watched_repo_url}/git/commits/old_pr_sha")
+      .to_return(status: 200,
+                 body: fixture("github", "git_commit.json"),
+                 headers: json_header)
+    stub_request(:patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}")
+      .to_return(status: 200,
+                 body: fixture("github", "update_ref.json"),
+                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/git/blobs")
+      .to_return(status: 200,
+                 body: fixture("github", "create_blob.json"),
+                 headers: json_header)
   end
 
   describe "#update" do
@@ -93,8 +94,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
 
       it "doesn't push a commit to GitHub" do
         updater.update
-        expect(WebMock).
-          to_not have_requested(:post, "#{watched_repo_url}/git/trees")
+        expect(WebMock)
+          .not_to have_requested(:post, "#{watched_repo_url}/git/trees")
       end
 
       it "returns nil" do
@@ -105,9 +106,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     it "pushes a commit to GitHub" do
       updater.update
 
-      expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/trees").
-        with(body: {
+      expect(WebMock)
+        .to have_requested(:post, "#{watched_repo_url}/git/trees")
+        .with(body: {
           base_tree: "basecommitsha",
           tree: [
             {
@@ -125,8 +126,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           ]
         })
 
-      expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/commits")
+      expect(WebMock)
+        .to have_requested(:post, "#{watched_repo_url}/git/commits")
     end
 
     context "with a submodule" do
@@ -143,9 +144,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "pushes a commit to GitHub" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/trees").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/trees")
+          .with(body: {
             base_tree: "basecommitsha",
             tree: [{
               path: "manifesto",
@@ -155,8 +156,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             }]
           })
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits")
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
       end
     end
 
@@ -175,9 +176,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "pushes a commit to GitHub" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/trees").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/trees")
+          .with(body: {
             base_tree: "basecommitsha",
             tree: [{
               path: "nested/manifesto",
@@ -187,8 +188,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             }]
           })
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits")
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
       end
     end
 
@@ -213,16 +214,16 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "creates a git blob and pushes a commit to GitHub" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/blobs").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/blobs")
+          .with(body: {
             content: gem_content,
             encoding: "base64"
           })
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/trees").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/trees")
+          .with(body: {
             base_tree: "basecommitsha",
             tree: [{
               path: "vendor/cache/addressable-2.7.0.gem",
@@ -232,8 +233,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             }]
           })
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits")
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
       end
     end
 
@@ -254,9 +255,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "pushes a commit to GitHub" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/trees").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/trees")
+          .with(body: {
             base_tree: "basecommitsha",
             tree: [{
               path: "vendor/cache/addressable-2.7.0.gem",
@@ -266,17 +267,17 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             }]
           })
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits")
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
       end
     end
 
     it "has the right commit message" do
       updater.update
 
-      expect(WebMock).
-        to have_requested(:post, "#{watched_repo_url}/git/commits").
-        with(
+      expect(WebMock)
+        .to have_requested(:post, "#{watched_repo_url}/git/commits")
+        .with(
           body: {
             parents: ["basecommitsha"],
             tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
@@ -295,22 +296,22 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
 
       before do
-        stub_request(:get, pull_request_url).
-          to_return(status: 200,
-                    body: fixture("github", "pull_request_added.json"),
-                    headers: json_header)
-        stub_request(:get, "#{pull_request_url}/commits").
-          to_return(status: 200,
-                    body: fixture("github", "pull_request_commits.json"),
-                    headers: json_header)
+        stub_request(:get, pull_request_url)
+          .to_return(status: 200,
+                     body: fixture("github", "pull_request_added.json"),
+                     headers: json_header)
+        stub_request(:get, "#{pull_request_url}/commits")
+          .to_return(status: 200,
+                     body: fixture("github", "pull_request_commits.json"),
+                     headers: json_header)
       end
 
       it "has the right commit message" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits").
-          with(
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
+          .with(
             body: {
               parents: ["basecommitsha"],
               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
@@ -326,14 +327,14 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           )
       end
 
-      context "multiple of which are from Dependabot" do
+      context "when multiple are from Dependabot" do
         before do
-          stub_request(:get, pull_request_url).
-            to_return(status: 200,
-                      body: fixture("github", "pull_request_added.json"),
-                      headers: json_header)
-          stub_request(:get, "#{pull_request_url}/commits").
-            to_return(
+          stub_request(:get, pull_request_url)
+            .to_return(status: 200,
+                       body: fixture("github", "pull_request_added.json"),
+                       headers: json_header)
+          stub_request(:get, "#{pull_request_url}/commits")
+            .to_return(
               status: 200,
               body:
                 fixture("github", "pull_request_commits_many_dependabot.json"),
@@ -344,9 +345,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         it "has the right commit message" do
           updater.update
 
-          expect(WebMock).
-            to have_requested(:post, "#{watched_repo_url}/git/commits").
-            with(
+          expect(WebMock)
+            .to have_requested(:post, "#{watched_repo_url}/git/commits")
+            .with(
               body: {
                 parents: ["basecommitsha"],
                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
@@ -363,15 +364,15 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         end
       end
 
-      context "the original PR head commit cannot be found" do
+      context "when the original PR head commit cannot be found" do
         let(:old_commit) { "oldcommitsha" }
 
         it "generates a reasonable fallback commit message" do
           updater.update
 
-          expect(WebMock).
-            to have_requested(:post, "#{watched_repo_url}/git/commits").
-            with(
+          expect(WebMock)
+            .to have_requested(:post, "#{watched_repo_url}/git/commits")
+            .with(
               body: {
                 parents: ["basecommitsha"],
                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
@@ -388,15 +389,15 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
 
     context "when the default branch has changed" do
       before do
-        stub_request(:get, pull_request_url).
-          to_return(
+        stub_request(:get, pull_request_url)
+          .to_return(
             status: 200,
             body: fixture("github", "pull_request_not_default_branch.json"),
             headers: json_header
           )
 
-        stub_request(:patch, pull_request_url).
-          to_return(
+        stub_request(:patch, pull_request_url)
+          .to_return(
             status: 200,
             body: fixture("github", "pull_request_not_default_branch.json"),
             headers: json_header
@@ -406,12 +407,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "updates the base branch" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:patch, pull_request_url).
-          with(body: { base: "develop" })
+        expect(WebMock)
+          .to have_requested(:patch, pull_request_url)
+          .with(body: { base: "develop" })
       end
 
-      context "but this PR wasn't targeting the default branch" do
+      context "when the PR wasn't targeting the default branch" do
         let(:source) do
           Dependabot::Source.new(
             provider: "github",
@@ -423,21 +424,21 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         it "does not update the base branch" do
           updater.update
 
-          expect(WebMock).to_not have_requested(:patch, pull_request_url)
+          expect(WebMock).not_to have_requested(:patch, pull_request_url)
         end
       end
 
-      context "but the PR has been closed" do
+      context "when the PR has been closed" do
         before do
-          stub_request(:patch, pull_request_url).
-            to_return(
+          stub_request(:patch, pull_request_url)
+            .to_return(
               status: 422,
               body: fixture("github", "update_closed_pr_branch.json"),
               headers: json_header
             )
         end
 
-        specify { expect { updater.update }.to_not raise_error }
+        specify { expect { updater.update }.not_to raise_error }
       end
     end
 
@@ -460,9 +461,9 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       it "passes the author details to GitHub" do
         updater.update
 
-        expect(WebMock).
-          to have_requested(:post, "#{watched_repo_url}/git/commits").
-          with(body: {
+        expect(WebMock)
+          .to have_requested(:post, "#{watched_repo_url}/git/commits")
+          .with(body: {
             parents: anything,
             tree: anything,
             message: anything,
@@ -486,6 +487,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             signature_key: signature_key
           )
         end
+
         let(:signature_key) { fixture("keys", "pgp.key") }
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
@@ -503,14 +505,15 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             "- [Commits](https://github.com/gocardless/business/compare/" \
             "v3.0.0...v1.5.0)"
         end
+
         before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
           updater.update
 
-          expect(WebMock).
-            to have_requested(:post, "#{watched_repo_url}/git/commits").
-            with(
+          expect(WebMock)
+            .to have_requested(:post, "#{watched_repo_url}/git/commits")
+            .with(
               body: {
                 parents: anything,
                 tree: anything,
@@ -529,8 +532,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           updater.update
 
           expect(WebMock).to(
-            have_requested(:post, "#{watched_repo_url}/git/commits").
-              with do |req|
+            have_requested(:post, "#{watched_repo_url}/git/commits")
+              .with do |req|
                 signature = JSON.parse(req.body)["signature"]
                 valid_sig = false
 
@@ -557,8 +560,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     it "updates the PR's branch to point to that commit" do
       updater.update
 
-      expect(WebMock).
-        to have_requested(
+      expect(WebMock)
+        .to have_requested(
           :patch, "#{watched_repo_url}/git/refs/heads/#{branch_name}"
         ).with(
           body: {
@@ -569,8 +572,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     end
 
     it "returns details of the updated branch" do
-      expect(updater.update.object.sha).
-        to eq("1e2d2afe8320998baecdfe127a49dca9a6650e07")
+      expect(updater.update.object.sha)
+        .to eq("1e2d2afe8320998baecdfe127a49dca9a6650e07")
     end
 
     context "when the branch gets deleted mid-flow" do
@@ -603,8 +606,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update }.
-          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }
+          .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
 
@@ -621,8 +624,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update }.
-          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }
+          .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
 
@@ -639,8 +642,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update }.
-          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }
+          .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
 
@@ -657,8 +660,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update }.
-          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }
+          .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
 
@@ -675,8 +678,21 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       end
 
       it "raises a helpful error" do
-        expect { updater.update }.
-          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+        expect { updater.update }
+          .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when pushing to a branch that does not allow force pushes" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(status: 422, body: fixture("github", "force_push_restricted_branch.json"), headers: json_header)
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update } .to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
       end
     end
   end

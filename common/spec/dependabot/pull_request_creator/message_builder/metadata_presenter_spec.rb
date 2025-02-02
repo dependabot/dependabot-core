@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -5,6 +6,16 @@ require "dependabot/pull_request_creator/message_builder/metadata_presenter"
 
 namespace = Dependabot::PullRequestCreator::MessageBuilder
 RSpec.describe namespace::MetadataPresenter do
+  subject(:presenter) do
+    described_class.new(
+      dependency: dependency,
+      source: source,
+      metadata_finder: metadata_finder,
+      vulnerabilities_fixed: vulnerabilities_fixed,
+      github_redirection_service: github_redirection_service
+    )
+  end
+
   let(:source) do
     Dependabot::Source.new(provider: "github", repo: "gocardless/bump")
   end
@@ -40,21 +51,11 @@ RSpec.describe namespace::MetadataPresenter do
 
   let(:github_redirection_service) { "redirect.github.com" }
 
-  subject(:presenter) do
-    described_class.new(
-      dependency: dependency,
-      source: source,
-      metadata_finder: metadata_finder,
-      vulnerabilities_fixed: vulnerabilities_fixed,
-      github_redirection_service: github_redirection_service
-    )
-  end
-
   describe "#to_s" do
     context "with a changelog that requires truncation" do
       before do
-        allow(metadata_finder).
-          to receive(:changelog_text) { fixture("raw", "changelog.md") }
+        allow(metadata_finder)
+          .to receive(:changelog_text) { fixture("raw", "changelog.md") }
       end
 
       it "adds a truncation notice" do
@@ -63,6 +64,22 @@ RSpec.describe namespace::MetadataPresenter do
 
       it "removes all content after the 50th line" do
         expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
+      end
+
+      context "with an azure source" do
+        let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
+
+        it "adds a truncation notice" do
+          expect(presenter.to_s).to include("(truncated)")
+        end
+
+        it "does not include a closing table fragment" do
+          expect(presenter.to_s).not_to include("></tr></table>")
+        end
+
+        it "removes all content after the 50th line" do
+          expect(presenter.to_s).not_to include("## 1.0.0 - June 11, 2014")
+        end
       end
     end
   end

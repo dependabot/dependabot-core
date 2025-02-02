@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 module Dependabot
@@ -8,8 +9,8 @@ module Dependabot
       COMPARISON = /===|==|>=|<=|<|>|~=|!=/
       VERSION = /([1-9][0-9]*!)?[0-9]+[a-zA-Z0-9\-_.*]*(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?/
 
-      REQUIREMENT = /(?<comparison>#{COMPARISON})\s*\\?\s*(?<version>#{VERSION})/
-      HASH = /--hash=(?<algorithm>.*?):(?<hash>.*?)(?=\s|$)/
+      REQUIREMENT = /(?<comparison>#{COMPARISON})\s*\\?\s*v?(?<version>#{VERSION})/
+      HASH = /--hash=(?<algorithm>.*?):(?<hash>.*?)(?=\s|\\|$)/
       REQUIREMENTS = /#{REQUIREMENT}(\s*,\s*\\?\s*#{REQUIREMENT})*/
       HASHES = /#{HASH}(\s*\\?\s*#{HASH})*/
       MARKER_OP = /\s*(#{COMPARISON}|(\s*in)|(\s*not\s*in))/

@@ -1,0 +1,16 @@
+{
+  "name": "Pro-Changes.md",
+  "path": "Pro-Changes.md",
+  "sha": "0c50ae70b0d731329c7be800f9e25fd1434ae0c9",
+  "size": 20276,
+  "url": "https://api.github.com/repos/mperham/sidekiq/contents/Pro-Changes.md?ref=master",
+  "html_url": "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md",
+  "git_url": "https://api.github.com/repos/mperham/sidekiq/git/blobs/0c50ae70b0d731329c7be800f9e25fd1434ae0c9",
+  "download_url": "https://raw.githubusercontent.com/mperham/sidekiq/master/Pro-Changes.md",
+  "type": "file",
+  "_links": {
+    "self": "https://api.github.com/repos/mperham/sidekiq/contents/Pro-Changes.md?ref=master",
+    "git": "https://api.github.com/repos/mperham/sidekiq/git/blobs/0c50ae70b0d731329c7be800f9e25fd1434ae0c9",
+    "html": "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"
+  }
+}

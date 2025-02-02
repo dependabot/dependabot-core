@@ -1,7 +1,6 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const rimraf = require("rimraf");
 const { updateDependencyFiles } = require("../../lib/yarn/updater");
 const helpers = require("./helpers");
 
@@ -10,7 +9,7 @@ describe("updater", () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => rimraf.sync(tempDir));
+  afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
   function copyDependencies(sourceDir, destDir) {
     const srcPackageJson = path.join(
@@ -84,6 +83,35 @@ describe("updater", () => {
       ]);
     } catch (error) {
       expect(error).not.toBeNull();
+    }
+  });
+
+  it("with a package.json which contains illegal character '@' in the name", async () => {
+    copyDependencies("illegal_character", tempDir);
+
+    try {
+      await updateDependencyFiles(tempDir, [
+          {
+            name: "@commitlint/cli",
+            version: "19.3.0",
+            requirements: [
+              {
+                requirement: "^19.3.0",
+                file: "package.json",
+                groups: ["devDependencies"],
+                source:
+                  {
+                    type: "registry",
+                    url: "https://registry.yarnpkg.com"
+                  }
+              }
+            ]
+          }
+        ]
+      );
+    } catch (error) {
+      expect(error).not.toBeNull();
+      expect(error.message).toEqual("package.json: Name contains illegal characters")
     }
   });
 });

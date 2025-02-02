@@ -1,4 +1,4 @@
-ARG FROM_IMAGE=dependabot/dependabot-core
+ARG FROM_IMAGE=ghcr.io/dependabot/dependabot-updater-core
 FROM $FROM_IMAGE
 
 # Temporarily switch to root user in order to install packages
@@ -10,54 +10,29 @@ RUN apt-get update \
     ltrace \
     gdb \
     shellcheck \
+    # Required for updater/ development
+    libgit2-dev \
+    cmake \
+    pkg-config \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 
-RUN git config --global user.name dependabot-ci \
-  && git config --global user.email no-reply@github.com
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
   echo 'export PS1="[dependabot-core-dev] \w \[$(tput setaf 4)\]$ \[$(tput sgr 0)\]"' >> ~/.bashrc
 
-ARG HOME=/home/dependabot
-ARG CODE_DIR=${HOME}/dependabot-core
+WORKDIR $DEPENDABOT_HOME
 
-COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
-COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
-
-COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
-COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
-COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
-COPY --chown=dependabot:dependabot docker/Gemfile docker/dependabot-docker.gemspec ${CODE_DIR}/docker/
-COPY --chown=dependabot:dependabot elm/Gemfile elm/dependabot-elm.gemspec ${CODE_DIR}/elm/
-COPY --chown=dependabot:dependabot git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec ${CODE_DIR}/git_submodules/
-COPY --chown=dependabot:dependabot github_actions/Gemfile github_actions/dependabot-github_actions.gemspec ${CODE_DIR}/github_actions/
-COPY --chown=dependabot:dependabot go_modules/Gemfile go_modules/dependabot-go_modules.gemspec ${CODE_DIR}/go_modules/
-COPY --chown=dependabot:dependabot gradle/Gemfile gradle/dependabot-gradle.gemspec ${CODE_DIR}/gradle/
-COPY --chown=dependabot:dependabot hex/Gemfile hex/dependabot-hex.gemspec ${CODE_DIR}/hex/
-COPY --chown=dependabot:dependabot maven/Gemfile maven/dependabot-maven.gemspec ${CODE_DIR}/maven/
-COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
-COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
-COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
-COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
-COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
-
-COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
-WORKDIR ${CODE_DIR}
-
-RUN for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 -name 'Gemfile' | xargs dirname`; do \
-  cd $d && bundle config path ${CODE_DIR}/omnibus/.bundle; \
-done
-
-RUN cd omnibus \
+RUN cd dependabot-updater \
+  && bundle config unset without \
   && bundle install \
   && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
   && rm .bundle/bin/bundle # let RubyGems manage Bundler
 
-ENV PATH="${CODE_DIR}/omnibus/.bundle/bin:$PATH"
+ENV PATH="${DEPENDABOT_HOME}/dependabot-updater/.bundle/bin:$PATH"
 
 # Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
 
-# Declare pass-thru environment variables used for debugging
+# Declare pass-through environment variables used for debugging
 ENV LOCAL_GITHUB_ACCESS_TOKEN="" \
   LOCAL_CONFIG_VARIABLES=""

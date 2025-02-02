@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,12 +12,9 @@ require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("go_modules", name: "go", colour: "16e2e2")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("go_modules", name: "go", colour: "16e2e2")
 
 require "dependabot/dependency"
-Dependabot::Dependency.
-  register_production_check("go_modules", ->(_) { true })
-
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("go_modules")
+Dependabot::Dependency
+  .register_production_check("go_modules", ->(_) { true })

@@ -1,11 +1,12 @@
+# typed: false
 # frozen_string_literal: true
 
 require "native_spec_helper"
 require "shared_contexts"
 
 RSpec.describe Functions::ForceUpdater do
-  include_context "in a temporary bundler directory"
-  include_context "stub rubygems compact index"
+  include_context "when in a temporary bundler directory"
+  include_context "when stubbing rubygems compact index"
 
   let(:force_updater) do
     described_class.new(
@@ -38,7 +39,7 @@ RSpec.describe Functions::ForceUpdater do
       context "when updating a single dependency" do
         let(:update_multiple_dependencies) { false }
 
-        it { expect { force_update }.to raise_error(Bundler::VersionConflict) }
+        it { expect { force_update }.to raise_error(Bundler::SolveFailure) }
       end
     end
 

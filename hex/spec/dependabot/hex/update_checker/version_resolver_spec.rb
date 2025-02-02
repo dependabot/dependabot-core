@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -45,9 +46,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
   end
   let(:sanitized_mixfile) do
     sanitized_content =
-      Dependabot::Hex::FileUpdater::MixfileSanitizer.
-      new(mixfile_content: mixfile_fixture_body).
-      sanitized_content
+      Dependabot::Hex::FileUpdater::MixfileSanitizer
+      .new(mixfile_content: mixfile_fixture_body)
+      .sanitized_content
     Dependabot::DependencyFile.new(
       name: "mix.exs",
       content: sanitized_content
@@ -71,7 +72,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     subject(:latest_resolvable_version) { resolver.latest_resolvable_version }
 
     it "returns a non-normalized version, following semver" do
-      expect(subject.segments.count).to eq(3)
+      expect(latest_resolvable_version.segments.count).to eq(3)
     end
 
     it "respects the resolvability of the mix.exs" do
@@ -99,9 +100,9 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     context "with a dependency with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
 
-      it "raises a DependencyFileNotResolvable error", skip_ci: true do
-        expect { resolver.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+      it "raises a DependencyFileNotResolvable error", :skip_ci do
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
@@ -109,8 +110,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       let(:mixfile_fixture_name) { "unresolvable" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
-        expect { resolver.latest_resolvable_version }.
-          to raise_error(Dependabot::DependencyFileNotResolvable)
+        expect { resolver.latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 

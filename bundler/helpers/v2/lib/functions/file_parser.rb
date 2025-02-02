@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "uri"
@@ -11,16 +12,16 @@ module Functions
     attr_reader :lockfile_name
 
     def parsed_gemfile(gemfile_name:)
-      Bundler::Definition.build(gemfile_name, nil, {}).
-        dependencies.select(&:current_platform?).
-        reject { |dep| local_sources.include?(dep.source.class) }.
-        map { |dep| serialize_bundler_dependency(dep) }
+      Bundler::Definition.build(gemfile_name, nil, {})
+                         .dependencies.select(&:current_platform?)
+                         .reject { |dep| local_sources.include?(dep.source.class) }
+                         .map { |dep| serialize_bundler_dependency(dep) }
     end
 
     def parsed_gemspec(gemspec_name:)
-      Bundler.load_gemspec_uncached(gemspec_name).
-        dependencies.
-        map { |dep| serialize_bundler_dependency(dep) }
+      Bundler.load_gemspec_uncached(gemspec_name)
+             .dependencies
+             .map { |dep| serialize_bundler_dependency(dep) }
     end
 
     private

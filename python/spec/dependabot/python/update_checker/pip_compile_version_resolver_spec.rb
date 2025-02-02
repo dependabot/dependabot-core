@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -11,16 +12,17 @@ RSpec.describe namespace::PipCompileVersionResolver do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: nil
     )
   end
   let(:credentials) do
-    [{
+    [Dependabot::Credential.new({
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
       "password" => "token"
-    }]
+    })]
   end
   let(:dependency_files) { [manifest_file, generated_file] }
   let(:manifest_file) do
@@ -58,10 +60,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
   end
 
   describe "#latest_resolvable_version" do
-    subject do
+    subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(requirement: updated_requirement)
     end
-    let(:updated_requirement) { ">= 17.3.0, <= 18.1.0" }
+
+    let(:updated_requirement) { ">=17.3.0,<=18.1.0" }
 
     it { is_expected.to eq(Gem::Version.new("18.1.0")) }
 
@@ -90,22 +93,26 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       context "when originally unpinned" do
-        let(:updated_requirement) { "<= 18.1.0" }
+        let(:updated_requirement) { "<=18.1.0" }
+
         it { is_expected.to eq(Gem::Version.new("18.1.0")) }
       end
 
       context "when not unlocking requirements" do
-        let(:updated_requirement) { "<= 17.4.0" }
+        let(:updated_requirement) { "<=17.4.0" }
+
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version isn't allowed (doesn't exist)" do
-        let(:updated_requirement) { "<= 18.0.0" }
+        let(:updated_requirement) { "<=18.0.0" }
+
         it { is_expected.to eq(Gem::Version.new("17.4.0")) }
       end
 
       context "when the latest version is nil" do
-        let(:updated_requirement) { ">= 0" }
+        let(:updated_requirement) { ">=0" }
+
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
 
@@ -120,9 +127,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 2.6.1, <= 2.7.5" }
+        let(:updated_requirement) { ">=2.6.1,<= 2.7.5" }
 
-        context "but only in an imported file" do
+        context "when only in an imported file" do
           let(:dependency_files) do
             [shared_file, manifest_file, generated_file]
           end
@@ -177,15 +184,15 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
-        context "one of which is not resolvable" do
+        context "when a requirement is not resolvable" do
           let(:manifest_fixture_name2) { "unresolvable.in" }
 
           it "raises a helpful error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-                expect(error.message).
-                  to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
-                             "package versions have conflicting dependencies.")
+            expect { latest_resolvable_version }
+              .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+                expect(error.message)
+                  .to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                              "package versions have conflicting dependencies.")
               end
           end
         end
@@ -212,38 +219,38 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
 
       it "raises a helpful error", :slow do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).
-              to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
-                         "conflicting dependencies.")
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message)
+              .to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                          "conflicting dependencies.")
           end
       end
     end
 
     context "with a git source" do
-      context "for another dependency, that can't be reached" do
+      context "when dealing with a dependency that can't be reached" do
         let(:manifest_fixture_name) { "git_source_unreachable.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
-              expect(error.dependency_urls).
-                to eq(["https://github.com/greysteil/unreachable"])
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+              expect(error.dependency_urls)
+                .to eq(["https://github.com/greysteil/unreachable"])
             end
         end
       end
 
-      context "for another dependency, that has a bad ref" do
+      context "when dealing with a dependency that has a bad ref" do
         let(:manifest_fixture_name) { "git_source_bad_ref.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_version) { nil }
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
               expect(err.dependency).to eq("pythonfinder")
             end
         end
@@ -254,15 +261,15 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "pbr" }
       let(:dependency_version) { "4.0.2" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 4.0.2, <= 4.3.0" }
+      let(:updated_requirement) { ">=4.0.2,<=4.3.0" }
 
       it { is_expected.to eq(Gem::Version.new("4.3.0")) }
 
-      context "that is superfluous" do
+      context "when the requirement is superfluous" do
         let(:dependency_name) { "requests" }
         let(:dependency_version) { "2.18.0" }
         let(:dependency_requirements) { [] }
-        let(:updated_requirement) { ">= 2.18.0, <= 2.18.4" }
+        let(:updated_requirement) { ">=2.18.0,<=2.18.4" }
         let(:generated_fixture_name) { "pip_compile_unpinned_rogue.txt" }
 
         it { is_expected.to be_nil }
@@ -275,7 +282,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:dependency_name) { "setuptools" }
       let(:dependency_version) { "40.4.1" }
       let(:dependency_requirements) { [] }
-      let(:updated_requirement) { ">= 40.4.1" }
+      let(:updated_requirement) { ">=40.4.1" }
 
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
@@ -312,8 +319,9 @@ RSpec.describe namespace::PipCompileVersionResolver do
 
       it { is_expected.to be >= Gem::Version.new("18.1.0") }
 
-      context "that needs sanitizing" do
+      context "when dependency needs sanitizing" do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
+
         it { is_expected.to be >= Gem::Version.new("18.1.0") }
       end
     end
@@ -323,19 +331,21 @@ RSpec.describe namespace::PipCompileVersionResolver do
       let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
       let(:dependency_name) { "cryptography" }
       let(:dependency_version) { "2.2.2" }
-      let(:updated_requirement) { "> 3.0.0, < 3.3" }
+      let(:updated_requirement) { ">3.0.0,<3.3" }
 
       it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
   end
 
   describe "#resolvable?" do
-    subject { resolver.resolvable?(version: version) }
+    subject(:resolvable) { resolver.resolvable?(version: version) }
+
     let(:version) { Gem::Version.new("18.1.0") }
 
-    context "that is resolvable" do
+    context "when the version is resolvable" do
       let(:version) { Gem::Version.new("18.1.0") }
-      it { is_expected.to eq(true) }
+
+      it { is_expected.to be(true) }
 
       context "with a subdependency" do
         let(:dependency_name) { "pbr" }
@@ -343,13 +353,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_requirements) { [] }
         let(:version) { Gem::Version.new("5.1.3") }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
       end
     end
 
-    context "that is not resolvable" do
+    context "when the version is not resolvable" do
       let(:version) { Gem::Version.new("99.18.4") }
-      it { is_expected.to eq(false) }
+
+      it { is_expected.to be(false) }
 
       context "with a subdependency" do
         let(:manifest_fixture_name) { "requests.in" }
@@ -359,10 +370,10 @@ RSpec.describe namespace::PipCompileVersionResolver do
         let(:dependency_requirements) { [] }
         let(:version) { Gem::Version.new("1.23") }
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to be(false) }
       end
 
-      context "because the original manifest isn't resolvable" do
+      context "when the original manifest isn't resolvable" do
         let(:manifest_fixture_name) { "unresolvable.in" }
         let(:dependency_files) { [manifest_file] }
         let(:dependency_name) { "boto3" }
@@ -378,12 +389,106 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
 
         it "raises a helpful error" do
-          expect { subject }.
-            to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).
-                to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
-                           "package versions have conflicting dependencies.")
+          expect { resolvable }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message)
+                .to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                            "package versions have conflicting dependencies.")
             end
+        end
+      end
+    end
+
+    context "when failing to resolve due to resource limits" do
+      context "when dealing with running out of disk space" do
+        before do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "OSError: [Errno 28] No space left on device",
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          expect { resolvable }
+            .to raise_error(Dependabot::OutOfDisk)
+        end
+      end
+
+      context "when dealing with running out of memory" do
+        before do
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command)
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with("pyenv versions").and_return("3.11.5")
+          allow(Dependabot::SharedHelpers)
+            .to receive(:run_shell_command).with(a_string_matching(/pyenv exec pip-compile/), *any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "MemoryError",
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          expect { resolvable }
+            .to raise_error(Dependabot::OutOfMemory)
+        end
+      end
+
+      context "when HelperSubprocessFailed exception is raised" do
+        let(:error_handler) { Dependabot::Python::PipCompileErrorHandler.new }
+
+        let(:exception_message) { "HelperSubprocessFailed" }
+
+        context "when dealing with subprocess-exited-with-error error" do
+          let(:exception_message) do
+            "Preparing metadata (setup.py): finished with status 'error'
+          error: subprocess-exited-with-error
+
+          × python setup.py egg_info did not run successfully.
+          │ exit code: 1
+          ╰─> [18 lines of output]
+              Traceback (most recent call last):
+                File \"<string>\", line 2, in <module>
+                  exec(compile('''
+                  ~~~~^^^^^^^^^^^^
+                  # This is <pip-setuptools-caller> -- a caller that pip uses to run setup.py
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ...<31 lines>...
+                  exec(compile(setup_py_code, filename, \"exec\"))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  ''' % ('/tmp/pip-resolve-84tqp2g1/pillow_f28c34dffdb342a49c27519580a49fd3/setup.py',)"
+          end
+
+          it "raises a helpful error" do
+            expect { error_handler.handle_pipcompile_error(exception_message) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
+        end
+
+        context "when dealing with an installation error" do
+          let(:exception_message) do
+            "pip._internal.exceptions.InstallationError: Could not install requirement" \
+              " rugby-[FILTERED_REPO]@ https://****@github.com/compute-cloud/a300cfb3a4070c923246dd4.zip " \
+              "from https://****@github.com/compute-cloud/[FILTERED_REPO]/archive/s.zip" \
+              " (from -r requirements.in (line 23)) because of HTTP error 404 Client Error: Not" \
+              " Found for url: https://github.com/compute-cloud/[FILTERED_REPO]/archive/a3246dd4.zip for" \
+              " URL https://****@github.com/compute-cloud/[FILTERED_REPO]/archive/a3dd4.zip"
+          end
+
+          it "raises a helpful error" do
+            expect { error_handler.handle_pipcompile_error(exception_message) }
+              .to raise_error(Dependabot::DependencyFileNotResolvable)
+          end
         end
       end
     end

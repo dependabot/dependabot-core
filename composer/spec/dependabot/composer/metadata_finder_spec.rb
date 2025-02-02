@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "octokit"
@@ -7,22 +8,16 @@ require "dependabot/composer/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
 
 RSpec.describe Dependabot::Composer::MetadataFinder do
-  it_behaves_like "a dependency metadata finder"
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: dependency_name,
-      version: "1.0",
-      requirements: requirements,
-      package_manager: "composer"
-    )
-  end
-  let(:requirements) do
-    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
-  end
   subject(:finder) do
     described_class.new(dependency: dependency, credentials: credentials)
   end
+
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
+  end
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  let(:dependency_name) { "monolog/monolog" }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -31,11 +26,16 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       "password" => "token"
     }]
   end
-  let(:dependency_name) { "monolog/monolog" }
-  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
-  let(:packagist_response) do
-    sanitized_name = dependency_name.downcase.gsub("/", "--")
-    fixture("packagist_responses", "#{sanitized_name}.json")
+  let(:requirements) do
+    [{ file: "composer.json", requirement: "1.*", groups: [], source: nil }]
+  end
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      version: "1.0",
+      requirements: requirements,
+      package_manager: "composer"
+    )
   end
 
   before do
@@ -48,6 +48,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       headers: {}
     )
   end
+
+  it_behaves_like "a dependency metadata finder"
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
@@ -65,8 +67,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
         it "downcases the dependency name" do
           expect(finder.source_url).to eq("https://github.com/Seldaek/monolog")
-          expect(WebMock).
-            to have_requested(
+          expect(WebMock)
+            .to have_requested(
               :get,
               "https://repo.packagist.org/p2/monolog/monolog.json"
             )
@@ -77,8 +79,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
         before do
           sanitized_name = "dependabot/dummy-pkg-a".downcase.gsub("/", "--")
           fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-          stub_request(:get, packagist_url).
-            to_return(status: 200, body: fixture)
+          stub_request(:get, packagist_url)
+            .to_return(status: 200, body: fixture)
         end
 
         it { is_expected.to be_nil }
@@ -87,8 +89,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is a bitbucket link in the packagist response" do
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: packagist_response.gsub!("github.com", "bitbucket.org"))
+        stub_request(:get, packagist_url)
+          .to_return(status: 200, body: packagist_response.gsub!("github.com", "bitbucket.org"))
       end
 
       it { is_expected.to eq("https://bitbucket.org/Seldaek/monolog") }
@@ -101,8 +103,8 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is not a source link in the packagist response" do
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: packagist_response.gsub!("github.com", "example.com"))
+        stub_request(:get, packagist_url)
+          .to_return(status: 200, body: packagist_response.gsub!("github.com", "example.com"))
       end
 
       it { is_expected.to be_nil }
@@ -112,7 +114,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
         expect(WebMock).to have_requested(:get, packagist_url).once
       end
 
-      context "but there is a source URL on the dependency" do
+      context "when there is a source URL on the dependency" do
         let(:requirements) do
           [{
             file: "composer.json",
@@ -129,7 +131,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
         it "doesn't hit packagist" do
           source_url
-          expect(WebMock).to_not have_requested(:get, packagist_url)
+          expect(WebMock).not_to have_requested(:get, packagist_url)
         end
       end
     end
@@ -144,10 +146,10 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
       let(:redirect_url) { "https://repo.packagist.org/p2/monolog/Monolog.json" }
 
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 302, headers: { "Location" => redirect_url })
-        stub_request(:get, redirect_url).
-          to_return(status: 200, body: packagist_response)
+        stub_request(:get, packagist_url)
+          .to_return(status: 302, headers: { "Location" => redirect_url })
+        stub_request(:get, redirect_url)
+          .to_return(status: 200, body: packagist_response)
       end
 
       it { is_expected.to eq("https://github.com/Seldaek/monolog") }
@@ -155,6 +157,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when the packagist link 404s" do
       before { stub_request(:get, packagist_url).to_return(status: 404) }
+
       it { is_expected.to be_nil }
     end
   end

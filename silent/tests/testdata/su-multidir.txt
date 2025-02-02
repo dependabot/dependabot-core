@@ -1,0 +1,68 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=2 'create_pull_request'
+stderr -count=2 'created \| dependency-a \( from 1.2.3 to 1.2.4 \)'
+pr-created frontend/expected.json
+pr-created backend/expected.json
+
+# Testing multi-directory configuration without a group.
+# Since it's impossible to tell which directory dependency-a should be
+# updated in, it should update in all directories.
+
+-- frontend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- backend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- utilities/manifest.json --
+{
+  "unrelated": { "version": "1.0.0" }
+}
+
+-- frontend/expected.json --
+{
+  "dependency-a": { "version": "1.2.4" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- backend/expected.json --
+{
+  "dependency-a": { "version": "1.2.4" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+      - dependency-a
+      - dependency-a
+  source:
+    directories:
+      - "/frontend"
+      - "/utilities"
+      - "/backend"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - < 1.2.4
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

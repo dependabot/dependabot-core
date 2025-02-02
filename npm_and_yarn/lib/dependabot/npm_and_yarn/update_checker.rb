@@ -1,10 +1,13 @@
+# typed: true
 # frozen_string_literal: true
 
+require "set"
+
 require "dependabot/git_commit_checker"
+require "dependabot/requirements_update_strategy"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-require "set"
 
 module Dependabot
   module NpmAndYarn
@@ -54,17 +57,29 @@ module Dependabot
       end
 
       def lowest_security_fix_version
+        # This will require a full unlock to update multiple top level ancestors.
+        return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
+
         latest_version_finder.lowest_security_fix_version
       end
 
       def lowest_resolvable_security_fix_version
         raise "Dependency not vulnerable!" unless vulnerable?
-        # NOTE: we currently don't resolve transitive/sub-dependencies as
+
+        # NOTE: Currently, we don't resolve transitive/sub-dependencies as
         # npm/yarn don't provide any control over updating to a specific
-        # sub-dependency version
+        # sub-dependency version.
+
+        # Return nil for vulnerable transitive dependencies if there are conflicting dependencies.
+        # This helps catch errors in such cases.
+        return nil if !dependency.top_level? && conflicting_dependencies.any?
+
+        # For transitive dependencies without conflicts, return the latest resolvable transitive
+        # security fix version that does not require unlocking other dependencies.
         return latest_resolvable_transitive_security_fix_version_with_no_unlock unless dependency.top_level?
 
-        # TODO: Might want to check resolvability here?
+        # For top-level dependencies, return the lowest security fix version.
+        # TODO: Consider checking resolvability here in the future.
         lowest_security_fix_version
       end
 
@@ -102,12 +117,16 @@ module Dependabot
           ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        !requirements_update_strategy.lockfile_only?
+      end
+
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+        return @requirements_update_strategy if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? :widen_ranges : :bump_versions
+        library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
       def conflicting_dependencies
@@ -137,8 +156,7 @@ module Dependabot
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
             dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: @options.key?(:npm_transitive_dependency_removal)
+            credentials: credentials
           ).audit(
             dependency: dependency,
             security_advisories: security_advisories
@@ -148,8 +166,8 @@ module Dependabot
       def vulnerable_versions
         @vulnerable_versions ||=
           begin
-            all_versions = dependency.all_versions.
-                           filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+            all_versions = dependency.all_versions
+                                     .filter_map { |v| version_class.new(v) if version_class.correct?(v) }
 
             all_versions.select do |v|
               security_advisories.any? { |advisory| advisory.vulnerable?(v) }
@@ -168,10 +186,10 @@ module Dependabot
       end
 
       def updated_dependencies_after_full_unlock
-        return conflicting_updated_dependencies if !dependency.top_level? && security_advisories.any?
+        return conflicting_updated_dependencies if security_advisories.any? && vulnerability_audit["fix_available"]
 
-        version_resolver.dependency_updates_from_full_unlock.
-          map { |update_details| build_updated_dependency(update_details) }
+        version_resolver.dependency_updates_from_full_unlock
+                        .map { |update_details| build_updated_dependency(update_details) }
       end
 
       # rubocop:disable Metrics/AbcSize
@@ -326,7 +344,8 @@ module Dependabot
             dependency_files: dependency_files,
             latest_allowable_version: latest_version,
             latest_version_finder: latest_version_finder,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            dependency_group: dependency_group
           )
       end
 
@@ -348,9 +367,9 @@ module Dependabot
 
       def latest_git_version_details
         semver_req =
-          dependency.requirements.
-          find { |req| req.dig(:source, :type) == "git" }&.
-          fetch(:requirement)
+          dependency.requirements
+                    .find { |req| req.dig(:source, :type) == "git" }
+                    &.fetch(:requirement)
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
@@ -408,8 +427,8 @@ module Dependabot
 
       def original_source(updated_dependency)
         sources =
-          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
-          sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+                            .sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end
@@ -432,5 +451,5 @@ module Dependabot
   end
 end
 
-Dependabot::UpdateCheckers.
-  register("npm_and_yarn", Dependabot::NpmAndYarn::UpdateChecker)
+Dependabot::UpdateCheckers
+  .register("npm_and_yarn", Dependabot::NpmAndYarn::UpdateChecker)

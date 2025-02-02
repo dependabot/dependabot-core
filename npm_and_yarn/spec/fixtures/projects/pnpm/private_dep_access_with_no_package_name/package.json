@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "devDependencies": {
+    "npm:rollup": "^2.79.1"
+  }
+}

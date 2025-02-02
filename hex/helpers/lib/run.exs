@@ -1,10 +1,11 @@
 defmodule DependencyHelper do
   def main() do
-    IO.read(:stdio, :all)
-    |> Jason.decode!()
+    IO.read(:stdio, :eof)
+    |> JSON.decode!()
     |> run()
     |> case do
       {output, 0} ->
+        output = Base.decode64!(output)
         if output =~ "No authenticated organization found" do
           {:error, output}
         else
@@ -12,6 +13,7 @@ defmodule DependencyHelper do
         end
 
       {error, 1} ->
+        Base.decode64!(error)
         {:error, error}
     end
     |> handle_result()
@@ -33,7 +35,7 @@ defmodule DependencyHelper do
 
   defp encode_and_write(content) do
     content
-    |> Jason.encode!()
+    |> JSON.encode!()
     |> IO.write()
   end
 
@@ -67,16 +69,7 @@ defmodule DependencyHelper do
         script
       ] ++ args
 
-    System.cmd(
-      "mix",
-      args,
-      cd: dir,
-      env: %{
-        "MIX_EXS" => nil,
-        "MIX_LOCK" => nil,
-        "MIX_DEPS" => nil
-      }
-    )
+    System.cmd("mix", args, cd: dir, env: %{"MIX_EXS" => nil})
   end
 
   defp set_credentials([]), do: :ok
@@ -118,7 +111,7 @@ defmodule DependencyHelper do
   end
 
   defp fetch_public_key(repo, repo_url, auth_key, fingerprint) do
-    case Hex.Repo.get_public_key(repo_url, auth_key) do
+    case Hex.Repo.get_public_key(%{trusted: true, url: repo_url, auth_key: auth_key}) do
       {:ok, {200, key, _}} ->
         if public_key_matches?(key, fingerprint) do
           {:ok, key}

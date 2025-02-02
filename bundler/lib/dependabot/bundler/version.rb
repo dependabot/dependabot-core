@@ -1,13 +1,15 @@
+# typed: strong
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
 
 module Dependabot
   module Bundler
-    class Version < Gem::Version
+    class Version < Dependabot::Version
     end
   end
 end
 
-Dependabot::Utils.
-  register_version_class("bundler", Dependabot::Bundler::Version)
+Dependabot::Utils
+  .register_version_class("bundler", Dependabot::Bundler::Version)

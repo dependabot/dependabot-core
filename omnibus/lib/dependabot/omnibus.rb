@@ -1,9 +1,11 @@
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"
+require "dependabot/dotnet_sdk"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
 require "dependabot/composer"
@@ -16,3 +18,5 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
+require "dependabot/swift"
+require "dependabot/devcontainers"

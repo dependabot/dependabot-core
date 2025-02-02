@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -8,23 +9,28 @@ require "dependabot/npm_and_yarn/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: dependencies,
-      credentials: credentials,
-      repo_contents_path: repo_contents_path
-    )
-  end
-  let(:dependencies) { [dependency] }
-  let(:credentials) do
+  let(:repo_contents_path) { nil }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:source) { nil }
+  let(:previous_requirements) do
     [{
-      "type" => "git_source",
-      "host" => "github.com"
+      file: "package.json",
+      requirement: "^0.0.1",
+      groups: ["dependencies"],
+      source: source
     }]
   end
+  let(:requirements) do
+    [{
+      file: "package.json",
+      requirement: "^0.0.2",
+      groups: ["dependencies"],
+      source: nil
+    }]
+  end
+  let(:previous_version) { "0.0.1" }
+  let(:version) { "0.0.2" }
+  let(:dependency_name) { "fetch-factory" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -35,36 +41,106 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       package_manager: "npm_and_yarn"
     )
   end
-  let(:dependency_name) { "fetch-factory" }
-  let(:version) { "0.0.2" }
-  let(:previous_version) { "0.0.1" }
-  let(:requirements) do
-    [{
-      file: "package.json",
-      requirement: "^0.0.2",
-      groups: ["dependencies"],
-      source: nil
-    }]
+  let(:credentials) do
+    [Dependabot::Credential.new({
+      "type" => "git_source",
+      "host" => "github.com"
+    })]
   end
-  let(:previous_requirements) do
-    [{
-      file: "package.json",
-      requirement: "^0.0.1",
-      groups: ["dependencies"],
-      source: source
-    }]
+  let(:dependencies) { [dependency] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: dependencies,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
-  let(:source) { nil }
 
-  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
-  let(:repo_contents_path) { nil }
+  # Variable to control the npm fallback version feature flag
+  let(:npm_fallback_version_above_v6_enabled) { true }
+  # Variable to control the enabling feature flag for the corepack fix
+  let(:enable_corepack_for_npm_and_yarn) { true }
 
   before do
     FileUtils.mkdir_p(tmp_path)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6).and_return(npm_fallback_version_above_v6_enabled)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_pnpm_workspace_catalog).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:avoid_duplicate_updates_package_json).and_return(false)
+  end
+
+  after do
+    Dependabot::Experiments.reset!
+  end
+
+  it_behaves_like "a dependency file updater"
+
+  describe "#updated_files_regex" do
+    subject(:updated_files_regex) { described_class.updated_files_regex }
+
+    it "is not empty" do
+      expect(updated_files_regex).not_to be_empty
+    end
+
+    context "when files match the regex patterns" do
+      it "returns true for files that should be updated" do
+        matching_files = [
+          "package.json",
+          "package-lock.json",
+          "npm-shrinkwrap.json",
+          "yarn.lock",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "subdirectory/package.json",
+          "subdirectory/package-lock.json",
+          "subdirectory/npm-shrinkwrap.json",
+          "subdirectory/yarn.lock",
+          "subdirectory/pnpm-lock.yaml",
+          "apps/dependabot_business/package.json",
+          "packages/package1/package.json",
+          "packages/package2/yarn.lock",
+          ".yarn/install-state.gz",
+          ".yarn/cache/@es-test-npm-0.46.0-d544b36047-96010ece49.zip",
+          ".pnp.js",
+          ".pnp.cjs"
+        ]
+
+        matching_files.each do |file_name|
+          expect(updated_files_regex).to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+
+      it "returns false for files that should not be updated" do
+        non_matching_files = [
+          "README.md",
+          ".github/workflow/main.yml",
+          "some_random_file.rb",
+          "requirements.txt",
+          "Gemfile",
+          "Gemfile.lock"
+        ]
+
+        non_matching_files.each do |file_name|
+          expect(updated_files_regex).not_to(be_any { |regex| file_name.match?(regex) })
+        end
+      end
+    end
   end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
     let(:updated_package_json) do
       updated_files.find { |f| f.name == "package.json" }
     end
@@ -76,40 +152,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with both npm and yarn lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/simple") }
 
       it "updates the files" do
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        expect { updated_files }.not_to(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
         expect(updated_files.count).to eq(3)
       end
 
       it "native helpers don't output to stdout" do
-        expect { updated_files }.to_not output.to_stdout
+        expect { updated_files }.not_to output.to_stdout
       end
     end
 
     context "without a lockfile" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6/simple_manifest") }
+
       its(:length) { is_expected.to eq(1) }
 
       context "when nothing has changed" do
         let(:requirements) { previous_requirements }
+
         specify { expect { updated_files }.to raise_error(/No files/) }
       end
     end
 
-    context "with a name that needs sanitizing" do
-      let(:files) { project_dependency_files("npm6/invalid_name") }
-
-      it "updates the files" do
-        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
-        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
-        expect(updated_files.count).to eq(2)
-      end
-    end
-
     context "with multiple dependencies" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
+
       let(:files) { project_dependency_files("npm6_and_yarn/multiple_updates") }
 
       let(:dependencies) do
@@ -155,16 +229,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       it "updates both dependencies" do
         parsed_package = JSON.parse(updated_package_json.content)
-        expect(parsed_package["dependencies"]["is-number"]).
-          to eq("^4.0.0")
-        expect(parsed_package["dependencies"]["etag"]).
-          to eq("^1.8.1")
+        expect(parsed_package["dependencies"]["is-number"])
+          .to eq("^4.0.0")
+        expect(parsed_package["dependencies"]["etag"])
+          .to eq("^1.8.1")
 
         parsed_package_lock = JSON.parse(updated_npm_lock.content)
-        expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-          to eq("4.0.0")
-        expect(parsed_package_lock["dependencies"]["etag"]["version"]).
-          to eq("1.8.1")
+        expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+          .to eq("4.0.0")
+        expect(parsed_package_lock["dependencies"]["etag"]["version"])
+          .to eq("1.8.1")
 
         expect(updated_yarn_lock.content).to include(
           "is-number@^4.0.0:"
@@ -174,7 +248,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         )
       end
 
-      context "lockfile only update" do
+      context "when dealing with lockfile only update" do
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -217,14 +291,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "updates both dependencies" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package-lock.json yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package-lock.json yarn.lock))
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("2.1.0")
-          expect(parsed_package_lock["dependencies"]["etag"]["version"]).
-            to eq("1.2.0")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("2.1.0")
+          expect(parsed_package_lock["dependencies"]["etag"]["version"])
+            .to eq("1.2.0")
 
           expect(updated_yarn_lock.content).to include(
             "is-number-2.1.0.tgz"
@@ -238,33 +312,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
     context "with diverged lockfiles" do
       context "when updating a sub-dependency" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:dependency_name) { "stringstream" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
         let(:version) { "0.0.6" }
         let(:previous_version) { "0.0.5" }
 
-        context "that is missing from npm" do
+        context "when missing from npm" do
           let(:files) { project_dependency_files("npm6_and_yarn/diverged_sub_dependency_missing_npm") }
 
           it "only updates the yarn lockfile (which includes the sub-dep)" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(yarn.lock))
           end
         end
 
-        context "that is missing from yarn" do
+        context "when missing from yarn" do
           let(:files) { project_dependency_files("npm6_and_yarn/diverged_sub_dependency_missing_yarn") }
 
           it "only updates the npm lockfile (which includes the sub-dep)" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json))
           end
         end
       end
     end
 
     context "with a shrinkwrap" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm4/shrinkwrap") }
 
       let(:updated_shrinkwrap) do
@@ -273,26 +349,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       it "updates the shrinkwrap" do
         parsed_shrinkwrap = JSON.parse(updated_shrinkwrap.content)
-        expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"]).
-          to eq("0.0.2")
+        expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"])
+          .to eq("0.0.2")
       end
 
-      context "and a package-json.lock" do
+      context "when dealing with a package-json.lock" do
         let(:files) { project_dependency_files("npm6/shrinkwrap") }
 
         it "updates the shrinkwrap and the package-lock.json" do
           parsed_shrinkwrap = JSON.parse(updated_shrinkwrap.content)
-          expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
+          expect(parsed_shrinkwrap["dependencies"]["fetch-factory"]["version"])
+            .to eq("0.0.2")
 
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.0.2")
+          expect(parsed_npm_lock["dependencies"]["fetch-factory"]["version"])
+            .to eq("0.0.2")
         end
       end
     end
 
     context "with a git dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:dependency_name) { "is-number" }
       let(:requirements) do
         [{
@@ -332,49 +409,53 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm6_and_yarn/github_dependency_no_ref") }
 
         it "only updates the lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package-lock.json yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package-lock.json yarn.lock))
         end
 
         it "correctly update the lockfiles" do
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("github:jonschlinkert/is-number#" \
-                  "98e8ff1da1a89f93d1397a24d7413ed15421c139")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("github:jonschlinkert/is-number#" \
+                   "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
           expect(updated_yarn_lock.content).to include(
             "is-number@jonschlinkert/is-number:"
           )
 
-          expect(updated_yarn_lock.content).to_not include("d5ac0584ee")
+          expect(updated_yarn_lock.content).not_to include("d5ac0584ee")
           expect(updated_yarn_lock.content).to include(
             "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
           )
         end
 
-        context "specified as a full URL" do
+        context "when specified as a full URL" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
+
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency") }
 
           it "only updates the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json yarn.lock))
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("git+https://github.com/jonschlinkert/is-number.git#" \
-                    "98e8ff1da1a89f93d1397a24d7413ed15421c139")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("git+https://github.com/jonschlinkert/is-number.git#" \
+                     "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
             expect(updated_yarn_lock.content).to include("is-number")
             expect(updated_yarn_lock.content).to include("0c6b15a88b")
-            expect(updated_yarn_lock.content).to_not include("af885e2e890")
+            expect(updated_yarn_lock.content).not_to include("af885e2e890")
           end
 
           context "when the lockfile has an outdated source" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_outdated_source") }
 
             it "updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json yarn.lock))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
               expect(
@@ -390,16 +471,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               expect(updated_yarn_lock.content).to include(
                 "is-number@https://github.com/jonschlinkert/is-number.git"
               )
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
             end
           end
 
           context "when the package lock is empty" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_empty_npm_lockfile") }
 
             it "updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json yarn.lock))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
               expect(
@@ -409,7 +492,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
           end
 
-          context "that previously caused problems" do
+          context "when previously causing problems" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_git_url") }
 
             let(:dependency_name) { "slick-carousel" }
@@ -433,42 +518,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:version) { "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1" }
 
             it "only updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json yarn.lock))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
               npm_lockfile_version =
                 parsed_package_lock["dependencies"]["slick-carousel"]["version"]
-              expect(npm_lockfile_version).
-                to eq("git://github.com/brianfryer/slick.git#" \
-                      "fc6f7d860844ad562df5b94b5918b58bab067751")
+              expect(npm_lockfile_version)
+                .to eq("git://github.com/brianfryer/slick.git#" \
+                       "fc6f7d860844ad562df5b94b5918b58bab067751")
 
-              expect(updated_yarn_lock.content).
-                to include('slick-carousel@git://github.com/brianfryer/slick":')
+              expect(updated_yarn_lock.content)
+                .to include('slick-carousel@git://github.com/brianfryer/slick":')
               expect(updated_yarn_lock.content).to include("a2aa3fec")
-              expect(updated_yarn_lock.content).to_not include("280b56016")
+              expect(updated_yarn_lock.content).not_to include("280b56016")
             end
           end
 
-          context "that uses ssh" do
+          context "when using ssh" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_ssh") }
 
             it "only updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json yarn.lock))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
               npm_lockfile_version =
                 parsed_package_lock["dependencies"]["is-number"]["version"]
-              expect(npm_lockfile_version).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "98e8ff1da1a89f93d1397a24d7413ed15421c139")
+              expect(npm_lockfile_version)
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
               expect(updated_yarn_lock.content).to include("is-number")
               expect(updated_yarn_lock.content).to include("0c6b15a88bc")
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
-              expect(updated_yarn_lock.content).
-                to include("is-number@git+ssh://git@github.com:jonschlinkert")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
+              expect(updated_yarn_lock.content)
+                .to include("is-number@git+ssh://git@github.com:jonschlinkert")
             end
           end
 
@@ -494,42 +581,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             end
 
             it "doesn't remove the git dependency" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json yarn.lock))
 
               parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+https://github.com/jonschlinkert/is-number.git#" \
-                      "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+              expect(parsed_npm_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+https://github.com/jonschlinkert/is-number.git#" \
+                       "af885e2e890b9ef0875edd2b117305119ee5bdc5")
 
-              expect(updated_yarn_lock.content).
-                to include("is-number.git#af885e2e890b9ef0875edd2b117305119ee")
+              expect(updated_yarn_lock.content)
+                .to include("is-number.git#af885e2e890b9ef0875edd2b117305119ee")
             end
 
             context "with an npm6 lockfile" do
+              let(:npm_fallback_version_above_v6_enabled) { false }
+
               let(:files) { project_dependency_files("npm6/git_dependency") }
 
               it "doesn't update the 'from' entry" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package.json package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package.json package-lock.json))
 
                 parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-                expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
-                  to eq("git+https://github.com/jonschlinkert/is-number.git#" \
-                        "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+                expect(parsed_npm_lock["dependencies"]["is-number"]["version"])
+                  .to eq("git+https://github.com/jonschlinkert/is-number.git#" \
+                         "af885e2e890b9ef0875edd2b117305119ee5bdc5")
 
-                expect(parsed_npm_lock["dependencies"]["is-number"]["from"]).
-                  to eq("git+https://github.com/jonschlinkert/is-number.git")
+                expect(parsed_npm_lock["dependencies"]["is-number"]["from"])
+                  .to eq("git+https://github.com/jonschlinkert/is-number.git")
               end
             end
           end
 
           context "when using a URL token" do
+            let(:npm_fallback_version_above_v6_enabled) { false }
+
             let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_token") }
 
             it "only updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json yarn.lock))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json yarn.lock))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
               expect(
@@ -537,16 +628,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               ).to eq("git+https://dummy-token@github.com/jonschlinkert/" \
                       "is-number.git#0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-              expect(updated_yarn_lock.content).
-                to include("is-number@https://dummy-token@github.com/" \
-                           "jonschlinkert/is-number.git#master")
+              expect(updated_yarn_lock.content)
+                .to include("is-number@https://dummy-token@github.com/" \
+                            "jonschlinkert/is-number.git#master")
               expect(updated_yarn_lock.content).to include("0c6b15a88b")
-              expect(updated_yarn_lock.content).to_not include("af885e2e890")
+              expect(updated_yarn_lock.content).not_to include("af885e2e890")
             end
           end
         end
 
         context "when using git host URL: gitlab" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:dependency_name) { "babel-preset-php" }
           let(:version) { "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19" }
           let(:previous_version) { "c5a7ba5e0ad98b8db1cb8ce105403dd4b768cced" }
@@ -586,8 +678,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             ).to eq("gitlab:kornelski/babel-preset-php#" \
                     "5fbc24ccc37bd72052ce71ceae5b4934feb3ac19")
 
-            expect(updated_yarn_lock.content).
-              to include('gitlab:kornelski/babel-preset-php#master":')
+            expect(updated_yarn_lock.content)
+              .to include('gitlab:kornelski/babel-preset-php#master":')
             expect(updated_yarn_lock.content).to include(
               "https://gitlab.com/kornelski/babel-preset-php/repository/archive.tar.gz?ref=5fbc24ccc37bd72052ce71ceae5b4934feb3ac19"
             )
@@ -595,16 +687,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         context "when using git host URL: github" do
+          let(:npm_fallback_version_above_v6_enabled) { false }
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency") }
 
           it "correctly update the lockfiles" do
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("github:jonschlinkert/is-number#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("github:jonschlinkert/is-number#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-            expect(updated_yarn_lock.content).
-              to include('is-number@github:jonschlinkert/is-number#master":')
+            expect(updated_yarn_lock.content)
+              .to include('is-number@github:jonschlinkert/is-number#master":')
             expect(updated_yarn_lock.content).to include(
               "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
             )
@@ -613,7 +706,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       context "with a requirement" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { "^4.0.0" }
+        let(:git_pack_fixture_name) { "is-number" }
         let(:ref) { "master" }
         let(:old_req) { "^2.0.0" }
         let(:old_ref) { "master" }
@@ -628,75 +723,75 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             "content-type" => "application/x-git-upload-pack-advertisement"
           }
           pack_url = git_url + "/info/refs?service=git-upload-pack"
-          stub_request(:get, pack_url).
-            to_return(
+          stub_request(:get, pack_url)
+            .to_return(
               status: 200,
               body: fixture("git", "upload_packs", git_pack_fixture_name),
               headers: git_header
             )
         end
-        let(:git_pack_fixture_name) { "is-number" }
 
         it "updates the package.json and the lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json yarn.lock))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["devDependencies"]["is-number"]).
-            to eq("jonschlinkert/is-number#semver:^4.0.0")
+          expect(parsed_package_json["devDependencies"]["is-number"])
+            .to eq("jonschlinkert/is-number#semver:^4.0.0")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("github:jonschlinkert/is-number#" \
-                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("github:jonschlinkert/is-number#" \
+                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-          expect(updated_yarn_lock.content).
-            to include('"is-number@jonschlinkert/is-number#semver:^4.0.0":')
-          expect(updated_yarn_lock.content).
-            to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          expect(updated_yarn_lock.content)
+            .to include('"is-number@jonschlinkert/is-number#semver:^4.0.0":')
+          expect(updated_yarn_lock.content)
+            .to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
 
         context "with a from line in the package-lock" do
           let(:files) { project_dependency_files("npm6/github_dependency_semver_modern") }
 
           it "updates the package-lock.json from line correctly" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#semver:^4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#semver:^4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("github:jonschlinkert/is-number#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
-            expect(parsed_package_lock["dependencies"]["is-number"]["from"]).
-              to eq("github:jonschlinkert/is-number#semver:^4.0.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("github:jonschlinkert/is-number#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["dependencies"]["is-number"]["from"])
+              .to eq("github:jonschlinkert/is-number#semver:^4.0.0")
           end
         end
 
-        context "using Yarn semver format" do
+        context "when using Yarn semver format" do
           # npm doesn't support Yarn semver format yet
           let(:files) { project_dependency_files("yarn/github_dependency_yarn_semver") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json yarn.lock))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#^4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#^4.0.0")
 
-            expect(updated_yarn_lock.content).
-              to include("is-number@jonschlinkert/is-number#^4.0.0:")
-            expect(updated_yarn_lock.content).
-              to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(updated_yarn_lock.content)
+              .to include("is-number@jonschlinkert/is-number#^4.0.0:")
+            expect(updated_yarn_lock.content)
+              .to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           end
         end
       end
 
       context "with a reference" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:req) { nil }
         let(:ref) { "4.0.0" }
         let(:old_req) { nil }
@@ -705,20 +800,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm6_and_yarn/github_dependency") }
 
         it "updates the package.json and the lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json yarn.lock))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["devDependencies"]["is-number"]).
-            to eq("jonschlinkert/is-number#4.0.0")
+          expect(parsed_package_json["devDependencies"]["is-number"])
+            .to eq("jonschlinkert/is-number#4.0.0")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("github:jonschlinkert/is-number#" \
-                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("github:jonschlinkert/is-number#" \
+                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-          expect(updated_yarn_lock.content).
-            to include("is-number@jonschlinkert/is-number#4.0.0:")
+          expect(updated_yarn_lock.content)
+            .to include("is-number@jonschlinkert/is-number#4.0.0:")
           expect(updated_yarn_lock.content).to include(
             "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
           )
@@ -760,17 +855,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6_and_yarn/github_dependency_commit_ref") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json yarn.lock))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["dependencies"]["@reach/router"]).
-              to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
+            expect(parsed_package_json["dependencies"]["@reach/router"])
+              .to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
 
             parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"]).
-              to eq("github:reach/router#" \
-                    "1c62524db6e156050552fa4938c2de363d3116df")
+            expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"])
+              .to eq("github:reach/router#" \
+                     "1c62524db6e156050552fa4938c2de363d3116df")
 
             expect(updated_yarn_lock.content).to include(
               '"@reach/router@reach/router' \
@@ -787,20 +882,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_ref") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json yarn.lock))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("git+https://github.com/jonschlinkert/is-number.git#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("git+https://github.com/jonschlinkert/is-number.git#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-            expect(updated_yarn_lock.content).
-              to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(updated_yarn_lock.content)
+              .to include("0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           end
         end
 
@@ -808,27 +903,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6_and_yarn/githost_dependency_ref") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json yarn.lock))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("github:jonschlinkert/is-number#4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("github:jonschlinkert/is-number#4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("github:jonschlinkert/is-number#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("github:jonschlinkert/is-number#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
 
-            expect(updated_yarn_lock.content).
-              to include('is-number@github:jonschlinkert/is-number#4.0.0":')
+            expect(updated_yarn_lock.content)
+              .to include('is-number@github:jonschlinkert/is-number#4.0.0":')
             expect(updated_yarn_lock.content).to include(
               "https://codeload.github.com/jonschlinkert/is-number/tar.gz/0c6b15a88bc10cd47f67a09506399dfc9ddc075d"
             )
           end
         end
 
-        context "updating to use the registry" do
+        context "when updating to use the registry" do
           let(:dependency_name) { "is-number" }
           let(:version) { "4.0.0" }
           let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
@@ -857,19 +952,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6_and_yarn/git_dependency_commit_ref") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json yarn.lock))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json yarn.lock))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("^4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("^4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("4.0.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("4.0.0")
 
-            expect(updated_yarn_lock.content).
-              to include("is-number@^4.0.0")
+            expect(updated_yarn_lock.content)
+              .to include("is-number@^4.0.0")
           end
         end
 
@@ -912,8 +1007,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("yarn/git_dependency_local_file") }
 
             it "raises a helpful error" do
-              expect { updated_files }.
-                to raise_error(
+              expect { updated_files }
+                .to raise_error(
                   Dependabot::DependencyFileNotResolvable,
                   %r{@segment\/analytics\.js-integration-facebook-pixel}
                 )
@@ -924,8 +1019,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("npm6/git_dependency_local_file") }
 
             it "raises a helpful error" do
-              expect { updated_files }.
-                to raise_error(
+              expect { updated_files }
+                .to raise_error(
                   Dependabot::DependencyFileNotResolvable,
                   %r{@segment\/analytics\.js-integration-facebook-pixel}
                 )
@@ -936,6 +1031,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
 
     context "with a path-based dependency" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/path_dependency") }
 
       let(:dependency_name) { "lodash" }
@@ -961,18 +1057,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       it "has details of the updated item" do
         parsed_lockfile = JSON.parse(updated_npm_lock.content)
 
-        expect(parsed_lockfile["dependencies"]["lodash"]["version"]).
-          to eq("1.3.1")
+        expect(parsed_lockfile["dependencies"]["lodash"]["version"])
+          .to eq("1.3.1")
         expect(updated_yarn_lock.content).to include("lodash@^1.3.1")
 
-        expect(updated_package_json.content).
-          to include('"lodash": "^1.3.1"')
-        expect(updated_package_json.content).
-          to include('"etag": "file:./deps/etag"')
+        expect(updated_package_json.content)
+          .to include('"lodash": "^1.3.1"')
+        expect(updated_package_json.content)
+          .to include('"etag": "file:./deps/etag"')
       end
     end
 
     context "with a lerna.json and both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/lerna") }
 
       let(:dependency_name) { "etag" }
@@ -1006,43 +1103,38 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
 
       it "updates both lockfiles" do
-        expect(updated_files.map(&:name)).
-          to match_array(
-            [
-              "packages/package1/yarn.lock",
-              "packages/package1/package-lock.json",
-              "packages/other_package/yarn.lock",
-              "packages/other_package/package-lock.json"
-            ]
-          )
+        expect(updated_files.map(&:name))
+          .to contain_exactly("packages/package1/yarn.lock", "packages/package1/package-lock.json",
+                              "packages/other_package/yarn.lock", "packages/other_package/package-lock.json")
 
         package1_yarn_lock =
           updated_files.find { |f| f.name == "packages/package1/yarn.lock" }
         package1_npm_lock =
-          updated_files.
-          find { |f| f.name == "packages/package1/package-lock.json" }
+          updated_files
+          .find { |f| f.name == "packages/package1/package-lock.json" }
         parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
         other_package_yarn_lock =
-          updated_files.
-          find { |f| f.name == "packages/other_package/yarn.lock" }
+          updated_files
+          .find { |f| f.name == "packages/other_package/yarn.lock" }
         other_package_npm_lock =
-          updated_files.
-          find { |f| f.name == "packages/other_package/package-lock.json" }
+          updated_files
+          .find { |f| f.name == "packages/other_package/package-lock.json" }
         parsed_other_pkg_npm_lock = JSON.parse(other_package_npm_lock.content)
 
-        expect(package1_yarn_lock.content).
-          to include("etag@^1.1.0:\n  version \"1.8.1\"")
-        expect(other_package_yarn_lock.content).
-          to include("etag@^1.0.0:\n  version \"1.8.1\"")
+        expect(package1_yarn_lock.content)
+          .to include("etag@^1.1.0:\n  version \"1.8.1\"")
+        expect(other_package_yarn_lock.content)
+          .to include("etag@^1.0.0:\n  version \"1.8.1\"")
 
-        expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"]).
-          to eq("1.8.1")
-        expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"]).
-          to eq("1.8.1")
+        expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"])
+          .to eq("1.8.1")
+        expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"])
+          .to eq("1.8.1")
       end
     end
 
     context "when updating a sub dependency with both yarn and npm lockfiles" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update") }
 
       let(:dependency_name) { "extend" }
@@ -1052,29 +1144,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:previous_requirements) { nil }
 
       it "updates only relevant lockfiles" do
-        expect(updated_files.map(&:name)).
-          to match_array(
-            [
-              "packages/package1/package-lock.json",
-              "packages/package3/yarn.lock"
-            ]
-          )
+        expect(updated_files.map(&:name))
+          .to contain_exactly("packages/package1/package-lock.json", "packages/package3/yarn.lock")
 
         package1_npm_lock =
-          updated_files.
-          find { |f| f.name == "packages/package1/package-lock.json" }
+          updated_files
+          .find { |f| f.name == "packages/package1/package-lock.json" }
         package3_yarn_lock =
           updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
         parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
-        expect(package3_yarn_lock.content).
-          to include("extend@~2.0.0:\n  version \"2.0.2\"")
+        expect(package3_yarn_lock.content)
+          .to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
-        expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-          to eq("2.0.2")
+        expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+          .to eq("2.0.2")
       end
 
-      context "updates to lowest required version" do
+      context "when updating to lowest required version" do
         let(:dependency_name) { "extend" }
         let(:version) { "2.0.1" }
         let(:previous_version) { "2.0.0" }
@@ -1082,68 +1169,60 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { nil }
 
         it "updates only relevant lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(
-              [
-                "packages/package1/package-lock.json",
-                "packages/package3/yarn.lock"
-              ]
-            )
+          expect(updated_files.map(&:name))
+            .to contain_exactly("packages/package1/package-lock.json", "packages/package3/yarn.lock")
 
           package1_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package1/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/package1/package-lock.json" }
           package3_yarn_lock =
             updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
-          expect(package3_yarn_lock.content).
-            to include("extend@~2.0.0:\n  version \"2.0.1\"")
+          expect(package3_yarn_lock.content)
+            .to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
           # TODO: Change this to 2.0.1 once npm supports updating to specific
           # sub dependency versions
-          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-            to eq("2.0.2")
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+            .to eq("2.0.2")
         end
       end
 
       context "when one lockfile version is out of range" do
+        let(:npm_fallback_version_above_v6_enabled) { false }
         let(:files) { project_dependency_files("npm6_and_yarn/nested_sub_dependency_update_npm_out_of_range") }
 
         it "updates out of range to latest resolvable version" do
-          expect(updated_files.map(&:name)).
-            to match_array(
-              [
-                "packages/package1/package-lock.json",
-                "packages/package3/yarn.lock",
-                "packages/package4/package-lock.json"
-              ]
-            )
+          expect(updated_files.map(&:name))
+            .to contain_exactly("packages/package1/package-lock.json", "packages/package3/yarn.lock",
+                                "packages/package4/package-lock.json")
 
           package1_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package1/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/package1/package-lock.json" }
           package3_yarn_lock =
             updated_files.find { |f| f.name == "packages/package3/yarn.lock" }
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
           package4_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package4/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/package4/package-lock.json" }
           parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
 
-          expect(package3_yarn_lock.content).
-            to include("extend@~2.0.0:\n  version \"2.0.2\"")
+          expect(package3_yarn_lock.content)
+            .to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
-          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-            to eq("2.0.2")
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+            .to eq("2.0.2")
 
-          expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"]).
-            to eq("1.3.0")
+          expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"])
+            .to eq("1.3.0")
         end
       end
     end
 
     context "when a wildcard is specified" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6_and_yarn/wildcard") }
 
       let(:version) { "0.2.0" }
@@ -1158,13 +1237,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:previous_requirements) { requirements }
 
       it "only updates the lockfiles" do
-        expect(updated_files.map(&:name)).
-          to match_array(%w(yarn.lock package-lock.json))
+        expect(updated_files.map(&:name))
+          .to match_array(%w(yarn.lock package-lock.json))
 
-        expect(updated_yarn_lock.content).
-          to include("fetch-factory@*:\n  version \"0.2.0\"")
-        expect(updated_npm_lock.content).
-          to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
+        expect(updated_yarn_lock.content)
+          .to include("fetch-factory@*:\n  version \"0.2.0\"")
+        expect(updated_npm_lock.content)
+          .to include("fetch-factory/-/fetch-factory-0.2.0.tgz")
       end
     end
 
@@ -1172,6 +1251,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     # npm specific tests #
     ######################
     describe "npm 6 specific" do
+      let(:npm_fallback_version_above_v6_enabled) { false }
       let(:files) { project_dependency_files("npm6/simple") }
 
       context "when the package lock is empty" do
@@ -1195,8 +1275,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)
-          expect(updated_files.last.content).
-            to start_with("{\n\t\"name\": \"{{ name }}\",\n")
+          expect(updated_files.last.content)
+            .to start_with("{\n\t\"name\": \"{{ name }}\",\n")
         end
       end
 
@@ -1207,8 +1287,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_files.count).to eq(2)
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["lodash"]["resolved"]).
-            to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
+          expect(parsed_package_lock["dependencies"]["lodash"]["resolved"])
+            .to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
         end
 
         context "when updating the problematic dependency" do
@@ -1236,8 +1316,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(updated_files.count).to eq(2)
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["chalk"]["resolved"]).
-              to eq("https://registry.npmjs.org/chalk/-/chalk-2.3.2.tgz")
+            expect(parsed_package_lock["dependencies"]["chalk"]["resolved"])
+              .to eq("https://registry.npmjs.org/chalk/-/chalk-2.3.2.tgz")
           end
         end
       end
@@ -1263,13 +1343,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
 
         it "updates the lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package-lock.json))
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("git+https://github.com/jonschlinkert/is-number.git#" \
-                  "98e8ff1da1a89f93d1397a24d7413ed15421c139")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("git+https://github.com/jonschlinkert/is-number.git#" \
+                   "98e8ff1da1a89f93d1397a24d7413ed15421c139")
         end
       end
 
@@ -1284,8 +1364,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the version" do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
-            to eq("5.7.4")
+          expect(parsed_npm_lock["dependencies"]["acorn"]["version"])
+            .to eq("5.7.4")
         end
       end
 
@@ -1331,8 +1411,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the version" do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["fsevents"]["version"]).
-            to eq("1.2.4")
+          expect(parsed_npm_lock["dependencies"]["fsevents"]["version"])
+            .to eq("1.2.4")
         end
       end
 
@@ -1359,19 +1439,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "1.8.1" }
 
         it "doesn't update git dependencies" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_json["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.4.8")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
-            to eq("git+https://github.com/select2/select2.git#3.4.8")
-          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
-            to eq("git+https://github.com/select2/select2.git#" \
-                  "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"])
+            .to eq("git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"])
+            .to eq("git+https://github.com/select2/select2.git#" \
+                   "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
         end
       end
 
@@ -1398,27 +1478,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "1.8.1" }
 
         it "doesn't update git dependencies" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_json["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.x")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
-            to eq("git+https://github.com/select2/select2.git#3.x")
-          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
-            to eq("git+https://github.com/select2/select2.git#" \
-                  "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"])
+            .to eq("git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"])
+            .to eq("git+https://github.com/select2/select2.git#" \
+                   "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
         end
       end
 
       context "with non-standard indentation" do
         it "preserves indentation in the package-lock.json" do
-          expect(updated_npm_lock.content).to eq(
-            fixture("updated_projects", "npm6", "simple", "package-lock.json")
-          )
+          # Ensure lines start with { or } or tabs. The actual content of the update isn't under test here.
+          expect(updated_npm_lock.content.split("\n")).to all(match(/^{|}|\t+["}]/))
         end
       end
 
@@ -1445,43 +1524,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-          expect(updated_npm_lock.content).
-            to include("extend/-/extend-3.0.2.tgz")
-          expect(updated_npm_lock.content).
-            to include("etag/-/etag-1.7.0.tgz")
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content)
+            .to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content)
+            .to include("etag/-/etag-1.7.0.tgz")
         end
       end
 
       context "with a .npmrc" do
-        context "that has an environment variable auth token" do
+        context "when it has an environment variable auth token" do
           let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
 
-        context "that has an _auth line" do
+        context "when it has an _auth line" do
           let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
 
-        context "that precludes updates to the lockfile" do
+        context "when precluding updates to the lockfile" do
           let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
@@ -1516,10 +1595,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the files" do
           expect(updated_files.count).to eq(2)
           parsed_lockfile = JSON.parse(updated_npm_lock.content)
-          expect(parsed_lockfile["packages"]["node_modules/left-pad"]["version"]).
-            to eq("1.3.0")
-          expect(parsed_lockfile["dependencies"]["left-pad"]["version"]).
-            to eq("1.3.0")
+          expect(parsed_lockfile["packages"]["node_modules/left-pad"]["version"])
+            .to eq("1.3.0")
+          expect(parsed_lockfile["dependencies"]["left-pad"]["version"])
+            .to eq("1.3.0")
         end
       end
 
@@ -1558,16 +1637,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm8/no_dependencies") }
 
         it "updates the files" do
-          expect(updated_files.count).to eq(2)
-        end
-      end
-
-      context "with a name that needs sanitizing" do
-        let(:files) { project_dependency_files("npm8/invalid_name") }
-
-        it "updates the files" do
-          expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
-          updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
           expect(updated_files.count).to eq(2)
         end
       end
@@ -1618,23 +1687,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates both dependencies" do
           parsed_package = JSON.parse(updated_package_json.content)
-          expect(parsed_package["dependencies"]["is-number"]).
-            to eq("^4.0.0")
-          expect(parsed_package["dependencies"]["etag"]).
-            to eq("^1.8.1")
+          expect(parsed_package["dependencies"]["is-number"])
+            .to eq("^4.0.0")
+          expect(parsed_package["dependencies"]["etag"])
+            .to eq("^1.8.1")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["packages"][""]["dependencies"]["is-number"]).
-            to eq("^4.0.0")
-          expect(parsed_package_lock["packages"][""]["dependencies"]["etag"]).
-            to eq("^1.8.1")
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("4.0.0")
-          expect(parsed_package_lock["dependencies"]["etag"]["version"]).
-            to eq("1.8.1")
+          expect(parsed_package_lock["packages"][""]["dependencies"]["is-number"])
+            .to eq("^4.0.0")
+          expect(parsed_package_lock["packages"][""]["dependencies"]["etag"])
+            .to eq("^1.8.1")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("4.0.0")
+          expect(parsed_package_lock["dependencies"]["etag"]["version"])
+            .to eq("1.8.1")
         end
 
-        context "lockfile only update" do
+        context "when dealing with a lockfile only update" do
           let(:dependencies) do
             [
               Dependabot::Dependency.new(
@@ -1677,14 +1746,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates both dependencies" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json))
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("2.1.0")
-            expect(parsed_package_lock["dependencies"]["etag"]["version"]).
-              to eq("1.2.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("2.1.0")
+            expect(parsed_package_lock["dependencies"]["etag"]["version"])
+              .to eq("1.2.0")
           end
         end
       end
@@ -1693,8 +1762,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("npm8/invalid_hash_requirement") }
 
         it "raises a helpful error" do
-          expect { updater.updated_dependency_files }.
-            to raise_error(Dependabot::DependencyFileNotParseable)
+          expect { updater.updated_dependency_files }
+            .to raise_error(Dependabot::DependencyFileNotParseable)
         end
       end
 
@@ -1703,8 +1772,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the files" do
           expect(updated_files.count).to eq(2)
-          expect(updated_files.last.content).
-            to start_with("{\n    \"name\": \"project-name\",\n")
+          expect(updated_files.last.content)
+            .to start_with("{\n    \"name\": \"project-name\",\n")
         end
       end
 
@@ -1715,8 +1784,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_files.count).to eq(2)
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["lodash"]["resolved"]).
-            to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
+          expect(parsed_package_lock["dependencies"]["lodash"]["resolved"])
+            .to eq("https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz")
         end
 
         context "when updating the problematic dependency" do
@@ -1744,8 +1813,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(updated_files.count).to eq(2)
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["chalk"]["resolved"]).
-              to eq("https://registry.npmjs.org/chalk/-/chalk-2.3.2.tgz")
+            expect(parsed_package_lock["dependencies"]["chalk"]["resolved"])
+              .to eq("https://registry.npmjs.org/chalk/-/chalk-2.3.2.tgz")
           end
         end
       end
@@ -1771,13 +1840,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
 
         it "updates the lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package-lock.json))
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-            to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+          expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+            .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                   "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
         end
       end
 
@@ -1792,8 +1861,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the version" do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["acorn"]["version"]).
-            to eq("5.7.4")
+          expect(parsed_npm_lock["dependencies"]["acorn"]["version"])
+            .to eq("5.7.4")
         end
       end
 
@@ -1839,13 +1908,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "has details of the updated item" do
           parsed_lockfile = JSON.parse(updated_npm_lock.content)
 
-          expect(parsed_lockfile["dependencies"]["lodash"]["version"]).
-            to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["lodash"]["version"])
+            .to eq("1.3.1")
 
-          expect(updated_package_json.content).
-            to include('"lodash": "^1.3.1"')
-          expect(updated_package_json.content).
-            to include('"etag": "file:./deps/etag"')
+          expect(updated_package_json.content)
+            .to include('"lodash": "^1.3.1"')
+          expect(updated_package_json.content)
+            .to include('"etag": "file:./deps/etag"')
         end
       end
 
@@ -1875,8 +1944,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "updates the version" do
           parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_npm_lock["dependencies"]["fsevents"]["version"]).
-            to eq("1.2.4")
+          expect(parsed_npm_lock["dependencies"]["fsevents"]["version"])
+            .to eq("1.2.4")
         end
       end
 
@@ -1903,25 +1972,25 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "1.8.1" }
 
         it "doesn't update git dependencies" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_json["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.4.8")
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
-            to eq("Select2@git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"])
+            .to eq("Select2@git+https://github.com/select2/select2.git#3.4.8")
 
-          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
-            to eq("git+ssh://git@github.com/select2/select2.git#" \
-                  "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"])
+            .to eq("git+ssh://git@github.com/select2/select2.git#" \
+                   "b5f3b2839c48c53f9641d6bb1bccafc5260c7620")
 
-          # metadata introduced in npm 8, check we restire the package requirement
-          expect(parsed_package_lock["packages"][""]["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.4.8")
-          expect(parsed_package_lock["packages"]["node_modules/Select2"]).
-            to eq({
+          # metadata introduced in npm 8, check we restore the package requirement
+          expect(parsed_package_lock["packages"][""]["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.4.8")
+          expect(parsed_package_lock["packages"]["node_modules/Select2"])
+            .to eq({
               "version" => "3.4.8",
               "resolved" =>
                       "git+ssh://git@github.com/select2/select2.git#b5f3b2839c48c53f9641d6bb1bccafc5260c7620",
@@ -1954,21 +2023,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "1.8.1" }
 
         it "doesn't update git dependencies" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
 
           parsed_package_json = JSON.parse(updated_package_json.content)
-          expect(parsed_package_json["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_json["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.x")
 
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
-          expect(parsed_package_lock["packages"][""]["dependencies"]["Select2"]).
-            to eq("git+https://github.com/select2/select2.git#3.x")
-          expect(parsed_package_lock["dependencies"]["Select2"]["from"]).
-            to eq("Select2@git+https://github.com/select2/select2.git#3.x")
-          expect(parsed_package_lock["dependencies"]["Select2"]["version"]).
-            to eq("git+ssh://git@github.com/select2/select2.git#" \
-                  "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
+          expect(parsed_package_lock["packages"][""]["dependencies"]["Select2"])
+            .to eq("git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_lock["dependencies"]["Select2"]["from"])
+            .to eq("Select2@git+https://github.com/select2/select2.git#3.x")
+          expect(parsed_package_lock["dependencies"]["Select2"]["version"])
+            .to eq("git+ssh://git@github.com/select2/select2.git#" \
+                   "170c88460ac69639b57dfa03cfea0dadbf3c2bad")
         end
       end
 
@@ -2057,8 +2126,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the yarn.lock and the correct package_json" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json packages/package1/package.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "package-lock.json" }
             parsed_lockfile = JSON.parse(lockfile.content)
@@ -2133,8 +2202,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "updated_projects", "npm8", "workspaces_dev", "package-lock.json"
             )
             parsed_npm_lockfile = JSON.parse(updated_npm_lock_content.content)
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json other_package/package.json packages/package1/package.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json other_package/package.json packages/package1/package.json))
             expect(parsed_npm_lockfile.dig("dependencies", "etag", "version")).to eq("1.8.1")
             expect(updated_npm_lock.content).to eq(expected_updated_npm_lock_content)
           end
@@ -2179,39 +2248,39 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-          expect(updated_npm_lock.content).
-            to include("extend/-/extend-3.0.2.tgz")
-          expect(updated_npm_lock.content).
-            to include("etag/-/etag-1.7.0.tgz")
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content)
+            .to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content)
+            .to include("etag/-/etag-1.7.0.tgz")
         end
       end
 
       context "with a .npmrc" do
-        context "that has an environment variable auth token" do
+        context "when it has an environment variable auth token" do
           let(:files) { project_dependency_files("npm8/npmrc_env_auth_token") }
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
 
-        context "that has an _auth line" do
+        context "when it has an _auth line" do
           let(:files) { project_dependency_files("npm8/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
       end
@@ -2256,36 +2325,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm8/github_dependency_no_ref") }
 
           it "only updates the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json))
           end
 
           it "correctly update the lockfiles" do
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           end
 
-          context "specified as a full URL" do
+          context "when specified as a full URL" do
             let(:files) { project_dependency_files("npm8/git_dependency") }
 
             it "only updates the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package-lock.json))
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             end
 
             context "when the lockfile has an outdated source" do
               let(:files) { project_dependency_files("npm8/git_dependency_outdated_source") }
 
               it "updates the lockfile" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package-lock.json))
 
                 parsed_package_lock = JSON.parse(updated_npm_lock.content)
                 expect(
@@ -2299,8 +2368,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               let(:files) { project_dependency_files("npm8/git_dependency_empty_npm_lockfile") }
 
               it "updates the lockfile" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package-lock.json))
 
                 parsed_package_lock = JSON.parse(updated_npm_lock.content)
                 expect(
@@ -2310,7 +2379,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               end
             end
 
-            context "that previously caused problems" do
+            context "when previously causing problems" do
               let(:files) { project_dependency_files("npm8/git_dependency_git_url") }
 
               let(:dependency_name) { "slick-carousel" }
@@ -2334,31 +2403,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               let(:version) { "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1" }
 
               it "only updates the lockfile" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package-lock.json))
 
                 parsed_package_lock = JSON.parse(updated_npm_lock.content)
                 npm_lockfile_version =
                   parsed_package_lock["dependencies"]["slick-carousel"]["version"]
-                expect(npm_lockfile_version).
-                  to eq("git+ssh://git@github.com/brianfryer/slick.git#" \
-                        "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1")
+                expect(npm_lockfile_version)
+                  .to eq("git+ssh://git@github.com/brianfryer/slick.git#" \
+                         "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1")
               end
             end
 
-            context "that uses ssh" do
+            context "when it uses ssh" do
               let(:files) { project_dependency_files("npm8/git_dependency_ssh") }
 
               it "only updates the lockfile" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package-lock.json))
 
                 parsed_package_lock = JSON.parse(updated_npm_lock.content)
                 npm_lockfile_version =
                   parsed_package_lock["dependencies"]["is-number"]["version"]
-                expect(npm_lockfile_version).
-                  to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                        "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                expect(npm_lockfile_version)
+                  .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                         "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
               end
             end
 
@@ -2384,13 +2453,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               end
 
               it "doesn't remove the git dependency" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package.json package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package.json package-lock.json))
 
                 parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-                expect(parsed_npm_lock["dependencies"]["is-number"]["version"]).
-                  to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                        "af885e2e890b9ef0875edd2b117305119ee5bdc5")
+                expect(parsed_npm_lock["dependencies"]["is-number"]["version"])
+                  .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                         "af885e2e890b9ef0875edd2b117305119ee5bdc5")
               end
             end
 
@@ -2398,8 +2467,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               let(:files) { project_dependency_files("npm8/git_dependency_token") }
 
               it "only updates the lockfile" do
-                expect(updated_files.map(&:name)).
-                  to match_array(%w(package-lock.json))
+                expect(updated_files.map(&:name))
+                  .to match_array(%w(package-lock.json))
 
                 parsed_package_lock = JSON.parse(updated_npm_lock.content)
                 expect(
@@ -2457,15 +2526,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
             it "correctly update the lockfiles" do
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             end
           end
         end
 
         context "with a requirement" do
           let(:req) { "^4.0.0" }
+          let(:git_pack_fixture_name) { "is-number" }
           let(:ref) { "master" }
           let(:old_req) { "^2.0.0" }
           let(:old_ref) { "master" }
@@ -2480,50 +2550,49 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
             pack_url = git_url + "/info/refs?service=git-upload-pack"
-            stub_request(:get, pack_url).
-              to_return(
+            stub_request(:get, pack_url)
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", git_pack_fixture_name),
                 headers: git_header
               )
           end
-          let(:git_pack_fixture_name) { "is-number" }
 
           it "updates the package.json and the lockfiles" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#semver:^4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#semver:^4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#semver:^4.0.0")
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#semver:^4.0.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           end
 
           context "with a from line in the package-lock" do
             let(:files) { project_dependency_files("npm8/github_dependency_semver_modern") }
 
             it "updates the package-lock.json from line correctly" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json))
 
               parsed_package_json = JSON.parse(updated_package_json.content)
-              expect(parsed_package_json["devDependencies"]["is-number"]).
-                to eq("jonschlinkert/is-number#semver:^4.0.0")
+              expect(parsed_package_json["devDependencies"]["is-number"])
+                .to eq("jonschlinkert/is-number#semver:^4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
-                to eq("jonschlinkert/is-number#semver:^4.0.0")
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
-              expect(parsed_package_lock["dependencies"]["is-number"]["from"]).
-                to eq("is-number@jonschlinkert/is-number#semver:^4.0.0")
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"])
+                .to eq("jonschlinkert/is-number#semver:^4.0.0")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["dependencies"]["is-number"]["from"])
+                .to eq("is-number@github:jonschlinkert/is-number#semver:^4.0.0")
             end
           end
         end
@@ -2537,19 +2606,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm8/github_dependency") }
 
           it "updates the package.json and the lockfile" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
 
             parsed_package_json = JSON.parse(updated_package_json.content)
-            expect(parsed_package_json["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#4.0.0")
+            expect(parsed_package_json["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#4.0.0")
 
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
-            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
-              to eq("jonschlinkert/is-number#4.0.0")
-            expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-              to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+            expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"])
+              .to eq("jonschlinkert/is-number#4.0.0")
+            expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+              .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                     "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
           end
 
           context "with a commit reference" do
@@ -2588,17 +2657,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("npm8/github_dependency_commit_ref") }
 
             it "updates the package.json and the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json))
 
               parsed_package_json = JSON.parse(updated_package_json.content)
-              expect(parsed_package_json["dependencies"]["@reach/router"]).
-                to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
+              expect(parsed_package_json["dependencies"]["@reach/router"])
+                .to eq("reach/router#1c62524db6e156050552fa4938c2de363d3116df")
 
               parsed_npm_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"]).
-                to eq("git+ssh://git@github.com/reach/router.git#" \
-                      "1c62524db6e156050552fa4938c2de363d3116df")
+              expect(parsed_npm_lock["dependencies"]["@reach/router"]["version"])
+                .to eq("git+ssh://git@github.com/reach/router.git#" \
+                       "1c62524db6e156050552fa4938c2de363d3116df")
             end
           end
 
@@ -2606,19 +2675,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("npm8/git_dependency_ref") }
 
             it "updates the package.json and the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json))
 
               parsed_package_json = JSON.parse(updated_package_json.content)
-              expect(parsed_package_json["devDependencies"]["is-number"]).
-                to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
+              expect(parsed_package_json["devDependencies"]["is-number"])
+                .to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
-                to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"])
+                .to eq("https://github.com/jonschlinkert/is-number.git#4.0.0")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             end
           end
 
@@ -2626,23 +2695,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("npm8/githost_dependency_ref") }
 
             it "updates the package.json and the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json))
 
               parsed_package_json = JSON.parse(updated_package_json.content)
-              expect(parsed_package_json["devDependencies"]["is-number"]).
-                to eq("github:jonschlinkert/is-number#4.0.0")
+              expect(parsed_package_json["devDependencies"]["is-number"])
+                .to eq("github:jonschlinkert/is-number#4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"]).
-                to eq("github:jonschlinkert/is-number#4.0.0")
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+              expect(parsed_package_lock["packages"][""]["devDependencies"]["is-number"])
+                .to eq("github:jonschlinkert/is-number#4.0.0")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#" \
+                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
             end
           end
 
-          context "updating to use the registry" do
+          context "when updating to use the registry" do
             let(:dependency_name) { "is-number" }
             let(:version) { "4.0.0" }
             let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
@@ -2671,16 +2740,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:files) { project_dependency_files("npm8/git_dependency_commit_ref") }
 
             it "updates the package.json and the lockfile" do
-              expect(updated_files.map(&:name)).
-                to match_array(%w(package.json package-lock.json))
+              expect(updated_files.map(&:name))
+                .to match_array(%w(package.json package-lock.json))
 
               parsed_package_json = JSON.parse(updated_package_json.content)
-              expect(parsed_package_json["devDependencies"]["is-number"]).
-                to eq("^4.0.0")
+              expect(parsed_package_json["devDependencies"]["is-number"])
+                .to eq("^4.0.0")
 
               parsed_package_lock = JSON.parse(updated_npm_lock.content)
-              expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
-                to eq("4.0.0")
+              expect(parsed_package_lock["dependencies"]["is-number"]["version"])
+                .to eq("4.0.0")
             end
           end
 
@@ -2719,13 +2788,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:previous_version) { "3b1bb80b302c2e552685dc8a029797ec832ea7c9" }
             let(:version) { "5677730fd3b9de2eb2224b968259893e5fc9adac" }
 
-            # TODO: npm 8 silently ignores this issue and generates a broken lockfile
             context "with a npm lockfile" do
               let(:files) { project_dependency_files("npm8/git_dependency_local_file") }
 
-              pending "raises a helpful error" do
-                expect { updated_files }.
-                  to raise_error(
+              it "raises a helpful error" do
+                pending("npm 8 silently ignores this issue and generates a broken lockfile")
+                expect { updated_files }
+                  .to raise_error(
                     Dependabot::DependencyFileNotResolvable,
                     %r{@segment\/analytics\.js-integration-facebook-pixel}
                   )
@@ -2769,33 +2838,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "updates both lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(
-              [
-                "packages/package1/package-lock.json",
-                "packages/other_package/package-lock.json"
-              ]
-            )
+          expect(updated_files.map(&:name))
+            .to contain_exactly("packages/package1/package-lock.json", "packages/other_package/package-lock.json")
 
           package1_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package1/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/package1/package-lock.json" }
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
           other_package_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/other_package/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/other_package/package-lock.json" }
           parsed_other_pkg_npm_lock = JSON.parse(other_package_npm_lock.content)
 
           # Sets npm 8 metadata from corresponding package.json requirements
-          expect(parsed_package1_npm_lock["packages"][""]["devDependencies"]["etag"]).
-            to eq("^1.1.0")
-          expect(parsed_other_pkg_npm_lock["packages"][""]["devDependencies"]["etag"]).
-            to eq("^1.0.0")
+          expect(parsed_package1_npm_lock["packages"][""]["devDependencies"]["etag"])
+            .to eq("^1.1.0")
+          expect(parsed_other_pkg_npm_lock["packages"][""]["devDependencies"]["etag"])
+            .to eq("^1.0.0")
 
-          expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"]).
-            to eq("1.8.1")
-          expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"]).
-            to eq("1.8.1")
+          expect(parsed_package1_npm_lock["dependencies"]["etag"]["version"])
+            .to eq("1.8.1")
+          expect(parsed_other_pkg_npm_lock["dependencies"]["etag"]["version"])
+            .to eq("1.8.1")
         end
       end
 
@@ -2809,23 +2873,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { nil }
 
         it "updates only relevant lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(
-              [
-                "packages/package1/package-lock.json"
-              ]
-            )
+          expect(updated_files.map(&:name))
+            .to contain_exactly("packages/package1/package-lock.json")
 
           package1_npm_lock =
-            updated_files.
-            find { |f| f.name == "packages/package1/package-lock.json" }
+            updated_files
+            .find { |f| f.name == "packages/package1/package-lock.json" }
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
-          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-            to eq("2.0.2")
+          expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+            .to eq("2.0.2")
         end
 
-        context "updates to lowest required version" do
+        context "when updating to lowest required version" do
           let(:dependency_name) { "extend" }
           let(:version) { "2.0.1" }
           let(:previous_version) { "2.0.0" }
@@ -2833,22 +2893,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:previous_requirements) { nil }
 
           it "updates only relevant lockfiles" do
-            expect(updated_files.map(&:name)).
-              to match_array(
-                [
-                  "packages/package1/package-lock.json"
-                ]
-              )
+            expect(updated_files.map(&:name))
+              .to contain_exactly("packages/package1/package-lock.json")
 
             package1_npm_lock =
-              updated_files.
-              find { |f| f.name == "packages/package1/package-lock.json" }
+              updated_files
+              .find { |f| f.name == "packages/package1/package-lock.json" }
             parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
             # TODO: Change this to 2.0.1 once npm supports updating to specific
             # sub dependency versions
-            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-              to eq("2.0.2")
+            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+              .to eq("2.0.2")
           end
         end
 
@@ -2856,28 +2912,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm8/nested_sub_dependency_update_npm_out_of_range") }
 
           it "updates out of range to latest resolvable version" do
-            expect(updated_files.map(&:name)).
-              to match_array(
-                [
-                  "packages/package1/package-lock.json",
-                  "packages/package4/package-lock.json"
-                ]
-              )
+            expect(updated_files.map(&:name))
+              .to contain_exactly("packages/package1/package-lock.json", "packages/package4/package-lock.json")
 
             package1_npm_lock =
-              updated_files.
-              find { |f| f.name == "packages/package1/package-lock.json" }
+              updated_files
+              .find { |f| f.name == "packages/package1/package-lock.json" }
             parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
             package4_npm_lock =
-              updated_files.
-              find { |f| f.name == "packages/package4/package-lock.json" }
+              updated_files
+              .find { |f| f.name == "packages/package4/package-lock.json" }
             parsed_package4_npm_lock = JSON.parse(package4_npm_lock.content)
 
-            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"]).
-              to eq("2.0.2")
+            expect(parsed_package1_npm_lock["dependencies"]["extend"]["version"])
+              .to eq("2.0.2")
 
-            expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"]).
-              to eq("1.3.0")
+            expect(parsed_package4_npm_lock["dependencies"]["extend"]["version"])
+              .to eq("1.3.0")
           end
         end
       end
@@ -2897,14 +2948,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { requirements }
 
         it "only updates the lockfiles" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package-lock.json))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package-lock.json))
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
 
-          expect(parsed_package_lock["packages"][""]["dependencies"]["fetch-factory"]).
-            to eq("*")
-          expect(parsed_package_lock["dependencies"]["fetch-factory"]["version"]).
-            to eq("0.2.0")
+          expect(parsed_package_lock["packages"][""]["dependencies"]["fetch-factory"])
+            .to eq("*")
+          expect(parsed_package_lock["dependencies"]["fetch-factory"]["version"])
+            .to eq("0.2.0")
         end
       end
 
@@ -2931,43 +2982,43 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json package-lock.json))
-          expect(updated_npm_lock.content).
-            to include("extend/-/extend-3.0.2.tgz")
-          expect(updated_npm_lock.content).
-            to include("etag/-/etag-1.7.0.tgz")
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json package-lock.json))
+          expect(updated_npm_lock.content)
+            .to include("extend/-/extend-3.0.2.tgz")
+          expect(updated_npm_lock.content)
+            .to include("etag/-/etag-1.7.0.tgz")
         end
       end
 
       context "with a .npmrc" do
-        context "that has an environment variable auth token" do
+        context "when it has an environment variable auth token" do
           let(:files) { project_dependency_files("npm6/npmrc_env_auth_token") }
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
 
-        context "that has an _auth line" do
+        context "when it has an _auth line" do
           let(:files) { project_dependency_files("npm6/npmrc_env_global_auth") }
 
           let(:credentials) do
-            [{
+            [Dependabot::Credential.new({
               "type" => "npm_registry",
               "registry" => "registry.npmjs.org",
               "token" => "secret_token"
-            }]
+            })]
           end
 
           it "updates the files" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(package.json package-lock.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package.json package-lock.json))
           end
         end
 
-        context "that precludes updates to the lockfile" do
+        context "when precluding updates to the lockfile" do
           let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
@@ -2993,16 +3044,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "updates the .yarn/cache folder" do
-          expect(updated_files.map(&:name)).to match_array(
-            [
+          expect(updated_files.map(&:name))
+            .to contain_exactly(
               ".pnp.cjs",
               ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
               ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
               ".yarn/install-state.gz",
               "package.json",
               "yarn.lock"
-            ]
-          )
+            )
           expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
         end
       end
@@ -3021,13 +3071,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "does not update zero-install files" do
-          expect(updated_files.map(&:name)).to match_array(
-            [
-              "package.json",
-              "yarn.lock",
-              ".yarn/install-state.gz"
-            ]
-          )
+          expect(updated_files.map(&:name)).to contain_exactly("package.json", "yarn.lock", ".yarn/install-state.gz")
         end
       end
 
@@ -3045,13 +3089,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "updates the cache but not the zero install file" do
-          expect(updated_files.map(&:name)).to match_array(
-            [
-              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
-              ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
-              "package.json",
-              "yarn.lock"
-            ]
+          expect(updated_files.map(&:name)).to contain_exactly(
+            ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
+            ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
+            "package.json",
+            "yarn.lock"
           )
         end
       end
@@ -3136,8 +3178,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           expect(lockfile.content).to include(%("lodash@npm:1.3.1, lodash@npm:^1.3.1":))
-          expect(lockfile.content).to_not include("lodash@npm:^1.2.1:")
-          expect(lockfile.content).to_not include("workspace-aggregator")
+          expect(lockfile.content).not_to include("lodash@npm:^1.2.1:")
+          expect(lockfile.content).not_to include("workspace-aggregator")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package.content).to include("\"./packages/*\",\n")
@@ -3167,12 +3209,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the yarn.lock and the correct package_json" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(yarn.lock packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@npm:0.4.0")
-            expect(lockfile.content).to_not include("workspace-aggregator")
+            expect(lockfile.content).not_to include("workspace-aggregator")
           end
 
           it "does not add the dependency to the top-level workspace" do
@@ -3193,8 +3235,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_yarn_lock.content).
-            to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
+          expect(updated_yarn_lock.content)
+            .to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
         end
       end
     end
@@ -3230,12 +3272,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(updated_yarn_lock.content).to include("npm@next:")
 
             version =
-              updated_yarn_lock.content.
-              match(/npm\@next:\n  version "(?<version>.*?)"/).
-              named_captures["version"]
+              updated_yarn_lock.content
+                               .match(/npm\@next:\n  version "(?<version>.*?)"/)
+                               .named_captures["version"]
 
-            expect(Dependabot::NpmAndYarn::Version.new(version)).
-              to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
+            expect(Dependabot::NpmAndYarn::Version.new(version))
+              .to be >= Dependabot::NpmAndYarn::Version.new("5.9.0-next.0")
           end
         end
 
@@ -3265,12 +3307,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "has details of the updated item, but doesn't update everything" do
             # Updates the desired dependency
-            expect(updated_yarn_lock.content).
-              to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
+            expect(updated_yarn_lock.content)
+              .to include("babel-jest@^22.0.4:\n  version \"22.4.3\"")
 
             # Doesn't update unrelated dependencies
-            expect(updated_yarn_lock.content).
-              to include("eslint@^4.14.0:\n  version \"4.14.0\"")
+            expect(updated_yarn_lock.content)
+              .to include("eslint@^4.14.0:\n  version \"4.14.0\"")
           end
         end
       end
@@ -3307,10 +3349,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "removes details of the old version" do
-          expect(updated_yarn_lock.content).
-            to_not include("babel-register@^6.24.1:")
-          expect(updated_yarn_lock.content).
-            to_not include("integrity sha512-")
+          expect(updated_yarn_lock.content)
+            .not_to include("babel-register@^6.24.1:")
+          expect(updated_yarn_lock.content)
+            .not_to include("integrity sha512-")
         end
       end
 
@@ -3318,32 +3360,54 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/http_lockfile") }
 
         it "updates the files" do
-          expect(updated_yarn_lock.content).
-            to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
-          expect(updated_yarn_lock.content).
-            to include("https://registry.yarnpkg.com/etag/-/etag-1.7.0.tgz")
+          expect(updated_yarn_lock.content)
+            .to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
+          expect(updated_yarn_lock.content)
+            .to include("https://registry.yarnpkg.com/etag/-/etag-1.7.0.tgz")
         end
       end
 
       context "when the npm registry was explicitly specified" do
         let(:files) { project_dependency_files("yarn/npm_global_registry") }
         let(:credentials) do
-          [{
+          [Dependabot::Credential.new({
             "type" => "npm_registry",
             "registry" => "https://registry.npmjs.org",
             "token" => "secret_token"
-          }]
+          })]
         end
         let(:source) do
           { type: "registry", url: "https://registry.npmjs.org" }
         end
 
         it "keeps the preference for the npm registry" do
-          expect(updated_yarn_lock.content).
-            to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
+          expect(updated_yarn_lock.content)
+            .to include("fetch-factory@^0.0.2:\n  version \"0.0.2\"")
           expect(updated_yarn_lock.content).to include(
             "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.2"
           )
+        end
+      end
+
+      context "when the npm registry access token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "${NPM_TOKEN}"
+          })]
+        end
+
+        let(:source) do
+          { type: "registry", url: "https://registry.npmjs.org" }
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${NPM_TOKEN}")
+          end
         end
       end
 
@@ -3374,7 +3438,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content).to include("rimraf@2.6.3")
 
           # Cleaned up in fix-duplicates.js
-          expect(updated_yarn_lock.content).to_not include("rimraf-2.6.2")
+          expect(updated_yarn_lock.content).not_to include("rimraf-2.6.2")
         end
       end
 
@@ -3382,14 +3446,50 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/no_lockfile_change") }
 
         let(:dependency_name) { "acorn" }
-        let(:version) { "5.7.3" }
+        let(:version) { "5.7.4" }
         let(:previous_version) { "5.1.1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_yarn_lock.content).
-            to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.3"))
+          expect(updated_yarn_lock.content)
+            .to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.4"))
+        end
+      end
+
+      context "when the private registry access #1 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://packagecloud.io/",
+            "token" => "${PACKAGECLOUD_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${PACKAGECLOUD_TOKEN}")
+          end
+        end
+      end
+
+      context "when the private registry access #2 token var is missing its env var" do
+        let(:files) { project_dependency_files("yarn/npm_global_registry_env_var_missing") }
+        let(:credentials) do
+          [Dependabot::Credential.new({
+            "type" => "npm_registry",
+            "registry" => "https://npm.fontawesome.com/",
+            "token" => "${FONTAWESOME_NPM_AUTH_TOKEN}"
+          })]
+        end
+
+        it "keeps the preference for the npm registry" do
+          expect { updated_yarn_lock }.to raise_error do |error|
+            expect(error).to be_a(Dependabot::MissingEnvironmentVariable)
+            expect(error.message).to include("Failed to replace env in config: ${FONTAWESOME_NPM_AUTH_TOKEN}")
+          end
         end
       end
 
@@ -3410,12 +3510,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { requirements }
 
         it "updates the resolution, as well as the declaration" do
-          expect(updated_package_json.content).
-            to include('"lodash": "3.10.1"')
+          expect(updated_package_json.content)
+            .to include('"lodash": "3.10.1"')
 
-          expect(updated_yarn_lock.content).
-            to include("lodash@2.4.1, lodash@3.10.1, lodash@^3.0, " \
-                       "lodash@^3.10.1:\n  version \"3.10.1\"")
+          expect(updated_yarn_lock.content)
+            .to include("lodash@2.4.1, lodash@3.10.1, lodash@^3.0, " \
+                        "lodash@^3.10.1:\n  version \"3.10.1\"")
         end
       end
 
@@ -3473,8 +3573,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           expect(lockfile.content).to include("lodash@1.3.1, lodash@^1.3.1:")
-          expect(lockfile.content).to_not include("lodash@^1.2.1:")
-          expect(lockfile.content).to_not include("workspace-aggregator")
+          expect(lockfile.content).not_to include("lodash@^1.2.1:")
+          expect(lockfile.content).not_to include("workspace-aggregator")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package.content).to include("\"./packages/*\",\n")
@@ -3504,12 +3604,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
 
           it "updates the yarn.lock and the correct package_json" do
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(yarn.lock packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@0.4.0:")
-            expect(lockfile.content).to_not include("workspace-aggregator")
+            expect(lockfile.content).not_to include("workspace-aggregator")
           end
         end
 
@@ -3517,8 +3617,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("yarn/workspaces_bad") }
 
           it "raises a helpful error" do
-            expect { updater.updated_dependency_files }.
-              to raise_error(Dependabot::DependencyFileNotEvaluatable)
+            expect { updater.updated_dependency_files }
+              .to raise_error(Dependabot::DependencyFileNotEvaluatable)
           end
         end
 
@@ -3545,8 +3645,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "updates the right file" do
             root_lockfile = updated_files.find { |f| f.name == "yarn.lock" }
-            expect(updated_files.map(&:name)).
-              to match_array(%w(yarn.lock packages/package1/package.json))
+            expect(updated_files.map(&:name))
+              .to match_array(%w(yarn.lock packages/package1/package.json))
             expect(root_lockfile.content).to include("etag@^1.8.1:")
           end
 
@@ -3595,19 +3695,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "241058716a075a04fd6a84cd76151cd94c3ffd3a" }
 
         it "updates the lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(yarn.lock))
 
           # All graphql requirements should be flattened to the git version
           # This "invalid" requirement is created by the "resolutions" glob
-          # targetting all graphql dependency names and resolving it to the git
+          # targeting all graphql dependency names and resolving it to the git
           # version
           expect(updated_yarn_lock.content).to include(
             "graphql@0.11.7, " \
             '"graphql@git://github.com/graphql/graphql-js.git#npm":'
           )
-          expect(updated_yarn_lock.content).
-            to include("241058716a075a04fd6a84cd76151cd94c3ffd3a")
+          expect(updated_yarn_lock.content)
+            .to include("241058716a075a04fd6a84cd76151cd94c3ffd3a")
         end
       end
 
@@ -3635,8 +3735,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "5.0.0" }
 
         it "updates the manifest and lockfile" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json yarn.lock))
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json yarn.lock))
 
           expect(updated_yarn_lock.content).to include(
             "node-adodb@^5.0.2"
@@ -3668,12 +3768,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "only updates extend and locks etag" do
-          expect(updated_files.map(&:name)).
-            to match_array(%w(package.json yarn.lock))
-          expect(updated_yarn_lock.content).
-            to include("extend@^3.0.2:\n  version \"3.0.2\"")
-          expect(updated_yarn_lock.content).
-            to include("etag@latest:\n  version \"1.7.0\"")
+          expect(updated_files.map(&:name))
+            .to match_array(%w(package.json yarn.lock))
+          expect(updated_yarn_lock.content)
+            .to include("extend@^3.0.2:\n  version \"3.0.2\"")
+          expect(updated_yarn_lock.content)
+            .to include("etag@latest:\n  version \"1.7.0\"")
         end
       end
 
@@ -3681,16 +3781,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.12.0" }
+        let(:version) { "3.14.1" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
         it "de-duplicates all entries to the same version" do
-          expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
-          expect(updated_yarn_lock.content).
-            to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-                       '  version "3.12.0"')
+          expect(updated_files.map(&:name)).to contain_exactly("yarn.lock")
+          expect(updated_yarn_lock.content)
+            .to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
+                        '  version "3.14.1"')
         end
       end
 
@@ -3713,11 +3813,539 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the lockfile" do
           expect(updated_files.map(&:name)).to eq(%w(yarn.lock))
 
-          expect(updated_yarn_lock.content).
-            to include("typescript@2.1.4:\n  version \"2.1.4\"")
-          expect(updated_yarn_lock.content).
-            to include("typescript@^2.1.1:\n  version \"2.9.1\"")
+          expect(updated_yarn_lock.content)
+            .to include("typescript@2.1.4:\n  version \"2.1.4\"")
+          expect(updated_yarn_lock.content)
+            .to include("typescript@^2.1.1:\n  version \"2.9.1\"")
         end
+      end
+    end
+
+    #############################
+    # Pnpm specific tests #
+    #############################
+    describe "PNPM specific" do
+      let(:updated_pnpm_lock) do
+        updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+      end
+
+      let(:updated_pnpm_workspace) do
+        updated_files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+      let(:files) { project_dependency_files(project_name) }
+
+      describe "simple case" do
+        let(:project_name) { "pnpm/simple" }
+
+        it "keeps the lockfileVersion" do
+          expect(updated_pnpm_lock.content).to include("lockfileVersion: '6.0'")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_pnpm_lock.content).to include("fetch-factory@0.0.2")
+        end
+      end
+
+      context "when updating only the lockfile" do
+        let(:project_name) { "pnpm/lockfile_only_change" }
+
+        let(:dependency_name) { "babel-jest" }
+        let(:version) { "22.4.4" }
+        let(:previous_version) { "22.0.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^22.0.4",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "has details of the updated item, but doesn't update everything" do
+          parsed_packages = YAML.safe_load(updated_pnpm_lock.content)["packages"]
+
+          # Updates the desired dependency
+          expect(parsed_packages.keys).to include(/babel-jest@22\.4\.4/)
+
+          # Doesn't update unrelated dependencies
+          expect(parsed_packages.keys).to include(/eslint@4\.14\.0/)
+        end
+      end
+
+      context "with workspaces" do
+        let(:project_name) { "pnpm/workspaces" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the lockfile and all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+
+          expect(lockfile.content).to include("lodash@1.3.1:\n    resolution").once
+
+          expect(package.content).to include('"lodash": "1.3.1"')
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
+        end
+
+        context "with a dependency that doesn't appear in all packages" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the lockfile and the correct package_json" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
+
+            lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            expect(lockfile.content).to include("chalk@0.4.0:")
+            expect(lockfile.content).to include("chalk@0.4.0:\n    resolution").once
+          end
+
+          it "does not add the dependency to the top-level workspace" do
+            lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            parsed_lockfile = YAML.safe_load(lockfile.content)
+
+            expect(parsed_lockfile.dig("importers", ".", "dependencies").keys).not_to include("chalk")
+          end
+        end
+
+        context "with a dependency that appears as a development dependency" do
+          let(:dependency_name) { "etag" }
+          let(:version) { "1.8.1" }
+          let(:previous_version) { "1.8.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.1.0",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the right file" do
+            root_lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            expect(updated_files.map(&:name)). to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
+
+            expect(root_lockfile.content).to include("etag@1.8.1:\n    resolution").once
+          end
+
+          it "updates the existing development declaration" do
+            file = updated_files.find do |f|
+              f.name == "packages/package1/package.json"
+            end
+            parsed_file = JSON.parse(file.content)
+            expect(parsed_file.dig("dependencies", "etag")).to be_nil
+            expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+          end
+        end
+      end
+
+      context "with a sub-dependency" do
+        let(:project_name) { "pnpm/no_lockfile_change" }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.2.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_pnpm_lock.content).to include("acorn@5.2.1:\n    resolution").once
+        end
+      end
+
+      context "with resolutions" do
+        let(:project_name) { "pnpm/resolution_specified" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the resolution, as well as the declaration" do
+          expect(updated_package_json.content).to include('"lodash": "3.10.1"')
+
+          expect(updated_pnpm_lock.content).to include("lodash@3.10.1:\n    resolution").once
+        end
+      end
+
+      context "with overrides (pnpm specific resolutions)" do
+        let(:project_name) { "pnpm/overrides_specified" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the resolution, as well as the declaration" do
+          expect(updated_package_json.content).to include('"lodash": "3.10.1"')
+
+          expect(updated_pnpm_lock.content).to include("lodash@3.10.1:\n    resolution").once
+        end
+      end
+
+      context "when package has a invalid platform requirement" do
+        let(:project_name) { "pnpm/invalid_platform" }
+
+        let(:dependency_name) { "node-adodb" }
+        let(:requirements) do
+          [{
+            requirement: "^5.0.2",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^5.0.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_version) { "5.0.2" }
+        let(:version) { "5.0.0" }
+
+        it "updates the manifest and lockfile" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json pnpm-lock.yaml))
+
+          expect(updated_pnpm_lock.content).to include("node-adodb@5.0.3:\n    resolution").once
+        end
+      end
+
+      context "when updating a sub dependency with multiple requirements" do
+        let(:project_name) { "pnpm/multiple_sub_dependencies" }
+
+        let(:dependency_name) { "js-yaml" }
+        let(:version) { "3.14.1" }
+        let(:previous_version) { "3.9.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { nil }
+
+        it "de-duplicates all entries to the same version" do
+          expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
+
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.1:\n    resolution").once
+        end
+      end
+
+      context "when the exact version we're updating from is still requested" do
+        let(:project_name) { "pnpm/typedoc-plugin-ui-router" }
+
+        let(:dependency_name) { "typescript" }
+        let(:version) { "2.9.1" }
+        let(:previous_version) { "2.1.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.1.1",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).to eq(%w(pnpm-lock.yaml))
+
+          expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
+          expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
+        end
+      end
+
+      context "with pnpm catalog protocol" do
+        context "when individual dependency needs updating" do
+          let(:project_name) { "pnpm/catalog_prettier" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.0",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+            expect(updated_pnpm_workspace.content).to include("prettier: 3.3.3")
+          end
+        end
+
+        context "when updating multiple dependencies in catalogs" do
+          let(:project_name) { "pnpm/catalogs_all_examples" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.2.0",
+                required_version: "^18.2.0",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.2.0",
+                required_version: "18.2.0",
+                previous_required_version: "18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-icons",
+                version: "4.3.1",
+                required_version: "4.3.14",
+                previous_required_version: "4.3.1"
+              )
+            ]
+          end
+
+          it "updates the workspace file" do
+            expect(updated_pnpm_workspace.content).to include("react-icons: 4.3.14")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.0\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '18.2.0'")
+            expect(updated_pnpm_workspace.content).to include("react: 16.2.0")
+            expect(updated_pnpm_workspace.content).to include("react-dom: ^16.2.0")
+          end
+        end
+
+        context "when updating multiple dependencies with valid yaml" do
+          let(:project_name) { "pnpm/catalogs_valid_yaml" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.0",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "express",
+                version: "4.15.2",
+                required_version: "4.21.2",
+                previous_required_version: "4.15.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "is-even",
+                version: "0.1.2",
+                required_version: "1.0.0",
+                previous_required_version: "0.1.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+
+            expect(updated_pnpm_workspace.content).to include("prettier: \"3.3.3\"")
+            expect(updated_pnpm_workspace.content).to include("\"express\": 4.21.2")
+            expect(updated_pnpm_workspace.content).to include("is-even: '1.0.0'")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.3\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '^18.2.3'")
+          end
+        end
+      end
+    end
+  end
+
+  describe "without a package.json file" do
+    let(:child_class) do
+      Class.new(described_class) do
+        def check_required_files
+          %w(manifest).each do |filename|
+            unless get_original_file(filename)
+              raise Dependabot::DependencyFileNotFound.new(nil,
+                                                           "package.json not found.")
+            end
+          end
+        end
+      end
+    end
+    let(:updater_instance) do
+      child_class.new(
+        dependency_files: files,
+        dependencies: [dependency],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com"
+        }]
+      )
+    end
+
+    let(:manifest) do
+      Dependabot::DependencyFile.new(
+        content: "a",
+        name: "manifest",
+        directory: "/path/to"
+      )
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        package_manager: "bundler",
+        requirements:
+          [{ file: "manifest", requirement: "~> 1.4.0", groups: [], source: nil }]
+      )
+    end
+    let(:files) { [manifest] }
+
+    describe "new file updater" do
+      subject { -> { updater_instance } }
+
+      context "when the required file is present" do
+        let(:files) { [manifest] }
+
+        it "doesn't raise" do
+          expect { updater_instance }.not_to raise_error
+        end
+      end
+
+      context "when the required file is missing" do
+        let(:files) { [] }
+
+        it "raises" do
+          expect { updater_instance }.to raise_error(Dependabot::DependencyFileNotFound)
+        end
+      end
+    end
+
+    describe "#get_original_file" do
+      subject { updater_instance.send(:get_original_file, filename) }
+
+      context "when the requested file is present" do
+        let(:filename) { "manifest" }
+
+        it { is_expected.to eq(manifest) }
+      end
+
+      context "when the requested file is not present" do
+        let(:filename) { "package.json" }
+
+        it { is_expected.to be_nil }
       end
     end
   end

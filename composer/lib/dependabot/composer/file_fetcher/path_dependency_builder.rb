@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "json"
@@ -16,7 +17,7 @@ module Dependabot
         end
 
         def dependency_file
-          filename = File.join(path, "composer.json")
+          filename = File.join(path, PackageManager::MANIFEST_FILENAME)
 
           # Current we just return `nil` if a path dependency can't be built.
           # In future we may wish to change that to a raise. (We'll get errors
@@ -34,11 +35,13 @@ module Dependabot
 
         private
 
-        attr_reader :path, :lockfile, :directory
+        attr_reader :path
+        attr_reader :lockfile
+        attr_reader :directory
 
         def details_from_lockfile
-          keys = FileParser::DEPENDENCY_GROUP_KEYS.
-                 map { |h| h.fetch(:lockfile) }
+          keys = FileParser::DEPENDENCY_GROUP_KEYS
+                 .map { |h| h.fetch(:lockfile) }
 
           keys.each do |key|
             next unless parsed_lockfile[key]

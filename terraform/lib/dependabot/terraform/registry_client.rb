@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -24,11 +25,13 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
-      def self.get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
+      def self.get_proxied_source(raw_source)
         return raw_source unless raw_source.start_with?("http")
 
         uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
-        return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+        return raw_source if ARCHIVE_EXTENSIONS.any? { |ext| uri.path&.end_with?(ext) }
         return raw_source if URI.parse(raw_source).query&.include?("archive=")
 
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
@@ -48,6 +51,8 @@ module Dependabot
 
         raw_source
       end
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
 
       # Fetch all the versions of a provider, and return a Version
@@ -61,9 +66,9 @@ module Dependabot
         base_url = service_url_for("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response.body).
-          fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        JSON.parse(response.body)
+            .fetch("versions")
+            .map { |release| version_class.new(release.fetch("version")) }
       rescue Excon::Error
         raise error("Could not fetch provider versions")
       end
@@ -79,9 +84,9 @@ module Dependabot
         base_url = service_url_for("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response.body).
-          fetch("modules").first.fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        JSON.parse(response.body)
+            .fetch("modules").first.fetch("versions")
+            .map { |release| version_class.new(release.fetch("version")) }
       end
 
       # Fetch the "source" for a module or provider. We use the API to fetch
@@ -133,7 +138,8 @@ module Dependabot
 
       private
 
-      attr_reader :hostname, :tokens
+      attr_reader :hostname
+      attr_reader :tokens
 
       def version_class
         Version

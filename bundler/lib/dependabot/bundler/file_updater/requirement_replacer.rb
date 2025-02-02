@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "parser/current"
@@ -7,8 +8,10 @@ module Dependabot
   module Bundler
     class FileUpdater
       class RequirementReplacer
-        attr_reader :dependency, :file_type, :updated_requirement,
-                    :previous_requirement
+        attr_reader :dependency
+        attr_reader :file_type
+        attr_reader :updated_requirement
+        attr_reader :previous_requirement
 
         def initialize(dependency:, file_type:, updated_requirement:,
                        previous_requirement: nil, insert_if_bare: false)
@@ -48,8 +51,8 @@ module Dependabot
 
           updated_lines = updated_content.lines
           updated_line_index =
-            updated_lines.length.
-            times.find { |i| content.lines[i] != updated_content.lines[i] }
+            updated_lines.length
+                         .times.find { |i| content.lines[i] != updated_content.lines[i] }
           updated_line = updated_lines[updated_line_index]
 
           updated_line =
@@ -114,7 +117,9 @@ module Dependabot
 
           private
 
-          attr_reader :dependency, :file_type, :updated_requirement
+          attr_reader :dependency
+          attr_reader :file_type
+          attr_reader :updated_requirement
 
           def insert_if_bare?
             @insert_if_bare
@@ -188,8 +193,8 @@ module Dependabot
                                      use_equality_operator:)
             open_quote, close_quote = quote_characters
             new_requirement_string =
-              updated_requirement.split(",").
-              map do |r|
+              updated_requirement.split(",")
+                                 .map do |r|
                 req_string = serialized_req(r, use_equality_operator)
                 req_string = %(#{open_quote}#{req_string}#{close_quote})
                 req_string = req_string.delete(" ") unless space_after_specifier

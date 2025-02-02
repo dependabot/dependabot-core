@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -21,6 +22,7 @@ RSpec.describe Dependabot::Gradle do
 
     context "with a 100+ character name" do
       let(:name) { "com.long-domain-name-that-should-be-replaced-by-ellipsis.this-is-longer-group-id:the-longest-artifact-id" } # rubocop:disable Layout/LineLength
+
       it { is_expected.to eq("the-longest-artifact-id") }
     end
   end

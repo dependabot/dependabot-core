@@ -1,0 +1,14 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  test-missing-dep-name-npm-package:
+    specifier: dependabot-fixtures/test-missing-dep-name-npm-package#v1.0.0
+    version: github.com/dependabot-fixtures/test-missing-dep-name-npm-package/1be88e036981a8511eacf3f20e0a21507349988d
+
+packages:
+
+  github.com/dependabot-fixtures/test-missing-dep-name-npm-package/1be88e036981a8511eacf3f20e0a21507349988d:
+    resolution: {tarball: https://codeload.github.com/dependabot-fixtures/test-missing-dep-name-npm-package/tar.gz/1be88e036981a8511eacf3f20e0a21507349988d}
+    name: test-missing-dep-name-npm-package
+    version: 1.0.0
+    dev: false

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -19,7 +20,7 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_files = dependency_files.dup
+        updated_files = T.let(dependency_files.dup, T.untyped)
 
         # Loop through each of the changed requirements, applying changes to
         # all pom and extensions files for that change. Note that the logic
@@ -51,8 +52,8 @@ module Dependabot
 
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        reqs = dependency.requirements.zip(dependency.previous_requirements)
+                         .reject { |new_req, old_req| new_req == old_req }
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
@@ -77,12 +78,12 @@ module Dependabot
       def update_pomfiles_for_property_change(pomfiles, req)
         property_name = req.fetch(:metadata).fetch(:property_name)
 
-        PropertyValueUpdater.new(dependency_files: pomfiles).
-          update_pomfiles_for_property_change(
-            property_name: property_name,
-            callsite_pom: pomfiles.find { |f| f.name == req.fetch(:file) },
-            updated_value: req.fetch(:requirement)
-          )
+        PropertyValueUpdater.new(dependency_files: pomfiles)
+                            .update_pomfiles_for_property_change(
+                              property_name: property_name,
+                              callsite_pom: pomfiles.find { |f| f.name == req.fetch(:file) },
+                              updated_value: req.fetch(:requirement)
+                            )
       end
 
       def update_version_in_file(dependency, file, previous_req, requirement)

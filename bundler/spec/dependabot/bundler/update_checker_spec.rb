@@ -1,39 +1,22 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
 require "shared_contexts"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
+
 require "dependabot/bundler/update_checker"
+require "dependabot/dependency_file"
+require "dependabot/dependency"
+require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Bundler::UpdateChecker do
-  it_behaves_like "an update checker"
-
-  let(:checker) do
-    described_class.new(
-      dependency: dependency,
-      dependency_files: dependency_files,
-      credentials: credentials,
-      ignored_versions: ignored_versions,
-      security_advisories: security_advisories
-    )
+  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
   end
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
-
-  let(:github_token) { "token" }
-  let(:directory) { "/" }
-  let(:ignored_versions) { [] }
-  let(:security_advisories) { [] }
-
+  let(:current_version) { "1.4.0" }
+  let(:dependency_name) { "business" }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -42,13 +25,32 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       package_manager: "bundler"
     )
   end
-  let(:dependency_name) { "business" }
-  let(:current_version) { "1.4.0" }
-  let(:requirements) do
-    [{ file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }]
+  let(:requirements_update_strategy) { nil }
+  let(:security_advisories) { [] }
+  let(:ignored_versions) { [] }
+  let(:directory) { "/" }
+  let(:github_token) { "token" }
+  let(:dependency_files) { bundler_project_dependency_files("gemfile") }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:checker) do
+    described_class.new(
+      dependency: dependency,
+      dependency_files: dependency_files,
+      credentials: credentials,
+      ignored_versions: ignored_versions,
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
+    )
   end
 
-  let(:rubygems_url) { "https://rubygems.org/api/v1/" }
+  it_behaves_like "an update checker"
 
   describe "#latest_version" do
     subject { checker.latest_version }
@@ -56,13 +58,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     context "with a rubygems source" do
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       it { is_expected.to eq(Gem::Version.new("1.5.0")) }
 
-      context "that only appears in the lockfile" do
+      context "when that only appears in the lockfile" do
         let(:dependency_files) { bundler_project_dependency_files("subdependency") }
 
         let(:requirements) { [] }
@@ -71,8 +73,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         before do
           rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-          stub_request(:get, rubygems_url + "versions/i18n.json").
-            to_return(status: 200, body: rubygems_response)
+          stub_request(:get, rubygems_url + "versions/i18n.json")
+            .to_return(status: 200, body: rubygems_response)
         end
 
         it { is_expected.to eq(Gem::Version.new("1.6.0.beta")) }
@@ -80,8 +82,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       context "when the gem isn't on Rubygems" do
         before do
-          stub_request(:get, rubygems_url + "versions/business.json").
-            to_return(status: 404, body: "This rubygem could not be found.")
+          stub_request(:get, rubygems_url + "versions/business.json")
+            .to_return(status: 404, body: "This rubygem could not be found.")
         end
 
         it { is_expected.to be_nil }
@@ -113,8 +115,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     context "with extra nonrelevant credentials" do
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       let(:credentials) do
@@ -148,29 +150,30 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:gemfury_business_url) do
         "https://repo.fury.io/greysteil/api/v1/dependencies?gems=business"
       end
+
       before do
         bundler_version = PackageManagerHelper.bundler_version
 
         # We only need to stub out the version callout since it would
         # otherwise call out to the internet in a shell command
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
             options: anything,
             args: anything
-          }).and_call_original
+          }).and_return("private")
 
-        allow(Dependabot::Bundler::NativeHelpers).
-          to receive(:run_bundler_subprocess).
-          with({
+        allow(Dependabot::Bundler::NativeHelpers)
+          .to receive(:run_bundler_subprocess)
+          .with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
             options: anything,
             args: anything
-          }).
-          and_return(
+          })
+          .and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
       end
@@ -178,16 +181,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it { is_expected.to eq(Gem::Version.new("1.9.0")) }
     end
 
-    context "given a git source" do
+    context "when given a git source" do
       let(:dependency_files) { bundler_project_dependency_files("git_source_no_ref") }
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
-      context "that is the gem we're checking for" do
+      context "when that is the gem we're checking for" do
         let(:dependency_name) { "business" }
         let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
         let(:requirements) do
@@ -206,9 +209,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when head of the gem's branch is included in a release" do
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(true)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(true)
           end
 
           it { is_expected.to eq(Gem::Version.new("1.5.0")) }
@@ -216,15 +219,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when head of the gem's branch is not included in a release" do
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "business"),
                 headers: git_header
@@ -232,8 +235,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "fetches the latest SHA-1 hash" do
-            expect(checker.latest_version).
-              to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
+            expect(checker.latest_version)
+              .to eq("7bb4e41ce5164074a0920d5b5770d196b4d90104")
           end
         end
 
@@ -254,40 +257,40 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }]
           end
 
-          context "and the gem isn't on Rubygems" do
+          context "when the gem isn't on Rubygems" do
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
+              stub_request(:get, rubygems_url + "versions/business.json")
+                .to_return(status: 404, body: "This rubygem could not be found.")
             end
 
             it { is_expected.to eq(current_version) }
           end
 
-          context "and the reference isn't included in the new version" do
+          context "when the reference isn't included in the new version" do
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:branch_or_ref_in_release?).
-                and_return(false)
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+                .to receive(:branch_or_ref_in_release?)
+                .and_return(false)
             end
 
             it "respects the pin" do
               expect(checker.latest_version).to eq(current_version)
-              expect(checker.can_update?(requirements_to_unlock: :own)).
-                to eq(false)
+              expect(checker.can_update?(requirements_to_unlock: :own))
+                .to be(false)
             end
           end
 
-          context "and the reference is included in the new version" do
+          context "when the reference is included in the new version" do
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:branch_or_ref_in_release?).
-                and_return(true)
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+                .to receive(:branch_or_ref_in_release?)
+                .and_return(true)
             end
 
             it { is_expected.to eq(Gem::Version.new("1.5.0")) }
           end
 
-          context "and the pin looks like a version" do
+          context "when the pin looks like a version" do
             let(:requirements) do
               [{
                 file: "Gemfile",
@@ -301,30 +304,30 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 }
               }]
             end
+            let(:upload_pack_fixture) { "business" }
 
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
+              stub_request(:get, rubygems_url + "versions/business.json")
+                .to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
-              stub_request(:get, url + "/info/refs?service=git-upload-pack").
-                with(basic_auth: %w(x-access-token token)).
-                to_return(
+              stub_request(:get, url + "/info/refs?service=git-upload-pack")
+                .with(basic_auth: %w(x-access-token token))
+                .to_return(
                   status: 200,
                   body: fixture("git", "upload_packs", upload_pack_fixture),
                   headers: git_header
                 )
             end
-            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
-              expect(checker.latest_version).
-                to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+              expect(checker.latest_version)
+                .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
-            context "but there are no tags" do
+            context "when there are no tags" do
               let(:upload_pack_fixture) { "no_tags" }
 
               it "returns the current version" do
@@ -336,17 +339,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
     end
 
-    context "given a path source" do
+    context "when given a path source" do
       let(:dependency_files) { bundler_project_dependency_files("path_source") }
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       context "with a downloaded gemspec" do
-        context "that is the gem we're checking" do
+        context "when that is the gem we're checking" do
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
           let(:requirements) do
@@ -365,7 +368,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#lowest_security_fix_version" do
-    subject { checker.lowest_security_fix_version }
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
     context "with a rubygems source" do
       let(:current_version) { "1.2.0" }
@@ -375,12 +378,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       before do
         rubygems_response = fixture("ruby", "rubygems_response_versions.json")
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 200, body: rubygems_response)
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 200, body: rubygems_response)
       end
 
       it "finds the lowest available non-vulnerable version" do
-        is_expected.to eq(Gem::Version.new("1.3.0"))
+        expect(lowest_security_fix_version).to eq(Gem::Version.new("1.3.0"))
       end
 
       context "with a security vulnerability" do
@@ -395,20 +398,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "finds the lowest available non-vulnerable version" do
-          is_expected.to eq(Gem::Version.new("1.4.0"))
+          expect(lowest_security_fix_version).to eq(Gem::Version.new("1.4.0"))
         end
       end
     end
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
-    include_context "stub rubygems compact index"
     subject { checker.send(:latest_version_resolvable_with_full_unlock?) }
+
+    include_context "when stubbing rubygems compact index"
 
     context "with no latest version" do
       before do
-        stub_request(:get, rubygems_url + "versions/business.json").
-          to_return(status: 404, body: "This rubygem could not be found.")
+        stub_request(:get, rubygems_url + "versions/business.json")
+          .to_return(status: 404, body: "This rubygem could not be found.")
       end
 
       it { is_expected.to be_falsey }
@@ -416,9 +420,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
     context "with a latest version" do
       before do
-        allow(checker).
-          to receive(:latest_version).
-          and_return(target_version)
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new(target_version))
       end
 
       context "when the force updater raises" do
@@ -451,14 +453,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#updated_dependencies_after_full_unlock" do
-    include_context "stub rubygems compact index"
     subject(:updated_dependencies_after_full_unlock) do
       checker.send(:updated_dependencies_after_full_unlock)
     end
 
+    include_context "when stubbing rubygems compact index"
+
     context "with a latest version" do
       before do
-        allow(checker).to receive(:latest_version).and_return(target_version)
+        allow(checker).to receive(:latest_version).and_return(Gem::Version.new(target_version))
       end
 
       context "when the force updater succeeds" do
@@ -483,26 +486,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "returns the right array of updated dependencies" do
-          expect(updated_dependencies_after_full_unlock).to match_array(
-            [
-              Dependabot::Dependency.new(
-                name: "rspec-mocks",
-                version: "3.6.0",
-                previous_version: "3.5.0",
-                requirements: expected_requirements,
-                previous_requirements: requirements,
-                package_manager: "bundler"
-              ),
-              Dependabot::Dependency.new(
-                name: "rspec-support",
-                version: "3.6.0",
-                previous_version: "3.5.0",
-                requirements: expected_requirements,
-                previous_requirements: requirements,
-                package_manager: "bundler"
-              )
-            ]
-          )
+          expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
+                                                                              name: "rspec-mocks",
+                                                                              version: "3.6.0",
+                                                                              previous_version: "3.5.0",
+                                                                              requirements: expected_requirements,
+                                                                              previous_requirements: requirements,
+                                                                              package_manager: "bundler"
+                                                                            ), Dependabot::Dependency.new(
+                                                                                 name: "rspec-support",
+                                                                                 version: "3.6.0",
+                                                                                 previous_version: "3.5.0",
+                                                                                 requirements: expected_requirements,
+                                                                                 previous_requirements: requirements,
+                                                                                 package_manager: "bundler"
+                                                                               ))
         end
 
         context "with a gem.rb and gems.locked setup" do
@@ -526,26 +524,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           it "returns the right array of updated dependencies" do
-            expect(updated_dependencies_after_full_unlock).to match_array(
-              [
-                Dependabot::Dependency.new(
-                  name: "rspec-mocks",
-                  version: "3.6.0",
-                  previous_version: "3.5.0",
-                  requirements: expected_requirements,
-                  previous_requirements: requirements,
-                  package_manager: "bundler"
-                ),
-                Dependabot::Dependency.new(
-                  name: "rspec-support",
-                  version: "3.6.0",
-                  previous_version: "3.5.0",
-                  requirements: expected_requirements,
-                  previous_requirements: requirements,
-                  package_manager: "bundler"
-                )
-              ]
-            )
+            expect(updated_dependencies_after_full_unlock).to contain_exactly(Dependabot::Dependency.new(
+                                                                                name: "rspec-mocks",
+                                                                                version: "3.6.0",
+                                                                                previous_version: "3.5.0",
+                                                                                requirements: expected_requirements,
+                                                                                previous_requirements: requirements,
+                                                                                package_manager: "bundler"
+                                                                              ), Dependabot::Dependency.new(
+                                                                                   name: "rspec-support",
+                                                                                   version: "3.6.0",
+                                                                                   previous_version: "3.5.0",
+                                                                                   requirements: expected_requirements,
+                                                                                   previous_requirements: requirements,
+                                                                                   package_manager: "bundler"
+                                                                                 ))
           end
         end
       end
@@ -553,10 +546,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    subject(:conflicting_dependencies) { checker.conflicting_dependencies }
 
-    subject { checker.conflicting_dependencies }
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
 
     let(:dependency_files) { bundler_project_dependency_files("subdep_blocked_by_subdep") }
     let(:target_version) { "2.0.0" }
@@ -582,13 +575,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
 
     before do
-      allow(checker).
-        to receive(:lowest_security_fix_version).
-        and_return(target_version)
+      allow(checker)
+        .to receive(:lowest_security_fix_version)
+        .and_return(target_version)
     end
 
     it do
-      is_expected.to eq(
+      expect(conflicting_dependencies).to eq(
         [{
           "explanation" => "dummy-pkg-b (1.0.0) requires dummy-pkg-a (< 2.0.0)",
           "name" => "dummy-pkg-b",
@@ -600,13 +593,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_resolvable_version" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
+    subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    subject { checker.latest_resolvable_version }
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
 
-    context "given a gem from rubygems" do
-      context "that only appears in the lockfile" do
+    context "when given a gem from rubygems" do
+      context "when that only appears in the lockfile" do
         let(:dependency_files) { bundler_project_dependency_files("subdependency") }
         let(:requirements) { [] }
         let(:dependency_name) { "i18n" }
@@ -625,6 +618,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when the user is ignoring the latest version" do
           let(:ignored_versions) { [">= 1.7.0.a, < 2.0"] }
+
           it { is_expected.to eq(Gem::Version.new("1.6.0")) }
         end
       end
@@ -658,7 +652,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       context "with a gem.rb and gems.locked setup" do
-        context "that only appears in the lockfile" do
+        context "when that only appears in the lockfile" do
           let(:dependency_files) { bundler_project_dependency_files("subdependency_gems_rb") }
           let(:requirements) { [] }
           let(:dependency_name) { "i18n" }
@@ -683,30 +677,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
     end
 
-    context "given a gem with a path source" do
+    context "when given a gem with a path source" do
       context "with a downloaded gemspec" do
         let(:dependency_files) { bundler_project_dependency_files("path_source_no_overlap") }
 
         it { is_expected.to eq(Gem::Version.new("1.13.0")) }
 
         it "doesn't persist any temporary changes to Bundler's root" do
-          expect { checker.latest_resolvable_version }.
-            to_not(change { ::Bundler.root })
+          expect { checker.latest_resolvable_version }
+            .not_to(change(::Bundler, :root))
         end
 
-        context "that requires other files" do
+        context "when that requires other files" do
           let(:dependency_files) { bundler_project_dependency_files("path_source_no_overlap_with_require") }
 
           it { is_expected.to eq(Gem::Version.new("1.13.0")) }
         end
 
-        context "that is the gem we're checking" do
+        context "when that is the gem we're checking" do
           let(:dependency_name) { "example" }
           let(:current_version) { "0.9.3" }
+
           it { is_expected.to eq(Gem::Version.new("0.9.3")) }
         end
 
-        context "that has a .specification" do
+        context "when that has a .specification" do
           let(:dependency_files) { bundler_project_dependency_files("path_source_statesman") }
 
           it { is_expected.to eq(Gem::Version.new("1.13.0")) }
@@ -714,10 +709,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
     end
 
-    context "given a gem with a git source" do
+    context "when given a gem with a git source" do
       let(:dependency_files) { bundler_project_dependency_files("git_source_no_ref") }
 
-      context "that is the gem we're checking" do
+      context "when the gem under consideration is the one we're checking" do
         let(:dependency_name) { "business" }
         let(:current_version) { "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2" }
         let(:requirements) do
@@ -736,15 +731,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when the head of the branch isn't released" do
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "business"),
                 headers: git_header
@@ -754,10 +749,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq(current_version)
+            expect(version).not_to eq(current_version)
           end
 
-          context "and the Gemfile doesn't specify a git source" do
+          context "when the Gemfile doesn't specify a git source" do
             let(:dependency_files) { bundler_project_dependency_files("git_source_mismatched") }
 
             # If the dependency has a git version in the Gemfile.lock but not in
@@ -769,9 +764,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when the head of the branch is released" do
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(true)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(true)
           end
 
           it { is_expected.to eq(Gem::Version.new("1.13.0")) }
@@ -795,15 +790,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "prius"),
                 headers: git_header
@@ -813,7 +808,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq(current_version)
+            expect(version).not_to eq(current_version)
           end
         end
 
@@ -836,32 +831,32 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }]
           end
 
-          context "and the reference isn't included in the new version" do
+          context "when the reference isn't included in the new version" do
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:branch_or_ref_in_release?).
-                and_return(false)
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+                .to receive(:branch_or_ref_in_release?)
+                .and_return(false)
             end
 
             it "respects the pin" do
-              expect(checker.latest_resolvable_version).
-                to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
-              expect(checker.can_update?(requirements_to_unlock: :own)).
-                to eq(false)
+              expect(checker.latest_resolvable_version)
+                .to eq("a1b78a929dac93a52f08db4f2847d76d6cfe39bd")
+              expect(checker.can_update?(requirements_to_unlock: :own))
+                .to be(false)
             end
           end
 
-          context "and the reference is included in the new version" do
+          context "when the reference is included in the new version" do
             before do
-              allow_any_instance_of(Dependabot::GitCommitChecker).
-                to receive(:branch_or_ref_in_release?).
-                and_return(true)
+              allow_any_instance_of(Dependabot::GitCommitChecker)
+                .to receive(:branch_or_ref_in_release?)
+                .and_return(true)
             end
 
             it { is_expected.to eq(Gem::Version.new("1.13.0")) }
           end
 
-          context "and the release looks like a version" do
+          context "when the release appears to be a version" do
             let(:requirements) do
               [{
                 file: "Gemfile",
@@ -875,30 +870,30 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 }
               }]
             end
+            let(:upload_pack_fixture) { "business" }
 
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
+              stub_request(:get, rubygems_url + "versions/business.json")
+                .to_return(status: 404, body: "This rubygem could not be found.")
               url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
-              stub_request(:get, url + "/info/refs?service=git-upload-pack").
-                with(basic_auth: %w(x-access-token token)).
-                to_return(
+              stub_request(:get, url + "/info/refs?service=git-upload-pack")
+                .with(basic_auth: %w(x-access-token token))
+                .to_return(
                   status: 200,
                   body: fixture("git", "upload_packs", upload_pack_fixture),
                   headers: git_header
                 )
             end
-            let(:upload_pack_fixture) { "business" }
 
             it "fetches the latest SHA-1 hash of the latest version tag" do
-              expect(checker.latest_resolvable_version).
-                to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+              expect(checker.latest_resolvable_version)
+                .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
-            context "but this dependency has never been released" do
+            context "when the dependency has never been released" do
               let(:dependency_files) { bundler_project_dependency_files("git_source_unreleased") }
               let(:dependency_name) { "dummy-git-dependency" }
               let(:current_version) do
@@ -930,9 +925,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   "content-type" =>
                     "application/x-git-upload-pack-advertisement"
                 }
-                stub_request(:get, url + "/info/refs?service=git-upload-pack").
-                  with(basic_auth: %w(x-access-token token)).
-                  to_return(
+                stub_request(:get, url + "/info/refs?service=git-upload-pack")
+                  .with(basic_auth: %w(x-access-token token))
+                  .to_return(
                     status: 200,
                     body: fixture("git", "upload_packs", upload_pack_fixture),
                     headers: git_header
@@ -940,12 +935,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               end
 
               it "returns the commit SHA for the updated version" do
-                expect(checker.latest_resolvable_version).
-                  to eq("c0e25c2eb332122873f73acb3b61fb2e261cfd8f")
+                expect(checker.latest_resolvable_version)
+                  .to eq("c0e25c2eb332122873f73acb3b61fb2e261cfd8f")
               end
             end
 
-            context "but there are no tags" do
+            context "when there are no tags" do
               let(:upload_pack_fixture) { "no_tags" }
 
               it "returns the current version" do
@@ -955,29 +950,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
             context "when updating the gem results in a conflict" do
               let(:dependency_files) { bundler_project_dependency_files("git_source_with_tag_conflict") }
-
-              before do
-                allow_any_instance_of(Dependabot::GitCommitChecker).
-                  to receive(:branch_or_ref_in_release?).
-                  and_return(false)
-                refs_url = "https://github.com/hvssle/onfido.git/info/refs"
-                git_header = {
-                  "content-type" =>
-                    "application/x-git-upload-pack-advertisement"
-                }
-                stub_request(:get, refs_url + "?service=git-upload-pack").
-                  to_return(
-                    status: 200,
-                    body: fixture("git", "upload_packs", "onfido"),
-                    headers: git_header
-                  )
-              end
-
               let(:dependency_name) { "onfido" }
               let(:current_version) do
                 "7b36eac82a7e42049052a58af0a7943fe0363714"
               end
-
               let(:requirements) do
                 [{
                   file: "Gemfile",
@@ -990,6 +966,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                     ref: "v0.4.0"
                   }
                 }]
+              end
+
+              before do
+                allow_any_instance_of(Dependabot::GitCommitChecker)
+                  .to receive(:branch_or_ref_in_release?)
+                  .and_return(false)
+                refs_url = "https://github.com/hvssle/onfido.git/info/refs"
+                git_header = {
+                  "content-type" =>
+                    "application/x-git-upload-pack-advertisement"
+                }
+                stub_request(:get, refs_url + "?service=git-upload-pack")
+                  .to_return(
+                    status: 200,
+                    body: fixture("git", "upload_packs", "onfido"),
+                    headers: git_header
+                  )
               end
 
               it { is_expected.to eq(dependency.version) }
@@ -1018,9 +1011,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           let(:current_version) { "81073f9462f228c6894e3e384d0718def310d99f" }
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
             stub_request(
               :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
             ).to_return(status: 404)
@@ -1029,8 +1022,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
                 status: 200,
                 body: fixture("git",
                               "upload_packs",
@@ -1042,13 +1035,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           it "fetches the latest SHA-1 hash" do
             version = checker.latest_resolvable_version
             expect(version).to match(/^[0-9a-f]{40}$/)
-            expect(version).to_not eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
+            expect(version).not_to eq "c5bf1bd47935504072ac0eba1006cf4d67af6a7a"
           end
         end
 
         context "when the gem has a bad branch" do
           let(:dependency_files) { bundler_project_dependency_files("bad_branch") }
-          around { |example| capture_stderr { example.run } }
 
           let(:dependency_name) { "prius" }
           let(:current_version) { "2.0.0" }
@@ -1067,31 +1059,31 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
 
           before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
             git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
                 status: 200,
                 body: fixture("git", "upload_packs", "prius"),
                 headers: git_header
               )
-            allow(checker).
-              to receive(:latest_resolvable_version_details).
-              and_call_original
-            allow(checker).
-              to receive(:latest_resolvable_version_details).
-              with(remove_git_source: true).
-              and_return(version: Gem::Version.new("2.0.0"))
+            allow(checker)
+              .to receive(:latest_resolvable_version_details)
+              .and_call_original
+            allow(checker)
+              .to receive(:latest_resolvable_version_details)
+              .with(remove_git_source: true)
+              .and_return(version: Gem::Version.new("2.0.0"))
           end
 
           it "raises a helpful error" do
-            expect { checker.latest_resolvable_version }.
-              to raise_error do |error|
+            expect { checker.latest_resolvable_version }
+              .to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
                 expect(error.dependency).to eq("prius")
               end
@@ -1100,31 +1092,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         context "when updating the gem results in a conflict" do
           let(:dependency_files) { bundler_project_dependency_files("git_source_with_conflict") }
-          around { |example| capture_stderr { example.run } }
-
-          before do
-            allow_any_instance_of(Dependabot::GitCommitChecker).
-              to receive(:branch_or_ref_in_release?).
-              and_return(false)
-            git_url = "https://github.com/hvssle/onfido.git"
-            git_header = {
-              "content-type" => "application/x-git-upload-pack-advertisement"
-            }
-            stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-              to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "onfido"),
-                headers: git_header
-              )
-            allow(checker).
-              to receive(:latest_resolvable_version_details).
-              and_call_original
-            allow(checker).
-              to receive(:latest_resolvable_version_details).
-              with(remove_git_source: true).
-              and_return(version: Gem::Version.new("2.0.0"))
-          end
-
           let(:dependency_name) { "onfido" }
           let(:current_version) { "1.13.0" }
           let(:requirements) do
@@ -1141,62 +1108,83 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }]
           end
 
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker)
+              .to receive(:branch_or_ref_in_release?)
+              .and_return(false)
+            git_url = "https://github.com/hvssle/onfido.git"
+            git_header = {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+            stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+              .to_return(
+                status: 200,
+                body: fixture("git", "upload_packs", "onfido"),
+                headers: git_header
+              )
+            allow(checker)
+              .to receive(:latest_resolvable_version_details)
+              .and_call_original
+            allow(checker)
+              .to receive(:latest_resolvable_version_details)
+              .with(remove_git_source: true)
+              .and_return(version: Gem::Version.new("2.0.0"))
+          end
+
           it { is_expected.to be_nil }
         end
       end
 
-      context "that is not the gem we're checking" do
+      context "when the gem under consideration is not the one we're checking" do
         let(:dependency_files) { bundler_project_dependency_files("git_source") }
         let(:dependency_name) { "statesman" }
         let(:current_version) { "1.2" }
 
         it { is_expected.to eq(Gem::Version.new("3.4.1")) }
 
-        context "that is private" do
+        context "when dealing with a private instance" do
           let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
           let(:token) do
             Base64.encode64("x-access-token:#{github_token}").delete("\n")
           end
-          around { |example| capture_stderr { example.run } }
 
           before do
             stub_request(
               :get,
               "https://github.com/no-exist-sorry/prius.git/info/refs" \
               "?service=git-upload-pack"
-            ).with(headers: { "Authorization" => "Basic #{token}" }).
-              to_return(status: 401)
+            ).with(headers: { "Authorization" => "Basic #{token}" })
+              .to_return(status: 401)
           end
 
           it "raises a helpful error" do
-            expect { checker.latest_resolvable_version }.
-              to raise_error do |error|
+            expect { checker.latest_resolvable_version }
+              .to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-                expect(error.dependency_urls).
-                  to eq(["git@github.com:no-exist-sorry/prius"])
+                expect(error.dependency_urls)
+                  .to eq(["git@github.com:no-exist-sorry/prius"])
               end
           end
         end
 
-        context "that has a bad reference" do
+        context "when dealing with a bad reference" do
           let(:dependency_files) { bundler_project_dependency_files("bad_ref") }
-          around { |example| capture_stderr { example.run } }
 
           before do
-            stub_request(:get, "https://github.com/dependabot-fixtures/prius").
-              to_return(status: 200)
+            stub_request(:get, "https://github.com/dependabot-fixtures/prius")
+              .to_return(status: 200)
           end
 
           it "raises a helpful error" do
-            expect { checker.latest_resolvable_version }.
-              to raise_error do |error|
+            expect { checker.latest_resolvable_version }
+              .to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
                 expect(error.dependency).to eq("prius")
               end
           end
         end
 
-        context "that has a bad branch" do
+        context "when dealing with a bad branch" do
           let(:dependency_files) { bundler_project_dependency_files("bad_branch") }
 
           it { is_expected.to eq(Gem::Version.new("3.4.1")) }
@@ -1204,7 +1192,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
     end
 
-    context "given a Gemfile that specifies a Ruby version" do
+    context "when given a Gemfile that specifies a Ruby version" do
       let(:dependency_files) { bundler_project_dependency_files("explicit_ruby") }
       let(:dependency_name) { "statesman" }
       let(:requirements) do
@@ -1213,10 +1201,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
       it { is_expected.to eq(Gem::Version.new("3.4.1")) }
 
-      context "that is old" do
+      context "when the instance is old" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby_old") }
 
-        xit { is_expected.to eq(Gem::Version.new("2.0.1")) }
+        it "Gem version is 2.0.1" do
+          skip "This test intermittently fails, which often trips up external contributors"
+          expect(latest_resolvable_version).to eq(Gem::Version.new("2.0.1"))
+        end
       end
     end
 
@@ -1237,8 +1228,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "doesn't just fall back to latest_version" do
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("1.13.0"))
+        expect(checker.latest_resolvable_version)
+          .to eq(Gem::Version.new("1.13.0"))
       end
 
       context "when the gemspec has a path" do
@@ -1258,8 +1249,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "doesn't just fall back to latest_version" do
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.13.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("1.13.0"))
         end
       end
 
@@ -1268,8 +1259,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:dependency_name) { "statesman" }
 
         it "takes the minimum ruby version into account" do
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("2.0.1"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("2.0.1"))
         end
       end
 
@@ -1277,8 +1268,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:dependency_files) { bundler_project_dependency_files("gemspec_not_imported_no_lockfile") }
 
         it "falls back to latest_version" do
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.13.0"))
+          expect(checker.latest_resolvable_version)
+            .to eq(Gem::Version.new("1.13.0"))
         end
       end
     end
@@ -1290,12 +1281,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         dummy_version_resolver =
           checker.send(:version_resolver, remove_git_source: false)
         dummy_version = Gem::Version.new("0.5.0")
-        allow(checker).
-          to receive(:version_resolver).
-          and_return(dummy_version_resolver)
-        expect(dummy_version_resolver).
-          to receive(:latest_version_details).
-          and_return(version: dummy_version)
+        allow(checker)
+          .to receive(:version_resolver)
+          .and_return(dummy_version_resolver)
+        expect(dummy_version_resolver)
+          .to receive(:latest_version_details)
+          .and_return(version: dummy_version)
         expect(checker.latest_resolvable_version).to eq(dummy_version)
       end
     end
@@ -1304,58 +1295,56 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_files) { bundler_project_dependency_files("no_lockfile") }
 
       it "doesn't just fall back to latest_version" do
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("1.13.0"))
+        expect(checker.latest_resolvable_version)
+          .to eq(Gem::Version.new("1.13.0"))
       end
 
-      context "given a gem with a private git source" do
+      context "when dealing with a gem with a private git source" do
         let(:dependency_files) { bundler_project_dependency_files("private_git_source_no_lockfile") }
         let(:token) do
           Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
-        around { |example| capture_stderr { example.run } }
 
         before do
           stub_request(
             :get,
             "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
-          ).with(headers: { "Authorization" => "Basic #{token}" }).
-            to_return(status: 401)
+          ).with(headers: { "Authorization" => "Basic #{token}" })
+            .to_return(status: 401)
         end
 
         it "raises a helpful error" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
+              expect(error.dependency_urls)
+                .to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
             end
         end
       end
 
-      context "given a gem with a private github source" do
+      context "when dealing with a gem with a private github source" do
         let(:dependency_files) { bundler_project_dependency_files("private_github_source_no_lockfile") }
         let(:token) do
           Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
-        around { |example| capture_stderr { example.run } }
 
         before do
           stub_request(
             :get,
             "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
-          ).with(headers: { "Authorization" => "Basic #{token}" }).
-            to_return(status: 401)
+          ).with(headers: { "Authorization" => "Basic #{token}" })
+            .to_return(status: 401)
         end
 
-        it "raises a helpful error", :bundler_v2_only do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
+        it "raises a helpful error" do
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["https://github.com/dependabot-fixtures/does-not-exist.git"])
+              expect(error.dependency_urls)
+                .to eq(["https://github.com/dependabot-fixtures/does-not-exist.git"])
             end
         end
       end
@@ -1365,23 +1354,22 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         let(:token) do
           Base64.encode64("x-access-token:#{github_token}").delete("\n")
         end
-        around { |example| capture_stderr { example.run } }
 
         before do
           stub_request(
             :get,
             "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
-          ).with(headers: { "Authorization" => "Basic #{token}" }).
-            to_raise(Excon::Error::Timeout)
+          ).with(headers: { "Authorization" => "Basic #{token}" })
+            .to_raise(Excon::Error::Timeout)
         end
 
         it "raises a helpful error" do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
+          expect { checker.latest_resolvable_version }
+            .to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
+              expect(error.dependency_urls)
+                .to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
             end
         end
       end
@@ -1395,21 +1383,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_name) { "guard-bundler" }
       let(:current_version) { "2.2.1" }
 
-      context "using bundler v1", :bundler_v1_only do
-        it { is_expected.to eq(Gem::Version.new("2.2.1")) }
-      end
-
-      context "using bundler v2", :bundler_v2_only do
+      context "when using bundler v2" do
         it { is_expected.to eq(Gem::Version.new("3.0.0")) }
       end
     end
   end
 
   describe "#preferred_resolvable_version" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
-
     subject { checker.preferred_resolvable_version }
+
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
 
     it { is_expected.to eq(Gem::Version.new("1.13.0")) }
 
@@ -1429,12 +1413,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
-
     subject { checker.latest_resolvable_version_with_no_unlock }
 
-    context "given a gem from rubygems" do
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
+
+    context "when given a gem from rubygems" do
       it { is_expected.to eq(Gem::Version.new("1.4.0")) }
 
       context "with a version conflict at the latest version" do
@@ -1462,14 +1446,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
   end
 
   describe "#updated_requirements" do
-    include_context "stub rubygems compact index"
-    include_context "stub rubygems versions api"
-
     subject(:updated_requirements) { checker.updated_requirements }
+
+    include_context "when stubbing rubygems compact index"
+    include_context "when stubbing rubygems versions api"
 
     let(:requirements_updater) do
       Dependabot::Bundler::UpdateChecker::RequirementsUpdater
     end
+
     before do
       allow(requirements_updater).to receive(:new).and_call_original
     end
@@ -1489,10 +1474,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
-        expect(requirements_updater).
-          to receive(:new).with(
+        expect(requirements_updater)
+          .to receive(:new).with(
             requirements: requirements,
-            update_strategy: :bump_versions,
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: nil
@@ -1514,10 +1499,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "delegates to Bundler::RequirementsUpdater with the right params" do
-          expect(requirements_updater).
-            to receive(:new).with(
+          expect(requirements_updater)
+            .to receive(:new).with(
               requirements: requirements,
-              update_strategy: :bump_versions,
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.5.0",
               updated_source: nil
@@ -1550,10 +1535,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "delegates to Bundler::RequirementsUpdater" do
-          expect(requirements_updater).
-            to receive(:new).with(
+          expect(requirements_updater)
+            .to receive(:new).with(
               requirements: requirements,
-              update_strategy: :bump_versions,
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.13.0",
               updated_source: nil
@@ -1565,7 +1550,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
       end
 
-      context "for a gem with a git source" do
+      context "when dealing with a gem with a git source" do
         let(:dependency_files) { bundler_project_dependency_files("git_source_with_version_gemfile") }
         let(:dependency_name) { "dependabot-test-ruby-package" }
         let(:current_version) { "81073f9462f228c6894e3e384d0718def310d99f" }
@@ -1585,9 +1570,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         before do
-          allow_any_instance_of(Dependabot::GitCommitChecker).
-            to receive(:branch_or_ref_in_release?).
-            and_return(false)
+          allow_any_instance_of(Dependabot::GitCommitChecker)
+            .to receive(:branch_or_ref_in_release?)
+            .and_return(false)
           stub_request(
             :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
           ).to_return(status: 404)
@@ -1596,8 +1581,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           git_header = {
             "content-type" => "application/x-git-upload-pack-advertisement"
           }
-          stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
-            to_return(
+          stub_request(:get, git_url + "/info/refs?service=git-upload-pack")
+            .to_return(
               status: 200,
               body: fixture("git",
                             "upload_packs",
@@ -1607,21 +1592,21 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         end
 
         it "delegates to Bundler::RequirementsUpdater with the right params" do
-          expect(requirements_updater).
-            to receive(:new).with(
+          expect(requirements_updater)
+            .to receive(:new).with(
               requirements: requirements,
-              update_strategy: :bump_versions,
+              update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.0.1",
               latest_resolvable_version: "1.0.1",
               updated_source: requirements.first[:source]
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).
-            to start_with("~> 1.")
+          expect(updated_requirements.first[:requirement])
+            .to start_with("~> 1.")
         end
 
-        context "that is pinned" do
+        context "when the reference is pinned" do
           let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
           let(:dependency_name) { "business" }
@@ -1640,17 +1625,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             }]
           end
 
-          context "and the reference isn't included in the new version" do
+          context "when the reference is not included in the new version" do
             before do
-              stub_request(:get, rubygems_url + "versions/business.json").
-                to_return(status: 404, body: "This rubygem could not be found.")
+              stub_request(:get, rubygems_url + "versions/business.json")
+                .to_return(status: 404, body: "This rubygem could not be found.")
             end
 
             it "delegates to Bundler::RequirementsUpdater" do
-              expect(requirements_updater).
-                to receive(:new).with(
+              expect(requirements_updater)
+                .to receive(:new).with(
                   requirements: requirements,
-                  update_strategy: :bump_versions,
+                  update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
                   latest_version: /^2./,
                   latest_resolvable_version: /^1./,
                   updated_source: requirements.first[:source]
@@ -1658,7 +1643,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
               expect(updated_requirements.count).to eq(1)
               expect(updated_requirements.first[:requirement]).to eq(">= 0")
-              expect(updated_requirements.first[:source]).to_not be_nil
+              expect(updated_requirements.first[:source]).not_to be_nil
             end
           end
         end
@@ -1685,10 +1670,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
-        expect(requirements_updater).
-          to receive(:new).with(
+        expect(requirements_updater)
+          .to receive(:new).with(
             requirements: requirements,
-            update_strategy: :bump_versions,
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1720,10 +1705,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
-        expect(requirements_updater).
-          to receive(:new).with(
+        expect(requirements_updater)
+          .to receive(:new).with(
             requirements: requirements,
-            update_strategy: :bump_versions_if_necessary,
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1749,10 +1734,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
-        expect(requirements_updater).
-          to receive(:new).with(
+        expect(requirements_updater)
+          .to receive(:new).with(
             requirements: requirements,
-            update_strategy: :bump_versions_if_necessary,
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1777,10 +1762,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
 
       it "delegates to Bundler::RequirementsUpdater with the right params" do
-        expect(requirements_updater).
-          to receive(:new).with(
+        expect(requirements_updater)
+          .to receive(:new).with(
             requirements: requirements,
-            update_strategy: :bump_versions_if_necessary,
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
             updated_source: requirements.first[:source]
@@ -1801,7 +1786,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
+
+      context "when the lockfile-only requirements update strategy is set" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+        it { is_expected.to be(true) }
+      end
     end
 
     context "with a sub-dependency" do
@@ -1810,7 +1801,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       let(:dependency_name) { "i18n" }
       let(:current_version) { "0.7.0.beta1" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a Gemfile dependency that can be unlocked" do
@@ -1820,13 +1811,19 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       end
       let(:req) { "~> 1.4.0" }
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
 
       context "with multiple requirements" do
         let(:dependency_files) { bundler_project_dependency_files("version_between_bounds_gemfile") }
         let(:req) { "> 1.0.0, < 1.5.0" }
 
-        it { is_expected.to eq(true) }
+        it { is_expected.to be(true) }
+      end
+
+      context "when the lockfile-only requirements update strategy is set" do
+        let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+        it { is_expected.to be(false) }
       end
     end
 
@@ -1847,7 +1844,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to be(true) }
     end
 
     context "with a Gemfile with a function version" do
@@ -1856,7 +1853,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         [{ file: "Gemfile", requirement: "1.0.0", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to be(false) }
     end
   end
 end

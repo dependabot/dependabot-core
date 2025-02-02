@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -18,8 +19,8 @@ RSpec.describe Dependabot::Clients::GitlabWithRetries do
     context "when the request has to be retried" do
       before do
         repo_url = "https://gitlab.com/api/v4/projects/some%2Frepo/repository"
-        stub_request(:get, "#{repo_url}/files/important_path.json?ref=sha").
-          to_return(
+        stub_request(:get, "#{repo_url}/files/important_path.json?ref=sha")
+          .to_return(
             { status: 502, headers: { "content-type" => "application/json" } },
             status: 200,
             body: fixture("github", "gemfile_content.json"),

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "fileutils"
@@ -25,7 +26,9 @@ module Functions
 
     private
 
-    attr_reader :gemfile_name, :lockfile_name, :dependencies
+    attr_reader :gemfile_name
+    attr_reader :lockfile_name
+    attr_reader :dependencies
 
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
@@ -50,7 +53,7 @@ module Functions
         definition.to_lock
       rescue Bundler::GemNotFound => e
         unlock_yanked_gem(dependencies_to_unlock, e) && retry
-      rescue Bundler::VersionConflict => e
+      rescue Bundler::SolveFailure => e
         unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
       rescue *RETRYABLE_ERRORS
         raise if @retrying
@@ -62,10 +65,13 @@ module Functions
     end
 
     def cache_vendored_gems(definition)
-      # Dependencies that have been unlocked for the update (including
-      # sub-dependencies)
-      unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems).reject { |gem| __keep_on_prune?(gem) }
+      resolve = definition.resolve
+
+      # Dependencies that have been updated (including sub-dependencies)
+      updated_gems = resolve.reject do |spec|
+        lockfile_specs.include?(spec)
+      end.map(&:name).uniq
+
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -76,36 +82,30 @@ module Functions
         # Fetch and cache gems on all platforms without pruning
         Bundler::Runtime.new(nil, definition).cache
 
-        # Only prune unlocked gems (the original implementation is in
+        # Only prune updated gems (the original implementation is in
         # Bundler::Runtime)
         cache_path = Bundler.app_cache
-        resolve = definition.resolve
-        prune_gem_cache(resolve, cache_path, unlocked_gems)
+        prune_gem_cache(resolve, cache_path, updated_gems)
         prune_git_and_path_cache(resolve, cache_path)
       end
     end
 
-    # This is not officially supported and may be removed without notice.
-    def __keep_on_prune?(spec_name)
-      unless (specs = Bundler.settings[:persistent_gems_after_clean])
-        return false
-      end
-
-      specs.include?(spec_name)
-    end
-
     # Copied from Bundler::Runtime: Modified to only prune gems that have
-    # been unlocked
-    def prune_gem_cache(resolve, cache_path, unlocked_gems)
+    # been updated
+    def prune_gem_cache(resolve, cache_path, updated_gems)
       cached_gems = Dir["#{cache_path}/*.gem"]
 
-      outdated_gems = cached_gems.reject do |path|
+      outdated_gems = cached_gems.select do |path|
         spec = Bundler.rubygems.spec_from_gem path
 
-        !unlocked_gems.include?(spec.name) || resolve.any? do |s|
+        caused_by_update = updated_gems.include?(spec.name) && resolve.none? do |s|
           s.name == spec.name && s.version == spec.version &&
             !s.source.is_a?(Bundler::Source::Git)
         end
+
+        caused_by_removal = resolve.none? { |s| s.name == spec.name }
+
+        caused_by_update || caused_by_removal
       end
 
       return unless outdated_gems.any?
@@ -139,41 +139,44 @@ module Functions
     def unlock_yanked_gem(dependencies_to_unlock, error)
       raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
 
-      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                 named_captures["name"]
+      gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX)
+                      .named_captures["name"]
       raise if dependencies_to_unlock.include?(gem_name)
 
       dependencies_to_unlock << gem_name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
-      top_level = build_definition([]).dependencies.
-                  map(&:name).map(&:to_s)
+      all_deps = lockfile_specs.map { |x| x.name.to_s }
+      top_level = build_definition([]).dependencies
+                                      .map { |x| x.name.to_s }
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
 
       raise if allowed_new_unlocks.none?
 
       # Unlock any sub-dependencies that Bundler reports caused the
       # conflict
-      potentials_deps =
-        error.cause.conflicts.values.
-        flat_map(&:requirement_trees).
-        filter_map do |tree|
-          tree.find { |req| allowed_new_unlocks.include?(req.name) }
-        end.map(&:name)
+      incompatibility = error.cause.incompatibility
+      potential_deps = []
+
+      while incompatibility.conflict?
+        cause = incompatibility.cause
+        incompatibility = cause.incompatibility
+
+        incompatibility.terms.each do |term|
+          name = term.package.name
+          potential_deps << name if allowed_new_unlocks.include?(name)
+        end
+      end
 
       # If there are specific dependencies we can unlock, unlock them
-      return dependencies_to_unlock.append(*potentials_deps) if potentials_deps.any?
+      return dependencies_to_unlock.append(*potential_deps) if potential_deps.any?
 
       # Fall back to unlocking *all* sub-dependencies. This is required
-      # because Bundler's VersionConflict objects don't include enough
+      # because Bundler's SolveFailure objects don't include enough
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
       defn = Bundler::Definition.build(
@@ -186,8 +189,8 @@ module Functions
       # if those sub-deps are top-level dependencies. We only want true
       # subdeps unlocked, like they were in the UpdateChecker, so we
       # mutate the unlocked gems array.
-      unlocked = defn.instance_variable_get(:@unlock).fetch(:gems)
-      must_not_unlock = defn.dependencies.map(&:name).map(&:to_s) -
+      unlocked = defn.instance_variable_get(:@gems_to_unlock)
+      must_not_unlock = defn.dependencies.map { |x| x.name.to_s } -
                         dependencies_to_unlock
       unlocked.reject! { |n| must_not_unlock.include?(n) }
 
@@ -218,6 +221,10 @@ module Functions
     def git_dependency?(dep)
       sources = dep.fetch("requirements").map { |r| r.fetch("source") }
       sources.all? { |s| s&.fetch("type", nil) == "git" }
+    end
+
+    def lockfile_specs
+      @lockfile_specs ||= Bundler::LockfileParser.new(lockfile).specs
     end
 
     def lockfile

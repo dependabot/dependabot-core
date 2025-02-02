@@ -4,20 +4,15 @@ Go modules support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
-1. Install native helpers
-   ```
-   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
-   $ helpers/build
-   ```
+1. Start a development shell
 
-2. Install Ruby dependencies
-   ```
-   $ bundle install
-   ```
+  ```
+  $ bin/docker-dev-shell go_modules
+  ```
 
-3. Run tests
+2. Run tests
    ```
-   $ bundle exec rspec spec
+   [dependabot-core-dev] ~ $ cd go_modules && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 module Dependabot
@@ -22,7 +23,6 @@ module Dependabot
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
         command = [
-          "npm",
           "update",
           *dependency_names,
           "--force",
@@ -33,7 +33,6 @@ module Dependabot
         ].join(" ")
 
         fingerprint = [
-          "npm",
           "update",
           "<dependency_names>",
           "--force",
@@ -43,7 +42,7 @@ module Dependabot
           "--package-lock-only"
         ].join(" ")
 
-        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
     end
   end

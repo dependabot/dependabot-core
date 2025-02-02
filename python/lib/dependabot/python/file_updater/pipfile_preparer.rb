@@ -1,3 +1,4 @@
+# typed: strict
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -6,17 +7,19 @@ require "dependabot/dependency"
 require "dependabot/python/file_parser"
 require "dependabot/python/file_updater"
 require "dependabot/python/authed_url_builder"
-require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
     class FileUpdater
       class PipfilePreparer
-        def initialize(pipfile_content:, lockfile: nil)
+        extend T::Sig
+
+        sig { params(pipfile_content: String).void }
+        def initialize(pipfile_content:)
           @pipfile_content = pipfile_content
-          @lockfile = lockfile
         end
 
+        sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).returns(String) }
         def replace_sources(credentials)
           pipfile_object = TomlRB.parse(pipfile_content)
 
@@ -27,45 +30,7 @@ module Dependabot
           TomlRB.dump(pipfile_object)
         end
 
-        def freeze_top_level_dependencies_except(dependencies)
-          return pipfile_content unless lockfile
-
-          pipfile_object = TomlRB.parse(pipfile_content)
-          excluded_names = dependencies.map(&:name)
-
-          Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
-            next unless pipfile_object[keys[:pipfile]]
-
-            pipfile_object.fetch(keys[:pipfile]).each do |dep_name, _|
-              next if excluded_names.include?(normalise(dep_name))
-
-              freeze_dependency(dep_name, pipfile_object, keys)
-            end
-          end
-
-          TomlRB.dump(pipfile_object)
-        end
-
-        def freeze_dependency(dep_name, pipfile_object, keys)
-          locked_version = version_from_lockfile(
-            keys[:lockfile],
-            normalise(dep_name)
-          )
-          locked_ref = ref_from_lockfile(
-            keys[:lockfile],
-            normalise(dep_name)
-          )
-
-          pipfile_req = pipfile_object[keys[:pipfile]][dep_name]
-          if pipfile_req.is_a?(Hash) && locked_version
-            pipfile_req["version"] = "==#{locked_version}"
-          elsif pipfile_req.is_a?(Hash) && locked_ref && !pipfile_req["ref"]
-            pipfile_req["ref"] = locked_ref
-          elsif locked_version
-            pipfile_object[keys[:pipfile]][dep_name] = "==#{locked_version}"
-          end
-        end
-
+        sig { params(requirement: String).returns(String) }
         def update_python_requirement(requirement)
           pipfile_object = TomlRB.parse(pipfile_content)
 
@@ -79,48 +44,44 @@ module Dependabot
           TomlRB.dump(pipfile_object)
         end
 
+        sig { params(parsed_file: String).returns(String) }
+        def update_ssl_requirement(parsed_file)
+          pipfile_object = TomlRB.parse(pipfile_content)
+          parsed_object = TomlRB.parse(parsed_file)
+
+          # we parse the verify_ssl value from manifest if it exists
+          verify_ssl = parsed_object["source"].map { |x| x["verify_ssl"] }.first
+
+          # provide a default "true" value to file generator in case no value is provided in manifest file
+          pipfile_object["source"].each do |key|
+            key["verify_ssl"] = verify_ssl.nil? ? true : verify_ssl
+          end
+
+          TomlRB.dump(pipfile_object)
+        end
+
         private
 
-        attr_reader :pipfile_content, :lockfile
+        sig { returns(String) }
+        attr_reader :pipfile_content
 
-        def version_from_lockfile(dep_type, dep_name)
-          details = parsed_lockfile.dig(dep_type, normalise(dep_name))
-
-          case details
-          when String then details.gsub(/^==/, "")
-          when Hash then details["version"]&.gsub(/^==/, "")
-          end
-        end
-
-        def ref_from_lockfile(dep_type, dep_name)
-          details = parsed_lockfile.dig(dep_type, normalise(dep_name))
-
-          case details
-          when Hash then details["ref"]
-          end
-        end
-
-        def parsed_lockfile
-          @parsed_lockfile ||= JSON.parse(lockfile.content)
-        end
-
-        def normalise(name)
-          NameNormaliser.normalise(name)
-        end
-
+        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def pipfile_sources
-          @pipfile_sources ||=
-            TomlRB.parse(pipfile_content).fetch("source", []).
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+          @pipfile_sources ||= T.let(TomlRB.parse(pipfile_content).fetch("source", []),
+                                     T.nilable(T::Array[T::Hash[String, T.untyped]]))
         end
 
+        sig do
+          params(source: T::Hash[String, T.untyped],
+                 credentials: T::Array[T::Hash[String, T.untyped]]).returns(T.nilable(T::Hash[String, T.untyped]))
+        end
         def sub_auth_url(source, credentials)
           if source["url"].include?("${")
             base_url = source["url"].sub(/\${.*}@/, "")
 
-            source_cred = credentials.
-                          select { |cred| cred["type"] == "python_index" }.
-                          find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
+            source_cred = credentials
+                          .select { |cred| cred["type"] == "python_index" && cred["index-url"] }
+                          .find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
 
             return nil if source_cred.nil?
 
@@ -130,11 +91,16 @@ module Dependabot
           source
         end
 
+        sig { params(credentials: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
         def config_variable_sources(credentials)
-          @config_variable_sources ||=
-            credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map { |c| { "url" => AuthedUrlBuilder.authed_url(credential: c) } }
+          @config_variable_sources = T.let([], T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @config_variable_sources =
+            credentials.select { |cred| cred["type"] == "python_index" }.map.with_index do |c, i|
+              {
+                "name" => "dependabot-inserted-index-#{i}",
+                "url" => AuthedUrlBuilder.authed_url(credential: c)
+              }
+            end
         end
       end
     end

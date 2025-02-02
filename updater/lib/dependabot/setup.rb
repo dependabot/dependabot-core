@@ -1,11 +1,24 @@
+# typed: strict
 # frozen_string_literal: true
 
-# Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
-# However, we actually *want* to manipulate Gemfiles for other repos.
-Bundler.settings.set_command_option(:frozen, "0")
+require "sentry-ruby"
+require "sorbet-runtime"
 
+require "dependabot/environment"
+require "dependabot/logger"
+require "dependabot/logger/formats"
+require "dependabot/opentelemetry"
 require "dependabot/sentry"
-Raven.configure do |config|
+require "dependabot/sorbet/runtime"
+
+Dependabot.logger = Logger.new($stdout).tap do |logger|
+  logger.level = Dependabot::Environment.log_level
+  logger.formatter = Dependabot::Logger::BasicFormatter.new
+end
+
+Sentry.init do |config|
+  config.release = ENV.fetch("DEPENDABOT_UPDATER_VERSION")
+  config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
@@ -17,6 +30,7 @@ Raven.configure do |config|
     terraform|
     elm|
     docker|
+    dotnet_sdk|
     git_submodules|
     github_actions|
     composer|
@@ -28,33 +42,26 @@ Raven.configure do |config|
     go_modules|
     npm_and_yarn|
     bundler|
-    pub
+    pub|
+    silent|
+    swift|
+    devcontainers
   )}x
 
-  config.processors += [ExceptionSanitizer]
+  config.before_send = ->(event, hint) { Dependabot::Sentry.process_chain(event, hint) }
+  config.propagate_traces = false
+  config.instrumenter = ::Dependabot::OpenTelemetry.should_configure? ? :otel : :sentry
 end
 
-require "logger"
-require "dependabot/logger"
+Dependabot::OpenTelemetry.configure
+Dependabot::Sorbet::Runtime.silently_report_errors!
 
-class LoggerFormatter < Logger::Formatter
-  # Strip out timestamps as these are included in the runner's logger
-  def call(severity, _datetime, _progname, msg)
-    "#{severity} #{msg2str(msg)}\n"
-  end
-end
-
-Dependabot.logger = Logger.new($stdout).tap do |logger|
-  logger.formatter = LoggerFormatter.new
-end
-
-# We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
-# order for that configuration to take effect, we need to make sure that these
-# registration commands have been executed.
+# Ecosystems
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"
+require "dependabot/dotnet_sdk"
 require "dependabot/git_submodules"
 require "dependabot/github_actions"
 require "dependabot/composer"
@@ -67,5 +74,6 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
-
-require "dependabot/instrumentation"
+require "dependabot/silent"
+require "dependabot/swift"
+require "dependabot/devcontainers"

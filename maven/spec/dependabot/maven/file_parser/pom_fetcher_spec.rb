@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -10,6 +11,7 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
 
   describe "#fetch_remote_parent_pom" do
     subject(:fetch_remote_parent_pom) { fetcher.fetch_remote_parent_pom(group_id, artifact_id, version, urls_to_try) }
+
     let(:group_id) { "org.springframework.boot" }
     let(:artifact_id) { "spring-boot-starter-parent" }
     let(:version) { "1.5.9.RELEASE" }
@@ -20,8 +22,8 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
                          "org/springframework/boot/" \
                          "spring-boot-starter-parent/" \
                          "1.5.9.RELEASE/" \
-                         "spring-boot-starter-parent-1.5.9.RELEASE.pom").
-        to_return(status: 200, body: "<project><artifactId>spring-boot-dependencies</artifactId></project>")
+                         "spring-boot-starter-parent-1.5.9.RELEASE.pom")
+        .to_return(status: 200, body: "<project><artifactId>spring-boot-dependencies</artifactId></project>")
     end
 
     context "when the parent pom is a release" do
@@ -40,14 +42,14 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
                            "org/springframework/boot/" \
                            "spring-boot-starter-parent/" \
                            "1.5.10-SNAPSHOT/" \
-                           "maven-metadata.xml").
-          to_return(status: 200, body: fixture("maven_central_metadata", "snapshot.xml"))
+                           "maven-metadata.xml")
+          .to_return(status: 200, body: fixture("maven_central_metadata", "snapshot.xml"))
         stub_request(:get, "https://repo.maven.apache.org/maven2/" \
                            "org/springframework/boot/" \
                            "spring-boot-starter-parent/" \
                            "1.5.10-SNAPSHOT/" \
-                           "spring-boot-starter-parent-14.9-20221018.091616-23.pom").
-          to_return(status: 200, body: "<project><artifactId>snapshot</artifactId></project>")
+                           "spring-boot-starter-parent-14.9-20221018.091616-23.pom")
+          .to_return(status: 200, body: "<project><artifactId>snapshot</artifactId></project>")
       end
 
       it "returns the parent pom" do
@@ -56,14 +58,14 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
         expect(fetch_remote_parent_pom.content).to include("snapshot")
       end
 
-      context "but the response is malformed" do
+      context "when the response is malformed" do
         before do
           stub_request(:get, "https://repo.maven.apache.org/maven2/" \
                              "org/springframework/boot/" \
                              "spring-boot-starter-parent/" \
                              "1.5.10-SNAPSHOT/" \
-                             "maven-metadata.xml").
-            to_return(status: 200, body: "<error>404</error>")
+                             "maven-metadata.xml")
+            .to_return(status: 200, body: "<error>404</error>")
         end
 
         it "returns nil" do

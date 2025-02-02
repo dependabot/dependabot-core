@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 def common_dir
@@ -9,3 +10,23 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+def create_dependency(name:, version:, required_version:, previous_required_version:, file: "package.json")
+  Dependabot::Dependency.new(
+    name: name,
+    version: version,
+    package_manager: "npm_and_yarn",
+    requirements: [{
+      file: file,
+      requirement: required_version,
+      groups: ["dependencies"],
+      source: nil
+    }],
+    previous_requirements: [{
+      file: file,
+      requirement: previous_required_version,
+      groups: ["dependencies"],
+      source: nil
+    }]
+  )
+end

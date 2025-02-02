@@ -1,3 +1,4 @@
+# typed: strong
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -11,9 +12,9 @@ require "dependabot/git_submodules/requirement"
 require "dependabot/git_submodules/version"
 
 require "dependabot/pull_request_creator/labeler"
-Dependabot::PullRequestCreator::Labeler.
-  register_label_details("submodules", name: "submodules", colour: "000000")
+Dependabot::PullRequestCreator::Labeler
+  .register_label_details("submodules", name: "submodules", colour: "000000")
 
 require "dependabot/dependency"
-Dependabot::Dependency.
-  register_production_check("submodules", ->(_) { true })
+Dependabot::Dependency
+  .register_production_check("submodules", ->(_) { true })

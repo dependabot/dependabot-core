@@ -1,5 +1,9 @@
+# typed: true
 # frozen_string_literal: true
 
+require "parallel"
+require "dependabot/bundler/language"
+require "dependabot/bundler/package_manager"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -7,28 +11,72 @@ require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 require "dependabot/bundler/version"
+require "dependabot/bundler/cached_lockfile_parser"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
 module Dependabot
   module Bundler
     class FileParser < Dependabot::FileParsers::Base
+      extend T::Sig
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
       require "dependabot/bundler/file_parser/gemspec_declaration_finder"
 
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
         dependency_set += gemfile_dependencies
         dependency_set += gemspec_dependencies
         dependency_set += lockfile_dependencies
         check_external_code(dependency_set.dependencies)
-        instrument_package_manager_version
         dependency_set.dependencies
       end
 
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: package_manager,
+            language: language
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
+
       private
+
+      sig { returns(Ecosystem::VersionManager) }
+      def package_manager
+        @package_manager ||= PackageManager.new(
+          detected_version: bundler_version,
+          raw_version: bundler_raw_version,
+          requirement: package_manager_requirement
+        )
+      end
+
+      def package_manager_requirement
+        @package_manager_requirement ||= Helpers.dependency_requirement(
+          Helpers::BUNDLER_GEM_NAME, dependency_files
+        )
+      end
+
+      sig { returns(T.nilable(Ecosystem::VersionManager)) }
+      def language
+        return @language if defined?(@language)
+
+        return nil if package_manager.unsupported?
+
+        Language.new(ruby_raw_version, language_requirement)
+      end
+
+      def language_requirement
+        @language_requirement ||= Helpers.dependency_requirement(
+          Helpers::LANGUAGE, dependency_files
+        )
+      end
 
       def check_external_code(dependencies)
         return unless @reject_external_code
@@ -42,17 +90,6 @@ module Dependabot
         dependencies.any? do |dep|
           dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
         end
-      end
-
-      def instrument_package_manager_version
-        version = Helpers.detected_bundler_version(lockfile)
-        Dependabot.instrument(
-          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
-          ecosystem: "bundler",
-          package_managers: {
-            "bundler" => version
-          }
-        )
       end
 
       def gemfile_dependencies
@@ -84,17 +121,21 @@ module Dependabot
         dependencies
       end
 
-      def gemspec_dependencies
-        dependencies = DependencySet.new
+      def gemspec_dependencies # rubocop:disable Metrics/PerceivedComplexity
+        return @gemspec_dependencies if defined?(@gemspec_dependencies)
 
-        gemspecs.each do |gemspec|
-          gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
+        queue = Queue.new
 
-          parsed_gemspec(gemspec).each do |dependency|
-            next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+        SharedHelpers.in_a_temporary_repo_directory(base_directory, repo_contents_path) do
+          write_temporary_dependency_files
 
-            dependencies <<
-              Dependency.new(
+          Parallel.map(gemspecs, in_threads: 4) do |gemspec|
+            gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
+
+            parsed_gemspec(gemspec).each do |dependency|
+              next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+
+              queue << Dependency.new(
                 name: dependency.fetch("name"),
                 version: dependency_version(dependency.fetch("name"))&.to_s,
                 requirements: [{
@@ -109,10 +150,13 @@ module Dependabot
                 }],
                 package_manager: "bundler"
               )
+            end
           end
         end
 
-        dependencies
+        dependency_set = DependencySet.new
+        dependency_set << queue.pop(true) while queue.size.positive?
+        @gemspec_dependencies ||= dependency_set
       end
 
       def lockfile_dependencies
@@ -172,36 +216,29 @@ module Dependabot
       end
 
       def parsed_gemspec(file)
-        @parsed_gemspecs ||= {}
-        @parsed_gemspecs[file.name] ||=
-          SharedHelpers.in_a_temporary_repo_directory(base_directory,
-                                                      repo_contents_path) do
-            write_temporary_dependency_files
-
-            NativeHelpers.run_bundler_subprocess(
-              bundler_version: bundler_version,
-              function: "parsed_gemspec",
-              options: options,
-              args: {
-                gemspec_name: file.name,
-                lockfile_name: lockfile&.name,
-                dir: Dir.pwd
-              }
-            )
-          end
+        NativeHelpers.run_bundler_subprocess(
+          bundler_version: bundler_version,
+          function: "parsed_gemspec",
+          options: options,
+          args: {
+            gemspec_name: file.name,
+            lockfile_name: lockfile&.name,
+            dir: Dir.pwd
+          }
+        )
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.error_class + " with message: " + e.message
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
       def base_directory
-        dependency_files.first.directory
+        dependency_files.first&.directory
       end
 
       def prepared_dependency_files
         @prepared_dependency_files ||=
-          FilePreparer.new(dependency_files: dependency_files).
-          prepared_dependency_files
+          FilePreparer.new(dependency_files: dependency_files)
+                      .prepared_dependency_files
       end
 
       def write_temporary_dependency_files
@@ -250,14 +287,14 @@ module Dependabot
       end
 
       def evaled_gemfiles
-        dependency_files.
-          reject { |f| f.name.end_with?(".gemspec") }.
-          reject { |f| f.name.end_with?(".specification") }.
-          reject { |f| f.name.end_with?(".lock") }.
-          reject { |f| f.name.end_with?(".ruby-version") }.
-          reject { |f| f.name == "Gemfile" }.
-          reject { |f| f.name == "gems.rb" }.
-          reject { |f| f.name == "gems.locked" }
+        dependency_files
+          .reject { |f| f.name.end_with?(".gemspec") }
+          .reject { |f| f.name.end_with?(".specification") }
+          .reject { |f| f.name.end_with?(".lock") }
+          .reject { |f| f.name == "Gemfile" }
+          .reject { |f| f.name == "gems.rb" }
+          .reject { |f| f.name == "gems.locked" }
+          .reject(&:support_file?)
       end
 
       def lockfile
@@ -266,16 +303,15 @@ module Dependabot
       end
 
       def parsed_lockfile
-        @parsed_lockfile ||=
-          ::Bundler::LockfileParser.new(sanitized_lockfile_content)
+        @parsed_lockfile ||= CachedLockfileParser.parse(sanitized_lockfile_content)
       end
 
       def production_dep_names
         @production_dep_names ||=
-          (gemfile_dependencies + gemspec_dependencies).dependencies.
-          select { |dep| production?(dep) }.
-          flat_map { |dep| expanded_dependency_names(dep) }.
-          uniq
+          (gemfile_dependencies + gemspec_dependencies).dependencies
+                                                       .select { |dep| production?(dep) }
+                                                       .flat_map { |dep| expanded_dependency_names(dep) }
+                                                       .uniq
       end
 
       def expanded_dependency_names(dep)
@@ -289,9 +325,9 @@ module Dependabot
       end
 
       def production?(dependency)
-        groups = dependency.requirements.
-                 flat_map { |r| r.fetch(:groups) }.
-                 map(&:to_s)
+        groups = dependency.requirements
+                           .flat_map { |r| r.fetch(:groups) }
+                           .map(&:to_s)
 
         return true if groups.empty?
         return true if groups.include?("runtime")
@@ -308,17 +344,65 @@ module Dependabot
 
       def gemspecs
         # Path gemspecs are excluded (they're supporting files)
-        @gemspecs ||= prepared_dependency_files.
-                      select { |file| file.name.end_with?(".gemspec") }.
-                      reject(&:support_file?)
+        @gemspecs ||= prepared_dependency_files
+                      .select { |file| file.name.end_with?(".gemspec") }
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def imported_ruby_files
-        dependency_files.
-          select { |f| f.name.end_with?(".rb") }.
-          reject { |f| f.name == "gems.rb" }
+        dependency_files
+          .select { |f| f.name.end_with?(".rb") }
+          .reject { |f| f.name == "gems.rb" }
       end
 
+      sig { returns(String) }
+      def bundler_raw_version
+        return bundler_raw_version if defined?(@bundler_raw_version)
+
+        package_manager = PackageManager.new(
+          detected_version: bundler_version
+        )
+
+        # If the selected version is unsupported, an unsupported error will be raised,
+        # so there’s no need to attempt retrieving the raw version.
+        return bundler_version if package_manager.unsupported?
+
+        # read raw version directly from the ecosystem environment
+        bundler_raw_version = SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "bundler_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        bundler_raw_version || ::Bundler::VERSION
+      end
+
+      sig { returns(String) }
+      def ruby_raw_version
+        return @ruby_raw_version if defined?(@ruby_raw_version)
+
+        ruby_raw_version = SharedHelpers.in_a_temporary_repo_directory(
+          base_directory,
+          repo_contents_path
+        ) do
+          write_temporary_dependency_files
+          NativeHelpers.run_bundler_subprocess(
+            function: "ruby_raw_version",
+            args: {},
+            bundler_version: bundler_version,
+            options: { timeout_per_operation_seconds: 10 }
+          )
+        end
+        ruby_raw_version || RUBY_VERSION
+      end
+
+      sig { returns(String) }
       def bundler_version
         @bundler_version ||= Helpers.bundler_version(lockfile)
       end

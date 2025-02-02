@@ -1,6 +1,9 @@
+# typed: true
 # frozen_string_literal: true
 
-require "rubygems_version_patch"
+require "sorbet-runtime"
+
+require "dependabot/version"
 require "dependabot/utils"
 
 # Elixir versions can include build information, which Ruby can't parse.
@@ -9,7 +12,9 @@ require "dependabot/utils"
 
 module Dependabot
   module Hex
-    class Version < Gem::Version
+    class Version < Dependabot::Version
+      extend T::Sig
+
       attr_reader :build_info
 
       VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
@@ -38,8 +43,8 @@ module Dependabot
       end
 
       def <=>(other)
-        version_comparison = super(other)
-        return version_comparison unless version_comparison.zero?
+        version_comparison = super
+        return version_comparison unless version_comparison&.zero?
 
         return build_info.nil? ? 0 : 1 unless other.is_a?(Hex::Version)
 
@@ -53,7 +58,7 @@ module Dependabot
 
         local_comparison = Gem::Version.new(lhs) <=> Gem::Version.new(rhs)
 
-        return local_comparison unless local_comparison.zero?
+        return local_comparison unless local_comparison&.zero?
 
         lhsegments.count <=> rhsegments.count
       end
