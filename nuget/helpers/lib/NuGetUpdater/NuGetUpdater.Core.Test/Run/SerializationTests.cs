@@ -227,6 +227,36 @@ public class SerializationTests
         Assert.False(experimentsManager.UseDirectDiscovery);
     }
 
+    [Fact]
+    public void DeserializeExperimentsManager_AlternateNames()
+    {
+        // experiment names can be either snake case or kebab case
+        var jobWrapper = RunWorker.Deserialize("""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "allowed-updates": [
+                  {
+                    "update-type": "all"
+                  }
+                ],
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "some-dir"
+                },
+                "experiments": {
+                  "nuget-legacy-dependency-solver": true,
+                  "nuget-use-direct-discovery": true
+                }
+              }
+            }
+            """);
+        var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
+        Assert.True(experimentsManager.UseLegacyDependencySolver);
+        Assert.True(experimentsManager.UseDirectDiscovery);
+    }
+
     [Theory]
     [MemberData(nameof(DeserializeErrorTypesData))]
     public void SerializeError(JobErrorBase error, string expectedSerialization)
