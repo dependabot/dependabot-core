@@ -377,8 +377,10 @@ module Dependabot
       def updated_pnpm_lock_content(pnpm_lock)
         @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_pnpm_lock_content[pnpm_lock.name] ||=
-          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock,
-                                                          updated_pnpm_workspace_content: @updated_pnpm_workspace_content)
+          pnpm_lockfile_updater.updated_pnpm_lock_content(
+            pnpm_lock,
+            updated_pnpm_workspace_content: @updated_pnpm_workspace_content
+          )
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(String) }
