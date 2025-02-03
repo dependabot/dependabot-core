@@ -585,6 +585,22 @@ public class SerializationTests
 
         yield return
         [
+            new PullRequestExistsForLatestVersion("dep", "ver"),
+            """
+            {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotNeeded("dep"),
+            """
+            {"data":{"error-type":"security_update_not_needed","error-details":{"dependency-name":"dep"}}}
+            """
+        ];
+
+        yield return
+        [
             new UnknownError(new Exception("some message"), "JOB-ID"),
             """
             {"data":{"error-type":"unknown_error","error-details":{"error-class":"Exception","error-message":"some message","error-backtrace":"TEST-BACKTRACE","package-manager":"nuget","job-id":"JOB-ID"}}}
