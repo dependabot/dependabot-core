@@ -188,8 +188,10 @@ module Dependabot
 
       sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])]) }
       def parsed_elm_json
-        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)), T.nilable(T::Hash[String, T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])]))
-
+        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)),
+                                   T.nilable(T::Hash[String,
+                                                     T.any(String,
+                                                           T::Hash[String, T.any(String, T::Hash[String, String])])]))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json&.path || MANIFEST_FILE
       end
