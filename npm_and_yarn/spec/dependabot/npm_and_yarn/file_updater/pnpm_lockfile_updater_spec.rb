@@ -5,8 +5,9 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
-  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock) }
+  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock, is_catalog) }
 
+  let(:is_catalog) { false }
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -16,7 +17,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -72,6 +72,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_pnpm_workspace_catalog).and_return(true)
   end
 
   after do
@@ -685,6 +687,67 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+  end
+
+  describe "lockfile updates" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    end
+
+    context "when updating a regular package dependency" do
+      let(:project_name) { "pnpm/catalog_prettier" }
+      let(:dependencies) do
+        [
+          create_dependency(
+            name: "prettier",
+            required_version: "3.3.3",
+            previous_required_version: "3.3.0",
+            version: "3.3.3",
+            file: "pnpm-workspace.yaml"
+          )
+        ]
+      end
+
+      let(:pnpm_lock) do
+        files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
+      context "when pnpm updates followed by install for non catalog dependencies" do
+        let(:is_catalog) { true }
+
+        it "uses pnpm update followed by install" do
+          expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+            .with(
+              "update prettier@3.3.3  --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+            )
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
+
+          updated_pnpm_lock_content
+        end
+      end
+
+      context "when updating a regular package dependency" do
+        let(:is_catalog) { false }
+
+        it "uses pnpm update followed by install" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(
+              "update prettier@3.3.3  --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+            )
+            .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
+
+          updated_pnpm_lock_content
+        end
       end
     end
   end

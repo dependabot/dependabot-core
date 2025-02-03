@@ -1,0 +1,12 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+catalog:
+  prettier: 3.3.0
+
+importers:
+
+  .: {}
