@@ -560,6 +560,26 @@ public class SerializationTests
         Assert.Equal(expected, actual);
     }
 
+    [Fact]
+    public void SerializeUpdatePullRequest()
+    {
+        var update = new UpdatePullRequest()
+        {
+            BaseCommitSha = "TEST-COMMIT-SHA",
+            DependencyNames = ["dep"],
+            UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
+            PrTitle = "pr title",
+            PrBody = "pr body",
+            CommitMessage = "commit message",
+            DependencyGroup = null,
+        };
+        var actual = HttpApiHandler.Serialize(update);
+        var expected = """
+            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":null}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
     public static IEnumerable<object?[]> DeserializeErrorTypesData()
     {
         yield return
