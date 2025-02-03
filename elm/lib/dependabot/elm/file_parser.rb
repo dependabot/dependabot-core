@@ -96,9 +96,10 @@ module Dependabot
 
       sig { params(field: String).returns(T.nilable(String)) }
       def extract_version_content(field)
-        parsed_version = T.must(parsed_elm_json).fetch(field, nil)
-
-        return if parsed_version.nil? || parsed_version.empty?
+        parsed_version = parsed_elm_json.fetch(field, nil)
+        return nil if parsed_version.nil?
+        return nil unless parsed_version.is_a?(String)
+        return nil if parsed_version.empty?
 
         parsed_version
       end
@@ -109,7 +110,7 @@ module Dependabot
 
         DEPENDENCY_TYPES.each do |dep_type|
           if repo_type == "application"
-            dependencies_hash = T.cast(T.must(parsed_elm_json).fetch(dep_type, {}),
+            dependencies_hash = T.cast(parsed_elm_json.fetch(dep_type, {}),
                                        T::Hash[String, T::Hash[String, String]])
             dependencies_hash.fetch("direct", {}).each do |name, req|
               dependency_set << build_elm_json_dependency(
@@ -122,7 +123,7 @@ module Dependabot
               )
             end
           elsif repo_type == "package"
-            T.cast(T.must(parsed_elm_json).fetch(dep_type, {}), T::Hash[String, String]).each do |name, req|
+            T.cast(parsed_elm_json.fetch(dep_type, {}), T::Hash[String, String]).each do |name, req|
               dependency_set << build_elm_json_dependency(
                 name: name, group: dep_type, requirement: req, direct: true
               )
@@ -161,7 +162,8 @@ module Dependabot
 
       sig { returns(String) }
       def repo_type
-        T.must(parsed_elm_json).fetch("type")
+        type = parsed_elm_json.fetch("type")
+        T.must(type.is_a?(String) ? type : nil)
       end
 
       sig { override.void }
@@ -184,10 +186,10 @@ module Dependabot
         req.requirements.first.last
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.any(String, T::Boolean, NilClass)])) }
+      sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])]) }
       def parsed_elm_json
-        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)),
-                                   T.nilable(T::Hash[String, T.any(String, T::Boolean, NilClass)]))
+        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)), T.nilable(T::Hash[String, T.any(String, T::Hash[String, T.any(String, T::Hash[String, String])])]))
+
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json&.path || MANIFEST_FILE
       end
