@@ -4276,8 +4276,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                   file: "pnpm-workspace.yaml",
                   name: "prettier",
                   version: "3.3.0",
-                  required_version: "3.3.3",
-                  previous_required_version: "3.3.0"
+                  required_version: "^3.3.3",
+                  previous_required_version: "^3.3.0"
                 )
               ]
             end

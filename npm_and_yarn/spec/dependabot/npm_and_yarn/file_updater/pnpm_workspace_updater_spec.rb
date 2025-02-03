@@ -26,15 +26,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
       file: "pnpm-workspace.yaml",
       name: "prettier",
       version: "3.3.0",
-      required_version: "3.3.3",
-      previous_required_version: "3.3.0"
+      required_version: "^3.3.3",
+      previous_required_version: "^3.3.0"
     )
   end
 
   describe "#updated_pnmp_workspace" do
     subject(:updated_package_json) { pnpm_workspace_updater.updated_pnpm_workspace }
 
-    its(:content) { is_expected.to include "prettier: 3.3.3" }
+    its(:content) { is_expected.to include "prettier: ^3.3.3" }
 
     context("with multiple dependencies") do
       let(:project_name) { "pnpm/catalog_multiple" }
