@@ -12,7 +12,6 @@ module Dependabot
     class Labeler
       extend T::Sig
 
-      DEPENDENCIES_LABEL_REGEX = %r{^dependenc(y|ies)$}i
       DEFAULT_DEPENDENCIES_LABEL = "dependencies"
       DEFAULT_SECURITY_LABEL = "security"
 
@@ -235,16 +234,14 @@ module Dependabot
         end
       end
 
-      # Find the exact match first and then fallback to *dependency* label
       sig { returns(T.nilable(String)) }
       def default_dependencies_label
-        labels.find { |l| l == DEFAULT_DEPENDENCIES_LABEL } ||
-          labels.find { |l| l.match?(DEPENDENCIES_LABEL_REGEX) }
+        labels.find { |l| l.casecmp?(DEFAULT_DEPENDENCIES_LABEL) }
       end
 
       sig { returns(T::Boolean) }
       def dependencies_label_exists?
-        labels.any? { |l| l.match?(DEPENDENCIES_LABEL_REGEX) }
+        labels.any? { |l| l.casecmp?(DEFAULT_DEPENDENCIES_LABEL) }
       end
 
       sig { returns(T::Boolean) }
@@ -252,11 +249,9 @@ module Dependabot
         !security_label.nil?
       end
 
-      # Find the exact match first and then fallback to * security* label
       sig { returns(T.nilable(String)) }
       def security_label
-        labels.find { |l| l == DEFAULT_SECURITY_LABEL } ||
-          labels.find { |l| l.match?(/security/i) }
+        labels.find { |l| l.casecmp?(DEFAULT_SECURITY_LABEL) }
       end
 
       sig { returns(T::Boolean) }
