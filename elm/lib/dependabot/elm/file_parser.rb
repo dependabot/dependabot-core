@@ -109,13 +109,14 @@ module Dependabot
 
         DEPENDENCY_TYPES.each do |dep_type|
           if repo_type == "application"
-            dependencies_hash = T.cast(T.must(parsed_elm_json).fetch(dep_type, {}), T::Hash[String, T.untyped])
-            T.cast(dependencies_hash.fetch("direct", {}), T::Hash[String, String]).each do |name, req|
+            dependencies_hash = T.cast(T.must(parsed_elm_json).fetch(dep_type, {}),
+                                       T::Hash[String, T::Hash[String, String]])
+            dependencies_hash.fetch("direct", {}).each do |name, req|
               dependency_set << build_elm_json_dependency(
                 name: name, group: dep_type, requirement: req, direct: true
               )
             end
-            T.cast(dependencies_hash.fetch("indirect", {}), T::Hash[String, String]).each do |name, req|
+            dependencies_hash.fetch("indirect", {}).each do |name, req|
               dependency_set << build_elm_json_dependency(
                 name: name, group: dep_type, requirement: req, direct: false
               )
@@ -144,11 +145,11 @@ module Dependabot
       end
       def build_elm_json_dependency(name:, group:, requirement:, direct:)
         requirements = [{
-                          requirement: requirement,
-                          groups: [group],
-                          source: nil,
-                          file: MANIFEST_FILE
-                        }]
+          requirement: requirement,
+          groups: [group],
+          source: nil,
+          file: MANIFEST_FILE
+        }]
 
         Dependency.new(
           name: name,
@@ -183,9 +184,10 @@ module Dependabot
         req.requirements.first.last
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[String, T.any(String, T::Boolean, NilClass)])) }
       def parsed_elm_json
-        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)), T.nilable(T::Hash[String, T.untyped]))
+        @parsed_elm_json ||= T.let(JSON.parse(T.must(T.must(elm_json).content)),
+                                   T.nilable(T::Hash[String, T.any(String, T::Boolean, NilClass)]))
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json&.path || MANIFEST_FILE
       end
