@@ -542,6 +542,20 @@ public class SerializationTests
     }
 
     [Fact]
+    public void SerializeClosePullRequest()
+    {
+        var close = new ClosePullRequest()
+        {
+            DependencyNames = ["dep"],
+        };
+        var actual = HttpApiHandler.Serialize(close);
+        var expected = """
+            {"data":{"dependency-names":["dep"],"reason":"up_to_date"}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void SerializeCreatePullRequest()
     {
         var create = new CreatePullRequest()
