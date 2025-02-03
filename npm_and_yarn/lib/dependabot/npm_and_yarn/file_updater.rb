@@ -116,7 +116,7 @@ module Dependabot
       def update_pnpm_locks(is_catalog: false)
         updated_files = []
         pnpm_locks.each do |pnpm_lock|
-          next unless pnpm_lock_changed?(pnpm_lock)
+          next unless pnpm_lock_changed?(pnpm_lock, is_catalog: is_catalog)
 
           updated_files << updated_file(
             file: pnpm_lock,
@@ -282,9 +282,9 @@ module Dependabot
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
       end
 
-      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(T::Boolean) }
-      def pnpm_lock_changed?(pnpm_lock)
-        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
+      sig { params(pnpm_lock: Dependabot::DependencyFile, is_catalog: T::Boolean).returns(T::Boolean) }
+      def pnpm_lock_changed?(pnpm_lock, is_catalog: false)
+        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock, is_catalog: is_catalog)
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(T::Boolean) }
