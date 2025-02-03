@@ -924,7 +924,7 @@ internal static partial class MSBuildHelper
         ThrowOnUnauthenticatedFeed(output);
         ThrowOnMissingFile(output);
         ThrowOnMissingPackages(output);
-        ThrowOnUnresolvableDependencies(output);
+        ThrowOnUpdateNotPossible(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -962,13 +962,20 @@ internal static partial class MSBuildHelper
         }
     }
 
-    private static void ThrowOnUnresolvableDependencies(string output)
+    private static void ThrowOnUpdateNotPossible(string output)
     {
-        var unresolvablePackagePattern = new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'");
-        var match = unresolvablePackagePattern.Match(output);
-        if (match.Success)
+        var patterns = new[]
         {
-            throw new UpdateNotPossibleException([$"{match.Groups["PackageName"].Value}.{match.Groups["PackageVersion"].Value}"]);
+            new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'"),
+            new Regex(@"Could not install package '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'. You are trying to install this package"),
+            new Regex(@"Unable to find a version of '[^']+' that is compatible with '[^ ]+ [^ ]+ constraint: (?<PackageName>[^ ]+) \([^ ]+ (?<PackageVersion>[^)]+)\)'"),
+            new Regex(@"the following error\(s\) may be blocking the current package operation: '(?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+) constraint:"),
+        };
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
+        if (matches.Any())
+        {
+            var packages = matches.Select(m => $"{m.Groups["PackageName"].Value}.{m.Groups["PackageVersion"].Value}").Distinct().ToArray();
+            throw new UpdateNotPossibleException(packages);
         }
     }
 
