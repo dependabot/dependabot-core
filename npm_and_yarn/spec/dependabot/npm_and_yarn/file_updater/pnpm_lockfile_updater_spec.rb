@@ -5,7 +5,7 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
-  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock, is_catalog) }
+  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock) }
 
   let(:is_catalog) { false }
   let(:updater) do
