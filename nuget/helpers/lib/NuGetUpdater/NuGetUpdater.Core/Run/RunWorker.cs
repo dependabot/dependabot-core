@@ -116,14 +116,12 @@ public class RunWorker
         var discoveredUpdatedDependencies = GetUpdatedDependencyListFromDiscovery(discoveryResult, repoContentsPath.FullName);
         await _apiHandler.UpdateDependencyList(discoveredUpdatedDependencies);
 
+        var incrementMetric = GetIncrementMetric(job);
+        await _apiHandler.IncrementMetric(incrementMetric);
+
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         var originalDependencyFileContents = new Dictionary<string, string>();
         var actualUpdatedDependencies = new List<ReportedDependency>();
-        await _apiHandler.IncrementMetric(new()
-        {
-            Metric = "updater.started",
-            Tags = { ["operation"] = "group_update_all_versions" },
-        });
 
         // track original contents for later handling
         async Task TrackOriginalContentsAsync(string directory, string fileName)
@@ -273,6 +271,20 @@ public class RunWorker
             BaseCommitSha = baseCommitSha,
         };
         return result;
+    }
+
+    internal static IncrementMetric GetIncrementMetric(Job job)
+    {
+        var isSecurityUpdate = job.AllowedUpdates.Any(a => a.UpdateType == UpdateType.Security) || job.SecurityUpdatesOnly;
+        var metricOperation = isSecurityUpdate ?
+            (job.UpdatingAPullRequest ? "update_security_pr" : "create_security_pr")
+            : (job.UpdatingAPullRequest ? "update_version_pr" : "group_update_all_versions");
+        var increment = new IncrementMetric()
+        {
+            Metric = "updater.started",
+            Tags = { ["operation"] = metricOperation },
+        };
+        return increment;
     }
 
     internal static bool IsUpdateAllowed(Job job, Dependency dependency)
