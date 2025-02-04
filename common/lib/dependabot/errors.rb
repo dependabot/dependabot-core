@@ -251,6 +251,11 @@ module Dependabot
           "file-path": error.file_path
         }
       }
+    when Dependabot::DependencyFileContentNotChanged
+      {
+        "error-type": "dependency_file_content_not_changed",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::ToolVersionNotSupported
       {
         "error-type": "tool_version_not_supported",
@@ -640,6 +645,8 @@ module Dependabot
   class DependencyFileNotResolvable < DependabotError; end
 
   class DependencyFileNotSupported < DependabotError; end
+
+  class DependencyFileContentNotChanged < DependabotError; end
 
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
