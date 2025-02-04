@@ -107,20 +107,20 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_workspace_and_locks
         workspace_updates = updated_pnpm_workspace_files
-        lock_updates = update_pnpm_locks(is_catalog: true)
+        lock_updates = update_pnpm_locks
 
         workspace_updates + lock_updates
       end
 
-      sig { params(is_catalog: T::Boolean).returns(T::Array[Dependabot::DependencyFile]) }
-      def update_pnpm_locks(is_catalog: false)
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def update_pnpm_locks
         updated_files = []
         pnpm_locks.each do |pnpm_lock|
-          next unless pnpm_lock_changed?(pnpm_lock, is_catalog: is_catalog)
+          next unless pnpm_lock_changed?(pnpm_lock)
 
           updated_files << updated_file(
             file: pnpm_lock,
-            content: updated_pnpm_lock_content(pnpm_lock, is_catalog: is_catalog)
+            content: updated_pnpm_lock_content(pnpm_lock)
           )
         end
         updated_files
@@ -282,9 +282,9 @@ module Dependabot
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
       end
 
-      sig { params(pnpm_lock: Dependabot::DependencyFile, is_catalog: T::Boolean).returns(T::Boolean) }
-      def pnpm_lock_changed?(pnpm_lock, is_catalog: false)
-        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock, is_catalog: is_catalog)
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(T::Boolean) }
+      def pnpm_lock_changed?(pnpm_lock)
+        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -373,16 +373,14 @@ module Dependabot
           yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
       end
 
-      sig do
-        params(
-          pnpm_lock: Dependabot::DependencyFile,
-          is_catalog: T::Boolean
-        ).returns(String)
-      end
-      def updated_pnpm_lock_content(pnpm_lock, is_catalog: false)
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
+      def updated_pnpm_lock_content(pnpm_lock)
         @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_pnpm_lock_content[pnpm_lock.name] ||=
-          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock, is_catalog)
+          pnpm_lockfile_updater.updated_pnpm_lock_content(
+            pnpm_lock,
+            updated_pnpm_workspace_content: @updated_pnpm_workspace_content
+          )
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(String) }

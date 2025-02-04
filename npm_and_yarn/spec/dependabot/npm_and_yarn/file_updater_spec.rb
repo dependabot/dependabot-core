@@ -4144,7 +4144,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       describe "pnpm catalog protocol" do
         context "when individual dependency needs updating" do
-          let(:project_name) { "pnpm/catalog_prettier" }
+          let(:project_name) { "pnpm/catalog_monorepo" }
           let(:dependency_name) { "prettier" }
           let(:dependencies) do
             [
@@ -4152,15 +4152,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 file: "pnpm-workspace.yaml",
                 name: "prettier",
                 version: "3.3.3",
-                required_version: "^3.3.3",
-                previous_required_version: "^3.3.0"
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
               )
             ]
           end
 
           it "updates the workspace" do
-            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
-            expect(updated_pnpm_workspace.content).to include("prettier: ^3.3.3")
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml pnpm-lock.yaml))
+            expect(updated_pnpm_workspace.content).to include("prettier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("specifier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: ^3.4.2\n      version: 3.4.2")
           end
         end
 
