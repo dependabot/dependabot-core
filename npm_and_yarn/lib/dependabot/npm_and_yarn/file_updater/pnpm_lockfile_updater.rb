@@ -28,8 +28,10 @@ module Dependabot
           @updated_pnpm_lock_content ||= {}
           return @updated_pnpm_lock_content[pnpm_lock.name] if @updated_pnpm_lock_content[pnpm_lock.name]
 
-          new_content = run_pnpm_update(pnpm_lock: pnpm_lock,
-                                        updated_pnpm_workspace_content: updated_pnpm_workspace_content)
+          new_content = run_pnpm_update(
+            pnpm_lock: pnpm_lock,
+            updated_pnpm_workspace_content: updated_pnpm_workspace_content
+          )
           @updated_pnpm_lock_content[pnpm_lock.name] = new_content
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_pnpm_lock_updater_error(e, pnpm_lock)
