@@ -59,7 +59,7 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
-        dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml.any?
+        dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
