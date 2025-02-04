@@ -309,8 +309,10 @@ module Dependabot
             version < Version.new(constraint_version)
           end
           { constraint: "<#{Regexp.last_match(1)}", version: found_version&.to_s }
-        when WILDCARD_REGEX # Wildcard
-          { constraint: nil, version: dependabot_versions&.max&.to_s } # Explicitly valid but no specific constraint
+        when WILDCARD_REGEX # No specific constraint, resolves to the highest available version
+          { constraint: nil, version: dependabot_versions&.max&.to_s }
+        when LATEST_REGEX
+          { constraint: nil, version: dependabot_versions&.max&.to_s } # Resolves to the latest available version
         end
       end
 
