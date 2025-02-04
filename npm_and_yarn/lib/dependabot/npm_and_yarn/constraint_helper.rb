@@ -21,9 +21,9 @@ module Dependabot
       # Base regex for SemVer (major.minor.patch[-prerelease][+build])
       # This pattern extracts valid semantic versioning strings based on the SemVer 2.0 specification.
       SEMVER_REGEX = T.let(/
-        (?<version>\d+\.\d+\.\d+)              # <version>: Match major.minor.patch (e.g., 1.2.3)
-        (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # <prerelease>: Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
-        (?:\+(?<build>[a-zA-Z0-9.-]+))?         # <build>: Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
+        (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
+        (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
+        (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
       /x, Regexp)
 
       # Full SemVer validation regex (ensures the entire string is a valid SemVer)
