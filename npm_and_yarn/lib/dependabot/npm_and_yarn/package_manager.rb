@@ -189,8 +189,10 @@ module Dependabot
         @language_requirement ||= find_engine_constraints_as_requirement(Language::NAME)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       sig { params(name: String).returns(T.nilable(Requirement)) }
-      def find_engine_constraints_as_requirement(name) # rubocop:disable Metrics/PerceivedComplexity
+      def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
         return nil unless @engines.is_a?(Hash) && @engines[name]
@@ -199,8 +201,7 @@ module Dependabot
         return nil if raw_constraint.empty?
 
         if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
-          constraints = ConstraintHelper.extract_constraints(raw_constraint)
-
+          constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
           # When constraints are invalid we return constraints array nil
           if constraints.nil?
             Dependabot.logger.warn(
@@ -225,12 +226,16 @@ module Dependabot
 
         end
 
-        Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-        Requirement.new(constraints)
+        if constraints && !constraints.empty?
+          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
+          Requirement.new(constraints)
+        end
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize

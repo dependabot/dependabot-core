@@ -69,6 +69,24 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
   let(:package_json) { { "packageManager" => "npm@7" } }
   let(:helper) { described_class.new(package_json, lockfiles, register_config_files, []) }
 
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_fallback_version_above_v6)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_unsupported_error)
+      .and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_shared_helpers_command_timeout)
+      .and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_engine_version_detection)
+      .and_return(true)
+  end
+
   describe "#package_manager" do
     context "when npm lockfile exists" do
       it "returns an NpmPackageManager instance" do
@@ -146,21 +164,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
             }
           LOCKFILE
         )
-      end
-
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_fallback_version_above_v6)
-          .and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_deprecation_warning)
-          .and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_unsupported_error)
-          .and_return(false)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:enable_shared_helpers_command_timeout)
-          .and_return(true)
       end
 
       it "returns the deprecated package manager" do
@@ -532,6 +535,44 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "logs an error and returns nil" do
         expect(Dependabot.logger).to receive(:warn).with(/Unrecognized constraint format for npm: invalid/)
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_nil
+      end
+    end
+
+    context "when constraints are valid" do
+      let(:package_json) { { "engines" => { "npm" => ">= 6.0.0 < 8.0.0" } } }
+
+      it "returns a requirement object with correct constraints" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 6.0.0", "< 8.0.0"])
+      end
+    end
+
+    context "when constraints are empty" do
+      let(:package_json) { { "engines" => { "npm" => "" } } }
+
+      it "returns nil" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_nil
+      end
+    end
+
+    context "when constraints are nil" do
+      let(:package_json) { { "engines" => {} } }
+
+      it "returns nil" do
+        requirement = helper.find_engine_constraints_as_requirement("npm")
+        expect(requirement).to be_nil
+      end
+    end
+
+    context "when constraints contain an invalid format" do
+      let(:package_json) { { "engines" => { "npm" => "invalid-constraint" } } }
+
+      it "logs a warning and returns nil" do
+        expect(Dependabot.logger).to receive(:warn).with(/Unrecognized constraint format for npm/)
         requirement = helper.find_engine_constraints_as_requirement("npm")
         expect(requirement).to be_nil
       end
