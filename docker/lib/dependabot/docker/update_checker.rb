@@ -232,7 +232,7 @@ module Dependabot
         attempt ||= 1
         attempt += 1
         return if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
-        raise if attempt > 3
+        raise PrivateSourceBadResponse, registry_hostname if attempt > 3
 
         retry
       rescue DockerRegistry2::RegistryAuthenticationException,
