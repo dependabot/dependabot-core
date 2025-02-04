@@ -48,8 +48,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       .with(:npm_v6_deprecation_warning).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_pnpm_workspace_catalog).and_return(true)
   end
 
   after do

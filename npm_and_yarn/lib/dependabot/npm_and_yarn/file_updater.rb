@@ -56,7 +56,7 @@ module Dependabot
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
-        updated_files += if should_update_pnpm_workspace?
+        updated_files += if pnpm_workspace.any?
                            update_pnpm_workspace_and_locks
                          else
                            updated_lockfiles
@@ -98,11 +98,6 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       private
-
-      sig { returns(T::Boolean) }
-      def should_update_pnpm_workspace?
-        Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog) && pnpm_workspace.any?
-      end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_workspace_and_locks

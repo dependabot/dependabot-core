@@ -59,7 +59,7 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
-        dependency_set += workspace_catalog_dependencies if enable_pnpm_workspace_catalog?
+        dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
@@ -93,11 +93,6 @@ module Dependabot
       end
 
       private
-
-      sig { returns(T.nilable(T::Boolean)) }
-      def enable_pnpm_workspace_catalog?
-        pnpm_workspace_yml && Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog)
-      end
 
       sig { returns(PackageManagerHelper) }
       def package_manager_helper
