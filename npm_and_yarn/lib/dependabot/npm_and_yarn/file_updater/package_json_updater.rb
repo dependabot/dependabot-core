@@ -11,11 +11,15 @@ module Dependabot
       class PackageJsonUpdater
         extend T::Sig
 
+        LOCAL_PACKAGE = T.let([/portal:/, /file:/].freeze, T::Array[Regexp])
+
+        PATCH_PACKAGE = T.let([/patch:/].freeze, T::Array[Regexp])
+
         sig do
           params(
             package_json: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency]
-          ) .void
+          ).void
         end
         def initialize(package_json:, dependencies:)
           @package_json = package_json
@@ -114,6 +118,8 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
         def updated_requirements(dependency)
           return unless dependency.previous_requirements
+
+          preliminary_check_for_update(dependency)
 
           updated_requirement_pairs =
             dependency.requirements.zip(T.must(dependency.previous_requirements))
@@ -340,6 +346,31 @@ module Dependabot
           end
 
           0
+        end
+
+        sig { params(dependency: Dependabot::Dependency).void }
+        def preliminary_check_for_update(dependency)
+          T.must(dependency.previous_requirements).each do |req, _dep|
+            next if req.fetch(:requirement).nil?
+
+            # some deps are patched with local patches, we don't need to update them
+            if req.fetch(:requirement).match?(Regexp.union(PATCH_PACKAGE))
+              Dependabot.logger.info("Func: updated_requirements. dependency patched #{dependency.name}," \
+                                     " Requirement: '#{req.fetch(:requirement)}'")
+
+              raise DependencyFileNotResolvable,
+                    "Dependency is patched locally, Update not required."
+            end
+
+            # some deps are added as local packages, we don't need to update them as they are referred to a local path
+            next unless req.fetch(:requirement).match?(Regexp.union(LOCAL_PACKAGE))
+
+            Dependabot.logger.info("Func: updated_requirements. local package #{dependency.name}," \
+                                   " Requirement: '#{req.fetch(:requirement)}'")
+
+            raise DependencyFileNotResolvable,
+                  "Local package, Update not required."
+          end
         end
       end
     end
