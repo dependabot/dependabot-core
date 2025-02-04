@@ -7,6 +7,9 @@ require "dependabot/npm_and_yarn/constraint_helper"
 RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
   let(:helper) { described_class }
   let(:version_regex) { /^#{helper::VERSION}$/o }
+  let(:dependabot_versions) do
+    []
+  end
 
   describe "Regex Constants" do
     describe "VERSION" do
@@ -146,6 +149,16 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
         end
       end
     end
+
+    describe "LATEST_REGEX" do
+      it "matches valid wildcard constraints" do
+        expect(helper::LATEST_REGEX.match?("latest")).to be(true)
+      end
+
+      it "does not match invalid keyword constraints" do
+        expect(helper::LATEST_REGEX.match?("invalid")).to be(false), "Expected invalid to not match"
+      end
+    end
   end
 
   describe ".extract_ruby_constraints" do
@@ -174,22 +187,70 @@ RSpec.describe Dependabot::NpmAndYarn::ConstraintHelper do
   end
 
   describe ".find_highest_version_from_constraint_expression" do
-    it "finds the highest version from valid constraints" do
-      constraints = ">=1.2.3 <2.0.0 || ~2.3.4 || ^3.0.0"
-      result = helper.find_highest_version_from_constraint_expression(constraints)
-      expect(result).to eq("3.0.0")
+    let(:dependabot_versions) do
+      ["1.2.3", "2.0.0", "3.4.5", "3.5.1", "4.0.0"].map do |v|
+        Dependabot::Version.new(v)
+      end
     end
 
-    it "returns nil if no versions are present" do
-      constraints = "* || invalid"
-      result = helper.find_highest_version_from_constraint_expression(constraints)
+    it "finds the highest version from valid constraints" do
+      constraints = ">=1.2.3 <2.0.0 || ~2.3.4 || ^3.0.0"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("4.0.0")
+    end
+
+    it "handles exact versions correctly" do
+      constraints = "3.4.5"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("3.4.5")
+    end
+
+    it "handles greater than or equal constraints" do
+      constraints = ">=2.0.0"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("4.0.0")
+    end
+
+    it "handles less than constraints" do
+      constraints = "<3.5.1"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("3.4.5")
+    end
+
+    it "handles caret (^) constraints correctly" do
+      constraints = "^3.4.5"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("3.4.5") # Matches highest within 3.x.x range
+    end
+
+    it "handles tilde (~) constraints correctly" do
+      constraints = "~3.4.5"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("3.4.5") # Matches within minor range 3.4.x
+    end
+
+    it "handles wildcard (*) constraints correctly" do
+      constraints = "*"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("4.0.0") # Highest available version
+    end
+
+    it "handles 'latest' constraint correctly" do
+      constraints = "latest"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to eq("4.0.0") # Explicit latest resolution
+    end
+
+    it "returns nil if no versions match" do
+      constraints = ">5.0.0"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
       expect(result).to be_nil
     end
 
-    it "handles constraints with spaces and commas" do
-      constraints = ">= 1.2.3 , <= 2.0.0 , ~ 3.4.5"
-      result = helper.find_highest_version_from_constraint_expression(constraints)
-      expect(result).to eq("3.4.5")
+    it "returns nil for invalid constraints" do
+      constraints = "invalid || >=x.y.z"
+      result = helper.find_highest_version_from_constraint_expression(constraints, dependabot_versions)
+      expect(result).to be_nil
     end
   end
 

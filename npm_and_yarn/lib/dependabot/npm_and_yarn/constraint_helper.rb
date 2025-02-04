@@ -213,7 +213,7 @@ module Dependabot
       def self.to_ruby_constraints_with_versions(constraints, dependabot_versions = [])
         constraints.filter_map do |constraint|
           parsed = to_ruby_constraint_with_version(constraint, dependabot_versions)
-          parsed if parsed && parsed[:constraint] # Only include valid constraints
+          parsed if parsed
         end.uniq
       end
 
