@@ -209,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       expect do
         described_class.package_manager_run_command("npm", "install")
-      end.to raise_error(RegistryError, "The remote server failed to provide the requested resource")
+      end.to raise_error(Dependabot::RegistryError, "The remote server failed to provide the requested resource")
     end
   end
 
