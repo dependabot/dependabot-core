@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -9,33 +10,6 @@ require "dependabot/docker_compose/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::DockerCompose::FileUpdater do
-  it_behaves_like "a dependency file updater"
-
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
-  end
-  let(:files) { [dockerfile] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:dockerfile) do
-    Dependabot::DependencyFile.new(
-      content: dockerfile_body,
-      name: "docker-compose.yml"
-    )
-  end
-  let(:dockerfile_body) do
-    fixture("docker_compose", "composefiles", "multiple")
-  end
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "ubuntu",
@@ -56,12 +30,39 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
       package_manager: "docker"
     )
   end
+  let(:dockerfile_body) do
+    fixture("docker_compose", "composefiles", "multiple")
+  end
+  let(:dockerfile) do
+    Dependabot::DependencyFile.new(
+      content: dockerfile_body,
+      name: "docker-compose.yml"
+    )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:files) { [dockerfile] }
+  let(:updater) do
+    described_class.new(
+      dependency_files: files,
+      dependencies: [dependency],
+      credentials: credentials
+    )
+  end
+
+  it_behaves_like "a dependency file updater"
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
     it "returns DependencyFile objects" do
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      expect(updated_files).to all(be_a(Dependabot::DependencyFile))
     end
 
     its(:length) { is_expected.to eq(1) }
@@ -70,13 +71,15 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
       subject(:updated_dockerfile) do
         updated_files.find { |f| f.name == "docker-compose.yml" }
       end
+
       let(:yaml_content) do
         YAML.safe_load updated_dockerfile.content
       end
 
       its(:content) { is_expected.to include "image: ubuntu:17.10\n" }
       its(:content) { is_expected.to include "image: python:3.6.3\n" }
-      it "should contain the expected YAML content" do
+
+      it "contains the expected YAML content" do
         expect(yaml_content).to eq(
           "version" => "2",
           "services" => {
@@ -155,6 +158,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         end
 
         its(:content) { is_expected.to include "image: my-fork/ubuntu:17.10\n" }
+
         its(:content) do
           is_expected.to include "command: [/bin/echo, 'Hello world']"
         end
@@ -200,9 +204,10 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("image: registry-host.io:5000/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("image: registry-host.io:5000/myreg/ubuntu:17.10\n")
         end
+
         its(:content) do
           is_expected.to include "command: [/bin/echo, 'Hello world']"
         end
@@ -242,9 +247,10 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         end
 
         its(:content) do
-          is_expected.
-            to include("image: docker.io/myreg/ubuntu:17.10\n")
+          is_expected
+            .to include("image: docker.io/myreg/ubuntu:17.10\n")
         end
+
         its(:content) do
           is_expected.to include "command: [/bin/echo, 'Hello world']"
         end
@@ -265,7 +271,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "docker-compose.yml",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }],
@@ -274,7 +280,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "docker-compose.yml",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }],
@@ -292,6 +298,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         its(:content) do
           is_expected.to include "image: ubuntu@sha256:3ea1ca1aa"
         end
+
         its(:content) do
           is_expected.to include "command: [/bin/echo, 'Hello world']"
         end
@@ -322,7 +329,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               file: "docker-compose.yml",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }],
@@ -332,7 +339,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               file: "docker-compose.yml",
               source: {
                 registry: "registry-host.io:5000",
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                         "dfc38288cf73aa07485005"
               }
             }],
@@ -348,9 +355,10 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
           end
 
           its(:content) do
-            is_expected.to include("image: registry-host.io:5000/"\
+            is_expected.to include("image: registry-host.io:5000/" \
                                    "myreg/ubuntu@sha256:3ea1ca1aa")
           end
+
           its(:content) do
             is_expected.to include "command: [/bin/echo, 'Hello world']"
           end
@@ -382,7 +390,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "docker-compose.yml",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
           }, {
@@ -390,7 +398,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "custom-name",
             source: {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608",
               tag: "17.10"
             }
@@ -400,7 +408,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "docker-compose.yml",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
           }, {
@@ -408,7 +416,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             groups: [],
             file: "custom-name",
             source: {
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005",
               tag: "12.04.5"
             }
@@ -419,6 +427,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
 
       describe "the updated docker-compose.yml" do
         subject { updated_files.find { |f| f.name == "docker-compose.yml" } }
+
         its(:content) do
           is_expected.to include "image: ubuntu@sha256:3ea1ca1aa"
         end
@@ -447,7 +456,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               groups: [],
               file: "custom-name",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }],
@@ -456,7 +465,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               groups: [],
               file: "custom-name",
               source: {
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8"\
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                         "dfc38288cf73aa07485005"
               }
             }],

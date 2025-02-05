@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -6,7 +7,7 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module DockerCompose
     class FileFetcher < Dependabot::FileFetchers::Base
-      FILENAME_REGEX = /docker-compose(?>\.override)?\.yml/i.freeze
+      FILENAME_REGEX = /docker-compose(?>\.override)?\.yml/i
 
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(FILENAME_REGEX) }
@@ -39,9 +40,9 @@ module Dependabot
 
       def docker_compose_files
         @docker_compose_files ||=
-          repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }.
-          map { |f| fetch_file_from_host(f.name) }
+          repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
       def correctly_encoded_docker_compose_files

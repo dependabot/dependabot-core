@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "yaml"
@@ -16,18 +17,18 @@ module Dependabot
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
-        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/.freeze
-      DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
-      REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/.freeze
+        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/
+      DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/
+      REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/
 
-      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/.freeze
-      IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
+      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/
+      IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}
 
-      TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
-      DIGEST = /@(?<digest>[^\s]+)/.freeze
-      NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
+      TAG = /:(?<tag>[\w][\w.-]{0,127})/
+      DIGEST = /@(?<digest>[^\s]+)/
+      NAME = /\s+AS\s+(?<name>[\w-]+)/
       FROM_IMAGE =
-        %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
+        %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
 
       def parse
         dependency_set = DependencySet.new
@@ -37,9 +38,7 @@ module Dependabot
           yaml["services"].each do |_, service|
             parsed_from_image =
               FROM_IMAGE.match(service["image"]).named_captures
-            if parsed_from_image["registry"] == "docker.io"
-              parsed_from_image["registry"] = nil
-            end
+            parsed_from_image["registry"] = nil if parsed_from_image["registry"] == "docker.io"
 
             version = version_from(parsed_from_image)
             next unless version

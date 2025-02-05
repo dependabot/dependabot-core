@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -7,20 +8,6 @@ require "dependabot/docker_compose/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::DockerCompose::FileParser do
-  it_behaves_like "a dependency file parser"
-
-  let(:files) { [composefile] }
-  let(:composefile) do
-    Dependabot::DependencyFile.new(
-      name: "docker-compose.yml",
-      content: composefile_body
-    )
-  end
-  let(:composefile_body) do
-    fixture("docker_compose", "composefiles", composefile_fixture_name)
-  end
-  let(:composefile_fixture_name) { "tag" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -28,6 +15,20 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
       directory: "/"
     )
   end
+  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:composefile_fixture_name) { "tag" }
+  let(:composefile_body) do
+    fixture("docker_compose", "composefiles", composefile_fixture_name)
+  end
+  let(:composefile) do
+    Dependabot::DependencyFile.new(
+      name: "docker-compose.yml",
+      content: composefile_body
+    )
+  end
+  let(:files) { [composefile] }
+
+  it_behaves_like "a dependency file parser"
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -36,6 +37,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
+
       let(:expected_requirements) do
         [{
           requirement: nil,
@@ -55,6 +57,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
     context "with no tag or digest" do
       let(:composefile_fixture_name) { "bare" }
+
       its(:length) { is_expected.to eq(0) }
     end
 
@@ -63,6 +66,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -86,6 +90,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -117,49 +122,50 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       before do
         auth_url = "https://auth.docker.io/token?service=registry.docker.io"
-        stub_request(:get, auth_url).
-          and_return(status: 200, body: { token: "token" }.to_json)
+        stub_request(:get, auth_url)
+          .and_return(status: 200, body: { token: "token" }.to_json)
 
         tags_url = repo_url + "tags/list"
-        stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+        stub_request(:get, tags_url)
+          .and_return(status: 200, body: registry_tags)
       end
 
-      context "that doesn't match any tags" do
+      context "with no match any tags" do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
-        before { digest_headers["docker_content_digest"] = "nomatch" }
 
         before do
+          digest_headers["docker_content_digest"] = "nomatch"
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
-          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/)
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(0) }
       end
 
-      context "that matches a tag" do
+      context "when there is a matching tag" do
         before do
-          stub_request(:head, repo_url + "manifests/10.04").
-            and_return(status: 404)
+          stub_request(:head, repo_url + "manifests/10.04")
+            .and_return(status: 404)
 
-          stub_request(:head, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: "", headers: digest_headers)
+          stub_request(:head, repo_url + "manifests/12.04.5")
+            .and_return(status: 200, body: "", headers: digest_headers)
         end
 
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
               groups: [],
               file: "docker-compose.yml",
               source: {
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -173,15 +179,15 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           end
         end
 
-        context "for a private registry" do
+        context "with a private registry" do
           let(:composefile_fixture_name) { "private_digest" }
           let(:repo_url) { "https://registry-host.io:5000/v2/myreg/ubuntu/" }
 
           context "without no/bad authentication credentials" do
             before do
               tags_url = repo_url + "tags/list"
-              stub_request(:get, tags_url).
-                and_return(
+              stub_request(:get, tags_url)
+                .and_return(
                   status: 401,
                   body: "",
                   headers: { "www_authenticate" => "basic 123" }
@@ -190,8 +196,8 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
             it "raises a PrivateSourceAuthenticationFailure error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
-              expect { parser.parse }.
-                to raise_error(error_class) do |error|
+              expect { parser.parse }
+                .to raise_error(error_class) do |error|
                   expect(error.source).to eq("registry-host.io:5000")
                 end
             end
@@ -218,6 +224,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
             describe "the first dependency" do
               subject(:dependency) { dependencies.first }
+
               let(:expected_requirements) do
                 [{
                   requirement: nil,
@@ -225,7 +232,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
                   file: "docker-compose.yml",
                   source: {
                     registry: "registry-host.io:5000",
-                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                             "e4c8dfc38288cf73aa07485005"
                   }
                 }]
@@ -239,7 +246,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
               end
             end
 
-            context "that don't include a username and password" do
+            context "when there is no username and password" do
               let(:credentials) do
                 [{
                   "type" => "docker_registry",
@@ -251,18 +258,18 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
             end
           end
 
-          context "that uses Amazon ECR" do
+          context "with Amazon ECR" do
             let(:composefile_fixture_name) { "private_ecr_digest" }
             let(:repo_url) do
-              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/"\
-              "docker-php/"
+              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
+                "docker-php/"
             end
 
             context "without credentials" do
               before do
                 tags_url = repo_url + "tags/list"
-                stub_request(:get, tags_url).
-                  and_return(
+                stub_request(:get, tags_url)
+                  .and_return(
                     status: 401,
                     body: "",
                     headers: { "www_authenticate" => "basic 123" }
@@ -271,10 +278,10 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
               it "raises a PrivateSourceAuthenticationFailure error" do
                 error_class = Dependabot::PrivateSourceAuthenticationFailure
-                expect { parser.parse }.
-                  to raise_error(error_class) do |error|
-                    expect(error.source).
-                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+                expect { parser.parse }
+                  .to raise_error(error_class) do |error|
+                    expect(error.source)
+                      .to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
                   end
               end
             end
@@ -297,7 +304,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
                 }]
               end
 
-              context "that are invalid" do
+              context "when the private registry invalid" do
                 before do
                   stub_request(
                     :post,
@@ -310,15 +317,17 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
                 it "raises a PrivateSourceAuthenticationFailure error" do
                   error_class = Dependabot::PrivateSourceAuthenticationFailure
-                  expect { parser.parse }.
-                    to raise_error(error_class) do |error|
-                      expect(error.source).
-                        to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+                  expect { parser.parse }
+                    .to raise_error(error_class) do |error|
+                      expect(error.source)
+                        .to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
                     end
                 end
               end
 
-              context "that are valid" do
+              context "when private registry is valid" do
+                subject(:dependency) { dependencies.first }
+
                 before do
                   stub_request(
                     :post,
@@ -329,30 +338,27 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
                   )
                 end
 
+                let(:expected_requirements) do
+                  [{
+                    requirement: nil,
+                    groups: [],
+                    file: "docker-compose.yml",
+                    source: {
+                      registry:
+                        "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+                      digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
+                              "e4c8dfc38288cf73aa07485005"
+                    }
+                  }]
+                end
+
                 its(:length) { is_expected.to eq(1) }
 
-                describe "the first dependency" do
-                  subject(:dependency) { dependencies.first }
-                  let(:expected_requirements) do
-                    [{
-                      requirement: nil,
-                      groups: [],
-                      file: "docker-compose.yml",
-                      source: {
-                        registry:
-                          "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
-                                "e4c8dfc38288cf73aa07485005"
-                      }
-                    }]
-                  end
-
-                  it "has the right details" do
-                    expect(dependency).to be_a(Dependabot::Dependency)
-                    expect(dependency.name).to eq("docker-php")
-                    expect(dependency.version).to eq("12.04.5")
-                    expect(dependency.requirements).to eq(expected_requirements)
-                  end
+                it "has the right details" do
+                  expect(dependency).to be_a(Dependabot::Dependency)
+                  expect(dependency.name).to eq("docker-php")
+                  expect(dependency.version).to eq("12.04.5")
+                  expect(dependency.requirements).to eq(expected_requirements)
                 end
               end
             end
@@ -368,6 +374,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -387,6 +394,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -404,13 +412,14 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         end
       end
 
-      context "that are identical" do
+      context "when the dependencies are identical" do
         let(:composefile_fixture_name) { "multiple_identical" }
 
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -437,6 +446,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -462,6 +472,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -484,10 +495,12 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       context "when the registry has no port" do
         let(:composefile_fixture_name) { "private_no_port" }
+
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
+
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -522,6 +535,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -551,6 +565,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -570,6 +585,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
       describe "the second dependency" do
         subject(:dependency) { dependencies.last }
+
         let(:expected_requirements) do
           [{
             requirement: nil,

@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -13,10 +14,10 @@ module Dependabot
         old_declaration_regex = digest_and_tag_regex(old_digest(file))
 
         file.content.gsub(old_declaration_regex) do |old_dec|
-          old_dec.
-            gsub("@#{old_digest(file)}", "@#{new_digest(file)}").
-            gsub(":#{dependency.previous_version}",
-                 ":#{dependency.version}")
+          old_dec
+            .gsub("@#{old_digest(file)}", "@#{new_digest(file)}")
+            .gsub(":#{dependency.previous_version}",
+                  ":#{dependency.version}")
         end
       end
 
@@ -25,7 +26,8 @@ module Dependabot
 
         old_declaration =
           if private_registry_url(file) then "#{private_registry_url(file)}/"
-          else ""
+          else
+            ""
           end
         old_declaration += "#{dependency.name}:#{old_tag(file)}"
 
@@ -37,9 +39,9 @@ module Dependabot
       end
 
       def fetch_file_source(file, reqs)
-        reqs.
-          find { |req| req[:file] == file.name }.
-          fetch(:source)
+        reqs
+          .find { |req| req[:file] == file.name }
+          .fetch(:source)
       end
 
       def fetch_property_in_file_source(file, reqs, property)

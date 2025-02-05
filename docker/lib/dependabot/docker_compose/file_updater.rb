@@ -1,3 +1,4 @@
+# typed: true
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -10,7 +11,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include Dependabot::Docker::FileUpdaterHelper
 
-      IMAGE_REGEX = /image:\s*/.freeze
+      IMAGE_REGEX = /image:\s*/
 
       def self.updated_files_regex
         [/docker-compose\.yml/i]
