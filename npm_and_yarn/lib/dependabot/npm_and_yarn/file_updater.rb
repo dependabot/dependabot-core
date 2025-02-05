@@ -50,7 +50,6 @@ module Dependabot
         ]
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
@@ -63,20 +62,9 @@ module Dependabot
                          end
 
         if updated_files.none?
-
-          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
-            # when all dependencies are transitive
-            all_transitive = dependencies.none?(&:top_level?)
-            # when there is no update in package.json
-            no_package_json_update = package_files.empty?
-            # handle the no change error for transitive dependency updates
-            if pnpm_locks.any? && dependencies.length.positive? && all_transitive && no_package_json_update
-              raise ToolFeatureNotSupported.new(
-                tool_name: "pnpm",
-                tool_type: "package_manager",
-                feature: "updating transitive dependencies"
-              )
-            end
+          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error) && original_pnpm_locks.any?
+            raise_tool_not_supported_for_pnpm_if_transitive
+            raise_miss_configured_tooling_if_pnpm_subdirectory
           end
 
           raise NoChangeError.new(
@@ -95,9 +83,46 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
+
+      sig { void }
+      def raise_tool_not_supported_for_pnpm_if_transitive
+        # ✅ Ensure there are dependencies and check if all are transitive
+        return if dependencies.empty? || dependencies.any?(&:top_level?)
+
+        raise ToolFeatureNotSupported.new(
+          tool_name: "pnpm",
+          tool_type: "package_manager",
+          feature: "updating transitive dependencies"
+        )
+      end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { void }
+      def raise_miss_configured_tooling_if_pnpm_subdirectory
+        workspace_files = original_pnpm_workspace
+        lockfiles = original_pnpm_locks
+
+        # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
+        return if workspace_files.empty?
+        return if workspace_files.any? { |f| f.directory == "/" }
+        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
+
+        # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
+        return if lockfiles.empty?
+        return if lockfiles.any? { |f| f.directory == "/" }
+        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
+
+        # ❌ Raise error → Updating inside a subdirectory is misconfigured
+        raise MisconfiguredTooling.new(
+          "pnpm",
+          "Updating workspaces from inside a workspace subdirectory is not supported. " \
+          "Both `pnpm-lock.yaml` and `pnpm-workspace.yaml` exist in a parent directory. " \
+          "Dependabot should only update from the root workspace."
+        )
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_workspace_and_locks
@@ -240,6 +265,24 @@ module Dependabot
       def pnpm_workspace
         @pnpm_workspace ||= T.let(
           filtered_dependency_files
+          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def original_pnpm_locks
+        @original_pnpm_locks ||= T.let(
+          dependency_files
+          .select { |f| f.name.end_with?("pnpm-lock.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def original_pnpm_workspace
+        @original_pnpm_workspace ||= T.let(
+          dependency_files
           .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
