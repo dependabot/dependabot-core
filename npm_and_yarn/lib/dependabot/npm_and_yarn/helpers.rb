@@ -467,6 +467,8 @@ module Dependabot
       # Attempt to activate the local version of the package manager
       sig { params(name: String).void }
       def self.fallback_to_local_version(name)
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
         # Fetch the currently installed version directly from the environment
