@@ -207,7 +207,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
 
       expect do
-        described_class.package_manager_run_command("npm", "install")
+        described_class.package_manager_run_command("yarn", "up -R serve-static --mode=update-lockfile")
       end.to raise_error(Dependabot::RegistryError, "The remote server failed to provide the requested resource")
     end
   end
