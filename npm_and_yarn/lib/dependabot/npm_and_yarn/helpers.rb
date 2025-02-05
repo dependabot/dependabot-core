@@ -553,6 +553,11 @@ module Dependabot
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
+        if e.message.include?("\e[38;5;111mResponse Code\e[39m: \e[38;5;220m404\e[39m (Not Found)\n") &&
+           e.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+
         raise
       end
 
