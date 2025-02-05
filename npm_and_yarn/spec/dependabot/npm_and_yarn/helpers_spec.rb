@@ -5,7 +5,6 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
   describe "::dependencies_with_all_versions_metadata" do
