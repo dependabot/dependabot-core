@@ -511,6 +511,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           end
         end
       end
+
+      context "when there is ServerBrokeConnection error response" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::ServerBrokeConnection)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+      end
     end
 
     context "when the dependency's version has a suffix" do

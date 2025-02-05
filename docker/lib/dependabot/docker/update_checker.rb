@@ -211,6 +211,8 @@ module Dependabot
         raise if using_dockerhub?
 
         raise PrivateSourceTimedOut, registry_hostname
+      rescue RestClient::ServerBrokeConnection
+        raise PrivateSourceBadResponse, registry_hostname
       end
 
       def latest_digest
