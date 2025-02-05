@@ -2,16 +2,29 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    gnupg2 sudo wget
+    gnupg2 sudo curl apt-transport-https
 
 ARG ERLANG_MAJOR_VERSION=26
 
-RUN echo "deb http://binaries2.erlang-solutions.com/ubuntu/ jammy-esl-erlang-26 contrib" >> /etc/apt/sources.list
-RUN wget https://binaries2.erlang-solutions.com/GPG-KEY-pmanager.asc \
-  && sudo apt-key add GPG-KEY-pmanager.asc
+# This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
+# contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
 
+# primary RabbitMQ signing key
+RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.github.rabbitmq.signing.gpg > /dev/null
+
+# Launchpad PPA signing key for apt
+RUN curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null
+
+RUN echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-26/ubuntu jammy main" >> /etc/apt/sources.list
+RUN echo "deb-src [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-26/ubuntu jammy main" >> /etc/apt/sources.list
+
+# The `erlang` package from rabbitmq includes large packages, like erlang-wx, that aren't needed for this.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends esl-erlang
+  && apt-get install -y --no-install-recommends erlang-base \
+  erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
+  erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
+  erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl \
+  erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
