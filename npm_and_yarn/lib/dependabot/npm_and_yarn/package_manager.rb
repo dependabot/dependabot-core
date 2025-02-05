@@ -417,10 +417,15 @@ module Dependabot
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        SharedHelpers.run_shell_command(
-          "corepack install #{name}@#{version} --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
-        )
+        begin
+          SharedHelpers.run_shell_command(
+            "corepack install #{name}@#{version} --global --cache-only",
+            fingerprint: "corepack install <name>@<version> --global --cache-only"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Helpers.fallback_to_local_version(name)
+        end
       end
 
       sig { params(name: T.nilable(String)).returns(String) }
