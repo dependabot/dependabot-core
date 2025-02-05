@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
+require "dependabot/errors"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
   describe "::dependencies_with_all_versions_metadata" do
@@ -190,6 +191,25 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class).to receive(:package_manager_run_command).with("npm", "install")
 
       described_class.package_manager_run_command("npm", "install")
+    end
+  end
+
+  describe "::package_manager_run_command raise registry error" do
+    let(:error_message) do
+      "\e[91m➤\e[39m YN0035: │ \e[38;5;166m@sample-group-name/\e[39m\e[38;5;173msample-package-name\e[39m" \
+        "\e[38;5;111m@\e[39m\e[38;5;111mnpm:1.0.2\e[39m: The remote server failed to provide the requested resource\n" \
+        "\e[91m➤\e[39m YN0035: │   \e[38;5;111mResponse Code\e[39m: \e[38;5;220m404\e[39m (Not Found)\n" \
+        "\e[91m➤\e[39m YN0035: │   \e[38;5;111mRequest Method\e[39m: GET\n"
+    end
+
+    it "raises RegistryError when the error message includes Response Code 404" do
+      error = StandardError.new(error_message)
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "install")
+      end.to raise_error(RegistryError, "The remote server failed to provide the requested resource")
     end
   end
 
