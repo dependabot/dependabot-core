@@ -146,11 +146,15 @@ module Dependabot
           )
         end
 
+        def workspace_files
+          @workspace_files ||= dependency_files.select { |f| f.name.end_with?("pnpm-workspace.yaml") }
+        end
+
         def lockfile_dependencies(lockfile)
           @lockfile_dependencies ||= {}
           @lockfile_dependencies[lockfile.name] ||=
             NpmAndYarn::FileParser.new(
-              dependency_files: [lockfile, *package_files],
+              dependency_files: [lockfile, *package_files, *workspace_files],
               source: nil,
               credentials: credentials
             ).parse

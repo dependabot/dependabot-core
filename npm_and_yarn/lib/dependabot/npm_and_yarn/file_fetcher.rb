@@ -339,9 +339,14 @@ module Dependabot
         return @pnpm_workspace_yaml if defined?(@pnpm_workspace_yaml)
 
         @pnpm_workspace_yaml = T.let(
-          fetch_support_file(PNPMPackageManager::PNPM_WS_YML_FILENAME),
+          fetch_file_if_present(PNPMPackageManager::PNPM_WS_YML_FILENAME),
           T.nilable(DependencyFile)
         )
+
+        # Only fetch from parent directories if the file wasn't found initially
+        @pnpm_workspace_yaml ||= fetch_support_file_from_parent_directories(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+
+        @pnpm_workspace_yaml
       end
 
       sig { returns(T.nilable(DependencyFile)) }
@@ -721,6 +726,15 @@ module Dependabot
       def fetch_file_from_parent_directories(filename)
         (1..directory.split("/").count).each do |i|
           file = fetch_file_with_support(("../" * i) + filename)
+          return file if file
+        end
+        nil
+      end
+
+      sig { params(filename: String).returns(T.nilable(DependencyFile)) }
+      def fetch_support_file_from_parent_directories(filename)
+        (1..directory.split("/").count).each do |i|
+          file = fetch_support_file(("../" * i) + filename)
           return file if file
         end
         nil
