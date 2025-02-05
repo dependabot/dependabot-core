@@ -28,6 +28,8 @@ gem "dependabot-terraform", path: "terraform"
 gem "sorbet", "0.5.11630", group: :development
 gem "tapioca", "0.16.6", require: false, group: :development
 
+gem "zeitwerk", "~> 2.7"
+
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 
 deps_shared_with_common = %w(
