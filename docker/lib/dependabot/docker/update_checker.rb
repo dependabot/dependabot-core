@@ -16,7 +16,17 @@ module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       def latest_version
-        latest_version_from(dependency.version)
+        # When Dependabot checks if an existing version update PR is present
+        # it only knows about the semver version of the PRs.
+        # That's a problem for Docker since the tag can have the same version but
+        # a newer digest.
+        # Thus, we can't tell if the matching_tag has been updated or not if it 
+        # has a digest, so we force Dependabot to attempt an update
+        matching_tag = latest_tag_from(dependency.version)
+
+        return nil if matching_tag.digest?
+
+        matching_tag.name
       end
 
       def latest_resolvable_version
