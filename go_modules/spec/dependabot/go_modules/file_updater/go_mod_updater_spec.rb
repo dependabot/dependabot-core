@@ -914,13 +914,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#handle_subprocess_error" do
-    context "when dealing with an error caused by running out of disk space" do
-      let(:dependency_name) { "rsc.io/quote" }
-      let(:dependency_version) { "v1.5.2" }
-      let(:dependency_previous_version) { "v1.4.0" }
-      let(:requirements) { previous_requirements }
-      let(:previous_requirements) { [] }
+    let(:dependency_name) { "rsc.io/quote" }
+    let(:dependency_version) { "v1.5.2" }
+    let(:dependency_previous_version) { "v1.4.0" }
+    let(:requirements) { previous_requirements }
+    let(:previous_requirements) { [] }
 
+    context "when dealing with an error caused by running out of disk space" do
       it "detects 'input/output error'" do
         stderr = <<~ERROR
           rsc.io/sampler imports
@@ -953,7 +953,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("write error. Out of diskspace")
         end
       end
+    end
 
+    context "with an ambiguous package error" do
       it "detects 'ambiguous package'" do
         stderr = <<~ERROR
           go: downloading google.golang.org/grpc v1.70.0
@@ -970,7 +972,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           updater.send(:handle_subprocess_error, stderr)
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
+    end
 
+    context "with a dependency that requires a higher go version" do
       it "detects 'ToolVersionNotSupported'" do
         stderr = <<~ERROR
           go: downloading google.golang.org/grpc v1.67.3
@@ -981,6 +985,22 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect do
           updater.send(:handle_subprocess_error, stderr)
         end.to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "with a package import error" do
+      let(:stderr) do
+        <<~ERROR
+          go: sbom-signing-api imports
+          sbom-signing-api/routes imports
+          sbom-signing-api/docs: package sbom-signing-api/docs is not in std (/opt/go/src/sbom-signing-api/docs)
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end
