@@ -1,12 +1,9 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "yaml"
-require "sorbet-runtime"
-
 module Dependabot
   module Bun
-    class FileParser < Dependabot::FileParsers::Base
+    class FileParser
       class BunLock
         extend T::Sig
 

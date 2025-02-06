@@ -1,11 +1,5 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
-
-require "sorbet-runtime"
-
-require "dependabot/requirement"
-require "dependabot/utils"
-require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module Javascript
@@ -19,9 +13,10 @@ module Dependabot
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Javascript::Version::VERSION_PATTERN}"
 
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = /\A#{PATTERN_RAW}\z/
 
+      sig { params(obj: T.untyped).returns(T::Array[T.untyped]) }
       def self.parse(obj)
         return ["=", nil] if obj.is_a?(String) && Version::VERSION_TAGS.include?(obj.strip)
         return ["=", Javascript::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
@@ -40,7 +35,7 @@ module Dependabot
       # returned array must be satisfied for a version to be valid.
       sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
       def self.requirements_array(requirement_string)
-        return [new(nil)] if requirement_string.nil?
+        return [new([])] if requirement_string.nil?
 
         # Removing parentheses is technically wrong but they are extremely
         # rarely used.
@@ -52,6 +47,7 @@ module Dependabot
         end
       end
 
+      sig { params(requirements: T.any(String, T::Array[String])).void }
       def initialize(*requirements)
         requirements = requirements.flatten
                                    .flat_map { |req_string| req_string.split(",").map(&:strip) }
@@ -62,6 +58,7 @@ module Dependabot
 
       private
 
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
       def convert_js_constraint_to_ruby_constraint(req_string)
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
@@ -79,6 +76,7 @@ module Dependabot
         end
       end
 
+      sig { params(req_string: String).returns(String) }
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?[\s=]*/, "")
         parts = version.split(".")
@@ -86,25 +84,27 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
+      sig { params(req_string: String).returns(T::Array[String]) }
       def convert_hyphen_req(req_string)
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
-        lower_bound_parts = lower_bound.split(".")
-        lower_bound_parts.fill("0", lower_bound_parts.length...3)
+        lower_bound_parts = lower_bound&.split(".")
+        lower_bound_parts&.fill("0", lower_bound_parts.length...3)
 
-        upper_bound_parts = upper_bound.split(".")
+        upper_bound_parts = upper_bound&.split(".")
         upper_bound_range =
-          if upper_bound_parts.length < 3
+          if upper_bound_parts && upper_bound_parts.length < 3
             # When upper bound is a partial version treat these as an X-range
             upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1 if upper_bound_parts[-1].to_i.positive?
             upper_bound_parts.fill("0", upper_bound_parts.length...3)
             "< #{upper_bound_parts.join('.')}.a"
           else
-            "<= #{upper_bound_parts.join('.')}"
+            "<= #{upper_bound_parts&.join('.')}"
           end
 
-        [">= #{lower_bound_parts.join('.')}", upper_bound_range]
+        [">= #{lower_bound_parts&.join('.')}", upper_bound_range]
       end
 
+      sig { params(req_string: String).returns(String) }
       def ruby_range(req_string)
         parts = req_string.split(".")
         # If we have three or more parts then this is an exact match
@@ -115,7 +115,8 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
-      def convert_caret_req(req_string)
+      sig { params(req_string: String).returns(T::Array[String]) }
+      def convert_caret_req(req_string) # rubocop:disable Metrics/PerceivedComplexity
         version = req_string.gsub(/^\^[\s=]*/, "")
         parts = version.split(".")
         parts.fill("x", parts.length...3)
@@ -124,11 +125,11 @@ module Dependabot
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
         # If the requirement has a blank minor or patch version increment the
         # previous index value with 1
-        first_non_zero_index -= 1 if first_non_zero == "x"
+        first_non_zero_index -= 1 if first_non_zero_index && first_non_zero == "x"
         upper_bound = parts.map.with_index do |part, i|
-          if i < first_non_zero_index then part
+          if i < T.must(first_non_zero_index) then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          elsif i > first_non_zero_index && i == 2 then "0.a"
+          elsif i > T.must(first_non_zero_index) && i == 2 then "0.a"
           else
             0
           end
