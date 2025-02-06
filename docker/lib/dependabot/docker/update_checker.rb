@@ -241,6 +241,9 @@ module Dependabot
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
+      rescue RestClient::ServerBrokeConnection,
+             RestClient::TooManyRequests
+        raise PrivateSourceBadResponse, registry_hostname
       end
 
       def transient_docker_errors
