@@ -65,15 +65,6 @@ module Dependabot
         # TODO: remove this method and just use the one in the PackageManager class
         "noop"
       end
-
-      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
-      def self.dependencies_with_all_versions_metadata(dependency_set)
-        # TODO: Check if we still need this method
-        dependency_set.dependencies.map do |dependency|
-          dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
-          dependency
-        end
-      end
     end
   end
 end
