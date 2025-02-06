@@ -27,8 +27,7 @@ module Dependabot
       TAG = /:(?<tag>[\w][\w.-]{0,127})/
       DIGEST = /@(?<digest>[^\s]+)/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
-      FROM_IMAGE =
-        %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}
+      FROM_IMAGE = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
 
       def parse
         dependency_set = DependencySet.new
