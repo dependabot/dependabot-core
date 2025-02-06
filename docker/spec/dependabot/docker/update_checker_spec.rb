@@ -476,6 +476,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
 
+      context "when it returns a bad response (TooManyRequests) error" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::TooManyRequests)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+
+        context "when using a private registry" do
+          let(:dependency_name) { "ubuntu" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: version,
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { registry: "registry-host.io:5000" }
+              }],
+              package_manager: "docker"
+            )
+          end
+          let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
+          let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+          it "raises" do
+            expect { checker.latest_version }
+              .to raise_error(Dependabot::PrivateSourceBadResponse)
+          end
+        end
+      end
+
       context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
