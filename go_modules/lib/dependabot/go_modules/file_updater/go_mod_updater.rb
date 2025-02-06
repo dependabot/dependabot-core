@@ -51,7 +51,9 @@ module Dependabot
           # auth problems with either git or the go proxy
           /go(?: get)?: .*: unknown revision/m,
           # Package pointing to a proxy that 404s
-          /go(?: get)?: .*: unrecognized import path/m
+          /go(?: get)?: .*: unrecognized import path/m,
+          # Package not being referenced correctly
+          /go:.*imports.*package.+is not in std/m
         ].freeze, T::Array[Regexp])
 
         MODULE_PATH_MISMATCH_REGEXES = T.let([
