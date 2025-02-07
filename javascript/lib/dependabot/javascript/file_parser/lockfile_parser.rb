@@ -3,7 +3,7 @@
 
 module Dependabot
   module Javascript
-    module FileParsers
+    class FileParser
       class LockfileParser
         extend T::Helpers
         extend T::Sig

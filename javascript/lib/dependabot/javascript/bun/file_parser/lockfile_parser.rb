@@ -5,7 +5,7 @@ module Dependabot
   module Javascript
     module Bun
       class FileParser
-        class LockfileParser < Dependabot::Javascript::FileParsers::LockfileParser
+        class LockfileParser < Dependabot::Javascript::FileParser::LockfileParser
           extend T::Sig
 
           sig { override.returns(Dependabot::FileParsers::Base::DependencySet) }
