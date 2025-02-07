@@ -1945,7 +1945,7 @@ public class RunWorkerTests
                     Metric = "updater.started",
                     Tags = new()
                     {
-                        ["operation"] = "group_update_all_versions"
+                        ["operation"] = "create_security_pr"
                     }
                 },
                 new CreatePullRequest()
