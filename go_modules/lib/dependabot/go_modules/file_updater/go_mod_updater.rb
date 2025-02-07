@@ -26,6 +26,7 @@ module Dependabot
           # These are often fixable with go mod tidy too.
           /no required module provides package/,
           /missing go\.sum entry for module providing package/,
+          /missing go\.sum entry for go\.mod file/m,
           /malformed module path/,
           /used for two different module paths/,
           # https://github.com/golang/go/issues/56494
@@ -43,7 +44,7 @@ module Dependabot
           # (Private) module could not be found
           /cannot find module providing package/,
           # Package in module was likely renamed or removed
-          /module .* found \(.*\), but does not contain package/m,
+          /module.*found.*but does not contain package/m,
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
           /go(?: get)?: .*: invalid pseudo-version/m,

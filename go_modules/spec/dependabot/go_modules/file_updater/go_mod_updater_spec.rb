@@ -1003,5 +1003,37 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
+
+    context "with a missing go.sum entry error" do
+      let(:stderr) do
+        <<~ERROR
+          go mod download github.com/vmware/[FILTERED_REPO]
+          go: github.com/osbuild/[FILTERED_REPO]/internal/boot/vmwaretest imports
+          github.com/vmware/[FILTERED_REPO]/govc/importx: github.com/vmware/[FILTERED_REPO]@v0.38.0: missing go.sum entry for go.mod file; to add it:
+          go mod download github.com/vmware/[FILTERED_REPO]
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when a module does not contain a package" do
+      let(:stderr) do
+        <<~ERROR
+          go: downloading github.com/bandprotocol/[FILTERED_REPO] v0.0.1
+          go: module github.com/bandprotocol/[FILTERED_REPO]@v0.0.1 found, but does not contain package github.com/bandprotocol/[FILTERED_REPO]/[FILTERED_REPO]-api/client/go-client
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
