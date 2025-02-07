@@ -99,6 +99,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"

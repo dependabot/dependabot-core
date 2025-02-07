@@ -3,7 +3,7 @@
 
 module Dependabot
   module Javascript
-    class UpdateChecker
+    module UpdateChecker
       class DependencyFilesBuilder
         extend T::Helpers
         extend T::Sig
