@@ -165,7 +165,7 @@ module Dependabot
         dependency_set
       end
 
-      sig { abstract.returns(FileParsers::LockfileParser) }
+      sig { abstract.returns(FileParser::LockfileParser) }
       def lockfile_parser; end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
