@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/utils"
 
+# rubocop:disable Metrics/ModuleLength
 module Dependabot
   extend T::Sig
 
@@ -21,6 +22,7 @@ module Dependabot
   end
 
   # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/CyclomaticComplexity
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
     case error
@@ -31,6 +33,15 @@ module Dependabot
           "tool-name": error.tool_name,
           "detected-version": error.detected_version,
           "supported-versions": error.supported_versions
+        }
+      }
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
         }
       }
     when Dependabot::BranchNotFound
@@ -76,6 +87,16 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateSourceAuthenticationFailure
+      {
+        "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
+        "error-detail": { source: error.source }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
@@ -83,6 +104,11 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
+    when BadRequirementError
+      {
+        "error-type": "illformed_requirement",
+        "error-detail": { message: error.message }
+      }
     when *Octokit::RATE_LIMITED_ERRORS
       # If we get a rate-limited error we let dependabot-api handle the
       # retry by re-enqueing the update job after the reset
@@ -94,10 +120,20 @@ module Dependabot
       }
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotEvaluatable
       {
         "error-type": "dependency_file_not_evaluatable",
@@ -139,6 +175,11 @@ module Dependabot
         "error-type": "private_source_authentication_failure",
         "error-detail": { source: error.source }
       }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
@@ -161,9 +202,19 @@ module Dependabot
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
+  # rubocop:disable Metrics/AbcSize
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.updater_error_details(error)
     case error
+    when Dependabot::ToolFeatureNotSupported
+      {
+        "error-type": "tool_feature_not_supported",
+        "error-detail": {
+          "tool-name": error.tool_name,
+          "tool-type": error.tool_type,
+          feature: error.feature
+        }
+      }
     when Dependabot::DependencyFileNotResolvable
       {
         "error-type": "dependency_file_not_resolvable",
@@ -174,10 +225,36 @@ module Dependabot
         "error-type": "dependency_file_not_evaluatable",
         "error-detail": { message: error.message }
       }
+    when Dependabot::DependencyFileNotParseable
+      {
+        "error-type": "dependency_file_not_parseable",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileNotSupported
+      {
+        "error-type": "dependency_file_not_supported",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
         "error-detail": { "dependency-urls": error.dependency_urls }
+      }
+    when Dependabot::DependencyFileNotFound
+      {
+        "error-type": "dependency_file_not_found",
+        "error-detail": {
+          message: error.message,
+          "file-path": error.file_path
+        }
+      }
+    when Dependabot::DependencyFileContentNotChanged
+      {
+        "error-type": "dependency_file_content_not_changed",
+        "error-detail": { message: error.message }
       }
     when Dependabot::ToolVersionNotSupported
       {
@@ -201,6 +278,11 @@ module Dependabot
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Dependabot::DependencyNotFound
@@ -286,9 +368,11 @@ module Dependabot
       }
     end
   end
+
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
+  # rubocop:enable Metrics/AbcSize
 
   class DependabotError < StandardError
     extend T::Sig
@@ -475,6 +559,35 @@ module Dependabot
     end
   end
 
+  class ToolFeatureNotSupported < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :tool_name, :tool_type, :feature
+
+    sig do
+      params(
+        tool_name: String,
+        tool_type: String,
+        feature: String
+      ).void
+    end
+    def initialize(tool_name:, tool_type:, feature:)
+      @tool_name = tool_name
+      @tool_type = tool_type
+      @feature = feature
+      super(build_message)
+    end
+
+    private
+
+    sig { returns(String) }
+    def build_message
+      "Dependabot doesn't support the feature '#{feature}' for #{tool_name} (#{tool_type}). " \
+        "Please refer to the documentation for supported features."
+    end
+  end
+
   class DependencyFileNotFound < DependabotError
     extend T::Sig
 
@@ -531,6 +644,10 @@ module Dependabot
 
   class DependencyFileNotResolvable < DependabotError; end
 
+  class DependencyFileNotSupported < DependabotError; end
+
+  class DependencyFileContentNotChanged < DependabotError; end
+
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
   #######################
@@ -549,6 +666,20 @@ module Dependabot
       msg = "The following source could not be reached as it requires " \
             "authentication (and any provided details were invalid or lacked " \
             "the required permissions): #{@source}"
+      super(msg)
+    end
+  end
+
+  class PrivateSourceBadResponse < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: T.nilable(String)).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(T.must(source)), String)
+      msg = "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end
@@ -754,3 +885,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ModuleLength

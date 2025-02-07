@@ -10,4 +10,6 @@ public record Advisory
     public ImmutableArray<Requirement>? AffectedVersions { get; init; } = null;
     public ImmutableArray<Requirement>? PatchedVersions { get; init; } = null;
     public ImmutableArray<Requirement>? UnaffectedVersions { get; init; } = null;
+
+    public IEnumerable<Requirement> SafeVersions => (PatchedVersions ?? []).Concat(UnaffectedVersions ?? []);
 }

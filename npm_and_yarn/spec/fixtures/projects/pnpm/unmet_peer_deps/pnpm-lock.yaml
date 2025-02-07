@@ -1,0 +1,15 @@
+lockfileVersion: "9.0"
+settings:
+  autoInstallPeers: false
+  excludeLinksFromLockfile: false
+importers:
+  .:
+    dependencies:
+      clsx:
+        specifier: 2.1.2
+        version: 2.1.2(@swc/core@1.10.4(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.4.49)(typescript@5.7.2)(yaml@2.7.0)
+  agent:
+    peerDependencies:
+      "@types/jest":
+        specifier: ^29.5.14
+        version: 29.5.14

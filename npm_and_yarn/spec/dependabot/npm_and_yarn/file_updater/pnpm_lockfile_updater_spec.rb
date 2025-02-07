@@ -5,8 +5,11 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
-  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock) }
+  subject(:updated_pnpm_lock_content) do
+    updater.updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: workspace_files)
+  end
 
+  let(:workspace_files) { nil }
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -16,7 +19,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     )
   end
   let(:dependencies) { [dependency] }
-
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",
@@ -79,6 +81,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    end
+
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
@@ -99,6 +106,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a lockfile with tarball urls we don't have access to" do
       let(:project_name) { "pnpm/private_tarball_urls" }
+      let(:dependency_name) { "@dsp-testing/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -108,6 +118,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a lockfile with tarball urls we don't have access to" do
       let(:project_name) { "pnpm/private_package_access" }
+      let(:dependency_name) { "@private-pkg/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -159,6 +172,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private registry we don't have access to" do
       let(:project_name) { "pnpm/private_package_access_with_package_name" }
+      let(:dependency_name) { "@private-pkg/inner-source-top-secret-npm-2" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -167,13 +183,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "when there is a private registry we don't have access to and no package name is mentioned" do
-      let(:dependency_name) { "rollup" }
-      let(:version) { "3.29.5" }
+      let(:dependency_name) { "npm:rollup" }
+      let(:version) { "2.80.0" }
       let(:previous_version) { "^2.79.1" }
       let(:requirements) do
         [{
           file: "package.json",
-          requirement: "3.29.5",
+          requirement: "2.80.0",
           groups: ["devDependencies"],
           source: nil
         }]
@@ -195,18 +211,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     end
 
     context "when there is a unsupported engine response (pnpm) from registry" do
-      let(:dependency_name) { "eslint" }
-      let(:version) { "9.9.0" }
-      let(:previous_version) { "8.32.0" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "9.9.0",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-
       let(:project_name) { "pnpm/unsupported_engine_pnpm" }
 
       it "raises a helpful error" do
@@ -351,6 +355,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
+      let(:dependency_name) { "@dsp-testing/node" }
+      let(:version) { "1.0.4" }
+      let(:previous_version) { "1.0.3" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -396,6 +403,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
     context "when there is a private repo returns a 5xx error" do
       let(:project_name) { "pnpm/private_repo_with_server_error" }
+      let(:dependency_name) { "@dsp-testing/is-positive" }
+      let(:version) { "3.1.1" }
+      let(:previous_version) { "3.1.0" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -470,35 +480,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       let(:project_name) { "pnpm/missing_workspace_package" }
-
-      it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::DependencyFileNotResolvable)
-      end
-    end
-
-    context "with a registry resolution that returns err_pnpm_broken_metadata_json response" do
-      let(:dependency_name) { "nodemon" }
-      let(:version) { "3.3.3" }
-      let(:previous_version) { "^3.1.3" }
-      let(:requirements) do
-        [{
-          file: "package.json",
-          requirement: "3.3.3",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-      let(:previous_requirements) do
-        [{
-          file: "package.json",
-          requirement: "^3.1.3",
-          groups: ["devDependencies"],
-          source: nil
-        }]
-      end
-
-      let(:project_name) { "pnpm/broken_metadata" }
 
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
@@ -590,6 +571,185 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_pnpm_lock_content }
           .to raise_error(Dependabot::DependencyNotFound)
+      end
+    end
+
+    context "with a dependency resolution that returns Invalid package.json response" do
+      let(:dependency_name) { "@radix-ui/react-context-menu" }
+      let(:version) { "2.2.3-rc.12" }
+      let(:previous_version) { "^2.2.3" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "2.2.3-rc.12",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.2.3",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/invalid_json" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns invalid YAML response" do
+      let(:dependency_name) { "@mdx-js/react" }
+      let(:version) { "3.0.2" }
+      let(:previous_version) { "^3.0.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.0.2",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^3.0.1",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/invalid_yaml" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns unexpected store response" do
+      let(:dependency_name) { "hexo" }
+      let(:version) { "7.3.1" }
+      let(:previous_version) { "^7.3.0" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "7.3.1",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "^7.3.0",
+          groups: ["Dependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unexpected_store" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency resolution that returns unmet peer deps response" do
+      let(:dependency_name) { "clsx" }
+      let(:version) { "2.2.2" }
+      let(:previous_version) { "^2.1.1" }
+      let(:requirements) do
+        [{
+          file: "package.json",
+          requirement: "^2.1.1",
+          groups: ["peerDependencies"],
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "2.2.2",
+          groups: ["peerDependencies"],
+          source: nil
+        }]
+      end
+
+      let(:project_name) { "pnpm/unmet_peer_deps" }
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+  end
+
+  describe "lockfile updates" do
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    end
+
+    context "when updating a regular package dependency" do
+      let(:project_name) { "pnpm/catalog_prettier" }
+      let(:dependencies) do
+        [
+          create_dependency(
+            name: "prettier",
+            required_version: "3.3.3",
+            previous_required_version: "3.3.0",
+            version: "3.3.3",
+            file: "pnpm-workspace.yaml"
+          )
+        ]
+      end
+
+      let(:pnpm_lock) do
+        files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
+      context "when pnpm updates followed by install for non catalog dependencies" do
+        let(:workspace_files) do
+          {
+            "pnpm-workspace.yaml" => "catalogs:\n    prettier:\n    version: 3.3.3\n"
+          }
+        end
+
+        it "uses pnpm update followed by install" do
+          expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+            .with(
+              "update prettier@3.3.3  --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+            )
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
+
+          updated_pnpm_lock_content
+        end
+      end
+
+      context "when updating a regular package dependency" do
+        it "uses pnpm update followed by install" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(
+              "update prettier@3.3.3  --lockfile-only --no-save -r",
+              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+            )
+            .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
+
+          updated_pnpm_lock_content
+        end
       end
     end
   end

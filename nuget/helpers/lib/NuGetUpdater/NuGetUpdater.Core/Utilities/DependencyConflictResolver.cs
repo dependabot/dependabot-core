@@ -395,7 +395,6 @@ public class PackageManager
                                     if (await AreAllParentsCompatibleAsync(existingPackages, existingPackage, targetFramework, projectDirectory, logger) == true)
                                     {
                                         existingPackage.CurrentVersion = dependencyOldVersion;
-                                        string NewVersion = dependency.CurrentVersion;
                                         existingPackage.NewVersion = dependency.CurrentVersion;
                                         await UpdateVersion(existingPackages, existingPackage, targetFramework, projectDirectory, logger);
                                     }
@@ -420,6 +419,8 @@ public class PackageManager
                         await UpdateVersion(existingPackages, dependency, targetFramework, projectDirectory, logger);
                     }
                 }
+
+                var projectFramework = NuGetFramework.Parse(targetFramework);
 
                 // Get the parent packages of the package and check the compatibility between its family
                 HashSet<PackageToUpdate> parentPackages = GetParentPackages(package);
@@ -459,7 +460,7 @@ public class PackageManager
                             string currentVersionString = parent.CurrentVersion;
                             NuGetVersion currentVersionParent = NuGetVersion.Parse(currentVersionString);
 
-                            var result = await VersionFinder.GetVersionsAsync(parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
+                            var result = await VersionFinder.GetVersionsAsync([projectFramework], parent.PackageName, currentVersionParent, nugetContext, logger, CancellationToken.None);
                             var versions = result.GetVersions();
                             NuGetVersion latestVersion = versions.Where(v => !v.IsPrerelease).Max();
 
@@ -566,8 +567,9 @@ public class PackageManager
 
         // Create a NugetContext instance to get the latest versions of the parent
         NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(projectPath));
+        var projectFramework = NuGetFramework.Parse(targetFramework);
 
-        var result = await VersionFinder.GetVersionsAsync(possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
+        var result = await VersionFinder.GetVersionsAsync([projectFramework], possibleParent.PackageName, CurrentVersion, nugetContext, logger, CancellationToken.None);
         var versions = result.GetVersions();
 
         // If there are no versions
@@ -591,12 +593,6 @@ public class PackageManager
         if (CurrentVersion == latestVersion)
         {
             return null;
-        }
-
-        // If the current version of the parent is less than the current version of the dependency
-        else if (CurrentVersion < currentVersionDependency)
-        {
-            return currentVersionDependency;
         }
 
         // Loop from the current version to the latest version, use next patch as a limit (unless there's a limit) so it doesn't look for versions that don't exist

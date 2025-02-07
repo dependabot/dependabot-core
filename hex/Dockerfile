@@ -2,25 +2,21 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    gnupg2
+    gnupg2 sudo wget
 
-# Install Erlang
-# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
-# switching to a more up to date PPA. See also:
-#  * https://github.com/esl/packages/issues/15
-#  * https://github.com/dependabot/dependabot-core/pull/7865
-#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
-#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
-ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
+ARG ERLANG_MAJOR_VERSION=26
+
+RUN echo "deb http://binaries2.erlang-solutions.com/ubuntu/ jammy-esl-erlang-26 contrib" >> /etc/apt/sources.list
+RUN wget https://binaries2.erlang-solutions.com/GPG-KEY-pmanager.asc \
+  && sudo apt-key add GPG-KEY-pmanager.asc
+
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    erlang=${ERLANG_VERSION}
+  && apt-get install -y --no-install-recommends esl-erlang
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.14.4
-ARG ELIXIR_CHECKSUM=b5705275d62ce3dae172d25d7ea567fffdabb45458abeb29c0189923b907367c
+ARG ELIXIR_VERSION=v1.18.1
+ARG ELIXIR_CHECKSUM=aae4625102ba7020887918d1c0ac7c8ad972b65fe8103476765cc6b00ab16b5f
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \

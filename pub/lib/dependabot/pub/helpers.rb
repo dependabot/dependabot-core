@@ -244,11 +244,25 @@ module Dependabot
               stdin_data: stdin_data,
               chdir: command_dir
             )
-            raise Dependabot::DependabotError, "dependency_services failed: #{stderr}" unless status.success?
+            raise_error(stderr) unless status.success?
             return stdout unless block_given?
 
             yield command_dir
           end
+        end
+      end
+
+      def raise_error(stderr)
+        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
+          raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Git error")
+          raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("version solving failed")
+          raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
+        elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
+          raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")
+        else
+          raise Dependabot::DependabotError, "dependency_services failed: #{stderr}"
         end
       end
 

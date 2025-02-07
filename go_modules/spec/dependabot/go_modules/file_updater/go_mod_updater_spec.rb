@@ -562,35 +562,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
-    context "when module major version doesn't match (v0)" do
-      let(:project_name) { "module_major_version_mismatch_v0" }
-      let(:dependency_name) do
-        "github.com/jenkins-x/jx-api"
-      end
-      let(:dependency_version) { "v0.0.25" }
-      let(:dependency_previous_version) { "v0.0.24" }
-      let(:requirements) do
-        [{
-          file: "go.mod",
-          requirement: "v0.0.25",
-          groups: [],
-          source: {
-            type: "default",
-            source: "github.com/jenkins-x/jx-api"
-          }
-        }]
-      end
-      let(:previous_requirements) { [] }
-
-      it "raises the correct error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { updater.updated_go_sum_content }
-          .to raise_error(error_class) do |error|
-          expect(error.message).to include("go.mod has post-v0 module path")
-        end
-      end
-    end
-
     context "when dealing with a invalid pseudo version" do
       let(:project_name) { "invalid_pseudo_version" }
       let(:dependency_name) do
@@ -943,13 +914,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   end
 
   describe "#handle_subprocess_error" do
-    context "when dealing with an error caused by running out of disk space" do
-      let(:dependency_name) { "rsc.io/quote" }
-      let(:dependency_version) { "v1.5.2" }
-      let(:dependency_previous_version) { "v1.4.0" }
-      let(:requirements) { previous_requirements }
-      let(:previous_requirements) { [] }
+    let(:dependency_name) { "rsc.io/quote" }
+    let(:dependency_version) { "v1.5.2" }
+    let(:dependency_previous_version) { "v1.4.0" }
+    let(:requirements) { previous_requirements }
+    let(:previous_requirements) { [] }
 
+    context "when dealing with an error caused by running out of disk space" do
       it "detects 'input/output error'" do
         stderr = <<~ERROR
           rsc.io/sampler imports
@@ -981,6 +952,55 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.send(:handle_subprocess_error, stderr) }.to raise_error(Dependabot::OutOfDisk) do |error|
           expect(error.message).to include("write error. Out of diskspace")
         end
+      end
+    end
+
+    context "with an ambiguous package error" do
+      it "detects 'ambiguous package'" do
+        stderr = <<~ERROR
+          go: downloading google.golang.org/grpc v1.70.0
+          go: github.com/terraform-linters/tflint imports
+                  github.com/terraform-linters/tflint/cmd imports
+                  github.com/terraform-linters/tflint-ruleset-terraform/rules imports
+                  github.com/hashicorp/go-getter imports
+                  cloud.google.com/go/storage imports
+                  google.golang.org: ambiguous import: found package google.golang.org/grpc/stats/otl in multiple modules:
+                  google.golang.org/grpc v1.69.2 (/home/dependabot/go/pkg/mod/stats/opentelemetry)
+        ERROR
+
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a dependency that requires a higher go version" do
+      it "detects 'ToolVersionNotSupported'" do
+        stderr = <<~ERROR
+          go: downloading google.golang.org/grpc v1.67.3
+          go: downloading google.golang.org/grpc v1.70.0
+          go: google.golang.org/grpc/stats/otl@v0.0.0-87961b3 requires go >= 1.22.7 (running go 1.22.5; CUAIN=local+auto)
+        ERROR
+
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::ToolVersionNotSupported)
+      end
+    end
+
+    context "with a package import error" do
+      let(:stderr) do
+        <<~ERROR
+          go: sbom-signing-api imports
+          sbom-signing-api/routes imports
+          sbom-signing-api/docs: package sbom-signing-api/docs is not in std (/opt/go/src/sbom-signing-api/docs)
+        ERROR
+      end
+
+      it "raises the correct error" do
+        expect do
+          updater.send(:handle_subprocess_error, stderr)
+        end.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
   end

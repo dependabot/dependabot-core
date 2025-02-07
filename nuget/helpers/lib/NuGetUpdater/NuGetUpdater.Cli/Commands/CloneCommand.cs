@@ -30,7 +30,7 @@ internal static class CloneCommand
             var apiHandler = new HttpApiHandler(apiUrl.ToString(), jobId);
             var logger = new ConsoleLogger();
             var gitCommandHandler = new ShellGitCommandHandler(logger);
-            var worker = new CloneWorker(apiHandler, gitCommandHandler, logger);
+            var worker = new CloneWorker(jobId, apiHandler, gitCommandHandler);
             var exitCode = await worker.RunAsync(jobPath, repoContentsPath);
             setExitCode(exitCode);
         }, JobPathOption, RepoContentsPathOption, ApiUrlOption, JobIdOption);

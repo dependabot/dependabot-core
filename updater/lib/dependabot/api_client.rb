@@ -5,6 +5,7 @@ require "http"
 require "dependabot/job"
 require "dependabot/opentelemetry"
 require "sorbet-runtime"
+require "dependabot/errors"
 
 # Provides a client to access the internal Dependabot Service's API
 #
@@ -18,10 +19,11 @@ require "sorbet-runtime"
 module Dependabot
   class ApiError < StandardError; end
 
-  class ApiClient
+  class ApiClient # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
     MAX_REQUEST_RETRIES = 3
+    INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/
 
     sig { params(base_url: String, job_id: T.any(String, Integer), job_token: String).void }
     def initialize(base_url, job_id, job_token)
@@ -41,7 +43,12 @@ module Dependabot
         api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
         response = http_client.post(api_url, json: { data: data })
-        raise ApiError, response.body if response.code >= 400
+
+        if response.code >= 400 && dependency_file_not_supported_error?(response.body.to_s)
+          raise Dependabot::DependencyFileNotSupported, response.body.to_s
+        elsif response.code >= 400
+          raise ApiError, response.body
+        end
       rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
@@ -330,10 +337,13 @@ module Dependabot
     def version_manager_json(version_manager)
       return nil unless version_manager
 
+      version = version_manager.version_to_s
+      raw_version = version_manager.version_to_raw_s
+
       {
         name: version_manager.name,
-        raw_version: version_manager.version.to_semver.to_s,
-        version: version_manager.version.to_s,
+        version: version.empty? ? "N/A" : version,
+        raw_version: raw_version.empty? ? "N/A" : raw_version,
         requirement: version_manager_requirement_json(version_manager)
       }
     end
@@ -412,6 +422,16 @@ module Dependabot
       data["pr-title"] = dependency_change.pr_message.pr_name
       data["pr-body"] = dependency_change.pr_message.pr_message
       data
+    end
+
+    sig { params(response: String).returns(T::Boolean) }
+    def dependency_file_not_supported_error?(response)
+      body = JSON.parse(response)
+
+      return false unless body.is_a?(Hash)
+      return false unless body["errors"]
+
+      INVALID_REQUEST_MSG.match? body["errors"].first["detail"]
     end
   end
 end

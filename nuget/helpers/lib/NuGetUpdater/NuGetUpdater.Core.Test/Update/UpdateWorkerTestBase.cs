@@ -47,7 +47,7 @@ public abstract class UpdateWorkerTestBase : TestBase
     {
         return useSolution
             ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [(projectFilePath, projectContents)], projectFilesExpected: [(projectFilePath, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected, packages, experimentsManager)
-            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile: (projectFilePath, projectContents), expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, packages, experimentsManager);
+            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile: (projectFilePath, projectContents), expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, additionalChecks: null, packages: packages, experimentsManager: experimentsManager);
     }
 
     protected static Task TestUpdate(
@@ -65,7 +65,7 @@ public abstract class UpdateWorkerTestBase : TestBase
     {
         return useSolution
             ? TestUpdateForSolution(dependencyName, oldVersion, newVersion, projectFiles: [projectFile], projectFilesExpected: [(projectFile.Path, expectedProjectContents)], isTransitive, additionalFiles, additionalFilesExpected, packages, experimentsManager)
-            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, packages, experimentsManager);
+            : TestUpdateForProject(dependencyName, oldVersion, newVersion, projectFile, expectedProjectContents, isTransitive, additionalFiles, additionalFilesExpected, additionalChecks: null, packages: packages, experimentsManager: experimentsManager);
     }
 
     protected static Task TestNoChangeforProject(
@@ -101,6 +101,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
         TestFile[]? additionalFilesExpected = null,
+        Action<string>? additionalChecks = null,
         MockNuGetPackage[]? packages = null,
         ExperimentsManager? experimentsManager = null,
         string projectFilePath = "test-project.csproj",
@@ -114,6 +115,7 @@ public abstract class UpdateWorkerTestBase : TestBase
             isTransitive,
             additionalFiles,
             additionalFilesExpected,
+            additionalChecks,
             packages,
             experimentsManager,
             expectedResult);
@@ -127,6 +129,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         bool isTransitive = false,
         TestFile[]? additionalFiles = null,
         TestFile[]? additionalFilesExpected = null,
+        Action<string>? additionalChecks = null,
         MockNuGetPackage[]? packages = null,
         ExperimentsManager? experimentsManager = null,
         ExpectedUpdateOperationResult? expectedResult = null)
@@ -149,12 +152,20 @@ public abstract class UpdateWorkerTestBase : TestBase
 
             // run update
             experimentsManager ??= new ExperimentsManager();
-            var worker = new UpdaterWorker(experimentsManager, new TestLogger());
+            var worker = new UpdaterWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
             var projectPath = placeFilesInSrc ? $"src/{projectFilePath}" : projectFilePath;
             var actualResult = await worker.RunWithErrorHandlingAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion, isTransitive);
-            if (expectedResult is { })
+            ValidateUpdateOperationResult(expectedResult, actualResult!);
+
+            if (additionalChecks is not null)
             {
-                ValidateUpdateOperationResult(expectedResult, actualResult!);
+                var sourcesDirectory = temporaryDirectory;
+                if (placeFilesInSrc)
+                {
+                    sourcesDirectory = Path.Combine(temporaryDirectory, "src");
+                }
+
+                additionalChecks(sourcesDirectory);
             }
         });
 
@@ -167,16 +178,19 @@ public abstract class UpdateWorkerTestBase : TestBase
         AssertContainsFiles(expectedResultFiles, actualResult);
     }
 
-    protected static void ValidateUpdateOperationResult(ExpectedUpdateOperationResult expectedResult, UpdateOperationResult actualResult)
+    protected static void ValidateUpdateOperationResult(ExpectedUpdateOperationResult? expectedResult, UpdateOperationResult actualResult)
     {
-        Assert.Equal(expectedResult.ErrorType, actualResult.ErrorType);
-        if (expectedResult.ErrorDetailsRegex is not null && actualResult.ErrorDetails is string errorDetails)
+        if (expectedResult?.Error is not null)
         {
-            Assert.Matches(expectedResult.ErrorDetailsRegex, errorDetails);
+            ValidateError(expectedResult.Error, actualResult.Error);
+        }
+        else if (expectedResult?.ErrorRegex is not null)
+        {
+            ValidateErrorRegex(expectedResult.ErrorRegex, actualResult.Error);
         }
         else
         {
-            Assert.Equivalent(expectedResult.ErrorDetails, actualResult.ErrorDetails);
+            Assert.Null(actualResult.Error);
         }
     }
 
@@ -256,7 +270,7 @@ public abstract class UpdateWorkerTestBase : TestBase
 
             experimentsManager ??= new ExperimentsManager();
             var slnPath = Path.Combine(temporaryDirectory, slnName);
-            var worker = new UpdaterWorker(experimentsManager, new TestLogger());
+            var worker = new UpdaterWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
             await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion, isTransitive);
         });
 

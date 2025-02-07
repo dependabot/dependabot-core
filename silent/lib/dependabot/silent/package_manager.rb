@@ -19,10 +19,10 @@ module Dependabot
       sig { params(version: T.any(String, Dependabot::Version)).void }
       def initialize(version)
         super(
-          PACKAGE_MANAGER,
-          Version.new(version),
-          DEPRECATED_SILENT_VERSIONS,
-          SUPPORTED_SILENT_VERSIONS,
+          name: PACKAGE_MANAGER,
+          version: Version.new(version),
+          deprecated_versions: DEPRECATED_SILENT_VERSIONS,
+          supported_versions: SUPPORTED_SILENT_VERSIONS,
        )
       end
     end

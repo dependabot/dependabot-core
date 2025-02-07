@@ -33,13 +33,19 @@ module Dependabot
       # DEPRECATED_COMPOSER_VERSIONS = T.let([Version.new("1")].freeze, T::Array[Dependabot::Version])
       DEPRECATED_COMPOSER_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
-      sig { params(raw_version: String).void }
-      def initialize(raw_version)
+      sig do
+        params(
+          detected_version: String,
+          raw_version: T.nilable(String)
+        ).void
+      end
+      def initialize(detected_version:, raw_version: nil)
         super(
-          NAME,
-          Version.new(raw_version),
-          DEPRECATED_COMPOSER_VERSIONS,
-          SUPPORTED_COMPOSER_VERSIONS,
+          name: NAME,
+          detected_version: Version.new(detected_version),
+          version: raw_version ? Version.new(raw_version) : nil,
+          deprecated_versions: DEPRECATED_COMPOSER_VERSIONS,
+          supported_versions: SUPPORTED_COMPOSER_VERSIONS
        )
       end
     end

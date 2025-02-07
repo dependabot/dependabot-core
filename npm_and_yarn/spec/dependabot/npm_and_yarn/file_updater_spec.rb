@@ -70,6 +70,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:avoid_duplicate_updates_package_json).and_return(false)
   end
 
   after do
@@ -93,6 +99,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           "npm-shrinkwrap.json",
           "yarn.lock",
           "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
           "subdirectory/package.json",
           "subdirectory/package-lock.json",
           "subdirectory/npm-shrinkwrap.json",
@@ -3820,6 +3827,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         updated_files.find { |f| f.name == "pnpm-lock.yaml" }
       end
 
+      let(:updated_pnpm_workspace) do
+        updated_files.find { |f| f.name == "pnpm-workspace.yaml" }
+      end
+
       let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
       let(:files) { project_dependency_files(project_name) }
 
@@ -4009,7 +4020,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:previous_requirements) { [] }
 
         it "updates the version" do
-          expect(updated_pnpm_lock.content).to include("acorn@5.7.3:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("acorn@5.2.1:\n    resolution").once
         end
       end
 
@@ -4126,6 +4137,161 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           expect(updated_pnpm_lock.content).to include("typescript@2.1.4:")
           expect(updated_pnpm_lock.content).to include("typescript@2.9.1:")
+        end
+      end
+
+      describe "pnpm catalog protocol" do
+        context "when individual dependency needs updating" do
+          let(:project_name) { "pnpm/catalog_monorepo" }
+          let(:dependency_name) { "prettier" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.3",
+                required_version: "^3.4.2",
+                previous_required_version: "^3.3.3"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml pnpm-lock.yaml))
+            expect(updated_pnpm_workspace.content).to include("prettier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("specifier: ^3.4.2")
+            expect(updated_pnpm_lock.content).to include("prettier:\n      specifier: ^3.4.2\n      version: 3.4.2")
+          end
+        end
+
+        context "when updating multiple dependencies in catalogs" do
+          let(:project_name) { "pnpm/catalogs_all_examples" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.2.0",
+                required_version: "^18.2.0",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.2.0",
+                required_version: "18.2.0",
+                previous_required_version: "18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "16.2.0",
+                required_version: "16.2.0",
+                previous_required_version: "16.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-icons",
+                version: "4.3.1",
+                required_version: "4.3.14",
+                previous_required_version: "4.3.1"
+              )
+            ]
+          end
+
+          it "updates the workspace file" do
+            expect(updated_pnpm_workspace.content).to include("react-icons: 4.3.14")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.0\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '18.2.0'")
+            expect(updated_pnpm_workspace.content).to include("react: 16.2.0")
+            expect(updated_pnpm_workspace.content).to include("react-dom: ^16.2.0")
+          end
+        end
+
+        context "when updating multiple dependencies with valid yaml" do
+          let(:project_name) { "pnpm/catalogs_valid_yaml" }
+          let(:dependencies) do
+            [
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "prettier",
+                version: "3.3.0",
+                required_version: "3.3.3",
+                previous_required_version: "3.3.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "express",
+                version: "4.15.2",
+                required_version: "4.21.2",
+                previous_required_version: "4.15.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "is-even",
+                version: "0.1.2",
+                required_version: "1.0.0",
+                previous_required_version: "0.1.2"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              ),
+              create_dependency(
+                file: "pnpm-workspace.yaml",
+                name: "react-dom",
+                version: "18.0.0",
+                required_version: "^18.2.3",
+                previous_required_version: "^18.0.0"
+              )
+            ]
+          end
+
+          it "updates the workspace" do
+            expect(updated_files.map(&:name)).to eq(%w(pnpm-workspace.yaml))
+
+            expect(updated_pnpm_workspace.content).to include("prettier: \"3.3.3\"")
+            expect(updated_pnpm_workspace.content).to include("\"express\": 4.21.2")
+            expect(updated_pnpm_workspace.content).to include("is-even: '1.0.0'")
+            expect(updated_pnpm_workspace.content).to include("react: \"^18.2.3\"")
+            expect(updated_pnpm_workspace.content).to include("react-dom: '^18.2.3'")
+          end
+
+          context "when updating workspace catalog entries" do
+            let(:project_name) { "pnpm/catalog_prettier" }
+
+            let(:dependencies) do
+              [
+                create_dependency(
+                  file: "pnpm-workspace.yaml",
+                  name: "prettier",
+                  version: "3.3.0",
+                  required_version: "^3.3.3",
+                  previous_required_version: "^3.3.0"
+                )
+              ]
+            end
+
+            it "uses pnpm install for catalog updates" do
+              expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+                .with(/update.*--lockfile-only/)
+
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+                .with("install --lockfile-only")
+
+              updated_files
+            end
+          end
         end
       end
     end

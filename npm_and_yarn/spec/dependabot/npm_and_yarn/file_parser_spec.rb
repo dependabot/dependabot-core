@@ -44,6 +44,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:npm_v6_deprecation_warning).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
   end
 
   after do
@@ -82,6 +86,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       context "with yarn `workspace:` requirements and no lockfile" do
         let(:files) { project_dependency_files("yarn/workspace_requirements_no_lockfile") }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "with pnpm `catalog:` requirements and no lockfile" do
+        let(:files) { project_dependency_files("pnpm/workspace_requirements_catalog") }
 
         its(:length) { is_expected.to eq(0) }
       end
@@ -1530,6 +1540,78 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               groups: ["dependencies"],
               source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
             })
+          end
+        end
+      end
+
+      context "with pnpm catalog protocol" do
+        let(:files) { project_dependency_files("pnpm/catalogs_all_examples") }
+
+        its(:length) { is_expected.to eq(6) }
+
+        it "parses the dependency" do
+          expect(top_level_dependencies.map(&:name)).to eq(%w(
+            react-icons
+            prettier
+            express
+            is-even
+            react
+            react-dom
+          ))
+        end
+
+        it "parses the dependency requirements" do
+          expected_dependencies = [
+            {
+              name: "react-icons",
+              version: "4.3.1",
+              requirements: [
+                { requirement: "4.3.1", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "prettier",
+              version: "3.3.0",
+              requirements: [
+                { requirement: "3.3.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "express",
+              version: "4.15.2",
+              requirements: [
+                { requirement: "4.15.2", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "is-even",
+              version: "0.1.2",
+              requirements: [
+                { requirement: "0.1.2", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "react",
+              version: "16.0.0",
+              requirements: [
+                { requirement: "^18.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil },
+                { requirement: "16.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            },
+            {
+              name: "react-dom",
+              version: "18.0.0",
+              requirements: [
+                { requirement: "18.0.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil },
+                { requirement: "^16.2.0", file: "pnpm-workspace.yaml", groups: ["dependencies"], source: nil }
+              ]
+            }
+          ]
+
+          expected_dependencies.each_with_index do |expected, index|
+            expect(dependencies[index].name).to eq(expected[:name])
+            expect(dependencies[index].version).to eq(expected[:version])
+            expect(dependencies[index].requirements).to eq(expected[:requirements])
           end
         end
       end

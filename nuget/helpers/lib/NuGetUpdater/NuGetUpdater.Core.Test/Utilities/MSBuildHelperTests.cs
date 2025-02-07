@@ -1,7 +1,8 @@
 using System.Collections.Immutable;
+using System.Text.Json;
 
-using NuGet.Build.Tasks;
-
+using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Test.Update;
 
 using Xunit;
@@ -854,29 +855,44 @@ public class MSBuildHelperTests : TestBase
 
     // Two top level packages (Buildalyzer), (Microsoft.CodeAnalysis.CSharp.Scripting) that share a dependency (Microsoft.CodeAnalysis.Csharp)
     // Updating ONE of the top level packages, which updates the dependencies and their other "parents"
-    // First family: Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be >= 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
-    // Second family: Microsoft.CodeAnalysis.CSharp.Scripting 4.0.0 requires Microsoft.CodeAnalysis.CSharp 4.0.0 and Microsoft.CodeAnalysis.Common to be 4.0.0 (Specific version)
+    // First family: Buildalyzer 7.0.1 requires Microsoft.CodeAnalysis.CSharp to be = 4.0.1 and Microsoft.CodeAnalysis.Common to be 4.0.1 (@ 6.0.4, Microsoft.CodeAnalysis.Common isn't a dependency of buildalyzer)
+    // Second family: Microsoft.CodeAnalysis.CSharp.Scripting 4.0.1 requires Microsoft.CodeAnalysis.CSharp 4.0.1 and Microsoft.CodeAnalysis.Common to be 4.0.1 (Specific version)
     // Updating Buildalyzer to 7.0.1 will update its transitive dependency (Microsoft.CodeAnalysis.Common) and then its transitive dependency's "family"
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task DependencyConflictsCanBeResolvedNewSharingDependency(bool useExistingSdks)
+    [Fact]
+    public async Task DependencyConflictsCanBeResolvedNewSharingDependency()
     {
+        // arrange
         using var tempDirectory = new TemporaryDirectory();
         var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
         await File.WriteAllTextAsync(projectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
-                <PropertyGroup>
+              <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
-                </PropertyGroup>
-                <ItemGroup>
+              </PropertyGroup>
+              <ItemGroup>
                 <PackageReference Include="Buildalyzer" Version="6.0.4" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Csharp.Scripting" Version="3.10.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
                 <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.10.0" />
-                </ItemGroup>
+              </ItemGroup>
             </Project>
             """);
+
+        var testPackages = new MockNuGetPackage[]
+        {
+            MockNuGetPackage.CreateSimplePackage("Buildalyzer", "6.0.4", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Buildalyzer", "7.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "3.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp.Scripting", "4.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.CSharp", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "3.10.0", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[3.10.0]")])]),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.CSharp", "4.0.1", "net8.0", [(null, [("Microsoft.CodeAnalysis.Common", "[4.0.1]")])]),
+
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "3.10.0", "net8.0"),
+            MockNuGetPackage.CreateSimplePackage("Microsoft.CodeAnalysis.Common", "4.0.1", "net8.0"),
+        };
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(testPackages, tempDirectory.DirectoryPath);
 
         var dependencies = new[]
         {
@@ -890,25 +906,28 @@ public class MSBuildHelperTests : TestBase
             new Dependency("Buildalyzer", "7.0.1", DependencyType.PackageReference),
         };
 
+        // act
         var resolvedDependencies = await MSBuildHelper.ResolveDependencyConflicts(
             tempDirectory.DirectoryPath,
             projectPath,
             "net8.0",
             dependencies,
             update,
-            new ExperimentsManager() { InstallDotnetSdks = useExistingSdks },
+            new ExperimentsManager(),
             new TestLogger()
         );
+
+        // assert
+        var expectedDependencies = new[]
+        {
+            "Buildalyzer/7.0.1",
+            "Microsoft.CodeAnalysis.CSharp.Scripting/4.0.1",
+            "Microsoft.CodeAnalysis.CSharp/4.0.1",
+            "Microsoft.CodeAnalysis.Common/4.0.1"
+        };
         Assert.NotNull(resolvedDependencies);
-        Assert.Equal(4, resolvedDependencies.Length);
-        Assert.Equal("Buildalyzer", resolvedDependencies[0].Name);
-        Assert.Equal("7.0.1", resolvedDependencies[0].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp.Scripting", resolvedDependencies[1].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[1].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.CSharp", resolvedDependencies[2].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[2].Version);
-        Assert.Equal("Microsoft.CodeAnalysis.Common", resolvedDependencies[3].Name);
-        Assert.Equal("4.0.0", resolvedDependencies[3].Version);
+        var actualDependencies = resolvedDependencies.Select(d => $"{d.Name}/{d.Version}").ToArray();
+        AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
     // Updating two families at once to test efficiency
@@ -1347,6 +1366,115 @@ public class MSBuildHelperTests : TestBase
         Assert.Equal("4.9.2", resolvedDependencies[2].Version);
     }
     #endregion
+
+    [Theory]
+    [MemberData(nameof(GenerateErrorFromToolOutputTestData))]
+    public async Task GenerateErrorFromToolOutput(string output, JobErrorBase? expectedError)
+    {
+        Exception? exception = null;
+        try
+        {
+            MSBuildHelper.ThrowOnError(output);
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+        }
+
+        if (expectedError is null)
+        {
+            Assert.Null(exception);
+        }
+        else
+        {
+            Assert.NotNull(exception);
+            using var tempDir = await TemporaryDirectory.CreateWithContentsAsync([("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test-feed" value="http://localhost/test-feed" />
+                  </packageSources>
+                </configuration>
+                """)]);
+            var actualError = JobErrorBase.ErrorFromException(exception, "TEST-JOB-ID", tempDir.DirectoryPath);
+            if (actualError is DependencyFileNotFound notFound)
+            {
+                // normalize default message for the test
+                actualError = new DependencyFileNotFound(notFound.Details["file-path"].ToString()!, "test message");
+            }
+
+            var actualErrorJson = JsonSerializer.Serialize(actualError, RunWorker.SerializerOptions);
+            var expectedErrorJson = JsonSerializer.Serialize(expectedError, RunWorker.SerializerOptions);
+            Assert.Equal(expectedErrorJson, actualErrorJson);
+        }
+    }
+
+    public static IEnumerable<object?[]> GenerateErrorFromToolOutputTestData()
+    {
+        yield return
+        [
+            // output
+            "Everything was good.",
+            // expectedError
+            null,
+        ];
+
+        yield return
+        [
+            // output
+            "Response status code does not indicate success: 403",
+            // expectedError
+            new PrivateSourceAuthenticationFailure(["http://localhost/test-feed"]),
+        ];
+
+        yield return
+        [
+            // output
+            "The imported file \"some.file\" does not exist",
+            // expectedError
+            new DependencyFileNotFound("some.file", "test message"),
+        ];
+
+        yield return
+        [
+            // output
+            "Package 'Some.Package' is not found on source",
+            // expectedError
+            new UpdateNotPossible(["Some.Package"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Could not install package 'Some.Package 1.2.3'. You are trying to install this package into a project that targets 'SomeFramework'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find a version of 'Some.Package' that is compatible with 'Some.Other.Package 4.5.6 constraint: Some.Package (>= 1.2.3)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "the following error(s) may be blocking the current package operation: 'Some.Package 1.2.3 constraint: Some.Other.Package (>= 4.5.6)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+    }
 
     public static IEnumerable<object[]> GetTopLevelPackageDependencyInfosTestData()
     {

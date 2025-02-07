@@ -40,7 +40,9 @@
 
 "L: javascript":
 - changed-files:
-  - any-glob-to-any-file: npm_and_yarn/**
+  - any-glob-to-any-file:
+    - javascript/**
+    - npm_and_yarn/**
 
 "L: java:gradle":
 - changed-files:

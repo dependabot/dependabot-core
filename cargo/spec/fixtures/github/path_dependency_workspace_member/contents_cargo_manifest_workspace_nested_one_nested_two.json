@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "workspace/nested_one/nested_two/Cargo.toml",
+  "sha": "f74aff39c4387e28f0ccf42e270b2da5eea15927",
+  "size": 93,
+  "url": "https://api.github.com/repos/Jefffrey/dependabot-cargo-test/contents/workspace/nested_one/nested_two/Cargo.toml?ref=master",
+  "html_url": "https://github.com/Jefffrey/dependabot-cargo-test/blob/master/workspace/nested_one/nested_two/Cargo.toml",
+  "git_url": "https://api.github.com/repos/Jefffrey/dependabot-cargo-test/git/blobs/f74aff39c4387e28f0ccf42e270b2da5eea15927",
+  "download_url": "https://raw.githubusercontent.com/Jefffrey/dependabot-cargo-test/master/workspace/nested_one/nested_two/Cargo.toml",
+  "type": "file",
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAibmVzdGVkX3R3byIKdmVyc2lvbiA9IHsgd29y\na3NwYWNlID0gdHJ1ZSB9CmVkaXRpb24gPSB7IHdvcmtzcGFjZSA9IHRydWUg\nfQoK\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/Jefffrey/dependabot-cargo-test/contents/workspace/nested_one/nested_two/Cargo.toml?ref=master",
+    "git": "https://api.github.com/repos/Jefffrey/dependabot-cargo-test/git/blobs/f74aff39c4387e28f0ccf42e270b2da5eea15927",
+    "html": "https://github.com/Jefffrey/dependabot-cargo-test/blob/master/workspace/nested_one/nested_two/Cargo.toml"
+  }
+}

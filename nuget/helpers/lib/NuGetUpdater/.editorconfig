@@ -26,6 +26,7 @@ end_of_line = lf
 [*.{cs,vb}]
 
 max_line_length = 0
+dotnet_diagnostic.IDE0055.severity = error
 
 # Organize usings
 dotnet_separate_import_directive_groups = true

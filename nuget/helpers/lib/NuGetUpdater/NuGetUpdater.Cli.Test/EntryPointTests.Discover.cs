@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using NuGetUpdater.Core;
 using NuGetUpdater.Core.Discover;
@@ -25,6 +26,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -83,6 +86,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -178,6 +183,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -251,6 +258,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -321,6 +330,8 @@ public partial class EntryPointTests
             await RunAsync(path =>
                 [
                     "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
                     "--job-path",
                     Path.Combine(path, "job.json"),
                     "--repo-root",
@@ -388,6 +399,85 @@ public partial class EntryPointTests
             );
         }
 
+        [Fact]
+        public async Task JobFileParseErrorIsReported_InvalidJson()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+            await File.WriteAllTextAsync(jobFilePath, "not json");
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    ErrorRegex = "Error deserializing job file contents",
+                }
+            );
+        }
+
+        [Fact]
+        public async Task JobFileParseErrorIsReported_BadRequirement()
+        {
+            using var testDirectory = new TemporaryDirectory();
+            var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
+            var resultFilePath = Path.Combine(testDirectory.DirectoryPath, DiscoveryWorker.DiscoveryResultFileName);
+
+            // write a job file with a valid shape, but invalid requirement
+            await File.WriteAllTextAsync(jobFilePath, """
+                {
+                    "job": {
+                        "source": {
+                            "provider": "github",
+                            "repo": "test/repo"
+                        },
+                        "security-advisories": [
+                            {
+                                "dependency-name": "Some.Dependency",
+                                "affected-versions": ["not a valid requirement"]
+                            }
+                        ]
+                    }
+                }
+                """);
+            await RunAsync(path =>
+                [
+                    "discover",
+                    "--job-id",
+                    "TEST-JOB-ID",
+                    "--job-path",
+                    jobFilePath,
+                    "--repo-root",
+                    path,
+                    "--workspace",
+                    "/",
+                    "--output",
+                    resultFilePath
+                ],
+                initialFiles: [],
+                expectedResult: new()
+                {
+                    Path = "/",
+                    Projects = [],
+                    Error = new Core.Run.ApiModel.BadRequirement("not a valid requirement"),
+                }
+            );
+        }
+
         private static async Task RunAsync(
             Func<string, string[]> getArgs,
             TestFile[] initialFiles,
@@ -406,6 +496,7 @@ public partial class EntryPointTests
                 var originalErr = Console.Error;
                 Console.SetOut(writer);
                 Console.SetError(writer);
+                string? resultPath = null;
 
                 try
                 {
@@ -416,9 +507,15 @@ public partial class EntryPointTests
                     // manually pull out the experiments manager for the validate step below
                     for (int i = 0; i < args.Length - 1; i++)
                     {
-                        if (args[i] == "--job-path")
+                        switch (args[i])
                         {
-                            experimentsManager = await ExperimentsManager.FromJobFileAsync(args[i + 1], new TestLogger());
+                            case "--job-path":
+                                var experimentsResult = await ExperimentsManager.FromJobFileAsync("TEST-JOB-ID", args[i + 1]);
+                                experimentsManager = experimentsResult.ExperimentsManager;
+                                break;
+                            case "--output":
+                                resultPath = args[i + 1];
+                                break;
                         }
                     }
 
@@ -434,13 +531,40 @@ public partial class EntryPointTests
                     Console.SetError(originalErr);
                 }
 
-                var resultPath = Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
+                resultPath ??= Path.Join(path, DiscoveryWorker.DiscoveryResultFileName);
                 var resultJson = await File.ReadAllTextAsync(resultPath);
-                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, DiscoveryWorker.SerializerOptions);
+                var serializerOptions = new JsonSerializerOptions()
+                {
+                    Converters = { new TestJobErrorBaseConverter() }
+                };
+                foreach (var converter in DiscoveryWorker.SerializerOptions.Converters)
+                {
+                    serializerOptions.Converters.Add(converter);
+                }
+                var resultObject = JsonSerializer.Deserialize<WorkspaceDiscoveryResult>(resultJson, serializerOptions);
                 return resultObject!;
             });
 
             ValidateWorkspaceResult(expectedResult, actualResult, experimentsManager);
+        }
+
+        private class TestJobErrorBaseConverter : JsonConverter<Core.Run.ApiModel.JobErrorBase>
+        {
+            public override Core.Run.ApiModel.JobErrorBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(ref reader, options)!;
+                return dict["error-type"].GetString() switch
+                {
+                    "illformed_requirement" => new Core.Run.ApiModel.BadRequirement(dict["error-details"].GetProperty("message").GetString()!),
+                    "unknown_error" => new Core.Run.ApiModel.UnknownError(new Exception("Error deserializing job file contents"), "TEST-JOB-ID"),
+                    _ => throw new NotImplementedException($"Unknown error type: {dict["error-type"]}"),
+                };
+            }
+
+            public override void Write(Utf8JsonWriter writer, Core.Run.ApiModel.JobErrorBase value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

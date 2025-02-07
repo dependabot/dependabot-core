@@ -77,11 +77,11 @@ internal static class ProjectHelper
         var itemPath = projectRootElement.Items
             .Where(i => i.ElementName.Equals("None", StringComparison.OrdinalIgnoreCase) ||
                         i.ElementName.Equals("Content", StringComparison.OrdinalIgnoreCase))
-            .Where(i => Path.GetFileName(i.Include).Equals(itemFileName, StringComparison.OrdinalIgnoreCase))
-            .Select(i => Path.GetFullPath(Path.Combine(projectDirectory, i.Include)))
+            .Where(i => !string.IsNullOrEmpty(i.Include))
+            .Select(i => Path.GetFullPath(Path.Combine(projectDirectory, i.Include.NormalizePathToUnix())))
+            .Where(p => Path.GetFileName(p).Equals(itemFileName, StringComparison.OrdinalIgnoreCase))
             .Where(File.Exists)
-            .FirstOrDefault()
-            ?.NormalizePathToUnix();
+            .FirstOrDefault();
         return itemPath;
     }
 

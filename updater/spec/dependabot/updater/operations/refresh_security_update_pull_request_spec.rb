@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         end
 
         it "creates a pull request with deprecation notice" do
-          allow(Dependabot::Notice).to receive(:generate_pm_deprecation_notice).and_return([{
+          allow(Dependabot::Notice).to receive(:generate_deprecation_notice).and_return([{
             mode: "WARN",
             type: "bundler_deprecated_warn",
             package_manager_name: "bundler",
