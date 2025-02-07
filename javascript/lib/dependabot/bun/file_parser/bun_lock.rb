@@ -56,7 +56,7 @@ module Dependabot
             dependency_set << Dependency.new(
               name: name,
               version: semver.to_s,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: []
             )
           end

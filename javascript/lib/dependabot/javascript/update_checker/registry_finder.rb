@@ -5,7 +5,7 @@ require "excon"
 
 module Dependabot
   module Javascript
-    class UpdateChecker
+    module UpdateChecker
       class RegistryFinder
         extend T::Sig
 
@@ -26,7 +26,7 @@ module Dependabot
 
         sig do
           params(
-            dependency: Dependency,
+            dependency: T.nilable(Dependency),
             credentials: T::Array[Credential],
             rc_file: T.nilable(DependencyFile)
           ).void
@@ -60,12 +60,12 @@ module Dependabot
           "#{registry_url}/#{escaped_dependency_name}"
         end
 
-        sig { params(version: String).returns(String) }
+        sig { params(version: Version).returns(String) }
         def tarball_url(version)
           version_without_build_metadata = version.to_s.gsub(/\+.*/, "")
 
           # Dependency name needs to be unescaped since tarball URLs don't always work with escaped slashes
-          "#{registry_url}/#{dependency.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
+          "#{registry_url}/#{dependency&.name}/-/#{scopeless_name}-#{version_without_build_metadata}.tgz"
         end
 
         sig { params(registry: String).returns(T::Boolean) }
@@ -82,7 +82,7 @@ module Dependabot
 
         private
 
-        sig { returns(Dependency) }
+        sig { returns(T.nilable(Dependency)) }
         attr_reader :dependency
 
         sig { returns(T::Array[Credential]) }
@@ -94,9 +94,9 @@ module Dependabot
         sig { returns(T.nilable(DependencyFile)) }
         attr_reader :npmrc_file
 
-        sig { params(dependency_name: String).returns(T.nilable(String)) }
+        sig { params(dependency_name: T.nilable(String)).returns(T.nilable(String)) }
         def explicit_registry_from_rc(dependency_name)
-          if dependency_name.start_with?("@") && dependency_name.include?("/")
+          if dependency_name&.start_with?("@") && dependency_name.include?("/")
             scope = dependency_name.split("/").first
             scoped_registry(scope) || configured_global_registry
           else
@@ -187,7 +187,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def configured_registry
-          configured_registry_url = explicit_registry_from_rc(dependency.name)
+          configured_registry_url = explicit_registry_from_rc(dependency&.name)
           return unless configured_registry_url
 
           normalize_configured_registry(configured_registry_url)
@@ -319,21 +319,27 @@ module Dependabot
         end
 
         # npm registries expect slashes to be escaped
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         def escaped_dependency_name
-          dependency.name.gsub("/", "%2F")
+          return unless dependency
+
+          T.must(dependency).name.gsub("/", "%2F")
         end
 
         sig { returns(T.nilable(String)) }
         def scopeless_name
-          dependency.name.split("/").last
+          return unless dependency
+
+          T.must(dependency).name.split("/").last
         end
 
         sig { returns(T.nilable(String)) }
         def registry_source_url
-          sources = dependency.requirements
-                              .map { |r| r.fetch(:source) }.uniq.compact
-                              .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+          return unless dependency
+
+          sources = T.must(dependency).requirements
+                     .map { |r| r.fetch(:source) }.uniq.compact
+                     .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
