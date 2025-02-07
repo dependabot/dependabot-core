@@ -4,7 +4,7 @@
 module Dependabot
   module Bun
     class FileFetcher < Dependabot::FileFetchers::Base
-      include Javascript::FileFetcherHelper
+      include ::Dependabot::Javascript::FileFetcherHelper
       extend T::Sig
       extend T::Helpers
 
@@ -92,6 +92,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::FileFetchers
-  .register(Dependabot::Bun::ECOSYSTEM, Dependabot::Bun::FileFetcher)
