@@ -35,8 +35,8 @@ module Dependabot
               # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
               #
               # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
-              # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
-              # parser doesn't deal with at the moment.
+              # npm parser handles edge cases where the package.json is out of sync with the lockfile,
+              # something the yarn parser doesn't deal with at the moment.
               if dependency_files_builder.lockfiles.any?
                 SharedHelpers.run_helper_subprocess(
                   command: Dependabot::Javascript::NativeHelpers.helper_path,
