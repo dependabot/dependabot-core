@@ -6,7 +6,7 @@ require "dependabot/file_fetchers"
 require "dependabot/bun"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::Bun::FileFetcher do
+RSpec.describe Dependabot::Javascript::Bun::FileFetcher do
   let(:json_header) { { "content-type" => "application/json" } }
   let(:credentials) do
     [Dependabot::Credential.new({

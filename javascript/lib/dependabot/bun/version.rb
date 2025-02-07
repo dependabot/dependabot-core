@@ -2,11 +2,13 @@
 # frozen_string_literal: true
 
 module Dependabot
-  module Bun
-    class Version < Dependabot::Javascript::Version
+  module Javascript
+    module Bun
+      class Version < Dependabot::Javascript::Version
+      end
     end
   end
 end
 
 Dependabot::Utils
-  .register_version_class("bun", Dependabot::Bun::Version)
+  .register_version_class("bun", Dependabot::Javascript::Bun::Version)

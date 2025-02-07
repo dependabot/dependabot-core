@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Bun::FileParser do
+RSpec.describe Dependabot::Javascript::Bun::FileParser do
   let(:credentials) do
     [Dependabot::Credential.new({
       "type" => "git_source",

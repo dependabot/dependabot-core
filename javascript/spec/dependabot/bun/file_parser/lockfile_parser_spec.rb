@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
+RSpec.describe Dependabot::Javascript::Bun::FileParser::LockfileParser do
   subject(:lockfile_parser) do
     described_class.new(dependency_files: dependency_files)
   end

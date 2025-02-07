@@ -11,13 +11,13 @@ module Dependabot
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
       DEPENDENCY_TYPES = T.let(%w(dependencies devDependencies optionalDependencies).freeze, T::Array[String])
 
-      sig { params(instance: Dependabot::Bun::FileFetcher).returns(T::Array[DependencyFile]) }
+      sig { params(instance: Dependabot::Javascript::Bun::FileFetcher).returns(T::Array[DependencyFile]) }
       def workspace_package_jsons(instance)
         @workspace_package_jsons ||= T.let(fetch_workspace_package_jsons(instance), T.nilable(T::Array[DependencyFile]))
       end
 
       sig do
-        params(instance: Dependabot::Bun::FileFetcher, fetched_files: T::Array[DependencyFile])
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, fetched_files: T::Array[DependencyFile])
           .returns(T::Array[DependencyFile])
       end
       def path_dependencies(instance, fetched_files)
@@ -49,7 +49,7 @@ module Dependabot
       end
 
       sig do
-        params(instance: Dependabot::Bun::FileFetcher, fetched_files: T::Array[DependencyFile])
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, fetched_files: T::Array[DependencyFile])
           .returns(T::Array[[String, String]])
       end
       def path_dependency_details(instance, fetched_files)
@@ -67,7 +67,10 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
-      sig { params(instance: Dependabot::Bun::FileFetcher, file: DependencyFile).returns(T::Array[[String, String]]) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher,
+               file: DependencyFile).returns(T::Array[[String, String]])
+      end
       def path_dependency_details_from_manifest(instance, file)
         return [] unless file.name.end_with?(MANIFEST_FILENAME)
 
@@ -127,7 +130,7 @@ module Dependabot
         [parts.join("/"), value]
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher).returns(T::Array[DependencyFile]) }
+      sig { params(instance: Dependabot::Javascript::Bun::FileFetcher).returns(T::Array[DependencyFile]) }
       def fetch_workspace_package_jsons(instance)
         parsed_manifest = parsed_package_json(instance)
         return [] unless parsed_manifest["workspaces"]
@@ -137,7 +140,10 @@ module Dependabot
         end
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, workspace_object: T.untyped).returns(T::Array[String]) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher,
+               workspace_object: T.untyped).returns(T::Array[String])
+      end
       def workspace_paths(instance, workspace_object)
         paths_array =
           if workspace_object.is_a?(Hash)
@@ -150,7 +156,7 @@ module Dependabot
         paths_array.flat_map { |path| recursive_find_directories(instance, path) }
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, glob: String).returns(T::Array[String]) }
+      sig { params(instance: Dependabot::Javascript::Bun::FileFetcher, glob: String).returns(T::Array[String]) }
       def find_directories(instance, glob)
         return [glob] unless glob.include?("*")
 
@@ -177,7 +183,10 @@ module Dependabot
         paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, glob: String, prefix: String).returns(T::Array[String]) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, glob: String,
+               prefix: String).returns(T::Array[String])
+      end
       def recursive_find_directories(instance, glob, prefix = "")
         return [prefix + glob] unless glob.include?("*")
 
@@ -196,7 +205,9 @@ module Dependabot
         matching_paths(prefix + glob, paths)
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, workspace: String).returns(T.nilable(DependencyFile)) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, workspace: String).returns(T.nilable(DependencyFile))
+      end
       def fetch_package_json_if_present(instance, workspace)
         file = File.join(workspace, MANIFEST_FILENAME)
 
@@ -209,12 +220,12 @@ module Dependabot
         end
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher).returns(DependencyFile) }
+      sig { params(instance: Dependabot::Javascript::Bun::FileFetcher).returns(DependencyFile) }
       def package_json(instance)
         @package_json ||= T.let(instance.fetch_file(Javascript::MANIFEST_FILENAME), T.nilable(DependencyFile))
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher).returns(T.untyped) }
+      sig { params(instance: Dependabot::Javascript::Bun::FileFetcher).returns(T.untyped) }
       def parsed_package_json(instance)
         manifest_file = package_json(instance)
         parsed = JSON.parse(T.must(manifest_file.content))
@@ -225,14 +236,18 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, T.must(manifest_file).path
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, filename: String).returns(T.nilable(DependencyFile)) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, filename: String).returns(T.nilable(DependencyFile))
+      end
       def fetch_file_with_support(instance, filename)
         instance.fetch_file(filename).tap { |f| f.support_file = true }
       rescue Dependabot::DependencyFileNotFound
         nil
       end
 
-      sig { params(instance: Dependabot::Bun::FileFetcher, filename: String).returns(T.nilable(DependencyFile)) }
+      sig do
+        params(instance: Dependabot::Javascript::Bun::FileFetcher, filename: String).returns(T.nilable(DependencyFile))
+      end
       def fetch_file_from_parent_directories(instance, filename)
         (1..instance.directory.split("/").count).each do |i|
           file = fetch_file_with_support(instance, ("../" * i) + filename)

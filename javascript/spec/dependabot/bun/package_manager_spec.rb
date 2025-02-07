@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Bun::PackageManager do
+RSpec.describe Dependabot::Javascript::Bun::PackageManager do
   let(:package_manager) do
     described_class.new(
       detected_version: detected_version,
