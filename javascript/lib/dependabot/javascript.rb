@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/bun"
+
 module Dependabot
   module Javascript
     DEFAULT_PACKAGE_MANAGER = "npm"

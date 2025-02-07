@@ -37,3 +37,7 @@ module Dependabot
     ECOSYSTEM = "bun"
   end
 end
+
+Dependabot::FileFetchers.register("bun", Dependabot::Bun::FileFetcher)
+Dependabot::FileParsers.register("bun", Dependabot::Bun::FileParser)
+Dependabot::FileUpdaters.register("bun", Dependabot::Bun::FileUpdater)

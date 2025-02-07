@@ -70,6 +70,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::FileParsers
-  .register(Dependabot::Bun::ECOSYSTEM, Dependabot::Bun::FileParser)
