@@ -4,6 +4,7 @@ using System.Text.Json;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 
@@ -50,6 +51,49 @@ public class MiscellaneousTests
         var actualJson = HttpApiHandler.Serialize(actual);
         var expectedJson = HttpApiHandler.Serialize(expected);
         Assert.Equal(expectedJson, actualJson);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetUpdateOperationsData))]
+    public void GetUpdateOperations(WorkspaceDiscoveryResult discovery, (string ProjectPath, string DependencyName)[] expectedUpdateOperations)
+    {
+        var updateOperations = RunWorker.GetUpdateOperations(discovery).ToArray();
+        var actualUpdateOperations = updateOperations.Select(uo => (uo.ProjectPath, uo.Dependency.Name)).ToArray();
+        Assert.Equal(expectedUpdateOperations, actualUpdateOperations);
+    }
+
+    public static IEnumerable<object[]> GetUpdateOperationsData()
+    {
+        static ProjectDiscoveryResult GetProjectDiscovery(string filePath, params string[] dependencyNames)
+        {
+            return new()
+            {
+                FilePath = filePath,
+                Dependencies = dependencyNames.Select(d => new Dependency(d, "1.0.0", DependencyType.PackageReference)).ToImmutableArray(),
+                ImportedFiles = [],
+                AdditionalFiles = [],
+            };
+        }
+
+        yield return
+        [
+            new WorkspaceDiscoveryResult()
+            {
+                Path = "",
+                Projects = [
+                    GetProjectDiscovery("src/Library.csproj", "Package.B", "Package.C"),
+                    GetProjectDiscovery("src/Common.csproj", "Package.A", "Package.C", "Package.D"),
+                ]
+            },
+            new (string, string)[]
+            {
+                ("/src/Common.csproj", "Package.A"),
+                ("/src/Library.csproj", "Package.B"),
+                ("/src/Common.csproj", "Package.C"),
+                ("/src/Library.csproj", "Package.C"),
+                ("/src/Common.csproj", "Package.D"),
+            },
+        ];
     }
 
     public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
