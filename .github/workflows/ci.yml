@@ -37,6 +37,7 @@ jobs:
           - { path: swift, name: swift, ecosystem: swift }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: javascript, name: javascript, ecosystem: bun }
 
     steps:
       - name: Checkout code
