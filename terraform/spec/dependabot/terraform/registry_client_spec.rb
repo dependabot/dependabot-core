@@ -283,6 +283,16 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       end
     end
 
+    context "when the metadata endpoint is not reachable with Timeout error" do
+      it "raises an error" do
+        stub_request(:get, metadata).to_raise(Excon::Error::Timeout)
+
+        expect do
+          client.service_url_for("modules.v1")
+        end.to raise_error(Dependabot::PrivateSourceBadResponse)
+      end
+    end
+
     context "when the service url is not available" do
       it "raises an error" do
         stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)

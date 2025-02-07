@@ -541,6 +541,59 @@ public class SerializationTests
         Assert.True(jobWrapper.Job.CommitMessageOptions!.IncludeScope);
     }
 
+    [Fact]
+    public void SerializeClosePullRequest()
+    {
+        var close = new ClosePullRequest()
+        {
+            DependencyNames = ["dep"],
+        };
+        var actual = HttpApiHandler.Serialize(close);
+        var expected = """
+            {"data":{"dependency-names":["dep"],"reason":"up_to_date"}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeCreatePullRequest()
+    {
+        var create = new CreatePullRequest()
+        {
+            Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
+            UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
+            BaseCommitSha = "TEST-COMMIT-SHA",
+            CommitMessage = "commit message",
+            PrTitle = "pr title",
+            PrBody = "pr body"
+        };
+        var actual = HttpApiHandler.Serialize(create);
+        var expected = """
+            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body"}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeUpdatePullRequest()
+    {
+        var update = new UpdatePullRequest()
+        {
+            BaseCommitSha = "TEST-COMMIT-SHA",
+            DependencyNames = ["dep"],
+            UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
+            PrTitle = "pr title",
+            PrBody = "pr body",
+            CommitMessage = "commit message",
+            DependencyGroup = null,
+        };
+        var actual = HttpApiHandler.Serialize(update);
+        var expected = """
+            {"data":{"base-commit-sha":"TEST-COMMIT-SHA","dependency-names":["dep"],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"pr-title":"pr title","pr-body":"pr body","commit-message":"commit message","dependency-group":null}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
     public static IEnumerable<object?[]> DeserializeErrorTypesData()
     {
         yield return
@@ -580,6 +633,22 @@ public class SerializationTests
             new PrivateSourceAuthenticationFailure(["url1", "url2"]),
             """
             {"data":{"error-type":"private_source_authentication_failure","error-details":{"source":"(url1|url2)"}}}
+            """
+        ];
+
+        yield return
+        [
+            new PullRequestExistsForLatestVersion("dep", "ver"),
+            """
+            {"data":{"error-type":"pull_request_exists_for_latest_version","error-details":{"dependency-name":"dep","dependency-version":"ver"}}}
+            """
+        ];
+
+        yield return
+        [
+            new SecurityUpdateNotNeeded("dep"),
+            """
+            {"data":{"error-type":"security_update_not_needed","error-details":{"dependency-name":"dep"}}}
             """
         ];
 

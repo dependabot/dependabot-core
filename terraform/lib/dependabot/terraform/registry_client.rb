@@ -195,6 +195,8 @@ module Dependabot
           url: url.to_s,
           headers: headers_for(hostname)
         )
+      rescue Excon::Error::Socket, Excon::Error::Timeout
+        raise PrivateSourceBadResponse, hostname
       end
 
       sig { params(url: URI::Generic).returns(Excon::Response) }

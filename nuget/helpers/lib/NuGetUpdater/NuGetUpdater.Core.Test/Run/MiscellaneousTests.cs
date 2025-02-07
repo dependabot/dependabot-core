@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.Json;
 
 using NuGet.Versioning;
@@ -39,6 +40,16 @@ public class MiscellaneousTests
         var expectedString = JsonSerializer.Serialize(expectedDependencyInfo, AnalyzeWorker.SerializerOptions);
         var actualString = JsonSerializer.Serialize(actualDependencyInfo, AnalyzeWorker.SerializerOptions);
         Assert.Equal(expectedString, actualString);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetIncrementMetricData))]
+    public void GetIncrementMetric(Job job, IncrementMetric expected)
+    {
+        var actual = RunWorker.GetIncrementMetric(job);
+        var actualJson = HttpApiHandler.Serialize(actual);
+        var expectedJson = HttpApiHandler.Serialize(expected);
+        Assert.Equal(expectedJson, actualJson);
     }
 
     public static IEnumerable<object?[]> RequirementsFromIgnoredVersionsData()
@@ -140,6 +151,126 @@ public class MiscellaneousTests
                         SafeVersions = [Requirement.Parse("= 1.1.0"), Requirement.Parse("= 1.2.0")],
                     }
                 ]
+            }
+        ];
+    }
+
+    public static IEnumerable<object?[]> GetIncrementMetricData()
+    {
+        static Job GetJob(AllowedUpdate[] allowed, bool securityUpdatesOnly, bool updatingAPullRequest)
+        {
+            return new Job()
+            {
+                AllowedUpdates = allowed.ToImmutableArray(),
+                Source = new()
+                {
+                    Provider = "github",
+                    Repo = "some/repo"
+                },
+                SecurityUpdatesOnly = securityUpdatesOnly,
+                UpdatingAPullRequest = updatingAPullRequest,
+            };
+        }
+
+        // version update
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "group_update_all_versions"
+                }
+            }
+        ];
+
+        // version update - existing pr
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }],
+                securityUpdatesOnly: false,
+                updatingAPullRequest: true),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "update_version_pr"
+                }
+            }
+        ];
+
+        // create security pr - allowed security update
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security }],
+                securityUpdatesOnly: false,
+                updatingAPullRequest: false),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "create_security_pr"
+                }
+            }
+        ];
+
+        // create security pr - security only
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
+                securityUpdatesOnly: true,
+                updatingAPullRequest: false),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "create_security_pr"
+                }
+            }
+        ];
+
+        // update security pr - allowed security update
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All }, new AllowedUpdate() { UpdateType = UpdateType.Security } ],
+                securityUpdatesOnly: false,
+                updatingAPullRequest: true),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "update_security_pr"
+                }
+            }
+        ];
+
+        // update security pr - security only
+        yield return
+        [
+            GetJob(
+                allowed: [new AllowedUpdate() { UpdateType = UpdateType.All } ],
+                securityUpdatesOnly: true,
+                updatingAPullRequest: true),
+            new IncrementMetric()
+            {
+                Metric = "updater.started",
+                Tags =
+                {
+                    ["operation"] = "update_security_pr"
+                }
             }
         ];
     }
