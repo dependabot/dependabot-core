@@ -101,7 +101,7 @@ module Dependabot
 
           def filtered_lockfiles
             @filtered_lockfiles ||=
-              Javascript::SubDependencyFilesFilterer.new(
+              Dependabot::Javascript::Shared::SubDependencyFilesFilterer.new(
                 dependency_files: dependency_files,
                 updated_dependencies: [updated_dependency]
               ).files_requiring_update

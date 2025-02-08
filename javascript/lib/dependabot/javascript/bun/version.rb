@@ -4,7 +4,7 @@
 module Dependabot
   module Javascript
     module Bun
-      class Version < Dependabot::Javascript::Version
+      class Version < Dependabot::Javascript::Shared::Version
       end
     end
   end

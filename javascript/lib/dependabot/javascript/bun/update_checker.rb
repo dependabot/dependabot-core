@@ -414,7 +414,7 @@ module Dependabot
           sources =
             updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
                               .sort_by do |source|
-              Javascript::UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
+              Dependabot::Javascript::Shared::UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
             end
 
           sources.first

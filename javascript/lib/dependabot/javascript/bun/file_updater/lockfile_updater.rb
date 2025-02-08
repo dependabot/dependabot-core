@@ -100,7 +100,7 @@ module Dependabot
           end
 
           def npmrc_content(bun_lock)
-            Javascript::FileUpdater::NpmrcBuilder.new(
+            Dependabot::Javascript::Shared::FileUpdater::NpmrcBuilder.new(
               credentials: credentials,
               dependency_files: dependency_files,
               dependencies: lockfile_dependencies(bun_lock)
@@ -110,7 +110,7 @@ module Dependabot
           def updated_package_json_content(file)
             @updated_package_json_content ||= {}
             @updated_package_json_content[file.name] ||=
-              Javascript::FileUpdater::PackageJsonUpdater.new(
+              Dependabot::Javascript::Shared::FileUpdater::PackageJsonUpdater.new(
                 package_json: file,
                 dependencies: dependencies
               ).updated_package_json.content

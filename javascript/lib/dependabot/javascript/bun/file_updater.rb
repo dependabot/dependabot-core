@@ -4,7 +4,7 @@
 module Dependabot
   module Javascript
     module Bun
-      class FileUpdater < Javascript::FileUpdater
+      class FileUpdater < Shared::FileUpdater
         sig { override.returns(T::Array[Regexp]) }
         def self.updated_files_regex
           [
@@ -52,7 +52,7 @@ module Dependabot
             bun_lockfile_updater.updated_bun_lock_content(bun_lock)
         end
 
-        sig { returns(Dependabot::Javascript::Bun::FileUpdater::LockfileUpdater) }
+        sig { returns(Bun::FileUpdater::LockfileUpdater) }
         def bun_lockfile_updater
           @bun_lockfile_updater ||= T.let(
             LockfileUpdater.new(
@@ -61,7 +61,7 @@ module Dependabot
               repo_contents_path: repo_contents_path,
               credentials: credentials
             ),
-            T.nilable(Dependabot::Javascript::Bun::FileUpdater::LockfileUpdater)
+            T.nilable(Bun::FileUpdater::LockfileUpdater)
           )
         end
       end

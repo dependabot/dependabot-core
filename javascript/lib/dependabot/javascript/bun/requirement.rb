@@ -4,7 +4,7 @@
 module Dependabot
   module Javascript
     module Bun
-      class Requirement < Dependabot::Javascript::Requirement
+      class Requirement < Dependabot::Javascript::Shared::Requirement
       end
     end
   end

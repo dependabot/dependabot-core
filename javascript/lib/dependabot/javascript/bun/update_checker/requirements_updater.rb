@@ -132,7 +132,7 @@ module Dependabot
           end
 
           def ruby_requirements(requirement_string)
-            Javascript::Requirement
+            Dependabot::Javascript::Shared::Requirement
               .requirements_array(requirement_string)
           end
 
@@ -194,7 +194,7 @@ module Dependabot
           end
 
           def version_class
-            Javascript::Version
+            Dependabot::Javascript::Shared::Version
           end
         end
       end

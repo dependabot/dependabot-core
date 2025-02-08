@@ -191,14 +191,14 @@ module Dependabot
 
           def types_package
             @types_package ||= begin
-              types_package_name = Javascript::PackageName.new(dependency.name).types_package_name
+              types_package_name = Dependabot::Javascript::Shared::PackageName.new(dependency.name).types_package_name
               top_level_dependencies.find { |d| types_package_name.to_s == d.name } if types_package_name
             end
           end
 
           def original_package
             @original_package ||= begin
-              original_package_name = Javascript::PackageName.new(dependency.name).library_name
+              original_package_name = Dependabot::Javascript::Shared::PackageName.new(dependency.name).library_name
               top_level_dependencies.find { |d| original_package_name.to_s == d.name } if original_package_name
             end
           end
@@ -479,7 +479,7 @@ module Dependabot
 
           def paths_requiring_update_check
             @paths_requiring_update_check ||=
-              Javascript::DependencyFilesFilterer.new(
+              Dependabot::Javascript::Shared::DependencyFilesFilterer.new(
                 dependency_files: dependency_files,
                 updated_dependencies: [dependency]
               ).paths_requiring_update_check
@@ -515,7 +515,7 @@ module Dependabot
           end
 
           def version_regex
-            Dependabot::Javascript::Version::VERSION_PATTERN
+            Dependabot::Javascript::Shared::Version::VERSION_PATTERN
           end
         end
       end

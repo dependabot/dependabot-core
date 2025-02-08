@@ -4,8 +4,8 @@
 module Dependabot
   module Javascript
     module Bun
-      class FileFetcher < Dependabot::FileFetchers::Base
-        include ::Dependabot::Javascript::FileFetcherHelper
+      class FileFetcher < Shared::FileFetcher
+        include Shared::FileFetcherHelper
         extend T::Sig
         extend T::Helpers
 
@@ -39,24 +39,6 @@ module Dependabot
           fetched_files += path_dependencies(self, fetched_files)
 
           fetched_files.uniq
-        end
-
-        sig { params(filename: String, fetch_submodules: T::Boolean).returns(DependencyFile) }
-        def fetch_file(filename, fetch_submodules: false)
-          fetch_file_from_host(filename, fetch_submodules: fetch_submodules)
-        end
-
-        sig do
-          params(
-            dir: T.any(Pathname, String),
-            ignore_base_directory: T::Boolean,
-            raise_errors: T::Boolean,
-            fetch_submodules: T::Boolean
-          )
-            .returns(T::Array[T.untyped])
-        end
-        def fetch_repo_contents(dir: ".", ignore_base_directory: false, raise_errors: true, fetch_submodules: false)
-          repo_contents(dir: dir, ignore_base_directory:, raise_errors:, fetch_submodules:)
         end
 
         private

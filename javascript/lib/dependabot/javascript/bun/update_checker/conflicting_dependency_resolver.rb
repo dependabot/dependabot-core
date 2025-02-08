@@ -39,13 +39,13 @@ module Dependabot
               # something the yarn parser doesn't deal with at the moment.
               if dependency_files_builder.lockfiles.any?
                 SharedHelpers.run_helper_subprocess(
-                  command: Dependabot::Javascript::NativeHelpers.helper_path,
+                  command: Dependabot::Javascript::Shared::NativeHelpers.helper_path,
                   function: "npm:findConflictingDependencies",
                   args: [Dir.pwd, dependency.name, target_version.to_s]
                 )
               else
                 SharedHelpers.run_helper_subprocess(
-                  command: Dependabot::Javascript::NativeHelpers.helper_path,
+                  command: Dependabot::Javascript::Shared::NativeHelpers.helper_path,
                   function: "yarn:findConflictingDependencies",
                   args: [Dir.pwd, dependency.name, target_version.to_s]
                 )

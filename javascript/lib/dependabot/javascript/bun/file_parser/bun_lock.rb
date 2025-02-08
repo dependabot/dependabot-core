@@ -5,15 +5,19 @@ module Dependabot
   module Javascript
     module Bun
       class FileParser
-        class BunLock
+        class BunLock < Dependabot::Javascript::Shared::FileParser::Lockfile
           extend T::Sig
 
           sig { params(dependency_file: DependencyFile).void }
           def initialize(dependency_file)
-            @dependency_file = dependency_file
+            super
+            @parsed = T.let(
+              nil,
+              T.nilable(T::Hash[String, T.any(Integer, String, T::Array[String], T::Hash[String, String])])
+            )
           end
 
-          sig { returns(T::Hash[String, T.untyped]) }
+          sig { override.returns(T::Hash[String, T.untyped]) }
           def parsed
             @parsed ||= begin
               content = begin
@@ -28,11 +32,11 @@ module Dependabot
               raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
               raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
 
-              T.let(content, T.untyped)
+              content
             end
           end
 
-          sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+          sig { override.returns(Dependabot::FileParsers::Base::DependencySet) }
           def dependencies
             dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
@@ -66,10 +70,15 @@ module Dependabot
           end
 
           sig do
-            params(dependency_name: String, requirement: T.untyped, _manifest_name: String)
+            override
+              .params(
+                dependency_name: String,
+                requirement: T.untyped,
+                manifest_name: String
+              )
               .returns(T.nilable(T::Hash[String, T.untyped]))
           end
-          def details(dependency_name, requirement, _manifest_name)
+          def details(dependency_name, requirement, manifest_name) # rubocop:disable Lint/UnusedMethodArgument
             packages = parsed["packages"]
             return unless packages.is_a?(Hash)
 

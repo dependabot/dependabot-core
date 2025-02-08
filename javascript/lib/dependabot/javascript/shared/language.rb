@@ -3,17 +3,14 @@
 
 module Dependabot
   module Javascript
-    module Bun
-      class PackageManager < Ecosystem::VersionManager
+    module Shared
+      class Language < Ecosystem::VersionManager
         extend T::Sig
-        NAME = "bun"
-        LOCKFILE_NAME = "bun.lock"
+        NAME = "javascript"
 
-        # In Bun 1.1.39, the lockfile format was changed from a binary bun.lockb to a text-based bun.lock.
-        # https://bun.sh/blog/bun-lock-text-lockfile
-        MIN_SUPPORTED_VERSION = T.let(Version.new("1.1.39"), Dependabot::Version)
-        SUPPORTED_VERSIONS = T.let([MIN_SUPPORTED_VERSION].freeze, T::Array[Dependabot::Version])
-        DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Version])
+        SUPPORTED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
+
+        DEPRECATED_VERSIONS = T.let([].freeze, T::Array[Dependabot::Version])
 
         sig do
           params(

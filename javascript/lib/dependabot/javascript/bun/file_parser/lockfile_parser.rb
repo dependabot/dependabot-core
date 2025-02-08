@@ -5,8 +5,10 @@ module Dependabot
   module Javascript
     module Bun
       class FileParser
-        class LockfileParser < Dependabot::Javascript::FileParser::LockfileParser
+        class LockfileParser < Dependabot::Javascript::Shared::FileParser::LockfileParser
           extend T::Sig
+
+          DEFAULT_LOCKFILES = %w(bun.lock).freeze
 
           sig { override.returns(Dependabot::FileParsers::Base::DependencySet) }
           def parse_set
@@ -17,6 +19,11 @@ module Dependabot
             end
 
             dependency_set
+          end
+
+          sig { override.returns(T::Array[String]) }
+          def default_lockfiles
+            DEFAULT_LOCKFILES
           end
 
           private

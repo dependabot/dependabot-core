@@ -63,7 +63,7 @@ module Dependabot
           end
 
           def registry
-            Javascript::UpdateChecker::RegistryFinder.new(
+            Dependabot::Javascript::Shared::UpdateChecker::RegistryFinder.new(
               dependency: nil,
               credentials: credentials,
               rc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") }

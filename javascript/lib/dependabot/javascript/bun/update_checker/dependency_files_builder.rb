@@ -5,7 +5,7 @@ module Dependabot
   module Javascript
     module Bun
       class UpdateChecker
-        class DependencyFilesBuilder < Dependabot::Javascript::UpdateChecker::DependencyFilesBuilder
+        class DependencyFilesBuilder < Shared::UpdateChecker::DependencyFilesBuilder
           extend T::Sig
 
           sig { returns(T::Array[Dependabot::DependencyFile]) }

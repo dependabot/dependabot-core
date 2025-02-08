@@ -6,7 +6,7 @@
 module Dependabot
   module Javascript
     module Bun
-      class FileParser < Dependabot::Javascript::FileParser
+      class FileParser < Shared::FileParser
         extend T::Sig
 
         sig { override.returns(Ecosystem) }
@@ -15,7 +15,7 @@ module Dependabot
             Ecosystem.new(
               name: ECOSYSTEM,
               package_manager: PackageManager.new(detected_version:),
-              language: Javascript::Language.new(detected_version:)
+              language: Shared::Language.new(detected_version:)
             ),
             T.nilable(Ecosystem)
           )

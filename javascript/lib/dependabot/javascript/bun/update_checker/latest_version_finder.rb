@@ -404,7 +404,7 @@ module Dependabot
           end
 
           def registry_finder
-            @registry_finder ||= Javascript::UpdateChecker::RegistryFinder.new(
+            @registry_finder ||= Dependabot::Javascript::Shared::UpdateChecker::RegistryFinder.new(
               dependency: dependency,
               credentials: credentials,
               rc_file: npmrc_file
