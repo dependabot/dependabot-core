@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::ConstraintHelper do
+RSpec.describe Dependabot::Javascript::Shared::ConstraintHelper do
   let(:helper) { described_class }
   let(:version_regex) { /^#{helper::VERSION}$/o }
   let(:dependabot_versions) do

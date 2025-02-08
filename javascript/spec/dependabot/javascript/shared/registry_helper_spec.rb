@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::RegistryHelper do
+RSpec.describe Dependabot::Javascript::Shared::RegistryHelper do
   let(:npmrc_file) do
     Dependabot::DependencyFile.new(
       name: ".npmrc",

@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::FileUpdater::PackageJsonUpdater do
+RSpec.describe Dependabot::Javascript::Shared::FileUpdater::PackageJsonUpdater do
   let(:package_json_updater) do
     described_class.new(
       package_json: package_json,

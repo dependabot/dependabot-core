@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::Version do
+RSpec.describe Dependabot::Javascript::Shared::Version do
   subject(:version) { described_class.new(version_string) }
 
   let(:version_string) { "1.0.0" }

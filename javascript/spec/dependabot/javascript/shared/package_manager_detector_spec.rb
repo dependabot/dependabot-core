@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::PackageManagerDetector do
+RSpec.describe Dependabot::Javascript::Shared::PackageManagerDetector do
   let(:npm_lockfile) do
     instance_double(
       Dependabot::DependencyFile,

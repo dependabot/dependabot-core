@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::Requirement do
+RSpec.describe Dependabot::Javascript::Shared::Requirement do
   subject(:requirement) { described_class.new(requirement_string) }
 
   let(:requirement_string) { ">=1.0.0" }
@@ -331,7 +331,7 @@ RSpec.describe Dependabot::Javascript::Requirement do
 
     context "with a Javascript::Version" do
       let(:version) do
-        Dependabot::Javascript::Version.new(version_string)
+        Dependabot::Javascript::Shared::Version.new(version_string)
       end
 
       context "when dealing with the current version" do

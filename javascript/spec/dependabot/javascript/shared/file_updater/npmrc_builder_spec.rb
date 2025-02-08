@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::FileUpdater::NpmrcBuilder do
+RSpec.describe Dependabot::Javascript::Shared::FileUpdater::NpmrcBuilder do
   let(:npmrc_builder) do
     described_class.new(
       dependency_files: dependency_files,

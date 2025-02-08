@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/bun"
 
-RSpec.describe Dependabot::Javascript::Language do
+RSpec.describe Dependabot::Javascript::Shared::Language do
   let(:language) do
     described_class.new(
       raw_version: raw_version,
@@ -20,19 +20,19 @@ RSpec.describe Dependabot::Javascript::Language do
     end
 
     it "sets the name correctly" do
-      expect(language.name).to eq(Dependabot::Javascript::Language::NAME)
+      expect(language.name).to eq(Dependabot::Javascript::Shared::Language::NAME)
     end
 
     it "sets the deprecated_versions correctly" do
-      expect(language.deprecated_versions).to eq(Dependabot::Javascript::Language::DEPRECATED_VERSIONS)
+      expect(language.deprecated_versions).to eq(Dependabot::Javascript::Shared::Language::DEPRECATED_VERSIONS)
     end
 
     it "sets the supported_versions correctly" do
-      expect(language.supported_versions).to eq(Dependabot::Javascript::Language::SUPPORTED_VERSIONS)
+      expect(language.supported_versions).to eq(Dependabot::Javascript::Shared::Language::SUPPORTED_VERSIONS)
     end
 
     context "when a requirement is provided" do
-      let(:requirement) { Dependabot::Javascript::Requirement.new([">= 16.0.0", "< 17.0.0"]) }
+      let(:requirement) { Dependabot::Javascript::Shared::Requirement.new([">= 16.0.0", "< 17.0.0"]) }
 
       it "sets the requirement correctly" do
         expect(language.requirement).to eq(requirement)
