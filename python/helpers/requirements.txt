@@ -1,4 +1,4 @@
-pip==24.0
+pip==25.0
 pip-tools==7.4.1
 flake8==7.1.0
 # TODO: Drop the conditions and use the latest version once we drop support for Python 3.8.
