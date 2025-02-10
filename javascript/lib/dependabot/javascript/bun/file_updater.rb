@@ -15,6 +15,11 @@ module Dependabot
 
         private
 
+        sig { override.returns(T.class_of(FileParser::LockfileParser)) }
+        def lockfile_parser_class
+          FileParser::LockfileParser
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def bun_locks
           @bun_locks ||= T.let(

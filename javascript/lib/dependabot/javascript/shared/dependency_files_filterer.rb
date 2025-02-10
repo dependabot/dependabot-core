@@ -8,10 +8,18 @@ module Dependabot
       class DependencyFilesFilterer
         extend T::Sig
 
-        sig { params(dependency_files: T::Array[DependencyFile], updated_dependencies: T::Array[Dependency]).void }
-        def initialize(dependency_files:, updated_dependencies:)
+        sig do
+          params(
+            dependency_files: T::Array[DependencyFile],
+            updated_dependencies: T::Array[Dependency],
+            lockfile_parser_class: T.class_of(FileParser::LockfileParser)
+          )
+            .void
+        end
+        def initialize(dependency_files:, updated_dependencies:, lockfile_parser_class:)
           @dependency_files = dependency_files
           @updated_dependencies = updated_dependencies
+          @lockfile_parser_class = lockfile_parser_class
         end
 
         sig { returns(T::Array[String]) }
@@ -46,6 +54,9 @@ module Dependabot
 
         sig { returns(T::Array[Dependency]) }
         attr_reader :updated_dependencies
+
+        sig { returns(T.class_of(FileParser::LockfileParser)) }
+        attr_reader :lockfile_parser_class
 
         sig { returns(T::Array[String]) }
         def fetch_paths_requiring_update_check
@@ -127,7 +138,7 @@ module Dependabot
         def lockfile_dependencies(lockfile)
           @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
           @lockfile_dependencies[lockfile.name] ||=
-            NpmAndYarn::FileParser::LockfileParser.new(
+            lockfile_parser_class.new(
               dependency_files: [lockfile]
             ).parse
         end

@@ -111,18 +111,22 @@ module Dependabot
         def filtered_dependency_files
           @filtered_dependency_files ||= T.let(
             if dependencies.any?(&:top_level?)
-              DependencyFilesFilterer.new(
+              Shared::DependencyFilesFilterer.new(
                 dependency_files: dependency_files,
-                updated_dependencies: dependencies
+                updated_dependencies: dependencies,
+                lockfile_parser_class: lockfile_parser_class
               ).files_requiring_update
             else
-              SubDependencyFilesFilterer.new(
+              Shared::SubDependencyFilesFilterer.new(
                 dependency_files: dependency_files,
                 updated_dependencies: dependencies
               ).files_requiring_update
             end, T.nilable(T::Array[DependencyFile])
           )
         end
+
+        sig { abstract.returns(T.class_of(FileParser::LockfileParser)) }
+        def lockfile_parser_class; end
 
         sig { override.void }
         def check_required_files

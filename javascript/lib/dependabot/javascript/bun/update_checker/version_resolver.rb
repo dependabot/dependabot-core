@@ -481,7 +481,8 @@ module Dependabot
             @paths_requiring_update_check ||=
               Dependabot::Javascript::Shared::DependencyFilesFilterer.new(
                 dependency_files: dependency_files,
-                updated_dependencies: [dependency]
+                updated_dependencies: [dependency],
+                lockfile_parser_class: FileParser::LockfileParser
               ).paths_requiring_update_check
           end
 
