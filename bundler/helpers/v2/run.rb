@@ -2,8 +2,11 @@
 # frozen_string_literal: true
 
 gem "bundler", "~> 2.4"
+gem "sorbet-runtime", "~> 0.5.11577"
+
 require "bundler"
 require "json"
+require "sorbet-runtime"
 
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
