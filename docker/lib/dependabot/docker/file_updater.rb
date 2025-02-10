@@ -1,28 +1,20 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/docker/utils/helpers"
-require "dependabot/file_updaters"
-require "dependabot/file_updaters/base"
-require "dependabot/errors"
-require "sorbet-runtime"
+require_relative "../common/base_file_updater"
 
 module Dependabot
   module Docker
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::DockerCommon::BaseFileUpdater
       extend T::Sig
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
-
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /(docker|container)file/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [
-          DOCKER_REGEXP,
-          YAML_REGEXP
-        ]
+        [DOCKER_REGEXP, YAML_REGEXP]
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -52,18 +44,9 @@ module Dependabot
 
       private
 
-      sig { returns T.nilable(Dependabot::Dependency) }
-      def dependency
-        # Dockerfiles will only ever be updating a single dependency
-        dependencies.first
-      end
-
-      sig { override.void }
-      def check_required_files
-        # Just check if there are any files at all.
-        return if dependency_files.any?
-
-        raise "No Dockerfile or Containerfile!"
+      sig { override.returns(String) }
+      def file_type
+        "Dockerfile or Containerfile"
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
@@ -121,43 +104,6 @@ module Dependabot
         end
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
-      def specified_with_tag?(source)
-        source[:tag]
-      end
-
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
-      def specified_with_digest?(source)
-        source[:digest]
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[String])) }
-      def new_tags(file)
-        requirements(file)
-          .map { |r| r.fetch(:source)[:tag] }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[String])) }
-      def old_tags(file)
-        previous_requirements(file)
-          &.map { |r| r.fetch(:source)[:tag] }
-      end
-
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
-      def private_registry_url(source)
-        source[:registry]
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
-      def sources(file)
-        requirements(file).map { |r| r.fetch(:source) }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]])) }
-      def previous_sources(file)
-        previous_requirements(file)&.map { |r| r.fetch(:source) }
-      end
-
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_yaml_content(file)
         updated_content = file.content
@@ -171,14 +117,13 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile, content: T.nilable(String)).returns(T.nilable(String)) }
       def update_helm(file, content)
-        # TODO: this won't work if two images have the same tag version
         old_tags = old_helm_tags(file)
         return if old_tags.empty?
 
         modified_content = content
 
         old_tags.each do |old_tag|
-          old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
+          old_tag_regex = /^\s*(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
           modified_content = modified_content&.gsub(old_tag_regex) do |old_img_tag|
             old_img_tag.gsub(old_tag.to_s, new_helm_tag(file).to_s)
           end
@@ -236,18 +181,6 @@ module Dependabot
         tag = T.must(element).dig(:source, :tag) || ""
         digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
         "#{tag}#{digest}"
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-      def requirements(file)
-        T.must(dependency).requirements
-         .select { |r| r[:file] == file.name }
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns T.nilable(T::Array[T::Hash[Symbol, T.untyped]]) }
-      def previous_requirements(file)
-        T.must(dependency).previous_requirements
-         &.select { |r| r[:file] == file.name }
       end
     end
   end

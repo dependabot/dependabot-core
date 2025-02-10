@@ -1,27 +1,26 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
-require "dependabot/file_updaters"
-require "dependabot/file_updaters/base"
-require "dependabot/errors"
-require "dependabot/common/file_updater_helper"
+require_relative "../common/base_file_updater"
 
 module Dependabot
   module DockerCompose
-    class FileUpdater < Dependabot::FileUpdaters::Base
-      include Dependabot::Docker::FileUpdaterHelper
+    class FileUpdater < Dependabot::DockerCommon::BaseFileUpdater
+      extend T::Sig
 
       IMAGE_REGEX = /image:\s*/
 
+      sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
-        [/docker-compose\.yml/i]
+        [/(docker-)?compose(?>\.[\w-]+)?\.ya?ml/i]
       end
 
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
 
         dependency_files.each do |file|
-          next unless requirement_changed?(file, dependency)
+          next unless requirement_changed?(file, T.must(dependency))
 
           updated_files <<
             updated_file(
@@ -38,40 +37,44 @@ module Dependabot
 
       private
 
-      def dependency
-        # docker-compose.yml files will only ever be updating
-        # a single dependency
-        dependencies.first
+      sig { override.returns(String) }
+      def file_type
+        "docker-compose.yml"
       end
 
-      def check_required_files
-        # Just check if there are any files at all.
-        return if dependency_files.any?
-
-        raise "No docker-compose.yml file!"
-      end
-
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_dockercompose_file_content(file)
-        updated_content =
-          if specified_with_digest?(file)
-            update_digest_and_tag(file)
-          else
-            update_tag(file)
-          end
-
+        updated_content = update_content(file)
         raise "Expected content to change!" if updated_content == file.content
 
         updated_content
       end
 
-      def digest_and_tag_regex(digest)
-        /^\s*#{IMAGE_REGEX}\s+.*@#{digest}/
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def update_content(file)
+        old_source = T.must(previous_sources(file)).first
+        new_source = T.must(sources(file)).first
+
+        content = file.content
+        old_declaration = build_declaration(old_source)
+        new_declaration = build_declaration(new_source)
+
+        escaped_declaration = Regexp.escape(old_declaration)
+        image_regex = %r{^\s*#{IMAGE_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+
+        content.gsub(image_regex) do |old_dec|
+          old_dec.gsub(old_declaration, new_declaration)
+        end
       end
 
-      def tag_regex(declaration)
-        escaped_declaration = Regexp.escape(declaration)
-
-        %r{^\s*#{IMAGE_REGEX}\s+(docker\.io/)?#{escaped_declaration}(?=\s|$)}
+      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(String) }
+      def build_declaration(source)
+        declaration = ""
+        declaration += "#{source[:registry]}/" if source[:registry]
+        declaration += T.must(dependency).name
+        declaration += ":#{source[:tag]}" if source[:tag]
+        declaration += "@sha256:#{source[:digest]}" if source[:digest]
+        declaration
       end
     end
   end
