@@ -5,7 +5,6 @@ module Dependabot
   module Javascript
     module Bun
       class FileFetcher < Shared::FileFetcher
-        include Shared::FileFetcherHelper
         extend T::Sig
         extend T::Helpers
 
