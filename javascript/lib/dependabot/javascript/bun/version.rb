@@ -9,6 +9,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::Utils
-  .register_version_class("bun", Dependabot::Javascript::Bun::Version)

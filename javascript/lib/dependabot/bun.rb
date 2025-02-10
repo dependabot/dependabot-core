@@ -44,3 +44,5 @@ Dependabot::FileFetchers.register("bun", Dependabot::Javascript::Bun::FileFetche
 Dependabot::FileParsers.register("bun", Dependabot::Javascript::Bun::FileParser)
 Dependabot::FileUpdaters.register("bun", Dependabot::Javascript::Bun::FileUpdater)
 Dependabot::UpdateCheckers.register("bun", Dependabot::Javascript::Bun::UpdateChecker)
+Dependabot::Utils.register_requirement_class("bun", Dependabot::Javascript::Bun::Requirement)
+Dependabot::Utils.register_version_class("bun", Dependabot::Javascript::Bun::Version)

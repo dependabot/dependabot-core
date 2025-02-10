@@ -9,8 +9,3 @@ module Dependabot
     end
   end
 end
-
-Dependabot::Utils.register_requirement_class(
-  "bun",
-  Dependabot::Javascript::Bun::Requirement
-)
