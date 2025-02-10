@@ -1,11 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "../common/base_file_updater"
+require_relative "../shared/base_file_updater"
 
 module Dependabot
   module Docker
-    class FileUpdater < Dependabot::DockerCommon::BaseFileUpdater
+    class FileUpdater < Dependabot::Shared::BaseFileUpdater
       extend T::Sig
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i

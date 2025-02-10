@@ -1,13 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "../common/base_file_fetcher"
+require_relative "../shared/base_file_fetcher"
 
 module Dependabot
   module DockerCompose
-    class FileFetcher < Dependabot::DockerCommon::BaseFileFetcher
-      FILENAME_REGEX = /docker-compose(?>\.override)?\.yml/i
-
+    class FileFetcher < Dependabot::Shared::BaseFileFetcher
       FILENAME_REGEX = /(docker-)?compose(?>\.[\w-]+)?\.ya?ml/i
 
       sig { override.returns(Regexp) }

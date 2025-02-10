@@ -3,7 +3,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
 module Dependabot
-  module DockerCommon
+  module Shared
     class BaseFileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers

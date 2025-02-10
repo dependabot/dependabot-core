@@ -1,11 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "../common/base_file_parser"
+require_relative "../shared/base_file_parser"
 
 module Dependabot
   module Docker
-    class FileParser < Dependabot::DockerCommon::BaseFileParser
+    class FileParser < Dependabot::Shared::BaseFileParser
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
@@ -21,6 +21,17 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: DockerPackageManager.new
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -152,6 +163,13 @@ module Dependabot
         image.prepend("#{registry}/") if registry
         image << "@sha256:#{digest}/" if digest
         [image]
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if dependency_files.any?
+
+        raise "No #{file_type}!"
       end
     end
   end

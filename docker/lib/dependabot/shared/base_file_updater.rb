@@ -7,7 +7,7 @@ require "dependabot/errors"
 require "sorbet-runtime"
 
 module Dependabot
-  module DockerCommon
+  module Shared
     class BaseFileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
       extend T::Helpers

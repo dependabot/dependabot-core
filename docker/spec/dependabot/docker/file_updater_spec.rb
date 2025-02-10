@@ -2,11 +2,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/dependency"
-require "dependabot/dependency_file"
-require "dependabot/source"
-require "dependabot/docker/file_updater"
-require_common_spec "file_updaters/shared_examples_for_file_updaters"
+require "dependabot/docker"
+# require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Docker::FileUpdater do
   let(:helm_dependency) do

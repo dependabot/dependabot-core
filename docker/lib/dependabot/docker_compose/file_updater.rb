@@ -1,11 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "../common/base_file_updater"
+require_relative "../shared/base_file_updater"
 
 module Dependabot
   module DockerCompose
-    class FileUpdater < Dependabot::DockerCommon::BaseFileUpdater
+    class FileUpdater < Dependabot::Shared::BaseFileUpdater
       extend T::Sig
 
       IMAGE_REGEX = /image:\s*/

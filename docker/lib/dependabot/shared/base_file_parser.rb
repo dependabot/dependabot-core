@@ -7,7 +7,7 @@ require "dependabot/file_parsers/base"
 require "sorbet-runtime"
 
 module Dependabot
-  module DockerCommon
+  module Shared
     class BaseFileParser < Dependabot::FileParsers::Base
       extend T::Sig
       extend T::Helpers
@@ -65,13 +65,6 @@ module Dependabot
       sig { abstract.returns(String) }
       def package_manager
         raise NotImplementedError, "#{self.class.name} must implement #package_manager"
-      end
-
-      sig { override.void }
-      def check_required_files
-        return if dependency_files.any?
-
-        raise "No #{file_type}!"
       end
 
       sig { abstract.returns(String) }

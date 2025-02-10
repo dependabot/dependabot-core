@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "yaml"
-require_relative "../common/base_file_parser"
+require_relative "../shared/base_file_parser"
 
 module Dependabot
   module DockerCompose
-    class FileParser < Dependabot::DockerCommon::BaseFileParser
+    class FileParser < Dependabot::Shared::BaseFileParser
       extend T::Sig
 
       FROM_IMAGE = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
@@ -46,6 +46,13 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def composefiles
         dependency_files
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if dependency_files.any?
+
+        raise "No #{file_type}!"
       end
     end
   end

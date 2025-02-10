@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
-require_relative "../common/base_file_fetcher"
+require_relative "../shared/base_file_fetcher"
 
 module Dependabot
   module Docker
-    class FileFetcher < Dependabot::DockerCommon::BaseFileFetcher
+    class FileFetcher < Dependabot::Shared::BaseFileFetcher
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
@@ -35,7 +35,7 @@ module Dependabot
       end
 
       # Additional Docker-specific methods for YAML handling
-      sig { returns(T::Array[DependencyFile]) }
+      sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = super
         fetched_files += correctly_encoded_yamlfiles
