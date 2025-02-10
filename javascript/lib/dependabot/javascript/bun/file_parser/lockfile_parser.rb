@@ -5,7 +5,7 @@ module Dependabot
   module Javascript
     module Bun
       class FileParser
-        class LockfileParser < Dependabot::Javascript::Shared::FileParser::LockfileParser
+        class LockfileParser < Shared::FileParser::LockfileParser
           extend T::Sig
 
           DEFAULT_LOCKFILES = %w(bun.lock).freeze

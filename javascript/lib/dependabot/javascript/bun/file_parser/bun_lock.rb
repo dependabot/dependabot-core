@@ -5,7 +5,7 @@ module Dependabot
   module Javascript
     module Bun
       class FileParser
-        class BunLock < Dependabot::Javascript::Shared::FileParser::Lockfile
+        class BunLock < Shared::FileParser::Lockfile
           extend T::Sig
 
           sig { params(dependency_file: DependencyFile).void }

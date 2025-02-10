@@ -189,7 +189,7 @@ module Dependabot
             updated_deps << build_updated_dependency(
               dependency: Dependency.new(
                 name: dependency_name,
-                package_manager: "npm_and_yarn",
+                package_manager: "bun",
                 requirements: requirements
               ),
               version: update["target_version"],

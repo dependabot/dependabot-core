@@ -11,7 +11,7 @@ module Dependabot
 
         def self.native_helpers_root
           helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
-          return File.join(helpers_root, "npm_and_yarn") unless helpers_root.nil?
+          return File.join(helpers_root, "javascript", "shared") unless helpers_root.nil?
 
           File.join(__dir__, "../../../helpers")
         end

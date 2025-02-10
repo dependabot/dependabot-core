@@ -1,8 +1,6 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/bun/update_checker/dependency_files_builder"
-
 module Dependabot
   module Javascript
     module Bun
