@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require_relative "../../../../lib/dependabot/bundler/version"
 
 module Functions
   class DependencySource
@@ -49,7 +50,7 @@ module Functions
       { version: spec.version, commit_sha: spec.source.revision }
     end
 
-    sig { returns(T::Array[Bundler::Version]) }
+    sig { returns(T::Array[Dependabot::Bundler::Version]) }
     def private_registry_versions
       bundler_source = specified_source || default_source
 
