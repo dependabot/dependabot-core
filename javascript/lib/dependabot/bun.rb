@@ -13,7 +13,7 @@ loader.ignore(File.join(__dir__, "../../../common/lib/dependabot/notices.rb"))
 loader.ignore(File.join(__dir__, "../../../common/lib/dependabot/clients/codecommit.rb"))
 
 loader.push_dir(File.join(__dir__, ".."))
-loader.ignore("#{__dir__}/../script", "#{__dir__}/../spec", "#{__dir__}/../dependabot-javascript.gemspec")
+loader.ignore("#{__dir__}/../script", "#{__dir__}/../spec", "#{__dir__}/../dependabot-bun.gemspec")
 
 loader.on_load do |_file|
   require "json"
