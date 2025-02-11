@@ -61,13 +61,21 @@ module Dependabot
                            updated_lockfiles
                          end
 
+        updated_files&.each do |updated_file|
+          puts "Files updated: #{updated_file.name}"
+        end
+
         if updated_files.none?
           if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error) && original_pnpm_locks.any?
             raise_tool_not_supported_for_pnpm_if_transitive
             raise_miss_configured_tooling_if_pnpm_subdirectory
           end
+debugger
+          if Experiments.enabled?(:update_samever_requirements)
+            raise DependencyFileNotResolvable, "No viable files available for update"
+          end
 
-          raise NoChangeError.new(
+          raise DependencyFileNotResolvable.new(
             message: "No files were updated!",
             error_context: error_context(updated_files: updated_files)
           )

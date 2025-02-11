@@ -76,6 +76,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:update_samever_requirements).and_return(false)
   end
 
   after do
