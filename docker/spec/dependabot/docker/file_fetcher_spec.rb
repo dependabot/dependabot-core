@@ -70,6 +70,14 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: dockerfile_fixture,
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     let(:dockerfile_fixture) do
@@ -122,6 +130,20 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: dockerfile_fixture,
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
     let(:dockerfile_fixture) do
@@ -159,6 +181,14 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         )
 
       stub_request(:get, File.join(url, "Dockerfile-base?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dockerfile.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,

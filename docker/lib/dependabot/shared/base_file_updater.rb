@@ -12,6 +12,10 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+
+
+      protected
+
       sig { params(file: Dependabot::DependencyFile, dependency: Dependabot::Dependency).returns(T::Boolean) }
       def requirement_changed?(file, dependency)
         changed_requirements =
@@ -19,8 +23,6 @@ module Dependabot
 
         changed_requirements.any? { |f| f[:file] == file.name }
       end
-
-      protected
 
       sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
       def specified_with_tag?(source)

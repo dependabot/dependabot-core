@@ -1,6 +1,10 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+require "dependabot/docker/utils/helpers"
+require "dependabot/file_fetchers"
+require "dependabot/file_fetchers/base"
 require_relative "../shared/base_file_updater"
 
 module Dependabot
@@ -181,6 +185,13 @@ module Dependabot
         tag = T.must(element).dig(:source, :tag) || ""
         digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
         "#{tag}#{digest}"
+      end
+
+      sig { override.void }
+      def check_required_files
+        return if dependency_files.any?
+
+        raise "No #{file_type}!"
       end
     end
   end

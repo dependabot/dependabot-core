@@ -21,21 +21,7 @@ module Dependabot
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
         fetched_files = []
-        fetched_files += correctly_encoded_files
-
-        return fetched_files if fetched_files.any?
-
-        if incorrectly_encoded_files.none?
-          raise Dependabot::DependencyFileNotFound.new(
-            File.join(directory, default_file_name),
-            "No #{file_type} files found in #{directory}"
-          )
-        else
-          raise(
-            Dependabot::DependencyFileNotParseable,
-            T.must(incorrectly_encoded_files.first).path
-          )
-        end
+        fetched_files + correctly_encoded_files
       end
 
       private

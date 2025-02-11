@@ -117,14 +117,14 @@
     "sha": "311f9743315183cc6751313cb251cfeb3de45c1a",
     "size": 4927,
     "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/docker-compose.override.yml?ref=master",
-    "html_url": "https://github.com/dependabot/dependabot-core/blob/master/docker-compose.override.yml",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/docker-compose.override.yml",
     "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
-    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/docker-compose.override.yml",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/main/docker-compose.override.yml",
     "type": "file",
     "_links": {
       "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/docker-compose.override.yml?ref=master",
       "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
-      "html": "https://github.com/dependabot/dependabot-core/blob/master/docker-compose.override.yml"
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/docker-compose.override.yml"
     }
   },
   {

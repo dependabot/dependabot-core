@@ -42,14 +42,23 @@ module Dependabot
 
         return fetched_files if fetched_files.any?
 
-        if incorrectly_encoded_yamlfiles.any?
+        if incorrectly_encoded_files.none?
+          raise Dependabot::DependencyFileNotFound.new(
+            File.join(directory, default_file_name),
+            "No #{file_type} files found in #{directory}"
+          )
+        else
           raise(
             Dependabot::DependencyFileNotParseable,
-            T.must(incorrectly_encoded_yamlfiles.first).path
+            T.must(incorrectly_encoded_files.first).path
           )
         end
+      end
 
-        fetched_files
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
+          filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
       sig { returns(T::Array[DependencyFile]) }
@@ -70,6 +79,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
+        debugger
         candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
         candidate_files.select do |f|
           if f.type == "file" && Utils.likely_helm_chart?(f)
