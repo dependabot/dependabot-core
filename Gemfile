@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-bun", path: "javascript"
 gem "dependabot-bundler", path: "bundler"
 gem "dependabot-cargo", path: "cargo"
 gem "dependabot-common", path: "common"
@@ -15,7 +16,6 @@ gem "dependabot-git_submodules", path: "git_submodules"
 gem "dependabot-go_modules", path: "go_modules"
 gem "dependabot-gradle", path: "gradle"
 gem "dependabot-hex", path: "hex"
-gem "dependabot-javascript", path: "javascript"
 gem "dependabot-maven", path: "maven"
 gem "dependabot-npm_and_yarn", path: "npm_and_yarn"
 gem "dependabot-nuget", path: "nuget"

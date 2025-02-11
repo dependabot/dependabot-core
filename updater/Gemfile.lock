@@ -100,7 +100,7 @@ PATH
 PATH
   remote: ../javascript
   specs:
-    dependabot-javascript (0.296.1)
+    dependabot-bun (0.296.1)
       dependabot-common (= 0.296.1)
       zeitwerk (~> 2.7)
 
@@ -419,6 +419,7 @@ PLATFORMS
 
 DEPENDENCIES
   debug (~> 1.9.2)
+  dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
   dependabot-common!
@@ -432,7 +433,6 @@ DEPENDENCIES
   dependabot-go_modules!
   dependabot-gradle!
   dependabot-hex!
-  dependabot-javascript!
   dependabot-maven!
   dependabot-npm_and_yarn!
   dependabot-nuget!
