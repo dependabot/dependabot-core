@@ -43,9 +43,7 @@ RUN corepack install yarn@$YARN_VERSION --global
 # Install npm and set it to a stable version
 RUN corepack install npm@$NPM_VERSION --global
 
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-COPY --chown=dependabot:dependabot javascript/helpers /opt/javascript/helpers
-RUN bash /opt/javascript/helpers/build
+# TODO: Removed helpers as they are not used by bun. But we should add back when we use npm, pnpm, or yarn.
 
 # START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
