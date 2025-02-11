@@ -105,10 +105,13 @@ COPY --chown=dependabot:dependabot swift/.bundle swift/dependabot-swift.gemspec 
 COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk javascript; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
+
+# Special case: Bun under Javascript
+RUN mkdir -p javascript/lib/dependabot && touch javascript/lib/dependabot/bun.rb
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
