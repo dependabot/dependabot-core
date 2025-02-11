@@ -7,7 +7,9 @@ Gem::Specification.new do |spec|
   spec.name         = "dependabot-bun"
   spec.summary      = "Provides Dependabot support for bun"
   spec.description  = "Dependabot-bun provides support for bumping Javascript libraries using bun via " \
-                      "Dependabot. "
+                      "Dependabot." \
+                      "If you want support for multiple package managers, you probably want the meta-gem " \
+                      "dependabot-omnibus."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
