@@ -1,10 +1,10 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nodejs/corepack/releases
-ARG COREPACK_VERSION=0.30.0
+ARG COREPACK_VERSION=0.31.0
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
-ARG PNPM_VERSION=9.15.3
+ARG PNPM_VERSION=9.15.5
 
 # Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=4.5.3
@@ -44,8 +44,8 @@ RUN corepack install yarn@$YARN_VERSION --global
 RUN corepack install npm@$NPM_VERSION --global
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-RUN bash /opt/npm_and_yarn/helpers/build
+COPY --chown=dependabot:dependabot javascript/helpers /opt/javascript/helpers
+RUN bash /opt/javascript/helpers/build
 
 # START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
