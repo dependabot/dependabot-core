@@ -13,7 +13,7 @@ loader.ignore(File.join(__dir__, "../../../common/lib/dependabot/notices.rb"))
 loader.ignore(File.join(__dir__, "../../../common/lib/dependabot/clients/codecommit.rb"))
 
 loader.push_dir(File.join(__dir__, ".."))
-loader.ignore("#{__dir__}/../script", "#{__dir__}/../spec", "#{__dir__}/../dependabot-bun.gemspec")
+loader.ignore("#{__dir__}/../script", "#{__dir__}/../spec", "#{__dir__}/../dependabot-javascript.gemspec")
 
 loader.on_load do |_file|
   require "json"
@@ -33,12 +33,17 @@ Dependabot::PullRequestCreator::Labeler
 Dependabot::Dependency.register_production_check("bun", ->(_) { true })
 
 module Dependabot
-  module Bun
-    ECOSYSTEM = "bun"
+  module Javascript
+    module Bun
+      ECOSYSTEM = "bun"
+    end
   end
 end
 
-Dependabot::FileFetchers.register("bun", Dependabot::Bun::FileFetcher)
-Dependabot::FileParsers.register("bun", Dependabot::Bun::FileParser)
-Dependabot::FileUpdaters.register("bun", Dependabot::Bun::FileUpdater)
-Dependabot::UpdateCheckers.register("bun", Dependabot::Bun::UpdateChecker)
+Dependabot::FileFetchers.register("bun", Dependabot::Javascript::Bun::FileFetcher)
+Dependabot::FileParsers.register("bun", Dependabot::Javascript::Bun::FileParser)
+Dependabot::FileUpdaters.register("bun", Dependabot::Javascript::Bun::FileUpdater)
+Dependabot::UpdateCheckers.register("bun", Dependabot::Javascript::Bun::UpdateChecker)
+Dependabot::MetadataFinders.register("bun", Dependabot::Javascript::Shared::MetadataFinder)
+Dependabot::Utils.register_requirement_class("bun", Dependabot::Javascript::Bun::Requirement)
+Dependabot::Utils.register_version_class("bun", Dependabot::Javascript::Bun::Version)
