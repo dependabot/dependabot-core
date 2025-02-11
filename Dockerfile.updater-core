@@ -110,7 +110,8 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-# Special case: Bun under Javascript
+# Special cases: 
+#  - Bun ecosystem under Javascript
 RUN mkdir -p javascript/lib/dependabot && touch javascript/lib/dependabot/bun.rb
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
