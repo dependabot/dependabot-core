@@ -196,6 +196,11 @@ docker run --rm -ti \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
+  -v "$(pwd)/javascript/.rubocop.yml:$CODE_DIR/javascript/.rubocop.yml" \
+  -v "$(pwd)/javascript/dependabot-bun.gemspec:$CODE_DIR/javascript/dependabot-bun.gemspec" \
+  -v "$(pwd)/javascript/lib:$CODE_DIR/javascript/lib" \
+  -v "$(pwd)/javascript/script:$CODE_DIR/javascript/script" \
+  -v "$(pwd)/javascript/spec:$CODE_DIR/javascript/spec" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
