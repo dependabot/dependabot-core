@@ -1709,5 +1709,23 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
       specify { expect(updated_dependency_files.length).to eq(1) }
     end
+
+    describe "#error_handler" do
+      subject(:error_handler) { Dependabot::Terraform::FileUpdaterErrorHandler.new }
+
+      let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
+
+      context "when the error message contains no resolvable releases" do
+        let(:error_message) do
+          "Could not retrieve providers for locking, no available releases match"
+        end
+
+        it "raises a DependencyFileNotResolvable error with the correct message" do
+          expect do
+            error_handler.handle_helper_subprocess_failed_error(error)
+          end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
   end
 end
