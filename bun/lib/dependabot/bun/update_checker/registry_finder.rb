@@ -12,22 +12,15 @@ module Dependabot
         CENTRAL_REGISTRIES = %w(
           https://registry.npmjs.org
           http://registry.npmjs.org
-          https://registry.yarnpkg.com
-          http://registry.yarnpkg.com
         ).freeze
         NPM_AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
         NPM_GLOBAL_REGISTRY_REGEX = /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
-        YARN_GLOBAL_REGISTRY_REGEX = /^(?:--)?registry\s+((['"](?<registry>.*)['"])|(?<registry>.*))/
         NPM_SCOPED_REGISTRY_REGEX = /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
-        YARN_SCOPED_REGISTRY_REGEX = /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/
 
-        def initialize(dependency:, credentials:, npmrc_file: nil,
-                       yarnrc_file: nil, yarnrc_yml_file: nil)
+        def initialize(dependency:, credentials:, npmrc_file: nil)
           @dependency = dependency
           @credentials = credentials
           @npmrc_file = npmrc_file
-          @yarnrc_file = yarnrc_file
-          @yarnrc_yml_file = yarnrc_yml_file
         end
 
         def registry
@@ -64,8 +57,6 @@ module Dependabot
         attr_reader :dependency
         attr_reader :credentials
         attr_reader :npmrc_file
-        attr_reader :yarnrc_file
-        attr_reader :yarnrc_yml_file
 
         def explicit_registry_from_rc(dependency_name)
           if dependency_name.start_with?("@") && dependency_name.include?("/")
@@ -165,7 +156,6 @@ module Dependabot
                             .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap { |arr| arr.each { |c| c["token"] ||= nil } }
               registries += npmrc_registries
-              registries += yarnrc_registries
 
               unique_registries(registries)
             end
@@ -191,12 +181,6 @@ module Dependabot
           registries += npmrc_global_registries
         end
 
-        def yarnrc_registries
-          return [] unless yarnrc_file
-
-          yarnrc_global_registries
-        end
-
         def unique_registries(registries)
           registries.uniq.reject do |registry|
             next if registry["token"]
@@ -214,17 +198,11 @@ module Dependabot
           @global_registry ||= configured_global_registry || "https://registry.npmjs.org"
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def configured_global_registry
           return @configured_global_registry if defined? @configured_global_registry
 
-          @configured_global_registry = (npmrc_file && npmrc_global_registries.first&.fetch("url")) ||
-                                        (yarnrc_file && yarnrc_global_registries.first&.fetch("url"))
+          @configured_global_registry = npmrc_file && npmrc_global_registries.first&.fetch("url")
           return @configured_global_registry if @configured_global_registry
-
-          if parsed_yarnrc_yml&.key?("npmRegistryServer")
-            return @configured_global_registry = parsed_yarnrc_yml["npmRegistryServer"]
-          end
 
           replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           if replaces_base
@@ -235,27 +213,13 @@ module Dependabot
 
           @configured_global_registry = nil
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def npmrc_global_registries
           global_rc_registries(npmrc_file, syntax: NPM_GLOBAL_REGISTRY_REGEX)
         end
 
-        def yarnrc_global_registries
-          global_rc_registries(yarnrc_file, syntax: YARN_GLOBAL_REGISTRY_REGEX)
-        end
-
         def scoped_registry(scope)
-          scoped_rc_registry = scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope) ||
-                               scoped_rc_registry(yarnrc_file, syntax: YARN_SCOPED_REGISTRY_REGEX, scope: scope)
-          return scoped_rc_registry if scoped_rc_registry
-
-          if parsed_yarnrc_yml
-            yarn_berry_registry = parsed_yarnrc_yml.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
-            return yarn_berry_registry if yarn_berry_registry
-          end
-
-          nil
+          scoped_rc_registry(npmrc_file, syntax: NPM_SCOPED_REGISTRY_REGEX, scope: scope)
         end
 
         def global_rc_registries(file, syntax:)
@@ -302,13 +266,6 @@ module Dependabot
                               .sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
-        end
-
-        def parsed_yarnrc_yml
-          return unless yarnrc_yml_file
-          return @parsed_yarnrc_yml if defined? @parsed_yarnrc_yml
-
-          @parsed_yarnrc_yml = YAML.safe_load(yarnrc_yml_file.content)
         end
 
         def normalize_configured_registry(url)

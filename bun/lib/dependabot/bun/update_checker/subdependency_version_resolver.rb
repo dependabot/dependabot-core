@@ -64,19 +64,7 @@ module Dependabot
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
           path = Pathname.new(lockfile.name).dirname.to_s
 
-          updated_files = if lockfile.name.end_with?("yarn.lock") && Helpers.yarn_berry?(lockfile)
-                            run_yarn_berry_updater(path, lockfile_name)
-                          elsif lockfile.name.end_with?("yarn.lock")
-                            run_yarn_updater(path, lockfile_name)
-                          elsif lockfile.name.end_with?("pnpm-lock.yaml")
-                            run_pnpm_updater(path, lockfile_name)
-                          elsif lockfile.name.end_with?("bun.lock")
-                            run_bun_updater(path, lockfile_name)
-                          elsif !Helpers.npm8?(lockfile)
-                            run_npm6_updater(path, lockfile_name)
-                          else
-                            run_npm_updater(path, lockfile_name)
-                          end
+          updated_files = (run_bun_updater(path, lockfile_name) if lockfile.name.end_with?("bun.lock"))
 
           updated_files.fetch(lockfile_name)
         end
@@ -96,65 +84,6 @@ module Dependabot
           version_class.new(updated_version)
         end
 
-        def run_yarn_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:updateSubdependency",
-                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
-              )
-            end
-          end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          unfindable_str = "find package \"#{dependency.name}"
-          raise unless e.message.include?("The registry may be down") ||
-                       e.message.include?("ETIMEDOUT") ||
-                       e.message.include?("ENOBUFS") ||
-                       e.message.include?(unfindable_str)
-
-          retry_count ||= 0
-          retry_count += 1
-          raise if retry_count > 2
-
-          sleep(rand(3.0..10.0))
-          retry
-        end
-
-        def run_yarn_berry_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              Helpers.run_yarn_command(
-                "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
-                fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
-              )
-              { lockfile_name => File.read(lockfile_name) }
-            end
-          end
-        end
-
-        def run_pnpm_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              Helpers.run_pnpm_command(
-                "update #{dependency.name} --lockfile-only",
-                fingerprint: "update <dependency_name> --lockfile-only"
-              )
-              { lockfile_name => File.read(lockfile_name) }
-            end
-          end
-        end
-
-        def run_npm_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
-
-              { lockfile_name => File.read(lockfile_name) }
-            end
-          end
-        end
-
         def run_bun_updater(path, lockfile_name)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
@@ -163,18 +92,6 @@ module Dependabot
                 fingerprint: "update <dependency_name> --save-text-lockfile"
               )
               { lockfile_name => File.read(lockfile_name) }
-            end
-          end
-        end
-
-        def run_npm6_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
-                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
-              )
             end
           end
         end

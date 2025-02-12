@@ -31,43 +31,6 @@ module Dependabot
           "vue" => %w(vue vue-template-compiler)
         }.freeze
 
-        # Error message returned by `yarn add` (for Yarn classic):
-        # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
-        # "workspace-aggregator-<random-string> > test > react-dom@15.6.2" has incorrect peer dependency "react@^15.6.2"
-        # " > react-burger-menu@1.9.9" has unmet peer dependency "react@>=0.14.0 <16.0.0"
-        YARN_PEER_DEP_ERROR_REGEX =
-          /
-            \s>\s(?<requiring_dep>[^>"]+)"\s
-            has\s(incorrect|unmet)\speer\sdependency\s
-            "(?<required_dep>[^"]+)"
-          /x
-
-        # Error message returned by `yarn add` (for Yarn berry):
-        # YN0060: │ eve-roster@workspace:. provides jest (p8d618) \
-        # with version 29.3.0, which doesn't satisfy \
-        # what ts-jest requests\n
-        YARN_BERRY_PEER_DEP_ERROR_REGEX =
-          /
-            YN0060:.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
-          /x
-
-        # Error message returned by `yarn add` (for Yarn berry v4):
-        # YN0060: │ react is listed by your project with version 15.2.0, \
-        # which doesn't satisfy what react-dom (p89012) requests (^16.0.0).
-        YARN_BERRY_V4_PEER_DEP_ERROR_REGEX =
-          /
-            YN0060:.+\s(?<required_dep>.+?)\sis\s.+what\s(?<requiring_dep>.+?)\s\((?<info_hash>\w+)\)\srequests
-          /x
-
-        # Error message returned by `pnpm update`:
-        # └─┬ react-dom 15.7.0
-        #   └── ✕ unmet peer react@^15.7.0: found 16.3.1
-        PNPM_PEER_DEP_ERROR_REGEX =
-          /
-            ┬\s(?<requiring_dep>[^\n]+)\n
-            [^\n]*✕\sunmet\speer\s(?<required_dep>[^:]+):
-          /mx
-
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
@@ -365,7 +328,6 @@ module Dependabot
           []
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
         def handle_peer_dependency_errors(message)
           errors = []
@@ -377,30 +339,11 @@ module Dependabot
             message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
               errors << T.must(Regexp.last_match).named_captures
             end
-          elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
-            message.scan(YARN_PEER_DEP_ERROR_REGEX) do
-              errors << T.must(Regexp.last_match).named_captures
-            end
-          elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
-            message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
-              errors << T.must(Regexp.last_match).named_captures
-            end
-          elsif message.match?(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX)
-            message.scan(YARN_BERRY_V4_PEER_DEP_ERROR_REGEX) do
-              errors << T.must(Regexp.last_match).named_captures
-            end
-          elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
-            message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
-              captures = T.must(Regexp.last_match).named_captures
-              T.must(captures["requiring_dep"]).tr!(" ", "@")
-              errors << captures
-            end
           else
             raise
           end
           errors
         end
-        # rubocop:enable Metrics/AbcSize
 
         def unmet_peer_dependencies
           peer_dependency_errors
@@ -542,53 +485,13 @@ module Dependabot
         end
 
         def run_checker(path:, version:)
-          yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
-          return run_yarn_checker(path: path, version: version, lockfile: yarn_lockfiles.first) if yarn_lockfiles.any?
-
-          pnpm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.pnpm_locks, path: path)
-          return run_pnpm_checker(path: path, version: version) if pnpm_lockfiles.any?
-
-          npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
-          return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
-
           bun_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.bun_locks, path: path)
           return run_bun_checker(path: path, version: version) if bun_lockfiles.any?
 
-          root_yarn_lock = dependency_files_builder.root_yarn_lock
-          return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
-
-          root_pnpm_lock = dependency_files_builder.root_pnpm_lock
-          return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
-
           root_bun_lock = dependency_files_builder.root_bun_lock
-          return run_bun_checker(path: path, version: version) if root_bun_lock
-
-          run_npm_checker(path: path, version: version)
+          run_bun_checker(path: path, version: version) if root_bun_lock
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_peer_dependency_errors(e.message)
-        end
-
-        def run_yarn_checker(path:, version:, lockfile:)
-          return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
-
-          run_yarn_classic_checker(path: path, version: version)
-        end
-
-        def run_pnpm_checker(path:, version:)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              output = Helpers.run_pnpm_command(
-                "update #{dependency.name}@#{version} --lockfile-only",
-                fingerprint: "update <dependency_name>@<version> --lockfile-only"
-              )
-              if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
-                raise SharedHelpers::HelperSubprocessFailed.new(
-                  message: output,
-                  error_context: {}
-                )
-              end
-            end
-          end
         end
 
         def run_bun_checker(path:, version:)
@@ -600,81 +503,6 @@ module Dependabot
               )
             end
           end
-        end
-
-        def run_yarn_berry_checker(path:, version:)
-          # This method mimics calling a native helper in order to comply with the caller's expectations
-          # Specifically we add the dependency at the specified updated version
-          # then check the output of the add command for Peer Dependency errors (Denoted by YN0060)
-          # If we find peer dependency issues, we raise HelperSubprocessFailed as
-          # the native helpers do.
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              output = Helpers.run_yarn_command(
-                "add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
-              )
-              if output.include?("YN0060")
-                raise SharedHelpers::HelperSubprocessFailed.new(
-                  message: output,
-                  error_context: {}
-                )
-              end
-            end
-          end
-        end
-
-        def run_yarn_classic_checker(path:, version:)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:checkPeerDependencies",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  version,
-                  requirements_for_path(dependency.requirements, path)
-                ]
-              )
-            end
-          end
-        end
-
-        def run_npm_checker(path:, version:)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              package_lock = dependency_files_builder.package_locks.find do |f|
-                # Find the lockfile that's in the current directory
-                f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
-              end
-
-              return run_npm8_checker(version: version) if Dependabot::Bun::Helpers.npm8?(package_lock)
-
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:checkPeerDependencies",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  version,
-                  requirements_for_path(dependency.requirements, path),
-                  top_level_dependencies.map(&:to_h)
-                ]
-              )
-            end
-          end
-        end
-
-        def run_npm8_checker(version:)
-          cmd =
-            "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          output = Helpers.run_npm_command(cmd)
-          if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
-            error_context = { command: cmd, process_exit_value: 1 }
-            raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
-          end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
         end
 
         def version_install_arg(version:)

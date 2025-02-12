@@ -14,13 +14,7 @@ module Dependabot
       class NpmrcBuilder
         extend T::Sig
 
-        CENTRAL_REGISTRIES = T.let(
-          %w(
-            registry.npmjs.org
-            registry.yarnpkg.com
-          ).freeze,
-          T::Array[String]
-        )
+        CENTRAL_REGISTRIES = T.let(%w(registry.npmjs.org).freeze, T::Array[String])
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
@@ -42,7 +36,6 @@ module Dependabot
         def npmrc_content
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
-            elsif yarnrc_file then build_npmrc_from_yarnrc
             else
               build_npmrc_content_from_lockfile
             end
@@ -60,21 +53,6 @@ module Dependabot
           final_content
         end
 
-        # PROXY WORK
-        # Yarn allows registries to be defined either in an .npmrc or .yarnrc
-        # so we need to parse both files for registry keys
-        sig { returns(String) }
-        def yarnrc_content
-          initial_content =
-            if npmrc_file then complete_yarnrc_from_credentials
-            elsif yarnrc_file then build_yarnrc_from_yarnrc
-            else
-              build_yarnrc_content_from_lockfile
-            end
-
-          initial_content || ""
-        end
-
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -88,7 +66,6 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def build_npmrc_content_from_lockfile
-          return unless yarn_lock || package_lock || shrinkwrap
           return unless global_registry
 
           registry = T.must(global_registry)["registry"]
@@ -98,19 +75,8 @@ module Dependabot
             "always-auth = true"
         end
 
-        sig { returns(T.nilable(String)) }
-        def build_yarnrc_content_from_lockfile
-          return unless yarn_lock || package_lock
-          return unless global_registry
-
-          "registry \"https://#{T.must(global_registry)['registry']}\"\n" \
-            "#{yarnrc_global_registry_auth_line}" \
-            "npmAlwaysAuth: true"
-        end
-
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(Dependabot::Credential)) }
         def global_registry
           return @global_registry if defined?(@global_registry)
@@ -127,8 +93,6 @@ module Dependabot
               # Check if this registry has already been defined in .npmrc as a scoped registry
               next false if npmrc_scoped_registries&.any? { |sr| sr.include?(T.must(cred["registry"])) }
 
-              next false if yarnrc_scoped_registries&.any? { |sr| sr.include?(T.must(cred["registry"])) }
-
               # If any unscoped URLs include this registry, assume it's global
               dependency_urls
                 &.reject { |u| u.include?("@") || u.include?("%40") }
@@ -139,8 +103,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(String) }
         def npmrc_global_registry_auth_line
           # This token is passed in from the Dependabot Config
@@ -151,23 +113,6 @@ module Dependabot
           auth_line(token, global_registry&.fetch("registry")) + "\n"
         end
 
-        sig { returns(String) }
-        def yarnrc_global_registry_auth_line
-          token = global_registry&.fetch("token", nil)
-          return "" unless token
-
-          if token.include?(":")
-            encoded_token = Base64.encode64(token).delete("\n")
-            "npmAuthIdent: \"#{encoded_token}\""
-          elsif Base64.decode64(token).ascii_only? &&
-                Base64.decode64(token).include?(":")
-            "npmAuthIdent: \"#{token.delete("\n")}\""
-          else
-            "npmAuthToken: \"#{token}\""
-          end
-        end
-
-        # rubocop:disable Metrics/AbcSize
         sig { returns(T.nilable(T::Array[String])) }
         def dependency_urls
           return @dependency_urls if defined?(@dependency_urls)
@@ -179,25 +124,10 @@ module Dependabot
               UpdateChecker::RegistryFinder.new(
                 dependency: dependency,
                 credentials: credentials,
-                npmrc_file: npmrc_file,
-                yarnrc_file: yarnrc_file,
-                yarnrc_yml_file: yarnrc_yml_file
+                npmrc_file: npmrc_file
               ).dependency_url
             end
             return @dependency_urls
-          end
-
-          npm_lockfile = package_lock || shrinkwrap
-          if npm_lockfile
-            @dependency_urls +=
-              T.must(npm_lockfile.content).scan(/"resolved"\s*:\s*"(.*)"/)
-               .flatten
-               .select { |url| url.is_a?(String) }
-               .reject { |url| url.start_with?("git") }
-          end
-          if yarn_lock
-            @dependency_urls +=
-              T.must(T.must(yarn_lock).content).scan(/ resolved "(.*?)"/).flatten
           end
 
           # The registry URL for Bintray goes into the lockfile in a
@@ -210,8 +140,6 @@ module Dependabot
             T.nilable(T::Array[String])
           )
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(String) }
         def complete_npmrc_from_credentials
           # removes attribute timeout to allow for job update,
@@ -219,7 +147,6 @@ module Dependabot
           initial_content = T.must(T.must(npmrc_file).content)
                              .gsub(/^.*\$\{.*\}.*/, "").strip.gsub(/^timeout.*/, "").strip + "\n"
 
-          return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 
           registry = T.must(global_registry)["registry"]
@@ -228,47 +155,6 @@ module Dependabot
             "registry = #{registry}\n" \
             "#{npmrc_global_registry_auth_line}" \
             "always-auth = true\n"
-        end
-
-        sig { returns(String) }
-        def complete_yarnrc_from_credentials
-          initial_content = T.must(T.must(yarnrc_file).content)
-                             .gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
-          return initial_content unless yarn_lock || package_lock
-          return initial_content unless global_registry
-
-          initial_content +
-            "registry: \"https://#{T.must(global_registry)['registry']}\"\n" \
-            "#{yarnrc_global_registry_auth_line}" \
-            "npmAlwaysAuth: true\n"
-        end
-
-        sig { returns(T.nilable(String)) }
-        def build_npmrc_from_yarnrc
-          yarnrc_global_registry =
-            yarnrc_file&.content
-                       &.lines
-                       &.find { |line| line.match?(/^\s*registry\s/) }
-                       &.match(Bun::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
-                       &.named_captures&.fetch("registry")
-
-          return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
-
-          build_npmrc_content_from_lockfile
-        end
-
-        sig { returns(T.nilable(String)) }
-        def build_yarnrc_from_yarnrc
-          yarnrc_global_registry =
-            yarnrc_file&.content
-                       &.lines
-                       &.find { |line| line.match?(/^\s*registry\s/) }
-                       &.match(/^\s*registry\s+"(?<registry>[^"]+)"/)
-                       &.named_captures&.fetch("registry")
-
-          return "registry \"#{yarnrc_global_registry}\"\n" if yarnrc_global_registry
-
-          build_yarnrc_content_from_lockfile
         end
 
         sig { returns(T::Array[String]) }
@@ -323,17 +209,6 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(T::Array[String])) }
-        def yarnrc_scoped_registries
-          return [] unless yarnrc_file
-
-          @yarnrc_scoped_registries ||= T.let(
-            T.must(T.must(yarnrc_file).content).lines.select { |line| line.match?(SCOPED_REGISTRY) }
-                       .filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") },
-            T.nilable(T::Array[String])
-          )
-        end
-
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(registry: String).returns(T.nilable(T::Array[String])) }
         def registry_scopes(registry)
@@ -368,58 +243,10 @@ module Dependabot
           credentials.select { |cred| cred.fetch("type") == "npm_registry" }
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-        def parsed_package_lock
-          @parsed_package_lock ||= T.let(
-            JSON.parse(T.must(T.must(package_lock).content)),
-            T.nilable(T::Hash[String, T.untyped])
-          )
-        end
-
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def npmrc_file
           @npmrc_file ||= T.let(
             dependency_files.find { |f| f.name.end_with?(".npmrc") },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def yarnrc_file
-          @yarnrc_file ||= T.let(
-            dependency_files.find { |f| f.name.end_with?(".yarnrc") },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def yarnrc_yml_file
-          @yarnrc_yml_file ||= T.let(
-            dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def yarn_lock
-          @yarn_lock ||= T.let(
-            dependency_files.find { |f| f.name == "yarn.lock" },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def package_lock
-          @package_lock ||= T.let(
-            dependency_files.find { |f| f.name == "package-lock.json" },
-            T.nilable(Dependabot::DependencyFile)
-          )
-        end
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def shrinkwrap
-          @shrinkwrap ||= T.let(
-            dependency_files.find { |f| f.name == "npm-shrinkwrap.json" },
             T.nilable(Dependabot::DependencyFile)
           )
         end

@@ -414,9 +414,7 @@ module Dependabot
           @registry_finder ||= RegistryFinder.new(
             dependency: dependency,
             credentials: credentials,
-            npmrc_file: npmrc_file,
-            yarnrc_file: yarnrc_file,
-            yarnrc_yml_file: yarnrc_yml_file
+            npmrc_file: npmrc_file
           )
         end
 
@@ -434,14 +432,6 @@ module Dependabot
 
         def npmrc_file
           dependency_files.find { |f| f.name.end_with?(".npmrc") }
-        end
-
-        def yarnrc_file
-          dependency_files.find { |f| f.name.end_with?(".yarnrc") }
-        end
-
-        def yarnrc_yml_file
-          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
         end
 
         # TODO: Remove need for me

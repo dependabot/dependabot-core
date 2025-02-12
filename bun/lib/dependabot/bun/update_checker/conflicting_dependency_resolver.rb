@@ -39,25 +39,11 @@ module Dependabot
             )
             dependency_files_builder.write_temporary_dependency_files
 
-            # TODO: Look into using npm/arborist for parsing yarn lockfiles (there's currently partial yarn support)
-            #
-            # Prefer the npm conflicting dependency parser if there's both a npm lockfile and a yarn.lock file as the
-            # npm parser handles edge cases where the package.json is out of sync with the lockfile, something the yarn
-            # parser doesn't deal with at the moment.
-            if dependency_files_builder.package_locks.any? ||
-               dependency_files_builder.shrinkwraps.any?
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm:findConflictingDependencies",
-                args: [Dir.pwd, dependency.name, target_version.to_s]
-              )
-            else
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:findConflictingDependencies",
-                args: [Dir.pwd, dependency.name, target_version.to_s]
-              )
-            end
+            SharedHelpers.run_helper_subprocess(
+              command: NativeHelpers.helper_path,
+              function: "yarn:findConflictingDependencies",
+              args: [Dir.pwd, dependency.name, target_version.to_s]
+            )
           end
         rescue SharedHelpers::HelperSubprocessFailed
           []
