@@ -15,11 +15,7 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_updater/package_json_updater"
-      require_relative "file_updater/npm_lockfile_updater"
-      require_relative "file_updater/yarn_lockfile_updater"
-      require_relative "file_updater/pnpm_lockfile_updater"
       require_relative "file_updater/bun_lockfile_updater"
-      require_relative "file_updater/pnpm_workspace_updater"
 
       class NoChangeError < StandardError
         extend T::Sig

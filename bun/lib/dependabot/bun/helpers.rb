@@ -81,8 +81,6 @@ module Dependabot
         raise
       end
 
-      private_class_method :run_single_yarn_command
-
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|

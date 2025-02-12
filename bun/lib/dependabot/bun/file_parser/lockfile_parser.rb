@@ -12,9 +12,6 @@ module Dependabot
       class LockfileParser
         extend T::Sig
 
-        require "dependabot/bun/file_parser/yarn_lock"
-        require "dependabot/bun/file_parser/pnpm_lock"
-        require "dependabot/bun/file_parser/json_lock"
         require "dependabot/bun/file_parser/bun_lock"
 
         DEFAULT_LOCKFILES = %w(package-lock.json yarn.lock pnpm-lock.yaml bun.lock npm-shrinkwrap.json).freeze

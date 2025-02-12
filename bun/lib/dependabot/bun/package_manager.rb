@@ -6,9 +6,6 @@ require "dependabot/ecosystem"
 require "dependabot/bun/requirement"
 require "dependabot/bun/version_selector"
 require "dependabot/bun/registry_helper"
-require "dependabot/bun/npm_package_manager"
-require "dependabot/bun/yarn_package_manager"
-require "dependabot/bun/pnpm_package_manager"
 require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/language"
 require "dependabot/bun/constraint_helper"
@@ -188,14 +185,8 @@ module Dependabot
         end
 
         version ||= requested_version(name)
+        version ||= guessed_version(name)
 
-        if version
-          raise_if_unsupported!(name, version.to_s)
-        else
-          version = guessed_version(name)
-
-          raise_if_unsupported!(name, version.to_s) if version
-        end
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
@@ -246,14 +237,6 @@ module Dependabot
       end
 
       private
-
-      sig { params(name: String, version: String).void }
-      def raise_if_unsupported!(name, version)
-        return unless name == PNPMPackageManager::NAME
-        return unless Version.new(version) < Version.new("7")
-
-        raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
-      end
 
       sig { params(name: String).returns(T.nilable(String)) }
       def requested_version(name)
