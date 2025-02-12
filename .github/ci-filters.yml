@@ -48,9 +48,6 @@ gradle:
 hex:
   - *shared
   - 'hex/**'
-javascript:
-  - *shared
-  - 'javascript/**'
 maven:
   - *shared
   - 'maven/**'
