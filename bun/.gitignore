@@ -1,4 +1,4 @@
-/.bundle/
+/.bundle/*
 !.bundle/config
 /.env
 /tmp

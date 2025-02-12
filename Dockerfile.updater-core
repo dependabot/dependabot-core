@@ -82,6 +82,7 @@ COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependab
 
 COPY --chown=dependabot:dependabot common/.bundle common/dependabot-common.gemspec common/
 COPY --chown=dependabot:dependabot common/lib/dependabot.rb common/lib/dependabot.rb
+COPY --chown=dependabot:dependabot bun/.bundle bun/dependabot-bun.gemspec bun/
 COPY --chown=dependabot:dependabot bundler/.bundle bundler/dependabot-bundler.gemspec bundler/
 COPY --chown=dependabot:dependabot cargo/.bundle cargo/dependabot-cargo.gemspec cargo/
 COPY --chown=dependabot:dependabot composer/.bundle composer/dependabot-composer.gemspec composer/
@@ -105,12 +106,12 @@ COPY --chown=dependabot:dependabot swift/.bundle swift/dependabot-swift.gemspec 
 COPY --chown=dependabot:dependabot terraform/.bundle terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
-RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk; do \
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler silent swift devcontainers dotnet_sdk bun; do \
     mkdir -p $ecosystem/lib/dependabot; \
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-# Special cases: 
+# Special cases:
 #  - Bun ecosystem is a special case that is under the javascript folder
 RUN mkdir -p javascript/lib/dependabot && touch javascript/lib/dependabot/bun.rb
 

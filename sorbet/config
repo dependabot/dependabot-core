@@ -7,6 +7,7 @@
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429
+--ignore=bun/spec/
 --ignore=bundler/helpers
 --ignore=bundler/spec/
 --ignore=cargo/spec/

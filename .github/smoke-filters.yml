@@ -7,6 +7,9 @@ common: &common
 github_actions:
   - *common
   - 'github_actions/**'
+bun:
+  - *common
+  - 'bun/**'
 bundler:
   - *common
   - 'bundler/**'

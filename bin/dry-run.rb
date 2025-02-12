@@ -51,6 +51,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
@@ -64,7 +65,6 @@ $LOAD_PATH << "./github_actions/lib"
 $LOAD_PATH << "./go_modules/lib"
 $LOAD_PATH << "./gradle/lib"
 $LOAD_PATH << "./hex/lib"
-$LOAD_PATH << "./javascript/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
@@ -112,7 +112,6 @@ require "dependabot/github_actions"
 require "dependabot/go_modules"
 require "dependabot/gradle"
 require "dependabot/hex"
-require "dependabot/javascript"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
