@@ -564,6 +564,38 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with a timed out response error" do
+      let(:response) do
+        "HTTPSConnectionPool(host='nexus.nee.com', port=443): " \
+          "Max retries exceeded with url:  (Caused by ProxyError('Unable to connect to proxy'" \
+          ", RemoteDisconnected('Remote end closed connection without response')))"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
+    context "with a timed out response error" do
+      let(:response) do
+        "HTTPSConnectionPool(host='pypi.pymetrics.com', port=443): Read timed out. (read timeout=15)"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
+    context "with a 500 server error" do
+      let(:response) do
+        "500 Server Error: Internal Server Error for url: http://nexus.bvc.euc1.lan/repository/le/adup-utils/"
+      end
+
+      it "raises a helpful error" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse)
+      end
+    end
+
     context "with a project is listed a dependency" do
       let(:response) do
         "Creating virtualenv kiota-serialization-multipart-GzD6BRdm-py3.13 in " \
