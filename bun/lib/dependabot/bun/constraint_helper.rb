@@ -4,7 +4,7 @@
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     module ConstraintHelper
       extend T::Sig
 

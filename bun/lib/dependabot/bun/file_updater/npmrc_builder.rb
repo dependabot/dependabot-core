@@ -3,10 +3,10 @@
 
 require "sorbet-runtime"
 
-require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/bun/file_updater"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
@@ -249,7 +249,7 @@ module Dependabot
             yarnrc_file&.content
                        &.lines
                        &.find { |line| line.match?(/^\s*registry\s/) }
-                       &.match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
+                       &.match(Bun::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)
                        &.named_captures&.fetch("registry")
 
           return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry

@@ -4,15 +4,15 @@
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/logger"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/helpers"
+require "dependabot/bun/native_helpers"
+require "dependabot/bun/update_checker"
+require "dependabot/bun/update_checker/dependency_files_builder"
 require "dependabot/shared_helpers"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       class ConflictingDependencyResolver
         def initialize(dependency_files:, credentials:)

@@ -2,17 +2,17 @@
 # frozen_string_literal: true
 
 require "excon"
-require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/bun/update_checker"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/requirement"
+require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/version"
+require "dependabot/bun/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class LatestVersionFinder
         extend T::Sig
@@ -130,7 +130,7 @@ module Dependabot
         sig { params(versions_array: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
         def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.filter_map do |r|
-            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+            Bun::Requirement.requirements_array(r.fetch(:requirement))
           end
 
           versions_array
@@ -178,7 +178,7 @@ module Dependabot
           dependency.requirements.any? do |req|
             next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
 
-            NpmAndYarn::Requirement
+            Bun::Requirement
               .requirements_array(req.fetch(:requirement))
               .any? do |r|
                 r.requirements.any? { |a| a.last.release == version.release }

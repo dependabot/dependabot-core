@@ -2,20 +2,20 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/helpers"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/helpers"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base
       class LockfileParser
         extend T::Sig
 
-        require "dependabot/npm_and_yarn/file_parser/yarn_lock"
-        require "dependabot/npm_and_yarn/file_parser/pnpm_lock"
-        require "dependabot/npm_and_yarn/file_parser/json_lock"
-        require "dependabot/npm_and_yarn/file_parser/bun_lock"
+        require "dependabot/bun/file_parser/yarn_lock"
+        require "dependabot/bun/file_parser/pnpm_lock"
+        require "dependabot/bun/file_parser/json_lock"
+        require "dependabot/bun/file_parser/bun_lock"
 
         DEFAULT_LOCKFILES = %w(package-lock.json yarn.lock pnpm-lock.yaml bun.lock npm-shrinkwrap.json).freeze
 
@@ -124,9 +124,9 @@ module Dependabot
           @shrinkwraps ||= T.let(select_files_by_extension("npm-shrinkwrap.json"), T.nilable(T::Array[DependencyFile]))
         end
 
-        sig { returns(T.class_of(Dependabot::NpmAndYarn::Version)) }
+        sig { returns(T.class_of(Dependabot::Bun::Version)) }
         def version_class
-          NpmAndYarn::Version
+          Bun::Version
         end
       end
     end

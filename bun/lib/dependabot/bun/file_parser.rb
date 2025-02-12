@@ -7,19 +7,19 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/package_manager"
-require "dependabot/npm_and_yarn/registry_parser"
+require "dependabot/bun/helpers"
+require "dependabot/bun/native_helpers"
+require "dependabot/bun/version"
+require "dependabot/bun/requirement"
+require "dependabot/bun/package_manager"
+require "dependabot/bun/registry_parser"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/errors"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
@@ -55,11 +55,10 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[Dependency]) }
-      def parse # rubocop:disable Metrics/PerceivedComplexity
+      def parse
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
-        dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
@@ -109,9 +108,6 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles
         {
-          npm: package_lock || shrinkwrap,
-          yarn: yarn_lock,
-          pnpm: pnpm_lock,
           bun: bun_lock
         }
       end
@@ -119,9 +115,7 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def registry_config_files
         {
-          npmrc: npmrc,
-          yarnrc: yarnrc,
-          yarnrc_yml: yarnrc_yml
+          npmrc: npmrc
         }
       end
 
@@ -142,41 +136,6 @@ module Dependabot
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def shrinkwrap
-        @shrinkwrap ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::SHRINKWRAP_LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def package_lock
-        @package_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def yarn_lock
-        @yarn_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pnpm_lock
-        @pnpm_lock ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pnpm_workspace_yml
-        @pnpm_workspace_yml ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def bun_lock
         @bun_lock ||= T.let(dependency_files.find do |f|
           f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
@@ -186,21 +145,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def npmrc
         @npmrc ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(NpmPackageManager::RC_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def yarnrc
-        @yarnrc ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::RC_FILENAME)
-        end, T.nilable(Dependabot::DependencyFile))
-      end
-
-      sig { returns(T.nilable(DependencyFile)) }
-      def yarnrc_yml
-        @yarnrc_yml ||= T.let(dependency_files.find do |f|
-          f.name.end_with?(YarnPackageManager::RC_YML_FILENAME)
+          f.name.end_with?(BunPackageManager::RC_FILENAME)
         end, T.nilable(Dependabot::DependencyFile))
       end
 
@@ -233,35 +178,13 @@ module Dependabot
         dependency_set
       end
 
-      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-      def workspace_catalog_dependencies
-        dependency_set = DependencySet.new
-        workspace_config = YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true)
-
-        workspace_config["catalog"]&.each do |name, version|
-          dep = build_dependency(
-            file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
-          )
-          dependency_set << dep if dep
-        end
-
-        workspace_config["catalogs"]&.each do |_, group_depenencies|
-          group_depenencies.each do |name, version|
-            dep = build_dependency(
-              file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
-            )
-            dependency_set << dep if dep
-          end
-        end
-
-        dependency_set
-      end
-
       sig { returns(LockfileParser) }
       def lockfile_parser
-        @lockfile_parser ||= T.let(LockfileParser.new(
-                                     dependency_files: dependency_files
-                                   ), T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser))
+        @lockfile_parser ||= T.let(
+          LockfileParser.new(
+            dependency_files: dependency_files
+          ), T.nilable(Dependabot::Bun::FileParser::LockfileParser)
+        )
       end
 
       sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -337,7 +260,7 @@ module Dependabot
 
       sig { params(requirement: String).returns(T::Boolean) }
       def alias_package?(requirement)
-        requirement.start_with?("#{NpmPackageManager::NAME}:")
+        requirement.start_with?("#{BunPackageManager::NAME}:")
       end
 
       sig { params(requirement: String).returns(T::Boolean) }
@@ -359,7 +282,7 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def aliased_package_name?(name)
-        name.include?("@#{NpmPackageManager::NAME}:")
+        name.include?("@#{BunPackageManager::NAME}:")
       end
 
       sig { returns(T::Array[String]) }
@@ -537,18 +460,18 @@ module Dependabot
         )
       end
 
-      sig { returns(T.class_of(Dependabot::NpmAndYarn::Version)) }
+      sig { returns(T.class_of(Dependabot::Bun::Version)) }
       def version_class
-        NpmAndYarn::Version
+        Bun::Version
       end
 
-      sig { returns(T.class_of(Dependabot::NpmAndYarn::Requirement)) }
+      sig { returns(T.class_of(Dependabot::Bun::Requirement)) }
       def requirement_class
-        NpmAndYarn::Requirement
+        Bun::Requirement
       end
     end
   end
 end
 
 Dependabot::FileParsers
-  .register(Dependabot::NpmAndYarn::ECOSYSTEM, Dependabot::NpmAndYarn::FileParser)
+  .register(Dependabot::Bun::ECOSYSTEM, Dependabot::Bun::FileParser)

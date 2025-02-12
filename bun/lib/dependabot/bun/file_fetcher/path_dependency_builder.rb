@@ -4,11 +4,11 @@
 require "json"
 require "dependabot/dependency_file"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/file_fetcher"
+require "dependabot/bun/file_fetcher"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileFetcher
       class PathDependencyBuilder
         extend T::Sig

@@ -12,7 +12,7 @@ require "sorbet-runtime"
 # See https://semver.org/ for details of node's version syntax.
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class Version < Dependabot::Version
       extend T::Sig
 
@@ -91,9 +91,9 @@ module Dependabot
         version
       end
 
-      sig { override.params(version: VersionParameter).returns(Dependabot::NpmAndYarn::Version) }
+      sig { override.params(version: VersionParameter).returns(Dependabot::Bun::Version) }
       def self.new(version)
-        T.cast(super, Dependabot::NpmAndYarn::Version)
+        T.cast(super, Dependabot::Bun::Version)
       end
 
       sig { returns(Integer) }
@@ -111,7 +111,7 @@ module Dependabot
         @patch ||= T.let(segments[2].to_i, T.nilable(Integer))
       end
 
-      sig { params(other: Dependabot::NpmAndYarn::Version).returns(T::Boolean) }
+      sig { params(other: Dependabot::Bun::Version).returns(T::Boolean) }
       def backwards_compatible_with?(other)
         case major
         when 0
@@ -135,4 +135,4 @@ module Dependabot
 end
 
 Dependabot::Utils
-  .register_version_class("npm_and_yarn", Dependabot::NpmAndYarn::Version)
+  .register_version_class("bun", Dependabot::Bun::Version)

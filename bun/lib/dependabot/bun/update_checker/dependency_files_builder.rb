@@ -1,11 +1,11 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
-require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/bun/file_updater/npmrc_builder"
+require "dependabot/bun/file_updater/package_json_preparer"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class DependencyFilesBuilder
         def initialize(dependency:, dependency_files:, credentials:)
@@ -133,13 +133,13 @@ module Dependabot
         end
 
         def prepared_package_json_content(file)
-          NpmAndYarn::FileUpdater::PackageJsonPreparer.new(
+          Bun::FileUpdater::PackageJsonPreparer.new(
             package_json_content: file.content
           ).prepared_content
         end
 
         def npmrc_content
-          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
+          Bun::FileUpdater::NpmrcBuilder.new(
             credentials: credentials,
             dependency_files: dependency_files
           ).npmrc_content
@@ -150,7 +150,7 @@ module Dependabot
         end
 
         def yarnrc_content
-          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
+          Bun::FileUpdater::NpmrcBuilder.new(
             credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content

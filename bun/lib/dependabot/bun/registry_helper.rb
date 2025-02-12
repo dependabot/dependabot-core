@@ -6,7 +6,7 @@ require "dependabot/dependency_file"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class RegistryHelper
       extend T::Sig
 

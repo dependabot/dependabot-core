@@ -3,11 +3,11 @@
 
 require "json"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/helpers"
+require "dependabot/bun/helpers"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base
       class JsonLock
         extend T::Sig
@@ -69,7 +69,7 @@ module Dependabot
             dependency_args = {
               name: name.split("node_modules/").last,
               version: version,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: []
             }
 

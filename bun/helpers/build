@@ -7,7 +7,7 @@ if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   exit 1
 fi
 
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/npm_and_yarn"
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bun"
 mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"

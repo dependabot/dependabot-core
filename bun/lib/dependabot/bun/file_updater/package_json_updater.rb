@@ -3,10 +3,10 @@
 
 require "sorbet-runtime"
 
-require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/bun/file_updater"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonUpdater
         extend T::Sig

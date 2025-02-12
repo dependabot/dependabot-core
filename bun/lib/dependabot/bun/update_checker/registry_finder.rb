@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "excon"
-require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/bun/update_checker"
 require "dependabot/registry_client"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class RegistryFinder
         CENTRAL_REGISTRIES = %w(

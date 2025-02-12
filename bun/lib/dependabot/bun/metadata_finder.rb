@@ -7,11 +7,11 @@ require "time"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/version"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class MetadataFinder < Dependabot::MetadataFinders::Base
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
@@ -150,7 +150,7 @@ module Dependabot
 
         npm_listing["versions"]
           .reject { |_, details| details["deprecated"] }
-          .sort_by { |version, _| NpmAndYarn::Version.new(version) }
+          .sort_by { |version, _| Bun::Version.new(version) }
           .reverse
       end
 
@@ -211,4 +211,4 @@ module Dependabot
 end
 
 Dependabot::MetadataFinders
-  .register("npm_and_yarn", Dependabot::NpmAndYarn::MetadataFinder)
+  .register("bun", Dependabot::Bun::MetadataFinder)

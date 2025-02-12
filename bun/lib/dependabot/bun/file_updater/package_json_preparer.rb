@@ -1,11 +1,11 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/file_updater"
-require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/bun/file_updater"
+require "dependabot/bun/file_parser"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class PackageJsonPreparer
         def initialize(package_json_content:)
@@ -72,7 +72,7 @@ module Dependabot
 
           @git_ssh_requirements_to_swap = []
 
-          NpmAndYarn::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
+          Bun::FileParser.each_dependency(JSON.parse(package_json_content)) do |_, req, _t|
             next unless req.is_a?(String)
             next unless req.start_with?("git+ssh:")
 

@@ -6,21 +6,21 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
 require "dependabot/logger"
-require "dependabot/npm_and_yarn/dependency_files_filterer"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
-require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/package_name"
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/dependency_files_filterer"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/file_updater/npmrc_builder"
+require "dependabot/bun/file_updater/package_json_preparer"
+require "dependabot/bun/helpers"
+require "dependabot/bun/native_helpers"
+require "dependabot/bun/package_name"
+require "dependabot/bun/requirement"
+require "dependabot/bun/update_checker"
+require "dependabot/bun/version"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class VersionResolver
         extend T::Sig
@@ -648,7 +648,7 @@ module Dependabot
                 f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
               end
 
-              return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.npm8?(package_lock)
+              return run_npm8_checker(version: version) if Dependabot::Bun::Helpers.npm8?(package_lock)
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
@@ -701,7 +701,7 @@ module Dependabot
         # to fetch the manifests for all top level deps which may contain
         # "peerDependency" requirements
         def top_level_dependencies
-          @top_level_dependencies ||= NpmAndYarn::FileParser.new(
+          @top_level_dependencies ||= Bun::FileParser.new(
             dependency_files: dependency_files,
             source: nil,
             credentials: credentials
@@ -746,7 +746,7 @@ module Dependabot
         end
 
         def version_regex
-          Dependabot::NpmAndYarn::Version::VERSION_PATTERN
+          Dependabot::Bun::Version::VERSION_PATTERN
         end
       end
     end

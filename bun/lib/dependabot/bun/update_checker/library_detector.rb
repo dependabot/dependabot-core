@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "excon"
-require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/bun/update_checker"
 require "dependabot/shared_helpers"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class LibraryDetector
         def initialize(package_json_file:, credentials:, dependency_files:)
@@ -64,7 +64,7 @@ module Dependabot
         end
 
         def registry
-          NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          Bun::UpdateChecker::RegistryFinder.new(
             dependency: nil,
             credentials: credentials,
             npmrc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") },

@@ -10,7 +10,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
@@ -204,7 +204,7 @@ module Dependabot
           updated_deps << build_updated_dependency(
             dependency: Dependency.new(
               name: dependency_name,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: requirements
             ),
             version: update["target_version"],
@@ -452,4 +452,4 @@ module Dependabot
 end
 
 Dependabot::UpdateCheckers
-  .register("npm_and_yarn", Dependabot::NpmAndYarn::UpdateChecker)
+  .register("bun", Dependabot::Bun::UpdateChecker)

@@ -3,11 +3,11 @@
 
 require "yaml"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/helpers"
+require "dependabot/bun/helpers"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base
       class BunLock
         extend T::Sig
@@ -61,7 +61,7 @@ module Dependabot
             dependency_set << Dependency.new(
               name: name,
               version: semver.to_s,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: []
             )
           end

@@ -1,5 +1,0 @@
-packages:
-  - packages/*
-
-catalog:
-  prettier: ^3.3.0

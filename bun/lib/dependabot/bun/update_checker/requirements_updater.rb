@@ -6,13 +6,13 @@
 # https://docs.npmjs.com/misc/semver                                           #
 ################################################################################
 
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/requirement"
+require "dependabot/bun/update_checker"
+require "dependabot/bun/version"
 require "dependabot/requirements_update_strategy"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class RequirementsUpdater
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
@@ -136,7 +136,7 @@ module Dependabot
         end
 
         def ruby_requirements(requirement_string)
-          NpmAndYarn::Requirement
+          Bun::Requirement
             .requirements_array(requirement_string)
         end
 
@@ -198,7 +198,7 @@ module Dependabot
         end
 
         def version_class
-          NpmAndYarn::Version
+          Bun::Version
         end
       end
     end

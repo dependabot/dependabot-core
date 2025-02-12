@@ -5,17 +5,17 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/logger"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/file_updater"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
+require "dependabot/bun/version"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/file_updater"
+require "dependabot/bun/helpers"
+require "dependabot/bun/native_helpers"
+require "dependabot/bun/update_checker/registry_finder"
 require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class NpmLockfileUpdater
         extend T::Sig
@@ -159,7 +159,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         def lockfile_dependencies
           @lockfile_dependencies ||= T.let(
-            NpmAndYarn::FileParser.new(
+            Bun::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
               credentials: credentials
@@ -334,7 +334,7 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def flattenend_manifest_dependencies
           @flattenend_manifest_dependencies ||= T.let(
-            NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
+            Bun::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
               deps.merge(parsed_package_json[type] || {})
             end,
             T.nilable(T::Hash[String, String])
@@ -669,7 +669,7 @@ module Dependabot
 
           raise_resolvability_error(error_message) unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Bun::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: dependency_files. find { |f| f.name.end_with?(".npmrc") },
@@ -778,7 +778,7 @@ module Dependabot
           return content if git_dependencies_to_lock.empty?
 
           json = JSON.parse(content)
-          NpmAndYarn::FileParser.each_dependency(json) do |nm, _, type|
+          Bun::FileParser.each_dependency(json) do |nm, _, type|
             updated_version = git_dependencies_to_lock.dig(nm, :version)
             next unless updated_version
 
@@ -821,7 +821,7 @@ module Dependabot
         def lock_deps_with_latest_reqs(content)
           json = JSON.parse(content)
 
-          NpmAndYarn::FileParser.each_dependency(json) do |nm, requirement, type|
+          Bun::FileParser.each_dependency(json) do |nm, requirement, type|
             next unless Version::VERSION_TAGS.include?(requirement)
 
             json[type][nm] = "*"
@@ -977,7 +977,7 @@ module Dependabot
 
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
-          NpmAndYarn::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
+          Bun::FileParser.each_dependency(parsed_package_json) do |dependency_name, original_requirement, type|
             next unless dependency_names_to_restore.include?(dependency_name)
 
             locked_requirement = parsed_updated_lockfile_content.dig("packages", "", type, dependency_name)
@@ -1086,11 +1086,11 @@ module Dependabot
           )
         end
 
-        sig { params(content: String).returns(Dependabot::NpmAndYarn::FileUpdater::PackageJsonPreparer) }
+        sig { params(content: String).returns(Dependabot::Bun::FileUpdater::PackageJsonPreparer) }
         def package_json_preparer(content)
           @package_json_preparer ||= T.let(
             {},
-            T.nilable(T::Hash[String, Dependabot::NpmAndYarn::FileUpdater::PackageJsonPreparer])
+            T.nilable(T::Hash[String, Dependabot::Bun::FileUpdater::PackageJsonPreparer])
           )
           @package_json_preparer[content] ||=
             PackageJsonPreparer.new(
@@ -1108,7 +1108,7 @@ module Dependabot
           return T.must(@npm8) if defined?(@npm8)
 
           @npm8 ||= T.let(
-            Dependabot::NpmAndYarn::Helpers.npm8?(lockfile),
+            Dependabot::Bun::Helpers.npm8?(lockfile),
             T.nilable(T::Boolean)
           )
         end

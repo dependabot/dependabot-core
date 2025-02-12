@@ -3,21 +3,21 @@
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
-require "dependabot/npm_and_yarn/file_fetcher"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/file_updater"
-require "dependabot/npm_and_yarn/metadata_finder"
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/file_fetcher"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/update_checker"
+require "dependabot/bun/file_updater"
+require "dependabot/bun/metadata_finder"
+require "dependabot/bun/requirement"
+require "dependabot/bun/version"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
-  .register_label_details("npm_and_yarn", name: "javascript", colour: "168700")
+  .register_label_details("bun", name: "javascript", colour: "168700")
 
 require "dependabot/dependency"
 Dependabot::Dependency.register_production_check(
-  "npm_and_yarn",
+  "bun",
   lambda do |groups|
     return true if groups.empty?
     return true if groups.include?("optionalDependencies")
@@ -34,8 +34,7 @@ ErrorHandler = T.type_alias do
 end
 
 module Dependabot
-  # rubocop:disable Metrics/ModuleLength
-  module NpmAndYarn
+  module Bun
     NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?<current_version>v?\d+\.\d+\.\d+) does not satisfy the required version (?<required_version>v?\d+\.\d+\.\d+)\./ # rubocop:disable Layout/LineLength
 
     # Used to check if package manager registry is public npm registry
@@ -93,13 +92,6 @@ module Dependabot
     YARN_PACKAGE_NOT_FOUND_CODE_1 = /Couldn't find package "[^@].*(?<dep>.*)" on the "(?<regis>.*)" registry./
     YARN_PACKAGE_NOT_FOUND_CODE_2 = /Couldn't find package "[^@].*(?<dep>.*)" required by "(?<pkg>.*)" on the "(?<regis>.*)" registry./ # rubocop:disable Layout/LineLength
 
-    YN0035 = T.let({
-      PACKAGE_NOT_FOUND: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): Package not found},
-      FAILED_TO_RETRIEVE: %r{(?<package_req>@[\w-]+\/[\w-]+@\S+): The remote server failed to provide the requested resource} # rubocop:disable Layout/LineLength
-    }.freeze, T::Hash[String, Regexp])
-
-    YN0082_PACKAGE_NOT_FOUND_REGEX = /YN0082:.*?(\S+@\S+): No candidates found/
-
     PACKAGE_NOT_FOUND2 = %r{/[^/]+: Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_REGEX = %r{/(?<package_name>[^/]+): Not found}
     PACKAGE_NOT_FOUND2_PACKAGE_NAME_CAPTURE = "package_name"
@@ -134,42 +126,6 @@ module Dependabot
     ENV_VAR_NOT_RESOLVABLE = /Failed to replace env in config: \$\{(?<var>.*)\}/
 
     OUT_OF_DISKSPACE = / Out of diskspace/
-
-    # yarnrc.yml errors
-    YARNRC_PARSE_ERROR = /Parse error when loading (?<filename>.*?); /
-    YARNRC_ENV_NOT_FOUND = /Usage Error: Environment variable not found /
-    YARNRC_ENV_NOT_FOUND_REGEX = /Usage Error: Environment variable not found \((?<token>.*)\) in (?<filename>.*?) /
-    YARNRC_EAI_AGAIN = /getaddrinfo EAI_AGAIN/
-    YARNRC_ENOENT = /Internal Error: ENOENT/
-    YARNRC_ENOENT_REGEX = /Internal Error: ENOENT: no such file or directory, stat '(?<filename>.*?)'/
-
-    # if not package found with specified version
-    YARN_PACKAGE_NOT_FOUND = /MessageError: Couldn't find any versions for "(?<pkg>.*?)" that matches "(?<ver>.*?)"/
-
-    YN0001_DEPS_RESOLUTION_FAILED = T.let({
-      DEPS_INCORRECT_MET: /peer dependencies are incorrectly met/
-    }.freeze, T::Hash[String, Regexp])
-
-    YN0001_FILE_NOT_RESOLVED_CODES = T.let({
-      FIND_PACKAGE_LOCATION: /YN0001:(.*?)UsageError: Couldn't find the (?<pkg>.*) state file/,
-      NO_CANDIDATE_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): No candidates found/,
-      NO_SUPPORTED_RESOLVER: /YN0001:(.*?)Error: (?<pkg>.*) isn't supported by any available resolver/,
-      WORKSPACE_NOT_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): Workspace not found/,
-      ENOENT: /YN0001:(.*?)Thrown Error: (?<pkg>.*) ENOENT/,
-      MANIFEST_NOT_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): Manifest not found/,
-      LIBZIP_ERROR: /YN0001:(.*?)Libzip Error: Failed to open the cache entry for (?<pkg>.*): Not a zip archive/
-    }.freeze, T::Hash[String, Regexp])
-
-    YN0001_AUTH_ERROR_CODES = T.let({
-      AUTH_ERROR: /YN0001:*.*Fatal Error: could not read Username for '(?<url>.*)': terminal prompts disabled/
-    }.freeze, T::Hash[String, Regexp])
-
-    YN0001_REQ_NOT_FOUND_CODES = T.let({
-      REQUIREMENT_NOT_SATISFIED: /provides (?<dep>.*)(.*?)with version (?<ver>.*), which doesn't satisfy what (?<pkg>.*) requests/, # rubocop:disable Layout/LineLength
-      REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
-    }.freeze, T::Hash[String, Regexp])
-
-    YN0086_DEPS_RESOLUTION_FAILED = /peer dependencies are incorrectly met/
 
     # registry returns malformed response
     REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
@@ -208,173 +164,6 @@ module Dependabot
         "Error whilst updating #{dependency_names} in #{yarn_lock.path}:\n#{error_message}"
       end
     end
-
-    YARN_CODE_REGEX = /(YN\d{4})/
-    YARN_ERROR_CODES = T.let({
-      "YN0001" => {
-        message: "Exception error",
-        handler: lambda { |message, _error, _params|
-          YN0001_FILE_NOT_RESOLVED_CODES.each do |(_yn0001_key, yn0001_regex)|
-            if (msg = message.match(yn0001_regex))
-              return Dependabot::DependencyFileNotResolvable.new(msg)
-            end
-          end
-
-          YN0001_AUTH_ERROR_CODES.each do |(_yn0001_key, yn0001_regex)|
-            if (msg = message.match(yn0001_regex))
-              url = msg.named_captures.fetch(URL_CAPTURE)
-              return Dependabot::PrivateSourceAuthenticationFailure.new(url)
-            end
-          end
-
-          YN0001_REQ_NOT_FOUND_CODES.each do |(_yn0001_key, yn0001_regex)|
-            if (msg = message.match(yn0001_regex))
-              return Dependabot::DependencyFileNotResolvable.new(msg)
-            end
-          end
-
-          YN0001_DEPS_RESOLUTION_FAILED.each do |(_yn0001_key, yn0001_regex)|
-            if (msg = message.match(yn0001_regex))
-              return Dependabot::DependencyFileNotResolvable.new(msg)
-            end
-          end
-
-          Dependabot::DependabotError.new(message)
-        }
-      },
-      "YN0002" => {
-        message: "Missing peer dependency",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
-        }
-      },
-      "YN0009" => {
-        message: "Build Failed",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
-        }
-      },
-      "YN0016" => {
-        message: "Remote not found",
-        handler: lambda { |message, _error, _params|
-          Dependabot::GitDependenciesNotReachable.new(message)
-        }
-      },
-      "YN0020" => {
-        message: "Missing lockfile entry",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotFound.new(message)
-        }
-      },
-      "YN0035" => {
-        message: "Package not found",
-        handler: lambda { |message, _error, _params|
-          YN0035.each do |(_yn0035_key, yn0035_regex)|
-            if (match_data = message.match(yn0035_regex)) && (package_req = match_data[:package_req])
-              return Dependabot::DependencyNotFound.new(
-                "#{package_req} Detail: #{message}"
-              )
-            end
-          end
-          Dependabot::DependencyNotFound.new(message)
-        }
-      },
-      "YN0041" => {
-        message: "Invalid authentication",
-        handler: lambda { |message, _error, _params|
-          url = T.must(URI.decode_www_form_component(message).split("https://").last).split("/").first
-          Dependabot::PrivateSourceAuthenticationFailure.new(url)
-        }
-      },
-      "YN0046" => {
-        message: "Automerge failed to parse",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0047" => {
-        message: "Automerge immutable",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0062" => {
-        message: "Incompatible OS",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependabotError.new(message)
-        }
-      },
-      "YN0063" => {
-        message: "Incompatible CPU",
-        handler: lambda { |message, _error, _params|
-          Dependabot::IncompatibleCPU.new(message)
-        }
-      },
-      "YN0068" => {
-        message: "No matching package",
-        handler: lambda { |message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new(message)
-        }
-      },
-      "YN0071" => {
-        message: "NM can't install external soft link",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0072" => {
-        message: "NM preserve symlinks required",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0075" => {
-        message: "Prolog instantiation error",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0077" => {
-        message: "Ghost architecture",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0080" => {
-        message: "Network disabled",
-        handler: lambda { |message, _error, _params|
-          Dependabot::MisconfiguredTooling.new("Yarn", message)
-        }
-      },
-      "YN0081" => {
-        message: "Network unsafe HTTP",
-        handler: lambda { |message, _error, _params|
-          Dependabot::NetworkUnsafeHTTP.new(message)
-        }
-      },
-      "YN0082" => {
-        message: "No candidates found",
-        handler: lambda { |message, _error, _params|
-          match_data = message.match(YN0082_PACKAGE_NOT_FOUND_REGEX)
-          if match_data
-            package_req = match_data[1]
-            Dependabot::DependencyNotFound.new("#{package_req} Detail: #{message}")
-          else
-            Dependabot::DependencyNotFound.new(message)
-          end
-        }
-      },
-      "YN0086" => {
-        message: "deps resolution failed",
-        handler: lambda { |message, _error, _params|
-          msg = message.match(YN0086_DEPS_RESOLUTION_FAILED)
-          Dependabot::DependencyFileNotResolvable.new(msg || message)
-        }
-      }
-    }.freeze, T::Hash[String, {
-      message: T.any(String, NilClass),
-      handler: ErrorHandler
-    }])
 
     # Group of patterns to validate error message and raise specific error
     VALIDATION_GROUP_PATTERNS = T.let([
@@ -505,66 +294,6 @@ module Dependabot
         matchfn: nil
       },
       {
-        patterns: [YARNRC_PARSE_ERROR],
-        handler: lambda { |message, _error, _params|
-          filename = message.match(YARNRC_PARSE_ERROR).named_captures["filename"]
-
-          msg = "Error while loading \"#{filename.split('/').last}\"."
-          Dependabot::DependencyFileNotResolvable.new(msg)
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARNRC_ENV_NOT_FOUND],
-        handler: lambda { |message, _error, _params|
-          error_message = message.gsub(/[[:space:]]+/, " ").strip
-
-          filename = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                    .named_captures["filename"]
-
-          env_var = error_message.match(YARNRC_ENV_NOT_FOUND_REGEX)
-                                .named_captures["token"]
-
-          msg = "Environment variable \"#{env_var}\" not found in \"#{filename.split('/').last}\"."
-          Dependabot::MissingEnvironmentVariable.new(env_var, msg)
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARNRC_EAI_AGAIN],
-        handler: lambda { |_message, _error, _params|
-          Dependabot::DependencyFileNotResolvable.new("Network error while resolving dependency.")
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARNRC_ENOENT],
-        handler: lambda { |message, _error, _params|
-          error_message = message.gsub(/[[:space:]]+/, " ").strip
-          filename = error_message.match(YARNRC_ENOENT_REGEX).named_captures["filename"]
-
-          Dependabot::DependencyFileNotResolvable.new("Internal error while resolving dependency." \
-                                                      "File not found \"#{filename.split('/').last}\"")
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
-        patterns: [YARN_PACKAGE_NOT_FOUND],
-        handler: lambda { |message, _error, _params|
-          package_name = message.match(YARN_PACKAGE_NOT_FOUND).named_captures["pkg"]
-          version = message.match(YARN_PACKAGE_NOT_FOUND).named_captures["ver"]
-
-          Dependabot::InconsistentRegistryResponse.new("Couldn't find any versions for \"#{package_name}\" that " \
-                                                       "matches \"#{version}\"")
-        },
-        in_usage: false,
-        matchfn: nil
-      },
-      {
         patterns: [YARN_PACKAGE_NOT_FOUND_CODE, YARN_PACKAGE_NOT_FOUND_CODE_1, YARN_PACKAGE_NOT_FOUND_CODE_2],
         handler: lambda { |message, _error, _params|
           msg = message.match(YARN_PACKAGE_NOT_FOUND_CODE) || message.match(YARN_PACKAGE_NOT_FOUND_CODE_1) ||
@@ -619,5 +348,4 @@ module Dependabot
       matchfn: T.nilable(T.proc.params(usage: String, message: String).returns(T::Boolean))
     }])
   end
-  # rubocop:enable Metrics/ModuleLength
 end

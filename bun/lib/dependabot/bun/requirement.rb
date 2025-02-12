@@ -5,10 +5,10 @@ require "sorbet-runtime"
 
 require "dependabot/requirement"
 require "dependabot/utils"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/version"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
@@ -17,14 +17,14 @@ module Dependabot
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
-      version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
+      version_pattern = "v?#{Bun::Version::VERSION_PATTERN}"
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
         return ["=", nil] if obj.is_a?(String) && Version::VERSION_TAGS.include?(obj.strip)
-        return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
+        return ["=", Bun::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"
@@ -33,7 +33,7 @@ module Dependabot
 
         return DefaultRequirement if matches[1] == ">=" && matches[2] == "0"
 
-        [matches[1] || "=", NpmAndYarn::Version.new(T.must(matches[2]))]
+        [matches[1] || "=", Bun::Version.new(T.must(matches[2]))]
       end
 
       # Returns an array of requirements. At least one requirement from the
@@ -141,6 +141,6 @@ module Dependabot
 end
 
 Dependabot::Utils.register_requirement_class(
-  "npm_and_yarn",
-  Dependabot::NpmAndYarn::Requirement
+  "bun",
+  Dependabot::Bun::Requirement
 )

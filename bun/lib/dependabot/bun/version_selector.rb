@@ -2,10 +2,10 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
-require "dependabot/npm_and_yarn/constraint_helper"
+require "dependabot/bun/constraint_helper"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class VersionSelector
       extend T::Sig
       extend T::Helpers

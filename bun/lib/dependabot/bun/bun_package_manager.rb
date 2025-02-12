@@ -2,11 +2,12 @@
 # frozen_string_literal: true
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class BunPackageManager < Ecosystem::VersionManager
       extend T::Sig
       NAME = "bun"
       LOCKFILE_NAME = "bun.lock"
+      RC_FILENAME = ".npmrc"
 
       # In Bun 1.1.39, the lockfile format was changed from a binary bun.lockb to a text-based bun.lock.
       # https://bun.sh/blog/bun-lock-text-lockfile
@@ -18,7 +19,7 @@ module Dependabot
         params(
           detected_version: T.nilable(String),
           raw_version: T.nilable(String),
-          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
+          requirement: T.nilable(Dependabot::Bun::Requirement)
         ).void
       end
       def initialize(detected_version: nil, raw_version: nil, requirement: nil)

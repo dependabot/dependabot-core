@@ -4,17 +4,17 @@
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/logger"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
-require "dependabot/npm_and_yarn/version"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/helpers"
+require "dependabot/bun/native_helpers"
+require "dependabot/bun/sub_dependency_files_filterer"
+require "dependabot/bun/update_checker"
+require "dependabot/bun/update_checker/dependency_files_builder"
+require "dependabot/bun/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class UpdateChecker
       class SubdependencyVersionResolver
         def initialize(dependency:, credentials:, dependency_files:,
@@ -86,7 +86,7 @@ module Dependabot
                           dependency_files_builder.lockfiles +
                           updated_lockfiles
 
-          updated_version = NpmAndYarn::FileParser.new(
+          updated_version = Bun::FileParser.new(
             dependency_files: updated_files,
             source: nil,
             credentials: credentials

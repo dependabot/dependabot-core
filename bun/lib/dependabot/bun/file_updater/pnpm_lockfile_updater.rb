@@ -1,13 +1,13 @@
 # typed: true
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
-require "dependabot/npm_and_yarn/registry_parser"
+require "dependabot/bun/helpers"
+require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/registry_parser"
 require "dependabot/shared_helpers"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class PnpmLockfileUpdater
         require_relative "npmrc_builder"
@@ -153,7 +153,7 @@ module Dependabot
         def lockfile_dependencies(lockfile)
           @lockfile_dependencies ||= {}
           @lockfile_dependencies[lockfile.name] ||=
-            NpmAndYarn::FileParser.new(
+            Bun::FileParser.new(
               dependency_files: [lockfile, *package_files, *workspace_files],
               source: nil,
               credentials: credentials
@@ -316,7 +316,7 @@ module Dependabot
                         .find { |dep| dep.name == package_name }
           raise DependencyNotFound, package_name unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Bun::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file

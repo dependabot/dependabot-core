@@ -3,18 +3,18 @@
 
 require "uri"
 
-require "dependabot/npm_and_yarn"
-require "dependabot/npm_and_yarn/file_updater"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/helpers"
-require "dependabot/npm_and_yarn/update_checker/registry_finder"
-require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/bun"
+require "dependabot/bun/file_updater"
+require "dependabot/bun/file_parser"
+require "dependabot/bun/helpers"
+require "dependabot/bun/update_checker/registry_finder"
+require "dependabot/bun/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileUpdater < Dependabot::FileUpdaters::Base
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
@@ -416,7 +416,7 @@ module Dependabot
         def lockfile_dependencies(lockfile)
           @lockfile_dependencies ||= {}
           @lockfile_dependencies[lockfile.name] ||=
-            NpmAndYarn::FileParser.new(
+            Bun::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
               credentials: credentials
@@ -429,7 +429,7 @@ module Dependabot
 
           error_handler.raise_resolvability_error(error_message, yarn_lock) unless missing_dep
 
-          reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
+          reg = Bun::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file,
@@ -588,40 +588,6 @@ module Dependabot
 
         # Check if the error message contains any group patterns and raise the corresponding error class
         handle_group_patterns(error, usage_error_message, params)
-
-        # Check if defined yarn error codes contained in the error message
-        # and raise the corresponding error class
-        handle_yarn_error(error, params)
-      end
-
-      # Handles errors with specific to yarn error codes
-      sig { params(error: SharedHelpers::HelperSubprocessFailed, params: T::Hash[Symbol, String]).void }
-      def handle_yarn_error(error, params)
-        ## Clean error message from ANSI escape codes
-        error_message = error.message.gsub(/\e\[\d+(;\d+)*m/, "")
-        matches = error_message.scan(YARN_CODE_REGEX)
-        return if matches.empty?
-
-        # Go through each match backwards in the error message and raise the corresponding error class
-        matches.reverse_each do |match|
-          code = match[0]
-          next unless code
-
-          yarn_error = YARN_ERROR_CODES[code]
-          next unless yarn_error.is_a?(Hash)
-
-          message = yarn_error[:message]
-          handler = yarn_error[:handler]
-          next unless handler
-
-          modified_error_message = if message
-                                     "[#{code}]: #{message}, Detail: #{error_message}"
-                                   else
-                                     "[#{code}]: #{error_message}"
-                                   end
-
-          raise  create_error(handler, modified_error_message, error, params)
-        end
       end
 
       # Handles errors based on group patterns

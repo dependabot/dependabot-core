@@ -1,10 +1,10 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/package_manager"
+require "dependabot/bun/package_manager"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class PNPMPackageManager < Ecosystem::VersionManager
       extend T::Sig
       NAME = "pnpm"
@@ -27,7 +27,7 @@ module Dependabot
         params(
           detected_version: T.nilable(String),
           raw_version: T.nilable(String),
-          requirement: T.nilable(Dependabot::NpmAndYarn::Requirement)
+          requirement: T.nilable(Dependabot::Bun::Requirement)
         ).void
       end
       def initialize(detected_version: nil, raw_version: nil, requirement: nil)

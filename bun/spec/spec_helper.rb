@@ -15,7 +15,7 @@ def create_dependency(name:, version:, required_version:, previous_required_vers
   Dependabot::Dependency.new(
     name: name,
     version: version,
-    package_manager: "npm_and_yarn",
+    package_manager: "bun",
     requirements: [{
       file: file,
       requirement: required_version,

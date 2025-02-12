@@ -3,11 +3,11 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/bun/native_helpers"
 require "sorbet-runtime"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base
       class YarnLock
         def initialize(dependency_file)
@@ -46,7 +46,7 @@ module Dependabot
               dependency_set << Dependency.new(
                 name: req.split(/(?<=\w)\@/).first,
                 version: version.to_s,
-                package_manager: "npm_and_yarn",
+                package_manager: "bun",
                 requirements: []
               )
             end

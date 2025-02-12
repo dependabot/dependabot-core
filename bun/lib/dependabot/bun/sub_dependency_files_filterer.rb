@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
+require "dependabot/bun/version"
+require "dependabot/bun/file_parser/lockfile_parser"
 require "sorbet-runtime"
 
 # Used in the sub dependency version resolver and file updater to only run
@@ -11,7 +11,7 @@ require "sorbet-runtime"
 # large monorepos with lots of sub-projects that don't all have the same
 # dependencies.
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class SubDependencyFilesFilterer
       extend T::Sig
 
@@ -52,7 +52,7 @@ module Dependabot
       def lockfile_dependencies(lockfile)
         @lockfile_dependencies ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependency]]))
         @lockfile_dependencies[lockfile.name] ||=
-          NpmAndYarn::FileParser::LockfileParser.new(
+          Bun::FileParser::LockfileParser.new(
             dependency_files: [lockfile]
           ).parse
       end
@@ -73,9 +73,9 @@ module Dependabot
         )
       end
 
-      sig { returns(T.class_of(Dependabot::NpmAndYarn::Version)) }
+      sig { returns(T.class_of(Dependabot::Bun::Version)) }
       def version_class
-        NpmAndYarn::Version
+        Bun::Version
       end
     end
   end

@@ -4,7 +4,7 @@
 require "dependabot/errors"
 
 module Dependabot
-  module NpmAndYarn
+  module Bun
     class FileParser < Dependabot::FileParsers::Base
       class PnpmLock
         def initialize(dependency_file)
@@ -41,7 +41,7 @@ module Dependabot
             dependency_args = {
               name: name,
               version: version,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: []
             }
 
@@ -72,7 +72,7 @@ module Dependabot
             dependency_args = {
               name: name,
               version: version,
-              package_manager: "npm_and_yarn",
+              package_manager: "bun",
               requirements: []
             }
 
