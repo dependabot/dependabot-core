@@ -1,0 +1,17 @@
+{
+  "name": "transitive-dependency-locked-by-multiple",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dependabot-fixtures/npm-parent-dependency": "2.0.1",
+    "@dependabot-fixtures/npm-parent-dependency-2": "2.1.0",
+    "@dependabot-fixtures/npm-parent-dependency-3": "2.0.0"
+  }
+}

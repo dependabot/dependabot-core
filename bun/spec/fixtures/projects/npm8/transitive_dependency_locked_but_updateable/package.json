@@ -1,0 +1,14 @@
+{
+  "name": "transitive-dependency-locked-but-updateable",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dependabot-fixtures/npm-parent-dependency-with-more-versions": "^1.0.0"
+  }
+}

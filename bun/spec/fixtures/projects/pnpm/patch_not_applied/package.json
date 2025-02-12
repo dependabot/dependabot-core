@@ -1,0 +1,14 @@
+{
+  "name": "name",
+  "packageManager": "pnpm@9.2.0",
+  "type": "module",
+  "namespace": "form-signals",
+  "devDependencies": {
+    "@nx/js": "18.0.2"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@nx/js@18.0.2": "patches/@nx__js@18.0.2.patch"
+    }
+  }
+}
