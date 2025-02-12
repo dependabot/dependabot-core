@@ -364,6 +364,7 @@ module Dependabot
 
       # server response error codes while accessing package index
       SERVER_ERROR_CODES = T.let({
+        server500: /500 Server Error/,
         server502: /502 Server Error/,
         server503: /503 Server Error/,
         server504: /504 Server Error/
@@ -374,6 +375,12 @@ module Dependabot
 
       # error related to local project as dependency in pyproject.toml
       ERR_LOCAL_PROJECT_PATH = /Path (?<path>.*) for (?<dep>.*) does not exist/
+
+      TIME_OUT_ERRORS = T.let({
+        time_out_max_retries: /Max retries exceeded/,
+        time_out_read_timed_out: /Read timed out/,
+        time_out_inactivity: /Timed out due to inactivity/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
 
       sig do
         params(
@@ -435,6 +442,12 @@ module Dependabot
 
           index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
           raise InconsistentRegistryResponse, index_url
+        end
+
+        TIME_OUT_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          raise InconsistentRegistryResponse, "Inconsistent registry response"
         end
 
         CLIENT_ERROR_CODES.each do |(_error_codes, error_regex)|
