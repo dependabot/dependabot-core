@@ -20,6 +20,9 @@ module Dependabot
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
       GIT_HTTPS_PREFIX = %r{^git::https://}
 
+      RESOLVE_ERROR = /Could not retrieve providers for locking/
+      CONSTRAINTS_ERROR = /no available releases match/
+
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -294,6 +297,11 @@ module Dependabot
             content.sub!(declaration_regex, updated_dependency)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          if e.message.match?(RESOLVE_ERROR) && e.message.match?(CONSTRAINTS_ERROR)
+            raise Dependabot::DependencyFileNotResolvable, "Error while updating lockfile, " \
+                                                           "no matching constraints found."
+          end
+
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
             mod = T.must(e.message.match(MODULE_NOT_INSTALLED_ERROR)).named_captures.fetch("mod")
             raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
