@@ -616,6 +616,28 @@ RSpec.describe Dependabot::NpmAndYarn::YarnErrorHandler do
         end
       end
 
+      context "when error message doesn't match any YN0001.* regex patterns" do
+        let(:error_message) do
+          "[YN0001]: Exception error, Detail: ➤ YN0000: · Yarn 4.0.2" \
+            "➤ YN0000: ┌ Resolution step" \
+            "::group::Resolution step" \
+            "➤ YN0001: │ TypeError: @moonpig/common-logging-sqs-lambda@npm:1.1.2: Invalid URL" \
+            "at new URL (node:internal/url:806:29)" \
+            "at Q1t (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:20388)" \
+            "at /home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:18667" \
+            "at Object.ol (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:140:53564)" \
+            "at KC (/home/dependabot/dependabot-updater/repo/.yarn/releases/yarn-4.0.2.cjs:676:18561)"
+        end
+
+        it "raises error with the raw message" do
+          expect do
+            error_handler.handle_yarn_error(error, { yarn_lock: yarn_lock })
+          end.to raise_error(
+            Dependabot::DependencyFileNotResolvable
+          )
+        end
+      end
+
       context "when out of diskspace error" do
         let(:error_message) do
           "fatal: sha1 file '/home/dependabot/dependabot-updater/repo/.git/index.lock' write error. Out of diskspace"
