@@ -426,6 +426,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when fetching the latest tag results in a JSON parser error" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+      let(:version) { "12.10" }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        stub_request(:head, repo_url + "manifests/latest").to_raise(JSON::ParserError)
+      end
+
+      it { is_expected.to eq("17.10") }
+    end
+
     context "when the dependency's version has a prefix" do
       let(:version) { "artful-20170826" }
 
