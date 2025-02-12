@@ -111,10 +111,6 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-# Special cases:
-#  - Bun ecosystem is a special case that is under the javascript folder
-RUN mkdir -p javascript/lib/dependabot && touch javascript/lib/dependabot/bun.rb
-
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 # RubyGems & Bundler should be bumped together following these steps:
