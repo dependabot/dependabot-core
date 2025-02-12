@@ -294,6 +294,10 @@ module Dependabot
       rescue RestClient::ServerBrokeConnection,
              RestClient::TooManyRequests
         raise PrivateSourceBadResponse, registry_hostname
+      rescue JSON::ParserError
+        Dependabot.logger.info \
+          "docker_registry_client.manifest_digest(#{docker_repo_name}, #{tag}) returned an empty string"
+        nil
       end
 
       sig { returns(T::Array[T.class_of(StandardError)]) }
