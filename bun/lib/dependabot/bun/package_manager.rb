@@ -234,28 +234,15 @@ module Dependabot
           return package_manager if package_manager.deprecated? || package_manager.unsupported?
         end
 
-        installed_version = installed_version(name)
-        Dependabot.logger.info("Installed version for #{name}: #{installed_version}")
-
-        package_manager_requirement = find_engine_constraints_as_requirement(name)
-        if package_manager_requirement
-          Dependabot.logger.info("Version requirement for #{name}: #{package_manager_requirement}")
-        else
-          Dependabot.logger.info("No version requirement found for #{name}")
-        end
-
         BunPackageManager.new(
           detected_version: detected_version,
-          raw_version: installed_version,
-          requirement: package_manager_requirement
+          raw_version: installed_version
         )
-      rescue ArgumentError => e
-        raise DependencyFileNotParseable, e.message if e.message.include?(ERROR_MALFORMED_VERSION_NUMBER)
+      end
 
-        raise
-      rescue StandardError => e
-        Dependabot.logger.error("Error resolving package manager for #{name || 'default'}: #{e.message}")
-        raise
+      sig { returns(T.nilable(String)) }
+      def installed_version
+        Helpers.bun_version
       end
 
       private
@@ -266,21 +253,6 @@ module Dependabot
         return unless Version.new(version) < Version.new("7")
 
         raise ToolVersionNotSupported.new(PNPMPackageManager::NAME.upcase, version, "7.*, 8.*, 9.*")
-      end
-
-      sig { params(name: String, version: T.nilable(String)).void }
-      def install(name, version)
-        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
-
-        begin
-          SharedHelpers.run_shell_command(
-            "corepack install #{name}@#{version} --global --cache-only",
-            fingerprint: "corepack install <name>@<version> --global --cache-only"
-          )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
-          Helpers.fallback_to_local_version(name)
-        end
       end
 
       sig { params(name: String).returns(T.nilable(String)) }

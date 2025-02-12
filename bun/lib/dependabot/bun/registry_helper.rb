@@ -100,7 +100,7 @@ module Dependabot
         ).returns(T::Hash[Symbol, T.nilable(String)])
       end
       def parse_npm_from_npm_or_yarn_rc(file, separator = "=")
-        parse_registry_from_npmrc_yarnrc(file, separator, NpmPackageManager::NAME)
+        parse_registry_from_npmrc_yarnrc(file, separator, "npm")
       end
 
       # Find registry and token in .npmrc or .yarnrc file

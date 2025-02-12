@@ -40,12 +40,6 @@ module Dependabot
       def self.updated_files_regex
         [
           %r{^(?:.*/)?package\.json$},
-          %r{^(?:.*/)?package-lock\.json$},
-          %r{^(?:.*/)?npm-shrinkwrap\.json$},
-          %r{^(?:.*/)?yarn\.lock$},
-          %r{^(?:.*/)?pnpm-lock\.yaml$},
-          %r{^(?:.*/)?pnpm-workspace\.yaml$},
-          %r{^(?:.*/)?\.yarn/.*}, # Matches any file within the .yarn/ directory
           %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
         ]
       end
@@ -55,11 +49,7 @@ module Dependabot
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
-        updated_files += if pnpm_workspace.any?
-                           update_pnpm_workspace_and_locks
-                         else
-                           updated_lockfiles
-                         end
+        updated_files += updated_lockfiles
 
         if updated_files.none?
 
@@ -88,47 +78,8 @@ module Dependabot
         pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
           updated_files << file
         end
-        T.unsafe(vendor_updater).updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file
-        end
-        install_state_updater.updated_files(base_directory: base_dir).each do |file|
-          updated_files << file
-        end
 
         updated_files
-      end
-
-      # Dynamically fetch the vendor cache folder from yarn
-      sig { returns(String) }
-      def vendor_cache_dir
-        @vendor_cache_dir ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache"),
-          T.nilable(String)
-        )
-      end
-
-      sig { returns(String) }
-      def install_state_path
-        @install_state_path ||= T.let(
-          Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz"),
-          T.nilable(String)
-        )
-      end
-
-      sig { returns(Dependabot::FileUpdaters::VendorUpdater) }
-      def vendor_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
-          repo_contents_path: repo_contents_path,
-          vendor_dir: vendor_cache_dir
-        )
-      end
-
-      sig { returns(Dependabot::FileUpdaters::ArtifactUpdater) }
-      def install_state_updater
-        Dependabot::FileUpdaters::ArtifactUpdater.new(
-          repo_contents_path: repo_contents_path,
-          target_directory: install_state_path
-        )
       end
 
       sig { returns(Dependabot::FileUpdaters::ArtifactUpdater) }
@@ -237,18 +188,6 @@ module Dependabot
           ),
           T.nilable(Dependabot::Bun::FileUpdater::BunLockfileUpdater)
         )
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
-      def updated_lockfile_content(file)
-        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_lockfile_content[file.name] ||=
-          NpmLockfileUpdater.new(
-            lockfile: file,
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).updated_lockfile.content
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }

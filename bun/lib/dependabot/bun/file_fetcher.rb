@@ -42,7 +42,7 @@ module Dependabot
         "Repo must contain a package.json."
       end
 
-      # Overridden to pull any yarn data or plugins which may be stored with Git LFS.
+      # Overridden to pull any necessary data stored with Git LFS.
       sig { override.returns(String) }
       def clone_repo_contents
         return @git_lfs_cloned_repo_contents_path unless @git_lfs_cloned_repo_contents_path.nil?
@@ -51,8 +51,7 @@ module Dependabot
         begin
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(@git_lfs_cloned_repo_contents_path) do
-              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
-              SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
+              SharedHelpers.run_shell_command("git lfs pull --include .yarn")
             end
             @git_lfs_cloned_repo_contents_path
           end
