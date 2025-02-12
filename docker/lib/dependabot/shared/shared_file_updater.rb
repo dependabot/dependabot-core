@@ -8,11 +8,9 @@ require "sorbet-runtime"
 
 module Dependabot
   module Shared
-    class BaseFileUpdater < Dependabot::FileUpdaters::Base
+    class SharedFileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
       extend T::Helpers
-
-
 
       protected
 

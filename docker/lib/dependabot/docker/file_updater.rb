@@ -5,11 +5,11 @@ require "sorbet-runtime"
 require "dependabot/docker/utils/helpers"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require_relative "../shared/base_file_updater"
+require "dependabot/shared/shared_file_updater"
 
 module Dependabot
   module Docker
-    class FileUpdater < Dependabot::Shared::BaseFileUpdater
+    class FileUpdater < Dependabot::Shared::SharedFileUpdater
       extend T::Sig
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i

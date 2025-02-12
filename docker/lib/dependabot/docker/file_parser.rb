@@ -1,11 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "../shared/base_file_parser"
+require "dependabot/shared/shared_file_parser"
 
 module Dependabot
   module Docker
-    class FileParser < Dependabot::Shared::BaseFileParser
+    class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i

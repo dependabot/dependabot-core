@@ -8,7 +8,7 @@ require "sorbet-runtime"
 
 module Dependabot
   module Shared
-    class BaseFileParser < Dependabot::FileParsers::Base
+    class SharedFileParser < Dependabot::FileParsers::Base
       extend T::Sig
       extend T::Helpers
 

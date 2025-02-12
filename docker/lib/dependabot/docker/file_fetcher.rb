@@ -2,11 +2,11 @@
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
-require_relative "../shared/base_file_fetcher"
+require "dependabot/shared/shared_file_fetcher"
 
 module Dependabot
   module Docker
-    class FileFetcher < Dependabot::Shared::BaseFileFetcher
+    class FileFetcher < Dependabot::Shared::SharedFileFetcher
       extend T::Sig
 
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
@@ -42,17 +42,20 @@ module Dependabot
 
         return fetched_files if fetched_files.any?
 
-        if incorrectly_encoded_files.none?
+        raise_appropriate_error
+      end
+
+      sig { void }
+      def raise_appropriate_error
+        if incorrectly_encoded_files.none? && incorrectly_encoded_yamlfiles.none?
           raise Dependabot::DependencyFileNotFound.new(
-            File.join(directory, default_file_name),
-            "No #{file_type} files found in #{directory}"
-          )
-        else
-          raise(
-            Dependabot::DependencyFileNotParseable,
-            T.must(incorrectly_encoded_files.first).path
+            File.join(directory, "Dockerfile"),
+            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )
         end
+
+        invalid_files = incorrectly_encoded_files.any? ? incorrectly_encoded_files : incorrectly_encoded_yamlfiles
+        raise Dependabot::DependencyFileNotParseable, T.must(invalid_files.first).path
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -79,7 +82,6 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def correctly_encoded_yamlfiles
-        debugger
         candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
         candidate_files.select do |f|
           if f.type == "file" && Utils.likely_helm_chart?(f)

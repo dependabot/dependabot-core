@@ -4,7 +4,7 @@ require "dependabot/file_fetchers/base"
 
 module Dependabot
   module Shared
-    class BaseFileFetcher < Dependabot::FileFetchers::Base
+    class SharedFileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
       extend T::Helpers
 
