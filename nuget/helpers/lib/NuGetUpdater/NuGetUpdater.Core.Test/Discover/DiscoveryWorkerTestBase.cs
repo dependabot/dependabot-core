@@ -23,13 +23,12 @@ public class DiscoveryWorkerTestBase : TestBase
         TestFile[] files,
         ExpectedWorkspaceDiscoveryResult expectedResult,
         MockNuGetPackage[]? packages = null,
-        bool includeCommonPackages = true,
         ExperimentsManager? experimentsManager = null)
     {
         experimentsManager ??= new ExperimentsManager();
         var actualResult = await RunDiscoveryAsync(files, async directoryPath =>
         {
-            await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath, includeCommonPackages: includeCommonPackages);
+            await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(packages, directoryPath);
 
             var worker = new DiscoveryWorker("TEST-JOB-ID", experimentsManager, new TestLogger());
             var result = await worker.RunWithErrorHandlingAsync(directoryPath, workspacePath);

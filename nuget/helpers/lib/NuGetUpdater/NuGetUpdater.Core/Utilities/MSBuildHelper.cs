@@ -784,11 +784,11 @@ internal static partial class MSBuildHelper
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
                 [
-                    "msbuild",
+                    "build",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
-                    $"/p:CustomAfterMicrosoftCommonTargets={targetsHelperPath}",
+                    $"/p:CustomAfterMicrosoftCommonTargets={targetsHelperPath}"
                 ],
                 projectDirectory,
                 experimentsManager
@@ -833,12 +833,6 @@ internal static partial class MSBuildHelper
                     var framework = string.IsNullOrWhiteSpace(tfpm.Item2)
                         ? NuGetFramework.Parse(tfpm.Item1)
                         : NuGetFramework.ParseComponents(tfpm.Item1, tfpm.Item2);
-                    if (framework.Framework == "_")
-                    {
-                        // error/default value
-                        return null;
-                    }
-
                     return framework;
                 }
                 catch

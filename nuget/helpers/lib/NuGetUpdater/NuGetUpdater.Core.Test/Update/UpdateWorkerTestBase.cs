@@ -298,17 +298,13 @@ public abstract class UpdateWorkerTestBase : TestBase
         await File.WriteAllTextAsync(Path.Join(temporaryDirectory, "job.json"), JsonSerializer.Serialize(jobFile, RunWorker.SerializerOptions));
     }
 
-    public static async Task MockNuGetPackagesInDirectory(MockNuGetPackage[]? packages, string temporaryDirectory, bool includeCommonPackages = true)
+    public static async Task MockNuGetPackagesInDirectory(MockNuGetPackage[]? packages, string temporaryDirectory)
     {
         if (packages is not null)
         {
             string localFeedPath = Path.Join(temporaryDirectory, "local-feed");
             Directory.CreateDirectory(localFeedPath);
-            var allPackages = packages;
-            if (includeCommonPackages)
-            {
-                allPackages = allPackages.Concat(MockNuGetPackage.CommonPackages).ToArray();
-            }
+            MockNuGetPackage[] allPackages = packages.Concat(MockNuGetPackage.CommonPackages).ToArray();
 
             // write all packages to disk
             foreach (MockNuGetPackage package in allPackages)
