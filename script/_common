@@ -14,9 +14,6 @@ function set_tag() {
       npm_and_yarn)
         TAG=npm
         ;;
-      javascript)
-        TAG=bun
-        ;;
       python)
         TAG=pip
         ;;

@@ -1,4 +1,10 @@
 PATH
+  remote: ../bun
+  specs:
+    dependabot-bun (0.296.2)
+      dependabot-common (= 0.296.2)
+
+PATH
   remote: ../bundler
   specs:
     dependabot-bundler (0.296.2)
@@ -96,13 +102,6 @@ PATH
   specs:
     dependabot-hex (0.296.2)
       dependabot-common (= 0.296.2)
-
-PATH
-  remote: ../javascript
-  specs:
-    dependabot-bun (0.296.2)
-      dependabot-common (= 0.296.2)
-      zeitwerk (~> 2.7)
 
 PATH
   remote: ../maven

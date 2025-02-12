@@ -1,0 +1,11 @@
+{
+  "extends": [
+    "prettier"
+  ],
+  "env": {
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest"
+  }
+}
