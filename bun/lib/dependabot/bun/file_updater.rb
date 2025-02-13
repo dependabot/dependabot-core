@@ -35,8 +35,8 @@ module Dependabot
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [
-          %r{^(?:.*/)?package\.json$},
-          %r{^(?:.*/)?\.pnp\.(?:js|cjs)$} # Matches .pnp.js or .pnp.cjs files
+          %r{^(?:.*\/)?package\.json$},
+          %r{^(?:.*\/)?bun\.lock$}
         ]
       end
 
