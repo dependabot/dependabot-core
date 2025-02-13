@@ -169,6 +169,10 @@ module Dependabot
       REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
     }.freeze, T::Hash[String, Regexp])
 
+    YN0001_INVALID_TYPE_ERRORS = T.let({
+      INVALID_URL: /TypeError: (?<dep>.*): Invalid URL/
+    }.freeze, T::Hash[String, Regexp])
+
     YN0086_DEPS_RESOLUTION_FAILED = /peer dependencies are incorrectly met/
 
     # registry returns malformed response
@@ -235,6 +239,13 @@ module Dependabot
 
           YN0001_DEPS_RESOLUTION_FAILED.each do |(_yn0001_key, yn0001_regex)|
             if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
+          YN0001_INVALID_TYPE_ERRORS.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+
               return Dependabot::DependencyFileNotResolvable.new(msg)
             end
           end

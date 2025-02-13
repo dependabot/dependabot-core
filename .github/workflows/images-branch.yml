@@ -76,7 +76,7 @@ jobs:
           - { name: swift, ecosystem: swift }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: terraform, ecosystem: terraform }
-          - { name: javascript, ecosystem: bun }
+          - { name: bun, ecosystem: bun }
     permissions:
       contents: read
       id-token: write

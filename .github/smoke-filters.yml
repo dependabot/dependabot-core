@@ -7,6 +7,9 @@ common: &common
 github_actions:
   - *common
   - 'github_actions/**'
+bun:
+  - *common
+  - 'bun/**'
 bundler:
   - *common
   - 'bundler/**'
@@ -38,9 +41,6 @@ gradle:
 hex:
   - *common
   - 'hex/**'
-javascript:
-  - *common
-  - 'javascript/**'
 maven:
   - *common
   - 'maven/**'

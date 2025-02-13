@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-bun", path: "bun"
 gem "dependabot-bundler", path: "bundler"
 gem "dependabot-cargo", path: "cargo"
 gem "dependabot-common", path: "common"
