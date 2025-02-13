@@ -41,11 +41,40 @@ internal abstract partial class BuildFile<T>
     public T Contents { get; private set; }
 
     private string _originalContentsText;
+    internal enum EOLSpec
+    {
+        Unknown,
+        LF,
+        CR,
+        CRLF
+    };
+
+    internal EOLSpec originalEOL = EOLSpec.Unknown;
+    internal EOLSpec writeEOL = EOLSpec.Unknown;
 
     public BuildFile(string repoRootPath, string path, T contents) : base(repoRootPath, path)
     {
         Contents = contents;
         _originalContentsText = GetContentsString(contents);
+        // Get stats on EOL characters/character sequences, if one predominates choose that for writing later.
+        var lfcount = _originalContentsText.Count(c => c == '\n');
+        var crcount = _originalContentsText.Count(c => c == '\r');
+        var crlfcount = Regex.Matches(_originalContentsText, "\r\n").Count();
+        lfcount -= crlfcount;
+        crcount -= crlfcount;
+        if (lfcount > crcount && lfcount > crlfcount)
+        {
+            originalEOL = EOLSpec.LF;
+        }
+        else if (crlfcount > crcount)
+        {
+            originalEOL = EOLSpec.CRLF;
+        }
+        else
+        {
+            originalEOL = EOLSpec.CR;
+        }
+        writeEOL = originalEOL;
     }
 
     public void Update(T contents)
@@ -57,9 +86,25 @@ internal abstract partial class BuildFile<T>
     {
         var currentContentsText = GetContentsString(Contents);
 
-        if (!HasAnyNonWhitespaceChanges(_originalContentsText, currentContentsText))
+        if (!HasAnyNonWhitespaceChanges(_originalContentsText, currentContentsText) && originalEOL == writeEOL)
         {
             return false;
+        }
+
+        switch (writeEOL)
+        {
+            case EOLSpec.LF:
+                currentContentsText = Regex.Replace(currentContentsText, "(\r\n|\r)", "\n");
+                break;
+            case EOLSpec.CR:
+                currentContentsText = Regex.Replace(currentContentsText, "(\r\n|\n)", "\r");
+                break;
+            case EOLSpec.CRLF:
+                currentContentsText = Regex.Replace(currentContentsText, "(\r\n|\r|\n)", "\r\n");
+                break;
+            case EOLSpec.Unknown:
+            default:
+                break;
         }
 
         await File.WriteAllTextAsync(Path, currentContentsText);
@@ -76,7 +121,7 @@ internal abstract partial class BuildFile<T>
         newText = WhitespaceRegex().Replace(newText, string.Empty);
 
         var diffBuilder = new InlineDiffBuilder(new Differ());
-        var diff = diffBuilder.BuildDiffModel(oldText, newText);
+        var diff = diffBuilder.BuildDiffModel(oldText, newText, false);
         foreach (var line in diff.Lines)
         {
             if (line.Type is ChangeType.Inserted ||
@@ -90,6 +135,6 @@ internal abstract partial class BuildFile<T>
         return false;
     }
 
-    [GeneratedRegex("\\s+")]
+    [GeneratedRegex("[^\\S\r\n]+")]
     private static partial Regex WhitespaceRegex();
 }

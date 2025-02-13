@@ -357,7 +357,7 @@ public abstract class UpdateWorkerTestBase : TestBase
         {
             var actualContent = actualContents[expectedPair.Path];
             var expectedContent = expectedPair.Content;
-            Assert.Equal(expectedContent.Replace("\r", ""), actualContent.Replace("\r", "")); // normalize line endings
+            Assert.Equal(expectedContent, actualContent);
         }
     }
 }

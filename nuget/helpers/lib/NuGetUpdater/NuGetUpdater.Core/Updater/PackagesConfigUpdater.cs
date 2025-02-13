@@ -8,6 +8,7 @@ using Microsoft.Language.Xml;
 
 using NuGet.CommandLine;
 
+using NuGetUpdater.Core.Files;
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
@@ -39,7 +40,10 @@ internal static partial class PackagesConfigUpdater
         logger.Info($"  Found '{ProjectHelper.PackagesConfigFileName}' project; running NuGet.exe update");
 
         // ensure local packages directory exists
+        var packagesConfigFile = BasicBuildFile.Open(repoRootPath, packagesConfigPath);
+        var originalConfigEOL = packagesConfigFile.originalEOL;
         var projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
+        var originalEOL = projectBuildFile.originalEOL;
         var packagesSubDirectory = GetPathToPackagesDirectory(projectBuildFile, dependencyName, previousDependencyVersion, packagesConfigPath);
         if (packagesSubDirectory is null)
         {
@@ -91,13 +95,19 @@ internal static partial class PackagesConfigUpdater
             RunNugetUpdate(updateArgs, restoreArgs, projectDirectory ?? packagesDirectory, logger);
         }
 
+        packagesConfigFile = BasicBuildFile.Open(repoRootPath, packagesConfigPath);
         projectBuildFile = ProjectBuildFile.Open(repoRootPath, projectPath);
         projectBuildFile.NormalizeDirectorySeparatorsInProject();
+
+        // The nuget update may have blown away the original line endings, so restore them
+        packagesConfigFile.writeEOL = originalConfigEOL;
+        projectBuildFile.writeEOL = originalEOL;
 
         // Update binding redirects
         await BindingRedirectManager.UpdateBindingRedirectsAsync(projectBuildFile, dependencyName, newDependencyVersion);
 
         logger.Info("    Writing project file back to disk");
+        await packagesConfigFile.SaveAsync();
         await projectBuildFile.SaveAsync();
     }
 

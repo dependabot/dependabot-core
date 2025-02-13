@@ -13,8 +13,11 @@ public partial class EntryPointTests
 {
     public class Update : UpdateWorkerTestBase
     {
-        [Fact]
-        public async Task WithSolution()
+        [Theory]
+        [InlineData(["\r"])]
+        [InlineData(["\n"])]
+        [InlineData(["\r\n"])]
+        public async Task WithSolution(string EOL)
         {
             await Run(path =>
                 [
@@ -63,7 +66,7 @@ public partial class EntryPointTests
                             HideSolutionNode = FALSE
                             EndGlobalSection
                         EndGlobal
-                        """),
+                        """.Replace("\n", EOL)),
                     ("path/to/my.csproj", """
                         <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                           <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -81,12 +84,12 @@ public partial class EntryPointTests
                           </ItemGroup>
                           <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("path/to/packages.config", """
                         <packages>
                           <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                         </packages>
-                        """)
+                        """.Replace("\n", EOL))
                       ],
                 expectedFiles:
                 [
@@ -107,19 +110,22 @@ public partial class EntryPointTests
                           </ItemGroup>
                           <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("path/to/packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
                           <package id="Some.Package" version="13.0.1" targetFramework="net45" />
                         </packages>
-                        """)
+                        """.Replace("\n", EOL))
                 ]
             );
         }
 
-        [Fact]
-        public async Task WithProject()
+        [Theory]
+        [InlineData(["\r"])]
+        [InlineData(["\n"])]
+        [InlineData(["\r\n"])]
+        public async Task WithProject(string EOL)
         {
             await Run(path =>
                 [
@@ -163,12 +169,12 @@ public partial class EntryPointTests
                           </ItemGroup>
                           <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("path/to/packages.config", """
                         <packages>
                           <package id="Some.Package" version="7.0.1" targetFramework="net45" />
                         </packages>
-                        """)
+                        """.Replace("\n", EOL))
                 ],
                 expectedFiles:
                 [
@@ -189,19 +195,22 @@ public partial class EntryPointTests
                           </ItemGroup>
                           <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("path/to/packages.config", """
                         <?xml version="1.0" encoding="utf-8"?>
                         <packages>
                           <package id="Some.Package" version="13.0.1" targetFramework="net45" />
                         </packages>
-                        """)
+                        """.Replace("\n", EOL))
                 ]
             );
         }
 
-        [Fact]
-        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage()
+        [Theory]
+        [InlineData(["\r"])]
+        [InlineData(["\n"])]
+        [InlineData(["\r\n"])]
+        public async Task WithDirsProjAndDirectoryBuildPropsThatIsOutOfDirectoryButStillMatchingThePackage(string EOL)
         {
             await Run(path =>
                 [
@@ -235,7 +244,7 @@ public partial class EntryPointTests
                             <ProjectReference Include="project2/project.csproj" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("some-dir/project1/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -248,7 +257,7 @@ public partial class EntryPointTests
                             <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("some-dir/project2/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -261,7 +270,7 @@ public partial class EntryPointTests
                             <PackageReference Include="Some.Package" Version="6.1.0" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
@@ -270,7 +279,7 @@ public partial class EntryPointTests
                           </ItemGroup>
 
                         </Project>
-                        """)
+                        """.Replace("\n", EOL))
                 ],
                 expectedFiles:
                 [
@@ -281,7 +290,7 @@ public partial class EntryPointTests
                             <ProjectReference Include="project2/project.csproj" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("some-dir/project1/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -294,7 +303,7 @@ public partial class EntryPointTests
                             <PackageReference Include="Some.Package" Version="6.6.1" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("some-dir/project2/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
@@ -307,7 +316,7 @@ public partial class EntryPointTests
                             <PackageReference Include="Some.Package" Version="6.6.1" />
                           </ItemGroup>
                         </Project>
-                        """),
+                        """.Replace("\n", EOL)),
                     ("other-dir/Directory.Build.props", """
                         <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
@@ -316,7 +325,7 @@ public partial class EntryPointTests
                           </ItemGroup>
 
                         </Project>
-                        """)
+                        """.Replace("\n", EOL))
                 ]
             );
         }
