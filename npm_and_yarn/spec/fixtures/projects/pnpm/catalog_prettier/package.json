@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "author": "",
+  "packageManager": "pnpm@9.14.2",
   "dependencies": {
   },
   "devDependencies": {
+    "prettier": "catalog:"
   }
 }

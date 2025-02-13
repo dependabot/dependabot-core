@@ -24,11 +24,14 @@ module Dependabot
           )
         end
 
-        def updated_pnpm_lock_content(pnpm_lock)
+        def updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: nil)
           @updated_pnpm_lock_content ||= {}
           return @updated_pnpm_lock_content[pnpm_lock.name] if @updated_pnpm_lock_content[pnpm_lock.name]
 
-          new_content = run_pnpm_update(pnpm_lock: pnpm_lock)
+          new_content = run_pnpm_update(
+            pnpm_lock: pnpm_lock,
+            updated_pnpm_workspace_content: updated_pnpm_workspace_content
+          )
           @updated_pnpm_lock_content[pnpm_lock.name] = new_content
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_pnpm_lock_updater_error(e, pnpm_lock)
@@ -100,14 +103,17 @@ module Dependabot
         # Peer dependencies configuration error
         ERR_PNPM_PEER_DEP_ISSUES = /ERR_PNPM_PEER_DEP_ISSUES/
 
-        def run_pnpm_update(pnpm_lock:)
+        def run_pnpm_update(pnpm_lock:, updated_pnpm_workspace_content: nil)
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_pnpm_update_packages
-
-              write_final_package_json_files
+              if updated_pnpm_workspace_content
+                File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
+              else
+                run_pnpm_update_packages
+                write_final_package_json_files
+              end
 
               run_pnpm_install
 
@@ -140,11 +146,15 @@ module Dependabot
           )
         end
 
+        def workspace_files
+          @workspace_files ||= dependency_files.select { |f| f.name.end_with?("pnpm-workspace.yaml") }
+        end
+
         def lockfile_dependencies(lockfile)
           @lockfile_dependencies ||= {}
           @lockfile_dependencies[lockfile.name] ||=
             NpmAndYarn::FileParser.new(
-              dependency_files: [lockfile, *package_files],
+              dependency_files: [lockfile, *package_files, *workspace_files],
               source: nil,
               credentials: credentials
             ).parse

@@ -426,6 +426,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when fetching the latest tag results in a JSON parser error" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+      let(:version) { "12.10" }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/17.10")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        stub_request(:head, repo_url + "manifests/latest").to_raise(JSON::ParserError)
+      end
+
+      it { is_expected.to eq("17.10") }
+    end
+
     context "when the dependency's version has a prefix" do
       let(:version) { "artful-20170826" }
 
@@ -476,6 +498,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to eq("17.10") }
 
+      context "when it returns a bad response (TooManyRequests) error" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::TooManyRequests)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+
+        context "when using a private registry" do
+          let(:dependency_name) { "ubuntu" }
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              version: version,
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "Dockerfile",
+                source: { registry: "registry-host.io:5000" }
+              }],
+              package_manager: "docker"
+            )
+          end
+          let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
+          let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+          it "raises" do
+            expect { checker.latest_version }
+              .to raise_error(Dependabot::PrivateSourceBadResponse)
+          end
+        end
+      end
+
       context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
@@ -509,6 +567,30 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             expect { checker.latest_version }
               .to raise_error(Dependabot::PrivateSourceTimedOut)
           end
+        end
+      end
+
+      context "when there is ServerBrokeConnection error response" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::ServerBrokeConnection)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+        end
+      end
+
+      context "when TooManyRequests request error" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(RestClient::TooManyRequests)
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
         end
       end
     end

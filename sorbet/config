@@ -7,6 +7,7 @@
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429
+--ignore=bun/spec/
 --ignore=bundler/helpers
 --ignore=bundler/spec/
 --ignore=cargo/spec/
@@ -14,12 +15,14 @@
 --ignore=composer/spec/
 --ignore=devcontainers/spec/
 --ignore=docker/spec/
+--ignore=dotnet_sdk/spec/
 --ignore=elm/spec/
 --ignore=git_submodules/spec/
 --ignore=github_actions/spec/
 --ignore=go_modules/spec/
 --ignore=gradle/spec/
 --ignore=hex/spec/
+--ignore=javascript/spec/
 --ignore=maven/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/

@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-bun", path: "../bun"
 gem "dependabot-bundler", path: "../bundler"
 gem "dependabot-cargo", path: "../cargo"
 gem "dependabot-common", path: "../common"
@@ -39,6 +40,8 @@ gem "sentry-ruby", "~> 5.16"
 gem "terminal-table", "~> 3.0.2"
 
 gem "flamegraph", "~> 0.9.5"
+
+gem "zeitwerk", "~> 2.7"
 
 group :test do
   common_gemspec = File.expand_path("../common/dependabot-common.gemspec", __dir__)

@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-bun", path: "bun"
 gem "dependabot-bundler", path: "bundler"
 gem "dependabot-cargo", path: "cargo"
 gem "dependabot-common", path: "common"
@@ -27,6 +28,8 @@ gem "dependabot-terraform", path: "terraform"
 # Sorbet
 gem "sorbet", "0.5.11630", group: :development
 gem "tapioca", "0.16.6", require: false, group: :development
+
+gem "zeitwerk", "~> 2.7"
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 
