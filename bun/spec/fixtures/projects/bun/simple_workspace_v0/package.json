@@ -1,0 +1,14 @@
+{
+  "workspaces": [
+    "packages/*",
+    "package-*"
+  ],
+  "dependencies": {
+    "foo": "workspace:*",
+    "bar": "workspace:*",
+    "baz": "workspace:*"
+  },
+  "devDependencies": {
+    "etag": "^1.1.0"
+  }
+}
