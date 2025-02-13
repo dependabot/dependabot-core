@@ -62,8 +62,10 @@ module Dependabot
                          end
 
         if updated_files.none?
-          raise_tool_not_supported_for_pnpm_if_transitive
-          raise_miss_configured_tooling_if_pnpm_subdirectory
+          if original_pnpm_locks.any?
+            raise_tool_not_supported_for_pnpm_if_transitive
+            raise_miss_configured_tooling_if_pnpm_subdirectory
+          end
 
           raise NoChangeError.new(
             message: "No files were updated!",
