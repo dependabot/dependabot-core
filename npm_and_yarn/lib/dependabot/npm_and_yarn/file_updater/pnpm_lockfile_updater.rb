@@ -127,17 +127,10 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
-            Helpers.run_pnpm_command(
-              "update #{dependency_updates}  --lockfile-only --no-save -r",
-              fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
-            )
-          else
-            Helpers.run_pnpm_command(
-              "install #{dependency_updates} --lockfile-only --ignore-workspace-root-check",
-              fingerprint: "install <dependency_updates> --lockfile-only --ignore-workspace-root-check"
-            )
-          end
+          Helpers.run_pnpm_command(
+            "update #{dependency_updates}  --lockfile-only --no-save -r",
+            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
+          )
         end
 
         def run_pnpm_install

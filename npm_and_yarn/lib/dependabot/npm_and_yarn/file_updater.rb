@@ -62,10 +62,8 @@ module Dependabot
                          end
 
         if updated_files.none?
-          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error) && original_pnpm_locks.any?
-            raise_tool_not_supported_for_pnpm_if_transitive
-            raise_miss_configured_tooling_if_pnpm_subdirectory
-          end
+          raise_tool_not_supported_for_pnpm_if_transitive
+          raise_miss_configured_tooling_if_pnpm_subdirectory
 
           raise NoChangeError.new(
             message: "No files were updated!",
