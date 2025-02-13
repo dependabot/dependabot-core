@@ -18,8 +18,11 @@ using TestFile = (string Path, string Content);
 
 public class RunWorkerTests
 {
-    [Fact]
-    public async Task UpdateSinglePackageProducedExpectedAPIMessages()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdateSinglePackageProducedExpectedAPIMessages(string EOL)
     {
         await RunAsync(
             packages: [],
@@ -43,7 +46,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.Replace("\n", EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -94,7 +97,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """);
+                    """.Replace("\n", EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -114,7 +117,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -199,7 +202,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -212,11 +215,14 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesSemicolonsInPackageReference()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdateHandlesSemicolonsInPackageReference(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
         await RunAsync(
             packages:
             [
@@ -246,7 +252,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.Replace("\n", EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -299,7 +305,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """);
+                    """.Replace("\n", EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -319,7 +325,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -447,7 +453,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         }
 
                     ],
@@ -461,8 +467,11 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler(string EOL)
     {
         await RunAsync(
             packages:
@@ -486,7 +495,7 @@ public class RunWorkerTests
                         <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
                       </packageSources>
                     </configuration>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -496,7 +505,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.Replace("\n", EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker((_input) =>
             {
@@ -517,11 +526,14 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesPackagesConfigFiles()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdateHandlesPackagesConfigFiles(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
         await RunAsync(
             packages:
             [
@@ -551,13 +563,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("some-dir/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.Replace("\n", EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -630,7 +642,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                              </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     case "Some.Package2":
                         await File.WriteAllTextAsync(projectPath, """
@@ -648,14 +660,14 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -676,7 +688,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -691,7 +703,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -815,7 +827,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                         new DependencyFile()
                         {
@@ -836,7 +848,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -849,11 +861,14 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""");
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""");
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
         await RunAsync(
             packages:
             [
@@ -886,13 +901,13 @@ public class RunWorkerTests
                         <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("some-dir/ProjectA/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("some-dir/ProjectB/ProjectB.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -902,13 +917,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("some-dir/ProjectB/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """),
+                    """.Replace("\n", EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -999,7 +1014,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     case ("ProjectA.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1020,13 +1035,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1038,7 +1053,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1056,13 +1071,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """);
+                            """.Replace("\n", EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """);
+                            """.Replace("\n", EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -1083,7 +1098,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1101,7 +1116,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1112,7 +1127,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1127,7 +1142,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1337,7 +1352,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                         new DependencyFile()
                         {
@@ -1361,7 +1376,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                         new DependencyFile()
                         {
@@ -1372,7 +1387,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                         new DependencyFile()
                         {
@@ -1393,7 +1408,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1406,8 +1421,11 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdatedFilesAreOnlyReportedOnce()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdatedFilesAreOnlyReportedOnce(string EOL)
     {
         await RunAsync(
             job: new()
@@ -1434,14 +1452,14 @@ public class RunWorkerTests
                         <ProjectFile Include="project2/project2.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("Directory.Build.props", """
                     <Project>
                       <PropertyGroup>
                         <SomePackageVersion>1.0.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("project1/project1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1451,7 +1469,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("project2/project2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1461,7 +1479,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """)
+                    """.Replace("\n", EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1526,7 +1544,7 @@ public class RunWorkerTests
                         <SomePackageVersion>1.1.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """);
+                    """.Replace("\n", EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -1543,7 +1561,7 @@ public class RunWorkerTests
                                 <SomePackageVersion>1.0.0</SomePackageVersion>
                               </PropertyGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1558,7 +1576,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1573,7 +1591,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1698,7 +1716,7 @@ public class RunWorkerTests
                                     <SomePackageVersion>1.1.0</SomePackageVersion>
                                   </PropertyGroup>
                                 </Project>
-                                """,
+                                """.Replace("\n", EOL),
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1711,8 +1729,11 @@ public class RunWorkerTests
         );
     }
 
-    [Fact]
-    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories()
+    [Theory]
+    [InlineData(["\r"])]
+    [InlineData(["\n"])]
+    [InlineData(["\r\n"])]
+    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(string EOL)
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior
 
@@ -1754,7 +1775,7 @@ public class RunWorkerTests
                         <ProjectFile Include="library3\library3.csproj" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("Directory.Build.props", "<Project />"),
                 ("Directory.Build.targets", "<Project />"),
                 ("Directory.Packages.props", """
@@ -1763,7 +1784,7 @@ public class RunWorkerTests
                         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("library1/library1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1773,7 +1794,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("library2/library2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1783,7 +1804,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
                 ("library3/library3.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1793,7 +1814,7 @@ public class RunWorkerTests
                         <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                       </ItemGroup>
                     </Project>
-                    """),
+                    """.Replace("\n", EOL)),
             ],
             discoveryWorker: null,
             analyzeWorker: null,
@@ -1824,7 +1845,7 @@ public class RunWorkerTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1839,7 +1860,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1854,7 +1875,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1869,7 +1890,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """))
+                            """.Replace("\n", EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2020,7 +2041,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """
+                                """.Replace("\n", EOL)
                         },
                         new()
                         {
@@ -2036,7 +2057,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """
+                                """.Replace("\n", EOL)
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
