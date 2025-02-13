@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 # These all need to be required so the various classes can be registered in a
@@ -13,10 +13,7 @@ require "dependabot/docker_compose/version"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler
-  .register_label_details("docker_compose", name: "docker", colour: "21ceff")
+  .register_label_details("docker_compose", name: "docker_compose", colour: "E5F2FC")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check(
-  "docker_compose",
-  ->(_) { true }
-)
+Dependabot::Dependency.register_production_check("docker_compose", ->(_) { true })

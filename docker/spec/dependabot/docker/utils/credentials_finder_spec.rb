@@ -3,11 +3,11 @@
 
 require "spec_helper"
 require "dependabot/credential"
-require "dependabot/docker/utils/credentials_finder"
+require "dependabot/shared/utils/credentials_finder"
 require "aws-sdk-ecr"
 require "base64"
 
-RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
+RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
 
   let(:credentials) do

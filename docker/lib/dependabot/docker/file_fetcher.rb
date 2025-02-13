@@ -1,7 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "dependabot/docker/utils/helpers"
+require "dependabot/shared/utils/helpers"
 require "dependabot/shared/shared_file_fetcher"
 
 module Dependabot
@@ -9,7 +9,6 @@ module Dependabot
     class FileFetcher < Dependabot::Shared::SharedFileFetcher
       extend T::Sig
 
-      YAML_REGEXP = /^[^\.].*\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile|containerfile/i
 
       sig { override.returns(Regexp) }
@@ -34,28 +33,14 @@ module Dependabot
         "Docker"
       end
 
-      # Additional Docker-specific methods for YAML handling
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = super
-        fetched_files += correctly_encoded_yamlfiles
+        fetched_files = correctly_encoded_dockerfiles
+        fetched_files += super
 
         return fetched_files if fetched_files.any?
 
-        raise_appropriate_error
-      end
-
-      sig { void }
-      def raise_appropriate_error
-        if incorrectly_encoded_files.none? && incorrectly_encoded_yamlfiles.none?
-          raise Dependabot::DependencyFileNotFound.new(
-            File.join(directory, "Dockerfile"),
-            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
-          )
-        end
-
-        invalid_files = incorrectly_encoded_files.any? ? incorrectly_encoded_files : incorrectly_encoded_yamlfiles
-        raise Dependabot::DependencyFileNotParseable, T.must(invalid_files.first).path
+        raise_appropriate_error(incorrectly_encoded_dockerfiles)
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -65,41 +50,25 @@ module Dependabot
       end
 
       sig { returns(T::Array[DependencyFile]) }
-      def yamlfiles
-        @yamlfiles ||= T.let(
-          repo_contents(raise_errors: false)
-            .select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }
-            .map { |f| fetch_file_from_host(f.name) },
-          T.nilable(T::Array[DependencyFile])
-        )
+      def dockerfiles
+        @dockerfiles ||= T.let(fetch_candidate_dockerfiles, T.nilable(T::Array[DependencyFile]))
       end
 
-      sig { params(resource: Object).returns(T.nilable(T::Boolean)) }
-      def likely_kubernetes_resource?(resource)
-        # Heuristic for being a Kubernetes resource. We could make this tighter but this probably works well.
-        resource.is_a?(::Hash) && resource.key?("apiVersion") && resource.key?("kind")
+      sig { returns(T::Array[DependencyFile]) }
+      def fetch_candidate_dockerfiles
+        repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(self.class.filename_regex) }
+          .map { |f| fetch_file_from_host(f.name) }
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def correctly_encoded_yamlfiles
-        candidate_files = yamlfiles.select { |f| f.content&.valid_encoding? }
-        candidate_files.select do |f|
-          if f.type == "file" && Utils.likely_helm_chart?(f)
-            true
-          else
-            # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
-            # in a multi-resource file had better be a valid k8s resource
-            content = ::YAML.safe_load(T.must(f.content), aliases: true)
-            likely_kubernetes_resource?(content)
-          end
-        rescue ::Psych::Exception
-          false
-        end
+      sig { returns(T::Array[DependencyFile]) }
+      def correctly_encoded_dockerfiles
+        dockerfiles.select { |f| f.content&.valid_encoding? }
       end
 
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def incorrectly_encoded_yamlfiles
-        yamlfiles.reject { |f| f.content&.valid_encoding? }
+      sig { returns(T::Array[DependencyFile]) }
+      def incorrectly_encoded_dockerfiles
+        dockerfiles.reject { |f| f.content&.valid_encoding? }
       end
     end
   end

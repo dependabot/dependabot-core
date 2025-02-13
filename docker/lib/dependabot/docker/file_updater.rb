@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/docker/utils/helpers"
+require "dependabot/shared/utils/helpers"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/shared/shared_file_updater"
@@ -111,7 +111,7 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_yaml_content(file)
         updated_content = file.content
-        updated_content = update_helm(file, updated_content) if Utils.likely_helm_chart?(file)
+        updated_content = update_helm(file, updated_content) if Shared::Utils.likely_helm_chart?(file)
         updated_content = update_image(file, updated_content)
 
         raise "Expected content to change!" if updated_content == file.content

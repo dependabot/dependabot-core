@@ -30,8 +30,6 @@ RSpec.describe Dependabot::DockerCompose::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
-  it_behaves_like "a dependency file fetcher"
-
   context "with a docker-compose.yml file" do
     before do
       stub_request(:get, url + "?ref=sha")

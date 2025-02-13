@@ -11,7 +11,7 @@ require "dependabot/docker/tag"
 require "dependabot/docker/file_parser"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
-require "dependabot/docker/utils/credentials_finder"
+require "dependabot/shared/utils/credentials_finder"
 
 module Dependabot
   module Docker
