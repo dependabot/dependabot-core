@@ -69,8 +69,6 @@ RSpec.describe Dependabot::Javascript::Bun::FileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:npm_v6_deprecation_warning).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:avoid_duplicate_updates_package_json).and_return(false)
   end
 
