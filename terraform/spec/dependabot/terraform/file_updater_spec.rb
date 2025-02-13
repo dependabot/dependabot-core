@@ -1717,7 +1717,15 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
       context "when the error message contains no resolvable releases" do
         let(:error_message) do
-          "Could not retrieve providers for locking, no available releases match"
+          "[31m[31m╷[0m[0m
+          [31m│[0m [0m[1m[31mError: [0m[0m[1mCould not retrieve providers for locking[0m
+          [31m│[0m [0m
+          [31m│[0m [0m[0mTerraform failed to fetch the requested providers for linux_amd64 in order
+          [31m│[0m [0mto calculate their checksums: some providers could not be installed:
+          [31m│[0m [0m- registry.terraform.io/firehydrant/firehydrant: no available releases
+          [31m│[0m [0mmatch the given constraints 0.13.4, 0.13.5.
+          [31m╵[0m[0m
+          [0m[0m"
         end
 
         it "raises a DependencyFileNotResolvable error with the correct message" do

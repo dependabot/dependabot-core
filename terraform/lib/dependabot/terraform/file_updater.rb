@@ -438,10 +438,18 @@ module Dependabot
       # Handles errors with specific to yarn error codes
       sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
       def handle_helper_subprocess_failed_error(error)
-        return unless error.message.match?(RESOLVE_ERROR) && error.message.match?(CONSTRAINTS_ERROR)
+        unless sanitize_message(error.message).match?(RESOLVE_ERROR) &&
+               sanitize_message(error.message).match?(CONSTRAINTS_ERROR)
+          return
+        end
 
         raise Dependabot::DependencyFileNotResolvable, "Error while updating lockfile, " \
                                                        "no matching constraints found."
+      end
+
+      sig { params(message: String).returns(String) }
+      def sanitize_message(message)
+        message.gsub(/\e\[[\d;]*[A-Za-z]/, "").delete("\n").delete("│").squeeze(" ")
       end
     end
   end
