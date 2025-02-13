@@ -7,7 +7,7 @@ ARG PY_3_10=3.10.15
 ARG PY_3_9=3.9.18
 ARG PYENV_VERSION=v2.4.22
 
-FROM ghcr.io/dependabot/dependabot-updater-core as python-core
+FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_13
 ARG PY_3_12
 ARG PY_3_11
@@ -37,8 +37,8 @@ RUN mkdir "${PYENV_ROOT}/versions"
 ## 3.9
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_9-bookworm as upstream-python-3.9
-FROM python-core as python-3.9
+FROM docker.io/library/python:$PY_3_9-bookworm AS upstream-python-3.9
+FROM python-core AS python-3.9
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_9"
 COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
 COPY --from=upstream-python-3.9 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
@@ -55,8 +55,8 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.10
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_10-bookworm as upstream-python-3.10
-FROM python-core as python-3.10
+FROM docker.io/library/python:$PY_3_10-bookworm AS upstream-python-3.10
+FROM python-core AS python-3.10
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_10"
 COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
 COPY --from=upstream-python-3.10 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
@@ -73,8 +73,8 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.11
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_11-bookworm as upstream-python-3.11
-FROM python-core as python-3.11
+FROM docker.io/library/python:$PY_3_11-bookworm AS upstream-python-3.11
+FROM python-core AS python-3.11
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_11"
 COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
 COPY --from=upstream-python-3.11 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
@@ -91,8 +91,8 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.12
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_12-bookworm as upstream-python-3.12
-FROM python-core as python-3.12
+FROM docker.io/library/python:$PY_3_12-bookworm AS upstream-python-3.12
+FROM python-core AS python-3.12
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_12"
 COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
 COPY --from=upstream-python-3.12 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
@@ -109,8 +109,8 @@ RUN cd $PYENV_ROOT/versions \
 ## 3.13
 # Docker doesn't support parametrizing `COPY --from:python:$PY_1_23-bookworm`, so work around it using an alias.
 # TODO: If upstream adds support for Ubuntu, use that instead of Debian as the base suffix: https://github.com/docker-library/python/pull/791
-FROM docker.io/library/python:$PY_3_13-bookworm as upstream-python-3.13
-FROM python-core as python-3.13
+FROM docker.io/library/python:$PY_3_13-bookworm AS upstream-python-3.13
+FROM python-core AS python-3.13
 ARG PYTHON_INSTALL_LOCATION="$PYENV_ROOT/versions/$PY_3_13"
 COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/bin $PYTHON_INSTALL_LOCATION/bin
 COPY --from=upstream-python-3.13 --chown=dependabot:dependabot /usr/local/include $PYTHON_INSTALL_LOCATION/include
