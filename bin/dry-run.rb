@@ -37,6 +37,7 @@
 # - swift
 # - devcontainers
 # - dotnet_sdk
+# - bun
 
 # rubocop:disable Style/GlobalVars
 
@@ -50,6 +51,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
@@ -97,6 +99,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"

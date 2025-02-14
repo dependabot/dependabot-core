@@ -951,6 +951,21 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
+
+    context "when a file is a support file" do
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "support.tf",
+          content: "module { source = 'foo/bar' }",
+          support_file: true
+        )
+      end
+      let(:files) { [support_file] }
+
+      it "skips the file and does not parse it" do
+        expect(dependencies).to be_empty
+      end
+    end
   end
 
   describe "#source_type" do

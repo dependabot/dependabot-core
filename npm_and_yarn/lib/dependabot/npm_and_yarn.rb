@@ -146,6 +146,10 @@ module Dependabot
     # if not package found with specified version
     YARN_PACKAGE_NOT_FOUND = /MessageError: Couldn't find any versions for "(?<pkg>.*?)" that matches "(?<ver>.*?)"/
 
+    YN0001_DEPS_RESOLUTION_FAILED = T.let({
+      DEPS_INCORRECT_MET: /peer dependencies are incorrectly met/
+    }.freeze, T::Hash[String, Regexp])
+
     YN0001_FILE_NOT_RESOLVED_CODES = T.let({
       FIND_PACKAGE_LOCATION: /YN0001:(.*?)UsageError: Couldn't find the (?<pkg>.*) state file/,
       NO_CANDIDATE_FOUND: /YN0001:(.*?)Error: (?<pkg>.*): No candidates found/,
@@ -163,6 +167,10 @@ module Dependabot
     YN0001_REQ_NOT_FOUND_CODES = T.let({
       REQUIREMENT_NOT_SATISFIED: /provides (?<dep>.*)(.*?)with version (?<ver>.*), which doesn't satisfy what (?<pkg>.*) requests/, # rubocop:disable Layout/LineLength
       REQUIREMENT_NOT_PROVIDED: /(?<dep>.*)(.*?)doesn't provide (?<pkg>.*)(.*?), requested by (?<parent>.*)/
+    }.freeze, T::Hash[String, Regexp])
+
+    YN0001_INVALID_TYPE_ERRORS = T.let({
+      INVALID_URL: /TypeError: (?<dep>.*): Invalid URL/
     }.freeze, T::Hash[String, Regexp])
 
     YN0086_DEPS_RESOLUTION_FAILED = /peer dependencies are incorrectly met/
@@ -225,6 +233,19 @@ module Dependabot
 
           YN0001_REQ_NOT_FOUND_CODES.each do |(_yn0001_key, yn0001_regex)|
             if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
+          YN0001_DEPS_RESOLUTION_FAILED.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+              return Dependabot::DependencyFileNotResolvable.new(msg)
+            end
+          end
+
+          YN0001_INVALID_TYPE_ERRORS.each do |(_yn0001_key, yn0001_regex)|
+            if (msg = message.match(yn0001_regex))
+
               return Dependabot::DependencyFileNotResolvable.new(msg)
             end
           end

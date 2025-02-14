@@ -154,7 +154,7 @@ internal static class PathHelper
         }
 
         // Normalize all resulting paths to Unix format
-        return currentPaths.Select(path => path.NormalizePathToUnix()).ToList();
+        return currentPaths.Select(path => path.NormalizePathToUnix()).OrderBy(path => path, StringComparer.Ordinal).ToList();
     }
 
     /// <summary>

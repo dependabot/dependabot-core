@@ -268,6 +268,39 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         refresh_group.perform
       end
     end
+
+    context "when there is an existing PR for the same group it has a minor version in another group" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/group_update_refresh_multiple_groups_unchaged")
+      end
+
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_multiple_groups")
+      end
+
+      before do
+        stub_rubygems_calls
+        allow(Dependabot::Experiments).to receive(:enabled?)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_for_existing_pr_dependencies)
+          .and_return(true)
+      end
+
+      after do
+        Dependabot::Experiments.reset!
+      end
+
+      it "updates the existing pull request without errors" do
+        expect(mock_service).not_to receive(:close_pull_request)
+        expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+          expect(dependency_change.dependency_group.name).to eql("major")
+          expect(dependency_change.updated_dependency_files_hash)
+            .to eql(updated_bundler_files_hash(fixture: "bundler_multiple_groups"))
+        end
+
+        refresh_group.perform
+      end
+    end
   end
 
   describe "#deduce_updated_dependency" do

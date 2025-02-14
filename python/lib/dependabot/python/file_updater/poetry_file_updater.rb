@@ -73,7 +73,7 @@ module Dependabot
             updated_content = replace_dep(dependency, updated_content, new_r, old_r)
           end
 
-          raise "Content did not change!" if content == updated_content
+          raise DependencyFileContentNotChanged, "Content did not change!" if content == updated_content
 
           updated_content
         end

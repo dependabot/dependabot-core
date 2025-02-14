@@ -538,6 +538,89 @@ public class MSBuildHelperTests : TestBase
             """, evaluatedValue);
     }
 
+    [Theory]
+    [MemberData(nameof(GetTargetFrameworkValuesFromProjectData))]
+    public async Task GetTargetFrameworkValuesFromProject(string projectContents, string[] expectedTfms)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+        [
+            ("Directory.Build.props", "<Project />"),
+            ("Directory.Build.targets", "<Project />"),
+            ("project.csproj", projectContents)
+        ]);
+        var projectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        var experimentsManager = new ExperimentsManager();
+        var logger = new TestLogger();
+        var actualTfms = await MSBuildHelper.GetTargetFrameworkValuesFromProject(tempDir.DirectoryPath, projectPath, experimentsManager, logger);
+        AssertEx.Equal(expectedTfms, actualTfms);
+    }
+
+    public static IEnumerable<object[]> GetTargetFrameworkValuesFromProjectData()
+    {
+        // SDK-style projects
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks> ; net8.0 ; </TargetFrameworks>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0", "net9.0" }
+        ];
+
+        yield return
+        [
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0-windows7.0</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """,
+            new[] { "net8.0-windows7.0" }
+        ];
+
+        // legacy projects
+        yield return
+        [
+            """
+            <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+              <PropertyGroup>
+                <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+              </PropertyGroup>
+              <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+            </Project>
+            """,
+            new[] { "net45" }
+        ];
+    }
 
     #region
     // Updating root package
@@ -1447,6 +1530,30 @@ public class MSBuildHelperTests : TestBase
         [
             // output
             "Unable to resolve dependencies. 'Some.Package 1.2.3' is not compatible with",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Could not install package 'Some.Package 1.2.3'. You are trying to install this package into a project that targets 'SomeFramework'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "Unable to find a version of 'Some.Package' that is compatible with 'Some.Other.Package 4.5.6 constraint: Some.Package (>= 1.2.3)'",
+            // expectedError
+            new UpdateNotPossible(["Some.Package.1.2.3"]),
+        ];
+
+        yield return
+        [
+            // output
+            "the following error(s) may be blocking the current package operation: 'Some.Package 1.2.3 constraint: Some.Other.Package (>= 4.5.6)'",
             // expectedError
             new UpdateNotPossible(["Some.Package.1.2.3"]),
         ];

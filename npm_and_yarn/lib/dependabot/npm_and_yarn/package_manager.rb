@@ -189,8 +189,10 @@ module Dependabot
         @language_requirement ||= find_engine_constraints_as_requirement(Language::NAME)
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       sig { params(name: String).returns(T.nilable(Requirement)) }
-      def find_engine_constraints_as_requirement(name) # rubocop:disable Metrics/PerceivedComplexity
+      def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
         return nil unless @engines.is_a?(Hash) && @engines[name]
@@ -199,8 +201,7 @@ module Dependabot
         return nil if raw_constraint.empty?
 
         if Dependabot::Experiments.enabled?(:enable_engine_version_detection)
-          constraints = ConstraintHelper.extract_constraints(raw_constraint)
-
+          constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
           # When constraints are invalid we return constraints array nil
           if constraints.nil?
             Dependabot.logger.warn(
@@ -225,12 +226,16 @@ module Dependabot
 
         end
 
-        Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-        Requirement.new(constraints)
+        if constraints && !constraints.empty?
+          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
+          Requirement.new(constraints)
+        end
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
@@ -302,19 +307,24 @@ module Dependabot
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
-        # we prioritize version mentioned in "packageManager" instead of "engines"
+        # Prioritize version mentioned in "packageManager" instead of "engines"
         if @manifest_package_manager&.start_with?("#{name}@")
           detected_version = @manifest_package_manager.split("@").last.to_s
         end
 
-        # if "packageManager" have no version specified, we check if we can extract "engines" information
-        detected_version = check_engine_version(name) if !detected_version || detected_version.empty?
+        # If "packageManager" has no version specified, check if we can extract "engines" information
+        detected_version ||= check_engine_version(name) if detected_version.to_s.empty?
 
-        # if "packageManager" and "engines" both are not present, we check if we can infer the version
-        # from the manifest file lockfileVersion
-        detected_version = guessed_version(name) if !detected_version || detected_version.empty?
+        # If neither "packageManager" nor "engines" have versions, infer version from lockfileVersion
+        detected_version ||= guessed_version(name) if detected_version.to_s.empty?
 
-        detected_version&.to_s
+        # Strip and validate version format
+        detected_version_string = detected_version.to_s.strip
+
+        # Ensure detected_version is neither "0" nor invalid format
+        return if detected_version_string == "0" || !detected_version_string.match?(ConstraintHelper::VERSION_REGEX)
+
+        detected_version_string
       end
 
       sig { params(name: T.nilable(String)).returns(Ecosystem::VersionManager) }
@@ -345,7 +355,7 @@ module Dependabot
         end
 
         package_manager_class.new(
-          detected_version: detected_version.to_s,
+          detected_version: detected_version,
           raw_version: installed_version,
           requirement: package_manager_requirement
         )
@@ -407,10 +417,15 @@ module Dependabot
 
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
-        SharedHelpers.run_shell_command(
-          "corepack install #{name}@#{version} --global --cache-only",
-          fingerprint: "corepack install <name>@<version> --global --cache-only"
-        )
+        begin
+          SharedHelpers.run_shell_command(
+            "corepack install #{name}@#{version} --global --cache-only",
+            fingerprint: "corepack install <name>@<version> --global --cache-only"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Helpers.fallback_to_local_version(name)
+        end
       end
 
       sig { params(name: T.nilable(String)).returns(String) }

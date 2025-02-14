@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/utils"
 
+# rubocop:disable Metrics/ModuleLength
 module Dependabot
   extend T::Sig
 
@@ -21,6 +22,7 @@ module Dependabot
   end
 
   # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/CyclomaticComplexity
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.fetcher_error_details(error)
     case error
@@ -90,6 +92,11 @@ module Dependabot
         "error-type": "private_source_authentication_failure",
         "error-detail": { source: error.source }
       }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
+        "error-detail": { source: error.source }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
@@ -113,6 +120,7 @@ module Dependabot
       }
     end
   end
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
   def self.parser_error_details(error)
@@ -165,6 +173,11 @@ module Dependabot
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Dependabot::GitDependenciesNotReachable
@@ -220,6 +233,11 @@ module Dependabot
           "file-path": error.file_path
         }
       }
+    when Dependabot::DependencyFileNotSupported
+      {
+        "error-type": "dependency_file_not_supported",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
@@ -232,6 +250,11 @@ module Dependabot
           message: error.message,
           "file-path": error.file_path
         }
+      }
+    when Dependabot::DependencyFileContentNotChanged
+      {
+        "error-type": "dependency_file_content_not_changed",
+        "error-detail": { message: error.message }
       }
     when Dependabot::ToolVersionNotSupported
       {
@@ -255,6 +278,11 @@ module Dependabot
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
+        "error-detail": { source: error.source }
+      }
+    when Dependabot::PrivateSourceBadResponse
+      {
+        "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
     when Dependabot::DependencyNotFound
@@ -616,6 +644,10 @@ module Dependabot
 
   class DependencyFileNotResolvable < DependabotError; end
 
+  class DependencyFileNotSupported < DependabotError; end
+
+  class DependencyFileContentNotChanged < DependabotError; end
+
   class BadRequirementError < Gem::Requirement::BadRequirementError; end
 
   #######################
@@ -634,6 +666,20 @@ module Dependabot
       msg = "The following source could not be reached as it requires " \
             "authentication (and any provided details were invalid or lacked " \
             "the required permissions): #{@source}"
+      super(msg)
+    end
+  end
+
+  class PrivateSourceBadResponse < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: T.nilable(String)).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(T.must(source)), String)
+      msg = "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end
@@ -839,3 +885,4 @@ module Dependabot
     end
   end
 end
+# rubocop:enable Metrics/ModuleLength

@@ -55,10 +55,11 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[Dependency]) }
-      def parse
+      def parse # rubocop:disable Metrics/PerceivedComplexity
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
+        dependency_set += workspace_catalog_dependencies if pnpm_workspace_yml
 
         dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
@@ -169,6 +170,13 @@ module Dependabot
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pnpm_workspace_yml
+        @pnpm_workspace_yml ||= T.let(dependency_files.find do |f|
+          f.name.end_with?(PNPMPackageManager::PNPM_WS_YML_FILENAME)
+        end, T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def bun_lock
         @bun_lock ||= T.let(dependency_files.find do |f|
           f.name.end_with?(BunPackageManager::LOCKFILE_NAME)
@@ -217,6 +225,30 @@ module Dependabot
             requirement = "*" if requirement == ""
             dep = build_dependency(
               file: file, type: type, name: name, requirement: requirement
+            )
+            dependency_set << dep if dep
+          end
+        end
+
+        dependency_set
+      end
+
+      sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+      def workspace_catalog_dependencies
+        dependency_set = DependencySet.new
+        workspace_config = YAML.safe_load(T.must(pnpm_workspace_yml&.content), aliases: true)
+
+        workspace_config["catalog"]&.each do |name, version|
+          dep = build_dependency(
+            file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
+          )
+          dependency_set << dep if dep
+        end
+
+        workspace_config["catalogs"]&.each do |_, group_depenencies|
+          group_depenencies.each do |name, version|
+            dep = build_dependency(
+              file: T.must(pnpm_workspace_yml), type: "dependencies", name: name, requirement: version
             )
             dependency_set << dep if dep
           end

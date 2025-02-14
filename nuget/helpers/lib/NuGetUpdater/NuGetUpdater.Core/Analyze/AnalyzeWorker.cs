@@ -236,6 +236,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
+            projectFrameworks,
             dependencyInfo,
             nugetContext,
             logger,
@@ -262,6 +263,7 @@ public partial class AnalyzeWorker : IAnalyzeWorker
         CancellationToken cancellationToken)
     {
         var versionResult = await VersionFinder.GetVersionsAsync(
+            projectFrameworks,
             packageIds.First(),
             version,
             nugetContext,

@@ -38,8 +38,8 @@ module Dependabot
       def initialize(detected_version: nil, raw_version: nil, requirement: nil)
         super(
           name: NAME,
-          detected_version: detected_version ? Version.new(detected_version) : nil,
-          version: raw_version ? Version.new(raw_version) : nil,
+          detected_version: detected_version && !detected_version.empty? ? Version.new(detected_version) : nil,
+          version: raw_version && !raw_version.empty? ? Version.new(raw_version) : nil,
           deprecated_versions: DEPRECATED_VERSIONS,
           supported_versions: SUPPORTED_VERSIONS,
           requirement: requirement
@@ -48,22 +48,16 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def deprecated?
-        return false unless detected_version
-
-        return false if unsupported?
-
         return false unless Dependabot::Experiments.enabled?(:npm_v6_deprecation_warning)
 
-        deprecated_versions.include?(detected_version)
+        super
       end
 
       sig { override.returns(T::Boolean) }
       def unsupported?
-        return false unless detected_version
-
         return false unless Dependabot::Experiments.enabled?(:npm_v6_unsupported_error)
 
-        supported_versions.all? { |supported| supported > detected_version }
+        super
       end
     end
   end

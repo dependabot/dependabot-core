@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "devcontainers"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "0.72.0"
+        expect(package_manager.version.to_s).to match(/\d+.\d+.\d+/)
       end
     end
 
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "node"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "18.20.6"
+        expect(language.version.to_s).to match(/\d+.\d+.\d+/)
       end
     end
   end

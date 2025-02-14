@@ -1147,7 +1147,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.0",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1161,7 +1161,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1175,7 +1175,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.0",
-                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1189,7 +1189,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ]
@@ -1218,7 +1218,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.1",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
                                     {
@@ -1233,36 +1233,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.0",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
-                                    Groups = ["dependencies"],
-                                }
-                            ],
-                        },
-                        new ReportedDependency()
-                        {
-                            Name = "Some.Package2",
-                            Version = "2.0.1",
-                            Requirements =
-                            [
-                                new ReportedRequirement()
-                                {
-                                    Requirement = "2.0.1",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
-                                    Groups = ["dependencies"],
-                                    Source = new()
-                                    {
-                                        SourceUrl = "https://nuget.example.com/some-package2",
-                                        Type = "nuget_repo",
-                                    }
-                                }
-                            ],
-                            PreviousVersion = "2.0.0",
-                            PreviousRequirements =
-                            [
-                                new ReportedRequirement()
-                                {
-                                    Requirement = "2.0.0",
-                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    File = "/some-dir/ProjectA/ProjectA.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],
@@ -1276,7 +1247,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.1",
-                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                     Source = new()
                                     {
@@ -1291,7 +1262,7 @@ public class RunWorkerTests
                                 new ReportedRequirement()
                                 {
                                     Requirement = "1.0.0",
-                                    File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],
@@ -1321,6 +1292,35 @@ public class RunWorkerTests
                                 {
                                     Requirement = "2.0.0",
                                     File = "/some-dir/ProjectA/ProjectA.csproj",
+                                    Groups = ["dependencies"],
+                                }
+                            ],
+                        },
+                        new ReportedDependency()
+                        {
+                            Name = "Some.Package2",
+                            Version = "2.0.1",
+                            Requirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.1",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
+                                    Groups = ["dependencies"],
+                                    Source = new()
+                                    {
+                                        SourceUrl = "https://nuget.example.com/some-package2",
+                                        Type = "nuget_repo",
+                                    }
+                                }
+                            ],
+                            PreviousVersion = "2.0.0",
+                            PreviousRequirements =
+                            [
+                                new ReportedRequirement()
+                                {
+                                    Requirement = "2.0.0",
+                                    File = "/some-dir/ProjectB/ProjectB.csproj",
                                     Groups = ["dependencies"],
                                 }
                             ],
@@ -1729,6 +1729,15 @@ public class RunWorkerTests
             ],
             job: new Job()
             {
+                AllowedUpdates = [new() { UpdateType = UpdateType.Security }],
+                SecurityAdvisories =
+                [
+                    new()
+                    {
+                        DependencyName = "Some.Package",
+                        AffectedVersions = [Requirement.Parse("= 1.0.0")]
+                    }
+                ],
                 Source = new()
                 {
                     Provider = "github",
@@ -1936,7 +1945,7 @@ public class RunWorkerTests
                     Metric = "updater.started",
                     Tags = new()
                     {
-                        ["operation"] = "group_update_all_versions"
+                        ["operation"] = "create_security_pr"
                     }
                 },
                 new CreatePullRequest()
