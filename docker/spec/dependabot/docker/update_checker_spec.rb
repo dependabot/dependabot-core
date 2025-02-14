@@ -582,6 +582,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
+      context "when there is ParserError response from while accessing docker image tags" do
+        before do
+          stub_request(:get, repo_url + "tags/list")
+            .to_raise(JSON::ParserError.new("unexpected token"))
+        end
+
+        it "raises" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+
       context "when TooManyRequests request error" do
         before do
           stub_request(:get, repo_url + "tags/list")

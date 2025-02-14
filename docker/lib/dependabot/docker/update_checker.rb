@@ -261,6 +261,12 @@ module Dependabot
       rescue RestClient::ServerBrokeConnection,
              RestClient::TooManyRequests
         raise PrivateSourceBadResponse, registry_hostname
+      rescue JSON::ParserError => e
+        if e.message.include?("unexpected token")
+          raise DependencyFileNotResolvable, "Error while accessing docker image at #{registry_hostname}"
+        end
+
+        raise
       end
 
       sig { returns(T.nilable(String)) }
