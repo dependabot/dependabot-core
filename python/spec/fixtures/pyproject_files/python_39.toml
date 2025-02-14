@@ -5,7 +5,7 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "3.8.17"
+python = "3.9.21"
 requests = "^2.27.1"
 Django = "3.0"
 

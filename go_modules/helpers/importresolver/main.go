@@ -1,7 +1,7 @@
 package importresolver
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/Masterminds/vcs"
@@ -20,7 +20,7 @@ func VCSRemoteForImport(args *Args) (interface{}, error) {
 		remote = "https://" + remote
 	}
 
-	local, err := ioutil.TempDir("", "unused-vcs-local-dir")
+	local, err := os.MkdirTemp("", "unused-vcs-local-dir")
 	if err != nil {
 		return nil, err
 	}
@@ -29,6 +29,8 @@ func VCSRemoteForImport(args *Args) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	defer func() {
+		os.RemoveAll(repo.LocalPath())
+	}()
 	return repo.Remote(), nil
 }
