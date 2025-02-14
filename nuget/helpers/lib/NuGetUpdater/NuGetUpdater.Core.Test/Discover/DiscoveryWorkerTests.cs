@@ -1294,4 +1294,65 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task MissingPackageIsCorrectlyReported_PackageNotFound()
+    {
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0", [(null, [("Transitive.Dependency.Does.Not.Exist", "4.5.6")])]),
+            ],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "",
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [],
+                Error = new DependencyNotFound("Transitive.Dependency.Does.Not.Exist"),
+            }
+        );
+    }
+
+    [Fact]
+    public async Task MissingPackageIsCorrectlyReported_VersionNotFound()
+    {
+        await TestDiscoveryAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.2.3", "net8.0", [(null, [("Transitive.Dependency", "4.5.6")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "0.1.2", "net8.0"),
+            ],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true },
+            workspacePath: "",
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [],
+                Error = new DependencyNotFound("Transitive.Dependency"),
+            }
+        );
+    }
 }
