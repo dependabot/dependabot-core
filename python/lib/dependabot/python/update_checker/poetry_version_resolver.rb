@@ -382,6 +382,12 @@ module Dependabot
         time_out_inactivity: /Timed out due to inactivity/
       }.freeze, T::Hash[T.nilable(String), Regexp])
 
+      PACKAGE_RESOLVER_ERRORS = T.let({
+        package_info_error: /Unable to determine package info/,
+        self_dep_error: /Package '(?<path>.*)' is listed as a dependency of itself./,
+        incompatible_constraints: /Incompatible constraints in requirements/
+      }.freeze, T::Hash[T.nilable(String), Regexp])
+
       sig do
         params(
           dependencies: Dependabot::Dependency,
@@ -414,6 +420,7 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
         Dependabot.logger.warn(error.message)
@@ -456,9 +463,17 @@ module Dependabot
           index_url = URI.extract(error.message.to_s).last .then { sanitize_url(_1) }
           raise PrivateSourceAuthenticationFailure, index_url
         end
+
+        PACKAGE_RESOLVER_ERRORS.each do |(_error_codes, error_regex)|
+          next unless error.message.match?(error_regex)
+
+          message = "Package solving failed while resolving manifest file"
+          raise DependencyFileNotResolvable, message
+        end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
     end
   end
 end

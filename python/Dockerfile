@@ -1,11 +1,11 @@
 # This list must match the versions specified in
 # python/lib/dependabot/python/language_version_manager.rb: PRE_INSTALLED_PYTHON_VERSIONS
-ARG PY_3_13=3.13.1
-ARG PY_3_12=3.12.7
-ARG PY_3_11=3.11.9
-ARG PY_3_10=3.10.15
-ARG PY_3_9=3.9.18
-ARG PYENV_VERSION=v2.4.22
+ARG PY_3_13=3.13.2
+ARG PY_3_12=3.12.9
+ARG PY_3_11=3.11.11
+ARG PY_3_10=3.10.16
+ARG PY_3_9=3.9.21
+ARG PYENV_VERSION=v2.5.2
 
 FROM ghcr.io/dependabot/dependabot-updater-core AS python-core
 ARG PY_3_13

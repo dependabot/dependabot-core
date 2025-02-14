@@ -81,11 +81,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    end
-
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
@@ -692,11 +687,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "lockfile updates" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    end
-
     context "when updating a regular package dependency" do
       let(:project_name) { "pnpm/catalog_prettier" }
       let(:dependencies) do
