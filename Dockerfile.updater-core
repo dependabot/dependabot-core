@@ -28,6 +28,8 @@ RUN apt-get update \
     mercurial \
     # needed to sign commits
     gnupg2 \
+    # for git repo access with ssh key credentials
+    openssh-client \
     # Installs certs in dependabot-action and CLI
     ca-certificates \
     # used to check if a file is binary in the VendorUpdater
