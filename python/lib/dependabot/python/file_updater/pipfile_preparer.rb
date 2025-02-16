@@ -49,6 +49,8 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
           parsed_object = TomlRB.parse(parsed_file)
 
+          raise DependencyFileNotResolvable, "Unable to resolve pipfile." unless parsed_object["source"]
+
           # we parse the verify_ssl value from manifest if it exists
           verify_ssl = parsed_object["source"].map { |x| x["verify_ssl"] }.first
 

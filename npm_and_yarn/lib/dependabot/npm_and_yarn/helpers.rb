@@ -467,6 +467,8 @@ module Dependabot
       # Attempt to activate the local version of the package manager
       sig { params(name: String).void }
       def self.fallback_to_local_version(name)
+        return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
+
         Dependabot.logger.info("Falling back to activate the currently installed version of #{name}.")
 
         # Fetch the currently installed version directly from the environment
@@ -553,6 +555,11 @@ module Dependabot
         result
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
+        if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
+           e.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+
         raise
       end
 

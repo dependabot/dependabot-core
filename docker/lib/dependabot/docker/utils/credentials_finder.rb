@@ -22,14 +22,14 @@ module Dependabot
           @credentials = credentials
         end
 
-        sig { params(registry_hostname: String).returns(T.nilable(Dependabot::Credential)) }
+        sig { params(registry_hostname: T.nilable(String)).returns(T.nilable(Dependabot::Credential)) }
         def credentials_for_registry(registry_hostname)
           registry_details =
             credentials
             .select { |cred| cred["type"] == "docker_registry" }
             .find { |cred| cred.fetch("registry") == registry_hostname }
           return unless registry_details
-          return registry_details unless registry_hostname.match?(AWS_ECR_URL)
+          return registry_details unless registry_hostname&.match?(AWS_ECR_URL)
 
           build_aws_credentials(registry_details)
         end

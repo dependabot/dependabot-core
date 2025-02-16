@@ -784,11 +784,11 @@ internal static partial class MSBuildHelper
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
             var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
                 [
-                    "build",
+                    "msbuild",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
-                    $"/p:CustomAfterMicrosoftCommonTargets={targetsHelperPath}"
+                    $"/p:CustomAfterMicrosoftCommonTargets={targetsHelperPath}",
                 ],
                 projectDirectory,
                 experimentsManager
@@ -801,40 +801,57 @@ internal static partial class MSBuildHelper
             logger.Warn($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
         }
 
-        // There are 3 return values, all uses slightly differently.  Only one will be set, the others will be blank
-        //   ProjectData::TargetFrameworkVersion=.NETFramework,Version=v4.5     // non-SDK projects, commonly with `packages.config`
-        //   ProjectData::TargetFramework=net7.0                                // SDK-style projects
-        //   ProjectData::TargetFrameworks=net7.0;net8.0
-        var tfmPatterns = new Regex[]
+        // There are 2 possible return values:
+        //   1. For SDK-style projects with a single TFM and legacy projects the output will look like:
+        //      ProjectData::TargetFrameworkMoniker=.NETCoreApp,Version=8.0;ProjectData::TargetPlatformMoniker=Windows,Version=7.0
+        //   2. For SDK-style projects with multiple TFMs the output will look like:
+        //      ProjectData::TargetFrameworks=net8.0;net9.0
+        var listedTargetFrameworks = new List<ValueTuple<string, string>>();
+        var listedTfmMatch = Regex.Match(stdOut, "ProjectData::TargetFrameworks=(?<TargetFrameworks>.*)$", RegexOptions.Multiline);
+        if (listedTfmMatch.Success)
         {
-            new Regex("ProjectData::TargetFrameworkVersion=(?<Value>.*)$", RegexOptions.Multiline),
-            new Regex("ProjectData::TargetFramework=(?<Value>.*)$", RegexOptions.Multiline),
-            new Regex("ProjectData::TargetFrameworks=(?<Value>.*)$", RegexOptions.Multiline),
-        };
-        var tfms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var tfmPattern in tfmPatterns)
-        {
-            var candidateTfms = tfmPattern.Matches(stdOut)
-                .Select(m => m.Groups["Value"].Value)
-                .SelectMany(v => v.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                .Where(v => !string.IsNullOrWhiteSpace(v))
-                .Select(v =>
-                {
-                    try
-                    {
-                        var framework = NuGetFramework.Parse(v);
-                        return framework.GetShortFolderName();
-                    }
-                    catch
-                    {
-                        return string.Empty;
-                    }
-                })
-                .Where(tfm => !string.IsNullOrEmpty(tfm));
-            tfms.AddRange(candidateTfms);
+            var value = listedTfmMatch.Groups["TargetFrameworks"].Value;
+            var foundTfms = value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(tfm => ValueTuple.Create(tfm, string.Empty))
+                .ToArray();
+            listedTargetFrameworks.AddRange(foundTfms);
         }
 
-        return tfms.ToImmutableArray();
+        var individualTfmMatch = Regex.Match(stdOut, "ProjectData::TargetFrameworkMoniker=(?<TargetFrameworkMoniker>[^;]*);ProjectData::TargetPlatformMoniker=(?<TargetPlatformMoniker>.*)$", RegexOptions.Multiline);
+        if (individualTfmMatch.Success)
+        {
+            var tfm = individualTfmMatch.Groups["TargetFrameworkMoniker"].Value;
+            var tpm = individualTfmMatch.Groups["TargetPlatformMoniker"].Value;
+            listedTargetFrameworks.Add(ValueTuple.Create(tfm, tpm));
+        }
+
+        var tfms = listedTargetFrameworks.Select(tfpm =>
+            {
+                try
+                {
+                    // Item2 is an optional component that looks like: "Windows,Version=7.0"
+                    var framework = string.IsNullOrWhiteSpace(tfpm.Item2)
+                        ? NuGetFramework.Parse(tfpm.Item1)
+                        : NuGetFramework.ParseComponents(tfpm.Item1, tfpm.Item2);
+                    if (framework.Framework == "_")
+                    {
+                        // error/default value
+                        return null;
+                    }
+
+                    return framework;
+                }
+                catch
+                {
+                    return null;
+                }
+            })
+            .Where(tfm => tfm is not null)
+            .Select(tfm => tfm!.GetShortFolderName())
+            .OrderBy(tfm => tfm)
+            .ToImmutableArray();
+
+        return tfms;
     }
 
     internal static async Task<Dependency[]> GetAllPackageDependenciesAsync(
@@ -924,7 +941,7 @@ internal static partial class MSBuildHelper
         ThrowOnUnauthenticatedFeed(output);
         ThrowOnMissingFile(output);
         ThrowOnMissingPackages(output);
-        ThrowOnUnresolvableDependencies(output);
+        ThrowOnUpdateNotPossible(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -962,13 +979,20 @@ internal static partial class MSBuildHelper
         }
     }
 
-    private static void ThrowOnUnresolvableDependencies(string output)
+    private static void ThrowOnUpdateNotPossible(string output)
     {
-        var unresolvablePackagePattern = new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'");
-        var match = unresolvablePackagePattern.Match(output);
-        if (match.Success)
+        var patterns = new[]
         {
-            throw new UpdateNotPossibleException([$"{match.Groups["PackageName"].Value}.{match.Groups["PackageVersion"].Value}"]);
+            new Regex(@"Unable to resolve dependencies\. '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'"),
+            new Regex(@"Could not install package '(?<PackageName>[^ ]+) (?<PackageVersion>[^']+)'. You are trying to install this package"),
+            new Regex(@"Unable to find a version of '[^']+' that is compatible with '[^ ]+ [^ ]+ constraint: (?<PackageName>[^ ]+) \([^ ]+ (?<PackageVersion>[^)]+)\)'"),
+            new Regex(@"the following error\(s\) may be blocking the current package operation: '(?<PackageName>[^ ]+) (?<PackageVersion>[^ ]+) constraint:"),
+        };
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
+        if (matches.Any())
+        {
+            var packages = matches.Select(m => $"{m.Groups["PackageName"].Value}.{m.Groups["PackageVersion"].Value}").Distinct().ToArray();
+            throw new UpdateNotPossibleException(packages);
         }
     }
 

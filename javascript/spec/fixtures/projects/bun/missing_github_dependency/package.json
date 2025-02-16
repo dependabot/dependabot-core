@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "this-does-not-exist": "github:dependabot/this-does-not-exist"
+  }
+}

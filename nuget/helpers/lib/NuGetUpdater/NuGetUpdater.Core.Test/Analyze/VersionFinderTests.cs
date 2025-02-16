@@ -1,6 +1,11 @@
+using System.Collections.Immutable;
+
+using NuGet.Frameworks;
 using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Test.Update;
+using NuGetUpdater.Core.Test.Utilities;
 
 using Xunit;
 
@@ -189,5 +194,33 @@ public class VersionFinderTests
         var result = filter(version);
 
         Assert.True(result);
+    }
+
+    [Fact]
+    public async Task TargetFrameworkIsConsideredForUpdatedVersions()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory(
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"), // can only update to this version because of the tfm
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "3.0.0", "net9.0"),
+            ],
+            tempDir.DirectoryPath);
+
+        // act
+        var projectTfms = new[] { "net8.0" }.Select(NuGetFramework.Parse).ToImmutableArray();
+        var packageId = "Some.Package";
+        var currentVersion = NuGetVersion.Parse("1.0.0");
+        var logger = new TestLogger();
+        var nugetContext = new NuGetContext(tempDir.DirectoryPath);
+        var versionResult = await VersionFinder.GetVersionsAsync(projectTfms, packageId, currentVersion, nugetContext, logger, CancellationToken.None);
+        var versions = versionResult.GetVersions();
+
+        // assert
+        var actual = versions.Select(v => v.ToString()).ToArray();
+        var expected = new[] { "2.0.0" };
+        AssertEx.Equal(expected, actual);
     }
 }

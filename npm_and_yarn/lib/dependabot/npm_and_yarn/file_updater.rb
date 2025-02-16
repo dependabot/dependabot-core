@@ -50,33 +50,21 @@ module Dependabot
         ]
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let([], T::Array[DependencyFile])
 
         updated_files += updated_manifest_files
-        updated_files += if should_update_pnpm_workspace?
+        updated_files += if pnpm_workspace.any?
                            update_pnpm_workspace_and_locks
                          else
                            updated_lockfiles
                          end
 
         if updated_files.none?
-
-          if Dependabot::Experiments.enabled?(:enable_fix_for_pnpm_no_change_error)
-            # when all dependencies are transitive
-            all_transitive = dependencies.none?(&:top_level?)
-            # when there is no update in package.json
-            no_package_json_update = package_files.empty?
-            # handle the no change error for transitive dependency updates
-            if pnpm_locks.any? && dependencies.length.positive? && all_transitive && no_package_json_update
-              raise ToolFeatureNotSupported.new(
-                tool_name: "pnpm",
-                tool_type: "package_manager",
-                feature: "updating transitive dependencies"
-              )
-            end
+          if original_pnpm_locks.any?
+            raise_tool_not_supported_for_pnpm_if_transitive
+            raise_miss_configured_tooling_if_pnpm_subdirectory
           end
 
           raise NoChangeError.new(
@@ -95,32 +83,64 @@ module Dependabot
 
         vendor_updated_files(updated_files)
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
-      sig { returns(T::Boolean) }
-      def should_update_pnpm_workspace?
-        Dependabot::Experiments.enabled?(:enable_pnpm_workspace_catalog) && pnpm_workspace.any?
+      sig { void }
+      def raise_tool_not_supported_for_pnpm_if_transitive
+        # ✅ Ensure there are dependencies and check if all are transitive
+        return if dependencies.empty? || dependencies.any?(&:top_level?)
+
+        raise ToolFeatureNotSupported.new(
+          tool_name: "pnpm",
+          tool_type: "package_manager",
+          feature: "updating transitive dependencies"
+        )
       end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig { void }
+      def raise_miss_configured_tooling_if_pnpm_subdirectory
+        workspace_files = original_pnpm_workspace
+        lockfiles = original_pnpm_locks
+
+        # ✅ Ensure `pnpm-workspace.yaml` is in a parent directory
+        return if workspace_files.empty?
+        return if workspace_files.any? { |f| f.directory == "/" }
+        return unless workspace_files.all? { |f| f.name.end_with?("../pnpm-workspace.yaml") }
+
+        # ✅ Ensure `pnpm-lock.yaml` is also in a parent directory
+        return if lockfiles.empty?
+        return if lockfiles.any? { |f| f.directory == "/" }
+        return unless lockfiles.all? { |f| f.name.end_with?("../pnpm-lock.yaml") }
+
+        # ❌ Raise error → Updating inside a subdirectory is misconfigured
+        raise MisconfiguredTooling.new(
+          "pnpm",
+          "Updating workspaces from inside a workspace subdirectory is not supported. " \
+          "Both `pnpm-lock.yaml` and `pnpm-workspace.yaml` exist in a parent directory. " \
+          "Dependabot should only update from the root workspace."
+        )
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def update_pnpm_workspace_and_locks
         workspace_updates = updated_pnpm_workspace_files
-        lock_updates = update_pnpm_locks(is_catalog: true)
+        lock_updates = update_pnpm_locks
 
         workspace_updates + lock_updates
       end
 
-      sig { params(is_catalog: T::Boolean).returns(T::Array[Dependabot::DependencyFile]) }
-      def update_pnpm_locks(is_catalog: false)
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def update_pnpm_locks
         updated_files = []
         pnpm_locks.each do |pnpm_lock|
-          next unless pnpm_lock_changed?(pnpm_lock, is_catalog: is_catalog)
+          next unless pnpm_lock_changed?(pnpm_lock)
 
           updated_files << updated_file(
             file: pnpm_lock,
-            content: updated_pnpm_lock_content(pnpm_lock, is_catalog: is_catalog)
+            content: updated_pnpm_lock_content(pnpm_lock)
           )
         end
         updated_files
@@ -251,6 +271,24 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def original_pnpm_locks
+        @original_pnpm_locks ||= T.let(
+          dependency_files
+          .select { |f| f.name.end_with?("pnpm-lock.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def original_pnpm_workspace
+        @original_pnpm_workspace ||= T.let(
+          dependency_files
+          .select { |f| f.name.end_with?("pnpm-workspace.yaml") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
       def bun_locks
         @bun_locks ||= T.let(
           filtered_dependency_files
@@ -282,9 +320,9 @@ module Dependabot
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
       end
 
-      sig { params(pnpm_lock: Dependabot::DependencyFile, is_catalog: T::Boolean).returns(T::Boolean) }
-      def pnpm_lock_changed?(pnpm_lock, is_catalog: false)
-        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock, is_catalog: is_catalog)
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(T::Boolean) }
+      def pnpm_lock_changed?(pnpm_lock)
+        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(T::Boolean) }
@@ -373,16 +411,14 @@ module Dependabot
           yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
       end
 
-      sig do
-        params(
-          pnpm_lock: Dependabot::DependencyFile,
-          is_catalog: T::Boolean
-        ).returns(String)
-      end
-      def updated_pnpm_lock_content(pnpm_lock, is_catalog: false)
+      sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
+      def updated_pnpm_lock_content(pnpm_lock)
         @updated_pnpm_lock_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
         @updated_pnpm_lock_content[pnpm_lock.name] ||=
-          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock, is_catalog)
+          pnpm_lockfile_updater.updated_pnpm_lock_content(
+            pnpm_lock,
+            updated_pnpm_workspace_content: @updated_pnpm_workspace_content
+          )
       end
 
       sig { params(bun_lock: Dependabot::DependencyFile).returns(String) }

@@ -1131,7 +1131,7 @@ public partial class DiscoveryWorkerTests
                     ("src/project.csproj", """
                         <Project Sdk="Microsoft.NET.Sdk">
                           <PropertyGroup>
-                            <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst</TargetFrameworks>
+                            <TargetFrameworks>net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows</TargetFrameworks>
                           </PropertyGroup>
                           <ItemGroup>
                             <PackageReference Include="Some.Package" Version="1.2.3" />
@@ -1151,11 +1151,12 @@ public partial class DiscoveryWorkerTests
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-ios"], IsDirect: true),
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-maccatalyst"], IsDirect: true),
                                 new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-macos"], IsDirect: true),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-windows"], IsDirect: true),
                             ],
                             Properties = [
-                                new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst", @"src/project.csproj"),
+                                new("TargetFrameworks", "net8.0-ios;net8.0-android;net8.0-macos;net8.0-maccatalyst;net8.0-windows", @"src/project.csproj"),
                             ],
-                            TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos"],
+                            TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -1310,6 +1311,8 @@ public partial class DiscoveryWorkerTests
 
                           <PropertyGroup>
                             <TargetFramework>net8.0</TargetFramework>
+                            <!-- the SDK turns `<TargetFramework>net8.0</TargetFramework>` into the following -->
+                            <TargetFrameworkMoniker>.NETCoreApp,Version=8.0</TargetFrameworkMoniker>
                           </PropertyGroup>
 
                           <ItemGroup>
@@ -1360,7 +1363,8 @@ public partial class DiscoveryWorkerTests
                                 new("Test.Only.Package", "1.0.99", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
                             ],
                             Properties = [
-                                new("TargetFramework", "net8.0", "project.csproj")
+                                new("TargetFramework", "net8.0", "project.csproj"),
+                                new("TargetFrameworkMoniker", ".NETCoreApp,Version=8.0", "project.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],

@@ -11,12 +11,11 @@ module Dependabot
       extend T::Sig
       # This list must match the versions specified at the top of `python/Dockerfile`
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.13.1
-        3.12.7
-        3.11.9
-        3.10.15
-        3.9.18
-        3.8.20
+        3.13.2
+        3.12.9
+        3.11.11
+        3.10.16
+        3.9.21
       ).freeze
 
       sig { params(python_requirement_parser: T.untyped).void }

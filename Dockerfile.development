@@ -14,6 +14,8 @@ RUN apt-get update \
     libgit2-dev \
     cmake \
     pkg-config \
+    # for git repo access with ssh key credentials
+    openssh-client \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 

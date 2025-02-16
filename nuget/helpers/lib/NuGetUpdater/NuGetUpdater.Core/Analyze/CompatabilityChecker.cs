@@ -108,17 +108,16 @@ internal static class CompatibilityChecker
 
         foreach (var d in dependencyGroups)
         {
-            var libItems = (await readers.ContentReader.GetLibItemsAsync(cancellationToken)).ToList();
-
-            foreach (var item in libItems)
-            {
-                tfms.Add(item.TargetFramework);
-            }
-
             if (!d.TargetFramework.IsAny)
             {
                 tfms.Add(d.TargetFramework);
             }
+        }
+
+        var refItems = await readers.ContentReader.GetReferenceItemsAsync(cancellationToken);
+        foreach (var refItem in refItems)
+        {
+            tfms.Add(refItem.TargetFramework);
         }
 
         if (!tfms.Any())

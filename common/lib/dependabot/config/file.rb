@@ -58,6 +58,7 @@ module Dependabot
       private
 
       PACKAGE_MANAGER_LOOKUP = T.let({
+        "bun" => "bun",
         "bundler" => "bundler",
         "cargo" => "cargo",
         "composer" => "composer",

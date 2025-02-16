@@ -62,9 +62,13 @@ public record ExperimentsManager
             return false;
         }
 
-        if (experiments.TryGetValue(experimentName, out var value))
+        // prefer experiments named with underscores, but hyphens are also allowed as an alternate
+        object? experimentValue;
+        var experimentNameAlternate = experimentName.Replace("_", "-");
+        if (experiments.TryGetValue(experimentName, out experimentValue) ||
+            experiments.TryGetValue(experimentNameAlternate, out experimentValue))
         {
-            if ((value?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+            if ((experimentValue?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

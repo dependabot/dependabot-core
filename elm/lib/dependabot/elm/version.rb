@@ -1,4 +1,4 @@
-# typed: true
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/version"
@@ -13,6 +13,7 @@ module Dependabot
       VERSION_PATTERN = "[0-9]+\\.[0-9]+\\.[0-9]+"
       VERSION_PATTERN_REGEX = /\A#{VERSION_PATTERN}\Z/
 
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
         version.to_s.match?(VERSION_PATTERN_REGEX)
       end

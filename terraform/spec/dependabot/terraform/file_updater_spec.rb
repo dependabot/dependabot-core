@@ -1709,5 +1709,31 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       specify { expect(updated_dependency_files).to all(be_a(Dependabot::DependencyFile)) }
       specify { expect(updated_dependency_files.length).to eq(1) }
     end
+
+    describe "#error_handler" do
+      subject(:error_handler) { Dependabot::Terraform::FileUpdaterErrorHandler.new }
+
+      let(:error) { instance_double(Dependabot::SharedHelpers::HelperSubprocessFailed, message: error_message) }
+
+      context "when the error message contains no resolvable releases" do
+        let(:error_message) do
+          "[31m[31m╷[0m[0m
+          [31m│[0m [0m[1m[31mError: [0m[0m[1mCould not retrieve providers for locking[0m
+          [31m│[0m [0m
+          [31m│[0m [0m[0mTerraform failed to fetch the requested providers for linux_amd64 in order
+          [31m│[0m [0mto calculate their checksums: some providers could not be installed:
+          [31m│[0m [0m- registry.terraform.io/firehydrant/firehydrant: no available releases
+          [31m│[0m [0mmatch the given constraints 0.13.4, 0.13.5.
+          [31m╵[0m[0m
+          [0m[0m"
+        end
+
+        it "raises a DependencyFileNotResolvable error with the correct message" do
+          expect do
+            error_handler.handle_helper_subprocess_failed_error(error)
+          end.to raise_error(Dependabot::DependencyFileNotResolvable)
+        end
+      end
+    end
   end
 end

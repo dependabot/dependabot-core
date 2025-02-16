@@ -1,0 +1,18 @@
+{
+  "name": "package.json",
+  "path": "package.json",
+  "sha": "800e0a4da6567d3d452cad3b0193b8956b654652",
+  "size": 548,
+  "url": "https://api.github.com/repos/AMorgaut/html5-eventsource/contents/package.json?ref=master",
+  "html_url": "https://github.com/AMorgaut/html5-eventsource/blob/master/package.json",
+  "git_url": "https://api.github.com/repos/AMorgaut/html5-eventsource/git/blobs/800e0a4da6567d3d452cad3b0193b8956b654652",
+  "download_url": "https://raw.githubusercontent.com/AMorgaut/html5-eventsource/master/package.json",
+  "type": "file",
+  "content": "ewogICJuYW1lIjogImh0bWw1LWV2ZW50c291cmNlIiwKICAiZGVzY3JpcHRp\nb24iOiAiQW4gaW1wbGVtZW50YXRpb24gb2YgdGhlIHN0YW5kYXJkIEhUTUw1\nIEV2ZW50U291cmNlIGNsaWVudCBpbnRlcmZhY2UiLAogICJ2ZXJzaW9uIjog\nIjAuMS4wIiwKICAicmVwb3NpdG9yeSI6IHsKICAgICJ0eXBlIjogImdpdCIs\nCiAgICAidXJsIjogImdpdDovL2dpdGh1Yi5jb20vQU1vcmdhdXQvaHRtbDUt\nZXZlbnRzb3VyY2UuZ2l0IgogIH0sCiAgImF1dGhvciI6ICJBbGV4YW5kcmUg\nTW9yZ2F1dCA8QWxleGFuZHJlLk1vcmdhdXRAZ21haWwuY29tPiAoaHR0cDov\nL2dpdGh1Yi5jb20vQU1vcmdhdXQpIiwKICAibWFpbiI6ICIuL2h0bWw1LWV2\nZW50c291cmNlLmpzIiwKICAiZW5naW5lcyI6IHsKICAgICJub2RlIjogIioi\nLAogICAgIndha2FuZGEiOiAiKiIKICB9LAogICJkZXBlbmRlbmNpZXMiOiBb\nCiAgICAgIHsidzNjLWRvbWV2ZW50cyI6ICIwLjEuMCJ9LAogICAgICB7Incz\nYy1kb21jb3JlLWVycm9ycyI6ICIwLjEuMCJ9CiAgXSwKICAibGljZW5zZSI6\nICJNSVQiCn0=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/AMorgaut/html5-eventsource/contents/package.json?ref=master",
+    "git": "https://api.github.com/repos/AMorgaut/html5-eventsource/git/blobs/800e0a4da6567d3d452cad3b0193b8956b654652",
+    "html": "https://github.com/AMorgaut/html5-eventsource/blob/master/package.json"
+  }
+}

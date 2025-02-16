@@ -225,18 +225,18 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "when the version is set to the oldest version of python supported by Dependabot" do
-          let(:python_version_content) { "3.8.0\n" }
+          let(:python_version_content) { "3.9.0\n" }
 
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
         context "when the version is set to a python version no longer supported by Dependabot" do
-          let(:python_version_content) { "3.7.0\n" }
+          let(:python_version_content) { "3.8.0\n" }
 
           it "raises a helpful error" do
             expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
-                "Dependabot detected the following Python requirement for your project: '3.7.0'."
+                "Dependabot detected the following Python requirement for your project: '3.8.0'."
               )
             end
           end

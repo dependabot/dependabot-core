@@ -92,20 +92,6 @@ public class UpdatedDependencyListTests
                 },
                 new ReportedDependency()
                 {
-                    Name = "System.Text.Json",
-                    Version = "6.0.0",
-                    Requirements =
-                    [
-                        new ReportedRequirement()
-                        {
-                            Requirement = "6.0.0",
-                            File = "/src/c/project.csproj",
-                            Groups = ["dependencies"],
-                        }
-                    ],
-                },
-                new ReportedDependency()
-                {
                     Name = "Newtonsoft.Json",
                     Version = "13.0.1",
                     Requirements =
@@ -117,6 +103,20 @@ public class UpdatedDependencyListTests
                             Groups = ["dependencies"],
                         },
                     ]
+                },
+                new ReportedDependency()
+                {
+                    Name = "System.Text.Json",
+                    Version = "6.0.0",
+                    Requirements =
+                    [
+                        new ReportedRequirement()
+                        {
+                            Requirement = "6.0.0",
+                            File = "/src/c/project.csproj",
+                            Groups = ["dependencies"],
+                        }
+                    ],
                 },
             ],
             DependencyFiles = ["/src/a/packages.config", "/src/a/project.csproj", "/src/b/packages.config", "/src/b/project.csproj", "/src/c/packages.config", "/src/c/project.csproj"],

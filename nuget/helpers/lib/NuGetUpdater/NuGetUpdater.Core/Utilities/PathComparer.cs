@@ -2,27 +2,34 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace NuGetUpdater.Core.Utilities;
 
-public class PathComparer : IEqualityComparer<string>
+public class PathComparer : IComparer<string>, IEqualityComparer<string>
 {
     public static PathComparer Instance { get; } = new PathComparer();
 
-    public bool Equals(string? x, string? y)
+    public int Compare(string? x, string? y)
     {
         x = x?.NormalizePathToUnix();
         y = y?.NormalizePathToUnix();
 
         if (x is null && y is null)
         {
-            return true;
+            return 0;
         }
 
-        if (x is null || y is null)
+        if (x is null)
         {
-            return false;
+            return -1;
         }
 
-        return x.Equals(y, StringComparison.OrdinalIgnoreCase);
+        if (y is null)
+        {
+            return 1;
+        }
+
+        return x.CompareTo(y);
     }
+
+    public bool Equals(string? x, string? y) => Compare(x, y) == 0;
 
     public int GetHashCode([DisallowNull] string obj)
     {

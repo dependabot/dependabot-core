@@ -408,6 +408,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "pnpm_lock_quotes_content.json"),
             headers: json_header
           )
+        stub_request(:get, File.join(url, "packages/pnpm-workspace.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404, # Simulate file not found in nested project
+            body: nil,
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "pnpm-workspace.yaml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 404, # Simulate file not found in nested project
+            body: nil,
+            headers: json_header
+          )
       end
 
       it "fetches the pnpm-lock.yaml file at the root of the monorepo" do
