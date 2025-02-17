@@ -158,6 +158,12 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
+          # If the current version is vulnerable
+          # And it cannot be updated due to conflicting dependencies
+          if checker.conflicting_dependencies.any?
+            return record_security_update_not_possible_error(checker)
+          end
+
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
