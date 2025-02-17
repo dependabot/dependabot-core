@@ -16,7 +16,7 @@ module Dependabot
         dependency_set = DependencySet.new
 
         composefiles.each do |composefile|
-          yaml = YAML.safe_load(composefile.content)
+          yaml = YAML.safe_load(T.must(composefile.content))
           yaml["services"].each do |_, service|
             parsed_from_image = T.must(FROM_IMAGE.match(service["image"])).named_captures
             parsed_from_image["registry"] = nil if parsed_from_image["registry"] == "docker.io"

@@ -12,6 +12,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      abstract!
+
       require "dependabot/file_parsers/base/dependency_set"
 
       # Details of Docker regular expressions is at
@@ -45,7 +47,10 @@ module Dependabot
         source
       end
 
-      sig { params(file: Dependabot::DependencyFile, details: T::Hash[String, T.nilable(String)], version: String).returns(Dependabot::Dependency) }
+      sig do
+        params(file: Dependabot::DependencyFile, details: T::Hash[String, T.nilable(String)],
+               version: String).returns(Dependabot::Dependency)
+      end
       def build_dependency(file, details, version)
         Dependency.new(
           name: T.must(details.fetch("image")),
@@ -62,15 +67,14 @@ module Dependabot
 
       private
 
-      sig { abstract.returns(String) }
-      def package_manager
-        raise NotImplementedError, "#{self.class.name} must implement #package_manager"
-      end
+      sig { override.void }
+      def check_required_files; end
 
       sig { abstract.returns(String) }
-      def file_type
-        raise NotImplementedError, "#{self.class.name} must implement #file_type"
-      end
+      def package_manager; end
+
+      sig { abstract.returns(String) }
+      def file_type; end
     end
   end
 end

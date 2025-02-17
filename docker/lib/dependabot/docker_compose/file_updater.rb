@@ -45,7 +45,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: file,
-            content: updated_dockerfile_content(file)
+            content: T.must(updated_dockerfile_content(file))
           )
         end
 

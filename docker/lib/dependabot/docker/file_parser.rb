@@ -95,7 +95,7 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        resources = file.content.split(/^---$/).map(&:strip).reject(&:empty?)
+        resources = T.must(file.content).split(/^---$/).map(&:strip).reject(&:empty?)
         resources.flat_map do |resource|
           json = YAML.safe_load(resource, aliases: true)
           images = deep_fetch_images(json).uniq

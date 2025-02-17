@@ -13,6 +13,8 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      abstract!
+
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -21,7 +23,7 @@ module Dependabot
         dependency_files.each do |file|
           next unless requirement_changed?(file, T.must(dependency))
 
-          updated_files << if file.name.match?(yaml_file_pattern)
+          updated_files << if file.name.match?(T.must(yaml_file_pattern))
                              updated_file(
                                file: file,
                                content: T.must(updated_yaml_content(file))
@@ -29,7 +31,7 @@ module Dependabot
                            else
                              updated_file(
                                file: file,
-                               content: updated_dockerfile_content(file)
+                               content: T.must(updated_dockerfile_content(file))
                              )
                            end
         end
@@ -42,12 +44,12 @@ module Dependabot
 
       sig { abstract.returns(T.nilable(Regexp)) }
       def yaml_file_pattern
-        nil
+
       end
 
       sig { abstract.returns(T.nilable(Regexp)) }
       def container_image_regex
-        nil
+
       end
 
       private
@@ -59,7 +61,7 @@ module Dependabot
 
         updated_content = T.let(file.content, T.untyped)
 
-        T.must(old_sources)&.zip(new_sources)&.each do |old_source, new_source|
+        T.must(old_sources).zip(new_sources).each do |old_source, new_source|
           updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
         end
 
@@ -101,7 +103,6 @@ module Dependabot
 
         escaped_declaration = Regexp.escape(old_declaration)
 
-        debugger
         old_declaration_regex = build_old_declaration_regex(escaped_declaration)
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
@@ -200,7 +201,7 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile, dependency: Dependabot::Dependency).returns(T::Boolean) }
       def requirement_changed?(file, dependency)
         changed_requirements =
-          dependency.requirements - dependency.previous_requirements
+          dependency.requirements - T.must(dependency.previous_requirements)
 
         changed_requirements.any? { |f| f[:file] == file.name }
       end
@@ -259,7 +260,7 @@ module Dependabot
 
       sig { abstract.returns(String) }
       def file_type
-        raise NotImplementedError, "#{self.class.name} must implement #file_type"
+
       end
     end
   end

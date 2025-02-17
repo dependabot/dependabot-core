@@ -361,11 +361,11 @@ module Dependabot
         credentials_finder.credentials_for_registry(registry_hostname)
       end
 
-      sig { returns(Dependabot::Docker::Utils::CredentialsFinder) }
+      sig { returns(Dependabot::Shared::Utils::CredentialsFinder) }
       def credentials_finder
         @credentials_finder ||= T.let(
-          Utils::CredentialsFinder.new(credentials),
-          T.nilable(Dependabot::Docker::Utils::CredentialsFinder)
+          Dependabot::Shared::Utils::CredentialsFinder.new(credentials),
+          T.nilable(Dependabot::Shared::Utils::CredentialsFinder)
         )
       end
 

@@ -32,7 +32,7 @@ module Dependabot
 
       sig { override.returns(Regexp) }
       def container_image_regex
-        %r{^#{FROM_REGEX}\s+(docker\.io/)?}
+        %r{^#{FROM_REGEX}\s+(docker\.io/)?}o
       end
     end
   end

@@ -12,11 +12,13 @@ module Dependabot
       extend T::Sig
       extend T::Helpers
 
+      abstract!
+
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
 
       sig { abstract.returns(Regexp) }
       def self.filename_regex
-        raise NotImplementedError, "#{self.class.name} must implement .filename_regex"
+
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -54,8 +56,8 @@ module Dependabot
 
       sig do
         params(
-          incorrectly_encoded_files: T::Array[Dependabot::DependencyFile],
-        ).void
+          incorrectly_encoded_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T.noreturn)
       end
       def raise_appropriate_error(
         incorrectly_encoded_files = []
@@ -91,12 +93,12 @@ module Dependabot
 
       sig { abstract.returns(String) }
       def default_file_name
-        raise NotImplementedError, "#{self.class.name} must implement #default_file_name"
+
       end
 
       sig { abstract.returns(String) }
       def file_type
-        raise NotImplementedError, "#{self.class.name} must implement #file_type"
+
       end
     end
   end
