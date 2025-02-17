@@ -156,11 +156,7 @@ module Dependabot
           # version. This happens for npm/yarn sub-dependencies where Dependabot has no
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
-          return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
-
-          # If the current version is vulnerable
-          # And it cannot be updated due to conflicting dependencies
-          if checker.conflicting_dependencies.any?
+          if updated_deps.none? { |d| job.security_fix?(d) } || checker.conflicting_dependencies.any?
             return record_security_update_not_possible_error(checker)
           end
 

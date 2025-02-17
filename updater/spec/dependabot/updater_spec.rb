@@ -883,7 +883,8 @@ RSpec.describe Dependabot::Updater do
 
     context "when a security update PR exists for the resolved version" do
       it "creates an update job error and short-circuits" do
-        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
+        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"),
+                                      vulnerable?: true, conflicting_dependencies: [])
 
         job = build_job(
           requested_dependencies: ["dummy-pkg-b"],
@@ -1003,6 +1004,7 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker(
             latest_version: Gem::Version.new("1.3.0"),
             vulnerable?: true,
+            conflicting_dependencies: [],
             updated_dependencies: [
               Dependabot::Dependency.new(
                 name: "dummy-pkg-b",
@@ -1309,9 +1311,9 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when the job is to create a security PR" do
-        context "when the dependency is vulnerable" do
+        context "when the dependency is vulnerable and there is no conflicting dependencies" do
           it "creates the pull request" do
-            stub_update_checker(vulnerable?: true)
+            stub_update_checker(vulnerable?: true, conflicting_dependencies: [])
 
             job = build_job(
               requested_dependencies: ["dummy-pkg-b"],
@@ -1437,7 +1439,7 @@ RSpec.describe Dependabot::Updater do
 
         context "when the dependency name case doesn't match what's parsed" do
           it "still updates dependencies on the specified list" do
-            stub_update_checker(vulnerable?: true)
+            stub_update_checker(vulnerable?: true, conflicting_dependencies: [])
 
             job = build_job(
               requested_dependencies: ["Dummy-pkg-b"],
