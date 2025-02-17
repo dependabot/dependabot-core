@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
           end
 
           it "returns updated, valid credentials" do
-            expect(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
+            allow(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
 
             expect(found_credentials.to_h).to eq(
               "type" => "docker_registry",

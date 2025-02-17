@@ -43,14 +43,10 @@ module Dependabot
       end
 
       sig { abstract.returns(T.nilable(Regexp)) }
-      def yaml_file_pattern
-
-      end
+      def yaml_file_pattern; end
 
       sig { abstract.returns(T.nilable(Regexp)) }
-      def container_image_regex
-
-      end
+      def container_image_regex; end
 
       private
 
@@ -259,9 +255,7 @@ module Dependabot
       private
 
       sig { abstract.returns(String) }
-      def file_type
-
-      end
+      def file_type; end
     end
   end
 end

@@ -21,6 +21,12 @@ module Dependabot
         "Repo must contain a Dockerfile, Containerfile, or Kubernetes YAML files."
       end
 
+      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
+      def self.required_files_in?(filenames)
+        filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
+          filenames.any? { |f| f.match?(YAML_REGEXP) }
+      end
+
       private
 
       sig { override.returns(String) }
@@ -41,12 +47,6 @@ module Dependabot
         return fetched_files if fetched_files.any?
 
         raise_appropriate_error(incorrectly_encoded_dockerfiles)
-      end
-
-      sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
-      def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
-          filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
       sig { returns(T::Array[DependencyFile]) }

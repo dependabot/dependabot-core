@@ -1,4 +1,4 @@
-# typed: true
+# typed: strict
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -17,9 +17,7 @@ module Dependabot
       YAML_REGEXP = /^[^\.].*\.ya?ml$/i
 
       sig { abstract.returns(Regexp) }
-      def self.filename_regex
-
-      end
+      def self.filename_regex; end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -92,14 +90,10 @@ module Dependabot
       end
 
       sig { abstract.returns(String) }
-      def default_file_name
-
-      end
+      def default_file_name; end
 
       sig { abstract.returns(String) }
-      def file_type
-
-      end
+      def file_type; end
     end
   end
 end
