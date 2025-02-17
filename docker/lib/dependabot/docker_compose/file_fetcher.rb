@@ -6,7 +6,7 @@ require "dependabot/shared/shared_file_fetcher"
 module Dependabot
   module DockerCompose
     class FileFetcher < Dependabot::Shared::SharedFileFetcher
-      FILENAME_REGEX = /(docker-)?compose(?>\.[\w-]+)?\.ya?ml/i
+      FILENAME_REGEX = /(docker-)?compose(-[\w]+)?(?>\.[\w-]+)?\.ya?ml/i
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
