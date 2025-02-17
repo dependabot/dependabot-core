@@ -10,6 +10,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
+        # debugger
         fetched_files = correctly_encoded_docker_compose_files
 
         return fetched_files if fetched_files.any?
@@ -23,10 +24,12 @@ module Dependabot
       end
 
       def docker_compose_files
+        # debugger
         @docker_compose_files ||=
-          repo_contents(raise_errors: false).
-            select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }.
-            map { |f| fetch_file_from_host(f.name) }
+          T.let(repo_contents(raise_errors: false)
+          .select { |f| f.type == "file" && f.name.match?(FILENAME_REGEX) }
+          .map { |f| fetch_file_from_host(f.name) }, T.nilable(T::Array[DependencyFile]
+          ))
       end
 
       def correctly_encoded_docker_compose_files

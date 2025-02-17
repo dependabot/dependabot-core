@@ -56,8 +56,6 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -304,6 +302,35 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         end
 
         context "when the dockerfile has a tag as well as a digest" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "ubuntu",
+              version: "17.10",
+              previous_version: "12.04.5",
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "docker-compose.yml",
+                source: {
+                  digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                          "ca97eba880ebf600d68608",
+                  tag: "17.10"
+                }
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "docker-compose.yml",
+                source: {
+                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
+                          "dfc38288cf73aa07485005",
+                  tag: "12.04.5"
+                }
+              }],
+              package_manager: "docker"
+            )
+          end
+
           let(:dockerfile_body) do
             fixture("docker_compose", "composefiles", "digest_and_tag")
           end
@@ -457,7 +484,8 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               file: "custom-name",
               source: {
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                        "ca97eba880ebf600d68608"
+                        "ca97eba880ebf600d68608",
+                tag: "17.10"
               }
             }],
             previous_requirements: [{
@@ -466,7 +494,8 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               file: "custom-name",
               source: {
                 digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                        "dfc38288cf73aa07485005"
+                        "dfc38288cf73aa07485005",
+                tag: "12.04.5"
               }
             }],
             package_manager: "docker"

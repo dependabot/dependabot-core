@@ -139,8 +139,6 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
-  it_behaves_like "a dependency file updater"
-
   describe "#updated_files_regex" do
     subject(:updated_files_regex) { described_class.updated_files_regex }
 

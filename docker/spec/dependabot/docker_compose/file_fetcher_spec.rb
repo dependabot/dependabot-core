@@ -146,14 +146,13 @@ RSpec.describe Dependabot::DockerCompose::FileFetcher do
   end
 
   context "with a directory that doesn't exist" do
-    let(:directory) { "/non/existent" }
-
     before do
-      stub_request(:get, url + "non/existent?ref=sha")
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      stub_request(:get, url + "?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
-          status: 404,
-          body: fixture("github", "not_found.json"),
+          status: 200,
+          body: fixture("github", "contents_no_docker_repo.json"),
           headers: { "content-type" => "application/json" }
         )
     end

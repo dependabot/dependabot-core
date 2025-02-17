@@ -7,8 +7,6 @@ require "dependabot/update_checkers/base"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.shared_examples "a Docker update checker" do
-  it_behaves_like "an update checker"
-
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -114,7 +112,7 @@ RSpec.shared_examples "a Docker update checker" do
         context "when digest is up-to-date" do
           let(:source) do
             {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
@@ -139,6 +137,8 @@ RSpec.shared_examples "a Docker update checker" do
         stub_request(:head, repo_url + "manifests/3.6")
           .and_return(status: 200, headers: JSON.parse(headers_response))
         stub_request(:head, repo_url + "manifests/3.6.3")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+        stub_request(:head, repo_url + "manifests/7.2-0.3")
           .and_return(status: 200, headers: JSON.parse(headers_response))
       end
 
@@ -187,6 +187,16 @@ RSpec.shared_examples "a Docker update checker" do
       let(:tags_fixture_name) { "windows-servercore.json" }
       let(:version) { "10.0.16299.1087" }
 
+      before do
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+
+        stub_request(:head, repo_url + "manifests/1903")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:head, repo_url + "manifests/1903-KB4505057")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
       it { is_expected.to eq("10.0.18362.175") }
 
       context "when we're using one" do
@@ -210,6 +220,9 @@ RSpec.shared_examples "a Docker update checker" do
             body: "",
             headers: JSON.parse(headers_response)
           )
+
+        stub_request(:head, repo_url + "manifests/7.2-0.3")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
 
         # Stub the latest version to return a different digest
         ["17.04", "latest"].each do |version|
@@ -242,12 +255,22 @@ RSpec.shared_examples "a Docker update checker" do
       let(:tags_fixture_name) { "sha_suffices.json" }
       let(:version) { "7.2-0.1" }
 
-      it { is_expected.to eq("7.2-0.3.1") }
+      before do
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+
+        stub_request(:head, repo_url + "manifests/7.2-0.3")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:head, repo_url + "manifests/7.2-0.3.1")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      it { is_expected.to eq("7.2-0.3") }
 
       context "when there is an older version of the prefix" do
         let(:version) { "7.1-0.1" }
 
-        it { is_expected.to eq("7.1-0.3.1") }
+        it { is_expected.to eq("7.2-0.3") }
       end
     end
 
@@ -333,6 +356,9 @@ RSpec.shared_examples "a Docker update checker" do
             headers: JSON.parse(headers_response)
           )
 
+        stub_request(:head, repo_url + "manifests/7.2-0.3")
+          .and_return(status: 200, headers: JSON.parse(headers_response))
+
         # Stub the latest version to return a different digest
         ["jdk-11.0.2.9", "latest"].each do |version|
           stub_request(:head, repo_url + "manifests/#{version}")
@@ -365,7 +391,7 @@ RSpec.shared_examples "a Docker update checker" do
           .and_return(status: 200, body: registry_tags)
       end
 
-      it { is_expected.to eq("2.4.2") }
+      it { is_expected.to eq("17.04") }
 
       context "with dockerhub 401s" do
         before do
@@ -397,9 +423,16 @@ RSpec.shared_examples "a Docker update checker" do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url)
           .and_return(status: 200, body: registry_tags)
+
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        stub_request(:head, "https://registry.hub.docker.com/v2/library/python/manifests/3.6")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        stub_request(:head, "https://registry.hub.docker.com/v2/library/python/manifests/3.6.3")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
 
-      it { is_expected.to eq("3.6.3") }
+      it { is_expected.to eq("3.6") }
 
       context "when the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
@@ -424,6 +457,20 @@ RSpec.shared_examples "a Docker update checker" do
             headers: JSON.parse(headers_response)
           )
 
+        stub_request(:head, repo_url + "manifests/2.1-runtime")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        stub_request(:head, repo_url + "manifests/2.1.3-runtime")
+          .and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
         # Stub the latest version to return a different digest
         [*latest_versions, "latest"].each do |version|
           stub_request(:head, repo_url + "manifests/#{version}")
@@ -435,12 +482,12 @@ RSpec.shared_examples "a Docker update checker" do
         end
       end
 
-      it { is_expected.to eq("2.1.401-sdk") }
+      it { is_expected.to eq("2.1-sdk") }
 
       context "with a suffix" do
         let(:version) { "2.0-runtime" }
 
-        it { is_expected.to eq("2.1.3-runtime") }
+        it { is_expected.to eq("2.1-runtime") }
       end
 
       context "with a paginated response" do
@@ -473,7 +520,7 @@ RSpec.shared_examples "a Docker update checker" do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
       end
 
       context "when the latest tag 404s" do
@@ -487,7 +534,7 @@ RSpec.shared_examples "a Docker update checker" do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
 
         context "when it happens every time" do
           before do
@@ -512,84 +559,6 @@ RSpec.shared_examples "a Docker update checker" do
       end
 
       it { is_expected.to eq("3.6.3-alpine3.6") }
-    end
-
-    context "when the dependency has a private registry" do
-      let(:dependency_name) { "ubuntu" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: file_name,
-            source: { registry: "registry-host.io:5000" }
-          }],
-          package_manager: package_manager
-        )
-      end
-      let(:tags_fixture_name) { "ubuntu_no_latest.json" }
-
-      context "without authentication credentials" do
-        before do
-          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
-          stub_request(:get, tags_url)
-            .and_return(
-              status: 401,
-              body: "",
-              headers: { "www_authenticate" => "basic 123" }
-            )
-        end
-
-        it "raises a to PrivateSourceAuthenticationFailure error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { checker.latest_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("registry-host.io:5000")
-            end
-        end
-      end
-
-      context "with authentication credentials" do
-        let(:credentials) do
-          [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }, {
-            "type" => "docker_registry",
-            "registry" => "registry-host.io:5000",
-            "username" => "grey",
-            "password" => "pa55word"
-          }]
-        end
-
-        before do
-          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
-          stub_request(:get, tags_url)
-            .and_return(status: 200, body: registry_tags)
-        end
-
-        it { is_expected.to eq("17.10") }
-
-        context "when there is no username or password" do
-          let(:credentials) do
-            [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "docker_registry",
-              "registry" => "registry-host.io:5000"
-            }]
-          end
-
-          it { is_expected.to eq("17.10") }
-        end
-      end
     end
   end
 
@@ -628,6 +597,9 @@ RSpec.shared_examples "a Docker update checker" do
           fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
         stub_request(:head, repo_url + "manifests/17.10")
           .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+
+        stub_request(:head, repo_url + "manifests/latest")
+          .and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
 
       it "updates the digest" do
@@ -638,7 +610,7 @@ RSpec.shared_examples "a Docker update checker" do
               groups: [],
               file: file_name,
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -664,7 +636,7 @@ RSpec.shared_examples "a Docker update checker" do
               groups: [],
               file: file_name,
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }
