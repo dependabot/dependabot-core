@@ -43,131 +43,55 @@ RSpec.describe Dependabot::NpmAndYarn::NpmPackageManager do
   end
 
   describe "#deprecated?" do
-    let(:detected_version) { "6" }
-    let(:raw_version) { "8.0.1" }
-
     it "returns false" do
       expect(package_manager.deprecated?).to be false
     end
 
-    context "with feature flag npm_v6_deprecation_warning" do
+    context "when detected version is unsupported" do
+      let(:detected_version) { "6" }
+
+      it "returns false as unsupported takes precedence" do
+        expect(package_manager.deprecated?).to be false
+      end
+    end
+
+    context "when detected version is deprecated but not unsupported" do
+      let(:detected_version) { "6" }
+
       before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_deprecation_warning)
-          .and_return(deprecation_enabled)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_unsupported_error)
-          .and_return(unsupported_enabled)
+        allow(package_manager).to receive(:unsupported?).and_return(false)
       end
 
-      context "when npm_v6_deprecation_warning is enabled and version is deprecated" do
-        let(:deprecation_enabled) { true }
-        let(:unsupported_enabled) { false }
-
-        it "returns true" do
-          expect(package_manager.deprecated?).to be true
-        end
-      end
-
-      context "when npm_v6_deprecation_warning is enabled but version is not deprecated" do
-        let(:detected_version) { "9" }
-        let(:deprecation_enabled) { true }
-        let(:unsupported_enabled) { false }
-
-        it "returns false" do
-          expect(package_manager.deprecated?).to be false
-        end
-      end
-
-      context "when npm_v6_deprecation_warning is disabled" do
-        let(:deprecation_enabled) { false }
-        let(:unsupported_enabled) { false }
-
-        it "returns false" do
-          expect(package_manager.deprecated?).to be false
-        end
-      end
-
-      context "when version is unsupported" do
-        let(:deprecation_enabled) { true }
-        let(:unsupported_enabled) { true }
-
-        it "returns false, as unsupported takes precedence" do
-          expect(package_manager.deprecated?).to be false
-        end
+      it "returns true" do
+        expect(package_manager.deprecated?).to be true
       end
     end
   end
 
   describe "#unsupported?" do
-    let(:detected_version) { "5" }
-    let(:raw_version) { "8.0.1" }
-
-    it "returns false for supported versions" do
+    it "returns false" do
       expect(package_manager.unsupported?).to be false
     end
 
-    context "with feature flag npm_v6_unsupported_error" do
-      before do
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:npm_v6_unsupported_error)
-          .and_return(unsupported_enabled)
-      end
+    context "when version is unsupported" do
+      let(:detected_version) { "6" }
 
-      context "when npm_v6_unsupported_error is enabled and version is unsupported" do
-        let(:detected_version) { "6" }
-        let(:raw_version) { "8.0.1" }
-
-        let(:unsupported_enabled) { true }
-
-        it "returns true" do
-          expect(package_manager.unsupported?).to be true
-        end
-      end
-
-      context "when npm_v6_unsupported_error is enabled but version is supported" do
-        let(:detected_version) { "7" }
-        let(:raw_version) { "8.0.1" }
-
-        let(:unsupported_enabled) { true }
-
-        it "returns false" do
-          expect(package_manager.unsupported?).to be false
-        end
-      end
-
-      context "when npm_v6_unsupported_error is disabled" do
-        let(:unsupported_enabled) { false }
-
-        it "returns false" do
-          expect(package_manager.unsupported?).to be false
-        end
+      it "returns true" do
+        expect(package_manager.unsupported?).to be true
       end
     end
   end
 
   describe "#raise_if_unsupported!" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:npm_v6_unsupported_error)
-        .and_return(unsupported_enabled)
+    it "does not raise error" do
+      expect { package_manager.raise_if_unsupported! }.not_to raise_error
     end
 
-    context "when npm_v6_unsupported_error is enabled and version is unsupported" do
+    context "when detected version is deprecated" do
       let(:detected_version) { "6" }
-      let(:unsupported_enabled) { true }
 
       it "raises a ToolVersionNotSupported error" do
         expect { package_manager.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported)
-      end
-    end
-
-    context "when npm_v6_unsupported_error is disabled" do
-      let(:detected_version) { "6" }
-      let(:unsupported_enabled) { false }
-
-      it "does not raise an error" do
-        expect { package_manager.raise_if_unsupported! }.not_to raise_error
       end
     end
   end
