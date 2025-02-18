@@ -20,6 +20,6 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker-compose $DEPENDABOT_HOME/docker-compose
+COPY --chown=dependabot:dependabot docker_compose $DEPENDABOT_HOME/docker_compose
 COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
