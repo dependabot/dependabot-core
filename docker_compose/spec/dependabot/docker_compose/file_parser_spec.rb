@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/docker_compose/file_parser"
+
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::DockerCompose::FileParser do
@@ -27,6 +28,10 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
     )
   end
   let(:files) { [composefile] }
+
+  before do
+    allow(Dependabot::Experiments).to receive(:enabled?).with(:enable_beta_ecosystems).and_return(true)
+  end
 
   it_behaves_like "a dependency file parser"
 
