@@ -3,6 +3,7 @@
 
 require "yaml"
 require "dependabot/shared/shared_file_parser"
+require "dependabot/docker/package_manager"
 
 module Dependabot
   module DockerCompose
@@ -10,6 +11,17 @@ module Dependabot
       extend T::Sig
 
       FROM_IMAGE = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: DockerPackageManager.new
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse

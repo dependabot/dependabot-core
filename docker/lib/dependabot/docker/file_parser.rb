@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared/shared_file_parser"
-require "dependabot/docker/package_manger"
+require "dependabot/docker/package_manager"
 
 module Dependabot
   module Docker
@@ -22,6 +22,17 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
       TAG_WITH_DIGEST = /^#{TAG_NO_PREFIX}(?:@sha256:#{DIGEST})?/x
+
+      sig { returns(Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Ecosystem.new(
+            name: ECOSYSTEM,
+            package_manager: DockerPackageManager.new
+          ),
+          T.nilable(Ecosystem)
+        )
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
