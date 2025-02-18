@@ -3,7 +3,7 @@
 
 require "yaml"
 require "dependabot/shared/shared_file_parser"
-require "dependabot/docker/package_manager"
+require "dependabot/docker_compose/package_manager"
 
 module Dependabot
   module DockerCompose
