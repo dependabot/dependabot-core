@@ -63,8 +63,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_security_update_not_possible_error(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, error_type: String).void }
+      def record_security_update_not_possible_error(checker, error_type = "security_update_not_possible")
         latest_allowed_version =
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
@@ -72,26 +72,26 @@ module Dependabot
           checker.lowest_security_fix_version.to_s
         conflicting_dependencies = checker.conflicting_dependencies
 
-        security_update_not_possible_message =
-          security_update_not_possible_message(checker, T.must(latest_allowed_version), conflicting_dependencies)
+        security_update_not_possible_message = security_update_not_possible_message(checker,
+                                                                                    T.must(latest_allowed_version),
+                                                                                    conflicting_dependencies)
         Dependabot.logger.info(security_update_not_possible_message)
         Dependabot.logger.info(
           earliest_fixed_version_message(lowest_non_vulnerable_version)
         )
 
-        error_type = "security_update_not_possible"
-        if security_update_not_possible_message.include?("transitive dependency on")
-          error_type = "transitive_update_not_possible"
+        unless error_type == "transitive_update_not_possible" &&
+               !security_update_not_possible_message.include?("transitive dependency on")
+          service.record_update_job_error(
+            error_type: error_type,
+            error_details: {
+              "dependency-name": checker.dependency.name,
+              "latest-resolvable-version": latest_allowed_version,
+              "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
+              "conflicting-dependencies": conflicting_dependencies
+            }
+          )
         end
-        service.record_update_job_error(
-          error_type: error_type,
-          error_details: {
-            "dependency-name": checker.dependency.name,
-            "latest-resolvable-version": latest_allowed_version,
-            "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
-            "conflicting-dependencies": conflicting_dependencies
-          }
-        )
       end
 
       sig { params(checker: Dependabot::UpdateCheckers::Base).void }

@@ -156,29 +156,13 @@ module Dependabot
           # version. This happens for npm/yarn sub-dependencies where Dependabot has no
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
-          return record_security_update_not_possible_error(checker) if vulnerable_and_conflict_check?(
-            checker, updated_deps
-          )
+          return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          if (existing_pr = existing_pull_request(updated_deps))
-            # Create a update job error to prevent dependabot-api from creating a
-            # update_not_possible error, this is likely caused by a update job retry
-            # so should be invisible to users (as the first job completed with a pull
-            # request)
-            record_pull_request_exists_for_security_update(existing_pr)
-
-            deps = existing_pr.dependencies.map do |dep|
-              if dep.removed?
-                "#{dep.name}@removed"
-              else
-                "#{dep.name}@#{dep.version}"
-              end
-            end
-
-            return Dependabot.logger.info(
-              "Pull request already exists for #{deps.join(', ')}"
-            )
+          if checker.conflicting_dependencies.any?
+            return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
           end
+
+          handle_existing_pull_request(updated_deps)
 
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
@@ -200,18 +184,27 @@ module Dependabot
           raise
         end
 
-        # Move the security update check logic to a new method
-        sig do
-          params(checker: Dependabot::UpdateCheckers::Base,
-                 updated_deps: T::Array[Dependabot::Dependency]).returns(T::Boolean)
-        end
-        def vulnerable_and_conflict_check?(checker, updated_deps)
-          # Prevent updates that don't end up fixing any security advisories,
-          # blocking any updates where dependabot-core updates to a vulnerable
-          # version. This happens for npm/yarn sub-dependencies where Dependabot has no
-          # control over the target version. Related issue:
-          #   https://github.com/github/dependabot-api/issues/905
-          updated_deps.none? { |d| job.security_fix?(d) } || checker.conflicting_dependencies.any?
+        sig { params(updated_deps: T::Array[Dependabot::Dependency]).returns(T.nilable(PullRequest)) }
+        def handle_existing_pull_request(updated_deps)
+          return unless (existing_pr = existing_pull_request(updated_deps))
+
+          # Create a update job error to prevent dependabot-api from creating a
+          # update_not_possible error, this is likely caused by a update job retry
+          # so should be invisible to users (as the first job completed with a pull
+          # request)
+          record_pull_request_exists_for_security_update(existing_pr)
+
+          deps = existing_pr.dependencies.map do |dep|
+            if dep.removed?
+              "#{dep.name}@removed"
+            else
+              "#{dep.name}@#{dep.version}"
+            end
+          end
+
+          Dependabot.logger.info(
+            "Pull request already exists for #{deps.join(', ')}"
+          )
         end
 
         # rubocop:enable Metrics/MethodLength
