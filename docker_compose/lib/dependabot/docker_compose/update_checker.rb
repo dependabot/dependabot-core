@@ -251,15 +251,15 @@ module Dependabot
           T.nilable(T::Array[Dependabot::DockerCompose::Tag])
         )
       rescue DockerRegistry2::RegistryAuthenticationException,
-        RestClient::Forbidden
+             RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::Exceptions::OpenTimeout,
-        RestClient::Exceptions::ReadTimeout
+             RestClient::Exceptions::ReadTimeout
         raise if using_dockerhub?
 
         raise PrivateSourceTimedOut, T.must(registry_hostname)
       rescue RestClient::ServerBrokeConnection,
-        RestClient::TooManyRequests
+             RestClient::TooManyRequests
         raise PrivateSourceBadResponse, registry_hostname
       rescue JSON::ParserError => e
         if e.message.include?("unexpected token")
@@ -295,10 +295,10 @@ module Dependabot
 
         retry
       rescue DockerRegistry2::RegistryAuthenticationException,
-        RestClient::Forbidden
+             RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::ServerBrokeConnection,
-        RestClient::TooManyRequests
+             RestClient::TooManyRequests
         raise PrivateSourceBadResponse, registry_hostname
       rescue JSON::ParserError
         Dependabot.logger.info \
@@ -328,8 +328,8 @@ module Dependabot
         if comparable_version_from(tag) > comparable_version_from(T.must(latest_tag))
           Dependabot.logger.info \
             "The `latest` tag points to the same image as the `#{T.must(latest_tag).name}` image, " \
-              "so dependabot is treating `#{tag.name}` as a pre-release. " \
-              "The `latest` tag needs to point to `#{tag.name}` for Dependabot to consider it."
+            "so dependabot is treating `#{tag.name}` as a pre-release. " \
+            "The `latest` tag needs to point to `#{tag.name}` for Dependabot to consider it."
 
           true
         else
@@ -429,18 +429,21 @@ module Dependabot
         end
       end
 
-      sig { params(candidate_tags: T::Array[Dependabot::DockerCompose::Tag]).returns(T::Array[Dependabot::DockerCompose::Tag]) }
+      sig do
+        params(candidate_tags: T::Array[Dependabot::DockerCompose::Tag])
+          .returns(T::Array[Dependabot::DockerCompose::Tag])
+      end
       def filter_ignored(candidate_tags)
         filtered =
           candidate_tags
-            .reject do |tag|
+          .reject do |tag|
             version = comparable_version_from(tag)
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
         if @raise_on_ignored &&
-          filter_lower_versions(filtered).empty? &&
-          filter_lower_versions(candidate_tags).any? &&
-          digest_requirements.none?
+           filter_lower_versions(filtered).empty? &&
+           filter_lower_versions(candidate_tags).any? &&
+           digest_requirements.none?
           raise AllVersionsIgnored
         end
 
