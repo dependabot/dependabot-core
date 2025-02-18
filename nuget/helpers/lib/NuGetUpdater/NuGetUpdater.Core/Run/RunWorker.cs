@@ -36,12 +36,12 @@ public class RunWorker
         /// </summary>
         LF,
         /// <summary>
-        /// Carrage return - \r
+        /// Carriage return - \r
         /// Typical on older MacOS, unlikely (but possible) to come up here
         /// </summary>
         CR,
         /// <summary>
-        /// Carrage return and line feed - \r\n.
+        /// Carriage return and line feed - \r\n.
         /// Typical on Windows
         /// </summary>
         CRLF
