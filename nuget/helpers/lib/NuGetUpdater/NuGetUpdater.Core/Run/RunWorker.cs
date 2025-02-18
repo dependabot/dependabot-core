@@ -228,10 +228,12 @@ public class RunWorker
             var localFullPath = Path.GetFullPath(Path.Join(repoContentsPath.FullName, repoFullPath));
             var originalContent = originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
+
+            updatedContent = FixEOL(updatedContent, originalDependencyFileEOFs[repoFullPath]);
+            await File.WriteAllTextAsync(localFullPath, updatedContent);
+
             if (updatedContent != originalContent)
             {
-                updatedContent = FixEOL(updatedContent, originalDependencyFileEOFs[repoFullPath]);
-                await File.WriteAllTextAsync(localFullPath, updatedContent);
 
                 updatedDependencyFiles[localFullPath] = new DependencyFile()
                 {
