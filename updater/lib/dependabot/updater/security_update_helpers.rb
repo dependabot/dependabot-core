@@ -89,8 +89,7 @@ module Dependabot
             "dependency-name": checker.dependency.name,
             "latest-resolvable-version": latest_allowed_version,
             "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
-            "conflicting-dependencies": conflicting_dependencies,
-            message: security_update_not_possible_message
+            "conflicting-dependencies": conflicting_dependencies
           }
         )
       end
