@@ -205,6 +205,8 @@ module Dependabot
           Dependabot.logger.info(
             "Pull request already exists for #{deps.join(', ')}"
           )
+
+          existing_pr
         end
 
         # rubocop:enable Metrics/MethodLength
