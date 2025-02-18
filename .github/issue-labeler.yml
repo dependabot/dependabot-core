@@ -14,7 +14,7 @@
     - '(docker|kubernetes)'
 
 "L: docker:compose":
-  - '(docker_compose)'
+    - '(docker_compose)'
 
 "L: elm":
     - '(elm)'
