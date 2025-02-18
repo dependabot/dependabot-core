@@ -6,8 +6,8 @@ Gem::Specification.new do |spec|
 
   spec.name         = "dependabot-docker_compose"
   spec.summary      = "Provides Dependabot support for Docker Compose"
-  spec.description  = "Dependabot-Docker-Compose provides support for bumping Docker Compose image tags via Dependabot. " \
-                      "If you want support for multiple package managers, you probably want the meta-gem " \
+  spec.description  = "Dependabot-Docker-Compose provides support for bumping Docker Compose image tags via " \
+                      "Dependabot. If you want support for multiple package managers, you probably want the meta-gem " \
                       "dependabot-omnibus."
 
   spec.author       = common_gemspec.author
