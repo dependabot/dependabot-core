@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: main
+  SMOKE_TEST_BRANCH: amazimbe/fix-python-3.8-smoke-test2
 jobs:
   discover:
     runs-on: ubuntu-latest
