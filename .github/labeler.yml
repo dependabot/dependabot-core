@@ -42,7 +42,6 @@
 - changed-files:
   - any-glob-to-any-file:
     - bun/**
-    - javascript/**
     - npm_and_yarn/**
 
 "L: java:gradle":

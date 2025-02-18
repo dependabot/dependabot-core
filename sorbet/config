@@ -22,7 +22,6 @@
 --ignore=go_modules/spec/
 --ignore=gradle/spec/
 --ignore=hex/spec/
---ignore=javascript/spec/
 --ignore=maven/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
