@@ -156,7 +156,9 @@ module Dependabot
           # version. This happens for npm/yarn sub-dependencies where Dependabot has no
           # control over the target version. Related issue:
           #   https://github.com/github/dependabot-api/issues/905
-          return record_security_update_not_possible_error(checker) if security_update_not_possible_due_to_vulnerable_version?(checker, updated_deps)
+          return record_security_update_not_possible_error(checker) if vulnerable_and_conflict_check?(
+            checker, updated_deps
+          )
 
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
@@ -199,8 +201,11 @@ module Dependabot
         end
 
         # Move the security update check logic to a new method
-        sig { params(checker: Dependabot::UpdateCheckers::Base, updated_deps: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
-        def security_update_not_possible_due_to_vulnerable_version?(checker, updated_deps)
+        sig do
+          params(checker: Dependabot::UpdateCheckers::Base,
+                 updated_deps: T::Array[Dependabot::Dependency]).returns(T::Boolean)
+        end
+        def vulnerable_and_conflict_check?(checker, updated_deps)
           # Prevent updates that don't end up fixing any security advisories,
           # blocking any updates where dependabot-core updates to a vulnerable
           # version. This happens for npm/yarn sub-dependencies where Dependabot has no
