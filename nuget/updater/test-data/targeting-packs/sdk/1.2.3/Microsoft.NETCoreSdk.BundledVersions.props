@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <KnownFrameworkReference Include="Some.Targeting.Pack"
+                             TargetingPackName="Some.Targeting.Pack.Ref"
+                             TargetingPackVersion="1.0.1" />
+    <KnownFrameworkReference Include="Some.Other.Targeting.Pack"
+                             TargetingPackName="Some.Other.Targeting.Pack.Ref"
+                             TargetingPackVersion="1.0.2" />
+  </ItemGroup>
+</Project>
