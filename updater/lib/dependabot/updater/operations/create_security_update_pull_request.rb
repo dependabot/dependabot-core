@@ -158,12 +158,12 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          if checker.conflicting_dependencies.any?
+          conflicting_dependencies = checker.conflicting_dependencies
+
+          if conflicting_dependencies.any?
             latest_allowed_version =
               (checker.lowest_resolvable_security_fix_version ||
                 checker.dependency.version)&.to_s
-
-            conflicting_dependencies = checker.conflicting_dependencies
 
             security_update_not_possible_message = security_update_not_possible_message(checker,
                                                                                         T.must(latest_allowed_version),
@@ -174,8 +174,25 @@ module Dependabot
             end
           end
 
+          if (existing_pr = existing_pull_request(updated_deps))
+            # Create a update job error to prevent dependabot-api from creating a
+            # update_not_possible error, this is likely caused by a update job retry
+            # so should be invisible to users (as the first job completed with a pull
+            # request)
+            record_pull_request_exists_for_security_update(existing_pr)
 
-          handle_existing_pull_request(updated_deps)
+            deps = existing_pr.dependencies.map do |dep|
+              if dep.removed?
+                "#{dep.name}@removed"
+              else
+                "#{dep.name}@#{dep.version}"
+              end
+            end
+
+            return Dependabot.logger.info(
+              "Pull request already exists for #{deps.join(', ')}"
+            )
+          end
 
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
