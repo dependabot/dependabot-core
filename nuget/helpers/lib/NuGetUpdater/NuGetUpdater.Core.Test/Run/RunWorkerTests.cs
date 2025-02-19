@@ -14,15 +14,17 @@ using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run;
 
+using static NuGetUpdater.Core.Utilities.EOLHandling;
+
 using TestFile = (string Path, string Content);
 
 public class RunWorkerTests
 {
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdateSinglePackageProducedExpectedAPIMessages(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateSinglePackageProducedExpectedAPIMessages(EOLType EOL)
     {
         await RunAsync(
             packages: [],
@@ -216,10 +218,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdateHandlesSemicolonsInPackageReference(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesSemicolonsInPackageReference(EOLType EOL)
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
@@ -468,10 +470,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task PrivateSourceAuthenticationFailureIsForwaredToApiHandler(EOLType EOL)
     {
         await RunAsync(
             packages:
@@ -527,10 +529,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdateHandlesPackagesConfigFiles(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesPackagesConfigFiles(EOLType EOL)
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
@@ -862,10 +864,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(EOLType EOL)
     {
         var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
         var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
@@ -1422,10 +1424,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdatedFilesAreOnlyReportedOnce(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdatedFilesAreOnlyReportedOnce(EOLType EOL)
     {
         await RunAsync(
             job: new()
@@ -1730,10 +1732,10 @@ public class RunWorkerTests
     }
 
     [Theory]
-    [InlineData(["\r"])]
-    [InlineData(["\n"])]
-    [InlineData(["\r\n"])]
-    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(string EOL)
+    [InlineData(EOLType.CR)]
+    [InlineData(EOLType.LF)]
+    [InlineData(EOLType.CRLF)]
+    public async Task UpdatePackageWithDifferentVersionsInDifferentDirectories(EOLType EOL)
     {
         // this test passes `null` for discovery, analyze, and update workers to fully test the desired behavior
 
