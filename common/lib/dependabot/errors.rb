@@ -97,6 +97,11 @@ module Dependabot
         "error-type": "private_source_bad_response",
         "error-detail": { source: error.source }
       }
+    when Dependabot::DependencyNotFound
+      {
+        "error-type": "dependency_not_found",
+        "error-detail": { source: error.source }
+      }
     when Octokit::Unauthorized
       { "error-type": "octokit_unauthorized" }
     when Octokit::ServerError
