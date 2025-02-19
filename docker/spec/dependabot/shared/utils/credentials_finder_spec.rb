@@ -3,11 +3,11 @@
 
 require "spec_helper"
 require "dependabot/credential"
-require "dependabot/docker/utils/credentials_finder"
+require "dependabot/shared/utils/credentials_finder"
 require "aws-sdk-ecr"
 require "base64"
 
-RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
+RSpec.describe Dependabot::Shared::Utils::CredentialsFinder do
   subject(:finder) { described_class.new(credentials) }
 
   let(:credentials) do
@@ -178,7 +178,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           end
 
           it "returns updated, valid credentials" do
-            expect(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
+            allow(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
 
             expect(found_credentials.to_h).to eq(
               "type" => "docker_registry",

@@ -36,6 +36,7 @@ GEMSPECS = %w(
   devcontainers/dependabot-devcontainers.gemspec
   dotnet_sdk/dependabot-dotnet_sdk.gemspec
   bun/dependabot-bun.gemspec
+  docker_compose/dependabot-docker_compose.gemspec
 ).freeze
 
 def run_command(command)
