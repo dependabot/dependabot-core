@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "this-does-not-exist": "git@github.com:dependabot/this-does-not-exist.git"
-  }
-}

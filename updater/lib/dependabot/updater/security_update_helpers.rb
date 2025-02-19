@@ -63,8 +63,8 @@ module Dependabot
         )
       end
 
-      sig { params(checker: Dependabot::UpdateCheckers::Base).void }
-      def record_security_update_not_possible_error(checker)
+      sig { params(checker: Dependabot::UpdateCheckers::Base, error_type: String).void }
+      def record_security_update_not_possible_error(checker, error_type = "security_update_not_possible")
         latest_allowed_version =
           (checker.lowest_resolvable_security_fix_version ||
            checker.dependency.version)&.to_s
@@ -80,7 +80,7 @@ module Dependabot
         )
 
         service.record_update_job_error(
-          error_type: "security_update_not_possible",
+          error_type: error_type,
           error_details: {
             "dependency-name": checker.dependency.name,
             "latest-resolvable-version": latest_allowed_version,
