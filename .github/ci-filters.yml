@@ -26,6 +26,9 @@ devcontainers:
 docker:
   - *shared
   - 'docker/**'
+docker_compose:
+  - *shared
+  - 'docker_compose/**'
 dotnet_sdk:
   - *shared
   - 'dotnet_sdk/**'

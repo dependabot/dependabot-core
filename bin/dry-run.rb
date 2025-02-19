@@ -32,6 +32,7 @@
 # - elm
 # - submodules
 # - docker
+# - docker_compose
 # - terraform
 # - pub
 # - swift
@@ -58,6 +59,7 @@ $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
+$LOAD_PATH << "./docker_compose/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -105,6 +107,7 @@ require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/devcontainers"
 require "dependabot/docker"
+require "dependabot/docker_compose"
 require "dependabot/dotnet_sdk"
 require "dependabot/elm"
 require "dependabot/git_submodules"

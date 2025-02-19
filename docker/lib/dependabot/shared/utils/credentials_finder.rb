@@ -9,7 +9,7 @@ require "dependabot/credential"
 require "dependabot/errors"
 
 module Dependabot
-  module Docker
+  module Shared
     module Utils
       class CredentialsFinder
         extend T::Sig
