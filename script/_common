@@ -26,6 +26,9 @@ function set_tag() {
       dotnet_sdk)
         TAG=dotnet-sdk
         ;;
+      docker_compose)
+        TAG=docker-compose
+        ;;
       *)
         TAG=$ECOSYSTEM
         ;;
