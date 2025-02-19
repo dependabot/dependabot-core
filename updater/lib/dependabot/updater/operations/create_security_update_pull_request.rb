@@ -158,7 +158,17 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          if checker.conflicting_dependencies.any?
+          latest_allowed_version =
+            (checker.lowest_resolvable_security_fix_version ||
+              checker.dependency.version)&.to_s
+
+          conflicting_dependencies = checker.conflicting_dependencies
+
+          security_update_not_possible_message = security_update_not_possible_message(checker,
+                                                                                      T.must(latest_allowed_version),
+                                                                                      conflicting_dependencies)
+
+          if security_update_not_possible_message.include?("transitive dependency on")
             return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
           end
 
