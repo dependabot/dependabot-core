@@ -159,7 +159,7 @@ module Dependabot
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
           if checker.conflicting_dependencies.any? do |dep|
-            dep["explanation"].include?("via a transitive dependency")
+            T.must(dep["explanation"]).include?("via a transitive dependency")
           end
             return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
           end
@@ -198,7 +198,7 @@ module Dependabot
 
         sig { params(existing_pr: PullRequest).returns(String) }
         def pr_already_exists_message(existing_pr)
-          deps = T.must(existing_pr).dependencies.map do |dep|
+          deps = existing_pr.dependencies.map do |dep|
             if dep.removed?
               "#{dep.name}@removed"
             else
