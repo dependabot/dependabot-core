@@ -90,6 +90,23 @@ module Dependabot
         )
       end
 
+      sig { params(checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
+      def transitive_dependency_update?(checker)
+        conflicting_dependencies = checker.conflicting_dependencies
+
+        return false unless conflicting_dependencies.any?
+
+        latest_allowed_version =
+          (checker.lowest_resolvable_security_fix_version ||
+            checker.dependency.version)&.to_s
+
+        security_update_not_possible_message = security_update_not_possible_message(checker,
+                                                                                    T.must(latest_allowed_version),
+                                                                                    conflicting_dependencies)
+
+        security_update_not_possible_message.include?("transitive dependency on")
+      end
+
       sig { params(checker: Dependabot::UpdateCheckers::Base).void }
       def record_security_update_not_found(checker)
         Dependabot.logger.info(

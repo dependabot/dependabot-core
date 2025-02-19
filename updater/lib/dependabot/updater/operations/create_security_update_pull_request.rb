@@ -158,20 +158,8 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          conflicting_dependencies = checker.conflicting_dependencies
-
-          if conflicting_dependencies.any?
-            latest_allowed_version =
-              (checker.lowest_resolvable_security_fix_version ||
-                checker.dependency.version)&.to_s
-
-            security_update_not_possible_message = security_update_not_possible_message(checker,
-                                                                                        T.must(latest_allowed_version),
-                                                                                        conflicting_dependencies)
-
-            if security_update_not_possible_message.include?("transitive dependency on")
-              return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
-            end
+          if transitive_dependency_update?(checker)
+            return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
           end
 
           if (existing_pr = existing_pull_request(updated_deps))
@@ -181,16 +169,8 @@ module Dependabot
             # request)
             record_pull_request_exists_for_security_update(existing_pr)
 
-            deps = existing_pr.dependencies.map do |dep|
-              if dep.removed?
-                "#{dep.name}@removed"
-              else
-                "#{dep.name}@#{dep.version}"
-              end
-            end
-
             return Dependabot.logger.info(
-              "Pull request already exists for #{deps.join(', ')}"
+              pr_already_exists_message(existing_pr)
             )
           end
 
@@ -212,6 +192,19 @@ module Dependabot
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")
           # Report this error to the backend to create an update job error
           raise
+        end
+
+        sig { params(existing_pr: T.nilable(PullRequest)).returns(String) }
+        def pr_already_exists_message(existing_pr)
+          deps = T.must(existing_pr).dependencies.map do |dep|
+            if dep.removed?
+              "#{dep.name}@removed"
+            else
+              "#{dep.name}@#{dep.version}"
+            end
+          end
+
+          "Pull request already exists for #{deps.join(', ')}"
         end
 
         # rubocop:enable Metrics/MethodLength
