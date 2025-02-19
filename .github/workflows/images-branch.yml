@@ -61,7 +61,7 @@ jobs:
           - { name: cargo, ecosystem: cargo }
           - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
-          - { name: docker_compose, ecosystem: docker_compose }
+          - { name: docker_compose, ecosystem: docker-compose }
           - { name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
