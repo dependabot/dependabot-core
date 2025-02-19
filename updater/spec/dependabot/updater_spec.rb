@@ -387,7 +387,7 @@ RSpec.describe Dependabot::Updater do
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:lowest_resolvable_security_fix_version)
-            .and_return("1.2.0")
+            .and_return("1.1.0")
           expect(checker).to receive(:lowest_security_fix_version)
             .and_return(Dependabot::Bundler::Version.new("1.2.0"))
 
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Updater do
               error_type: "transitive_update_not_possible",
               error_details: {
                 "dependency-name": "dummy-pkg-b",
-                "latest-resolvable-version": "1.2.0",
+                "latest-resolvable-version": "1.1.0",
                 "lowest-non-vulnerable-version": "1.2.0",
                 "conflicting-dependencies": [
                   {
@@ -414,7 +414,7 @@ RSpec.describe Dependabot::Updater do
           expect(Dependabot.logger)
             .to receive(:info).with(
               "The latest possible version that can be installed is " \
-              "1.2.0 because of the following conflicting dependency:\n" \
+              "1.1.0 because of the following conflicting dependency:\n" \
               "\n" \
               "  dummy-pkg-c@1.2.0 requires dummy-pkg-b@1.1.0 via a transitive dependency on dummy-pkg-a@1.2.0"
             )
