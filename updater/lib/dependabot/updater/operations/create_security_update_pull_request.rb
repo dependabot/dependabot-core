@@ -158,7 +158,9 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
-          if transitive_dependency_update?(checker)
+          if checker.conflicting_dependencies.any? do |dep|
+            T.must(dep["explanation"]).include?("via a transitive dependency")
+          end
             return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
           end
 
