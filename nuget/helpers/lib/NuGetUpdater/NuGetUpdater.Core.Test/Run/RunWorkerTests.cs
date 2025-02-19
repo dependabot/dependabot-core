@@ -46,7 +46,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL))
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -97,7 +97,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL));
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -117,7 +117,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -202,7 +202,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -221,8 +221,8 @@ public class RunWorkerTests
     [InlineData(["\r\n"])]
     public async Task UpdateHandlesSemicolonsInPackageReference(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -252,7 +252,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL))
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -305,7 +305,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL));
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -325,7 +325,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package;Some.Package2" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -453,7 +453,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package;Some.Package2" Version="1.0.1" />
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         }
 
                     ],
@@ -495,7 +495,7 @@ public class RunWorkerTests
                         <add key="private_feed" value="http://example.com/nuget/index.json" allowInsecureConnections="true" />
                       </packageSources>
                     </configuration>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -505,7 +505,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL))
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker((_input) =>
             {
@@ -532,8 +532,8 @@ public class RunWorkerTests
     [InlineData(["\r\n"])]
     public async Task UpdateHandlesPackagesConfigFiles(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -563,13 +563,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("some-dir/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -642,7 +642,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                              </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     case "Some.Package2":
                         await File.WriteAllTextAsync(projectPath, """
@@ -660,14 +660,14 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         var packagesConfigPath = Path.Join(Path.GetDirectoryName(projectPath)!, "packages.config");
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -688,7 +688,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -703,7 +703,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -827,7 +827,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -848,7 +848,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -867,8 +867,8 @@ public class RunWorkerTests
     [InlineData(["\r\n"])]
     public async Task UpdateHandlesPackagesConfigFromReferencedCsprojFiles(string EOL)
     {
-        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".Replace("\n", EOL));
-        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".Replace("\n", EOL));
+        var repoMetadata = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package" />""".SetEOL(EOL));
+        var repoMetadata2 = XElement.Parse("""<repository type="git" url="https://nuget.example.com/some-package2" />""".SetEOL(EOL));
         await RunAsync(
             packages:
             [
@@ -901,13 +901,13 @@ public class RunWorkerTests
                         <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectA/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectB/ProjectB.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -917,13 +917,13 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("some-dir/ProjectB/packages.config", """
                     <?xml version="1.0" encoding="utf-8"?>
                     <packages>
                       <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                     </packages>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1014,7 +1014,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectA.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1035,13 +1035,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1053,7 +1053,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.1" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     case ("ProjectB.csproj", "Some.Package2"):
                         await File.WriteAllTextAsync(projectPath, """
@@ -1071,13 +1071,13 @@ public class RunWorkerTests
                                 </Reference>
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         await File.WriteAllTextAsync(packagesConfigPath, """
                             <?xml version="1.0" encoding="utf-8"?>
                             <packages>
                               <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL));
+                            """.SetEOL(EOL));
                         break;
                     default:
                         throw new NotSupportedException();
@@ -1098,7 +1098,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1116,7 +1116,7 @@ public class RunWorkerTests
                                 <ProjectReference Include="../ProjectB/ProjectB.csproj" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1127,7 +1127,7 @@ public class RunWorkerTests
                             <packages>
                               <package id="Some.Package2" version="2.0.0" targetFramework="net8.0" />
                             </packages>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1142,7 +1142,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1352,7 +1352,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1376,7 +1376,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1387,7 +1387,7 @@ public class RunWorkerTests
                                 <packages>
                                   <package id="Some.Package2" version="2.0.1" targetFramework="net8.0" />
                                 </packages>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                         new DependencyFile()
                         {
@@ -1408,7 +1408,7 @@ public class RunWorkerTests
                                     </Reference>
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         },
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1452,14 +1452,14 @@ public class RunWorkerTests
                         <ProjectFile Include="project2/project2.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("Directory.Build.props", """
                     <Project>
                       <PropertyGroup>
                         <SomePackageVersion>1.0.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("project1/project1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1469,7 +1469,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("project2/project2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1479,7 +1479,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL))
+                    """.SetEOL(EOL))
             ],
             discoveryWorker: new TestDiscoveryWorker(_input =>
             {
@@ -1544,7 +1544,7 @@ public class RunWorkerTests
                         <SomePackageVersion>1.1.0</SomePackageVersion>
                       </PropertyGroup>
                     </Project>
-                    """.Replace("\n", EOL));
+                    """.SetEOL(EOL));
                 return new UpdateOperationResult();
             }),
             expectedResult: new RunResult()
@@ -1561,7 +1561,7 @@ public class RunWorkerTests
                                 <SomePackageVersion>1.0.0</SomePackageVersion>
                               </PropertyGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1576,7 +1576,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1591,7 +1591,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="$(SomePackageVersion)" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1716,7 +1716,7 @@ public class RunWorkerTests
                                     <SomePackageVersion>1.1.0</SomePackageVersion>
                                   </PropertyGroup>
                                 </Project>
-                                """.Replace("\n", EOL),
+                                """.SetEOL(EOL),
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
@@ -1775,7 +1775,7 @@ public class RunWorkerTests
                         <ProjectFile Include="library3\library3.csproj" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("Directory.Build.props", "<Project />"),
                 ("Directory.Build.targets", "<Project />"),
                 ("Directory.Packages.props", """
@@ -1784,7 +1784,7 @@ public class RunWorkerTests
                         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                       </PropertyGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("library1/library1.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1794,7 +1794,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("library2/library2.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1804,7 +1804,7 @@ public class RunWorkerTests
                         <PackageReference Include="Some.Package" Version="1.0.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
                 ("library3/library3.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
                       <PropertyGroup>
@@ -1814,7 +1814,7 @@ public class RunWorkerTests
                         <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                       </ItemGroup>
                     </Project>
-                    """.Replace("\n", EOL)),
+                    """.SetEOL(EOL)),
             ],
             discoveryWorker: null,
             analyzeWorker: null,
@@ -1845,7 +1845,7 @@ public class RunWorkerTests
                                 <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
                               </PropertyGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1860,7 +1860,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="2.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1875,7 +1875,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Some.Package" Version="1.0.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     },
                     new DependencyFile()
                     {
@@ -1890,7 +1890,7 @@ public class RunWorkerTests
                                 <PackageReference Include="Package.With.Transitive.Dependency" Version="0.1.0" />
                               </ItemGroup>
                             </Project>
-                            """.Replace("\n", EOL)))
+                            """.SetEOL(EOL)))
                     }
                 ],
                 BaseCommitSha = "TEST-COMMIT-SHA",
@@ -2041,7 +2041,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL)
+                                """.SetEOL(EOL)
                         },
                         new()
                         {
@@ -2057,7 +2057,7 @@ public class RunWorkerTests
                                     <PackageReference Include="Some.Package" Version="2.0.0" />
                                   </ItemGroup>
                                 </Project>
-                                """.Replace("\n", EOL)
+                                """.SetEOL(EOL)
                         }
                     ],
                     BaseCommitSha = "TEST-COMMIT-SHA",
