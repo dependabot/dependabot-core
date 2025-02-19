@@ -73,9 +73,7 @@ module Dependabot
         conflicting_dependencies = checker.conflicting_dependencies
 
         Dependabot.logger.info(
-          security_update_not_possible_message(checker,
-                                               T.must(latest_allowed_version),
-                                               conflicting_dependencies)
+          security_update_not_possible_message(checker, T.must(latest_allowed_version), conflicting_dependencies)
         )
         Dependabot.logger.info(
           earliest_fixed_version_message(lowest_non_vulnerable_version)
