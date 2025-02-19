@@ -214,31 +214,6 @@ module Dependabot
           raise
         end
 
-        sig { params(updated_deps: T::Array[Dependabot::Dependency]).returns(T.nilable(PullRequest)) }
-        def handle_existing_pull_request(updated_deps)
-          return unless (existing_pr = existing_pull_request(updated_deps))
-
-          # Create a update job error to prevent dependabot-api from creating a
-          # update_not_possible error, this is likely caused by a update job retry
-          # so should be invisible to users (as the first job completed with a pull
-          # request)
-          record_pull_request_exists_for_security_update(existing_pr)
-
-          deps = existing_pr.dependencies.map do |dep|
-            if dep.removed?
-              "#{dep.name}@removed"
-            else
-              "#{dep.name}@#{dep.version}"
-            end
-          end
-
-          Dependabot.logger.info(
-            "Pull request already exists for #{deps.join(', ')}"
-          )
-
-          existing_pr
-        end
-
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
