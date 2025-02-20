@@ -6,7 +6,7 @@ require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/index_finder"
 
-RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
+RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
   let(:finder) do
     described_class.new(
       dependency_files: dependency_files,
