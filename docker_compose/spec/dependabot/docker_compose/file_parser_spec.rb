@@ -478,11 +478,11 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
         let(:expected_requirements) do
           [{
-             requirement: nil,
-             groups: [],
-             file: "docker-compose.yml",
-             source: { tag: "10.11.2-jammy" }
-           }]
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "10.11.2-jammy" }
+          }]
         end
 
         it "has the right details" do
@@ -493,6 +493,5 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         end
       end
     end
-
   end
 end
