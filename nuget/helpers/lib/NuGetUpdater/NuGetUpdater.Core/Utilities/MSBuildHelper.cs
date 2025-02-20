@@ -795,7 +795,7 @@ internal static partial class MSBuildHelper
             );
             return (exitCode, stdOut, stdErr);
         });
-        ThrowOnUnauthenticatedFeed(stdOut);
+        ThrowOnError(stdOut);
         if (exitCode != 0)
         {
             logger.Warn($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
