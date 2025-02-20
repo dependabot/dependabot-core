@@ -103,9 +103,14 @@ function Get-RequiredTargetingPacks([string]$sdkInstallDir) {
         foreach ($frameworkRef in $knownFrameworkReferences) {
             $targetingPackName = $frameworkRef.Node.TargetingPackName
             $targetingPackVersion = $frameworkRef.Node.TargetingPackVersion
-            $requiredTargetingPack = "$targetingPackName/$targetingPackVersion"
-            if (-not ($requiredTargetingPack -in $targetingPacksToInstall)) {
-                $targetingPacksToInstall += $requiredTargetingPack
+            $requiredTargetingPackName = "$targetingPackName/$targetingPackVersion"
+            $requiredTargetingPackDirectory = Join-Path $sdkInstallDir "packs/$requiredTargetingPackName"
+            if (Test-Path -Path $requiredTargetingPackDirectory) {
+                continue
+            }
+
+            if (-not ($requiredTargetingPackName -in $targetingPacksToInstall)) {
+                $targetingPacksToInstall += $requiredTargetingPackName
             }
         }
     }
