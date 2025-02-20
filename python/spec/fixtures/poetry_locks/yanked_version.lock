@@ -26,15 +26,12 @@ files = [
 
 [[package]]
 name = "croniter"
-version = "0.3.25"
+version = "0.3.26"
 description = "croniter provides iteration for datetime object with cron like format"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 groups = ["dev"]
-files = [
-    {file = "croniter-0.3.25-py2.py3-none-any.whl", hash = "sha256:64d5f8c719249694265190810ef2f051345007246c99a3879a35b393d593d668"},
-    {file = "croniter-0.3.25.tar.gz", hash = "sha256:8ce5e4edd6f1956e70c8a31211cf86a7859aa1f0ff256107723582d79238e002"},
-]
+files = []
 
 [package.dependencies]
 python-dateutil = "*"

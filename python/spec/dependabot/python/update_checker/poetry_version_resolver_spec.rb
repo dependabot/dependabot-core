@@ -301,7 +301,7 @@ RSpec.describe namespace::PoetryVersionResolver do
             expect { latest_resolvable_version }
               .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message)
-                  .to include("depends on croniter (0.3.26) which doesn't match any versions")
+                  .to include("Package croniter (0.3.26) not found")
               end
           end
         end
