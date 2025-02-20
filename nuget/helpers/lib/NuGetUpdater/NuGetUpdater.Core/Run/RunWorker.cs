@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 using Microsoft.Extensions.FileSystemGlobbing;
 
@@ -12,6 +13,8 @@ using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Utilities;
+
+using static NuGetUpdater.Core.Utilities.EOLHandling;
 
 namespace NuGetUpdater.Core.Run;
 
@@ -122,6 +125,7 @@ public class RunWorker
 
         // TODO: pull out relevant dependencies, then check each for updates and track the changes
         var originalDependencyFileContents = new Dictionary<string, string>();
+        var originalDependencyFileEOFs = new Dictionary<string, EOLType>();
         var actualUpdatedDependencies = new List<ReportedDependency>();
 
         // track original contents for later handling
@@ -131,6 +135,7 @@ public class RunWorker
             var localFullPath = Path.Join(repoContentsPath.FullName, repoFullPath);
             var content = await File.ReadAllTextAsync(localFullPath);
             originalDependencyFileContents[repoFullPath] = content;
+            originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
         }
 
         foreach (var project in discoveryResult.Projects)
@@ -203,8 +208,13 @@ public class RunWorker
             var localFullPath = Path.GetFullPath(Path.Join(repoContentsPath.FullName, repoFullPath));
             var originalContent = originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
+
+            updatedContent = updatedContent.SetEOL(originalDependencyFileEOFs[repoFullPath]);
+            await File.WriteAllTextAsync(localFullPath, updatedContent);
+
             if (updatedContent != originalContent)
             {
+
                 updatedDependencyFiles[localFullPath] = new DependencyFile()
                 {
                     Name = Path.GetFileName(repoFullPath),

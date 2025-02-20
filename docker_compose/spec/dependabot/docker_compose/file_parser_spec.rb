@@ -469,5 +469,29 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         end
       end
     end
+
+    context "with a non-numeric version" do
+      let(:composefile_fixture_name) { "inline_dockerfile" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "10.11.2-jammy" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("mariadb")
+          expect(dependency.version).to eq("10.11.2-jammy")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end

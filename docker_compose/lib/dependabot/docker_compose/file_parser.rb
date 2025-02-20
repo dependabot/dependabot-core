@@ -10,7 +10,13 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
-      FROM_IMAGE = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
+      IMAGE_REGEX = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
+      FROM = /FROM/i
+      PLATFORM = /--platform\=(?<platform>\S+)/
+
+      FROM_LINE =
+        %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
+          #{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
       sig { returns(Ecosystem) }
       def ecosystem
@@ -28,9 +34,16 @@ module Dependabot
         dependency_set = DependencySet.new
 
         composefiles.each do |composefile|
-          yaml = YAML.safe_load(T.must(composefile.content))
+          yaml = YAML.safe_load(T.must(composefile.content), aliases: true)
           yaml["services"].each do |_, service|
-            parsed_from_image = T.must(FROM_IMAGE.match(service["image"])).named_captures
+            if service["image"]
+              parsed_from_image = T.must(IMAGE_REGEX.match(service["image"])).named_captures
+            elsif service["build"]["dockerfile_inline"]
+              parsed_from_image = T.must(FROM_LINE.match(service["build"]["dockerfile_inline"])).named_captures
+            else
+              next
+            end
+
             parsed_from_image["registry"] = nil if parsed_from_image["registry"] == "docker.io"
 
             version = version_from(parsed_from_image)
