@@ -27,7 +27,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         file: "docker-compose.yml",
         source: { tag: "17.04" }
       }],
-      package_manager: "docker"
+      package_manager: "docker_compose"
     )
   end
   let(:dockerfile_body) do
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             file: "docker-compose.yml",
             source: { tag: "10-alpine" }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             file: "docker-compose.yml",
             source: { tag: "17.04" }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -159,6 +159,46 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
 
         its(:content) do
           is_expected.to include "command: [/bin/echo, 'Hello world']"
+        end
+      end
+    end
+
+    context "when the dependency is in a dockerfile_inline" do
+      let(:dockerfile_body) do
+        fixture("docker_compose", "composefiles", "inline_dockerfile")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mariadb",
+          version: "11.11.2-jammy",
+          previous_version: "10.11.2-jammy",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "11.11.2-jammy" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "10.11.2-jammy" }
+          }],
+          package_manager: "docker_compose"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated docker-compose.yml" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "docker-compose.yml" }
+        end
+
+        its(:content) { is_expected.to include "FROM mariadb:11.11.2-jammy" }
+
+        its(:content) do
+          is_expected.to include "RUN echo 'Hello'"
         end
       end
     end
@@ -190,7 +230,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               tag: "17.04"
             }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -233,7 +273,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
             file: "docker-compose.yml",
             source: { tag: "17.04" }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -282,7 +322,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
                       "dfc38288cf73aa07485005"
             }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -327,7 +367,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
                   tag: "12.04.5"
                 }
               }],
-              package_manager: "docker"
+              package_manager: "docker_compose"
             )
           end
 
@@ -370,7 +410,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
                         "dfc38288cf73aa07485005"
               }
             }],
-            package_manager: "docker"
+            package_manager: "docker_compose"
           )
         end
 
@@ -448,7 +488,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
               tag: "12.04.5"
             }
           }],
-          package_manager: "docker"
+          package_manager: "docker_compose"
         )
       end
 
@@ -498,7 +538,7 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
                 tag: "12.04.5"
               }
             }],
-            package_manager: "docker"
+            package_manager: "docker_compose"
           )
         end
 
