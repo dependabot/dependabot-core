@@ -13,7 +13,7 @@ geopy = "^1.13"
 Pillow = "^5.1"
 requests = "^2.18"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^18.5"
 flake8 = "^3.5"
 flake8-comprehensions = "^1.4"
