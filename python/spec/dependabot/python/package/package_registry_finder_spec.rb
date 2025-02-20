@@ -4,7 +4,7 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency_file"
-require "dependabot/python/update_checker/index_finder"
+require "dependabot/python/package/package_registry_finder"
 
 RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
   let(:finder) do
