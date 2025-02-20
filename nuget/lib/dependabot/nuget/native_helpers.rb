@@ -325,6 +325,9 @@ module Dependabot
           file_path = T.let(error_details.fetch("file-path"), String)
           message = T.let(error_details.fetch("message", nil), T.nilable(String))
           raise DependencyFileNotParseable.new(file_path, message)
+        when "dependency_not_found"
+          source = T.let(error_details.fetch("source"), String)
+          raise DependencyNotFound, source
         when "illformed_requirement"
           raise BadRequirementError, T.let(error_details.fetch("message"), String)
         when "private_source_authentication_failure"

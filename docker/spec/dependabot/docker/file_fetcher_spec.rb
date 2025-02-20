@@ -34,8 +34,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
-  it_behaves_like "a dependency file fetcher"
-
   context "with no Dockerfile or Kubernetes YAML file" do
     before do
       stub_request(:get, url + "?ref=sha")
@@ -70,9 +68,19 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: dockerfile_fixture,
           headers: { "content-type" => "application/json" }
         )
+
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
-    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:dockerfile_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
 
     it "fetches the Dockerfile" do
       expect(file_fetcher_instance.files.count).to eq(1)
@@ -120,10 +128,28 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           body: dockerfile_fixture,
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, File.join(url, "docker-compose.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
     end
 
-    let(:dockerfile_fixture) { fixture("github", "contents_dockerfile.json") }
-    let(:dockerfile_2_fixture) { fixture("github", "contents_dockerfile.json") }
+    let(:dockerfile_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
+    let(:dockerfile_2_fixture) do
+      fixture("github", "contents_dockerfile.json")
+    end
 
     it "fetches both Dockerfiles" do
       expect(file_fetcher_instance.files.count).to eq(3)
@@ -153,6 +179,14 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         )
 
       stub_request(:get, File.join(url, "Dockerfile-base?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_dockerfile.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "docker-compose.override.yml?ref=sha"))
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,

@@ -2,12 +2,14 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-bun", path: "bun"
 gem "dependabot-bundler", path: "bundler"
 gem "dependabot-cargo", path: "cargo"
 gem "dependabot-common", path: "common"
 gem "dependabot-composer", path: "composer"
 gem "dependabot-devcontainers", path: "devcontainers"
 gem "dependabot-docker", path: "docker"
+gem "dependabot-docker_compose", path: "docker_compose"
 gem "dependabot-dotnet_sdk", path: "dotnet_sdk"
 gem "dependabot-elm", path: "elm"
 gem "dependabot-github_actions", path: "github_actions"
@@ -27,6 +29,8 @@ gem "dependabot-terraform", path: "terraform"
 # Sorbet
 gem "sorbet", "0.5.11630", group: :development
 gem "tapioca", "0.16.6", require: false, group: :development
+
+gem "zeitwerk", "~> 2.7"
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 

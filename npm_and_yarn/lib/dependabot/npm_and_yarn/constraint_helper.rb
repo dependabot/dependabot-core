@@ -8,30 +8,51 @@ module Dependabot
     module ConstraintHelper
       extend T::Sig
 
-      INVALID = "invalid" # Invalid constraint
       # Regex Components for Semantic Versioning
       DIGIT = "\\d+"                             # Matches a single number (e.g., "1")
       PRERELEASE = "(?:-[a-zA-Z0-9.-]+)?"        # Matches optional pre-release tag (e.g., "-alpha")
       BUILD_METADATA = "(?:\\+[a-zA-Z0-9.-]+)?"  # Matches optional build metadata (e.g., "+001")
-      DOT = "\\."                                # Matches a literal dot "."
 
       # Matches semantic versions:
       VERSION = T.let("#{DIGIT}(?:\\.#{DIGIT}){0,2}#{PRERELEASE}#{BUILD_METADATA}".freeze, String)
 
-      VERSION_REGEX = T.let(/\A#{VERSION}\z/o, Regexp)
+      VERSION_REGEX = T.let(/^#{VERSION}$/, Regexp)
 
-      # SemVer regex: major.minor.patch[-prerelease][+build]
-      SEMVER_REGEX = /^(?<version>\d+\.\d+\.\d+)(?:-(?<prerelease>[a-zA-Z0-9.-]+))?(?:\+(?<build>[a-zA-Z0-9.-]+))?$/
+      # Base regex for SemVer (major.minor.patch[-prerelease][+build])
+      # This pattern extracts valid semantic versioning strings based on the SemVer 2.0 specification.
+      SEMVER_REGEX = T.let(/
+        (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
+        (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
+        (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
+      /x, Regexp)
+
+      # Full SemVer validation regex (ensures the entire string is a valid SemVer)
+      # This ensures the entire input strictly follows SemVer, without extra characters before/after.
+      SEMVER_VALIDATION_REGEX = T.let(/^#{SEMVER_REGEX}$/, Regexp)
+
+      # SemVer constraint regex (supports package.json version constraints)
+      # This pattern ensures proper parsing of SemVer versions with optional operators.
+      SEMVER_CONSTRAINT_REGEX = T.let(/
+        (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
+        (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
+        | (\*|latest) # Match wildcard (*) or 'latest'
+      /x, Regexp)
+
+      # /(>=|<=|>|<|=|~|\^)\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)|(\*|latest)/
+
+      SEMVER_OPERATOR_REGEX = /^(>=|<=|>|<|~|\^|=)$/
 
       # Constraint Types as Constants
-      CARET_CONSTRAINT_REGEX = T.let(/^\^(#{VERSION})$/, Regexp)
-      TILDE_CONSTRAINT_REGEX = T.let(/^~(#{VERSION})$/, Regexp)
-      EXACT_CONSTRAINT_REGEX = T.let(/^(#{VERSION})$/, Regexp)
-      GREATER_THAN_EQUAL_REGEX = T.let(/^>=(#{VERSION})$/, Regexp)
-      LESS_THAN_EQUAL_REGEX = T.let(/^<=(#{VERSION})$/, Regexp)
-      GREATER_THAN_REGEX = T.let(/^>(#{VERSION})$/, Regexp)
-      LESS_THAN_REGEX = T.let(/^<(#{VERSION})$/, Regexp)
+      CARET_CONSTRAINT_REGEX = T.let(/^\^\s*(#{VERSION})$/, Regexp)
+      TILDE_CONSTRAINT_REGEX = T.let(/^~\s*(#{VERSION})$/, Regexp)
+      EXACT_CONSTRAINT_REGEX = T.let(/^\s*(#{VERSION})$/, Regexp)
+      GREATER_THAN_EQUAL_REGEX = T.let(/^>=\s*(#{VERSION})$/, Regexp)
+      LESS_THAN_EQUAL_REGEX = T.let(/^<=\s*(#{VERSION})$/, Regexp)
+      GREATER_THAN_REGEX = T.let(/^>\s*(#{VERSION})$/, Regexp)
+      LESS_THAN_REGEX = T.let(/^<\s*(#{VERSION})$/, Regexp)
       WILDCARD_REGEX = T.let(/^\*$/, Regexp)
+      LATEST_REGEX = T.let(/^latest$/, Regexp)
+      SEMVER_CONSTANTS = ["*", "latest"].freeze
 
       # Unified Regex for Valid Constraints
       VALID_CONSTRAINT_REGEX = T.let(Regexp.union(
@@ -42,42 +63,9 @@ module Dependabot
         LESS_THAN_EQUAL_REGEX,
         GREATER_THAN_REGEX,
         LESS_THAN_REGEX,
-        WILDCARD_REGEX
+        WILDCARD_REGEX,
+        LATEST_REGEX
       ).freeze, Regexp)
-
-      # Validates if the provided semver constraint expression from a `package.json` is valid.
-      # A valid semver constraint expression in `package.json` can consist of multiple groups
-      # separated by logical OR (`||`). Within each group, space-separated constraints are treated
-      # as logical AND. Each individual constraint must conform to the semver rules defined in
-      # `VALID_CONSTRAINT_REGEX`.
-      #
-      # Example (valid `package.json` semver constraints):
-      #   ">=1.2.3 <2.0.0 || ~3.4.5" → Valid (space-separated constraints are AND, `||` is OR)
-      #   "^1.0.0 || >=2.0.0 <3.0.0" → Valid (caret and range constraints combined)
-      #   "1.2.3" → Valid (exact version)
-      #   "*" → Valid (wildcard allows any version)
-      #
-      # Example (invalid `package.json` semver constraints):
-      #   ">=1.2.3 && <2.0.0" → Invalid (`&&` is not valid in semver)
-      #   ">=x.y.z" → Invalid (non-numeric version parts are not valid)
-      #   "1.2.3 ||" → Invalid (trailing OR operator)
-      #
-      # @param constraint_expression [String] The semver constraint expression from `package.json` to validate.
-      # @return [T::Boolean] Returns true if the constraint expression is valid semver, false otherwise.
-      sig { params(constraint_expression: T.nilable(String)).returns(T::Boolean) }
-      def self.valid_constraint_expression?(constraint_expression)
-        normalized_constraint = constraint_expression&.strip
-
-        # Treat nil or empty input as valid (no constraints)
-        return true if normalized_constraint.nil? || normalized_constraint.empty?
-
-        # Split the expression by logical OR (`||`) into groups
-        normalized_constraint.split("||").reject(&:empty?).all? do |or_group|
-          or_group.split(/\s+/).reject(&:empty?).all? do |and_constraint|
-            and_constraint.match?(VALID_CONSTRAINT_REGEX)
-          end
-        end
-      end
 
       # Extract unique constraints from the given constraint expression.
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.
@@ -89,16 +77,91 @@ module Dependabot
         )
           .returns(T.nilable(T::Array[String]))
       end
-      def self.extract_constraints(constraint_expression, dependabot_versions = nil)
-        normalized_constraint = constraint_expression&.strip
-        return [] if normalized_constraint.nil? || normalized_constraint.empty?
-
-        parsed_constraints = parse_constraints(normalized_constraint, dependabot_versions)
+      def self.extract_ruby_constraints(constraint_expression, dependabot_versions = nil)
+        parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
         return nil unless parsed_constraints
 
         parsed_constraints.filter_map { |parsed| parsed[:constraint] }
       end
+
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      sig do
+        params(constraint_expression: T.nilable(String))
+          .returns(T.nilable(T::Array[String]))
+      end
+      def self.split_constraints(constraint_expression)
+        normalized_constraint = constraint_expression&.strip
+        return [] if normalized_constraint.nil? || normalized_constraint.empty?
+
+        # Split constraints by logical OR (`||`)
+        constraint_groups = normalized_constraint.split("||")
+
+        # Split constraints by logical AND (`,`)
+        constraint_groups = constraint_groups.map do |or_constraint|
+          or_constraint.split(",").map(&:strip)
+        end.flatten
+
+        constraint_groups = constraint_groups.map do |constraint|
+          tokens = constraint.split(/\s+/).map(&:strip)
+
+          and_constraints = []
+
+          previous = T.let(nil, T.nilable(String))
+          operator = T.let(false, T.nilable(T::Boolean))
+          wildcard = T.let(false, T::Boolean)
+
+          tokens.each do |token|
+            token = token.strip
+            next if token.empty?
+
+            # Invalid constraint if wildcard and anything else
+            return nil if wildcard
+
+            # If token is one of the operators (>=, <=, >, <, ~, ^, =)
+            if token.match?(SEMVER_OPERATOR_REGEX)
+              wildcard = false
+              operator = true
+            # If token is wildcard or latest
+            elsif token.match?(/(\*|latest)/)
+              and_constraints << token
+              wildcard = true
+              operator = false
+            # If token is exact version (e.g., "1.2.3")
+            elsif token.match(VERSION_REGEX)
+              and_constraints << if operator
+                                   "#{previous}#{token}"
+                                 else
+                                   token
+                                 end
+              wildcard = false
+              operator = false
+            # If token is a valid constraint (e.g., ">=1.2.3", "<=2.0.0")
+            elsif token.match(VALID_CONSTRAINT_REGEX)
+              return nil if operator
+
+              and_constraints << token
+
+              wildcard = false
+              operator = false
+            else
+              # invalid constraint
+              return nil
+            end
+            previous = token
+          end
+          and_constraints.uniq
+        end.flatten
+        constraint_groups if constraint_groups.any?
+      end
+
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # Find the highest version from the given constraint expression.
       # @param constraint_expression [T.nilable(String)] The semver constraint expression.
@@ -111,10 +174,7 @@ module Dependabot
           .returns(T.nilable(String))
       end
       def self.find_highest_version_from_constraint_expression(constraint_expression, dependabot_versions = nil)
-        normalized_constraint = constraint_expression&.strip
-        return nil if normalized_constraint.nil? || normalized_constraint.empty?
-
-        parsed_constraints = parse_constraints(normalized_constraint, dependabot_versions)
+        parsed_constraints = parse_constraints(constraint_expression, dependabot_versions)
 
         return nil unless parsed_constraints
 
@@ -136,20 +196,11 @@ module Dependabot
           .returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]]))
       end
       def self.parse_constraints(constraint_expression, dependabot_versions = nil)
-        normalized_constraint = constraint_expression&.strip
+        splitted_constraints = split_constraints(constraint_expression)
 
-        # Return an empty array for valid "no constraints" (nil or empty input)
-        return [] if normalized_constraint.nil? || normalized_constraint.empty?
+        return unless splitted_constraints
 
-        # Return nil for invalid constraints
-        return nil unless valid_constraint_expression?(normalized_constraint)
-
-        # Parse valid constraints
-        constraints = normalized_constraint.split("||").flat_map do |or_group|
-          or_group.strip.split(/\s+/).map(&:strip)
-        end.then do |normalized_constraints| # rubocop:disable Style/MultilineBlockChain
-          to_ruby_constraints_with_versions(normalized_constraints, dependabot_versions)
-        end.uniq { |parsed| parsed[:constraint] } # Ensure uniqueness based on `:constraint` # rubocop:disable Style/MultilineBlockChain
+        constraints = to_ruby_constraints_with_versions(splitted_constraints, dependabot_versions)
         constraints
       end
 
@@ -162,7 +213,7 @@ module Dependabot
       def self.to_ruby_constraints_with_versions(constraints, dependabot_versions = [])
         constraints.filter_map do |constraint|
           parsed = to_ruby_constraint_with_version(constraint, dependabot_versions)
-          parsed if parsed && parsed[:constraint] # Only include valid constraints
+          parsed if parsed
         end.uniq
       end
 
@@ -258,8 +309,10 @@ module Dependabot
             version < Version.new(constraint_version)
           end
           { constraint: "<#{Regexp.last_match(1)}", version: found_version&.to_s }
-        when WILDCARD_REGEX # Wildcard
-          { constraint: nil, version: dependabot_versions&.max&.to_s } # Explicitly valid but no specific constraint
+        when WILDCARD_REGEX # No specific constraint, resolves to the highest available version
+          { constraint: nil, version: dependabot_versions&.max&.to_s }
+        when LATEST_REGEX
+          { constraint: nil, version: dependabot_versions&.max&.to_s } # Resolves to the latest available version
         end
       end
 
@@ -292,7 +345,7 @@ module Dependabot
       def self.version_components(full_version)
         return [] if full_version.nil?
 
-        match = full_version.match(SEMVER_REGEX)
+        match = full_version.match(SEMVER_VALIDATION_REGEX)
         return [] unless match
 
         version = match[:version]

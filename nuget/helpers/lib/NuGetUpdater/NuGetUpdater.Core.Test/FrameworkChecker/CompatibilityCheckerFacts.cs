@@ -7,6 +7,8 @@ namespace NuGetUpdater.Core.Test.FrameworkChecker;
 public class CompatibilityCheckerFacts
 {
     [Theory]
+    [InlineData("net9.0", "net9.0")]
+    [InlineData("net9.0", "net8.0")]
     [InlineData("net8.0", "net8.0")]
     [InlineData("net8.0", "net7.0")]
     [InlineData("net7.0", "net7.0")]

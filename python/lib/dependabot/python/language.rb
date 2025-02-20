@@ -52,7 +52,6 @@ module Dependabot
       def deprecated?
         return false unless detected_version
         return false if unsupported?
-        return false unless Dependabot::Experiments.enabled?(:python_3_8_deprecation_warning)
 
         deprecated_versions.include?(detected_version)
       end
@@ -60,7 +59,6 @@ module Dependabot
       sig { override.returns(T::Boolean) }
       def unsupported?
         return false unless detected_version
-        return false unless Dependabot::Experiments.enabled?(:python_3_8_unsupported_error)
 
         supported_versions.all? { |supported| supported > detected_version }
       end

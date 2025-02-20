@@ -18,6 +18,10 @@
 - changed-files:
   - any-glob-to-any-file: docker/**
 
+"L: docker:compose":
+- changed-files:
+  - any-glob-to-any-file: docker_compose/**
+
 "L: dotnet-sdk":
 - changed-files:
   - any-glob-to-any-file: dotnet_sdk/**
@@ -40,7 +44,9 @@
 
 "L: javascript":
 - changed-files:
-  - any-glob-to-any-file: npm_and_yarn/**
+  - any-glob-to-any-file:
+    - bun/**
+    - npm_and_yarn/**
 
 "L: java:gradle":
 - changed-files:

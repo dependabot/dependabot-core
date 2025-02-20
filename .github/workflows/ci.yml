@@ -20,6 +20,7 @@ jobs:
           - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: docker_compose, name: docker_compose, ecosystem: docker-compose }
           - { path: dotnet_sdk, name: dotnet_sdk, ecosystem: dotnet-sdk }
           - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
@@ -36,6 +37,7 @@ jobs:
           - { path: swift, name: swift, ecosystem: swift }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: terraform, name: terraform, ecosystem: terraform }
+          - { path: bun, name: bun, ecosystem: bun }
 
     steps:
       - name: Checkout code

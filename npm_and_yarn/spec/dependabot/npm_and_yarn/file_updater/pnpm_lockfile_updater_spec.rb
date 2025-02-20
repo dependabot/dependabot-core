@@ -5,9 +5,11 @@ require "spec_helper"
 require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 
 RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
-  subject(:updated_pnpm_lock_content) { updater.updated_pnpm_lock_content(pnpm_lock, is_catalog) }
+  subject(:updated_pnpm_lock_content) do
+    updater.updated_pnpm_lock_content(pnpm_lock, updated_pnpm_workspace_content: workspace_files)
+  end
 
-  let(:is_catalog) { false }
+  let(:workspace_files) { nil }
   let(:updater) do
     described_class.new(
       dependency_files: files,
@@ -72,8 +74,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_shared_helpers_command_timeout).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_pnpm_workspace_catalog).and_return(true)
   end
 
   after do
@@ -81,11 +81,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "errors" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    end
-
     context "with a dependency version that can't be found" do
       let(:project_name) { "pnpm/yanked_version" }
 
@@ -692,11 +687,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
   end
 
   describe "lockfile updates" do
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:enable_fix_for_pnpm_no_change_error).and_return(true)
-    end
-
     context "when updating a regular package dependency" do
       let(:project_name) { "pnpm/catalog_prettier" }
       let(:dependencies) do
@@ -716,7 +706,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       context "when pnpm updates followed by install for non catalog dependencies" do
-        let(:is_catalog) { true }
+        let(:workspace_files) do
+          {
+            "pnpm-workspace.yaml" => "catalogs:\n    prettier:\n    version: 3.3.3\n"
+          }
+        end
 
         it "uses pnpm update followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
@@ -733,8 +727,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       context "when updating a regular package dependency" do
-        let(:is_catalog) { false }
-
         it "uses pnpm update followed by install" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(

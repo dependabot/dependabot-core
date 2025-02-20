@@ -1,0 +1,19 @@
+{
+  "name": "other.yaml",
+  "path": "other.yaml",
+  "sha": "311f9743315183cc6751313cb251cfeb3de45c1a",
+  "size": 4927,
+  "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/other.yaml?ref=master",
+  "html_url": "https://github.com/dependabot/dependabot-core/blob/main/other.yaml",
+  "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+  "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/other.yaml",
+  "type": "file",
+  "content": "aW5oZXJpdF9mcm9tOiAuLi8ucnVib2NvcC55bWwK",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/other.yaml?ref=master",
+    "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+    "html": "https://github.com/dependabot/dependabot-core/blob/main/other.yaml"
+  }
+}
+

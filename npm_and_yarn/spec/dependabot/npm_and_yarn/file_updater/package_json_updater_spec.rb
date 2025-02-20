@@ -491,5 +491,61 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         is_expected.to include %("*.js": ["eslint --fix", "git add"])
       end
     end
+
+    context "with a path-based dependency that is in dependency list" do
+      let(:project_name) { "npm8/path_dependency" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "file:./deps/etag",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "^file:./deps/etag",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "file:./deps/etag",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "exits update with relevant exception" do
+        expect { updated_package_json }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a patched dependency that is in dependency list" do
+      let(:project_name) { "npm8/path_dependency" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "patch:./deps/etag",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "package.json",
+            requirement: "patch:./deps/etag",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "package.json",
+            requirement: "patch:./deps/etag",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      it "exits update with relevant exception" do
+        expect { updated_package_json }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
   end
 end
