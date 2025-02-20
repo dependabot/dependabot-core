@@ -12,6 +12,7 @@ require "dependabot/update_checkers/version_filters"
 require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/package/package_registry_finder"
 
 module Dependabot
   module Python
@@ -241,11 +242,11 @@ module Dependabot
 
         def index_urls
           @index_urls ||=
-            IndexFinder.new(
+            Package::PackageRegistryFinder.new(
               dependency_files: dependency_files,
               credentials: credentials,
               dependency: dependency
-            ).index_urls
+            ).registry_urls
         end
 
         def registry_response_for_dependency(index_url)
