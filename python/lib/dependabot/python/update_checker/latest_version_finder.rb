@@ -20,8 +20,6 @@ module Dependabot
       class LatestVersionFinder
         extend T::Sig
 
-        require_relative "index_finder"
-
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
