@@ -10,7 +10,7 @@ module Dependabot
       extend T::Helpers
 
       YAML_REGEXP = /(docker-)?compose(?>\.[\w-]+)?\.ya?ml/i
-      IMAGE_REGEX = /image:\s*/
+      IMAGE_REGEX = /(?:from|image:\s*)/i
 
       sig { override.returns(T::Array[Regexp]) }
       def self.updated_files_regex
