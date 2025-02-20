@@ -1355,4 +1355,30 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
+
+    [Fact]
+    public async Task MissingFileIsReported()
+    {
+        await TestDiscoveryAsync(
+            packages: [],
+            experimentsManager: new ExperimentsManager() { UseDirectDiscovery = true, InstallDotnetSdks = true },
+            workspacePath: "",
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Import Project="file-that-does-not-exist.props" />
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [],
+                ErrorRegex = @"file-that-does-not-exist\.props",
+            }
+        );
+    }
 }
