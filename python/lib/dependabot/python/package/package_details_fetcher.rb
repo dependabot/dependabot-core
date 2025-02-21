@@ -324,7 +324,8 @@ module Dependabot
                           end
 
           # Ensure extracted version is valid before converting
-          language_version = extracted_version.match?(/^\d+(\.\d+)*$/) ? Dependabot::Version.new(extracted_version) : nil
+          language_version =
+            extracted_version.match?(/^\d+(\.\d+)*$/) ? Dependabot::Version.new(extracted_version) : nil
 
           Dependabot.logger.warn("Skipping invalid language_version: #{version.inspect}") if language_version.nil?
 
