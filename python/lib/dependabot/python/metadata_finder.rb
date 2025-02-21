@@ -7,6 +7,7 @@ require "uri"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
+require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
