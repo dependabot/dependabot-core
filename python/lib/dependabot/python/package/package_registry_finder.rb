@@ -158,7 +158,7 @@ module Dependabot
         end
 
         def clean_check_and_remove_environment_variables(url)
-          url = url.strip.gsub(%r{/*$}, "") + "/"
+          url = url.strip.sub(%r{/+$}, "") + "/"
 
           return authed_base_url(url) unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
 
