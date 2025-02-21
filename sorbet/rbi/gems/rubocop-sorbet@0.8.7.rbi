@@ -277,6 +277,9 @@ RuboCop::Cop::Sorbet::CheckedTrueInSignature::MESSAGE = T.let(T.unsafe(nil), Str
 # source://rubocop-sorbet//lib/rubocop/cop/sorbet/constants_from_strings.rb#36
 class RuboCop::Cop::Sorbet::ConstantsFromStrings < ::RuboCop::Cop::Base
   # source://rubocop-sorbet//lib/rubocop/cop/sorbet/constants_from_strings.rb#46
+  def on_csend(node); end
+
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/constants_from_strings.rb#46
   def on_send(node); end
 end
 
@@ -678,7 +681,7 @@ class RuboCop::Cop::Sorbet::ForbidRBIOutsideOfAllowedPaths < ::RuboCop::Cop::Bas
 
   private
 
-  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/rbi/forbid_rbi_outside_of_allowed_paths.rb#55
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/rbi/forbid_rbi_outside_of_allowed_paths.rb#48
   def allowed_paths; end
 end
 
@@ -1253,6 +1256,46 @@ RuboCop::Cop::Sorbet::RedundantExtendTSig::MSG = T.let(T.unsafe(nil), String)
 
 # source://rubocop-sorbet//lib/rubocop/cop/sorbet/redundant_extend_t_sig.rb#33
 RuboCop::Cop::Sorbet::RedundantExtendTSig::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array)
+
+# Checks for the use of Ruby Refinements library. Refinements add
+# complexity and incur a performance penalty that can be significant
+# for large code bases. Good examples are cases of unrelated
+# methods that happen to have the same name as these module methods.
+#
+# @example
+#   # bad
+#   module Foo
+#   refine(Date) do
+#   end
+#   end
+#
+#   # bad
+#   module Foo
+#   using(Date) do
+#   end
+#   end
+#
+#   # good
+#   module Foo
+#   bar.refine(Date)
+#   end
+#
+#   # good
+#   module Foo
+#   bar.using(Date)
+#   end
+#
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/refinement.rb#34
+class RuboCop::Cop::Sorbet::Refinement < ::RuboCop::Cop::Base
+  # source://rubocop-sorbet//lib/rubocop/cop/sorbet/refinement.rb#38
+  def on_send(node); end
+end
+
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/refinement.rb#35
+RuboCop::Cop::Sorbet::Refinement::MSG = T.let(T.unsafe(nil), String)
+
+# source://rubocop-sorbet//lib/rubocop/cop/sorbet/refinement.rb#36
+RuboCop::Cop::Sorbet::Refinement::RESTRICT_ON_SEND = T.let(T.unsafe(nil), Array)
 
 # Checks for the correct order of `sig` builder methods.
 #
