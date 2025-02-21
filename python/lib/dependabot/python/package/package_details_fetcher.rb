@@ -149,11 +149,11 @@ module Dependabot
             end
           end
 
-          version_links = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
-          index_response.body.scan(%r{<a\s[^>]*?>.*?<\/a>}m) do
-            details = version_details_from_link(Regexp.last_match.to_s)
-            version_links << details if details
-          end
+          doc = Nokogiri::HTML(index_response.body)
+          version_links = T.let(doc.css("a").filter_map do |a_tag|
+            details = version_details_from_link(a_tag.to_s)
+            details if details
+          end, T::Array[T::Hash[Symbol, T.untyped]])
 
           version_links.compact.map do |details|
             python_requirement = details.fetch(:python_requirement, nil)
