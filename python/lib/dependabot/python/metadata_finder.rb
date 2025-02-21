@@ -15,7 +15,6 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
       MAIN_PYPI_URL = "https://pypi.org/pypi"
-      @source_from_description = T.let(nil, T.nilable(String))
 
       sig { returns(T.nilable(String)) }
       def homepage_url
