@@ -45,16 +45,16 @@ module Dependabot
           @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
 
-          @latest_version = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
-          @latest_version_with_no_unlock = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
-          @lowest_security_fix_version = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @latest_version = T.let(nil, T.nilable(Dependabot::Version))
+          @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
+          @lowest_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
           @available_versions = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
           @index_urls = T.let(nil, T.nilable(T::Array[String]))
         end
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Gem::Version))
         end
         def latest_version(python_version: nil)
           @latest_version ||= fetch_latest_version(python_version: python_version)
@@ -62,7 +62,7 @@ module Dependabot
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Gem::Version))
         end
         def latest_version_with_no_unlock(python_version: nil)
           @latest_version_with_no_unlock ||= fetch_latest_version_with_no_unlock(python_version: python_version)
@@ -70,7 +70,7 @@ module Dependabot
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Gem::Version))
         end
         def lowest_security_fix_version(python_version: nil)
           @lowest_security_fix_version ||= fetch_lowest_security_fix_version(python_version: python_version)
@@ -90,46 +90,52 @@ module Dependabot
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[SecurityAdvisory]) }
         attr_reader :security_advisories
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Dependabot::Version))
         end
         def fetch_latest_version(python_version:)
-          versions = available_versions
-          versions = filter_yanked_versions(versions)
-          versions = filter_unsupported_versions(versions, python_version)
-          # versions = filter_prerelease_versions(versions)
+          version_hashes = available_versions
+          return unless version_hashes
+
+          version_hashes = filter_yanked_versions(version_hashes)
+          versions = filter_unsupported_versions(version_hashes, python_version)
+          versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
 
-          versions.max_by { |v| v[:version] }
+          versions.max
         end
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Dependabot::Version))
         end
         def fetch_latest_version_with_no_unlock(python_version:)
-          versions = available_versions
-          versions = filter_yanked_versions(versions)
-          versions = filter_unsupported_versions(versions, python_version)
-          # versions = filter_prerelease_versions(versions)
+          version_hashes = available_versions
+          return unless version_hashes
+
+          version_hashes = filter_yanked_versions(version_hashes)
+          versions = filter_unsupported_versions(version_hashes, python_version)
+          versions = filter_prerelease_versions(versions)
           versions = filter_ignored_versions(versions)
           versions = filter_out_of_range_versions(versions)
 
-          versions.max_by { |v| v[:version] }
+          versions.max
         end
 
         sig do
           params(python_version: T.nilable(T.any(String, Version)))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Dependabot::Version))
         end
         def fetch_lowest_security_fix_version(python_version:)
-          versions = available_versions
-          versions = filter_yanked_versions(versions)
-          versions = filter_unsupported_versions(versions, python_version)
+          version_hashes = available_versions
+          return unless version_hashes
+
+          version_hashes = filter_yanked_versions(version_hashes)
+          versions = filter_unsupported_versions(version_hashes, python_version)
           # versions = filter_prerelease_versions(versions)
           versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
             versions,
@@ -138,7 +144,7 @@ module Dependabot
           versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
 
-          versions.min_by { |v| v[:version] }
+          versions.min
         end
 
         sig do
@@ -158,7 +164,7 @@ module Dependabot
             versions_array: T::Array[T::Hash[Symbol, T.untyped]],
             python_version: T.nilable(T.any(String, Version))
           )
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[Dependabot::Version])
         end
         def filter_unsupported_versions(versions_array, python_version)
           filtered = versions_array.filter_map do |details|
@@ -177,13 +183,13 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(versions_array: T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Version])
         end
         def filter_prerelease_versions(versions_array)
           return versions_array if wants_prerelease?
 
-          filtered = versions_array.reject { |v| v[:prerelease?] }
+          filtered = versions_array.reject(&:prerelease?)
 
           if versions_array.count > filtered.count
             Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} pre-release versions")
@@ -193,8 +199,8 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(versions_array: T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Version])
         end
         def filter_ignored_versions(versions_array)
           filtered = versions_array
@@ -210,8 +216,8 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(versions_array: T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Version])
         end
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.numeric_version
@@ -220,8 +226,8 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(versions_array: T::Array[Dependabot::Version])
+            .returns(T::Array[Dependabot::Version])
         end
         def filter_out_of_range_versions(versions_array)
           reqs = dependency.requirements.filter_map do |r|
@@ -245,7 +251,7 @@ module Dependabot
         # See https://www.python.org/dev/peps/pep-0503/ for details of the
         # Simple Repository API we use here.
         sig do
-          returns(T::Array[T::Hash[Symbol, T.untyped]])
+          returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
         end
         def available_versions
           @available_versions ||=
