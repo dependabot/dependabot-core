@@ -61,3 +61,6 @@ RUN mv bin/run bin/run-original
 COPY --chown=dependabot:dependabot nuget/script/* $DEPENDABOT_HOME/dependabot-updater/bin/
 COPY --chown=dependabot:dependabot nuget/updater/* $DEPENDABOT_HOME/dependabot-updater/bin/
 RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
+
+# .NET install targeting packs
+RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
