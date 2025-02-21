@@ -256,7 +256,7 @@ module Dependabot
         def available_versions
           @available_versions ||=
             index_urls.flat_map do |index_url|
-              sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+              sanitized_url = index_url.gsub(%r{(?<=//)[^/@]+(?=@)}, "redacted")
 
               begin
                 validate_index(index_url)
@@ -390,7 +390,7 @@ module Dependabot
         def validate_index(index_url)
           return unless index_url
 
-          sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
+          sanitized_url = index_url.gsub(%r{(?<=//)[^/@]+(?=@)}, "redacted")
 
           return if index_url.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
 
