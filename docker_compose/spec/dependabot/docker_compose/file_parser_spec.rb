@@ -492,4 +492,100 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
       end
     end
   end
+
+  describe "version_from with environment variables" do
+    context "with a parameterized tag" do
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                image: ubuntu:${TAG_VERSION}
+          YAML
+        )
+      end
+
+      it "returns no dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with mixed static and environment variable tags" do
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                image: ubuntu:${TAG_VERSION}
+              db:
+                image: postgres:12.3
+              cache:
+                image: redis:${REDIS_VERSION}
+          YAML
+        )
+      end
+
+      it "returns only the static dependency" do
+        dependencies = parser.parse
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("postgres")
+        expect(dependencies.first.version).to eq("12.3")
+      end
+    end
+
+    context "with inline Dockerfile and parameterized tag" do
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                build:
+                  dockerfile_inline: |
+                    FROM ubuntu:${VERSION}
+                    RUN apt-get update
+          YAML
+        )
+      end
+
+      it "returns no dependencies" do
+        expect(parser.parse).to be_empty
+      end
+    end
+
+    context "with static tag" do
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: <<~YAML
+            services:
+              api:
+                image: ubuntu:18.04
+          YAML
+        )
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) { parser.parse.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: { tag: "18.04" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("18.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+  end
 end
