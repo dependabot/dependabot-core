@@ -13,6 +13,7 @@ require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/package/package_registry_finder"
+require "dependabot/python/package/package_details_fetcher"
 
 module Dependabot
   module Python
@@ -48,7 +49,7 @@ module Dependabot
           @latest_version = T.let(nil, T.nilable(Dependabot::Version))
           @latest_version_with_no_unlock = T.let(nil, T.nilable(Dependabot::Version))
           @lowest_security_fix_version = T.let(nil, T.nilable(Dependabot::Version))
-          @available_versions = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+          @available_versions = T.let(nil, T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
           @index_urls = T.let(nil, T.nilable(T::Array[String]))
         end
 
@@ -148,35 +149,35 @@ module Dependabot
         end
 
         sig do
-          params(versions_array: T::Array[T::Hash[Symbol, T.untyped]])
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(releases: T::Array[Dependabot::Python::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Python::Package::PackageRelease])
         end
-        def filter_yanked_versions(versions_array)
-          filtered = versions_array.reject { |details| details.fetch(:yanked) }
-          if versions_array.count > filtered.count
-            Dependabot.logger.info("Filtered out #{versions_array.count - filtered.count} yanked versions")
+        def filter_yanked_versions(releases)
+          filtered = releases.reject(&:yanked?)
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} yanked versions")
           end
           filtered
         end
 
         sig do
           params(
-            versions_array: T::Array[T::Hash[Symbol, T.untyped]],
+            releases: T::Array[Dependabot::Python::Package::PackageRelease],
             python_version: T.nilable(T.any(String, Version))
           )
             .returns(T::Array[Dependabot::Version])
         end
-        def filter_unsupported_versions(versions_array, python_version)
-          filtered = versions_array.filter_map do |details|
-            python_requirement = details.fetch(:python_requirement)
-            next details.fetch(:version) unless python_version
-            next details.fetch(:version) unless python_requirement
+        def filter_unsupported_versions(releases, python_version)
+          filtered = releases.filter_map do |release|
+            python_requirement = release.language&.requirement
+            next release.version unless python_version
+            next release.version unless python_requirement
             next unless python_requirement.satisfied_by?(python_version)
 
-            details.fetch(:version)
+            release.version
           end
-          if versions_array.count > filtered.count
-            delta = versions_array.count - filtered.count
+          if releases.count > filtered.count
+            delta = releases.count - filtered.count
             Dependabot.logger.info("Filtered out #{delta} unsupported Python #{python_version} versions")
           end
           filtered
@@ -251,129 +252,19 @@ module Dependabot
         # See https://www.python.org/dev/peps/pep-0503/ for details of the
         # Simple Repository API we use here.
         sig do
-          returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+          returns(T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
         end
         def available_versions
-          @available_versions ||=
-            index_urls.flat_map do |index_url|
-              sanitized_url = index_url.sub(%r{//([^/@]+)@}, "//redacted@")
-
-              begin
-                validate_index(index_url)
-
-                index_response = registry_response_for_dependency(index_url)
-                if index_response.status == 401 || index_response.status == 403
-                  registry_index_response = registry_index_response(index_url)
-
-                  if registry_index_response.status == 401 || registry_index_response.status == 403
-                    raise PrivateSourceAuthenticationFailure, sanitized_url
-                  end
-                end
-
-                version_links = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
-                index_response.body.scan(%r{<a\s[^>]*?>.*?<\/a>}m) do
-                  details = version_details_from_link(Regexp.last_match.to_s)
-                  version_links << details if details
-                end
-
-                version_links.compact
-              rescue Excon::Error::Timeout, Excon::Error::Socket
-                raise if MAIN_PYPI_INDEXES.include?(index_url)
-
-                raise PrivateSourceTimedOut, sanitized_url
-              rescue URI::InvalidURIError
-                raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url}"
-              end
-            end
-        end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        sig do
-          params(link: T.nilable(String))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def version_details_from_link(link)
-          return unless link
-
-          doc = Nokogiri::XML(link)
-          filename = doc.at_css("a")&.content
-          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
-
-          return unless filename&.match?(name_regex) || url&.match?(name_regex)
-
-          version = get_version_from_filename(filename)
-          return unless version_class.correct?(version)
-
-          {
-            version: version_class.new(version),
-            python_requirement: build_python_requirement_from_link(link),
-            yanked: link.include?("data-yanked")
-          }
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        sig { params(filename: String).returns(T.nilable(String)) }
-        def get_version_from_filename(filename)
-          filename
-            .gsub(/#{name_regex}-/i, "")
-            .split(/-|\.tar\.|\.zip|\.whl/)
-            .first
-        end
-
-        sig { params(link: String).returns(T.nilable(Dependabot::Requirement)) }
-        def build_python_requirement_from_link(link)
-          req_string = Nokogiri::XML(link)
-                               .at_css("a")
-                               &.attribute("data-requires-python")
-                               &.content
-
-          return unless req_string
-
-          requirement_class.new(CGI.unescapeHTML(req_string))
-        rescue Gem::Requirement::BadRequirementError
-          nil
-        end
-
-        sig { returns(T::Array[String]) }
-        def index_urls
-          @index_urls ||=
-            Package::PackageRegistryFinder.new(
-              dependency_files: dependency_files,
-              credentials: credentials,
-              dependency: dependency
-            ).registry_urls
-        end
-
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_response_for_dependency(index_url)
-          Dependabot::RegistryClient.get(
-            url: index_url + normalised_name + "/",
-            headers: { "Accept" => "text/html" }
-          )
-        end
-
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_index_response(index_url)
-          Dependabot::RegistryClient.get(
-            url: index_url,
-            headers: { "Accept" => "text/html" }
-          )
+          @available_versions ||= Package::PackageDetailsFetcher.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).fetch
         end
 
         sig { returns(T::Array[T.untyped]) }
         def ignore_requirements
           ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
-        end
-
-        sig { returns(String) }
-        def normalised_name
-          NameNormaliser.normalise(dependency.name)
-        end
-
-        sig { returns(Regexp) }
-        def name_regex
-          parts = normalised_name.split(/[\s_.-]/).map { |n| Regexp.quote(n) }
-          /#{parts.join("[\s_.-]")}/i
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
@@ -384,18 +275,6 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Requirement)) }
         def requirement_class
           dependency.requirement_class
-        end
-
-        sig { params(index_url: T.nilable(String)).void }
-        def validate_index(index_url)
-          return unless index_url
-
-          sanitized_url = index_url.sub(%r{//([^/@]+)@}, "//redacted@")
-
-          return if index_url.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
-
-          raise Dependabot::DependencyFileNotResolvable,
-                "Invalid URL: #{sanitized_url}"
         end
       end
     end
