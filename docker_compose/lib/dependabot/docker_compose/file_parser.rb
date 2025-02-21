@@ -10,6 +10,7 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
+      ENV_VAR = /\${[^}]+}/
       DIGEST = /(?<digest>[0-9a-f]{64})/
       IMAGE_REGEX = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
 
@@ -37,14 +38,13 @@ module Dependabot
 
         composefiles.each do |composefile|
           yaml = YAML.safe_load(T.must(composefile.content), aliases: true)
+          next unless yaml["services"].is_a?(Hash)
+
           yaml["services"].each do |_, service|
-            if service["image"]
-              parsed_from_image = T.must(IMAGE_REGEX.match(service["image"])).named_captures
-            elsif service["build"]["dockerfile_inline"]
-              parsed_from_image = T.must(FROM_LINE.match(service["build"]["dockerfile_inline"])).named_captures
-            else
-              next
-            end
+            next unless service.is_a?(Hash)
+
+            parsed_from_image = parse_image_spec(service)
+            next unless parsed_from_image
 
             parsed_from_image["registry"] = nil if parsed_from_image["registry"] == "docker.io"
 
@@ -59,6 +59,32 @@ module Dependabot
       end
 
       private
+
+      sig { params(service: T.untyped).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
+      def parse_image_spec(service)
+        return nil unless service
+
+        if service["image"]
+          return nil if service["image"].match?(/^\${[^}]+}$/)
+
+          match = IMAGE_REGEX.match(service["image"])
+          return match&.named_captures
+        elsif service["build"].is_a?(Hash) && service["build"]["dockerfile_inline"]
+          return nil if service["build"]["dockerfile_inline"].match?(/^FROM\s+\${[^}]+}$/)
+
+          match = FROM_LINE.match(service["build"]["dockerfile_inline"])
+          return match&.named_captures
+        end
+
+        nil
+      end
+
+      sig { params(parsed_image: T::Hash[String, T.nilable(String)]).returns(T.nilable(String)) }
+      def version_from(parsed_image)
+        return nil if parsed_image["tag"]&.match?(ENV_VAR)
+
+        super
+      end
 
       sig { override.returns(String) }
       def package_manager
