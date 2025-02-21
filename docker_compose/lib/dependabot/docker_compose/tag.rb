@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/docker_compose/file_parser"
+
 require "sorbet-runtime"
 
 module Dependabot
@@ -18,7 +20,6 @@ module Dependabot
           #{VERSION_WITH_SFX}|
           #{VERSION_WITH_PFX_AND_SFX}
       /x
-      DIGEST = /@(?<digest>[^\s]+)/
 
       sig { returns(String) }
       attr_reader :name
@@ -35,7 +36,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def digest?
-        name.match?(DIGEST)
+        name.match?(FileParser::DIGEST)
       end
 
       sig { returns(T.nilable(T::Boolean)) }

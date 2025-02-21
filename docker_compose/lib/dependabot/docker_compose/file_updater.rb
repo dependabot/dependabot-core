@@ -54,48 +54,6 @@ module Dependabot
 
         updated_files
       end
-
-      sig do
-        override.params(previous_content: String, old_source: T::Hash[Symbol, T.nilable(String)],
-                        new_source: T::Hash[Symbol, T.nilable(String)]).returns(String)
-      end
-      def update_digest_and_tag(previous_content, old_source, new_source)
-        old_digest = old_source[:digest]
-        new_digest = new_source[:digest]
-
-        old_tag = old_source[:tag]
-        new_tag = new_source[:tag]
-
-        old_declaration =
-          if private_registry_url(old_source)
-            "#{private_registry_url(old_source)}/"
-          else
-            ""
-          end
-        old_declaration += T.must(dependency).name
-        old_declaration +=
-          if specified_with_tag?(old_source)
-            ":#{old_tag}"
-          else
-            ""
-          end
-        old_declaration +=
-          if old_digest&.start_with?("sha256:")
-            "@#{old_digest}"
-          else
-            ""
-          end
-
-        escaped_declaration = Regexp.escape(old_declaration)
-
-        old_declaration_regex = build_old_declaration_regex(escaped_declaration)
-
-        previous_content.gsub(old_declaration_regex) do |old_dec|
-          old_dec
-            .gsub(":#{old_tag}", ":#{new_tag}")
-            .gsub(old_digest.to_s, new_digest.to_s)
-        end
-      end
     end
   end
 end
