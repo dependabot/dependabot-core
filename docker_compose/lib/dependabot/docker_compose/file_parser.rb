@@ -10,7 +10,9 @@ module Dependabot
     class FileParser < Dependabot::Shared::SharedFileParser
       extend T::Sig
 
-      IMAGE_REGEX = %r{^(?:#{REGISTRY}/)?#{IMAGE}(?:#{TAG})?(?:#{DIGEST})?(?:#{NAME})?}
+      DIGEST = /(?<digest>[0-9a-f]{64})/
+      IMAGE_REGEX = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@sha256:#{DIGEST})?#{NAME}?}x
+
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
 
