@@ -134,3 +134,20 @@ function Install-TargetingPacks([string]$sdkInstallDir, [string[]]$targetingPack
         Remove-Item -Path $archiveName
     }
 }
+
+function Repair-FileCasingForName([string]$fileName) {
+    # Get-ChildItem is case-insensitive
+    $discoveredFiles = Get-ChildItem $env:DEPENDABOT_REPO_CONTENTS_PATH -r -inc $fileName
+    foreach ($file in $discoveredFiles) {
+        # `-cne` = Case-sensitive Not Equal
+        if ($file.Name -cne $fileName) {
+            $newName = "$($file.Directory)/$fileName"
+            Write-Host "Renaming '$file' to '$newName'"
+            Rename-Item -Path $file -NewName $newName
+        }
+    }
+}
+
+function Repair-FileCasing() {
+    Repair-FileCasingForName -fileName "NuGet.Config"
+}
