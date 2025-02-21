@@ -7,7 +7,6 @@ require "uri"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
-require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -26,7 +25,7 @@ module Dependabot
 
       private
 
-      sig { override.returns(T.nilable(Source)) }
+      sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         potential_source_urls = [
           pypi_listing.dig("info", "project_urls", "Source"),
@@ -68,7 +67,7 @@ module Dependabot
 
         # Failing that, look for a source where the full dependency name is
         # mentioned when the link is followed
-        @source_from_description = T.let(nil, T.nilable(String))
+        @source_from_description = T.let(nil, T.nilable(Source))
         @source_from_description =
           potential_source_urls.find do |url|
             full_url = Source.from_url(url)&.url
@@ -99,7 +98,7 @@ module Dependabot
 
         return match_url if match_url
 
-        @source_from_homepage = T.let(nil, T.nilable(String))
+        @source_from_homepage = T.let(nil, T.nilable(Source))
         @source_from_homepage =
           potential_source_urls.find do |url|
             full_url = Source.from_url(url)&.url
