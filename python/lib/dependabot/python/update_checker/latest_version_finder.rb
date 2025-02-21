@@ -271,7 +271,7 @@ module Dependabot
                 end
 
                 version_links = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
-                index_response.body.scan(%r{<a\s.*?>.*?</a>}m) do
+                index_response.body.scan(%r{<a\s[^>]*?>.*?<\/a>}m) do
                   details = version_details_from_link(Regexp.last_match.to_s)
                   version_links << details if details
                 end
