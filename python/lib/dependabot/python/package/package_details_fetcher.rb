@@ -49,8 +49,7 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
 
-          @available_versions = T.let(nil, T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
-          @index_urls = T.let(nil, T.nilable(T::Array[String]))
+          @registry_urls = T.let(nil, T.nilable(T::Array[String]))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -64,8 +63,8 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Python::Package::PackageRelease]) }
         def fetch
-          index_urls.flat_map do |index_url|
-            validate_index(index_url)
+          registry_urls.flat_map do |index_url|
+            return [] unless validate_index(index_url)
 
             package_details = fetch_from_registry(index_url)
 
@@ -106,7 +105,7 @@ module Dependabot
         end
         def fetch_from_json_registry(index_url)
           Dependabot.logger.info(
-            "Fetching metadata from json registry at #{sanitized_url(index_url)} for #{dependency.name}"
+            "Fetching release information from json registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
           json_url = index_url.sub(%r{/simple/?$}i, "/pypi/")
 
@@ -179,18 +178,13 @@ module Dependabot
         end
 
         sig { returns(T::Array[String]) }
-        def index_urls
-          @index_urls ||=
+        def registry_urls
+          @registry_urls ||=
             Package::PackageRegistryFinder.new(
               dependency_files: dependency_files,
               credentials: credentials,
               dependency: dependency
             ).registry_urls
-        end
-
-        sig { params(index_url: String).returns(String) }
-        def sanitized_url(index_url)
-          index_url.sub(%r{//([^/@]+)@}, "//redacted@")
         end
 
         sig { params(index_url: String).returns(Excon::Response) }
@@ -418,16 +412,19 @@ module Dependabot
           dependency.requirement_class
         end
 
-        sig { params(index_url: T.nilable(String)).void }
+        sig { params(index_url: T.nilable(String)).returns(T::Boolean) }
         def validate_index(index_url)
-          return unless index_url
+          return false unless index_url
 
-          sanitized_url = index_url.sub(%r{//([^/@]+)@}, "//redacted@")
-
-          return if index_url.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
+          return true if index_url.match?(URI::DEFAULT_PARSER.regexp[:ABS_URI])
 
           raise Dependabot::DependencyFileNotResolvable,
-                "Invalid URL: #{sanitized_url}"
+                "Invalid URL: #{sanitized_url(index_url)}"
+        end
+
+        sig { params(index_url: String).returns(String) }
+        def sanitized_url(index_url)
+          index_url.sub(%r{//([^/@]+)@}, "//redacted@")
         end
       end
     end
