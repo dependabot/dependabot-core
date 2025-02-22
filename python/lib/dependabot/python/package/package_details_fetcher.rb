@@ -109,15 +109,7 @@ module Dependabot
           )
           json_url = index_url.sub(%r{/simple/?$}i, "/pypi/")
 
-          auth_headers = auth_headers_for(index_url)
-
-          response = Dependabot::RegistryClient.get(
-            url: "#{json_url.chomp('/')}/#{@dependency.name}/json",
-            headers: {
-              "Accept" => APPLICATION_JSON,
-              **auth_headers
-            }
-          )
+          response = registry_json_response_for_dependency(json_url)
 
           return nil unless response.status == 200
 
@@ -147,8 +139,15 @@ module Dependabot
               raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
             end
           end
+          extract_release_details_from_html(index_response.body)
+        end
 
-          doc = Nokogiri::HTML(index_response.body)
+        sig do
+          params(html_body: String)
+            .returns(T::Array[Dependabot::Python::Package::PackageRelease])
+        end
+        def extract_release_details_from_html(html_body)
+          doc = Nokogiri::HTML(html_body)
           version_links = T.let(doc.css("a").filter_map do |a_tag|
             details = version_details_from_link(a_tag.to_s)
             details if details
@@ -187,24 +186,32 @@ module Dependabot
             ).registry_urls
         end
 
+        sig { returns(String) }
+        def normalised_name
+          NameNormaliser.normalise(dependency.name)
+        end
+
+        sig { params(json_url: String).returns(Excon::Response) }
+        def registry_json_response_for_dependency(json_url)
+          Dependabot::RegistryClient.get(
+            url: "#{json_url.chomp('/')}/#{@dependency.name}/json",
+            headers: { "Accept" => APPLICATION_JSON }
+          )
+        end
+
         sig { params(index_url: String).returns(Excon::Response) }
         def registry_response_for_dependency(index_url)
           Dependabot::RegistryClient.get(
             url: index_url + normalised_name + "/",
-            headers: { "Accept" => "text/html" }
+            headers: { "Accept" => APPLICATION_TEXT }
           )
-        end
-
-        sig { returns(String) }
-        def normalised_name
-          NameNormaliser.normalise(dependency.name)
         end
 
         sig { params(index_url: String).returns(Excon::Response) }
         def registry_index_response(index_url)
           Dependabot::RegistryClient.get(
             url: index_url,
-            headers: { "Accept" => "text/html" }
+            headers: { "Accept" => APPLICATION_TEXT }
           )
         end
 
