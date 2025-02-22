@@ -265,7 +265,10 @@ module Dependabot
           downloads = release_data["downloads"] || -1
           url = release_data["url"]
           package_type = release_data["packagetype"]
-          language = package_language(release_data)
+          language = package_language(
+            python_version: release_data["python_version"],
+            requires_python: release_data["requires_python"]
+          )
 
           release = Dependabot::Python::Package::PackageRelease.new(
             version: Dependabot::Python::Version.new(version),
@@ -280,16 +283,47 @@ module Dependabot
           release
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         sig do
-          params(release_data: T::Hash[String, T.untyped])
+          params(link: T.nilable(String))
+            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        end
+        def version_details_from_link(link)
+          return unless link
+
+          doc = Nokogiri::XML(link)
+          filename = doc.at_css("a")&.content
+          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
+
+          return unless filename&.match?(name_regex) || url&.match?(name_regex)
+
+          version = get_version_from_filename(filename)
+          return unless version_class.correct?(version)
+
+          {
+            version: version_class.new(version),
+            python_requirement: build_python_requirement(
+              requires_python_from_link(link)
+            ),
+            yanked: link.include?("data-yanked"),
+            url: link
+          }
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        sig do
+          params(
+            python_version: T.nilable(String),
+            requires_python: T.nilable(String)
+          )
             .returns(T.nilable(Dependabot::Python::Package::PackageLanguage))
         end
-        def package_language(release_data)
+        def package_language(python_version:, requires_python:)
           # Extract language name and version
-          language_name, language_version = convert_language_version(release_data["python_version"])
+          language_name, language_version = convert_language_version(python_version)
 
           # Extract language requirement
-          language_requirement = build_python_requirement(release_data["requires_python"])
+          language_requirement = build_python_requirement(requires_python)
 
           return nil unless language_version || language_requirement
 
@@ -326,6 +360,14 @@ module Dependabot
           [language_name, language_version]
         end
 
+        sig { params(filename: String).returns(T.nilable(String)) }
+        def get_version_from_filename(filename)
+          filename
+            .gsub(/#{name_regex}-/i, "")
+            .split(/-|\.tar\.|\.zip|\.whl/)
+            .first
+        end
+
         sig do
           params(req_string: T.nilable(String))
             .returns(T.nilable(Dependabot::Requirement))
@@ -338,52 +380,22 @@ module Dependabot
           nil
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        sig do
-          params(link: T.nilable(String))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def version_details_from_link(link)
-          return unless link
-
-          doc = Nokogiri::XML(link)
-          filename = doc.at_css("a")&.content
-          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
-
-          return unless filename&.match?(name_regex) || url&.match?(name_regex)
-
-          version = get_version_from_filename(filename)
-          return unless version_class.correct?(version)
-
-          {
-            version: version_class.new(version),
-            python_requirement: build_python_requirement_from_link(link),
-            yanked: link.include?("data-yanked"),
-            url: link
-          }
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        sig { params(filename: String).returns(T.nilable(String)) }
-        def get_version_from_filename(filename)
-          filename
-            .gsub(/#{name_regex}-/i, "")
-            .split(/-|\.tar\.|\.zip|\.whl/)
-            .first
+        sig { params(link: String).returns(T.nilable(String)) }
+        def requires_python_from_link(link)
+          Nokogiri::XML(link)
+                  .at_css("a")
+                  &.attribute("data-requires-python")
+                  &.content
         end
 
-        sig { params(link: String).returns(T.nilable(Dependabot::Requirement)) }
-        def build_python_requirement_from_link(link)
-          req_string = Nokogiri::XML(link)
-                               .at_css("a")
-                               &.attribute("data-requires-python")
-                               &.content
+        sig { returns(T.class_of(Dependabot::Version)) }
+        def version_class
+          dependency.version_class
+        end
 
-          return unless req_string
-
-          requirement_class.new(CGI.unescapeHTML(req_string))
-        rescue Gem::Requirement::BadRequirementError
-          nil
+        sig { returns(T.class_of(Dependabot::Requirement)) }
+        def requirement_class
+          dependency.requirement_class
         end
 
         sig { params(index_url: String).returns(T::Hash[String, String]) }
@@ -400,16 +412,6 @@ module Dependabot
         def name_regex
           parts = normalised_name.split(/[\s_.-]/).map { |n| Regexp.quote(n) }
           /#{parts.join("[\s_.-]")}/i
-        end
-
-        sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
-        end
-
-        sig { returns(T.class_of(Dependabot::Requirement)) }
-        def requirement_class
-          dependency.requirement_class
         end
 
         sig { params(index_url: T.nilable(String)).returns(T::Boolean) }
