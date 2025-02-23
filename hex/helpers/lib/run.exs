@@ -5,7 +5,7 @@ defmodule DependencyHelper do
     |> run()
     |> case do
       {output, 0} ->
-        output = Base.decode64!(output)
+        output = try_decode(output)
         if output =~ "No authenticated organization found" do
           {:error, output}
         else
@@ -13,10 +13,19 @@ defmodule DependencyHelper do
         end
 
       {error, 1} ->
-        Base.decode64!(error)
-        {:error, error}
+        {:error, try_decode(error)}
     end
     |> handle_result()
+  end
+
+  defp try_decode(result) do
+    case Base.decode64(result) do
+      {:ok, result} ->
+        result
+
+      {:error, _error} ->
+        result
+    end
   end
 
   defp handle_result({:ok, {:ok, result}}) do
