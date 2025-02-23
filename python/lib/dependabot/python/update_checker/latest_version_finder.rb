@@ -259,7 +259,7 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials
-          ).fetch
+          ).fetch.releases
         end
 
         sig { returns(T::Array[T.untyped]) }
