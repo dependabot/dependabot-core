@@ -16,10 +16,16 @@ args = [
   "--no-elixir-version-check",
 ]
 
-System.cmd("mix", args, [env: %{"MIX_EXS" => nil}])
+result =
+  case System.cmd("mix", args, env: %{"MIX_EXS" => nil}, stderr_to_stdout: true) do
+    {_results, 0} ->
+      File.read("mix.lock")
 
-"mix.lock"
-|> File.read()
+    {results, _code} ->
+      {:error, results}
+  end
+
+result
 |> :erlang.term_to_binary()
 |> Base.encode64()
 |> IO.write()
