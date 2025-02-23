@@ -84,9 +84,6 @@ module Dependabot
         end
         def fetch_from_registry(index_url)
           if Dependabot::Experiments.enabled?(:enable_cooldown_for_python)
-            Dependabot.logger.info(
-              "Fetching metadata from registry at #{sanitized_url(index_url)} for #{dependency.name}"
-            )
             metadata = fetch_from_json_registry(index_url)
 
             return metadata if metadata&.any?
@@ -99,15 +96,60 @@ module Dependabot
           fetch_from_html_registry(index_url)
         end
 
+        # Example JSON Response Format:
+        #
+        # {
+        #   "info": {
+        #     "name": "requests",
+        #     "summary": "Python HTTP for Humans.",
+        #     "author": "Kenneth Reitz",
+        #     "license": "Apache-2.0"
+        #   },
+        #   "releases": {
+        #     "2.32.3": [
+        #       {
+        #         "filename": "requests-2.32.3-py3-none-any.whl",
+        #         "version": "2.32.3",
+        #         "requires_python": ">=3.8",
+        #         "yanked": false,
+        #         "url": "https://files.pythonhosted.org/packages/f9/9b/335f9764261e915ed497fcdeb11df5dfd6f7bf257d4a6a2a686d80da4d54/requests-2.32.3-py3-none-any.whl"
+        #       },
+        #       {
+        #         "filename": "requests-2.32.3.tar.gz",
+        #         "version": "2.32.3",
+        #         "requires_python": ">=3.8",
+        #         "yanked": false,
+        #         "url": "https://files.pythonhosted.org/packages/63/70/2bf7780ad2d390a8d301ad0b550f1581eadbd9a20f896afe06353c2a2913/requests-2.32.3.tar.gz"
+        #       }
+        #     ],
+        #     "2.27.0": [
+        #       {
+        #         "filename": "requests-2.27.0-py2.py3-none-any.whl",
+        #         "version": "2.27.0",
+        #         "requires_python": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*",
+        #         "yanked": false,
+        #         "url": "https://files.pythonhosted.org/packages/47/01/f420e7add78110940639a958e5af0e3f8e07a8a8b62049bac55ee117aa91/requests-2.27.0-py2.py3-none-any.whl"
+        #       },
+        #       {
+        #         "filename": "requests-2.27.0.tar.gz",
+        #         "version": "2.27.0",
+        #         "requires_python": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*",
+        #         "yanked": false,
+        #         "url": "https://files.pythonhosted.org/packages/c0/e3/826e27b942352a74b656e8f58b4dc7ed9495ce2d4eeb498181167c615303/requests-2.27.0.tar.gz"
+        #       }
+        #     ]
+        #   }
+        # }
         sig do
           params(index_url: String)
             .returns(T.nilable(T::Array[Dependabot::Python::Package::PackageRelease]))
         end
         def fetch_from_json_registry(index_url)
-          Dependabot.logger.info(
-            "Fetching release information from json registry at #{sanitized_url(index_url)} for #{dependency.name}"
-          )
           json_url = index_url.sub(%r{/simple/?$}i, "/pypi/")
+
+          Dependabot.logger.info(
+            "Fetching release information from json registry at #{sanitized_url(json_url)} for #{dependency.name}"
+          )
 
           response = registry_json_response_for_dependency(json_url)
 
@@ -115,7 +157,10 @@ module Dependabot
 
           begin
             data = JSON.parse(response.body)
-            releases = extract_release_details_from_json(data["releases"] || {})
+
+            version_releases = data["releases"]
+
+            releases = format_version_releases(version_releases)
 
             releases.sort_by(&:version).reverse
           rescue JSON::ParserError
@@ -127,10 +172,32 @@ module Dependabot
           end
         end
 
-        # See https://www.python.org/dev/peps/pep-0503/ for details of the
-        # Simple Repository API we use here.
+        # This URL points to the Simple Index API for the "requests" package on PyPI.
+        # It provides an HTML listing of available package versions following PEP 503 (Simple Repository API).
+        # The information found here is useful for dependency resolution and package version retrieval.
+        #
+        # ✅ Information available in the Simple Index:
+        # - A list of package versions as anchor (`<a>`) elements.
+        # - URLs to distribution files (e.g., `.tar.gz`, `.whl`).
+        # - The `data-requires-python` attribute (if present) specifying the required Python version.
+        # - An optional `data-yanked` attribute indicating a yanked (withdrawn) version.
+        #
+        # ❌ Information NOT available in the Simple Index:
+        # - Release timestamps (upload time).
+        # - File digests (hashes like SHA256, MD5).
+        # - Package metadata such as description, author, or dependencies.
+        # - Download statistics.
+        # - Package type (`sdist` or `bdist_wheel`).
+        #
+        # To obtain full package metadata, use the PyPI JSON API:
+        # - JSON API: https://pypi.org/pypi/requests/json
+        #
+        # More details: https://www.python.org/dev/peps/pep-0503/
         sig { params(index_url: String).returns(T::Array[Dependabot::Python::Package::PackageRelease]) }
         def fetch_from_html_registry(index_url)
+          Dependabot.logger.info(
+            "Fetching release information from html registry at #{sanitized_url(index_url)} for #{dependency.name}"
+          )
           index_response = registry_response_for_dependency(index_url)
           if index_response.status == 401 || index_response.status == 403
             registry_index_response = registry_index_response(index_url)
@@ -139,81 +206,58 @@ module Dependabot
               raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
             end
           end
-          extract_release_details_from_html(index_response.body)
+
+          version_releases = extract_release_details_json_from_html(index_response.body)
+          releases = format_version_releases(version_releases)
+
+          releases.sort_by(&:version).reverse
         end
 
         sig do
           params(html_body: String)
-            .returns(T::Array[Dependabot::Python::Package::PackageRelease])
+            .returns(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]) # Returns JSON-like format
         end
-        def extract_release_details_from_html(html_body)
+        def extract_release_details_json_from_html(html_body)
           doc = Nokogiri::HTML(html_body)
-          version_links = T.let(doc.css("a").filter_map do |a_tag|
+
+          releases = {}
+
+          doc.css("a").each do |a_tag|
             details = version_details_from_link(a_tag.to_s)
-            details if details
-          end, T::Array[T::Hash[Symbol, T.untyped]])
-
-          version_links.compact.map do |details|
-            python_requirement = details.fetch(:python_requirement, nil)
-
-            if python_requirement
-              language = Dependabot::Python::Package::PackageLanguage.new(
-                name: PYTHON,
-                requirement: python_requirement
-              )
+            if details && details["version"]
+              releases[details["version"]] ||= []
+              releases[details["version"]] << details
             end
-
-            Dependabot::Python::Package::PackageRelease.new(
-              version: version_class.new(details.fetch(:version)),
-              released_at: nil, # HTML doesn't provide release timestamps
-              yanked: details.fetch(:yanked),
-              yanked_reason: nil, # No way to extract this from HTML
-              downloads: nil,       # No download count available in HTML
-              url: details.fetch(:url),
-              package_type: nil,    # No package type info from HTML
-              language: language
-            )
           end
+
+          releases
         end
 
-        sig { returns(T::Array[String]) }
-        def registry_urls
-          @registry_urls ||=
-            Package::PackageRegistryFinder.new(
-              dependency_files: dependency_files,
-              credentials: credentials,
-              dependency: dependency
-            ).registry_urls
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig do
+          params(link: T.nilable(String))
+            .returns(T.nilable(T::Hash[String, T.untyped]))
         end
+        def version_details_from_link(link)
+          return unless link
 
-        sig { returns(String) }
-        def normalised_name
-          NameNormaliser.normalise(dependency.name)
-        end
+          doc = Nokogiri::XML(link)
+          filename = doc.at_css("a")&.content
+          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
 
-        sig { params(json_url: String).returns(Excon::Response) }
-        def registry_json_response_for_dependency(json_url)
-          Dependabot::RegistryClient.get(
-            url: "#{json_url.chomp('/')}/#{@dependency.name}/json",
-            headers: { "Accept" => APPLICATION_JSON }
-          )
-        end
+          return unless filename&.match?(name_regex) || url&.match?(name_regex)
 
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_response_for_dependency(index_url)
-          Dependabot::RegistryClient.get(
-            url: index_url + normalised_name + "/",
-            headers: { "Accept" => APPLICATION_TEXT }
-          )
-        end
+          version = get_version_from_filename(filename)
+          return unless version_class.correct?(version)
 
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_index_response(index_url)
-          Dependabot::RegistryClient.get(
-            url: index_url,
-            headers: { "Accept" => APPLICATION_TEXT }
-          )
+          {
+            "version" => version,
+            "requires_python" => requires_python_from_link(link),
+            "yanked" => link.include?("data-yanked"),
+            "url" => link
+          }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig do
           params(
@@ -221,13 +265,13 @@ module Dependabot
           )
             .returns(T::Array[Dependabot::Python::Package::PackageRelease])
         end
-        def extract_release_details_from_json(releases_json)
+        def format_version_releases(releases_json)
           releases_json.each_with_object([]) do |(version, release_data_array), versions|
-            release_data = release_data_array.first
+            release_data = release_data_array.last
 
             next unless release_data
 
-            release = extract_release_from_release_json_data(version, release_data)
+            release = format_version_release(version, release_data)
 
             next unless release
 
@@ -235,28 +279,6 @@ module Dependabot
           end
         end
 
-        # Example of a JSON response:
-        # {
-        #   "comment_text": "",
-        #   "digests": {
-        #     "blake2b_256": "62ca338cf287e172099e4500cfa2cb580d2c9a1874427a8a14324d7a4c9d01b1",
-        #     "md5": "fac5635391778e2394a411d37e69ae5e",
-        #     "sha256": "37684324da8aca40e88fa2f7faa526cc116d74e979c2ac5d9119fe6e1bb5ced5"
-        #   },
-        #   "downloads": -1,
-        #   "filename": "requests-0.13.2.tar.gz",
-        #   "has_sig": false,
-        #   "md5_digest": "fac5635391778e2394a411d37e69ae5e",
-        #   "packagetype": "sdist",
-        #   "python_version": "source",
-        #   "requires_python": null,
-        #   "size": 514484,
-        #   "upload_time": "2012-06-29T02:37:41",
-        #   "upload_time_iso_8601": "2012-06-29T02:37:41.500479Z",
-        #   "url": "https://files.pythonhosted.org/packages/62/ca/338cf287e172099e4500cfa2cb580d2c9a1874427a8a14324d7a4c9d01b1/requests-0.13.2.tar.gz",
-        #   "yanked": false,
-        #   "yanked_reason": null
-        # }
         sig do
           params(
             version: String,
@@ -264,7 +286,7 @@ module Dependabot
           )
             .returns(T.nilable(Dependabot::Python::Package::PackageRelease))
         end
-        def extract_release_from_release_json_data(version, release_data)
+        def format_version_release(version, release_data)
           upload_time = release_data["upload_time"]
           released_at = Time.parse(upload_time) if upload_time
           yanked = release_data["yanked"] || false
@@ -289,34 +311,6 @@ module Dependabot
           )
           release
         end
-
-        # rubocop:disable Metrics/PerceivedComplexity
-        sig do
-          params(link: T.nilable(String))
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def version_details_from_link(link)
-          return unless link
-
-          doc = Nokogiri::XML(link)
-          filename = doc.at_css("a")&.content
-          url = doc.at_css("a")&.attributes&.fetch("href", nil)&.value
-
-          return unless filename&.match?(name_regex) || url&.match?(name_regex)
-
-          version = get_version_from_filename(filename)
-          return unless version_class.correct?(version)
-
-          {
-            version: version_class.new(version),
-            python_requirement: build_python_requirement(
-              requires_python_from_link(link)
-            ),
-            yanked: link.include?("data-yanked"),
-            url: link
-          }
-        end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         sig do
           params(
@@ -367,6 +361,45 @@ module Dependabot
           [language_name, language_version]
         end
 
+        sig { returns(T::Array[String]) }
+        def registry_urls
+          @registry_urls ||=
+            Package::PackageRegistryFinder.new(
+              dependency_files: dependency_files,
+              credentials: credentials,
+              dependency: dependency
+            ).registry_urls
+        end
+
+        sig { returns(String) }
+        def normalised_name
+          NameNormaliser.normalise(dependency.name)
+        end
+
+        sig { params(json_url: String).returns(Excon::Response) }
+        def registry_json_response_for_dependency(json_url)
+          Dependabot::RegistryClient.get(
+            url: "#{json_url.chomp('/')}/#{@dependency.name}/json",
+            headers: { "Accept" => APPLICATION_JSON }
+          )
+        end
+
+        sig { params(index_url: String).returns(Excon::Response) }
+        def registry_response_for_dependency(index_url)
+          Dependabot::RegistryClient.get(
+            url: index_url + normalised_name + "/",
+            headers: { "Accept" => APPLICATION_TEXT }
+          )
+        end
+
+        sig { params(index_url: String).returns(Excon::Response) }
+        def registry_index_response(index_url)
+          Dependabot::RegistryClient.get(
+            url: index_url,
+            headers: { "Accept" => APPLICATION_TEXT }
+          )
+        end
+
         sig { params(filename: String).returns(T.nilable(String)) }
         def get_version_from_filename(filename)
           filename
@@ -389,10 +422,14 @@ module Dependabot
 
         sig { params(link: String).returns(T.nilable(String)) }
         def requires_python_from_link(link)
-          Nokogiri::XML(link)
-                  .at_css("a")
-                  &.attribute("data-requires-python")
-                  &.content
+          raw_value = Nokogiri::XML(link)
+                              .at_css("a")
+                              &.attribute("data-requires-python")
+                              &.content
+
+          return nil unless raw_value
+
+          CGI.unescapeHTML(raw_value) # Decodes HTML entities like &gt;=3 → >=3
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
