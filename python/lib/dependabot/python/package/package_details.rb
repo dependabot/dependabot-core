@@ -32,14 +32,6 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Python::Package::PackageRelease]) }
         attr_reader :releases
-
-        sig { params(args: T.untyped).returns(String) }
-        def to_json(*args) # rubocop:disable Lint/UnusedMethodArgument
-          {
-            dependency: @dependency,
-            releases: @releases
-          }.to_json
-        end
       end
     end
   end
