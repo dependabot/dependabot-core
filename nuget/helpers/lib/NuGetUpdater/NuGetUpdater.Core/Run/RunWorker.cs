@@ -152,14 +152,28 @@ public class RunWorker
 
         // do update
         var updateOperations = GetUpdateOperations(discoveryResult).ToArray();
-        foreach (var updateOperation in updateOperations)
+        var allowedUpdateOperations = updateOperations.Where(u => IsUpdateAllowed(job, u.Dependency)).ToArray();
+
+        // requested update isn't listed => SecurityUpdateNotNeeded
+        var expectedSecurityUpdateDependencyNames = job.SecurityAdvisories
+            .Select(s => s.DependencyName)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var actualUpdateDependencyNames = allowedUpdateOperations
+            .Select(u => u.Dependency.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var expectedDependencyUpdateMissingInActual = expectedSecurityUpdateDependencyNames
+            .Except(actualUpdateDependencyNames, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var missingSecurityUpdate in expectedDependencyUpdateMissingInActual)
+        {
+            await _apiHandler.RecordUpdateJobError(new SecurityUpdateNotNeeded(missingSecurityUpdate));
+        }
+
+        foreach (var updateOperation in allowedUpdateOperations)
         {
             var dependency = updateOperation.Dependency;
-            if (!IsUpdateAllowed(job, dependency))
-            {
-                continue;
-            }
-
             _logger.Info($"Updating [{dependency.Name}] in [{updateOperation.ProjectPath}]");
 
             var dependencyInfo = GetDependencyInfo(job, dependency);
