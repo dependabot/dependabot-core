@@ -5,7 +5,6 @@
 # lookup table of package manager names to concrete classes.
 require "dependabot/docker_compose/file_fetcher"
 require "dependabot/docker_compose/file_parser"
-require "dependabot/docker_compose/update_checker"
 require "dependabot/docker_compose/file_updater"
 
 require "dependabot/docker/version"
