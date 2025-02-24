@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/python"
+mkdir -p "$install_dir"
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cp -r \
+  "$helpers_dir/lib" \
+  "$helpers_dir/run.py" \
+  "$helpers_dir/requirements.txt" \
+  "$install_dir"
+
+cd "$install_dir"
+PYENV_VERSION=$1 pyenv exec pip3 --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+
+# Remove the extra objects added during the previous install. Based on
+# https://github.com/docker-library/python/blob/master/Dockerfile-linux.template
+# And the image docker.io/library/python
+find "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -depth \
+    \( \
+    \( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+    -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \) \) \
+    \) -exec rm -rf '{}' +
+
+find -L "${PYENV_ROOT:-/usr/local/.pyenv}/versions" -type f  \
+    -name '*.so' \
+    -exec strip --preserve-dates {} +
