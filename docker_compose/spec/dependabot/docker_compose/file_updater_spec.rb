@@ -550,6 +550,45 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
           end
         end
       end
+
+      context "when the image is quoted" do
+        let(:dockerfile_body) do
+          fixture("docker_compose", "composefiles", "tag_quoted")
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "elastic/elasticsearch",
+            version: "8.17.2",
+            previous_version: "8.16.4",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "docker-compose.yml",
+              source: {
+                tag: "8.17.2"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "docker-compose.yml",
+              source: {
+                tag: "8.16.4"
+              }
+            }],
+            package_manager: "docker_compose"
+          )
+        end
+
+        describe "the updated custom-name file" do
+          subject { updated_files.find { |f| f.name == "docker-compose.yml" } }
+
+          its(:content) do
+            is_expected.to include "image: \"elastic/elasticsearch:8.17.2\""
+          end
+        end
+      end
     end
   end
 end
