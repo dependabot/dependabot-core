@@ -1,8 +1,8 @@
 pip==25.0.1
 pip-tools==7.4.1
-flake8==7.1.0
+flake8==7.1.2
 hashin==1.0.3
-pipenv==2024.0.2
+pipenv==2024.4.1
 plette==2.1.0
 poetry==2.1.1
 # TODO: Replace 3p package `tomli` with 3.11's new stdlib `tomllib` once we drop support for Python 3.10.
