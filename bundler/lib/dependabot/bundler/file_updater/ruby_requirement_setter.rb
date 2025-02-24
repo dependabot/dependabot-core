@@ -10,7 +10,7 @@ module Dependabot
     class FileUpdater
       class RubyRequirementSetter
         RUBY_VERSIONS = %w(
-          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.4 3.3.6
+          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.9 2.6.9 2.7.6 3.0.6 3.1.6 3.2.4 3.3.6 3.4.2
         ).freeze
 
         LANGUAGE = "ruby"
