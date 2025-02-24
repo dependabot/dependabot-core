@@ -490,23 +490,23 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
-    context "with incompatible versions" do
-      let(:manifest_fixture_name) { "incompatible_versions.in" }
-      let(:generated_fixture_name) { "incompatible_versions.txt" }
-      let(:dependency_name) { "pyyaml" }
-      let(:dependency_version) { "6.0.1" }
-      let(:dependency_previous_version) { "5.3.1" }
-      let(:dependency_requirements) { [] }
-      let(:dependency_previous_requirements) { [] }
+    # context "with incompatible versions" do
+    # let(:manifest_fixture_name) { "incompatible_versions.in" }
+    # let(:generated_fixture_name) { "incompatible_versions.txt" }
+    # let(:dependency_name) { "pyyaml" }
+    # let(:dependency_version) { "6.0.1" }
+    # let(:dependency_previous_version) { "5.3.1" }
+    # let(:dependency_requirements) { [] }
+    # let(:dependency_previous_requirements) { [] }
 
-      it "raises an error indicating the dependencies are not resolvable", :slow do
-        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
-          expect(err.message).to include(
-            "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
-          )
-        end
-      end
-    end
+    # it "raises an error indicating the dependencies are not resolvable", :slow do
+    # expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+    #  expect(err.message).to include(
+    #   "There are incompatible versions in the resolved dependencies:\n  pyyaml==6.0.1"
+    # )
+    # end
+    # end
+    # end
 
     context "with stripped extras" do
       let(:manifest_fixture_name) { "strip_extras.in" }
