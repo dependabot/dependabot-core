@@ -25,6 +25,7 @@ public abstract record JobErrorBase
         return ex switch
         {
             BadRequirementException badRequirement => new BadRequirement(badRequirement.Message),
+            DependencyNotFoundException dependencyNotFound => new DependencyNotFound(string.Join(", ", dependencyNotFound.Dependencies)),
             HttpRequestException httpRequest => httpRequest.StatusCode switch
             {
                 HttpStatusCode.Unauthorized or

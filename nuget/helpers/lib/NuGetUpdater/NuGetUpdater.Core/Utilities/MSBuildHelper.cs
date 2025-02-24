@@ -795,7 +795,7 @@ internal static partial class MSBuildHelper
             );
             return (exitCode, stdOut, stdErr);
         });
-        ThrowOnUnauthenticatedFeed(stdOut);
+        ThrowOnError(stdOut);
         if (exitCode != 0)
         {
             logger.Warn($"Error determining target frameworks.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
@@ -970,12 +970,17 @@ internal static partial class MSBuildHelper
 
     private static void ThrowOnMissingPackages(string output)
     {
-        var missingPackagesPattern = new Regex(@"Package '(?<PackageName>[^']*)' is not found on source");
-        var matchCollection = missingPackagesPattern.Matches(output);
-        var missingPackages = matchCollection.Select(m => m.Groups["PackageName"].Value).Distinct().ToArray();
-        if (missingPackages.Length > 0)
+        var patterns = new[]
         {
-            throw new UpdateNotPossibleException(missingPackages);
+            new Regex(@"Package '(?<PackageName>[^']*)' is not found on source '(?<PackageSource>[^$\r\n]*)'\."),
+            new Regex(@"Unable to find package (?<PackageName>[^ ]+)\. No packages exist with this id in source\(s\): (?<PackageSource>.*)$", RegexOptions.Multiline),
+            new Regex(@"Unable to find package (?<PackageName>[^ ]+) with version \((?<PackageVersion>[^)]+)\)"),
+        };
+        var matches = patterns.Select(p => p.Match(output)).Where(m => m.Success);
+        if (matches.Any())
+        {
+            var packages = matches.Select(m => m.Groups["PackageName"].Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            throw new DependencyNotFoundException(packages);
         }
     }
 

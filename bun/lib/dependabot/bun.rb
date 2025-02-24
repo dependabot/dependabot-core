@@ -26,13 +26,6 @@ Dependabot::Dependency.register_production_check(
   end
 )
 
-## A type used for defining a proc that creates a new error object
-ErrorHandler = T.type_alias do
-  T.proc
-   .params(message: String, error: Dependabot::DependabotError, params: T::Hash[Symbol, T.untyped])
-   .returns(Dependabot::DependabotError)
-end
-
 module Dependabot
   module Bun
     NODE_VERSION_NOT_SATISFY_REGEX = /The current Node version (?<current_version>v?\d+\.\d+\.\d+) does not satisfy the required version (?<required_version>v?\d+\.\d+\.\d+)\./ # rubocop:disable Layout/LineLength
@@ -129,6 +122,13 @@ module Dependabot
 
     # registry returns malformed response
     REGISTRY_NOT_REACHABLE = /Received malformed response from registry for "(?<ver>.*)". The registry may be down./
+
+    ## A type used for defining a proc that creates a new error object
+    ErrorHandler = T.type_alias do
+      T.proc
+       .params(message: String, error: Dependabot::DependabotError, params: T::Hash[Symbol, T.untyped])
+       .returns(Dependabot::DependabotError)
+    end
 
     class Utils
       extend T::Sig

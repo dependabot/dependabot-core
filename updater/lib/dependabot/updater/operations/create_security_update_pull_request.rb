@@ -158,6 +158,12 @@ module Dependabot
           #   https://github.com/github/dependabot-api/issues/905
           return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
+          if checker.conflicting_dependencies.any? do |dep|
+            T.must(dep["explanation"]).include?("via a transitive dependency")
+          end
+            return record_security_update_not_possible_error(checker, "transitive_update_not_possible")
+          end
+
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
@@ -165,16 +171,8 @@ module Dependabot
             # request)
             record_pull_request_exists_for_security_update(existing_pr)
 
-            deps = existing_pr.dependencies.map do |dep|
-              if dep.removed?
-                "#{dep.name}@removed"
-              else
-                "#{dep.name}@#{dep.version}"
-              end
-            end
-
             return Dependabot.logger.info(
-              "Pull request already exists for #{deps.join(', ')}"
+              pr_already_exists_message(existing_pr)
             )
           end
 
@@ -197,6 +195,20 @@ module Dependabot
           # Report this error to the backend to create an update job error
           raise
         end
+
+        sig { params(existing_pr: PullRequest).returns(String) }
+        def pr_already_exists_message(existing_pr)
+          deps = existing_pr.dependencies.map do |dep|
+            if dep.removed?
+              "#{dep.name}@removed"
+            else
+              "#{dep.name}@#{dep.version}"
+            end
+          end
+
+          "Pull request already exists for #{deps.join(', ')}"
+        end
+
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
