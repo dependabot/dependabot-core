@@ -147,7 +147,16 @@ public class RunWorker
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
                 await TrackOriginalContentsAsync(discoveryResult.Path, extraFilePath);
             }
-            // TODO: include global.json, etc.
+        }
+
+        var nonProjectFiles = new[]
+        {
+            discoveryResult.GlobalJson?.FilePath,
+            discoveryResult.DotNetToolsJson?.FilePath,
+        }.Where(f => f is not null).Cast<string>().ToArray();
+        foreach (var nonProjectFile in nonProjectFiles)
+        {
+            await TrackOriginalContentsAsync(discoveryResult.Path, nonProjectFile);
         }
 
         // do update
@@ -174,7 +183,7 @@ public class RunWorker
         foreach (var updateOperation in allowedUpdateOperations)
         {
             var dependency = updateOperation.Dependency;
-            _logger.Info($"Updating [{dependency.Name}] in [{updateOperation.ProjectPath}]");
+            _logger.Info($"Updating [{dependency.Name}] in [{updateOperation.FilePath}]");
 
             var dependencyInfo = GetDependencyInfo(job, dependency);
             var analysisResult = await _analyzeWorker.RunAsync(repoContentsPath.FullName, discoveryResult, dependencyInfo);
@@ -183,7 +192,7 @@ public class RunWorker
             {
                 // TODO: this is inefficient, but not likely causing a bottleneck
                 var previousDependency = discoveredUpdatedDependencies.Dependencies
-                    .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == updateOperation.ProjectPath);
+                    .Single(d => d.Name == dependency.Name && d.Requirements.Single().File == updateOperation.FilePath);
                 var updatedDependency = new ReportedDependency()
                 {
                     Name = dependency.Name,
@@ -192,7 +201,7 @@ public class RunWorker
                     [
                         new ReportedRequirement()
                         {
-                            File = updateOperation.ProjectPath,
+                            File = updateOperation.FilePath,
                             Requirement = analysisResult.UpdatedVersion,
                             Groups = previousDependency.Requirements.Single().Groups,
                             Source = new RequirementSource()
@@ -205,7 +214,7 @@ public class RunWorker
                     PreviousRequirements = previousDependency.Requirements,
                 };
 
-                var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.ProjectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
+                var updateResult = await _updaterWorker.RunAsync(repoContentsPath.FullName, updateOperation.FilePath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, isTransitive: dependency.IsTransitive);
                 // TODO: need to report if anything was actually updated
                 if (updateResult.Error is null)
                 {
@@ -228,7 +237,6 @@ public class RunWorker
 
             if (updatedContent != originalContent)
             {
-
                 updatedDependencyFiles[localFullPath] = new DependencyFile()
                 {
                     Name = Path.GetFileName(repoFullPath),
@@ -247,7 +255,11 @@ public class RunWorker
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
                 await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, extraFilePath);
             }
-            // TODO: handle global.json, etc.
+        }
+
+        foreach (var nonProjectFile in nonProjectFiles)
+        {
+            await AddUpdatedFileIfDifferentAsync(discoveryResult.Path, nonProjectFile);
         }
 
         if (updatedDependencyFiles.Count > 0)
@@ -290,34 +302,50 @@ public class RunWorker
         return result;
     }
 
-    internal static IEnumerable<(string ProjectPath, Dependency Dependency)> GetUpdateOperations(WorkspaceDiscoveryResult discovery)
+    internal static IEnumerable<(string FilePath, Dependency Dependency)> GetUpdateOperations(WorkspaceDiscoveryResult discovery)
     {
-        // discovery is grouped by project then dependency, but we want to pivot and return a list of update operations sorted by dependency name then project path
+        // discovery is grouped by project/file then dependency, but we want to pivot and return a list of update operations sorted by dependency name then file path
 
         var updateOrder = new Dictionary<string, Dictionary<string, Dictionary<string, Dependency>>>(StringComparer.OrdinalIgnoreCase);
-        //                     <dependency name,     <project path, specific dependencies>>
+        //                     <dependency name,        <file path, specific dependencies>>
 
         // collect
+        void CollectDependenciesForFile(string filePath, IEnumerable<Dependency> dependencies)
+        {
+            foreach (var dependency in dependencies)
+            {
+                var dependencyGroup = updateOrder.GetOrAdd(dependency.Name, () => new Dictionary<string, Dictionary<string, Dependency>>(PathComparer.Instance));
+                var dependenciesForFile = dependencyGroup.GetOrAdd(filePath, () => new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase));
+                dependenciesForFile[dependency.Name] = dependency;
+            }
+        }
         foreach (var project in discovery.Projects)
         {
             var projectPath = Path.Join(discovery.Path, project.FilePath).FullyNormalizedRootedPath();
-            foreach (var dependency in project.Dependencies)
-            {
-                var dependencyGroup = updateOrder.GetOrAdd(dependency.Name, () => new Dictionary<string, Dictionary<string, Dependency>>(PathComparer.Instance));
-                var dependenciesForProject = dependencyGroup.GetOrAdd(projectPath, () => new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase));
-                dependenciesForProject[dependency.Name] = dependency;
-            }
+            CollectDependenciesForFile(projectPath, project.Dependencies);
+        }
+
+        if (discovery.GlobalJson is not null)
+        {
+            var globalJsonPath = Path.Join(discovery.Path, discovery.GlobalJson.FilePath).FullyNormalizedRootedPath();
+            CollectDependenciesForFile(globalJsonPath, discovery.GlobalJson.Dependencies);
+        }
+
+        if (discovery.DotNetToolsJson is not null)
+        {
+            var dotnetToolsJsonPath = Path.Join(discovery.Path, discovery.DotNetToolsJson.FilePath).FullyNormalizedRootedPath();
+            CollectDependenciesForFile(dotnetToolsJsonPath, discovery.DotNetToolsJson.Dependencies);
         }
 
         // return
         foreach (var dependencyName in updateOrder.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
         {
-            var projectDependencies = updateOrder[dependencyName];
-            foreach (var projectPath in projectDependencies.Keys.OrderBy(p => p, PathComparer.Instance))
+            var fileDependencies = updateOrder[dependencyName];
+            foreach (var filePath in fileDependencies.Keys.OrderBy(p => p, PathComparer.Instance))
             {
-                var dependencies = projectDependencies[projectPath];
+                var dependencies = fileDependencies[filePath];
                 var dependency = dependencies[dependencyName];
-                yield return (projectPath, dependency);
+                yield return (filePath, dependency);
             }
         }
     }
@@ -464,35 +492,69 @@ public class RunWorker
             }
         }
 
+        var allDependenciesWithFilePath = discoveryResult.Projects.SelectMany(p =>
+        {
+            return p.Dependencies
+                .Where(d => d.Version is not null)
+                .Select(d =>
+                    (p.FilePath, new ReportedDependency()
+                    {
+                        Name = d.Name,
+                        Requirements = [new ReportedRequirement()
+                            {
+                                File = GetFullRepoPath(p.FilePath),
+                                Requirement = d.Version!,
+                                Groups = ["dependencies"],
+                            }],
+                        Version = d.Version,
+                    }));
+        }).ToList();
+
+        var nonProjectDependencySet = new (string?, IEnumerable<Dependency>)[]
+        {
+            (discoveryResult.GlobalJson?.FilePath, discoveryResult.GlobalJson?.Dependencies ?? []),
+            (discoveryResult.DotNetToolsJson?.FilePath, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
+        };
+
+        foreach (var (filePath, dependencies) in nonProjectDependencySet)
+        {
+            if (filePath is null)
+            {
+                continue;
+            }
+
+            allDependenciesWithFilePath.AddRange(dependencies
+                .Where(d => d.Version is not null)
+                .Select(d =>
+                    (filePath, new ReportedDependency()
+                    {
+                        Name = d.Name,
+                        Requirements = [new ReportedRequirement()
+                            {
+                                File = GetFullRepoPath(filePath),
+                                Requirement = d.Version!,
+                                Groups = ["dependencies"],
+                            }],
+                        Version = d.Version,
+                    })));
+        }
+
+        var sortedDependencies = allDependenciesWithFilePath
+            .OrderBy(pair => Path.Join(discoveryResult.Path, pair.FilePath).FullyNormalizedRootedPath(), PathComparer.Instance)
+            .ThenBy(pair => pair.Item2.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(pair => pair.Item2)
+            .ToArray();
+
         var dependencyFiles = discoveryResult.Projects
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
             .Distinct()
             .OrderBy(p => p)
             .ToArray();
-        var orderedProjects = discoveryResult.Projects
-            .OrderBy(p => Path.Join(discoveryResult.Path, p.FilePath).FullyNormalizedRootedPath(), PathComparer.Instance)
-            .ToArray();
+
         var updatedDependencyList = new UpdatedDependencyList()
         {
-            Dependencies = orderedProjects.SelectMany(p =>
-            {
-                return p.Dependencies
-                    .Where(d => d.Version is not null)
-                    .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-                    .Select(d =>
-                        new ReportedDependency()
-                        {
-                            Name = d.Name,
-                            Requirements = [new ReportedRequirement()
-                            {
-                                File = GetFullRepoPath(p.FilePath),
-                                Requirement = d.Version!,
-                                Groups = ["dependencies"],
-                            }],
-                            Version = d.Version,
-                        });
-            }).ToArray(),
+            Dependencies = sortedDependencies,
             DependencyFiles = dependencyFiles,
         };
         return updatedDependencyList;
