@@ -21,6 +21,7 @@ function Get-Files {
         --api-url $env:DEPENDABOT_API_URL `
         --job-id $env:DEPENDABOT_JOB_ID
     $script:operationExitCode = $LASTEXITCODE
+    Repair-FileCasing
 }
 
 function Update-Files {
