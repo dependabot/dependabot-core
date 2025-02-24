@@ -1,0 +1,18 @@
+{
+  "name": "pyproject.toml",
+  "path": "pyproject.toml",
+  "sha": "1ebadf060e206ca2414c1facbdeb7f8253f2d597",
+  "size": 1798,
+  "url": "https://api.github.com/repos/sdispater/poetry/contents/pyproject.toml?ref=master",
+  "html_url": "https://github.com/sdispater/poetry/blob/master/pyproject.toml",
+  "git_url": "https://api.github.com/repos/sdispater/poetry/git/blobs/1ebadf060e206ca2414c1facbdeb7f8253f2d597",
+  "download_url": "https://raw.githubusercontent.com/sdispater/poetry/master/pyproject.toml",
+  "type": "file",
+  "content": "W3Rvb2wucG9ldHJ5XQpuYW1lID0gIlB5dGhvblByb2plY3RzIgp2ZXJzaW9u\nID0gIjIuMC4wIgpob21lcGFnZSA9ICJodHRwczovL2dpdGh1Yi5jb20vcm9n\naHUvcHkzX3Byb2plY3RzIgpsaWNlbnNlID0gIk1JVCIKcmVhZG1lID0gIlJF\nQURNRS5tZCIKYXV0aG9ycyA9IFsiRGVwZW5kYWJvdCA8c3VwcG9ydEBkZXBl\nbmRhYm90LmNvbT4iXQpkZXNjcmlwdGlvbiA9ICJWYXJpb3VzIHNtYWxsIHB5\ndGhvbiBwcm9qZWN0cy4iCgpbdG9vbC5wb2V0cnkuZGVwZW5kZW5jaWVzXQpw\neXRob24gPSAifjMuNiIKbnVtcHkgPSAiMS4xNi4xIgpteV9kZXAgPSB7cGF0\naCA9ICJwYXRoX2RlcC8ifQo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/sdispater/poetry/contents/pyproject.toml?ref=master",
+    "git": "https://api.github.com/repos/sdispater/poetry/git/blobs/1ebadf060e206ca2414c1facbdeb7f8253f2d597",
+    "html": "https://github.com/sdispater/poetry/blob/master/pyproject.toml"
+  }
+}

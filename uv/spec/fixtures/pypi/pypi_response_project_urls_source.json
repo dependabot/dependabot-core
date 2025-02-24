@@ -1,0 +1,180 @@
+{
+  "info": {
+    "bugtrack_url": null,
+    "classifiers": [
+      "Development Status :: 5 - Production/Stable",
+      "Environment :: Web Environment",
+      "Framework :: Django",
+      "Framework :: Django :: 3.2",
+      "Intended Audience :: Developers",
+      "License :: OSI Approved :: BSD License",
+      "Operating System :: OS Independent",
+      "Programming Language :: Python :: 3",
+      "Programming Language :: Python :: 3.10"
+    ],
+    "description": null,
+    "docs_url": null,
+    "download_url": null,
+    "downloads": {
+      "last_day": -1,
+      "last_month": -1,
+      "last_week": -1
+    },
+    "dynamic": null,
+    "home_page": "https://django-split-settings.readthedocs.io",
+    "keywords": "django, settings, configuration, config",
+    "name": "django-split-settings",
+    "package_url": "https://pypi.org/project/django-split-settings/",
+    "platform": null,
+    "project_url": "https://pypi.org/project/django-split-settings/",
+    "project_urls": {
+      "Funding": "https://github.com/sponsors/xxxxx",
+      "Homepage": "https://django-split-settings.readthedocs.io",
+      "Repository": "https://github.com/xxxxx/django-split-settings"
+    },
+    "provides_extra": null,
+    "release_url": "https://pypi.org/project/django-split-settings/1.3.2/",
+    "requires_dist": null,
+    "requires_python": "<4.0,>=3.9",
+    "summary": "Organize Django settings into multiple files and directories.",
+    "version": "1.3.2",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "last_serial": 24000635,
+  "releases": {
+    "1.3.1": [
+      {
+        "comment_text": "",
+        "digests": {
+          "blake2b_256": "378c6bc9468e4715016883997090a303c3b2dc08a9cf2616360e7dd53ebe839b",
+          "md5": "3dea0ef804dc9bdf835b62aa2312a07c",
+          "sha256": "c902ef60d5fe8190ff224284f68e3c9015b6f1aca9e9d6bd70bf86394ff32634"
+        },
+        "downloads": -1,
+        "filename": "django_split_settings-1.3.1-py3-none-any.whl",
+        "has_sig": false,
+        "md5_digest": "3dea0ef804dc9bdf835b62aa2312a07c",
+        "packagetype": "bdist_wheel",
+        "python_version": "py3",
+        "requires_python": "<4.0,>=3.9",
+        "size": 6407,
+        "upload_time": "2024-04-05T07:14:12",
+        "upload_time_iso_8601": "2024-04-05T07:14:12.246439Z",
+        "url": "https://files.pythonhosted.org/packages/37/8c/6bc9468e4715016883997090a303c3b2dc08a9cf2616360e7dd53ebe839b/django_split_settings-1.3.1-py3-none-any.whl",
+        "yanked": false,
+        "yanked_reason": null
+      },
+      {
+        "comment_text": "",
+        "digests": {
+          "blake2b_256": "cb20400c2094d5db8aed83fb10634d072dc36ae35142425d56d602e11309d589",
+          "md5": "ec0644f368c12606faa743630eb73d9d",
+          "sha256": "c1f57f6b54fc0d93082c12163e76fad082c214f5fa0d16d84a1226d2c9f14f26"
+        },
+        "downloads": -1,
+        "filename": "django_split_settings-1.3.1.tar.gz",
+        "has_sig": false,
+        "md5_digest": "ec0644f368c12606faa743630eb73d9d",
+        "packagetype": "sdist",
+        "python_version": "source",
+        "requires_python": "<4.0,>=3.9",
+        "size": 5723,
+        "upload_time": "2024-04-05T07:14:14",
+        "upload_time_iso_8601": "2024-04-05T07:14:14.101556Z",
+        "url": "https://files.pythonhosted.org/packages/cb/20/400c2094d5db8aed83fb10634d072dc36ae35142425d56d602e11309d589/django_split_settings-1.3.1.tar.gz",
+        "yanked": false,
+        "yanked_reason": null
+      }
+    ],
+    "1.3.2": [
+      {
+        "comment_text": "",
+        "digests": {
+          "blake2b_256": "6369d94db8dac55bcfb6b3243578a3096cfda6c42ea5da292c36919768152ec6",
+          "md5": "c06d6d4bf3b8dc83e295fd86dc2e4e13",
+          "sha256": "72bd7dd9f12602585681074d1f859643fb4f6b196b584688fab86bdd73a57dff"
+        },
+        "downloads": -1,
+        "filename": "django_split_settings-1.3.2-py3-none-any.whl",
+        "has_sig": false,
+        "md5_digest": "c06d6d4bf3b8dc83e295fd86dc2e4e13",
+        "packagetype": "bdist_wheel",
+        "python_version": "py3",
+        "requires_python": "<4.0,>=3.9",
+        "size": 6435,
+        "upload_time": "2024-07-05T14:29:59",
+        "upload_time_iso_8601": "2024-07-05T14:29:59.756365Z",
+        "url": "https://files.pythonhosted.org/packages/63/69/d94db8dac55bcfb6b3243578a3096cfda6c42ea5da292c36919768152ec6/django_split_settings-1.3.2-py3-none-any.whl",
+        "yanked": false,
+        "yanked_reason": null
+      },
+      {
+        "comment_text": "",
+        "digests": {
+          "blake2b_256": "deb91c13089454afd7a42d492b8aa8a0c7e49eeca58c0f2ad331f361a067c876",
+          "md5": "a51b6266e7aa2307ba213c7c14188d69",
+          "sha256": "d3975aa3601e37f65c59b9977b6bcb1de8bc27496930054078589c7d56998a9d"
+        },
+        "downloads": -1,
+        "filename": "django_split_settings-1.3.2.tar.gz",
+        "has_sig": false,
+        "md5_digest": "a51b6266e7aa2307ba213c7c14188d69",
+        "packagetype": "sdist",
+        "python_version": "source",
+        "requires_python": "<4.0,>=3.9",
+        "size": 5751,
+        "upload_time": "2024-07-05T14:30:05",
+        "upload_time_iso_8601": "2024-07-05T14:30:05.997090Z",
+        "url": "https://files.pythonhosted.org/packages/de/b9/1c13089454afd7a42d492b8aa8a0c7e49eeca58c0f2ad331f361a067c876/django_split_settings-1.3.2.tar.gz",
+        "yanked": false,
+        "yanked_reason": null
+      }
+    ]
+  },
+  "urls": [
+    {
+      "comment_text": "",
+      "digests": {
+        "blake2b_256": "6369d94db8dac55bcfb6b3243578a3096cfda6c42ea5da292c36919768152ec6",
+        "md5": "c06d6d4bf3b8dc83e295fd86dc2e4e13",
+        "sha256": "72bd7dd9f12602585681074d1f859643fb4f6b196b584688fab86bdd73a57dff"
+      },
+      "downloads": -1,
+      "filename": "django_split_settings-1.3.2-py3-none-any.whl",
+      "has_sig": false,
+      "md5_digest": "c06d6d4bf3b8dc83e295fd86dc2e4e13",
+      "packagetype": "bdist_wheel",
+      "python_version": "py3",
+      "requires_python": "<4.0,>=3.9",
+      "size": 6435,
+      "upload_time": "2024-07-05T14:29:59",
+      "upload_time_iso_8601": "2024-07-05T14:29:59.756365Z",
+      "url": "https://files.pythonhosted.org/packages/63/69/d94db8dac55bcfb6b3243578a3096cfda6c42ea5da292c36919768152ec6/django_split_settings-1.3.2-py3-none-any.whl",
+      "yanked": false,
+      "yanked_reason": null
+    },
+    {
+      "comment_text": "",
+      "digests": {
+        "blake2b_256": "deb91c13089454afd7a42d492b8aa8a0c7e49eeca58c0f2ad331f361a067c876",
+        "md5": "a51b6266e7aa2307ba213c7c14188d69",
+        "sha256": "d3975aa3601e37f65c59b9977b6bcb1de8bc27496930054078589c7d56998a9d"
+      },
+      "downloads": -1,
+      "filename": "django_split_settings-1.3.2.tar.gz",
+      "has_sig": false,
+      "md5_digest": "a51b6266e7aa2307ba213c7c14188d69",
+      "packagetype": "sdist",
+      "python_version": "source",
+      "requires_python": "<4.0,>=3.9",
+      "size": 5751,
+      "upload_time": "2024-07-05T14:30:05",
+      "upload_time_iso_8601": "2024-07-05T14:30:05.997090Z",
+      "url": "https://files.pythonhosted.org/packages/de/b9/1c13089454afd7a42d492b8aa8a0c7e49eeca58c0f2ad331f361a067c876/django_split_settings-1.3.2.tar.gz",
+      "yanked": false,
+      "yanked_reason": null
+    }
+  ],
+  "vulnerabilities": []
+}

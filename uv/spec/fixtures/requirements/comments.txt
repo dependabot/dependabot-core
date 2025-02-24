@@ -1,0 +1,2 @@
+psycopg2==2.6.1  # Comment!
+luigi==2.2.0

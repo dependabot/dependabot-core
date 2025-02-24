@@ -1,0 +1,146 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "69cb8deeb32e391d4c7468bcb946d1dcc4a18f7e",
+    "size": 50,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/69cb8deeb32e391d4c7468bcb946d1dcc4a18f7e",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/69cb8deeb32e391d4c7468bcb946d1dcc4a18f7e",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "84fe533754a50b4ebba98d31711e44fda16e78ec",
+    "size": 1068,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/LICENSE?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/LICENSE",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/84fe533754a50b4ebba98d31711e44fda16e78ec",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/LICENSE?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/84fe533754a50b4ebba98d31711e44fda16e78ec",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "0aef9494ec8522bd282da9d9fdfabce2e37772e9",
+    "size": 1489,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/README.md?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/README.md",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/0aef9494ec8522bd282da9d9fdfabce2e37772e9",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/README.md?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/0aef9494ec8522bd282da9d9fdfabce2e37772e9",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/README.md"
+    }
+  },
+  {
+    "name": "action.yml",
+    "path": "action.yml",
+    "sha": "ce06edd0371247671900428088c35db33b47ea40",
+    "size": 1119,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/action.yml?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/action.yml",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/ce06edd0371247671900428088c35db33b47ea40",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/action.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/action.yml?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/ce06edd0371247671900428088c35db33b47ea40",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/action.yml"
+    }
+  },
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "sha": "bdbc5fb8c2f171476b749c74b3c18886402fc58f",
+    "size": 668,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/package.json?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/package.json",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/bdbc5fb8c2f171476b749c74b3c18886402fc58f",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/package.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/package.json?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/bdbc5fb8c2f171476b749c74b3c18886402fc58f",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/package.json"
+    }
+  },
+  {
+    "name": "pdm.lock",
+    "path": "pdm.lock",
+    "sha": "31a43a994d33ec6fab0a26a08b7313c6836e0822",
+    "size": 3281,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/pdm.lock?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/pdm.lock",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/31a43a994d33ec6fab0a26a08b7313c6836e0822",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/pdm.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/pdm.lock?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/31a43a994d33ec6fab0a26a08b7313c6836e0822",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/pdm.lock"
+    }
+  },
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "ef878626903d08844f17dec880ec944c2312ccd5",
+    "size": 526,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/pyproject.toml?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/pyproject.toml",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/ef878626903d08844f17dec880ec944c2312ccd5",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/pyproject.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/pyproject.toml?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/ef878626903d08844f17dec880ec944c2312ccd5",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/pyproject.toml"
+    }
+  },
+  {
+    "name": "test.py",
+    "path": "test.py",
+    "sha": "f4f28c78d3f907d97dc3d74d411e9d28aa8df4af",
+    "size": 1052,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/test.py?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/test.py",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/f4f28c78d3f907d97dc3d74d411e9d28aa8df4af",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/test.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/test.py?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/f4f28c78d3f907d97dc3d74d411e9d28aa8df4af",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/test.py"
+    }
+  },
+  {
+    "name": "tsconfig.json",
+    "path": "tsconfig.json",
+    "sha": "9e1ee252d05cfcafa70d459f87edc45cb2262926",
+    "size": 5523,
+    "url": "https://api.github.com/repos/pdm-project/setup-pdm/contents/tsconfig.json?ref=main",
+    "html_url": "https://github.com/pdm-project/setup-pdm/blob/main/tsconfig.json",
+    "git_url": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/9e1ee252d05cfcafa70d459f87edc45cb2262926",
+    "download_url": "https://raw.githubusercontent.com/pdm-project/setup-pdm/main/tsconfig.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/pdm-project/setup-pdm/contents/tsconfig.json?ref=main",
+      "git": "https://api.github.com/repos/pdm-project/setup-pdm/git/blobs/9e1ee252d05cfcafa70d459f87edc45cb2262926",
+      "html": "https://github.com/pdm-project/setup-pdm/blob/main/tsconfig.json"
+    }
+  }
+]

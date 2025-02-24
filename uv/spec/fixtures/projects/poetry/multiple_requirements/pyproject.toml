@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "example"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+numpy = [
+	{ version = "^1.19", python = "^3.6,<3.7" },
+	{ version  = "^1.20", python = "^3.7" }]
+scipy = [
+	{ version = "^1.5", python = "^3.6,<3.7" },
+	{ version = "^1.6.0", python = "^3.7" }
+]
