@@ -287,6 +287,22 @@ module Dependabot
       end
 
       sig { void }
+      def self.normalize_file_names
+        # environment variables are required and the following will generate an actionable error message if they're not
+        _dependabot_repo_contents_path = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH")
+
+        # this environment variable is directly used
+        dependabot_home = ENV.fetch("DEPENDABOT_HOME")
+
+        command = [
+          "pwsh",
+          "#{dependabot_home}/dependabot-updater/bin/normalize-file-names.ps1"
+        ].join(" ")
+        output = SharedHelpers.run_shell_command(command)
+        puts output
+      end
+
+      sig { void }
       def self.install_dotnet_sdks
         return unless Dependabot::Experiments.enabled?(:nuget_install_dotnet_sdks)
 
